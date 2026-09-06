@@ -122,10 +122,7 @@ export function observeProactivePanelUserChoice(
 ): ProactivePanelObservation {
   const sameThread = previous?.threadKey === input.threadKey;
   const newTurn =
-    sameThread &&
-    (previous.runningTurnId !== undefined || previous.userActionTurnId !== null) &&
-    input.runningTurnId !== null &&
-    input.runningTurnId !== previous.userActionTurnId;
+    sameThread && input.runningTurnId !== null && input.runningTurnId !== previous.userActionTurnId;
   return {
     threadKey: input.threadKey,
     runningTurnId: sameThread ? previous.runningTurnId : undefined,

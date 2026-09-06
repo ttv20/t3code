@@ -201,9 +201,9 @@ describe("proactive panels", () => {
     ).toBe(false);
   });
 
-  it.each([false, true])(
-    "captures a new turn's choice once while loading, with an observed initial turn: %s",
-    (firstTurnObserved) => {
+  it.each(["idle", "loading", "observed"] as const)(
+    "captures a new turn's choice once with initial state %s",
+    (initialState) => {
       useRightPanelStore.setState({ byThreadKey: {}, userActionRevisionByThreadKey: {} });
       const ref = scopeThreadRef(EnvironmentId.make("env-1"), ThreadId.make("thread-1"));
       const panels = useRightPanelStore.getState();
@@ -211,14 +211,14 @@ describe("proactive panels", () => {
       const nextTurn = TurnId.make("turn-2");
       const initial = observeProactivePanelUserChoice(null, {
         threadKey: "env-1:thread-1",
-        runningTurnId: firstTurn,
+        runningTurnId: initialState === "idle" ? null : firstTurn,
         userActionRevision: panels.getUserActionRevision(ref),
       });
       panels.openFile(ref, "src/first.ts");
       const loadingNextTurn = observeProactivePanelUserChoice(
         {
           ...initial,
-          ...(firstTurnObserved ? { runningTurnId: firstTurn, targetKey: null } : {}),
+          ...(initialState === "observed" ? { runningTurnId: firstTurn, targetKey: null } : {}),
         },
         {
           threadKey: initial.threadKey,
