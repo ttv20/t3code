@@ -881,6 +881,14 @@ export function createServerEnvironmentAtoms<R, E>(
       tag: WS_METHODS.serverGetUsageSummary,
       staleTimeMs: 60_000,
     }),
+    getCodexWeeklyUsage: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:get-codex-weekly-usage",
+      tag: WS_METHODS.serverGetCodexWeeklyUsage,
+      concurrency: {
+        mode: "singleFlight",
+        key: ({ environmentId, input }) => `${environmentId}:${input.threadId}`,
+      },
+    }),
     configProjection,
     welcome: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
       label: "environment-data:server:welcome",

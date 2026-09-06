@@ -10,7 +10,7 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, EllipsisIcon } from "lucide-react";
 import {
   memo,
   useCallback,
@@ -25,6 +25,8 @@ import GitActionsControl from "../GitActionsControl";
 import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { type DraftId } from "~/composerDraftStore";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { toastManager } from "../ui/toast";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
@@ -45,6 +47,7 @@ import {
   WorkspaceBreadcrumbSeparator,
 } from "../WorkspaceBreadcrumb";
 import { cn } from "~/lib/utils";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;
@@ -158,6 +161,7 @@ export const ChatHeader = memo(function ChatHeader({
     });
   }, [panelAnimationDurationMs, panelAnimationsActive]);
   const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const isMobileViewport = useMediaQuery("max-sm");
   const fileScripts = useT3ProjectFileScripts(
     activeThreadEnvironmentId,
     activeProjectScripts ? activeProjectCwd : null,
@@ -344,8 +348,9 @@ export const ChatHeader = memo(function ChatHeader({
           {renamingTitle !== null ? (
             <input
               autoFocus
+              dir="auto"
               aria-label="Thread title"
-              className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-ring/50 focus:ring-ring"
+              className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-ring/50 [unicode-bidi:plaintext] focus:ring-ring"
               defaultValue={renamingTitle}
               onBlur={(event) => {
                 if (renameCommittedRef.current) return;
@@ -370,25 +375,35 @@ export const ChatHeader = memo(function ChatHeader({
                   />
                 }
               >
-                <h2 className="min-w-0 truncate">{activeThreadTitle}</h2>
+                <h2 dir="auto" className="min-w-0 truncate [unicode-bidi:plaintext]">
+                  {activeThreadTitle}
+                </h2>
                 <ChevronDownIcon
                   aria-hidden
                   data-thread-title-chevron
                   className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/thread-title:opacity-100 group-focus-visible/thread-title:opacity-100"
                 />
               </TooltipTrigger>
-              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
+              <TooltipPopup side="top" dir="auto">
+                {activeThreadTitle}
+              </TooltipPopup>
             </Tooltip>
           ) : (
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <h2 aria-label={activeThreadTitle} className="min-w-0 flex-1 truncate">
+                  <h2
+                    dir="auto"
+                    aria-label={activeThreadTitle}
+                    className="min-w-0 flex-1 truncate [unicode-bidi:plaintext]"
+                  >
                     {activeThreadTitle}
                   </h2>
                 }
               />
-              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
+              <TooltipPopup side="top" dir="auto">
+                {activeThreadTitle}
+              </TooltipPopup>
             </Tooltip>
           )}
         </WorkspaceBreadcrumbItem>
@@ -402,33 +417,84 @@ export const ChatHeader = memo(function ChatHeader({
           "[[data-panel-animations=true]_&]:motion-safe:transition-[padding-right] [[data-panel-animations=true]_&]:motion-safe:[transition-duration:var(--panel-animation-duration)] [[data-panel-animations=true]_&]:motion-safe:ease-out",
         )}
       >
-        {activeProjectScripts && (
-          <ProjectScriptsControl
-            scripts={activeProjectScripts}
-            fileScripts={fileScripts}
-            keybindings={keybindings}
-            preferredScriptId={preferredScriptId}
-            onRunScript={onRunProjectScript}
-            onAddScript={onAddProjectScript}
-            onUpdateScript={onUpdateProjectScript}
-            onDeleteScript={onDeleteProjectScript}
-          />
-        )}
-        {showOpenInPicker && (
-          <OpenInPicker
-            environmentId={activeThreadEnvironmentId}
-            keybindings={keybindings}
-            availableEditors={availableEditors}
-            openInCwd={openInCwd}
-          />
-        )}
-        {activeProjectName && (
-          <GitActionsControl
-            gitCwd={gitCwd}
-            activeThreadRef={scopeThreadRef(activeThreadEnvironmentId, activeThreadId)}
-            onOpenPullRequest={onOpenPullRequest}
-            {...(draftId ? { draftId } : {})}
-          />
+        {isMobileViewport ? (
+          activeProjectScripts || activeProjectName ? (
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="outline"
+                    aria-label="Project actions"
+                  />
+                }
+              >
+                <EllipsisIcon className="size-4" aria-hidden />
+              </PopoverTrigger>
+              <PopoverPopup align="end" side="bottom" className="min-w-48" viewportClassName="p-3">
+                <div className="space-y-3">
+                  {activeProjectScripts ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-muted-foreground">Project actions</span>
+                      <ProjectScriptsControl
+                        scripts={activeProjectScripts}
+                        fileScripts={fileScripts}
+                        keybindings={keybindings}
+                        preferredScriptId={preferredScriptId}
+                        onRunScript={onRunProjectScript}
+                        onAddScript={onAddProjectScript}
+                        onUpdateScript={onUpdateProjectScript}
+                        onDeleteScript={onDeleteProjectScript}
+                      />
+                    </div>
+                  ) : null}
+                  {activeProjectName ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-muted-foreground">Git</span>
+                      <GitActionsControl
+                        gitCwd={gitCwd}
+                        activeThreadRef={activeThreadRef}
+                        onOpenPullRequest={onOpenPullRequest}
+                        {...(draftId ? { draftId } : {})}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </PopoverPopup>
+            </Popover>
+          ) : null
+        ) : (
+          <>
+            {activeProjectScripts && (
+              <ProjectScriptsControl
+                scripts={activeProjectScripts}
+                fileScripts={fileScripts}
+                keybindings={keybindings}
+                preferredScriptId={preferredScriptId}
+                onRunScript={onRunProjectScript}
+                onAddScript={onAddProjectScript}
+                onUpdateScript={onUpdateProjectScript}
+                onDeleteScript={onDeleteProjectScript}
+              />
+            )}
+            {showOpenInPicker && (
+              <OpenInPicker
+                environmentId={activeThreadEnvironmentId}
+                keybindings={keybindings}
+                availableEditors={availableEditors}
+                openInCwd={openInCwd}
+              />
+            )}
+            {activeProjectName && (
+              <GitActionsControl
+                gitCwd={gitCwd}
+                activeThreadRef={activeThreadRef}
+                onOpenPullRequest={onOpenPullRequest}
+                {...(draftId ? { draftId } : {})}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

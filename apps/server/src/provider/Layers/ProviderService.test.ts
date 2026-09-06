@@ -236,6 +236,17 @@ function makeFakeCodexAdapter(
       Effect.succeed({ feedbackId: `feedback-${input.threadId}` }),
   );
 
+  const readWeeklyUsage = vi.fn((_threadId: ThreadId) =>
+    Effect.succeed({
+      accountEmail: "codex@example.com",
+      usedPercent: 25,
+      remainingPercent: 75,
+      windowDurationMins: 10_080,
+      resetsAt: null,
+      checkedAt: "2026-01-01T00:00:00.000Z",
+    }),
+  );
+
   const stopAll = vi.fn((): Effect.Effect<void, ProviderAdapterError> =>
     Effect.sync(() => {
       sessions.clear();
@@ -259,7 +270,7 @@ function makeFakeCodexAdapter(
     hasSession,
     readThread,
     rollbackThread,
-    ...(provider === CODEX_DRIVER ? { uploadFeedback } : {}),
+    ...(provider === CODEX_DRIVER ? { uploadFeedback, readWeeklyUsage } : {}),
     stopAll,
     get streamEvents() {
       return Stream.fromPubSub(runtimeEventPubSub);
@@ -296,6 +307,7 @@ function makeFakeCodexAdapter(
     readThread,
     rollbackThread,
     uploadFeedback,
+    readWeeklyUsage,
     stopAll,
   };
 }
@@ -1259,6 +1271,34 @@ routing.layer("ProviderServiceLive routing", (it) => {
       assert.deepStrictEqual(result, { feedbackId: `feedback-${threadId}` });
       assert.strictEqual(routing.codex.startSession.mock.calls.length, 1);
       assert.deepStrictEqual(routing.codex.uploadFeedback.mock.calls, [[{ threadId }]]);
+    }),
+  );
+
+  it.effect("caches Codex weekly usage without recovering a stopped thread", () =>
+    Effect.gen(function* () {
+      const provider = yield* ProviderService.ProviderService;
+      const threadId = asThreadId("thread-weekly-usage-cache");
+      yield* provider.startSession(threadId, {
+        provider: CODEX_DRIVER,
+        providerInstanceId: codexInstanceId,
+        threadId,
+        runtimeMode: "full-access",
+      });
+
+      const first = yield* provider.readWeeklyUsage!(threadId);
+      yield* routing.codex.stopSession(threadId);
+      routing.codex.startSession.mockClear();
+      routing.codex.readWeeklyUsage.mockClear();
+
+      const cached = yield* provider.readWeeklyUsage!(threadId);
+      assert.deepStrictEqual(cached, first);
+      assert.strictEqual(routing.codex.startSession.mock.calls.length, 0);
+      assert.strictEqual(routing.codex.readWeeklyUsage.mock.calls.length, 0);
+
+      const refreshed = yield* provider.readWeeklyUsage!(threadId, { forceRefresh: true });
+      assert.strictEqual(refreshed.remainingPercent, 75);
+      assert.strictEqual(routing.codex.startSession.mock.calls.length, 0);
+      assert.deepStrictEqual(routing.codex.readWeeklyUsage.mock.calls, [[threadId]]);
     }),
   );
 

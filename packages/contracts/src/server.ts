@@ -91,6 +91,24 @@ export const ServerProviderSlashCommand = Schema.Struct({
 });
 export type ServerProviderSlashCommand = typeof ServerProviderSlashCommand.Type;
 
+export const CodexWeeklyUsageInput = Schema.Struct({
+  threadId: ThreadId,
+  forceRefresh: Schema.optional(Schema.Boolean),
+});
+export type CodexWeeklyUsageInput = typeof CodexWeeklyUsageInput.Type;
+
+export const CodexWeeklyUsageResult = Schema.Struct({
+  accountEmail: Schema.NullOr(TrimmedNonEmptyString),
+  usedPercent: Schema.Number.pipe(Schema.check(Schema.isBetween({ minimum: 0, maximum: 100 }))),
+  remainingPercent: Schema.Number.pipe(
+    Schema.check(Schema.isBetween({ minimum: 0, maximum: 100 })),
+  ),
+  windowDurationMins: PositiveInt,
+  resetsAt: Schema.NullOr(Schema.Number.pipe(Schema.check(Schema.isInt()))),
+  checkedAt: IsoDateTime,
+});
+export type CodexWeeklyUsageResult = typeof CodexWeeklyUsageResult.Type;
+
 export const ServerProviderSkill = Schema.Struct({
   name: TrimmedNonEmptyString,
   description: Schema.optional(TrimmedNonEmptyString),

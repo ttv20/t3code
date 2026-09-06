@@ -1642,12 +1642,16 @@ code {
   color: var(--contrast-muted-foreground);
 }
 
+.chat-markdown :where(p, h1, h2, h3, h4, h5, h6, li, blockquote, th, td) {
+  text-align: start;
+}
+
 .chat-markdown ul {
   /* Reset for nested uls under a widened ol. --list-gutter is an inherited
      custom property, so without this a task-list under a multi-digit ordered
      list would inherit the outer gutter instead of its own default. */
   --list-gutter: 1.25rem;
-  padding-left: 1.25rem;
+  padding-inline-start: 1.25rem;
   list-style-type: disc;
 }
 
@@ -1658,7 +1662,7 @@ code {
    nested ol without its own widened marker doesn't inherit the outer one. */
 .chat-markdown ol {
   --list-gutter: 1.25rem;
-  padding-left: var(--list-gutter, 1.25rem);
+  padding-inline-start: var(--list-gutter, 1.25rem);
   list-style-type: decimal;
 }
 
@@ -1692,7 +1696,8 @@ code {
 }
 
 .chat-markdown li.task-list-item input[type="checkbox"] {
-  margin: 0 0.35em 0.15em calc(-1 * var(--list-gutter, 1.25rem));
+  margin-block: 0 0.15em;
+  margin-inline: calc(-1 * var(--list-gutter, 1.25rem)) 0.35em;
   vertical-align: middle;
 }
 
@@ -1842,7 +1847,7 @@ code {
 .chat-markdown th,
 .chat-markdown td {
   padding: 0.45rem 0.75rem;
-  text-align: left;
+  text-align: start;
 }
 
 .chat-markdown thead th {

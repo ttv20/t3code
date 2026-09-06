@@ -28,6 +28,7 @@ import {
 import { expandAssistantCitationsForProvider } from "@t3tools/shared/assistantCitations";
 import { causeErrorTag } from "@t3tools/shared/observability";
 import * as DateTime from "effect/DateTime";
+import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -50,7 +51,10 @@ import {
   withMetrics,
 } from "../../observability/Metrics.ts";
 import { type ProviderAdapterError, ProviderValidationError } from "../Errors.ts";
-import type { ProviderAdapterShape } from "../Services/ProviderAdapter.ts";
+import type {
+  ProviderAdapterShape,
+  ProviderWeeklyUsageResult,
+} from "../Services/ProviderAdapter.ts";
 import * as ProviderAdapterRegistry from "../Services/ProviderAdapterRegistry.ts";
 import * as ProviderService from "../Services/ProviderService.ts";
 import * as ProviderSessionDirectory from "../Services/ProviderSessionDirectory.ts";
@@ -61,6 +65,7 @@ import * as McpProviderSession from "../../mcp/McpProviderSession.ts";
 import * as McpSessionRegistry from "../../mcp/McpSessionRegistry.ts";
 import * as ServerSettings from "../../serverSettings.ts";
 const isModelSelection = Schema.is(ModelSelection);
+const WEEKLY_USAGE_CACHE_TTL_MS = 10 * 60 * 1_000;
 
 /**
  * Hook for tests that want to override the canonical event logger pulled
@@ -219,6 +224,12 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
   const analytics = yield* Effect.service(AnalyticsService.AnalyticsService);
   const serverConfig = yield* ServerConfig.ServerConfig;
   const eventLoggers = yield* ProviderEventLoggers.ProviderEventLoggers;
+  const weeklyUsageCache = yield* Ref.make(
+    new Map<
+      ProviderInstanceId,
+      { readonly value: ProviderWeeklyUsageResult; readonly expiresAtMs: number }
+    >(),
+  );
   // Options-provided logger wins (test overrides); otherwise we take whatever
   // the `ProviderEventLoggers` tag exposes — `undefined` means "no canonical
   // log writer is attached", which downstream code already handles as a
@@ -874,6 +885,39 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
     );
   });
 
+  const readWeeklyUsage: NonNullable<ProviderServiceMethod<"readWeeklyUsage">> = Effect.fn(
+    "ProviderService.readWeeklyUsage",
+  )(function* (threadId, options) {
+    const routed = yield* resolveRoutableSession({
+      threadId,
+      operation: "ProviderService.readWeeklyUsage",
+      // Usage is observational. Never revive a dormant thread just to refresh it.
+      allowRecovery: false,
+    });
+    if (!routed.adapter.readWeeklyUsage) {
+      return yield* toValidationError(
+        "ProviderService.readWeeklyUsage",
+        `Provider '${routed.adapter.provider}' does not expose weekly usage.`,
+      );
+    }
+    const nowMs = yield* Clock.currentTimeMillis;
+    if (!options?.forceRefresh) {
+      const cached = (yield* Ref.get(weeklyUsageCache)).get(routed.instanceId);
+      if (cached && cached.expiresAtMs > nowMs) return cached.value;
+    }
+
+    const value = yield* routed.adapter.readWeeklyUsage(threadId);
+    yield* Ref.update(weeklyUsageCache, (cache) => {
+      const next = new Map(cache);
+      next.set(routed.instanceId, {
+        value,
+        expiresAtMs: nowMs + WEEKLY_USAGE_CACHE_TTL_MS,
+      });
+      return next;
+    });
+    return value;
+  });
+
   const interruptTurn: ProviderServiceMethod<"interruptTurn"> = Effect.fn("interruptTurn")(
     function* (rawInput) {
       const input = yield* decodeInputOrValidationError({
@@ -1285,6 +1329,7 @@ const makeProviderService = Effect.fn("makeProviderService")(function* (
   return {
     startSession,
     sendTurn,
+    readWeeklyUsage,
     interruptTurn,
     respondToRequest,
     respondToUserInput,

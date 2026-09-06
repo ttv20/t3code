@@ -30,10 +30,34 @@ vi.mock("~/lib/openPullRequestLink", () => ({
 
 import ChatMarkdown, {
   canUseMarkdownFileShellActions,
+  countMarkdownDirectionCharacters,
   hasMarkdownFilePrimaryAction,
   orderedListGutterStyle,
+  resolveMarkdownDirection,
+  resolveStreamingMarkdownDirection,
   shouldUseMarkdownFileBrowserPrimaryAction,
 } from "./ChatMarkdown";
+
+describe("ChatMarkdown message direction", () => {
+  it("uses the most common strong-letter direction for the whole message", () => {
+    expect(countMarkdownDirectionCharacters("hello שלום עולם")).toEqual({ ltr: 5, rtl: 8 });
+    expect(resolveMarkdownDirection({ ltr: 5, rtl: 8 })).toBe("rtl");
+    expect(resolveMarkdownDirection({ ltr: 9, rtl: 4 })).toBe("ltr");
+  });
+
+  it("keeps streaming direction stable until the other script has a clear lead", () => {
+    expect(resolveStreamingMarkdownDirection({ ltr: 20, rtl: 23 }, "ltr")).toBe("ltr");
+    expect(resolveStreamingMarkdownDirection({ ltr: 20, rtl: 30 }, "ltr")).toBe("rtl");
+    expect(resolveStreamingMarkdownDirection({ ltr: 0, rtl: 1 }, "ltr")).toBe("rtl");
+  });
+
+  it("applies one direction to the Markdown root", () => {
+    const html = renderToStaticMarkup(
+      <ChatMarkdown cwd={undefined} text={"שלום עולם ועוד מילים\n\nEnglish"} />,
+    );
+    expect(html).toContain('<div dir="rtl" class="chat-markdown');
+  });
+});
 
 describe("canUseMarkdownFileShellActions", () => {
   const environmentId = EnvironmentId.make("environment-1");

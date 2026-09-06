@@ -59,6 +59,7 @@ import {
   AssetWorkspaceContextResolutionError,
   RpcClientId,
   EnvironmentAuthorizationError,
+  TextGenerationError,
   ThreadId,
   type TerminalAttachStreamEvent,
   type TerminalError,
@@ -1670,6 +1671,24 @@ const makeWsRpcLayer = (
           observeRpcEffect(WS_METHODS.serverGetConfig, loadServerConfig, {
             "rpc.aggregate": "server",
           }),
+        [WS_METHODS.serverGetCodexWeeklyUsage]: (input) =>
+          observeRpcEffect(
+            WS_METHODS.serverGetCodexWeeklyUsage,
+            providerService.readWeeklyUsage!(
+              input.threadId,
+              input.forceRefresh === undefined ? undefined : { forceRefresh: input.forceRefresh },
+            ).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new TextGenerationError({
+                    operation: "getCodexWeeklyUsage",
+                    detail: cause.message,
+                    cause,
+                  }),
+              ),
+            ),
+            { "rpc.aggregate": "server" },
+          ),
         [WS_METHODS.serverRefreshProviders]: (input) =>
           observeRpcEffect(
             WS_METHODS.serverRefreshProviders,

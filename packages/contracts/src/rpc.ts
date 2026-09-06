@@ -58,6 +58,7 @@ import {
   VcsRemoveWorktreeInput,
   GitResolvePullRequestResult,
   GitRunStackedActionInput,
+  TextGenerationError,
   VcsStatusInput,
   VcsStatusResult,
   VcsStatusStreamEvent,
@@ -199,6 +200,8 @@ import {
   ServerSignalProcessResult,
   ServerUpsertKeybindingInput,
   ServerUpsertKeybindingResult,
+  CodexWeeklyUsageInput,
+  CodexWeeklyUsageResult,
 } from "./server.ts";
 import {
   ResourceTelemetryHistory,
@@ -295,6 +298,7 @@ export const WS_METHODS = {
   // Server meta
   serverProbe: "server.probe",
   serverGetConfig: "server.getConfig",
+  serverGetCodexWeeklyUsage: "server.getCodexWeeklyUsage",
   serverRefreshProviders: "server.refreshProviders",
   serverUpdateProvider: "server.updateProvider",
   serverUpdateServer: "server.updateServer",
@@ -383,6 +387,12 @@ export const WsServerGetConfigRpc = Rpc.make(WS_METHODS.serverGetConfig, {
   payload: Schema.Struct({}),
   success: ServerConfig,
   error: Schema.Union([KeybindingsConfigError, ServerSettingsError, EnvironmentAuthorizationError]),
+});
+
+export const WsServerGetCodexWeeklyUsageRpc = Rpc.make(WS_METHODS.serverGetCodexWeeklyUsage, {
+  payload: CodexWeeklyUsageInput,
+  success: CodexWeeklyUsageResult,
+  error: Schema.Union([TextGenerationError, EnvironmentAuthorizationError]),
 });
 
 export const WsServerRefreshProvidersRpc = Rpc.make(WS_METHODS.serverRefreshProviders, {
@@ -1153,6 +1163,7 @@ export const WsSubscribeResourceTelemetryRpc = Rpc.make(WS_METHODS.subscribeReso
 export const WsRpcGroup = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
+  WsServerGetCodexWeeklyUsageRpc,
   WsServerRefreshProvidersRpc,
   WsServerUpdateProviderRpc,
   WsProviderAuthStartRpc,

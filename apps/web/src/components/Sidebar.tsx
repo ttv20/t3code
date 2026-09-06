@@ -317,7 +317,10 @@ function SidebarThreadTooltip({
       className="max-w-80 text-left whitespace-normal [&_[data-slot=tooltip-viewport]]:p-0"
     >
       <div className="flex min-w-0 max-w-80 flex-col gap-2 p-[var(--floating-content-inset)]">
-        <div className="min-w-0 truncate text-xs leading-none font-medium text-foreground">
+        <div
+          dir="auto"
+          className="min-w-0 truncate text-xs leading-none font-medium text-foreground [unicode-bidi:plaintext]"
+        >
           {thread.title}
         </div>
         <div className="grid gap-1.5 pl-0.5 text-xs text-muted-foreground">
@@ -1167,6 +1170,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
   const title = isRenaming ? (
     <input
       autoFocus
+      dir="auto"
       value={renamingTitle}
       aria-label="Thread title"
       onChange={(event) => onRenameTitleChange(event.target.value)}
@@ -1175,12 +1179,13 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
       onBlur={handleRenameBlur}
       onClick={(event) => event.stopPropagation()}
       onDoubleClick={(event) => event.stopPropagation()}
-      className="min-w-0 flex-1 rounded-sm border border-input bg-card px-1 text-sm font-medium text-card-foreground outline-none focus:border-foreground"
+      className="min-w-0 flex-1 rounded-sm border border-input bg-card px-1 text-sm font-medium text-card-foreground outline-none [unicode-bidi:plaintext] focus:border-foreground"
     />
   ) : (
     <span
+      dir="auto"
       className={cn(
-        "min-w-0 flex-1 text-sm transition-opacity motion-reduce:transition-none",
+        "min-w-0 flex-1 text-sm [unicode-bidi:plaintext] transition-opacity motion-reduce:transition-none",
         shouldRecede ? "font-normal" : "font-medium",
         variant === "card"
           ? cn(
@@ -1756,7 +1761,9 @@ const SidebarSearchResultRow = memo(function SidebarSearchResultRow(props: {
             projectIcon={props.projectIcon}
             className="size-4 shrink-0"
           />
-          <span className="min-w-0 flex-1 truncate">{thread.title}</span>
+          <span dir="auto" className="min-w-0 flex-1 truncate [unicode-bidi:plaintext]">
+            {thread.title}
+          </span>
           <span className="shrink-0 text-xs text-muted-foreground/55 tabular-nums">
             {threadTimeLabel(thread)}
           </span>

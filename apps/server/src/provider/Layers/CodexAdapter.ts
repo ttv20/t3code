@@ -30,6 +30,7 @@ import {
   ProviderSendTurnInput,
 } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
+import * as DateTime from "effect/DateTime";
 import * as NodeCrypto from "node:crypto";
 import * as Crypto from "effect/Crypto";
 import * as Exit from "effect/Exit";
@@ -2240,6 +2241,53 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
       ),
     );
 
+  const readWeeklyUsage: NonNullable<CodexAdapterShape["readWeeklyUsage"]> = Effect.fn(
+    "CodexAdapter.readWeeklyUsage",
+  )(function* (threadId) {
+    const requestedSession = sessions.get(threadId);
+    const session =
+      requestedSession && !requestedSession.stopped
+        ? requestedSession
+        : Array.from(sessions.values()).find((candidate) => !candidate.stopped);
+    if (!session) {
+      return yield* new ProviderAdapterSessionNotFoundError({ provider: PROVIDER, threadId });
+    }
+    const response = yield* session.runtime.readAccountRateLimits!().pipe(
+      Effect.mapError((error) => mapCodexRuntimeError(threadId, "account/rateLimits/read", error)),
+    );
+    const accountResponse = yield* session.runtime.readAccount!().pipe(
+      Effect.mapError((error) => mapCodexRuntimeError(threadId, "account/read", error)),
+    );
+    const snapshots = [response.rateLimits, ...Object.values(response.rateLimitsByLimitId ?? {})];
+    const windows = snapshots.flatMap((snapshot) =>
+      [snapshot.primary, snapshot.secondary].flatMap((window) =>
+        window?.windowDurationMins ? [window] : [],
+      ),
+    );
+    const weekly = windows.sort(
+      (left, right) => (right.windowDurationMins ?? 0) - (left.windowDurationMins ?? 0),
+    )[0];
+    if (!weekly?.windowDurationMins) {
+      return yield* new ProviderAdapterRequestError({
+        provider: PROVIDER,
+        method: "account/rateLimits/read",
+        detail: "Codex did not return a weekly usage window.",
+      });
+    }
+    const usedPercent = Math.max(0, Math.min(100, weekly.usedPercent));
+    return {
+      accountEmail:
+        accountResponse.account?.type === "chatgpt"
+          ? (accountResponse.account.email?.trim() ?? null)
+          : null,
+      usedPercent,
+      remainingPercent: 100 - usedPercent,
+      windowDurationMins: weekly.windowDurationMins,
+      resetsAt: weekly.resetsAt ?? null,
+      checkedAt: DateTime.formatIso(yield* DateTime.now),
+    };
+  });
+
   const respondToRequest: CodexAdapterShape["respondToRequest"] = (threadId, requestId, decision) =>
     requireSession(threadId).pipe(
       Effect.flatMap((session) => session.runtime.respondToRequest(requestId, decision)),
@@ -2329,6 +2377,7 @@ export const makeCodexAdapter = Effect.fn("makeCodexAdapter")(function* (
     readThread,
     rollbackThread,
     uploadFeedback,
+    readWeeklyUsage,
     respondToRequest,
     respondToUserInput,
     stopSession,

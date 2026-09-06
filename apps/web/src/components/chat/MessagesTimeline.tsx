@@ -278,6 +278,20 @@ const TIMELINE_MAINTAIN_SCROLL_AT_END = {
     layout: true,
   },
 } as const satisfies MaintainScrollAtEndOptions;
+const TIMELINE_INITIAL_MESSAGE_TOP_OFFSET = 24;
+
+function resolveInitialUserMessageIndex(
+  rows: ReadonlyArray<MessagesTimelineRow>,
+  isWorking: boolean,
+  latestTurn: TimelineLatestTurn | null,
+): number | undefined {
+  if (isWorking || latestTurn === null || latestTurn.state === "running") return undefined;
+  for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index];
+    if (row?.kind === "message" && row.message.role === "user") return index;
+  }
+  return undefined;
+}
 
 // ---------------------------------------------------------------------------
 // Props (public API)
@@ -524,6 +538,10 @@ export const MessagesTimeline = memo(function MessagesTimeline({
     ],
   );
   const rows = useStableRows(rawRows);
+  const initialUserMessageIndex =
+    citationRequest === null
+      ? resolveInitialUserMessageIndex(rows, isWorking, latestTurn)
+      : undefined;
   const minimapItems = useMemo(() => deriveTimelineMinimapItems(rows), [rows]);
   const [timelineViewportElement, setTimelineViewportElement] = useState<HTMLDivElement | null>(
     null,
@@ -737,7 +755,16 @@ export const MessagesTimeline = memo(function MessagesTimeline({
             getItemType={getItemType}
             renderItem={renderItem}
             estimatedItemSize={90}
-            initialScrollAtEnd={citationRequest === null}
+            initialScrollAtEnd={citationRequest === null && initialUserMessageIndex === undefined}
+            {...(initialUserMessageIndex === undefined
+              ? {}
+              : {
+                  initialScrollIndex: {
+                    index: initialUserMessageIndex,
+                    viewOffset: TIMELINE_INITIAL_MESSAGE_TOP_OFFSET,
+                    viewPosition: 0,
+                  },
+                })}
             // Legend needs a data refresh to mount new pins without a scroll event.
             {...(readyCitationRequest ? { dataVersion: readyCitationRequest.key } : {})}
             {...(citationAlwaysRender ? { alwaysRender: citationAlwaysRender } : {})}
@@ -747,6 +774,7 @@ export const MessagesTimeline = memo(function MessagesTimeline({
             maintainScrollAtEnd={
               citationPositioning ||
               anchoredEndSpace ||
+              initialUserMessageIndex !== undefined ||
               !liveFollowEnabled ||
               disclosureToggleSettling
                 ? false

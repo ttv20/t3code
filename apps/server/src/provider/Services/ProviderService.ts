@@ -32,6 +32,7 @@ import type * as Stream from "effect/Stream";
 
 import type { ProviderServiceError } from "../Errors.ts";
 import type { ProviderAdapterCapabilities } from "./ProviderAdapter.ts";
+import type { ProviderWeeklyUsageResult } from "./ProviderAdapter.ts";
 import type { ProviderInstanceRoutingInfo } from "./ProviderAdapterRegistry.ts";
 
 /**
@@ -52,6 +53,11 @@ export interface ProviderServiceShape {
   readonly sendTurn: (
     input: ProviderSendTurnInput,
   ) => Effect.Effect<ProviderTurnStartResult, ProviderServiceError>;
+
+  readonly readWeeklyUsage?: (
+    threadId: ThreadId,
+    options?: { readonly forceRefresh?: boolean },
+  ) => Effect.Effect<ProviderWeeklyUsageResult, ProviderServiceError>;
 
   /**
    * Interrupt a running provider turn.

@@ -22,6 +22,8 @@ vi.mock("@legendapp/list/react", async () => {
     };
     contentInsetEndAdjustment?: number;
     className?: string;
+    initialScrollAtEnd?: boolean;
+    initialScrollIndex?: number | { index: number; viewOffset?: number; viewPosition?: number };
     maintainScrollAtEnd?: boolean | MaintainScrollAtEndOptions;
     maintainVisibleContentPosition?:
       | boolean
@@ -44,6 +46,22 @@ vi.mock("@legendapp/list/react", async () => {
         data-anchor-on-ready={Boolean(props.anchoredEndSpace?.onReady)}
         data-content-inset-end={props.contentInsetEndAdjustment}
         data-class-name={props.className}
+        data-initial-scroll-at-end={props.initialScrollAtEnd}
+        data-initial-scroll-index={
+          typeof props.initialScrollIndex === "object"
+            ? props.initialScrollIndex.index
+            : props.initialScrollIndex
+        }
+        data-initial-scroll-view-position={
+          typeof props.initialScrollIndex === "object"
+            ? props.initialScrollIndex.viewPosition
+            : undefined
+        }
+        data-initial-scroll-view-offset={
+          typeof props.initialScrollIndex === "object"
+            ? props.initialScrollIndex.viewOffset
+            : undefined
+        }
         data-maintain-scroll-at-end={props.maintainScrollAtEnd ? "enabled" : undefined}
         data-maintain-scroll-at-end-animated={
           typeof props.maintainScrollAtEnd === "object"
@@ -233,6 +251,53 @@ function buildAssistantTimelineEntry(text: string) {
 }
 
 describe("MessagesTimeline", () => {
+  it("opens a finished thread at its latest user message below the top overlay", () => {
+    const turnId = TurnId.make("finished-turn");
+    const userEntry = buildUserTimelineEntry("Question");
+    const assistantEntry = buildAssistantTimelineEntry("A long finished answer");
+    const markup = renderToStaticMarkup(
+      <MessagesTimeline
+        {...buildProps()}
+        latestTurn={{
+          turnId,
+          state: "completed",
+          startedAt: "2026-03-17T19:12:20.000Z",
+          completedAt: "2026-03-17T19:12:28.000Z",
+        }}
+        timelineEntries={[
+          { ...userEntry, message: { ...userEntry.message, turnId } },
+          {
+            ...assistantEntry,
+            id: "entry-2",
+            message: {
+              ...assistantEntry.message,
+              id: MessageId.make("message-2"),
+              turnId,
+            },
+          },
+        ]}
+      />,
+    );
+    expect(markup).toContain('data-initial-scroll-index="0"');
+    expect(markup).toContain('data-initial-scroll-view-position="0"');
+    expect(markup).toContain('data-initial-scroll-view-offset="24"');
+    expect(markup).not.toContain('data-initial-scroll-at-end="true"');
+    expect(markup).not.toContain('data-maintain-scroll-at-end="enabled"');
+  });
+
+  it("keeps active threads initially pinned to the end", () => {
+    const markup = renderToStaticMarkup(
+      <MessagesTimeline
+        {...buildProps()}
+        isWorking
+        timelineEntries={[buildAssistantTimelineEntry("Streaming answer")]}
+      />,
+    );
+    expect(markup).toContain('data-initial-scroll-at-end="true"');
+    expect(markup).not.toContain("data-initial-scroll-index");
+    expect(markup).toContain('data-maintain-scroll-at-end="enabled"');
+  });
+
   it("renders a feedback command and its pending response as normal thread messages", () => {
     const submission = {
       id: MessageId.make("feedback-command"),
@@ -806,7 +871,9 @@ describe("MessagesTimeline", () => {
       />,
     );
 
-    expect(markup).toContain('<code data-inline-code="">&lt;tag attr=&quot;x&quot;&gt;</code>');
+    expect(markup).toContain(
+      '<code data-inline-code="" dir="ltr" class="[unicode-bidi:isolate]">&lt;tag attr=&quot;x&quot;&gt;</code>',
+    );
     expect(markup).toContain("&lt;root&gt;&lt;child enabled=&quot;true&quot; /&gt;&lt;/root&gt;");
   });
 

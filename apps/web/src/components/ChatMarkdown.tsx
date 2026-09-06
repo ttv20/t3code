@@ -298,6 +298,68 @@ const CODE_FENCE_LANGUAGE_REGEX = /(?:^|\s)language-([^\s]+)/;
 const WINDOWS_DRIVE_PATH_REGEX = /^[A-Za-z]:[\\/]/;
 const MAX_HIGHLIGHT_CACHE_ENTRIES = 500;
 const MAX_HIGHLIGHT_CACHE_MEMORY_BYTES = 50 * 1024 * 1024;
+const MARKDOWN_LETTER_REGEX = /\p{L}/u;
+const MARKDOWN_RTL_LETTER_REGEX = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u;
+const STREAMING_DIRECTION_MIN_LEAD = 8;
+const STREAMING_DIRECTION_LEAD_RATIO = 1.25;
+
+type MarkdownDirection = "ltr" | "rtl";
+
+export interface MarkdownDirectionCounts {
+  readonly ltr: number;
+  readonly rtl: number;
+}
+
+export function countMarkdownDirectionCharacters(text: string): MarkdownDirectionCounts {
+  let ltr = 0;
+  let rtl = 0;
+  for (const character of text) {
+    if (!MARKDOWN_LETTER_REGEX.test(character)) continue;
+    if (MARKDOWN_RTL_LETTER_REGEX.test(character)) rtl += 1;
+    else ltr += 1;
+  }
+  return { ltr, rtl };
+}
+
+export function resolveMarkdownDirection(
+  counts: MarkdownDirectionCounts,
+  fallback: MarkdownDirection = "ltr",
+): MarkdownDirection {
+  if (counts.rtl === counts.ltr) return fallback;
+  return counts.rtl > counts.ltr ? "rtl" : "ltr";
+}
+
+export function resolveStreamingMarkdownDirection(
+  counts: MarkdownDirectionCounts,
+  current: MarkdownDirection,
+): MarkdownDirection {
+  const currentCount = counts[current];
+  const other: MarkdownDirection = current === "ltr" ? "rtl" : "ltr";
+  const otherCount = counts[other];
+  if (otherCount === 0 || otherCount <= currentCount) return current;
+  if (currentCount === 0) return other;
+  const hasClearLead =
+    otherCount - currentCount >= STREAMING_DIRECTION_MIN_LEAD &&
+    otherCount >= currentCount * STREAMING_DIRECTION_LEAD_RATIO;
+  return hasClearLead ? other : current;
+}
+
+function useMarkdownDirection(text: string, isStreaming: boolean): MarkdownDirection {
+  const counts = useMemo(() => countMarkdownDirectionCharacters(text), [text]);
+  const exactDirection = resolveMarkdownDirection(counts);
+  const [streamingDirection, setStreamingDirection] = useState(exactDirection);
+  const displayedDirection = isStreaming
+    ? resolveStreamingMarkdownDirection(counts, streamingDirection)
+    : exactDirection;
+
+  useEffect(() => {
+    if (isStreaming && displayedDirection !== streamingDirection) {
+      setStreamingDirection(displayedDirection);
+    }
+  }, [displayedDirection, isStreaming, streamingDirection]);
+
+  return displayedDirection;
+}
 
 interface MarkdownActionFailureContext {
   readonly operation: string;
@@ -877,6 +939,7 @@ function MarkdownCodeBlock({
 
   return (
     <div
+      dir="ltr"
       className="chat-markdown-codeblock my-[0.65rem] overflow-hidden rounded-[var(--radius)] border border-border/70 bg-secondary leading-snug dark:border-transparent dark:bg-input/32"
       data-language={language}
       data-wrap={wrapped ? "true" : "false"}
@@ -1968,6 +2031,7 @@ function ChatMarkdown({
   onImageExpand,
   extraRemarkPlugins = EMPTY_REMARK_PLUGINS,
 }: ChatMarkdownProps) {
+  const messageDirection = useMarkdownDirection(text, isStreaming);
   const { resolvedTheme } = useTheme();
   const [localMediaPreview, setLocalMediaPreview] = useState<ExpandedImagePreview | null>(null);
   const expandMedia = onImageExpand ?? setLocalMediaPreview;
@@ -2611,7 +2675,7 @@ function ChatMarkdown({
           }
         }
         return (
-          <code {...props} className={className}>
+          <code {...props} dir="ltr" className={cn(className, "[unicode-bidi:isolate]")}>
             {children}
           </code>
         );
@@ -2708,7 +2772,11 @@ function ChatMarkdown({
       pre({ node, children, ...props }) {
         const codeBlock = extractCodeBlock(children);
         if (!codeBlock) {
-          return <pre {...props}>{children}</pre>;
+          return (
+            <pre {...props} dir="ltr" className={cn(props.className, "[unicode-bidi:isolate]")}>
+              {children}
+            </pre>
+          );
         }
 
         const language = extractFenceLanguage(codeBlock.className);
@@ -2779,8 +2847,9 @@ function ChatMarkdown({
   // complete source token instead of dropping it from the rendered message.
   return (
     <div
+      dir={messageDirection}
       className={cn(
-        "chat-markdown w-full min-w-0 text-sm leading-relaxed text-foreground/80 [overflow-wrap:anywhere] [word-break:break-word]",
+        "chat-markdown w-full min-w-0 text-sm leading-relaxed text-foreground/80 [overflow-wrap:anywhere] [unicode-bidi:isolate] [word-break:break-word]",
         className,
       )}
       onCopy={handleCopy}

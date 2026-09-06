@@ -185,6 +185,7 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter } from "./ContextWindowMeter";
+import { CodexWeeklyUsageIndicator } from "./CodexWeeklyUsageIndicator";
 import { resolveContextWindowModelDisplayName } from "./ContextWindowMeter.logic";
 import {
   attachVideoThumbnail,
@@ -5376,6 +5377,11 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                       </Tooltip>
                     </>
                   ) : null}
+                  <CodexWeeklyUsageIndicator
+                    active={selectedProvider === "codex"}
+                    environmentId={environmentId}
+                    threadId={activeThreadId}
+                  />
                   <ComposerFooterPrimaryActions
                     compact={isComposerResting || isComposerPrimaryActionsCompact}
                     activeContextWindow={
