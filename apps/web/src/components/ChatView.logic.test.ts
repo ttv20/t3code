@@ -201,47 +201,49 @@ describe("proactive panels", () => {
     ).toBe(false);
   });
 
-  it("captures a new turn's choice once when thread loading delays observation", () => {
-    useRightPanelStore.setState({ byThreadKey: {}, userActionRevisionByThreadKey: {} });
-    const ref = scopeThreadRef(EnvironmentId.make("env-1"), ThreadId.make("thread-1"));
-    const panels = useRightPanelStore.getState();
-    const firstTurn = TurnId.make("turn-1");
-    const nextTurn = TurnId.make("turn-2");
-    const initial = observeProactivePanelUserChoice(null, {
-      threadKey: "env-1:thread-1",
-      runningTurnId: firstTurn,
-      userActionRevision: panels.getUserActionRevision(ref),
-    });
-    panels.openFile(ref, "src/first.ts");
-    const loadingNextTurn = observeProactivePanelUserChoice(
-      {
-        ...initial,
+  it.each([false, true])(
+    "captures a new turn's choice once while loading, with an observed initial turn: %s",
+    (firstTurnObserved) => {
+      useRightPanelStore.setState({ byThreadKey: {}, userActionRevisionByThreadKey: {} });
+      const ref = scopeThreadRef(EnvironmentId.make("env-1"), ThreadId.make("thread-1"));
+      const panels = useRightPanelStore.getState();
+      const firstTurn = TurnId.make("turn-1");
+      const nextTurn = TurnId.make("turn-2");
+      const initial = observeProactivePanelUserChoice(null, {
+        threadKey: "env-1:thread-1",
         runningTurnId: firstTurn,
-        targetKey: null,
-      },
-      {
+        userActionRevision: panels.getUserActionRevision(ref),
+      });
+      panels.openFile(ref, "src/first.ts");
+      const loadingNextTurn = observeProactivePanelUserChoice(
+        {
+          ...initial,
+          ...(firstTurnObserved ? { runningTurnId: firstTurn, targetKey: null } : {}),
+        },
+        {
+          threadKey: initial.threadKey,
+          runningTurnId: nextTurn,
+          userActionRevision: panels.getUserActionRevision(ref),
+        },
+      );
+      expect(
+        panels.openProactive(ref, { id: "diff", kind: "diff" }, loadingNextTurn.userActionRevision),
+      ).toBe(true);
+
+      panels.openFile(ref, "src/second.ts");
+      const loaded = observeProactivePanelUserChoice(loadingNextTurn, {
         threadKey: initial.threadKey,
         runningTurnId: nextTurn,
         userActionRevision: panels.getUserActionRevision(ref),
-      },
-    );
-    expect(
-      panels.openProactive(ref, { id: "diff", kind: "diff" }, loadingNextTurn.userActionRevision),
-    ).toBe(true);
-
-    panels.openFile(ref, "src/second.ts");
-    const loaded = observeProactivePanelUserChoice(loadingNextTurn, {
-      threadKey: initial.threadKey,
-      runningTurnId: nextTurn,
-      userActionRevision: panels.getUserActionRevision(ref),
-    });
-    expect(panels.openProactive(ref, { id: "diff", kind: "diff" }, loaded.userActionRevision)).toBe(
-      false,
-    );
-    expect(selectActiveRightPanelSurface(useRightPanelStore.getState().byThreadKey, ref)?.id).toBe(
-      "file:src/second.ts",
-    );
-  });
+      });
+      expect(
+        panels.openProactive(ref, { id: "diff", kind: "diff" }, loaded.userActionRevision),
+      ).toBe(false);
+      expect(
+        selectActiveRightPanelSurface(useRightPanelStore.getState().byThreadKey, ref)?.id,
+      ).toBe("file:src/second.ts");
+    },
+  );
 
   it("opens a pull request only after a newly observed link appears", () => {
     expect(shouldOpenProactivePullRequest(undefined, "project:repo:42")).toBe(false);
