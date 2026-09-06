@@ -196,6 +196,7 @@ export interface CodexSessionRuntimeShape {
   readonly sendTurn: (
     input: CodexSessionRuntimeSendTurnInput,
   ) => Effect.Effect<ProviderTurnStartResult, CodexSessionRuntimeError>;
+  readonly compactThread: Effect.Effect<void, CodexSessionRuntimeError>;
   readonly interruptTurn: (turnId?: TurnId) => Effect.Effect<void, CodexSessionRuntimeError>;
   readonly readThread: Effect.Effect<CodexThreadSnapshot, CodexSessionRuntimeError>;
   readonly rollbackThread: (
@@ -204,14 +205,6 @@ export interface CodexSessionRuntimeShape {
   readonly uploadFeedback: (
     reason?: string,
   ) => Effect.Effect<EffectCodexSchema.V2FeedbackUploadResponse, CodexSessionRuntimeError>;
-  readonly readAccountRateLimits?: () => Effect.Effect<
-    EffectCodexSchema.V2GetAccountRateLimitsResponse,
-    CodexSessionRuntimeError
-  >;
-  readonly readAccount?: () => Effect.Effect<
-    EffectCodexSchema.V2GetAccountResponse,
-    CodexSessionRuntimeError
-  >;
   readonly respondToRequest: (
     requestId: ApprovalRequestId,
     decision: ProviderApprovalDecision,
@@ -2301,6 +2294,10 @@ export const makeCodexSessionRuntime = (
     return {
       start,
       getSession: Ref.get(sessionRef),
+      compactThread: Effect.gen(function* () {
+        const providerThreadId = yield* readProviderThreadId;
+        yield* client.request("thread/compact/start", { threadId: providerThreadId });
+      }),
       sendTurn: (input) =>
         Effect.gen(function* () {
           const providerThreadId = yield* readProviderThreadId;
@@ -2422,8 +2419,6 @@ export const makeCodexSessionRuntime = (
             threadId: providerThreadId,
           });
         }),
-      readAccountRateLimits: () => client.request("account/rateLimits/read", undefined),
-      readAccount: () => client.request("account/read", { refreshToken: false }),
       respondToRequest: (requestId, decision) =>
         Effect.gen(function* () {
           const pending = (yield* Ref.get(pendingApprovalsRef)).get(requestId);

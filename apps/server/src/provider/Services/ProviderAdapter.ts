@@ -49,15 +49,6 @@ export interface ProviderThreadSnapshot {
   readonly turns: ReadonlyArray<ProviderThreadTurnSnapshot>;
 }
 
-export interface ProviderWeeklyUsageResult {
-  readonly accountEmail: string | null;
-  readonly usedPercent: number;
-  readonly remainingPercent: number;
-  readonly windowDurationMins: number;
-  readonly resetsAt: number | null;
-  readonly checkedAt: string;
-}
-
 export interface ProviderAdapterShape<TError> {
   /**
    * Provider kind implemented by this adapter.
@@ -79,10 +70,10 @@ export interface ProviderAdapterShape<TError> {
     input: ProviderSendTurnInput,
   ) => Effect.Effect<ProviderTurnStartResult, TError>;
 
-  /** Read the provider account's longest rolling usage window, when supported. */
-  readonly readWeeklyUsage?: (
+  readonly compactThread?: (
     threadId: ThreadId,
-  ) => Effect.Effect<ProviderWeeklyUsageResult, TError>;
+    modelSelection?: ProviderSendTurnInput["modelSelection"],
+  ) => Effect.Effect<void, TError>;
 
   /**
    * Interrupt an active turn.

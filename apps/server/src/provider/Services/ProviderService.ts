@@ -23,6 +23,7 @@ import type {
   ProviderStopSessionInput,
   ProviderUploadFeedbackInput,
   ProviderUploadFeedbackResult,
+  MessageId,
   ThreadId,
   ProviderTurnStartResult,
 } from "@t3tools/contracts";
@@ -32,7 +33,6 @@ import type * as Stream from "effect/Stream";
 
 import type { ProviderServiceError } from "../Errors.ts";
 import type { ProviderAdapterCapabilities } from "./ProviderAdapter.ts";
-import type { ProviderWeeklyUsageResult } from "./ProviderAdapter.ts";
 import type { ProviderInstanceRoutingInfo } from "./ProviderAdapterRegistry.ts";
 
 /**
@@ -54,10 +54,11 @@ export interface ProviderServiceShape {
     input: ProviderSendTurnInput,
   ) => Effect.Effect<ProviderTurnStartResult, ProviderServiceError>;
 
-  readonly readWeeklyUsage?: (
+  readonly compactThread: (
     threadId: ThreadId,
-    options?: { readonly forceRefresh?: boolean },
-  ) => Effect.Effect<ProviderWeeklyUsageResult, ProviderServiceError>;
+    modelSelection?: ProviderSendTurnInput["modelSelection"],
+    requestId?: MessageId,
+  ) => Effect.Effect<void, ProviderServiceError>;
 
   /**
    * Interrupt a running provider turn.

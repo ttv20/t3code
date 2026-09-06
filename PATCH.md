@@ -7,14 +7,10 @@
 - Project scripts and Git actions remain available in the combined popover. Desktop header controls are unchanged.
 - Attachment picking uses upstream T3's file picker and upload flow.
 
-## Codex weekly usage
+## Provider usage limits
 
-- Codex threads show the remaining percentage for the longest account rate-limit window beside the context-window ring.
-- T3 reads the native Codex app-server `account/rateLimits/read` response, the same account data surfaced by Codex `/status`.
-- The indicator refreshes immediately and every 10 minutes. Its hover card shows the account email, remaining percentage, reset time, exact last-check time, and a **Refresh now** control.
-- Successful reads are cached in server memory for 10 minutes per Codex provider account. **Refresh now** bypasses the cache.
-- Usage reads never recover a dormant thread. With no live Codex session, refresh fails quietly and retains the last displayed value.
-- Other providers do not show the indicator.
+- As of the Sep 6 update, upstream's provider usage limits replace the custom Codex weekly indicator and its polling/cache implementation.
+- Use upstream's `/usage-limits` feature for remaining subscription quota and account/environment aggregation.
 
 ## Web chat bidirectional text
 
@@ -32,6 +28,7 @@
 
 ## Retired local patches
 
+- The custom Codex weekly usage RPC and indicator were replaced by upstream usage limits.
 - `/btw` side questions were intentionally removed during the Sep 3 upstream update because they are no longer used.
 - Migration 48 reapplies upstream's migration 44 data correction. Older local databases recorded the removed `/btw` table as migration 44, so Effect would otherwise skip upstream's migration with the same ID.
 - The local ImageView click-to-panel patch was replaced by upstream's richer web and mobile viewed-image rendering.

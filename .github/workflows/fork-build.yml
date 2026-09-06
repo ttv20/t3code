@@ -1,0 +1,56 @@
+name: Build patched T3
+
+on:
+  push:
+    branches: [patched]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fork-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'ttv20/t3code'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      T3CODE_WEB_SOURCEMAP: "false"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: true
+      - name: Identify build
+        run: |
+          base=$(node -p "require('./apps/server/package.json').version")
+          echo "APP_VERSION=${base}-ttv20.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+      - name: Stamp package version
+        run: node apps/server/scripts/pack-fork.mjs --prepare
+      - name: Build web
+        working-directory: apps/web
+        run: vp build
+      - name: Build server and embed web
+        working-directory: apps/server
+        run: node scripts/cli.ts build
+      - name: Package
+        run: node apps/server/scripts/pack-fork.mjs
+      - name: Verify standalone installation
+        run: |
+          install_dir=$(mktemp -d)
+          npm install --prefix "$install_dir" ./fork-release/*.tgz
+          "$install_dir/node_modules/.bin/t3" --version
+          "$install_dir/node_modules/.bin/t3" --version | grep -F "$APP_VERSION"
+          test -f "$install_dir/node_modules/t3/dist/client/index.html"
+      - name: Publish downloadable build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="patched-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          gh release create "$tag" fork-release/*.tgz --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "Patched web and server build. Install the downloaded .tgz with npm install -g ./t3-*.tgz. Requires Node 24.13.1 or newer within Node 24. See docs/operations/patched-builds.md for setup."
