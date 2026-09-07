@@ -11,7 +11,7 @@ Install Node 24.13.1 or a newer Node 24 release. Download the `.tgz` from
 https://github.com/ttv20/t3code/releases/latest, then run:
 
 ```sh
-npm install -g ./t3-*.tgz
+bun add -g "t3@./<downloaded-file>.tgz"
 t3 serve
 ```
 
@@ -23,7 +23,7 @@ Project directories and conversation history are not included in the package.
 
 On Linux or macOS, run `t3 service install` to install and start a background
 service. On Windows, run `t3 serve` in a terminal. To update an existing service,
-install the new package and run `t3 service update` when ready to restart it.
+install the new package with Bun and run `t3 service update` when ready to restart it.
 Use fork release downloads for updates; official T3 releases omit these patches.
 
 ## Build workflow

@@ -48,9 +48,16 @@ jobs:
           "$install_dir/node_modules/.bin/t3" --version
           "$install_dir/node_modules/.bin/t3" --version | grep -F "$APP_VERSION"
           test -f "$install_dir/node_modules/t3/dist/client/index.html"
+          node -e 'const p=require(process.argv[1]); const expected=`https://github.com/ttv20/t3code/releases/download/v${process.env.APP_VERSION}/t3-${process.env.APP_VERSION}.tgz`; if (p.t3PackageSpec !== expected) process.exit(1)' "$install_dir/node_modules/t3/package.json"
       - name: Publish downloadable build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="patched-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
-          gh release create "$tag" fork-release/*.tgz --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "Patched web and server build. Install the downloaded .tgz with npm install -g ./t3-*.tgz. Requires Node 24.13.1 or newer within Node 24. See docs/operations/patched-builds.md for setup."
+          tag="v${APP_VERSION}"
+          notes="Patched web and server build. Install the downloaded .tgz with bun add -g t3@<asset-url>. Requires Node 24.13.1 or newer within Node 24. See docs/operations/patched-builds.md for setup."
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" fork-release/*.tgz --clobber
+            gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "$notes"
+          else
+            gh release create "$tag" fork-release/*.tgz --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "$notes"
+          fi

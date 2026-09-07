@@ -49,6 +49,7 @@ it.layer(NodeServices.layer)("ensurePinnedRuntimeInstalled", (it) => {
       const paths = yield* ensurePinnedRuntimeInstalled({
         baseDir,
         version: "1.2.3",
+        packageSpec: "https://example.test/t3-1.2.3.tgz",
         fs,
         path,
         runner: ProcessRunner.ProcessRunner.of({
@@ -80,6 +81,7 @@ it.layer(NodeServices.layer)("ensurePinnedRuntimeInstalled", (it) => {
         ["npm", "pnpm"],
       );
       assert.deepEqual(commands[1]!.args, ["--package=npm@11", "dlx", "npm", ...commands[0]!.args]);
+      assert.equal(commands[0]!.args.at(-1), "https://example.test/t3-1.2.3.tgz");
       assert.equal(yield* fs.readFileString(paths.sentinelPath), "1.2.3\n");
     }),
   );

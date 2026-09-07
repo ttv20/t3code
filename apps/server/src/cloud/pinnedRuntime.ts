@@ -81,6 +81,7 @@ export class PinnedRuntimePreflightBlockedError extends Schema.TaggedErrorClass<
 interface PinnedRuntimeInstallInput {
   readonly baseDir: string;
   readonly version: string;
+  readonly packageSpec?: string;
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly runner: ProcessRunner.ProcessRunner["Service"];
@@ -159,7 +160,7 @@ const installPinnedRuntime = Effect.fn("cloud.pinned_runtime.ensure_installed")(
       stagingDir,
       "--no-fund",
       "--no-audit",
-      `t3@${input.version}`,
+      input.packageSpec ?? `t3@${input.version}`,
     ];
     yield* runner
       .run({

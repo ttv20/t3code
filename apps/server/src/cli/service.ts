@@ -12,11 +12,15 @@ import type * as ServerConfig from "../config.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import { projectLocationFlags, resolveCliAuthConfig } from "./config.ts";
 
+const forkPackageSpec = (packageJson as typeof packageJson & { t3PackageSpec?: string })
+  .t3PackageSpec;
+
 export const bootServiceLayer = (config: ServerConfig.ServerConfig["Service"]) =>
   BootService.layer({
     baseDir: config.baseDir,
     logsDir: config.logsDir,
     cliVersion: packageJson.version,
+    ...(forkPackageSpec ? { packageSpec: forkPackageSpec } : {}),
   }).pipe(Layer.provide(ProcessRunner.layer));
 
 export type ServiceReconcileResult =

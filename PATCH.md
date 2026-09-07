@@ -1,5 +1,8 @@
 # Local fork patches
 
+GitHub builds embed their exact release asset URL so upstream's pinned service
+installer can install fork-only versions that are absent from npm.
+
 ## Mobile web controls
 
 - At phone widths, the chat header replaces the separate project-action and Git controls with one **Project actions** (`…`) popover.
