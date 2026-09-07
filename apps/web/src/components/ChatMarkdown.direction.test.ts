@@ -17,4 +17,23 @@ describe("message direction", () => {
     expect(resolveStreamingMarkdownDirection({ ltr: 32, rtl: 20 }, "rtl")).toBe("ltr");
     expect(resolveMarkdownDirection({ ltr: 21, rtl: 20 })).toBe("ltr");
   });
+
+  it("does not let inline code choose the message direction", () => {
+    expect(countMarkdownDirectionCharacters("שלום `english english english` עולם")).toEqual({
+      ltr: 0,
+      rtl: 8,
+    });
+    expect(countMarkdownDirectionCharacters("English `שלום שלום שלום` text")).toEqual({
+      ltr: 11,
+      rtl: 0,
+    });
+    expect(countMarkdownDirectionCharacters("English `unclosed שלום")).toEqual({
+      ltr: 15,
+      rtl: 4,
+    });
+    expect(countMarkdownDirectionCharacters("English \\`שלום\\` text")).toEqual({
+      ltr: 11,
+      rtl: 4,
+    });
+  });
 });

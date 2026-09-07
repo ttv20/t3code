@@ -1783,8 +1783,8 @@ code {
 }
 
 .chat-markdown blockquote {
-  border-left: 2px solid var(--contrast-border);
-  padding-left: 0.8rem;
+  border-inline-start: 2px solid var(--contrast-border);
+  padding-inline-start: 0.8rem;
   color: var(--contrast-muted-foreground);
 }
 

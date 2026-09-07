@@ -190,6 +190,7 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter } from "./ContextWindowMeter";
+import { ComposerWeeklyUsageIndicator, hasCodexWeeklyUsage } from "./ComposerWeeklyUsageIndicator";
 import {
   providerSupportsManualCompaction,
   resolveContextWindowModelDisplayName,
@@ -1646,6 +1647,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     () => selectedProviderEntry?.snapshot ?? null,
     [selectedProviderEntry],
   );
+  const showCodexWeeklyUsage = hasCodexWeeklyUsage(selectedProviderStatus);
   const compactCommandAvailable = providerSupportsManualCompaction(selectedProviderEntry);
   const selectedProviderSkills = selectedProviderStatus
     ? resolveProviderSkillsForCwd(selectedProviderStatus, gitCwd)
@@ -5454,11 +5456,17 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   "relative",
                   isComposerResting && "flex min-w-0 items-center gap-1",
                   isComposerResting &&
-                    (settings.contextWindowMeterEnabled && activeContextWindow
-                      ? "pr-28"
-                      : showComposerAttachAction
-                        ? "pr-20"
-                        : "pr-12"),
+                    (showCodexWeeklyUsage
+                      ? settings.contextWindowMeterEnabled && activeContextWindow
+                        ? "pr-40"
+                        : showComposerAttachAction
+                          ? "pr-32"
+                          : "pr-24"
+                      : settings.contextWindowMeterEnabled && activeContextWindow
+                        ? "pr-28"
+                        : showComposerAttachAction
+                          ? "pr-20"
+                          : "pr-12"),
                 )}
               >
                 <ComposerPromptEditor
@@ -5625,6 +5633,10 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                       </Tooltip>
                     </>
                   ) : null}
+                  <ComposerWeeklyUsageIndicator
+                    environmentId={environmentId}
+                    provider={selectedProviderStatus}
+                  />
                   <ComposerFooterPrimaryActions
                     compact={isComposerResting || isComposerPrimaryActionsCompact}
                     activeContextWindow={

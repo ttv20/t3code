@@ -317,10 +317,49 @@ export interface MarkdownDirectionCounts {
   readonly rtl: number;
 }
 
+function backtickRunLength(text: string, start: number): number {
+  let end = start;
+  while (text[end] === "`") end += 1;
+  return end - start;
+}
+
+function closingBacktickRun(text: string, start: number, length: number): number {
+  let cursor = start;
+  while (cursor < text.length) {
+    if (text[cursor] !== "`") {
+      cursor += 1;
+      continue;
+    }
+    const candidateLength = backtickRunLength(text, cursor);
+    if (candidateLength === length) return cursor;
+    cursor += candidateLength;
+  }
+  return -1;
+}
+
+function isEscapedMarkdownCharacter(text: string, index: number): boolean {
+  let backslashes = 0;
+  for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor -= 1) {
+    backslashes += 1;
+  }
+  return backslashes % 2 === 1;
+}
+
 export function countMarkdownDirectionCharacters(text: string): MarkdownDirectionCounts {
   let ltr = 0;
   let rtl = 0;
-  for (const character of text) {
+  for (let cursor = 0; cursor < text.length; cursor += 1) {
+    const character = text[cursor]!;
+    if (character === "`" && !isEscapedMarkdownCharacter(text, cursor)) {
+      const openingLength = backtickRunLength(text, cursor);
+      const closingStart = closingBacktickRun(text, cursor + openingLength, openingLength);
+      if (closingStart !== -1) {
+        cursor = closingStart + openingLength - 1;
+        continue;
+      }
+      cursor += openingLength - 1;
+      continue;
+    }
     if (!MARKDOWN_LETTER_REGEX.test(character)) continue;
     if (MARKDOWN_RTL_LETTER_REGEX.test(character)) rtl += 1;
     else ltr += 1;
@@ -2720,7 +2759,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
     // Not a <blockquote>: the stylesheet mutes those, and an alert's body is ordinary
     // text under a colored title — which is how the host renders it.
     return (
-      <div role="note" className={cn("my-1 border-l-2 pl-3", alert.borderClassName)}>
+      <div role="note" className={cn("my-1 border-s-2 ps-3", alert.borderClassName)}>
         <p className={cn("flex items-center gap-1.5 font-medium", alert.titleClassName)}>
           <alert.Icon aria-hidden className="size-3.5 shrink-0" />
           {alert.label}
