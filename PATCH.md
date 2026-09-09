@@ -3,6 +3,12 @@
 GitHub builds embed their exact release asset URL so upstream's pinned service
 installer can install fork-only versions that are absent from npm.
 
+## Web completion sound
+
+- Web and desktop play a short two-note chime when a turn observed running finishes successfully in any thread.
+- Existing completed threads loaded during startup and turns that error or are interrupted stay silent.
+- The client-local **Completion sound** switch in **Settings → General → Behavior** is enabled by default.
+
 ## Mobile web controls
 
 - At phone widths, the chat header replaces the separate project-action and Git controls with one **Project actions** (`…`) popover.

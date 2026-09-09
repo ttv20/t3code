@@ -545,6 +545,9 @@ export function useSettingsRestore(onRestored?: () => void) {
       ...(settings.proactivePanelsEnabled !== DEFAULT_UNIFIED_SETTINGS.proactivePanelsEnabled
         ? ["Proactive panels"]
         : []),
+      ...(settings.completionSoundEnabled !== DEFAULT_UNIFIED_SETTINGS.completionSoundEnabled
+        ? ["Completion sound"]
+        : []),
       ...(settings.showSkillsInSlashMenu !== DEFAULT_UNIFIED_SETTINGS.showSkillsInSlashMenu
         ? ["Show skills in slash menu"]
         : []),
@@ -617,6 +620,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       settings.diffIgnoreWhitespace,
       settings.diffLayout,
       settings.proactivePanelsEnabled,
+      settings.completionSoundEnabled,
       settings.environmentIdentificationMode,
       settings.contextWindowMeterEnabled,
       settings.fontFamilyCode,
@@ -714,6 +718,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       diffIgnoreWhitespace: DEFAULT_UNIFIED_SETTINGS.diffIgnoreWhitespace,
       diffLayout: DEFAULT_UNIFIED_SETTINGS.diffLayout,
       proactivePanelsEnabled: DEFAULT_UNIFIED_SETTINGS.proactivePanelsEnabled,
+      completionSoundEnabled: DEFAULT_UNIFIED_SETTINGS.completionSoundEnabled,
       showSkillsInSlashMenu: DEFAULT_UNIFIED_SETTINGS.showSkillsInSlashMenu,
       composerCollapseOnBlur: DEFAULT_UNIFIED_SETTINGS.composerCollapseOnBlur,
       composerCollapseOnScroll: DEFAULT_UNIFIED_SETTINGS.composerCollapseOnScroll,
@@ -2329,6 +2334,32 @@ export function GeneralSettingsPanel() {
                 updateSettings({ proactivePanelsEnabled: Boolean(checked) })
               }
               aria-label="Proactive panels"
+            />
+          }
+        />
+
+        <SettingsRow
+          {...searchableSetting("completion-sound")}
+          description="Play a short chime when an agent finishes a turn in any thread."
+          resetAction={
+            settings.completionSoundEnabled !== DEFAULT_UNIFIED_SETTINGS.completionSoundEnabled ? (
+              <SettingResetButton
+                label="completion sound"
+                onClick={() =>
+                  updateSettings({
+                    completionSoundEnabled: DEFAULT_UNIFIED_SETTINGS.completionSoundEnabled,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <Switch
+              checked={settings.completionSoundEnabled}
+              onCheckedChange={(checked) =>
+                updateSettings({ completionSoundEnabled: Boolean(checked) })
+              }
+              aria-label="Completion sound"
             />
           }
         />

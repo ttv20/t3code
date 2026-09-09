@@ -328,6 +328,15 @@ describe("ClientSettings context window meter", () => {
   });
 });
 
+describe("ClientSettings completion sound", () => {
+  it("defaults on and accepts a client-local override", () => {
+    expect(decodeClientSettings({}).completionSoundEnabled).toBe(true);
+    expect(decodeClientSettingsPatch({ completionSoundEnabled: false })).toEqual({
+      completionSoundEnabled: false,
+    });
+  });
+});
+
 describe("ClientSettings composer collapse", () => {
   it("collapses on blur and scroll by default and accepts opting out of each", () => {
     const defaults = decodeClientSettings({});

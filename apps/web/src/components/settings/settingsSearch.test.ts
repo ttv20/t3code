@@ -85,6 +85,7 @@ describe("searchSettings", () => {
     expect(searchSettings("pull request template")[0]?.id).toBe("follow-change-request-templates");
     expect(searchSettings("git security keys")[0]?.id).toBe("git-fetch-interval");
     expect(searchSettings("push notifications")[0]?.id).toBe("publish-agent-activity");
+    expect(searchSettings("completion chime")[0]?.id).toBe("completion-sound");
     expect(searchSettings("battery saver")[0]?.id).toBe("background-activity");
     expect(searchSettings("binary path")[0]?.id).toBe("providers");
     expect(searchSettings("Antigravity")[0]?.id).toBe("providers");

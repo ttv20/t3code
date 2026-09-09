@@ -341,6 +341,7 @@ export const ClientSettingsSchema = Schema.Struct({
   // composer into its single-line layout can be turned off on its own.
   composerCollapseOnBlur: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   composerCollapseOnScroll: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  completionSoundEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   proactivePanelsEnabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   showSkillsInSlashMenu: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
   // Legacy sidebar (the original per-project tree). Deliberately a fresh key
@@ -1272,6 +1273,7 @@ export const ClientSettingsPatch = Schema.Struct({
   contextWindowMeterEnabled: Schema.optionalKey(Schema.Boolean),
   composerCollapseOnBlur: Schema.optionalKey(Schema.Boolean),
   composerCollapseOnScroll: Schema.optionalKey(Schema.Boolean),
+  completionSoundEnabled: Schema.optionalKey(Schema.Boolean),
   proactivePanelsEnabled: Schema.optionalKey(Schema.Boolean),
   showSkillsInSlashMenu: Schema.optionalKey(Schema.Boolean),
   legacySidebarEnabled: Schema.optionalKey(Schema.Boolean),
