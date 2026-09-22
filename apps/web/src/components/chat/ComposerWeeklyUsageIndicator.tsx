@@ -10,9 +10,9 @@ import { RefreshIcon } from "../ui/refresh-icon";
 import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 
-export function hasCodexWeeklyUsage(provider: ServerProvider | null): boolean {
+export function hasComposerWeeklyUsage(provider: ServerProvider | null): boolean {
   return (
-    provider?.driver === "codex" &&
+    (provider?.driver === "codex" || provider?.driver === "claude") &&
     provider.usageLimits?.windows.some((window) => window.kind === "weekly") === true
   );
 }
@@ -31,9 +31,10 @@ export function ComposerWeeklyUsageIndicator(props: {
     .filter((window) => window.kind === "weekly")
     .toSorted((left, right) => (right.windowDurationMins ?? 0) - (left.windowDurationMins ?? 0))[0];
 
-  if (provider?.driver !== "codex" || !weekly) return null;
+  if ((provider?.driver !== "codex" && provider?.driver !== "claude") || !weekly) return null;
 
   const remaining = remainingPercent(weekly);
+  const providerLabel = provider.driver === "claude" ? "Claude" : "Codex";
   const refresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -58,7 +59,7 @@ export function ComposerWeeklyUsageIndicator(props: {
             size="sm"
             variant="ghost-muted"
             className="h-7 rounded-full px-2 text-[11px] tabular-nums"
-            aria-label={`Codex weekly usage ${remaining}% remaining`}
+            aria-label={`${providerLabel} weekly usage ${remaining}% remaining`}
           >
             {remaining}% wk
           </Button>
@@ -73,7 +74,9 @@ export function ComposerWeeklyUsageIndicator(props: {
       >
         <div className="flex flex-col gap-2 p-[var(--floating-content-inset)]">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium text-xs text-foreground">Codex weekly usage</span>
+            <span className="font-medium text-xs text-foreground">
+              {providerLabel} weekly usage
+            </span>
             {provider.auth.email ? (
               <span className="truncate text-[11px] text-muted-foreground">
                 {provider.auth.email}
@@ -104,7 +107,7 @@ export function ComposerWeeklyUsageIndicator(props: {
             disabled={isRefreshing}
             onClick={() => void refresh()}
           >
-            <RefreshIcon className="size-3.5" refreshing={isRefreshing} />
+            <RefreshIcon size="sm" refreshing={isRefreshing} />
             {isRefreshing ? "Refreshing…" : "Refresh now"}
           </Button>
         </div>

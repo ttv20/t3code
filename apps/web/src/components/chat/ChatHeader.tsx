@@ -6,6 +6,7 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -21,12 +22,11 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import GitActionsControl from "../GitActionsControl";
 import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { type DraftId } from "~/composerDraftStore";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Button } from "../ui/button";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { toastManager } from "../ui/toast";
 import ProjectScriptsControl, {
   type NewProjectScriptInput,
@@ -46,9 +46,12 @@ import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
+  WorkspaceBreadcrumbText,
 } from "../WorkspaceBreadcrumb";
 import { cn } from "~/lib/utils";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useIsMobile } from "~/hooks/useMediaQuery";
+import { Button } from "../ui/button";
+import { Menu, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 
 interface ChatHeaderProps {
   activeThreadEnvironmentId: EnvironmentId;
@@ -57,10 +60,7 @@ interface ChatHeaderProps {
   activeThreadTitle: string;
   /** Drafts have no server thread yet, so the title carries no action menu. */
   isServerThread: boolean;
-  activeProjectName: string | undefined;
-  activeProjectCwd: string | null;
-  activeProjectFaviconPath: string | null;
-  activeProjectIcon: import("@t3tools/contracts").ProjectIconOverride | null;
+  activeProject: EnvironmentProject | null;
   openInCwd: string | null;
   activeProjectScripts: ReadonlyArray<ProjectScript> | undefined;
   preferredScriptId: string | null;
@@ -129,10 +129,7 @@ export const ChatHeader = memo(function ChatHeader({
   draftId,
   activeThreadTitle,
   isServerThread,
-  activeProjectName,
-  activeProjectCwd,
-  activeProjectFaviconPath,
-  activeProjectIcon,
+  activeProject,
   openInCwd,
   activeProjectScripts,
   preferredScriptId,
@@ -163,8 +160,43 @@ export const ChatHeader = memo(function ChatHeader({
       breakpoint: { value: HEADER_ACTIONS_EXPANDED_BREAKPOINT_REM, unit: "rem" },
     });
   }, [panelAnimationDurationMs, panelAnimationsActive]);
+  const isMobile = useIsMobile();
+  // Side panels can leave a desktop header narrower than a phone.
+  const [isNarrowHeader, setIsNarrowHeader] = useState(false);
+  useEffect(() => {
+    const container = headerActionsRef.current?.parentElement;
+    if (!container) return;
+    const update = () => setIsNarrowHeader(container.clientWidth < 512);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+  const actionsCollapsed = isMobile || isNarrowHeader;
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [actionsContainer] = useState(() => {
+    const container = document.createElement("div");
+    container.className = "contents";
+    return container;
+  });
+  // Reparent the DOM host, not the React controls: rotating a phone or resizing
+  // a window must not discard an unsaved script or Git dialog.
+  const mountInlineActions = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node && !actionsCollapsed) node.appendChild(actionsContainer);
+    },
+    [actionsContainer, actionsCollapsed],
+  );
+  const mountMenuActions = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node && actionsCollapsed) node.appendChild(actionsContainer);
+    },
+    [actionsContainer, actionsCollapsed],
+  );
+  if (!actionsCollapsed && actionsOpen) setActionsOpen(false);
   const primaryEnvironmentId = usePrimaryEnvironmentId();
-  const isMobileViewport = useMediaQuery("max-sm");
+  const activeProjectName = activeProject?.title;
+  const activeProjectCwd = activeProject?.workspaceRoot ?? null;
   const fileScripts = useT3ProjectFileScripts(
     activeThreadEnvironmentId,
     activeProjectScripts ? activeProjectCwd : null,
@@ -319,6 +351,52 @@ export const ChatHeader = memo(function ChatHeader({
     },
     [commitRename],
   );
+  const headerActions = (
+    <>
+      {activeProjectScripts && (
+        <>
+          <ProjectScriptsControl
+            onRequestMenuClose={() => setActionsOpen(false)}
+            presentation={actionsCollapsed ? "menu" : "toolbar"}
+            scripts={activeProjectScripts}
+            fileScripts={fileScripts}
+            keybindings={keybindings}
+            preferredScriptId={preferredScriptId}
+            onRunScript={onRunProjectScript}
+            onAddScript={onAddProjectScript}
+            onUpdateScript={onUpdateProjectScript}
+            onDeleteScript={onDeleteProjectScript}
+          />
+        </>
+      )}
+      {showOpenInPicker && !isMobile && (
+        <>
+          {actionsCollapsed && activeProjectScripts && <MenuSeparator />}
+          <OpenInPicker
+            presentation={actionsCollapsed ? "menu" : "toolbar"}
+            environmentId={activeThreadEnvironmentId}
+            keybindings={keybindings}
+            availableEditors={availableEditors}
+            openInCwd={openInCwd}
+          />
+        </>
+      )}
+      {activeProjectName && gitCwd && (
+        <>
+          {actionsCollapsed && (activeProjectScripts || (showOpenInPicker && !isMobile)) && (
+            <MenuSeparator />
+          )}
+          <GitActionsControl
+            presentation={actionsCollapsed ? "menu" : "toolbar"}
+            gitCwd={gitCwd}
+            activeThreadRef={scopeThreadRef(activeThreadEnvironmentId, activeThreadId)}
+            onOpenPullRequest={onOpenPullRequest}
+            {...(draftId ? { draftId } : {})}
+          />
+        </>
+      )}
+    </>
+  );
   return (
     <div
       className="@container/header-actions flex min-w-0 flex-1 items-center gap-2 sm:gap-3"
@@ -331,7 +409,7 @@ export const ChatHeader = memo(function ChatHeader({
         {/* The project always leads the header: knowing which project a
             thread lives in is priority zero, and the thread title alone
             doesn't answer it. */}
-        {activeProjectName ? (
+        {activeProject ? (
           <>
             <WorkspaceBreadcrumbItem className="shrink">
               <Tooltip>
@@ -345,20 +423,17 @@ export const ChatHeader = memo(function ChatHeader({
                     />
                   }
                 >
-                  <ProjectFavicon
-                    environmentId={activeThreadEnvironmentId}
-                    cwd={activeProjectCwd ?? ""}
-                    projectName={activeProjectName}
-                    faviconPath={activeProjectFaviconPath}
-                    projectIcon={activeProjectIcon}
-                    className="size-3.5"
-                  />
-                  <span className="max-w-40 truncate">{activeProjectName}</span>
+                  <ProjectFavicon project={activeProject} className="size-3.5" />
+                  <WorkspaceBreadcrumbText className="max-w-40">
+                    {activeProjectName}
+                  </WorkspaceBreadcrumbText>
                 </TooltipTrigger>
                 <TooltipPopup side="top">New thread in {activeProjectName}</TooltipPopup>
               </Tooltip>
             </WorkspaceBreadcrumbItem>
-            <WorkspaceBreadcrumbSeparator />
+            <WorkspaceBreadcrumbSeparator>
+              <WorkspaceBreadcrumbText>/</WorkspaceBreadcrumbText>
+            </WorkspaceBreadcrumbSeparator>
           </>
         ) : null}
         <WorkspaceBreadcrumbItem current className="min-w-10 flex-1">
@@ -392,8 +467,8 @@ export const ChatHeader = memo(function ChatHeader({
                   />
                 }
               >
-                <h2 dir="auto" className="min-w-0 truncate [unicode-bidi:plaintext]">
-                  {activeThreadTitle}
+                <h2 dir="auto" className="min-w-0 [unicode-bidi:plaintext]">
+                  <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
                 </h2>
                 <ChevronDownIcon
                   aria-hidden
@@ -412,12 +487,12 @@ export const ChatHeader = memo(function ChatHeader({
                   <h2
                     dir="auto"
                     aria-label={activeThreadTitle}
-                    className="min-w-0 flex-1 truncate [unicode-bidi:plaintext]"
-                  >
-                    {activeThreadTitle}
-                  </h2>
+                    className="min-w-0 flex-1 [unicode-bidi:plaintext]"
+                  />
                 }
-              />
+              >
+                <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
+              </TooltipTrigger>
               <TooltipPopup side="top" dir="auto">
                 {activeThreadTitle}
               </TooltipPopup>
@@ -430,89 +505,39 @@ export const ChatHeader = memo(function ChatHeader({
         data-chat-header-actions
         className={cn(
           "flex shrink-0 items-center justify-end gap-2 @3xl/header-actions:gap-3",
-          rightPanelOpen ? "pr-0" : "pr-16",
+          // Reserve two panel toggles plus their 4px gaps and 1px edge inset.
+          // The page header adds 8px more right padding at sm.
+          rightPanelOpen ? "pr-0" : "pr-[calc(--spacing(18)+1px)] sm:pr-[calc(--spacing(14)+1px)]",
           "[[data-panel-animations=true]_&]:motion-safe:transition-[padding-right] [[data-panel-animations=true]_&]:motion-safe:[transition-duration:var(--panel-animation-duration)] [[data-panel-animations=true]_&]:motion-safe:ease-out",
         )}
       >
-        {isMobileViewport ? (
-          activeProjectScripts || activeProjectName ? (
-            <Popover>
-              <PopoverTrigger
-                render={
-                  <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="outline"
-                    aria-label="Project actions"
-                  />
-                }
-              >
-                <EllipsisIcon className="size-4" aria-hidden />
-              </PopoverTrigger>
-              <PopoverPopup align="end" side="bottom" className="min-w-48" viewportClassName="p-3">
-                <div className="space-y-3">
-                  {activeProjectScripts ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-muted-foreground">Project actions</span>
-                      <ProjectScriptsControl
-                        scripts={activeProjectScripts}
-                        fileScripts={fileScripts}
-                        keybindings={keybindings}
-                        preferredScriptId={preferredScriptId}
-                        onRunScript={onRunProjectScript}
-                        onAddScript={onAddProjectScript}
-                        onUpdateScript={onUpdateProjectScript}
-                        onDeleteScript={onDeleteProjectScript}
-                      />
-                    </div>
-                  ) : null}
-                  {activeProjectName ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-muted-foreground">Git</span>
-                      <GitActionsControl
-                        gitCwd={gitCwd}
-                        activeThreadRef={activeThreadRef}
-                        onOpenPullRequest={onOpenPullRequest}
-                        {...(draftId ? { draftId } : {})}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              </PopoverPopup>
-            </Popover>
-          ) : null
-        ) : (
-          <>
-            {activeProjectScripts && (
-              <ProjectScriptsControl
-                scripts={activeProjectScripts}
-                fileScripts={fileScripts}
-                keybindings={keybindings}
-                preferredScriptId={preferredScriptId}
-                onRunScript={onRunProjectScript}
-                onAddScript={onAddProjectScript}
-                onUpdateScript={onUpdateProjectScript}
-                onDeleteScript={onDeleteProjectScript}
-              />
-            )}
-            {showOpenInPicker && (
-              <OpenInPicker
-                environmentId={activeThreadEnvironmentId}
-                keybindings={keybindings}
-                availableEditors={availableEditors}
-                openInCwd={openInCwd}
-              />
-            )}
-            {activeProjectName && (
-              <GitActionsControl
-                gitCwd={gitCwd}
-                activeThreadRef={activeThreadRef}
-                onOpenPullRequest={onOpenPullRequest}
-                {...(draftId ? { draftId } : {})}
-              />
-            )}
-          </>
-        )}
+        <Menu open={actionsCollapsed && actionsOpen} onOpenChange={setActionsOpen}>
+          <MenuTrigger
+            className={
+              actionsCollapsed &&
+              (activeProjectScripts ||
+                (showOpenInPicker && !isMobile) ||
+                (activeProjectName && gitCwd))
+                ? undefined
+                : "hidden"
+            }
+            render={<Button size="icon-sm" variant="ghost" aria-label="More header actions" />}
+          >
+            <EllipsisIcon className="size-4" />
+          </MenuTrigger>
+          <div ref={mountInlineActions} className="contents" />
+          <MenuPopup
+            data-chat-header-actions
+            keepMounted
+            aria-label="Header actions"
+            align="end"
+            className="min-w-56 max-w-[calc(100vw-2rem)]"
+            finalFocus={actionsCollapsed ? undefined : false}
+          >
+            <div ref={mountMenuActions} className="contents" />
+            {createPortal(headerActions, actionsContainer)}
+          </MenuPopup>
+        </Menu>
       </div>
     </div>
   );

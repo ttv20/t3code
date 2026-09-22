@@ -13,51 +13,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  build_linux_x64:
     if: github.repository == 'ttv20/t3code'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       T3CODE_WEB_SOURCEMAP: "false"
     steps:
       - uses: actions/checkout@v6
+
       - uses: voidzero-dev/setup-vp@v1
         with:
           node-version-file: package.json
           cache: true
           run-install: true
-      - name: Identify build
+
+      - id: release
+        name: Identify build
+        shell: bash
         run: |
           base=$(node -p "require('./apps/server/package.json').version")
-          echo "APP_VERSION=${base}-ttv20.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-      - name: Stamp package version
-        run: node apps/server/scripts/pack-fork.mjs --prepare
-      - name: Build web
-        working-directory: apps/web
-        run: vp build
-      - name: Build server and embed web
-        working-directory: apps/server
-        run: node scripts/cli.ts build
-      - name: Package
-        run: node apps/server/scripts/pack-fork.mjs
-      - name: Verify standalone installation
+          version=$(node -e 'const [a,b,c]=process.argv[1].split(".").map(Number); process.stdout.write(`${a}.${b}.${c+1}`)' "$base")
+          version="${version}-nightly.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp release version
+        run: node scripts/update-release-package-versions.ts "${{ steps.release.outputs.version }}"
+
+      - name: Build web and server
+        run: vp run --filter t3 build
+
+      - name: Build resource monitor
+        run: cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml
+
+      - name: Build CLI single-executable
+        env:
+          VP_NODE_VERSION: "26.8.2"
+        run: node apps/server/scripts/cli.ts build-exe --verbose
+
+      - name: Build self-contained archive
+        shell: bash
         run: |
-          install_dir=$(mktemp -d)
-          npm install --prefix "$install_dir" ./fork-release/*.tgz
-          "$install_dir/node_modules/.bin/t3" --version
-          "$install_dir/node_modules/.bin/t3" --version | grep -F "$APP_VERSION"
-          test -f "$install_dir/node_modules/t3/dist/client/index.html"
-          node -e 'const p=require(process.argv[1]); const expected=`https://github.com/ttv20/t3code/releases/download/v${process.env.APP_VERSION}/t3-${process.env.APP_VERSION}.tgz`; if (p.t3PackageSpec !== expected) process.exit(1)' "$install_dir/node_modules/t3/package.json"
-      - name: Publish downloadable build
+          resource_dir="$RUNNER_TEMP/cli-resource-monitor/linux-x64"
+          mkdir -p "$resource_dir"
+          cp native/resource-monitor/target/release/t3-resource-monitor "$resource_dir/t3-resource-monitor"
+          node scripts/build-cli-archive.ts \
+            --platform linux \
+            --arch x64 \
+            --version "${{ steps.release.outputs.version }}" \
+            --resource-monitor-dir "$RUNNER_TEMP/cli-resource-monitor" \
+            --output-dir release-cli
+          cd release-cli
+          sha256sum t3-*.tar.gz > SHA256SUMS
+
+      - name: Smoke-test archive
+        run: node scripts/smoke-cli-archive.ts --archive release-cli/*.tar.gz --expect-version "${{ steps.release.outputs.version }}"
+
+      - name: Publish personal release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          tag="v${APP_VERSION}"
-          notes="Patched web and server build. Install the downloaded .tgz with bun add -g t3@<asset-url>. Requires Node 24.13.1 or newer within Node 24. See docs/operations/patched-builds.md for setup."
+          tag="${{ steps.release.outputs.tag }}"
+          version="${{ steps.release.outputs.version }}"
+          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive."
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" fork-release/*.tgz --clobber
-            gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "$notes"
+            gh release upload "$tag" release-cli/* --clobber
+            gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
           else
-            gh release create "$tag" fork-release/*.tgz --target "$GITHUB_SHA" --title "Patched T3 ${APP_VERSION}" --notes "$notes"
+            gh release create "$tag" release-cli/* --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
           fi

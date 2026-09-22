@@ -1,24 +1,19 @@
 # Local fork patches
 
-GitHub builds embed their exact release asset URL so upstream's pinned service
-installer can install fork-only versions that are absent from npm.
-
-## Web completion sound
-
-- Web and desktop play a short two-note chime when a turn observed running finishes successfully in any thread.
-- Existing completed threads loaded during startup and turns that error or are interrupted stay silent.
-- The client-local **Completion sound** switch in **Settings → General → Behavior** is enabled by default.
+GitHub Actions publishes a self-contained Linux x64 nightly from `patched`.
+The archive and built-in updater use `ttv20/t3code` instead of the upstream
+release repository.
 
 ## Mobile web controls
 
-- At phone widths, the chat header replaces the separate project-action and Git controls with one **Project actions** (`…`) popover.
+- The upstream responsive chat-header action menu is used at phone widths.
 - **Open in editor** is hidden at phone widths because mobile browsers cannot use the local desktop-editor action reliably.
-- Project scripts and Git actions remain available in the combined popover. Desktop header controls are unchanged.
+- Project scripts and Git actions remain in the upstream menu. Desktop header controls are unchanged.
 - Attachment picking uses upstream T3's file picker and upload flow.
 
 ## Provider usage limits
 
-- The composer shows the selected Codex account's weekly percentage beside its primary actions.
+- The composer shows the selected Codex or Claude account's weekly percentage beside its primary actions.
 - The indicator reads upstream's provider usage-limit snapshot and adds no separate polling or persistence. Upstream refreshes provider status on its configured interval and from live turn events.
 - Its hover card shows the account email, remaining percentage, reset time, last-check time, and a manual refresh action. Manual refresh uses upstream's targeted provider refresh.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
@@ -35,12 +30,13 @@ installer can install fork-only versions that are absent from npm.
 
 - Opening a web chat whose latest turn is no longer running positions the viewport at the latest user message instead of the end of the assistant answer. A 24px top offset keeps the message below the top overlay.
 - Active turns retain upstream's initial scroll-to-end and live-follow behavior.
-- Citation navigation retains priority over the normal entry position.
+- Saved reading positions and citation navigation retain priority over the normal entry position.
 
 ## Retired local patches
 
 - The custom Codex weekly usage RPC, polling, and cache were replaced by upstream usage-limit state.
 - `/btw` side questions were intentionally removed during the Sep 3 upstream update because they are no longer used.
-- Migration 48 reapplies upstream's migration 44 data correction. Older local databases recorded the removed `/btw` table as migration 44, so Effect would otherwise skip upstream's migration with the same ID.
+- Startup reconciles the exact migration IDs reused by old `/btw` builds before upstream migrations run. This lets existing fork databases receive the current upstream schema once and then retain canonical migration history.
 - The local ImageView click-to-panel patch was replaced by upstream's richer web and mobile viewed-image rendering.
 - The local image-only mobile-web picker was replaced by upstream's general attachment picker.
+- The local completion chime was removed in favor of upstream thread notifications and sounds.
