@@ -2,22 +2,25 @@ import type { EnvironmentId, ServerProvider } from "@t3tools/contracts";
 import { remainingPercent } from "@t3tools/shared/usageLimits";
 import { useState } from "react";
 
+import { useNowMinute } from "../../hooks/useNowMinute";
 import { usePrimarySettings } from "../../hooks/useSettings";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { formatDayAwareTimestamp, formatUpcomingTimestamp } from "../../timestampFormat";
-import { RefreshIcon } from "../ui/refresh-icon";
 import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { RefreshIcon } from "../ui/refresh-icon";
 
-export function hasComposerWeeklyUsage(provider: ServerProvider | null): boolean {
-  return (
-    (provider?.driver === "codex" || provider?.driver === "claude") &&
-    provider.usageLimits?.windows.some((window) => window.kind === "weekly") === true
-  );
+import {
+  formatCompactResetCountdown,
+  resolveComposerUsageWindows,
+} from "./composerUsageIndicator.logic";
+
+export function hasComposerUsage(provider: ServerProvider | null): boolean {
+  return resolveComposerUsageWindows(provider) !== null;
 }
 
-export function ComposerWeeklyUsageIndicator(props: {
+export function ComposerUsageIndicator(props: {
   readonly environmentId: EnvironmentId;
   readonly provider: ServerProvider | null;
 }) {
@@ -27,14 +30,25 @@ export function ComposerWeeklyUsageIndicator(props: {
     reportFailure: false,
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const weekly = provider?.usageLimits?.windows
-    .filter((window) => window.kind === "weekly")
-    .toSorted((left, right) => (right.windowDurationMins ?? 0) - (left.windowDurationMins ?? 0))[0];
+  const nowMinute = useNowMinute();
+  const now = Date.parse(`${nowMinute}:00.000Z`);
+  const usage = resolveComposerUsageWindows(provider);
 
-  if ((provider?.driver !== "codex" && provider?.driver !== "claude") || !weekly) return null;
+  if (!provider || !usage || !provider.usageLimits) return null;
 
-  const remaining = remainingPercent(weekly);
-  const providerLabel = provider.driver === "claude" ? "Claude" : "Codex";
+  const sessionRemaining = usage.session ? remainingPercent(usage.session) : null;
+  const weeklyRemaining = usage.weekly ? remainingPercent(usage.weekly) : null;
+  const sessionReset = usage.session
+    ? formatCompactResetCountdown(usage.session.resetsAt, now)
+    : null;
+  const ariaLabel = [
+    usage.session
+      ? `five-hour usage ${sessionRemaining}% remaining${sessionReset ? `, resets in ${sessionReset}` : ""}`
+      : null,
+    usage.weekly ? `weekly usage ${weeklyRemaining}% remaining` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const refresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -56,12 +70,23 @@ export function ComposerWeeklyUsageIndicator(props: {
         closeDelay={150}
         render={
           <Button
-            size="sm"
+            size="compact-stacked"
             variant="ghost-muted"
-            className="h-7 rounded-full px-2 text-[11px] tabular-nums"
-            aria-label={`${providerLabel} weekly usage ${remaining}% remaining`}
+            aria-label={`${usage.providerLabel} ${ariaLabel}`}
           >
-            {remaining}% wk
+            {usage.session ? (
+              <span className="flex items-center gap-1 tabular-nums">
+                <span>5h</span>
+                <span className="font-semibold text-foreground">{sessionRemaining}%</span>
+                {sessionReset ? <span>· {sessionReset}</span> : null}
+              </span>
+            ) : null}
+            {usage.weekly ? (
+              <span className="flex items-center gap-1 tabular-nums">
+                <span>7d</span>
+                <span className="font-semibold text-foreground">{weeklyRemaining}%</span>
+              </span>
+            ) : null}
           </Button>
         }
       />
@@ -69,34 +94,36 @@ export function ComposerWeeklyUsageIndicator(props: {
         tooltipStyle
         side="top"
         align="end"
-        viewportClassName="p-0"
         className="w-64 max-w-none text-left whitespace-normal"
       >
-        <div className="flex flex-col gap-2 p-[var(--floating-content-inset)]">
+        <div className="flex flex-col gap-2 py-1">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium text-xs text-foreground">
-              {providerLabel} weekly usage
-            </span>
+            <span className="font-medium text-xs text-foreground">{usage.providerLabel} usage</span>
             {provider.auth.email ? (
               <span className="truncate text-[11px] text-muted-foreground">
                 {provider.auth.email}
               </span>
             ) : null}
           </div>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-[11px]">
-            <span className="text-muted-foreground">Remaining</span>
-            <span className="text-end font-medium tabular-nums">{remaining}%</span>
-            {weekly.resetsAt ? (
-              <>
-                <span className="text-muted-foreground">Resets</span>
-                <span className="text-end tabular-nums">
-                  {formatUpcomingTimestamp(weekly.resetsAt, timestampFormat)}
+          <div className="flex flex-col gap-1.5 text-[11px]">
+            {usage.details.map((window) => (
+              <div key={window.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3">
+                <span className="truncate text-muted-foreground">{window.label}</span>
+                <span className="text-end font-medium tabular-nums">
+                  {remainingPercent(window)}%
                 </span>
-              </>
-            ) : null}
+                {window.resetsAt ? (
+                  <span className="col-span-2 text-end text-muted-foreground tabular-nums">
+                    Resets {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-[11px]">
             <span className="text-muted-foreground">Last checked</span>
             <span className="text-end tabular-nums">
-              {formatDayAwareTimestamp(provider.usageLimits!.checkedAt, timestampFormat)}
+              {formatDayAwareTimestamp(provider.usageLimits.checkedAt, timestampFormat)}
             </span>
           </div>
           <Button

@@ -13,9 +13,9 @@ release repository.
 
 ## Provider usage limits
 
-- The composer shows the selected Codex or Claude account's weekly percentage beside its primary actions.
+- The composer shows the selected Codex account's weekly percentage beside its primary actions. For Claude, it shows the five-hour and seven-day percentages in two compact rows, plus a minute-updated reset countdown for the five-hour window.
 - The indicator reads upstream's provider usage-limit snapshot and adds no separate polling or persistence. Upstream refreshes provider status on its configured interval and from live turn events.
-- Its hover card shows the account email, remaining percentage, reset time, last-check time, and a manual refresh action. Manual refresh uses upstream's targeted provider refresh.
+- Its hover card shows the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Manual refresh uses upstream's targeted provider refresh.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
 
 ## Web chat bidirectional text

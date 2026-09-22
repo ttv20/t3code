@@ -276,10 +276,7 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter, ContextWindowMeterPlaceholder } from "./ContextWindowMeter";
-import {
-  ComposerWeeklyUsageIndicator,
-  hasComposerWeeklyUsage,
-} from "./ComposerWeeklyUsageIndicator";
+import { ComposerUsageIndicator, hasComposerUsage } from "./ComposerWeeklyUsageIndicator";
 import {
   providerSupportsManualCompaction,
   resolveContextWindowModelDisplayName,
@@ -1946,7 +1943,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     () => selectedProviderEntry?.snapshot ?? null,
     [selectedProviderEntry],
   );
-  const showComposerWeeklyUsage = hasComposerWeeklyUsage(selectedProviderStatus);
+  const showComposerUsage = hasComposerUsage(selectedProviderStatus);
   const compactCommandAvailable = providerSupportsManualCompaction(selectedProviderEntry);
   const selectedProviderSkills = selectedProviderStatus
     ? resolveProviderSkillsForCwd(selectedProviderStatus, gitCwd)
@@ -6810,7 +6807,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   "relative",
                   isComposerResting && "flex min-w-0 items-center gap-1",
                   isComposerResting &&
-                    (showComposerWeeklyUsage
+                    (showComposerUsage
                       ? (settings.contextWindowMeterEnabled && activeContextWindow) ||
                         reserveContextWindowMeter
                         ? "pr-40"
@@ -7031,7 +7028,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                       </Tooltip>
                     </>
                   ) : null}
-                  <ComposerWeeklyUsageIndicator
+                  <ComposerUsageIndicator
                     environmentId={environmentId}
                     provider={selectedProviderStatus}
                   />
