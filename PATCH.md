@@ -20,7 +20,7 @@ release repository.
 
 ## Web chat bidirectional text
 
-- Web chat messages use one direction for the whole Markdown message. T3 counts RTL and LTR letters across the full message and uses whichever type is more common; punctuation, digits, whitespace, and backtick code spans do not determine direction.
+- Web chat messages use one direction for the whole Markdown message. T3 counts RTL and LTR letters across the full message and uses whichever type is more common; punctuation, digits, whitespace, backtick code spans, and hidden Markdown link destinations do not determine direction.
 - While an answer streams, its direction changes only when the other script gains a clear lead. Once streaming ends, the exact majority wins.
 - Markdown lists and quote bars inherit the message direction and use logical start-side gutters. Inline and fenced code remain explicitly left-to-right and isolated.
 - The prompt editor and thread-title fields use automatic plaintext bidi behavior. Thread titles also render with automatic direction in the chat header, sidebar, search results, and tooltips.

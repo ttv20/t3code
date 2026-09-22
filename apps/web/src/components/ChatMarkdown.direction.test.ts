@@ -36,4 +36,17 @@ describe("message direction", () => {
       rtl: 4,
     });
   });
+
+  it("does not count hidden Markdown link and image destinations", () => {
+    expect(
+      countMarkdownDirectionCharacters(
+        "ראיות: [סיום ההתקנה](/home/ttv20/Projects/wine/fixed-install-after-exit.png)",
+      ),
+    ).toEqual({ ltr: 0, rtl: 15 });
+    expect(
+      resolveMarkdownDirection(
+        countMarkdownDirectionCharacters("ראיות: ![צילום](/home/very/long/english/path/image.png"),
+      ),
+    ).toBe("rtl");
+  });
 });

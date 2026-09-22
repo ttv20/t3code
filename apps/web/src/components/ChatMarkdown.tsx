@@ -376,6 +376,23 @@ function isEscapedMarkdownCharacter(text: string, index: number): boolean {
   return backslashes % 2 === 1;
 }
 
+function markdownLinkDestinationEnd(text: string, openingStart: number): number {
+  let depth = 0;
+  for (let cursor = openingStart; cursor < text.length; cursor += 1) {
+    if (isEscapedMarkdownCharacter(text, cursor)) continue;
+    if (text[cursor] === "(") {
+      depth += 1;
+      continue;
+    }
+    if (text[cursor] !== ")") continue;
+    depth -= 1;
+    if (depth === 0) return cursor;
+  }
+  // A destination arriving during streaming is not visible message text and
+  // must not temporarily flip the whole message before its closing parenthesis.
+  return text.length - 1;
+}
+
 export function countMarkdownDirectionCharacters(text: string): MarkdownDirectionCounts {
   let ltr = 0;
   let rtl = 0;
@@ -389,6 +406,14 @@ export function countMarkdownDirectionCharacters(text: string): MarkdownDirectio
         continue;
       }
       cursor += openingLength - 1;
+      continue;
+    }
+    if (
+      character === "]" &&
+      text[cursor + 1] === "(" &&
+      !isEscapedMarkdownCharacter(text, cursor)
+    ) {
+      cursor = markdownLinkDestinationEnd(text, cursor + 1);
       continue;
     }
     if (!MARKDOWN_LETTER_REGEX.test(character)) continue;
