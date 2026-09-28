@@ -100,12 +100,10 @@ export function ComposerUsageIndicator(props: {
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="font-medium text-xs text-foreground">{usage.providerLabel} usage</span>
             {provider.auth.email ? (
-              <span className="truncate text-[11px] text-muted-foreground">
-                {provider.auth.email}
-              </span>
+              <span className="truncate text-2xs text-muted-foreground">{provider.auth.email}</span>
             ) : null}
           </div>
-          <div className="flex flex-col gap-1.5 text-[11px]">
+          <div className="flex flex-col gap-1.5 text-2xs">
             {usage.details.map((window) => (
               <div key={window.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3">
                 <span className="truncate text-muted-foreground">{window.label}</span>
@@ -120,7 +118,7 @@ export function ComposerUsageIndicator(props: {
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-[11px]">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-2xs">
             <span className="text-muted-foreground">Last checked</span>
             <span className="text-end tabular-nums">
               {formatDayAwareTimestamp(provider.usageLimits.checkedAt, timestampFormat)}
