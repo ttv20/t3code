@@ -1,8 +1,14 @@
 # Local fork patches
 
 GitHub Actions publishes a self-contained Linux x64 nightly from `patched`.
-The archive and built-in updater use `ttv20/t3code` instead of the upstream
-release repository.
+The release includes the self-contained Linux x64 CLI plus unsigned Linux x64
+and Windows x64 desktop clients. The archives and built-in updater use
+`ttv20/t3code` instead of the upstream release repository.
+
+## Telemetry
+
+- Anonymous PostHog product analytics are opt-in in this fork. Set `T3CODE_TELEMETRY_ENABLED=true` to enable them.
+- Personal desktop builds do not embed upstream's remote OTLP tracing configuration. Local diagnostic traces remain available on the machine.
 
 ## Mobile web controls
 

@@ -149,7 +149,7 @@ it.layer(NodeServices.layer)("AnalyticsService test", (it) => {
     }),
   );
 
-  it.effect("does not send batch requests when telemetry is disabled", () =>
+  it.effect("does not send batch requests when telemetry is not explicitly enabled", () =>
     Effect.gen(function* () {
       const capturedPaths: Array<string> = [];
       const serverConfigLayer = ServerConfig.ServerConfig.layerTest(process.cwd(), {
@@ -158,7 +158,6 @@ it.layer(NodeServices.layer)("AnalyticsService test", (it) => {
       const telemetryLayer = AnalyticsService.layer.pipe(Layer.provideMerge(serverConfigLayer));
       const configLayer = ConfigProvider.layer(
         ConfigProvider.fromUnknown({
-          T3CODE_TELEMETRY_ENABLED: false,
           T3CODE_POSTHOG_KEY: "phc_test_key",
           T3CODE_POSTHOG_HOST: "http://localhost",
         }),

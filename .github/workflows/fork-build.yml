@@ -17,6 +17,10 @@ jobs:
     if: github.repository == 'ttv20/t3code'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      ref: ${{ github.sha }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       T3CODE_WEB_SOURCEMAP: "false"
@@ -42,8 +46,23 @@ jobs:
       - name: Stamp release version
         run: node scripts/update-release-package-versions.ts "${{ steps.release.outputs.version }}"
 
-      - name: Build web and server
-        run: vp run --filter t3 build
+      - uses: ./.github/actions/setup-apt-mirrors
+
+      - name: Install desktop build libraries
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config
+
+      - name: Build web, server, and desktop bundle
+        run: vp run build:desktop
+
+      - name: Upload desktop bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: js-bundle
+          path: |
+            apps/server/dist
+            apps/desktop/dist-electron
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Build resource monitor
         run: cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml
@@ -71,6 +90,14 @@ jobs:
       - name: Smoke-test archive
         run: node scripts/smoke-cli-archive.ts --archive release-cli/*.tar.gz --expect-version "${{ steps.release.outputs.version }}"
 
+      - name: Upload Linux CLI archive for Windows WSL support
+        uses: actions/upload-artifact@v7
+        with:
+          name: cli-linux-x64
+          path: release-cli/t3-*.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Publish personal release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -78,10 +105,89 @@ jobs:
         run: |
           tag="${{ steps.release.outputs.tag }}"
           version="${{ steps.release.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive."
+          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive. Desktop installers are added after their builds finish. Anonymous product analytics are disabled by default."
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" release-cli/* --clobber
             gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
           else
             gh release create "$tag" release-cli/* --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
           fi
+
+  desktop_linux_x64:
+    name: Desktop Linux x64
+    needs: [build_linux_x64]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' }}
+    uses: ./.github/workflows/release-desktop.yml
+    with:
+      version: ${{ needs.build_linux_x64.outputs.version }}
+      ref: ${{ needs.build_linux_x64.outputs.ref }}
+      release_channel: nightly
+      relay_client_tracing: false
+      clerk_publishable_key: ""
+      clerk_jwt_template: ""
+      clerk_cli_oauth_client_id: ""
+      relay_url: ""
+      label: Linux x64
+      runner: ubuntu-24.04
+      platform: linux
+      target: AppImage
+      arch: x64
+      rust_target: x86_64-unknown-linux-gnu
+      resource_key: linux-x64
+      cli_archive: false
+
+  desktop_windows_x64:
+    name: Desktop Windows x64
+    needs: [build_linux_x64]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' }}
+    uses: ./.github/workflows/release-desktop.yml
+    with:
+      version: ${{ needs.build_linux_x64.outputs.version }}
+      ref: ${{ needs.build_linux_x64.outputs.ref }}
+      release_channel: nightly
+      relay_client_tracing: false
+      clerk_publishable_key: ""
+      clerk_jwt_template: ""
+      clerk_cli_oauth_client_id: ""
+      relay_url: ""
+      label: Windows x64
+      runner: windows-2025
+      platform: win
+      target: nsis
+      arch: x64
+      rust_target: x86_64-pc-windows-msvc
+      resource_key: win32-x64
+      cli_archive: false
+
+  publish_desktop:
+    name: Publish desktop clients
+    needs: [build_linux_x64, desktop_linux_x64, desktop_windows_x64]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' && needs.desktop_linux_x64.result == 'success' && needs.desktop_windows_x64.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download desktop clients
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          path: release-desktop
+          merge-multiple: true
+
+      - name: Restore Windows updater manifest name
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for manifest in release-desktop/*-win-x64.yml; do
+            mv "$manifest" "${manifest%-win-x64.yml}.yml"
+          done
+
+      - name: Add desktop clients to personal release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="${{ needs.build_linux_x64.outputs.tag }}"
+          version="${{ needs.build_linux_x64.outputs.version }}"
+          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Anonymous product analytics are disabled by default."
+          gh release upload "$tag" release-desktop/* --clobber
+          gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease
