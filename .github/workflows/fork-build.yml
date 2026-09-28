@@ -189,5 +189,5 @@ jobs:
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
           notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Anonymous product analytics are disabled by default."
-          gh release upload "$tag" release-desktop/* --clobber
-          gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease
+          gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease --repo "$GITHUB_REPOSITORY"
