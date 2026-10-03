@@ -26,8 +26,10 @@ stay on personal releases instead of replacing the build with upstream.
 
 ## Build workflow
 
-The workflow uses a standard Ubuntu runner with dependency caching. It builds
-the web client, server single-executable, resource monitor, and Linux x64
-self-contained archive, then uploads the archive and checksums as a prerelease.
+The workflow uses standard Ubuntu and Windows runners with dependency caching.
+It builds the web client, server single-executable, resource monitor, and Linux
+x64 self-contained archive, then packages Linux x64 and Windows x64 desktop
+clients. The release becomes the public latest release after both desktop
+builds are uploaded.
 No provider credentials or T3 database are required. The fork's inherited
 upstream workflows are disabled in GitHub.

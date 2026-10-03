@@ -12,9 +12,9 @@ and Windows x64 desktop clients. The archives and built-in updater use
 
 ## Mobile web controls
 
-- The upstream responsive chat-header action menu is used at phone widths.
+- Upstream V2's thread-details panel groups workspace, script, and Git actions.
 - **Open in editor** is hidden at phone widths because mobile browsers cannot use the local desktop-editor action reliably.
-- Project scripts and Git actions remain in the upstream menu. Desktop header controls are unchanged.
+- Project scripts and Git actions remain in the upstream thread-details panel.
 - Attachment picking uses upstream T3's file picker and upload flow.
 
 ## Provider usage limits
