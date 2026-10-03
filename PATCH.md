@@ -42,7 +42,7 @@ and Windows x64 desktop clients. The archives and built-in updater use
 
 - The custom Codex weekly usage RPC, polling, and cache were replaced by upstream usage-limit state.
 - `/btw` side questions were intentionally removed during the Sep 3 upstream update because they are no longer used.
-- Startup reconciles the exact migration IDs reused by old `/btw` builds before upstream migrations run. This lets existing fork databases receive the current upstream schema once and then retain canonical migration history.
+- The old `/btw` migration compatibility shim was removed after the sole user's database was verified to have canonical upstream migration entries.
 - The local ImageView click-to-panel patch was replaced by upstream's richer web and mobile viewed-image rendering.
 - The local image-only mobile-web picker was replaced by upstream's general attachment picker.
 - The local completion chime was removed in favor of upstream thread notifications and sounds.
