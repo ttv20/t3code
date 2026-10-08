@@ -839,6 +839,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     cloudOnly: true,
   },
   {
+    id: "server-release-updates",
+    title: "T3 Code updates",
+    to: "/settings/connections",
+    targetId: "connections-environment",
+    searchTerms: ["check for updates upgrade server version release nightly fork"],
+  },
+  {
     id: "connections-environment",
     title: "This machine",
     to: "/settings/connections",

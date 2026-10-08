@@ -5,6 +5,13 @@ The release includes the self-contained Linux x64 CLI plus unsigned Linux x64
 and Windows x64 desktop clients. The archives and built-in updater use
 `ttv20/t3code` instead of the upstream release repository.
 
+## In-app server updates
+
+- Web and desktop **Settings → Connections** can check GitHub for newer fork releases even when the bundled client and server have identical versions. The primary machine has a **Check for updates** button; connected remote machines have the same action as a refresh icon.
+- Checks preserve the server's nightly/stable/preview channel and never offer a downgrade. Native mobile uses the same release lookup through its existing environment maintenance screen.
+- Installing uses upstream's remote self-update, progress, reconnect, and optional thread continuation. The release-check action asks before restarting; no updates are installed silently.
+- Hosts without remote self-update retain a manual update action. Release-check failures are not shown as "Up to date".
+
 ## Telemetry
 
 - Anonymous PostHog product analytics are opt-in in this fork. Set `T3CODE_TELEMETRY_ENABLED=true` to enable them.

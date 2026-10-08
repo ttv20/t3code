@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./environment-updates": {
+      "types": "./src/environmentUpdates.ts",
+      "default": "./src/environmentUpdates.ts"
+    },
     "./composerThreadItems": {
       "types": "./src/composerThreadItems.ts",
       "default": "./src/composerThreadItems.ts"

@@ -15,6 +15,7 @@ import {
   dismissVersionMismatch,
   isServerUpdateFailureDismissed,
   isVersionMismatchDismissed,
+  manualServerUpdateCommand,
   resolveServerConfigVersionMismatch,
   resolveServerSelfUpdateCapability,
   resolveVersionMismatch,
@@ -26,6 +27,12 @@ const MISMATCH_HINT =
   "Version mismatch. Try syncing the client and server to the same T3 Code version.";
 
 describe("versionSkew", () => {
+  it("uses the installed fork updater instead of an unpublished npm version", () => {
+    expect(manualServerUpdateCommand("0.0.46-nightly.20261008.11")).toBe(
+      "t3 update 0.0.46-nightly.20261008.11",
+    );
+  });
+
   beforeEach(() => {
     branding.APP_VERSION = "0.0.34";
   });

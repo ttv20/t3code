@@ -38,6 +38,13 @@ Update the side the notice names, then reconnect.
 
 ## Update a connected server
 
+In **Settings → Connections**, choose **Check for updates** beside the primary
+machine's version, or use the refresh icon beside a connected remote machine.
+This fork checks releases from `ttv20/t3code` on that machine's current release
+channel, including when the client and server already match. Choose **Update**
+and confirm the restart to install a newer release. Checking never installs or
+restarts anything automatically.
+
 The offered action depends on how the server runs:
 
 | Action                     | What to do                                                                                                                                                                                      |

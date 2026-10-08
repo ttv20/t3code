@@ -67,6 +67,32 @@ describe("ServerUpdateAction", () => {
     testState.updateServer.mockReset();
     testState.toast.mockReset();
     testState.continueThreadsAfterServerUpdate = false;
+    resetConfirmDialogForTests();
+  });
+
+  afterEach(() => resetConfirmDialogForTests());
+
+  it("asks before restarting a release-check update and does nothing when cancelled", async () => {
+    registerConfirmDialogHost();
+    const action = ServerUpdateAction({
+      environmentId: "env-test" as EnvironmentId,
+      serverLabel: "Laptop server",
+      selfUpdate: "boot-service",
+      targetVersion: "0.0.46-nightly.20261008.11",
+      confirmRestart: true,
+    }) as ActionElement;
+    action.props.onClick?.();
+    await flushPromises();
+    expect(readConfirmDialogState()).toEqual(
+      expect.objectContaining({
+        status: "confirming",
+        message: expect.stringContaining("The server will restart"),
+      }),
+    );
+    expect(testState.updateServer).not.toHaveBeenCalled();
+    respondToConfirmDialog(false);
+    await flushPromises();
+    expect(testState.updateServer).not.toHaveBeenCalled();
   });
 
   it("reports success only after the shared update flow reconnects", async () => {

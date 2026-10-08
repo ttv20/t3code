@@ -77,6 +77,7 @@ import {
 import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { LoadBalancingSettings } from "./LoadBalancingSettings";
 import { GitHubRoutingSettings } from "./GitHubRoutingSettings";
+import { ServerReleaseUpdateAction } from "./ServerReleaseUpdateAction";
 import { Input } from "../ui/input";
 import { CommandShortcut } from "../ui/command";
 import {
@@ -172,7 +173,6 @@ import { primaryServerKeybindingsAtom, serverEnvironment } from "~/state/server"
 import { ConnectionStatusDot } from "../ConnectionStatusDot";
 import {
   OutdatedServerUpdateAction,
-  ServerUpdateAction,
   ServerUpdateProgress,
   ServerUpdatesAction,
   type ServerUpdateTarget,
@@ -1547,11 +1547,7 @@ function SavedBackendListRow({
 
   // Only a connected, enabled machine can take a remote update; a switched-off
   // one keeps the version note so the icon is not a surprise later.
-  const showUpdateAction =
-    enabled &&
-    isConnected &&
-    versionMismatch !== null &&
-    (serverUpdateState.status === "idle" || serverUpdateState.status === "failed");
+  const showUpdateAction = enabled && isConnected && environment.serverConfig !== null;
 
   const statusTooltip = `${
     unsupported
@@ -1611,15 +1607,11 @@ function SavedBackendListRow({
           label={serverUpdateState.status === "failed" ? "Retry update" : "Update"}
         />
       ) : null}
-      {showUpdateAction ? (
-        <ServerUpdateAction
+      {showUpdateAction && environment.serverConfig ? (
+        <ServerReleaseUpdateAction
           environmentId={environmentId}
           serverLabel={`${environment.label} server`}
-          selfUpdate={resolveServerSelfUpdateCapability(environment.serverConfig)}
-          desktopAppUpdate={supportsDesktopAppUpdate(environment.serverConfig)}
-          threadContinuation={supportsServerUpdateThreadContinuation(environment.serverConfig)}
-          targetVersion={versionMismatch.clientVersion}
-          label={serverUpdateState.status === "failed" ? "Retry update" : "Update"}
+          serverConfig={environment.serverConfig}
           appearance="icon"
         />
       ) : null}
@@ -2022,7 +2014,6 @@ export function ConnectionsSettings() {
     DesktopServerExposureState["mode"] | null
   >(null);
   const primaryServerConfig = primaryEnvironment?.serverConfig ?? null;
-  const primaryVersionMismatch = resolveServerConfigVersionMismatch(primaryServerConfig);
   const primaryServerUpdateState = useAtomValue(
     serverEnvironment.updateStateAtom(primaryEnvironmentId),
   );
@@ -3356,29 +3347,16 @@ export function ConnectionsSettings() {
                   )
                 }
                 control={
-                  primaryVersionMismatch &&
                   primaryEnvironmentId !== null &&
-                  primaryServerUpdateState.status !== "running" ? (
-                    <ServerUpdateAction
-                      size="sm"
+                  primaryServerConfig &&
+                  primaryEnvironment?.connection.phase === "connected" ? (
+                    <ServerReleaseUpdateAction
                       environmentId={primaryEnvironmentId}
                       serverLabel={
                         primaryEnvironment ? `${primaryEnvironment.label} server` : "server"
                       }
-                      selfUpdate={resolveServerSelfUpdateCapability(primaryServerConfig)}
-                      desktopAppUpdate={supportsDesktopAppUpdate(primaryServerConfig)}
-                      threadContinuation={supportsServerUpdateThreadContinuation(
-                        primaryServerConfig,
-                      )}
-                      targetVersion={primaryVersionMismatch.clientVersion}
-                      label={
-                        primaryServerUpdateState.status === "failed"
-                          ? "Retry update"
-                          : `Update to ${primaryVersionMismatch.clientVersion}`
-                      }
+                      serverConfig={primaryServerConfig}
                     />
-                  ) : primaryServerUpdateState.status === "idle" && primaryServerConfig ? (
-                    <span className="text-xs text-muted-foreground">Up to date</span>
                   ) : undefined
                 }
               />

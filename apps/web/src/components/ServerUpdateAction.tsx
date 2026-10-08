@@ -47,6 +47,7 @@ export interface ServerUpdateTarget {
 
 type UpdateButtonProps = Pick<ComponentProps<typeof Button>, "variant" | "size" | "className"> & {
   readonly label?: string;
+  readonly confirmRestart?: boolean;
   /** "icon" renders a compact icon button with the label in a tooltip. */
   readonly appearance?: "button" | "icon";
 };
@@ -196,6 +197,7 @@ export function ServerUpdateAction({
   size = "xs",
   className,
   appearance = "button",
+  confirmRestart = false,
 }: Omit<ServerUpdateTarget, "continueThreadsAfterServerUpdate"> & UpdateButtonProps) {
   const isDesktopAppUpdate = selfUpdate === "desktop-managed";
   const continueThreadsAfterServerUpdate = useEnvironmentSettings(
@@ -225,13 +227,15 @@ export function ServerUpdateAction({
     if (pendingUpdateEnvironmentIds.has(environmentId)) {
       return;
     }
-    if (isDesktopAppUpdate) {
+    if (isDesktopAppUpdate || confirmRestart) {
       // No themed host mounted (undefined) means proceed: the click itself
       // was the request. This is the only confirmation in the flow; the
       // remote machine installs without asking anyone there.
       const confirmed =
         (await requestConfirmDialog(
-          `Update the T3 Code desktop app that runs the ${serverLabel}? It will close and relaunch on that machine.`,
+          isDesktopAppUpdate
+            ? `Update the T3 Code desktop app that runs the ${serverLabel}? It will close and relaunch on that machine.`
+            : `Update ${serverLabel} to ${targetVersion}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals.`,
         )) ?? true;
       if (!confirmed) {
         return;
