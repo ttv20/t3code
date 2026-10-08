@@ -9,3 +9,7 @@ raw provider events, or child-agent output. Child-agent token use is excluded fr
 
 Collection is disabled by default in the patched build. To opt in, set
 `T3CODE_TELEMETRY_ENABLED=true` in the server's environment before starting it.
+
+The desktop app reads the variable from your shell profile on macOS and Linux,
+so export it there and restart the app. On Windows, set it as a user environment
+variable.

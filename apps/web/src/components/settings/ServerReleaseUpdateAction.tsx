@@ -4,7 +4,7 @@ import {
   findEnvironmentUpdate,
 } from "@t3tools/client-runtime/environment-updates";
 import {
-  AuthOrchestrationOperateScope,
+  AuthEnvironmentMaintainScope,
   type EnvironmentId,
   type ServerConfig,
 } from "@t3tools/contracts";
@@ -12,7 +12,7 @@ import { RefreshCwIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { serverEnvironment } from "~/state/server";
-import { useEnvironmentSessionState } from "~/state/session";
+import { useEnvironmentScope } from "~/state/session";
 import {
   resolveServerConfigVersionMismatch,
   resolveServerSelfUpdateCapability,
@@ -51,7 +51,7 @@ export function ServerReleaseUpdateAction({
     version: string;
     controller: AbortController;
   } | null>(null);
-  const session = useEnvironmentSessionState(environmentId);
+  const canUpdate = useEnvironmentScope(environmentId, AuthEnvironmentMaintainScope);
   const updateState = useAtomValue(serverEnvironment.updateStateAtom(environmentId));
   useEffect(
     () => () => {
@@ -74,9 +74,6 @@ export function ServerReleaseUpdateAction({
     resolveServerConfigVersionMismatch(serverConfig)?.clientVersion ?? null,
     result?.status === "checked" ? result.targetVersion : null,
   );
-  const canUpdate =
-    session.data?.authenticated === true &&
-    session.data.scopes?.includes(AuthOrchestrationOperateScope) === true;
   const checkReleases = async () => {
     if (request.current !== null) return;
     const controller = new AbortController();
@@ -152,6 +149,7 @@ export function ServerReleaseUpdateAction({
           environmentId={environmentId}
           serverLabel={serverLabel}
           selfUpdate={resolveServerSelfUpdateCapability(serverConfig)}
+          installation={serverConfig.environment.capabilities.serverInstallation}
           desktopAppUpdate={supportsDesktopAppUpdate(serverConfig)}
           threadContinuation={supportsServerUpdateThreadContinuation(serverConfig)}
           targetVersion={targetVersion}
