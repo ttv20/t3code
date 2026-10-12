@@ -9,7 +9,7 @@ and Windows x64 desktop clients. The archives and built-in updater use
 
 - Web and desktop **Settings → Connections** can check GitHub for newer fork releases even when the bundled client and server have identical versions. The primary machine has a **Check for updates** button; connected remote machines have the same action as a refresh icon.
 - Checks preserve the server's nightly/stable/preview channel and never offer a downgrade. Native mobile uses the same release lookup through its existing environment maintenance screen.
-- Installing uses upstream's remote self-update, progress, reconnect, and optional thread continuation. The release-check action asks before restarting; no updates are installed silently.
+- Installing uses upstream's remote self-update, progress, reconnect, and optional thread continuation. Settings actions show a confirmation popup naming the destination machine, version, install method, and restart impact; a missing popup host cancels rather than silently installing. These actions update T3 Code only, not provider CLIs.
 - Hosts without remote self-update retain upstream's installation-aware manual action: a proven global npm install gets an update command for its existing prefix, and npx/pnpm-dlx/bunx hosts get a matching relaunch command. Managed standalone services and desktop hosts retain their own update paths; checking for a release does not migrate an installation. Release-check failures are not shown as "Up to date".
 
 ## Telemetry

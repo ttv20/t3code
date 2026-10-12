@@ -114,6 +114,7 @@ describe("ServerUpdateAction", () => {
       environmentId: "env-test" as EnvironmentId,
       serverLabel: "Laptop server",
       selfUpdate: "boot-service",
+      currentVersion: "0.0.46-nightly.20261003.10",
       targetVersion: "0.0.46-nightly.20261008.11",
       confirmRestart: true,
     }) as ActionElement;
@@ -126,9 +127,57 @@ describe("ServerUpdateAction", () => {
       }),
     );
     expect(testState.updateServer).not.toHaveBeenCalled();
+    const confirmation = readConfirmDialogState();
+    expect(confirmation.status).toBe("confirming");
+    if (confirmation.status !== "idle") {
+      expect(confirmation.message).toContain("Laptop server");
+      expect(confirmation.message).toContain("from 0.0.46-nightly.20261003.10");
+      expect(confirmation.message).toContain("existing standalone installation");
+      expect(confirmation.message).toContain("Provider CLIs are not updated");
+    }
     respondToConfirmDialog(false);
     await flushPromises();
     expect(testState.updateServer).not.toHaveBeenCalled();
+  });
+
+  it("does not install a settings update when no confirmation popup is available", async () => {
+    const action = ServerUpdateAction({
+      environmentId: "env-test" as EnvironmentId,
+      serverLabel: "Laptop server",
+      selfUpdate: "boot-service",
+      targetVersion: "0.0.46-nightly.20261008.11",
+      confirmRestart: true,
+    }) as ActionElement;
+    action.props.onClick?.();
+    await flushPromises();
+    expect(testState.updateServer).not.toHaveBeenCalled();
+  });
+
+  it("updates only T3 on the selected machine after the popup is accepted", async () => {
+    registerConfirmDialogHost();
+    testState.updateServer.mockResolvedValue(
+      AsyncResult.success({
+        targetVersion: "0.0.46-nightly.20261008.11",
+        method: "boot-service" as const,
+      }),
+    );
+    const action = ServerUpdateAction({
+      environmentId: "env-test" as EnvironmentId,
+      serverLabel: "Laptop server",
+      selfUpdate: "boot-service",
+      targetVersion: "0.0.46-nightly.20261008.11",
+      confirmRestart: true,
+    }) as ActionElement;
+    action.props.onClick?.();
+    await flushPromises();
+    expect(testState.updateServer).not.toHaveBeenCalled();
+    respondToConfirmDialog(true);
+    await flushPromises();
+    expect(testState.updateServer).toHaveBeenCalledWith({
+      environmentId: "env-test",
+      input: { targetVersion: "0.0.46-nightly.20261008.11" },
+    });
+    expect(testState.updateServer).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -394,9 +443,9 @@ describe("ServerUpdatesAction", () => {
   ];
   const success = AsyncResult.success({ targetVersion: "0.0.31", method: "boot-service" as const });
 
-  async function mount(batch = targets) {
+  async function mount(batch = targets, confirmRestart = false) {
     await act(async () => {
-      renderer = create(<ServerUpdatesAction targets={batch} />);
+      renderer = create(<ServerUpdatesAction targets={batch} confirmRestart={confirmRestart} />);
     });
     return renderer!.root.findByType("button");
   }
@@ -414,6 +463,29 @@ describe("ServerUpdatesAction", () => {
     renderer = undefined;
     resetConfirmDialogForTests();
     vi.unstubAllGlobals();
+  });
+
+  it("confirms standalone settings updates and leaves all machines unchanged on cancel", async () => {
+    registerConfirmDialogHost();
+    const button = await mount(targets, true);
+    await act(async () => {
+      button.props.onClick();
+    });
+    const confirmation = readConfirmDialogState();
+    expect(confirmation.status).toBe("confirming");
+    if (confirmation.status !== "idle") {
+      expect(confirmation.message).toContain(
+        "Laptop: 0.0.31 via the existing standalone installation",
+      );
+      expect(confirmation.message).toContain("Office: 0.0.31 via the existing server updater");
+      expect(confirmation.message).not.toContain("Manual:");
+    }
+    expect(testState.updateServer).not.toHaveBeenCalled();
+    await act(async () => {
+      respondToConfirmDialog(false);
+    });
+    expect(testState.updateServer).not.toHaveBeenCalled();
+    expect(button.props.disabled).toBe(false);
   });
 
   it("updates both supported machines with their own continuation preference and skips the manual machine", async () => {

@@ -153,6 +153,7 @@ export function ServerReleaseUpdateAction({
           desktopAppUpdate={supportsDesktopAppUpdate(serverConfig)}
           threadContinuation={supportsServerUpdateThreadContinuation(serverConfig)}
           targetVersion={targetVersion}
+          currentVersion={currentVersion}
           label={`Update to ${targetVersion}`}
           appearance={appearance}
           size="sm"

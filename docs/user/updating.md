@@ -45,6 +45,12 @@ channel, including when the client and server already match. Choose **Update**
 and confirm the restart to install a newer release. Checking never installs or
 restarts anything automatically.
 
+The confirmation identifies the destination machine and its update method.
+Standalone services keep using standalone builds; desktop-hosted servers use
+the desktop updater on that machine. This action updates T3 Code itself, not
+your provider CLIs. Package-managed hosts without remote update support show
+their installation-specific manual command instead of changing install methods.
+
 The offered action depends on how the server runs:
 
 | Action                     | What to do                                                                                                                                                                                      |

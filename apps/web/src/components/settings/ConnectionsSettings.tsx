@@ -4085,7 +4085,11 @@ export function ConnectionsSettings() {
         headerAction={
           <div className="flex items-center gap-1">
             {savedServerUpdateTargets.length > 0 ? (
-              <ServerUpdatesAction targets={savedServerUpdateTargets} variant="ghost-muted" />
+              <ServerUpdatesAction
+                targets={savedServerUpdateTargets}
+                variant="ghost-muted"
+                confirmRestart
+              />
             ) : null}
             <Dialog
               open={addBackendDialogOpen}

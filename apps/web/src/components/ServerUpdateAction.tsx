@@ -48,6 +48,12 @@ function updateFailureMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Server update failed.";
 }
 
+function serverUpdateMethodLabel(capability: ServerSelfUpdateCapability | null): string {
+  if (capability === "desktop-managed") return "desktop updater, using its own release feed";
+  if (capability === "boot-service") return "existing standalone installation";
+  return "existing server updater";
+}
+
 export interface ServerUpdateTarget {
   readonly environmentId: EnvironmentId;
   readonly serverLabel: string;
@@ -56,6 +62,7 @@ export interface ServerUpdateTarget {
   readonly desktopAppUpdate?: boolean;
   readonly threadContinuation?: boolean;
   readonly targetVersion: string;
+  readonly currentVersion?: string;
   readonly continueThreadsAfterServerUpdate?: boolean;
 }
 
@@ -117,6 +124,7 @@ export function ServerUpdatesAction({
   variant = "outline",
   size = "xs",
   className,
+  confirmRestart = false,
 }: UpdateButtonProps & {
   readonly targets: ReadonlyArray<ServerUpdateTarget>;
 }) {
@@ -136,12 +144,15 @@ export function ServerUpdatesAction({
       const available = eligible.filter(
         (target) => !pendingUpdateEnvironmentIds.has(target.environmentId),
       );
+      if (available.length === 0) return;
       const desktopTargets = available.filter((target) => target.selfUpdate === "desktop-managed");
-      if (desktopTargets.length > 0) {
-        const confirmed =
-          (await requestConfirmDialog(
-            `Update the T3 Code desktop apps on ${desktopTargets.map((target) => target.serverLabel).join(", ")}? They will close and relaunch on those machines.`,
-          )) ?? true;
+      if (confirmRestart || desktopTargets.length > 0) {
+        const confirmation = requestConfirmDialog(
+          confirmRestart
+            ? `Update T3 Code on these machines?\n\n${available.map((target) => `${target.serverLabel}: ${target.selfUpdate === "desktop-managed" ? serverUpdateMethodLabel(target.selfUpdate) : `${target.targetVersion} via the ${serverUpdateMethodLabel(target.selfUpdate)}`}`).join("\n")}\n\nOnly T3 Code is updated, not provider CLIs. These servers or desktop apps will restart, potentially interrupting active agents and terminals.`
+            : `Update the T3 Code desktop apps on ${desktopTargets.map((target) => target.serverLabel).join(", ")}? They will close and relaunch on those machines.`,
+        );
+        const confirmed = (await confirmation) ?? !confirmRestart;
         if (!confirmed) return;
       }
       await Promise.all(
@@ -216,6 +227,7 @@ export function ServerUpdateAction({
   desktopAppUpdate = false,
   threadContinuation = false,
   targetVersion,
+  currentVersion,
   label = "Update",
   variant = "outline",
   size = "xs",
@@ -261,15 +273,14 @@ export function ServerUpdateAction({
       return;
     }
     if (isDesktopAppUpdate || confirmRestart) {
-      // No themed host mounted (undefined) means proceed: the click itself
-      // was the request. This is the only confirmation in the flow; the
-      // remote machine installs without asking anyone there.
-      const confirmed =
-        (await requestConfirmDialog(
-          isDesktopAppUpdate
-            ? `Update the T3 Code desktop app that runs the ${serverLabel}? It will close and relaunch on that machine.`
-            : `Update ${serverLabel} to ${targetVersion}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals.`,
-        )) ?? true;
+      // Settings updates require the popup to be shown. Retain the legacy
+      // desktop fallback for callers that do not request confirmation.
+      const confirmation = requestConfirmDialog(
+        isDesktopAppUpdate
+          ? `Update T3 Code on ${serverLabel} using its desktop updater? Its own release feed selects the version. The desktop app will close and relaunch on that machine. Provider CLIs are not updated.`
+          : `Update T3 Code on ${serverLabel}${currentVersion ? ` from ${currentVersion}` : ""} to ${targetVersion} using the ${serverUpdateMethodLabel(selfUpdate)}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals. Provider CLIs are not updated.`,
+      );
+      const confirmed = (await confirmation) ?? !confirmRestart;
       if (!confirmed) {
         return;
       }
