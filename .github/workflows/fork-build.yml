@@ -108,7 +108,7 @@ jobs:
         run: |
           prefix="$RUNNER_TEMP/t3-npm-smoke"
           npm install --global --prefix "$prefix" --cache "$RUNNER_TEMP/t3-npm-cache" \
-            --offline --ignore-scripts --no-audit --no-fund release-cli/*.tgz
+            --offline --ignore-scripts --no-audit --no-fund "$GITHUB_WORKSPACE"/release-cli/*.tgz
           "$prefix/bin/t3" --version | grep -Fx "${{ steps.release.outputs.version }}"
           test -f "$prefix/lib/node_modules/t3/runtime/client/index.html"
 
@@ -123,7 +123,7 @@ jobs:
           BUN_INSTALL_BIN: ${{ runner.temp }}/t3-bun-smoke/bin
           BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/t3-bun-smoke/cache
         run: |
-          bun add --global --ignore-scripts --no-progress --registry http://127.0.0.1:1 release-cli/*.tgz
+          bun add --global --ignore-scripts --no-progress --registry http://127.0.0.1:1 "$GITHUB_WORKSPACE"/release-cli/*.tgz
           "$BUN_INSTALL_BIN/t3" --version | grep -Fx "${{ steps.release.outputs.version }}"
           test -f "$BUN_INSTALL_GLOBAL_DIR/node_modules/t3/runtime/client/index.html"
 
