@@ -91,6 +91,42 @@ jobs:
       - name: Smoke-test archive
         run: node scripts/smoke-cli-archive.ts --archive release-cli/*.tar.gz --expect-version "${{ steps.release.outputs.version }}"
 
+      - name: Build npm and Bun installable package
+        shell: bash
+        run: |
+          node scripts/build-npm-platform-packages.ts \
+            --archives-dir release-cli \
+            --version "${{ steps.release.outputs.version }}" \
+            --output-dir release-npm \
+            --allow-missing --standalone
+          cp release-npm/*.tgz release-cli/
+          cd release-cli
+          sha256sum t3-*.tar.gz t3-*.tgz > SHA256SUMS
+
+      - name: Smoke-test npm package in an isolated prefix
+        shell: bash
+        run: |
+          prefix="$RUNNER_TEMP/t3-npm-smoke"
+          npm install --global --prefix "$prefix" --cache "$RUNNER_TEMP/t3-npm-cache" \
+            --offline --ignore-scripts --no-audit --no-fund release-cli/*.tgz
+          "$prefix/bin/t3" --version | grep -Fx "${{ steps.release.outputs.version }}"
+          test -f "$prefix/lib/node_modules/t3/runtime/client/index.html"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Smoke-test Bun package in an isolated prefix
+        shell: bash
+        env:
+          BUN_INSTALL_GLOBAL_DIR: ${{ runner.temp }}/t3-bun-smoke/global
+          BUN_INSTALL_BIN: ${{ runner.temp }}/t3-bun-smoke/bin
+          BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/t3-bun-smoke/cache
+        run: |
+          bun add --global --ignore-scripts --no-progress --registry http://127.0.0.1:1 release-cli/*.tgz
+          "$BUN_INSTALL_BIN/t3" --version | grep -Fx "${{ steps.release.outputs.version }}"
+          test -f "$BUN_INSTALL_GLOBAL_DIR/node_modules/t3/runtime/client/index.html"
+
       - name: Upload Linux CLI archive for Windows WSL support
         uses: actions/upload-artifact@v7
         with:
@@ -106,7 +142,7 @@ jobs:
         run: |
           tag="${{ steps.release.outputs.tag }}"
           version="${{ steps.release.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive. Desktop installers are added after their builds finish. Anonymous product analytics are disabled by default."
+          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive and npm/Bun-installable package with the web UI. Desktop installers are added after their builds finish. Anonymous product analytics are disabled by default."
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" release-cli/* --clobber
             gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
@@ -189,6 +225,6 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
-          notes="Personal patched Orchestrator V2 nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Anonymous product analytics are disabled by default. V2 imports conversations into a separate database; old tool activity, checkpoints, and live provider sessions do not carry over. Native mobile clients require the V2 beta. Migration details: https://github.com/pingdotgg/t3code/issues/14871"
+          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Anonymous product analytics are disabled by default."
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease=false --latest --repo "$GITHUB_REPOSITORY"

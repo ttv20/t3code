@@ -5,6 +5,8 @@ The release includes the self-contained Linux x64 CLI plus unsigned Linux x64
 and Windows x64 desktop clients. The archives and built-in updater use
 `ttv20/t3code` instead of the upstream release repository.
 
+Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun installation from its GitHub asset URL. It contains the same executable, web UI, and bundled native dependencies as the standalone archive, without depending on upstream's registry packages.
+
 ## In-app server updates
 
 - Upstream's sidebar **Update everything** popup is retained. Its standalone-server publication check uses this fork's GitHub release assets instead of upstream npm, refreshing every five minutes. It updates providers first, remote servers next, and the local desktop app last.
@@ -38,6 +40,7 @@ and Windows x64 desktop clients. The archives and built-in updater use
 - While an answer streams, its direction changes only when the other script gains a clear lead. Once streaming ends, the exact majority wins.
 - Markdown lists and quote bars inherit the message direction and use logical start-side gutters. Inline and fenced code remain explicitly left-to-right and isolated.
 - The prompt editor and thread-title fields use automatic plaintext bidi behavior. Thread titles also render with automatic direction in the chat header, sidebar, search results, and tooltips.
+- Pending question cards and answer choices use the same majority-character direction rules as messages. Choice rows mirror their text and shortcut/checkmark placement for RTL; collapsed previews preserve the question's direction.
 - This patch applies only to the web client; the native mobile app is unchanged.
 
 ## Finished-thread entry position

@@ -321,6 +321,7 @@ const stagePlatformPackage = Effect.fn("stagePlatformPackage")(function* (input:
   readonly archive: string;
   readonly outputDir: string;
   readonly version: string;
+  readonly standalone: boolean;
 }) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -331,9 +332,9 @@ const stagePlatformPackage = Effect.fn("stagePlatformPackage")(function* (input:
   });
   const extractDir = path.join(scratch, "extract");
   yield* fs.makeDirectory(extractDir);
-  const contentDir = yield* extractArchive(input.archive, extractDir);
+  const extractedDir = yield* extractArchive(input.archive, extractDir);
   const executableName = input.key.startsWith("win32") ? "t3.exe" : "t3";
-  const executable = path.join(contentDir, executableName);
+  const executable = path.join(extractedDir, executableName);
   if (!(yield* fs.exists(executable))) {
     return yield* new NpmPackagesArchiveLayoutError({
       archive: path.basename(input.archive),
@@ -344,22 +345,47 @@ const stagePlatformPackage = Effect.fn("stagePlatformPackage")(function* (input:
   if (executableName === "t3") {
     yield* fs.chmod(executable, 0o755);
   }
-  const bundled = yield* readBundledPackages(path.join(contentDir, "node_modules"));
+  const bundled = input.standalone
+    ? {}
+    : yield* readBundledPackages(path.join(extractedDir, "node_modules"));
+  // Bun re-resolves dependencies declared at the package root even when npm
+  // marks them bundled. Keep the complete runtime outside the package manager's
+  // dependency tree; the executable still sees its original sibling files.
+  const contentDir = input.standalone ? path.join(scratch, "content") : extractedDir;
+  if (input.standalone) {
+    yield* fs.makeDirectory(contentDir);
+    yield* fs.rename(extractedDir, path.join(contentDir, "runtime"));
+  }
+  const platformManifest = npmPlatformPackageManifest(input.key, input.version, bundled);
+  const manifest = input.standalone
+    ? {
+        ...platformManifest,
+        name: NPM_LAUNCHER_PACKAGE_NAME,
+        repository: { ...platformManifest.repository, url: "https://github.com/ttv20/t3code" },
+        bin: { t3: `./runtime/${executableName}` },
+        files: ["runtime"],
+      }
+    : platformManifest;
   yield* fs.writeFileString(
     path.join(contentDir, "package.json"),
-    `${yield* encodePackageJson(npmPlatformPackageManifest(input.key, input.version, bundled))}\n`,
+    `${yield* encodePackageJson(manifest)}\n`,
   );
   yield* fs.writeFileString(
     path.join(contentDir, "README.md"),
-    npmPlatformPackageReadme(input.key),
+    input.standalone
+      ? `# Patched T3 Code (${input.key})\n\nSelf-contained server and web UI. Install this tarball with npm or Bun, then run \`t3\`.\n\nSource: https://github.com/ttv20/t3code\n`
+      : npmPlatformPackageReadme(input.key),
   );
   // npm tarballs root everything under `package/`.
   yield* fs.rename(contentDir, path.join(scratch, "package"));
-  const name = npmPlatformPackageName(input.key);
+  const name = manifest.name;
   const output: NpmPackageOutput = {
     name,
-    packageDir: path.join(input.outputDir, name),
-    tarball: path.join(input.outputDir, `${name}.tgz`),
+    packageDir: path.join(input.outputDir, input.standalone ? input.key : name),
+    tarball: path.join(
+      input.outputDir,
+      input.standalone ? `t3-${input.version}-${input.key}.tgz` : `${name}.tgz`,
+    ),
   };
   yield* packAndPlace({ stageDir: scratch, ...output });
   return output;
@@ -408,6 +434,8 @@ export const buildNpmPlatformPackages = Effect.fn("buildNpmPlatformPackages")(fu
   readonly version: string;
   readonly outputDir: string;
   readonly allowMissing: boolean;
+  /** One self-contained, directly installable t3 tarball per platform, without registry dependencies. */
+  readonly standalone?: boolean;
 }) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -426,30 +454,43 @@ export const buildNpmPlatformPackages = Effect.fn("buildNpmPlatformPackages")(fu
     return yield* new NpmPackagesArchivesMissingError({ archivesDir: input.archivesDir, missing });
   }
 
-  yield* fs.makeDirectory(path.join(input.outputDir, NPM_PLATFORM_PACKAGE_SCOPE), {
-    recursive: true,
-  });
+  yield* fs.makeDirectory(
+    input.standalone ? input.outputDir : path.join(input.outputDir, NPM_PLATFORM_PACKAGE_SCOPE),
+    {
+      recursive: true,
+    },
+  );
   // Each archive stages in its own scratch dir, so all of them unpack and
   // compress at once. Sequentially this took about 45s for five archives.
   const platformOutputs = yield* Effect.forEach(
     archives,
     ({ key, archive }) =>
-      stagePlatformPackage({ key, archive, outputDir: input.outputDir, version: input.version }),
+      stagePlatformPackage({
+        key,
+        archive,
+        outputDir: input.outputDir,
+        version: input.version,
+        standalone: input.standalone ?? false,
+      }),
     { concurrency: "unbounded" },
   );
   const outputs = [
     ...platformOutputs,
-    yield* stageLauncherPackage({
-      outputDir: input.outputDir,
-      version: input.version,
-      platformKeys: archives.map((entry) => entry.key),
-    }),
+    ...(input.standalone
+      ? []
+      : [
+          yield* stageLauncherPackage({
+            outputDir: input.outputDir,
+            version: input.version,
+            platformKeys: archives.map((entry) => entry.key),
+          }),
+        ]),
   ];
 
   for (const output of outputs) {
     yield* Effect.log(`[npm-packages] Wrote ${output.packageDir} and ${output.tarball}`);
   }
-  if (missing.length > 0) {
+  if (missing.length > 0 && !input.standalone) {
     yield* Effect.logWarning(
       `[npm-packages] Launcher omits ${missing.join(", ")} (--allow-missing).`,
     );
@@ -472,6 +513,12 @@ const command = Command.make(
     allowMissing: Flag.Boolean("allow-missing").pipe(
       Flag.withDefault(false),
       Flag.withDescription("Build a launcher that lists only the platforms present."),
+    ),
+    standalone: Flag.Boolean("standalone").pipe(
+      Flag.withDefault(false),
+      Flag.withDescription(
+        "Build directly installable per-platform t3 tarballs instead of registry launcher packages.",
+      ),
     ),
   },
   buildNpmPlatformPackages,

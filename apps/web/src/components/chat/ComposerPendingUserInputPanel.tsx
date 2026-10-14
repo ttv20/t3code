@@ -10,6 +10,10 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collaps
 import { cn } from "~/lib/utils";
 import { ComposerBanner } from "./ComposerBanner";
 import ChatMarkdown from "../ChatMarkdown";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "~/lib/markdownDirection";
 
 interface PendingUserInputPanelProps {
   pendingUserInputs: PendingUserInput[];
@@ -194,6 +198,9 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
   }
 
   const customAnswerActive = progress.customAnswer.trim().length > 0;
+  const questionDirection = resolveMarkdownDirection(
+    countMarkdownDirectionCharacters(activeQuestion.question),
+  );
 
   return (
     <Collapsible
@@ -211,11 +218,17 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       >
         <ComposerBanner.Icon />
         <ComposerBanner.Content>
-          <span className="shrink-0 font-medium text-muted-foreground">
+          <span
+            dir="auto"
+            className="shrink-0 font-medium text-muted-foreground [unicode-bidi:isolate]"
+          >
             {activeQuestion.header}
           </span>
           {isCollapsed ? (
-            <span className="min-w-0 flex-1 truncate text-secondary-label">
+            <span
+              dir={questionDirection}
+              className="min-w-0 flex-1 truncate text-start text-secondary-label [unicode-bidi:isolate]"
+            >
               {activeQuestion.question}
             </span>
           ) : null}
@@ -253,7 +266,10 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       </CollapsibleTrigger>
       <CollapsiblePanel>
         <ComposerBanner.Scroll>
-          <ComposerBanner.Body className="pe-1 pb-1 wrap-anywhere">
+          <ComposerBanner.Body
+            dir={questionDirection}
+            className="pe-1 pb-1 text-start wrap-anywhere"
+          >
             <ChatMarkdown
               text={activeQuestion.question}
               cwd={cwd}
@@ -261,7 +277,9 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
               className="text-foreground/85"
             />
             {activeQuestion.multiSelect ? (
-              <p className="mt-1 text-secondary-label text-xs">Select one or more options.</p>
+              <p dir="ltr" className="mt-1 text-secondary-label text-xs">
+                Select one or more options.
+              </p>
             ) : null}
             <div className="mt-2 space-y-0.5">
               {activeQuestion.options.map((option, index) => {
@@ -274,7 +292,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                   (!customAnswerActive && progress.selectedOptionValues.includes(optionValue));
                 const shortcutKey = index < 9 ? index + 1 : null;
                 const className = cn(
-                  "group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/25",
+                  "group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-start outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/25",
                   isSelected
                     ? "bg-muted/55 text-foreground"
                     : "bg-transparent text-foreground/85 hover:bg-muted/30",
@@ -305,6 +323,12 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                 return (
                   <button
                     key={`${activeQuestion.id}:${optionValue}`}
+                    dir={resolveMarkdownDirection(
+                      countMarkdownDirectionCharacters(
+                        `${option.label}\n${option.description ?? ""}`,
+                      ),
+                      questionDirection,
+                    )}
                     type="button"
                     disabled={disabled || isResponding}
                     onClick={() => {

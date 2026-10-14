@@ -1,4 +1,5 @@
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { isCommandAvailable } from "@t3tools/shared/shell";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
@@ -87,6 +88,102 @@ const makeFakeArchives = Effect.fn("test.makeFakeArchives")(function* () {
 });
 
 it.layer(NodeServices.layer)("build-npm-platform-packages", (it) => {
+  it.effect("builds a standalone tarball that installs offline and runs the packaged CLI", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const fixture = yield* makeFakeArchives();
+      const outputs = yield* buildNpmPlatformPackages({
+        ...fixture,
+        version: VERSION,
+        allowMissing: true,
+        standalone: true,
+      });
+      assert.equal(outputs.length, 2);
+      const linux = outputs.find((output) => output.tarball.endsWith("-linux-x64.tgz"))!;
+      const manifest = yield* decodeManifest(
+        yield* fs.readFileString(path.join(linux.packageDir, "package.json")),
+      );
+      assert.equal(manifest.name, "t3");
+      assert.deepStrictEqual(manifest.bin, { t3: "./runtime/t3" });
+      assert.isUndefined(manifest.optionalDependencies);
+      assert.isTrue(yield* fs.exists(path.join(linux.packageDir, "runtime/client/index.html")));
+      assert.deepStrictEqual(manifest.dependencies, {});
+      assert.deepStrictEqual(manifest.bundleDependencies, []);
+      if ((yield* HostProcess.Platform) !== "linux" || (yield* HostProcess.Architecture) !== "x64")
+        return;
+      const prefix = path.join(fixture.root, "npm-prefix");
+      const install = yield* run(
+        "npm",
+        [
+          "install",
+          "--global",
+          "--prefix",
+          prefix,
+          "--cache",
+          path.join(fixture.root, "npm-cache"),
+          "--offline",
+          "--ignore-scripts",
+          "--no-audit",
+          "--no-fund",
+          linux.tarball,
+        ],
+        { cwd: fixture.root, env: process.env as Record<string, string> },
+      );
+      assert.equal(install.exitCode, 0, install.stderr);
+      const launched = yield* run(path.join(prefix, "bin/t3"), ["serve", "--port", "1234"], {
+        cwd: fixture.root,
+      });
+      assert.equal(launched.stdout.trim(), "stub linux-x64 serve --port 1234");
+      assert.equal(launched.exitCode, 7);
+      assert.isTrue(
+        yield* fs.exists(path.join(prefix, "lib/node_modules/t3/runtime/client/index.html")),
+      );
+      assert.isTrue(
+        yield* fs.exists(
+          path.join(prefix, "lib/node_modules/t3/runtime/node_modules/node-pty/package.json"),
+        ),
+      );
+      if (yield* isCommandAvailable("bun")) {
+        const bunBin = path.join(fixture.root, "bun-bin");
+        const bunInstall = yield* run(
+          "bun",
+          [
+            "add",
+            "--global",
+            "--ignore-scripts",
+            "--no-progress",
+            "--registry",
+            "http://127.0.0.1:1",
+            linux.tarball,
+          ],
+          {
+            cwd: fixture.root,
+            env: {
+              ...process.env,
+              BUN_INSTALL_GLOBAL_DIR: path.join(fixture.root, "bun-global"),
+              BUN_INSTALL_BIN: bunBin,
+              BUN_INSTALL_CACHE_DIR: path.join(fixture.root, "bun-cache"),
+            } as Record<string, string>,
+          },
+        );
+        assert.equal(bunInstall.exitCode, 0, bunInstall.stderr);
+        const bunLaunched = yield* run(path.join(bunBin, "t3"), ["--version"], {
+          cwd: fixture.root,
+        });
+        assert.equal(bunLaunched.stdout.trim(), "stub linux-x64 --version");
+        assert.equal(bunLaunched.exitCode, 7);
+        assert.isTrue(
+          yield* fs.exists(
+            path.join(
+              fixture.root,
+              "bun-global/node_modules/t3/runtime/node_modules/node-pty/package.json",
+            ),
+          ),
+        );
+      }
+    }),
+  );
   it.effect("refuses a partial release unless --allow-missing is passed", () =>
     Effect.gen(function* () {
       const fixture = yield* makeFakeArchives();

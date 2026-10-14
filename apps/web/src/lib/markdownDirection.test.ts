@@ -3,9 +3,23 @@ import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
   resolveStreamingMarkdownDirection,
-} from "./ChatMarkdown";
+} from "./markdownDirection";
 
 describe("message direction", () => {
+  it("keeps technical Hebrew questions and answer choices RTL even when they start with Latin text", () => {
+    for (const text of [
+      "Qt API: רשימת פעולות פנימית לשיפור הודעה יש שתי גישות איזו גישה אתה מעדיף להצעת KDE?",
+      "Qt API פנימי כדי להציג התאמות מדויקות עם בדיקות",
+      "ציבורי ותחזוקה פשוטה API להעדיף",
+      "בחירה קצרה `very long English code example`",
+    ]) {
+      expect(resolveMarkdownDirection(countMarkdownDirectionCharacters(text))).toBe("rtl");
+    }
+    expect(resolveMarkdownDirection(countMarkdownDirectionCharacters("123"), "rtl")).toBe("rtl");
+    expect(
+      resolveMarkdownDirection(countMarkdownDirectionCharacters("Use the public API"), "rtl"),
+    ).toBe("ltr");
+  });
   it("uses the full message majority rather than its first paragraph", () => {
     const counts = countMarkdownDirectionCharacters("English\n\nשלום עולם ועוד מילים 123!?");
     expect(resolveMarkdownDirection(counts)).toBe("rtl");
