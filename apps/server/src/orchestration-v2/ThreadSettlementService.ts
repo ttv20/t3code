@@ -237,8 +237,14 @@ export function resolveAutoSettlementAt(input: {
     return activityAtMs === null ? thread.createdAt : DateTime.makeUnsafe(activityAtMs);
   }
   if (input.autoSettleAfterDays === null || activityAtMs === null) return null;
-  return activityAtMs < input.nowMs - input.autoSettleAfterDays * DAY_MS
-    ? DateTime.makeUnsafe(activityAtMs)
+  // A passed wake timer restarts inactivity. An earlier wake can only delay settlement.
+  const snoozedUntilMs = toMillis(thread.snoozedUntil);
+  const timerWakeAtMs =
+    snoozedUntilMs !== null && snoozedUntilMs <= input.nowMs ? snoozedUntilMs : null;
+  const inactivityAtMs =
+    latestMillis([activityAtMs, toMillis(thread.lastSnoozeWakeAt), timerWakeAtMs]) ?? activityAtMs;
+  return inactivityAtMs < input.nowMs - input.autoSettleAfterDays * DAY_MS
+    ? DateTime.makeUnsafe(inactivityAtMs)
     : null;
 }
 
@@ -339,7 +345,7 @@ export const make = Effect.gen(function* () {
           autoSettleOnMerge: currentSettings.sidebarAutoSettleOnMerge,
         });
         if (settledAt === null) return thread;
-        const uuid = yield* crypto.randomUUIDv4;
+        const uuid = yield* crypto.randomUUIDv4();
         yield* orchestrator.dispatch({
           type: "thread.auto-settle",
           commandId: CommandId.make(`server:auto-settle:${thread.id}:${uuid}`),
@@ -600,6 +606,7 @@ export const make = Effect.gen(function* () {
     switch (event.type) {
       case "thread.settled":
         return cleanUpSettledThread(event.threadId);
+      case "thread.pull-request-link-updated":
       case "thread.pull-request-synced":
       case "provider-session.detached":
         return worker.enqueue(event.threadId);

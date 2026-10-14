@@ -16,6 +16,7 @@ import {
 } from "./renderer";
 import symbolsFontUrl from "./fonts/SymbolsNerdFontMono-Regular.woff2?url";
 import { isMonospaceFamily } from "../../appearanceFonts";
+import { observeResize } from "../../lib/observeResize";
 
 export const DEFAULT_TERMINAL_FONT_SIZE = 12;
 const MIN_TERMINAL_FONT_SIZE = 6;
@@ -575,7 +576,7 @@ export class GhosttyTerminalSurface {
   private fontSize: number;
   private fontEpoch = 0;
   private pendingFontEpoch: number | null = null;
-  private readonly resizeObserver: ResizeObserver;
+  private readonly stopObservingResize: () => void;
   private readonly scrollbarThumb: HTMLDivElement;
   private snapshot: GhosttySnapshot | null = null;
   private frame = 0;
@@ -630,6 +631,14 @@ export class GhosttyTerminalSurface {
   private clearSelectionAfterCopy = false;
   private primedCopySelection = "";
   private wheelRemainder = 0;
+  private touchScroll: {
+    pointerId: number;
+    startX: number;
+    startY: number;
+    lastY: number;
+    remainder: number;
+    moved: boolean;
+  } | null = null;
   private lastMouseMotionData = "";
   private mouseAnyEventTracking = false;
   private dprMedia: MediaQueryList | null = null;
@@ -666,12 +675,11 @@ export class GhosttyTerminalSurface {
     this.fontFamily = fontFamily;
     this.requestedFontFamily = options.font?.family;
     this.fontSize = terminalFontSize(options.font?.size);
-    this.resizeObserver = new ResizeObserver(() => this.fit());
     this.installEvents();
     this.watchDevicePixelRatio();
     this.reducedMotionMedia?.addEventListener("change", this.onReducedMotionChange);
     document.fonts.addEventListener("loadingdone", this.onFontsLoaded);
-    this.resizeObserver.observe(mount);
+    this.stopObservingResize = observeResize(mount, () => this.fit());
   }
 
   static async create(
@@ -680,6 +688,7 @@ export class GhosttyTerminalSurface {
   ): Promise<GhosttyTerminalSurface> {
     const canvas = document.createElement("canvas");
     canvas.className = "block size-full cursor-text";
+    canvas.style.touchAction = "pan-x pinch-zoom";
     canvas.setAttribute("aria-hidden", "true");
 
     const input = document.createElement("textarea");
@@ -1058,7 +1067,7 @@ export class GhosttyTerminalSurface {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.resizeObserver.disconnect();
+    this.stopObservingResize();
     document.fonts.removeEventListener("loadingdone", this.onFontsLoaded);
     this.dprMedia?.removeEventListener("change", this.onDevicePixelRatioChange);
     this.dprMedia = null;
@@ -1361,6 +1370,21 @@ export class GhosttyTerminalSurface {
   }
 
   private readonly onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      if (!event.isPrimary || this.touchScroll !== null) return;
+      this.touchScroll = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastY: event.clientY,
+        remainder: 0,
+        moved: false,
+      };
+      this.clearHoveredLink();
+      this.canvas.setPointerCapture(event.pointerId);
+      return;
+    }
     this.focus();
     if (shouldReportTerminalMouse(this.core.isMouseTracking(), event)) {
       const button = ghosttyMouseButton(event.button);
@@ -1445,6 +1469,25 @@ export class GhosttyTerminalSurface {
   }
 
   private readonly onPointerMove = (event: PointerEvent) => {
+    if (event.pointerType === "touch") {
+      const touch = this.touchScroll;
+      if (touch?.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      touch.moved ||=
+        Math.hypot(event.clientX - touch.startX, event.clientY - touch.startY) >
+        TERMINAL_LINK_DRAG_THRESHOLD_PX;
+      if (!touch.moved) return;
+      const delta = terminalWheelDeltaRows(
+        { deltaY: touch.lastY - event.clientY, deltaMode: 0 },
+        this.metrics.height,
+        this.rows,
+        touch.remainder,
+      );
+      touch.lastY = event.clientY;
+      touch.remainder = delta.remainder;
+      this.scrollRows(delta.rows, event);
+      return;
+    }
     if (this.linkActivationPointerId === event.pointerId) {
       const origin = this.linkActivationOrigin;
       if (
@@ -1490,9 +1533,9 @@ export class GhosttyTerminalSurface {
     this.clearHoveredLink();
     this.selectionPointer = { x: event.clientX, y: event.clientY };
     const bounds = this.canvas.getBoundingClientRect();
-    this.setSelectionAutoscroll(
-      event.clientY < bounds.top ? -1 : event.clientY > bounds.bottom ? 1 : 0,
-    );
+    const top = Math.max(bounds.top, 0) + CONTENT_PADDING;
+    const bottom = Math.min(bounds.bottom, window.innerHeight) - CONTENT_PADDING;
+    this.setSelectionAutoscroll(event.clientY < top ? -1 : event.clientY > bottom ? 1 : 0);
     const cell = this.cellAt(event.clientX, event.clientY);
     if (cell.x === this.selectionEnd?.x && cell.y === this.selectionEnd.y) return;
     this.extendSelectionTo(event.clientX, event.clientY);
@@ -1585,6 +1628,26 @@ export class GhosttyTerminalSurface {
   }
 
   private readonly onPointerUp = (event: PointerEvent) => {
+    if (event.pointerType === "touch") {
+      const touch = this.touchScroll;
+      if (touch?.pointerId !== event.pointerId) return;
+      this.touchScroll = null;
+      event.preventDefault();
+      if (this.canvas.hasPointerCapture(event.pointerId)) {
+        this.canvas.releasePointerCapture(event.pointerId);
+      }
+      if (event.type === "pointercancel" || touch.moved) return;
+      this.focus();
+      if (shouldReportTerminalMouse(this.core.isMouseTracking(), event)) {
+        this.sendMouse("press", ghosttyMouseButton(0), event);
+        this.sendMouse("release", ghosttyMouseButton(0), event);
+      } else {
+        const link = this.linkAt(event.clientX, event.clientY);
+        if (link) this.options.onLinkActivate(link.text, event);
+        else this.clearSelection();
+      }
+      return;
+    }
     this.setSelectionAutoscroll(0);
     if (this.linkActivationPointerId === event.pointerId) {
       event.preventDefault();
@@ -1644,10 +1707,14 @@ export class GhosttyTerminalSurface {
       this.wheelRemainder,
     );
     this.wheelRemainder = delta.remainder;
-    if (delta.rows === 0) return;
-    const magnitude = Math.abs(delta.rows);
+    this.scrollRows(delta.rows, event);
+  };
+
+  private scrollRows(rows: number, event: MouseEvent): void {
+    if (rows === 0) return;
+    const magnitude = Math.abs(rows);
     if (shouldReportTerminalMouse(this.core.isMouseTracking(), event)) {
-      const button = delta.rows < 0 ? 4 : 5;
+      const button = rows < 0 ? 4 : 5;
       for (let index = 0; index < magnitude; index += 1) {
         this.sendMouse("press", button, event);
       }
@@ -1656,11 +1723,11 @@ export class GhosttyTerminalSurface {
     if (this.core.isAlternateScreen()) {
       // The alternate screen has no scrollback: translate wheel motion into
       // arrow keys so full-screen apps like vim and less scroll, matching xterm.
-      this.options.onData(terminalWheelArrowData(delta.rows, this.core.isApplicationCursorKeys()));
+      this.options.onData(terminalWheelArrowData(rows, this.core.isApplicationCursorKeys()));
       return;
     }
-    this.scrollViewport(delta.rows);
-  };
+    this.scrollViewport(rows);
+  }
 
   private readonly onMouseDown = (event: MouseEvent) => {
     // Cancelling the middle button here stops autoscroll while still letting

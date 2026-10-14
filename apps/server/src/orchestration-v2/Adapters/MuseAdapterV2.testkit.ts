@@ -16,33 +16,32 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Connection, type DuplexTransport } from "@muse-code/sdk";
 import {
-  MuseSettings,
   ProviderDriverKind,
   ProviderInstanceId,
   ProviderReplayEntry,
   type ProviderReplayEntry as ProviderReplayEntryType,
   type ProviderReplayTranscript,
 } from "@t3tools/contracts";
+import { MuseSettings } from "@t3tools/provider-muse/settings";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 
-import * as ServerConfig from "../../config.ts";
+import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
 import {
   museInitializeParams,
   museServeArgs,
+  museWorkspaceRoot,
   type MuseSdkHost,
   type MuseSdkHostOptions,
-} from "../../provider/museSdk.ts";
-import * as IdAllocator from "../IdAllocator.ts";
+} from "@t3tools/provider-muse/testing";
+import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
 import * as ProviderAdapterRegistry from "../ProviderAdapterRegistry.ts";
-import * as ProviderContinuationRequests from "../ProviderContinuationRequests.ts";
-import {
-  makeReplayServerConfig,
-  type OrchestratorV2ProviderReplayHarness,
-} from "../testkit/ProviderReplayHarness.ts";
-import { makeMuseAdapterV2 } from "./MuseAdapterV2.ts";
+import * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
+import type { OrchestratorV2ProviderReplayHarness } from "../testkit/ProviderReplayHarness.ts";
+import { materializeReplayTranscriptWorkspace } from "@t3tools/provider-testing/replayTranscript";
+import { makeMuseAdapterV2 } from "@t3tools/provider-muse/server";
 
 export const MUSE_PROVIDER_KIND = "muse";
 export const MUSE_MSP_REPLAY_PROTOCOL = "muse.msp-jsonl";
@@ -448,28 +447,58 @@ export function layer(input: {
   /** Replay needs none; a live recording passes the host environment. */
   readonly environment?: NodeJS.ProcessEnv;
 }) {
-  const layerServerConfig = Layer.effect(
-    ServerConfig.ServerConfig,
-    makeReplayServerConfig(`muse-${input.scenario}`).pipe(Effect.orDie),
-  ).pipe(Layer.provide(NodeServices.layer));
   return ProviderAdapterRegistry.layerFromAdaptersEffect(
     Effect.gen(function* () {
       return [
-        makeMuseAdapterV2({
+        yield* makeMuseAdapterV2({
           instanceId: ProviderInstanceId.make(MUSE_PROVIDER_KIND),
           settings: DEFAULT_MUSE_SETTINGS,
           environment: input.environment ?? {},
-          idAllocator: yield* IdAllocator.IdAllocatorV2,
-          serverConfig: yield* ServerConfig.ServerConfig,
-          fileSystem: yield* FileSystem.FileSystem,
           createHost: input.createHost,
           // Same queue the continuation worker drains when the fixture runs it.
           continuationRequests: yield* ProviderContinuationRequests.ProviderContinuationRequests,
         }),
       ];
     }),
-  ).pipe(Layer.provide(Layer.mergeAll(layerServerConfig, NodeServices.layer, IdAllocator.layer)));
+  ).pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        TestProviderHost.layer().pipe(Layer.provide(NodeServices.layer)),
+        NodeServices.layer,
+        IdAllocator.layer,
+      ),
+    ),
+  );
 }
+
+/**
+ * Fills a recording's `<workspace>` with what the adapter sends on this host:
+ * the canonical path (macOS /var -> /private/var), which `turn/start` names in
+ * museWorkspaceRoot's form (verbatim on Windows).
+ */
+export const materializeMuseReplayWorkspace = Effect.fn("materializeMuseReplayWorkspace")(
+  function* (transcript: ProviderReplayTranscript, workspace: string) {
+    const canonical = yield* FileSystem.FileSystem.pipe(
+      Effect.flatMap((fs) => fs.realPath(workspace)),
+      Effect.provide(NodeServices.layer),
+    );
+    const plain = materializeReplayTranscriptWorkspace(transcript, canonical);
+    const turnStarts = materializeReplayTranscriptWorkspace(
+      transcript,
+      yield* museWorkspaceRoot(canonical),
+    );
+    return {
+      ...plain,
+      entries: plain.entries.map((entry, index) =>
+        entry.type === "expect_outbound" &&
+        isRecord(entry.frame) &&
+        entry.frame.method === "turn/start"
+          ? turnStarts.entries[index]!
+          : entry,
+      ),
+    };
+  },
+);
 
 export const MuseOrchestratorReplayHarness: OrchestratorV2ProviderReplayHarness<
   MuseReplayTranscript,

@@ -1,5 +1,5 @@
 import { ProjectId, type ProjectScript } from "@t3tools/contracts";
-import { HostProcessEnvironment, HostProcessPlatform } from "@t3tools/shared/hostProcess";
+import * as HostProcess from "@t3tools/shared/HostProcess";
 import {
   projectScriptRuntimeEnv,
   resolveProjectScripts,
@@ -206,8 +206,8 @@ export const make = Effect.gen(function* () {
   const serverSettings = yield* ServerSettings.ServerSettingsService;
   const crypto = yield* Crypto.Crypto;
   const completionShell = resolveCompletionShell(
-    yield* HostProcessPlatform,
-    yield* HostProcessEnvironment,
+    yield* HostProcess.Platform,
+    yield* HostProcess.Environment,
   );
 
   /**
@@ -380,7 +380,7 @@ export const make = Effect.gen(function* () {
     const terminalId =
       input.preferredTerminalId ??
       (trigger === "settle"
-        ? `settle-${script.id}-${(yield* crypto.randomUUIDv4.pipe(Effect.orDie)).slice(0, 8)}`
+        ? `settle-${script.id}-${(yield* crypto.randomUUIDv4().pipe(Effect.orDie)).slice(0, 8)}`
         : `setup-${script.id}`);
     const cwd = input.worktreePath;
     const env = {
@@ -395,7 +395,7 @@ export const make = Effect.gen(function* () {
     };
     const observe = input.observeCompletion;
     const completionToken = observe
-      ? (yield* crypto.randomUUIDv4.pipe(Effect.orDie)).replaceAll("-", "")
+      ? (yield* crypto.randomUUIDv4().pipe(Effect.orDie)).replaceAll("-", "")
       : null;
     const commandLine =
       observe && completionToken

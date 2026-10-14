@@ -7,6 +7,7 @@ and Windows x64 desktop clients. The archives and built-in updater use
 
 ## In-app server updates
 
+- Upstream's sidebar **Update everything** popup is retained. Its standalone-server publication check uses this fork's GitHub release assets instead of upstream npm, refreshing every five minutes. It updates providers first, remote servers next, and the local desktop app last.
 - Web and desktop **Settings → Connections** can check GitHub for newer fork releases even when the bundled client and server have identical versions. The primary machine has a **Check for updates** button; connected remote machines have the same action as a refresh icon.
 - Checks preserve the server's nightly/stable/preview channel and never offer a downgrade. Native mobile uses the same release lookup through its existing environment maintenance screen.
 - Installing uses upstream's remote self-update, progress, reconnect, and optional thread continuation. Settings actions show a confirmation popup naming the destination machine, version, install method, and restart impact; a missing popup host cancels rather than silently installing. These actions update T3 Code only, not provider CLIs.

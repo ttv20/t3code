@@ -4,7 +4,7 @@ import {
   resolveThreadDetailsCardLayout,
 } from "./threadDetailsCardLayout";
 
-const lane = { padding: 20, minChatWidth: 640 };
+const lane = { padding: 48, minChatWidth: 640 };
 const resolve = (width: number, height: number, previewY: number | null = null) =>
   resolveThreadDetailsCardLayout({
     container: { width, height },
@@ -16,6 +16,7 @@ describe("workspace card", () => {
   it("pins to the top right at a fixed width", () => {
     expect(resolve(1600, 900)).toEqual({
       x: 1308,
+      right: 12,
       y: 12,
       width: 280,
       height: 876,
@@ -30,15 +31,15 @@ describe("workspace card", () => {
         frame: null,
         topInset: 48,
       }),
-    ).toEqual({ x: 1308, y: 60, width: 280, height: 828 });
+    ).toEqual({ x: 1308, right: 12, y: 60, width: 280, height: 828 });
   });
   it("hides when a readable chat lane cannot fit beside it", () => {
-    expect(resolve(984, 900)).toMatchObject({ x: 692 });
-    expect(resolve(983, 900)).toBeNull();
+    expect(resolve(1012, 900)).toMatchObject({ x: 720 });
+    expect(resolve(1011, 900)).toBeNull();
   });
   it("keeps the card at the top right while the preview is freely dragged vertically", () => {
     for (const y of [12, 170, 250, 400, 648]) {
-      expect(resolve(1600, 900, y)).toEqual({ x: 1308, y: 12, width: 280, height: 876 });
+      expect(resolve(1600, 900, y)).toEqual({ x: 1308, right: 12, y: 12, width: 280, height: 876 });
     }
   });
   it("keeps full height while a preview stays clear of the card", () => {

@@ -1,7 +1,9 @@
+import * as NodeNet from "node:net";
+
 import { assert, describe, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NetService from "@t3tools/shared/Net";
-import { HostProcessArchitecture, HostProcessPlatform } from "@t3tools/shared/hostProcess";
+import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -230,6 +232,12 @@ describe("ssh tunnel scripts", () => {
     assert.include(script, 'for T3_NODE_BIN in "$NVM_DIR"/versions/node/*/bin');
     assert.notInclude(script, "ensure $NVM_DIR/nvm.sh is available");
     assert.notInclude(script, "npx");
+  });
+
+  it("embeds the runner in the launch script byte for byte", () => {
+    const runner = SshTunnel.buildRemoteT3RunnerScript(ARCHIVE);
+    assert.include(runner, 'printf \'%s\\n\' "$$" > "$T3_LOCK/pid.tmp"');
+    assert.include(SshTunnel.buildRemoteLaunchScript(ARCHIVE), runner);
   });
 
   it("uses the remote t3 runner for launch and pairing scripts", () => {
@@ -687,12 +695,84 @@ describe("ssh tunnel scripts", () => {
   );
 });
 
+// On macOS, Node can bind 127.0.0.1:<port> while another process (such as the
+// desktop app with network access on) listens on *:<port>. Linux refuses that
+// bind unless both sockets set SO_REUSEPORT, so on Linux the preload adds it to
+// the picker's probe and the holder sets it too. macOS needs neither.
+const MACOS_BIND_PRELOAD = `const net = require("node:net");
+const listen = net.Server.prototype.listen;
+net.Server.prototype.listen = function (port, host, callback) {
+  if (typeof port !== "number" || typeof host !== "string") return listen.apply(this, arguments);
+  return listen.call(this, { port, host, reusePort: true }, callback);
+};
+`;
+
+describe("remote port picker", () => {
+  const hostPlatform = HostProcess.Platform.defaultValue();
+  const linuxHost = hostPlatform === "linux";
+  const windowsHost = hostPlatform === "win32";
+
+  const holdWildcardPort = Effect.acquireRelease(
+    Effect.callback<NodeNet.Server>((resume) => {
+      const server = NodeNet.createServer((socket) => socket.destroy());
+      server.once("error", (error) => resume(Effect.die(error)));
+      server.listen({ port: 0, host: "0.0.0.0", reusePort: linuxHost }, () =>
+        resume(Effect.succeed(server)),
+      );
+    }),
+    (server) =>
+      Effect.callback<void>((resume) => {
+        server.close(() => resume(Effect.void));
+      }),
+  );
+
+  it.effect.skipIf(windowsHost)("skips a port another server answers on loopback", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+      const root = yield* fs.makeTempDirectoryScoped({ prefix: "t3-pick-port-" });
+      yield* fs.writeFileString(`${root}/preload.cjs`, MACOS_BIND_PRELOAD);
+      yield* fs.writeFileString(`${root}/pick-port.cjs`, SshTunnel.REMOTE_PICK_PORT_SCRIPT);
+      const holder = yield* holdWildcardPort;
+      const heldPort = (holder.address() as NodeNet.AddressInfo).port;
+
+      const child = yield* spawner.spawn(
+        ChildProcess.make(process.execPath, [
+          ...(linuxHost ? ["--require", `${root}/preload.cjs`] : []),
+          `${root}/pick-port.cjs`,
+          "",
+          String(heldPort),
+          "20",
+        ]),
+      );
+      const [stdout, exitCode] = yield* Effect.all(
+        [
+          child.stdout.pipe(
+            Stream.decodeText(),
+            Stream.runFold(
+              () => "",
+              (acc, chunk) => acc + chunk,
+            ),
+          ),
+          child.exitCode.pipe(Effect.map(Number)),
+        ],
+        { concurrency: "unbounded" },
+      );
+
+      assert.equal(exitCode, 0);
+      const picked = Number(stdout);
+      assert.isAbove(picked, heldPort);
+      assert.isBelow(picked, heldPort + 20);
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  );
+});
+
 // The archive runner is generated shell; string assertions cannot prove the
 // lock excludes concurrent installers. Run the real script against a tiny
 // fake archive served from a file:// mirror.
 describe("archive runner script", () => {
-  const hostPlatform = HostProcessPlatform.defaultValue();
-  const hostArch = HostProcessArchitecture.defaultValue();
+  const hostPlatform = HostProcess.Platform.defaultValue();
+  const hostArch = HostProcess.Architecture.defaultValue();
   const windowsHost = hostPlatform === "win32";
   const archiveVersion = "1.2.3-preview.20260911.4";
 

@@ -7,6 +7,7 @@ import type {
   ScopedThreadRef,
   ThreadId,
 } from "@t3tools/contracts";
+import { isProviderNativeSubagentThread } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 
 import type { EnvironmentThreadShell } from "./models.ts";
@@ -28,6 +29,20 @@ const EMPTY_THREAD_REFS_BY_PROJECT: ReadonlyMap<
   ProjectId,
   ReadonlyArray<ScopedThreadRef>
 > = new Map();
+
+// An async question outlives the subagent's run, but once that run ends the
+// parent is no longer waiting on the answer, so it stops counting as input.
+// The activity run stays set when a follow-up is queued behind a blocked run;
+// older servers omit it, so fall back to the latest run's status.
+const isChildRunLive = (
+  thread: Pick<OrchestrationV2ThreadShell, "activityRunStatus" | "status">,
+) =>
+  thread.activityRunStatus !== undefined
+    ? thread.activityRunStatus !== null
+    : thread.status === "preparing" ||
+      thread.status === "starting" ||
+      thread.status === "running" ||
+      thread.status === "waiting";
 
 export function createEnvironmentThreadShellAtoms(input: {
   readonly catalogValueAtom: Atom.Atom<EnvironmentCatalogState>;
@@ -138,6 +153,51 @@ export function createEnvironmentThreadShellAtoms(input: {
     }).pipe(Atom.withLabel(`environment-thread-shell:${key}`));
   });
 
+  // Child questions are hidden with their sidebar rows. Read their shell summaries,
+  // without subscribing to every child transcript.
+  const childThreadInputsAtomFamily = Atom.family((key: string) => {
+    const ref = parseThreadKey(key);
+    let previous: ReadonlyArray<EnvironmentThreadShell> = [];
+    return Atom.make((get) => {
+      const children = new Map<ThreadId, OrchestrationV2ThreadShell[]>();
+      for (const thread of get(environmentThreadsAtom(ref.environmentId))) {
+        const parent = thread.lineage.parentThreadId;
+        if (parent === null || thread.lineage.relationshipToParent !== "subagent") continue;
+        const siblings = children.get(parent);
+        if (siblings) siblings.push(thread);
+        else children.set(parent, [thread]);
+      }
+      const seen = new Set<ThreadId>([ref.threadId]);
+      const pending = [ref.threadId];
+      const next: EnvironmentThreadShell[] = [];
+      for (const parent of pending) {
+        for (const child of children.get(parent) ?? []) {
+          if (seen.has(child.id)) continue;
+          seen.add(child.id);
+          pending.push(child.id);
+          if (
+            child.pendingRuntimeRequest?.kind === "user_input" &&
+            isChildRunLive(child) &&
+            !isProviderNativeSubagentThread(child)
+          ) {
+            next.push(scopedThread(ref.environmentId, child));
+          }
+        }
+      }
+      // Indicators read only ids and titles, so other shell updates keep the old array.
+      if (
+        previous.length === next.length &&
+        previous.every(
+          (thread, index) => thread.id === next[index]?.id && thread.title === next[index]?.title,
+        )
+      ) {
+        return previous;
+      }
+      previous = next;
+      return next;
+    }).pipe(Atom.withLabel(`environment-child-thread-inputs:${key}`));
+  });
+
   const threadShellsForProjectRefsAtomFamily = Atom.family((key: string) => {
     const projectRefs = parseProjectRefCollectionKey(key);
     let previous: ReadonlyArray<EnvironmentThreadShell> = [];
@@ -225,5 +285,6 @@ export function createEnvironmentThreadShellAtoms(input: {
     threadShellsForProjectRefsAtom: (refs: ReadonlyArray<ScopedProjectRef>) =>
       threadShellsForProjectRefsAtomFamily(projectRefCollectionKey(refs)),
     threadShellAtom: (ref: ScopedThreadRef) => threadShellAtomFamily(threadKey(ref)),
+    childThreadInputsAtom: (ref: ScopedThreadRef) => childThreadInputsAtomFamily(threadKey(ref)),
   };
 }

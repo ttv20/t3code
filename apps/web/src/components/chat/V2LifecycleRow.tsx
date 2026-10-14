@@ -10,7 +10,11 @@ import { environmentThreadDetails } from "../../state/threads";
 import { MiddleTruncate } from "../ui/middle-truncate";
 import * as DateTime from "effect/DateTime";
 import { WorkLogRow } from "./WorkLog";
-import { resolveHandoffEndpoints, type HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
+import {
+  resolveHandoffEndpoints,
+  type HandoffEndpoints,
+  type HandoffTimelineRun,
+} from "@t3tools/client-runtime/handoff";
 import { Fragment } from "react";
 import { formatSubagentDisplayTitle } from "@t3tools/client-runtime/state/subagent-display";
 import {
@@ -41,7 +45,7 @@ import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { getProviderInstanceEntry } from "../../providerInstances";
 import { formatShortTimestamp } from "../../timestampFormat";
 import { getTriggerDisplayModelName } from "./providerIconUtils";
-import { ProviderInstanceIcon, providerTextColorClassName } from "./ProviderInstanceIcon";
+import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
 import { Button, InlineButton } from "../ui/button";
@@ -121,39 +125,11 @@ export function V2LifecycleRow(props: {
     );
   }
   if (item.type === "handoff") {
-    const { from: fromEndpoints, to } = resolveHandoffEndpoints(item, props.runs);
     return (
-      <TimelineSystemDivider
-        label="Context handoff"
-        icon={ArrowRightLeftIcon}
-        showDetailSeparator={false}
-        tone={item.status === "failed" ? "danger" : "neutral"}
-        detail={
-          <span className="inline-flex min-w-0 flex-wrap items-center justify-center gap-1.5">
-            {fromEndpoints.map((endpoint, index) => (
-              <Fragment key={`${endpoint.instanceId}:${endpoint.model ?? ""}`}>
-                {index > 0 ? (
-                  <span aria-hidden="true" className="-ml-1">
-                    ,
-                  </span>
-                ) : null}
-                <HandoffEndpoint
-                  providers={props.providerStatuses}
-                  instanceId={endpoint.instanceId}
-                  model={endpoint.model}
-                />
-              </Fragment>
-            ))}
-            {fromEndpoints.length > 0 ? (
-              <ArrowRightIcon aria-hidden="true" className="size-3 shrink-0" />
-            ) : null}
-            <HandoffEndpoint
-              providers={props.providerStatuses}
-              instanceId={item.toProviderInstanceId}
-              model={to.model}
-            />
-          </span>
-        }
+      <HandoffRow
+        endpoints={resolveHandoffEndpoints(item, props.runs)}
+        providers={props.providerStatuses}
+        failed={item.status === "failed"}
       />
     );
   }
@@ -570,6 +546,49 @@ function SubagentTimelineTooltip(
   );
 }
 
+export function HandoffRow(props: {
+  readonly endpoints: HandoffEndpoints;
+  readonly providers: ReadonlyArray<ServerProvider>;
+  readonly pending?: boolean;
+  readonly failed?: boolean;
+}) {
+  const { from: fromEndpoints, to } = props.endpoints;
+  return (
+    <TimelineSystemDivider
+      label={props.pending ? "Context handoff pending" : "Context handoff"}
+      icon={ArrowRightLeftIcon}
+      showDetailSeparator={false}
+      tone={props.failed ? "danger" : "neutral"}
+      detail={
+        <span className="inline-flex min-w-0 flex-wrap items-center justify-center gap-1.5">
+          {fromEndpoints.map((endpoint, index) => (
+            <Fragment key={`${endpoint.instanceId}:${endpoint.model ?? ""}`}>
+              {index > 0 ? (
+                <span aria-hidden="true" className="-ml-1">
+                  ,
+                </span>
+              ) : null}
+              <HandoffEndpoint
+                providers={props.providers}
+                instanceId={endpoint.instanceId}
+                model={endpoint.model}
+              />
+            </Fragment>
+          ))}
+          {fromEndpoints.length > 0 ? (
+            <ArrowRightIcon aria-hidden="true" className="size-3 shrink-0" />
+          ) : null}
+          <HandoffEndpoint
+            providers={props.providers}
+            instanceId={to.instanceId}
+            model={to.model}
+          />
+        </span>
+      }
+    />
+  );
+}
+
 function HandoffEndpoint(props: {
   readonly providers: ReadonlyArray<ServerProvider>;
   readonly instanceId: ProviderInstanceId;
@@ -587,13 +606,16 @@ function HandoffEndpoint(props: {
       : model !== undefined && model.length > 0
         ? model
         : (entry?.displayName ?? props.instanceId);
+  const labelColor = providerTextColor(
+    entry?.driverKind ?? ProviderDriverKind.make(props.instanceId),
+  );
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <span
             tabIndex={0}
-            className="inline-flex min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
             <ProviderInstanceIcon
               driverKind={entry?.driverKind ?? ProviderDriverKind.make(props.instanceId)}
@@ -603,12 +625,8 @@ function HandoffEndpoint(props: {
               iconClassName="size-3"
             />
             <span
-              className={cn(
-                "truncate font-medium",
-                providerTextColorClassName(
-                  entry?.driverKind ?? ProviderDriverKind.make(props.instanceId),
-                ),
-              )}
+              className={cn("truncate font-medium", labelColor.className)}
+              style={labelColor.style}
             >
               {label}
             </span>

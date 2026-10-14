@@ -7,6 +7,7 @@ import {
   cliReleaseDownloadBaseUrl,
   cliReleaseChannelOf,
   cliReleaseIndexPageUrl,
+  cliReleaseTagUrl,
   newestCliReleaseVersion,
   parseChecksums,
 } from "./cliRelease.ts";
@@ -90,5 +91,11 @@ describe("cliRelease", () => {
       "https://api.github.com/repos/ttv20/t3code/releases?per_page=100&page=1",
     );
     expect(cliReleaseIndexPageUrl(3)).toContain("page=3");
+  });
+
+  it("looks up the exact version in the fork's release feed", () => {
+    expect(cliReleaseTagUrl("1.2.3-nightly.20261014.12")).toBe(
+      "https://api.github.com/repos/ttv20/t3code/releases/tags/v1.2.3-nightly.20261014.12",
+    );
   });
 });

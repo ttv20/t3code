@@ -20,12 +20,15 @@ import {
   type NativeStackNavigatorProps,
   type NativeStackTypeBag,
 } from "@react-navigation/native-stack";
-import { useCallback, useState, type ComponentProps } from "react";
+import { useCallback, useRef, useState, type ComponentProps } from "react";
 import { StyleSheet, View } from "react-native";
 import { FormSheet, Stack } from "react-native-screens";
+import { NativeScrollEdgeEffectsContext } from "./NativeScrollViewMarker";
 import { V5StackHeader } from "./V5StackHeader.ios";
+import type { AppNativeStackNavigationOptions } from "./StackHeader";
 import { NativeColumnContent } from "./NativeColumnContent.ios";
 import {
+  nativeStackPopAction,
   nativeWorkspacePopAction,
   nativeWorkspacePopCount,
   partitionStackPresentations,
@@ -50,10 +53,14 @@ export function modalEnvelopeOptions(options: NativeStackNavigationOptions) {
 }
 
 /** Keep outgoing screens until UIKit completes its pop, as required by v5. */
-export function V5CardStackView(props: V5StackViewProps) {
+export function V5CardStackView(
+  props: V5StackViewProps & { readonly onRootVisibilityChange?: (visible: boolean) => void },
+) {
   const { preventedRoutes } = usePreventRemoveContext();
+  const nativePopSource = useRef<string | null>(null);
   const [screens, setScreens] = useState({
     completedNativeDismissals: new Set<string>(),
+    nativeCompletingPops: new Set<string>(),
     routes: props.state.routes,
     descriptors: props.descriptors,
     observedRoutes: props.state.routes,
@@ -71,6 +78,9 @@ export function V5CardStackView(props: V5StackViewProps) {
     const active = new Set(props.state.routes.map((route) => route.key));
     const retainedKeys = new Set(routes.map((route) => route.key));
     setScreens({
+      nativeCompletingPops: new Set(
+        [...screens.nativeCompletingPops].filter((key) => retainedKeys.has(key)),
+      ),
       completedNativeDismissals: new Set(
         [...screens.completedNativeDismissals].filter((key) => active.has(key)),
       ),
@@ -92,9 +102,11 @@ export function V5CardStackView(props: V5StackViewProps) {
       const attached = state.routes.some((route) => route.key === key);
       setScreens((current) => {
         const completedNativeDismissals = new Set(current.completedNativeDismissals);
+        const nativeCompletingPops = new Set(current.nativeCompletingPops);
+        nativeCompletingPops.delete(key);
         if (attached) {
           completedNativeDismissals.add(key);
-          return { ...current, completedNativeDismissals };
+          return { ...current, completedNativeDismissals, nativeCompletingPops };
         }
         // A delayed callback needs immediate cleanup: the router already
         // removed the route, so no further router update will follow.
@@ -104,11 +116,13 @@ export function V5CardStackView(props: V5StackViewProps) {
         return {
           ...current,
           completedNativeDismissals,
+          nativeCompletingPops,
           routes: current.routes.filter((route) => route.key !== key),
           descriptors,
         };
       });
-      const action = nativeWorkspacePopAction(state, key);
+      if (nativePopSource.current === key) nativePopSource.current = null;
+      const action = nativeStackPopAction(state, key);
       if (action) props.navigation.dispatch(action);
     },
     [props.navigation, setScreens],
@@ -140,7 +154,9 @@ export function V5CardStackView(props: V5StackViewProps) {
             <Stack.Screen
               key={route.key}
               screenKey={route.key}
-              activityMode={attached ? "attached" : "detached"}
+              activityMode={
+                attached || screens.nativeCompletingPops.has(route.key) ? "attached" : "detached"
+              }
               preventNativeDismiss={
                 preventedRoutes[route.key]?.preventRemove ||
                 descriptor.options.gestureEnabled === false
@@ -150,27 +166,60 @@ export function V5CardStackView(props: V5StackViewProps) {
               onNativeDismissPrevented={() => {
                 if (preventedRoutes[route.key]?.preventRemove) descriptor.navigation.goBack();
               }}
-              onWillAppear={() =>
+              onWillAppear={() => {
+                if (index === 0) props.onRootVisibilityChange?.(true);
                 props.navigation.emit({
                   type: "transitionStart",
                   target: route.key,
                   data: { closing: false },
-                })
-              }
-              onDidAppear={() =>
+                });
+              }}
+              onDidAppear={() => {
+                const source = nativePopSource.current;
+                if (source === route.key) {
+                  // A cancelled swipe restores its source without changing router history.
+                  nativePopSource.current = null;
+                } else if (source) {
+                  const state = props.navigation.getState();
+                  const action = nativeStackPopAction(state, source, route.key);
+                  if (action) {
+                    const sourceIndex = state.routes.findIndex((current) => current.key === source);
+                    // UIKit owns this pop. Keep these children attached until its
+                    // dismissal callback, so the early router update cannot enqueue a second pop.
+                    const poppedKeys = state.routes
+                      .slice(sourceIndex - action.payload.count + 1, sourceIndex + 1)
+                      .map((popped) => popped.key);
+                    setScreens((current) => ({
+                      ...current,
+                      nativeCompletingPops: new Set([
+                        ...current.nativeCompletingPops,
+                        ...poppedKeys,
+                      ]),
+                    }));
+                    nativePopSource.current = null;
+                    props.navigation.dispatch(action);
+                  }
+                }
                 props.navigation.emit({
                   type: "transitionEnd",
                   target: route.key,
                   data: { closing: false },
-                })
-              }
-              onWillDisappear={() =>
+                });
+              }}
+              onWillDisappear={() => {
+                if (index === 0) props.onRootVisibilityChange?.(false);
+                const state = props.navigation.getState();
+                // JS pushes/pops already changed history. Only native Back leaves
+                // the disappearing card at the router's active index.
+                if (state.index > 0 && state.routes[state.index]?.key === route.key) {
+                  nativePopSource.current = route.key;
+                }
                 props.navigation.emit({
                   type: "transitionStart",
                   target: route.key,
                   data: { closing: true },
-                })
-              }
+                });
+              }}
               onDidDisappear={() =>
                 props.navigation.emit({
                   type: "transitionEnd",
@@ -189,7 +238,16 @@ export function V5CardStackView(props: V5StackViewProps) {
                         : index > 0
                     }
                   />
-                  <NativeColumnContent>{descriptor.render()}</NativeColumnContent>
+                  <NativeColumnContent
+                    insetHorizontally={
+                      (descriptor.options as AppNativeStackNavigationOptions)
+                        .nativeContentInsetHorizontally
+                    }
+                  >
+                    <NativeScrollEdgeEffectsContext value={descriptor.options.scrollEdgeEffects}>
+                      {descriptor.render()}
+                    </NativeScrollEdgeEffectsContext>
+                  </NativeColumnContent>
                 </NavigationRouteContext>
               </NavigationContext>
             </Stack.Screen>
@@ -214,10 +272,14 @@ export function V5StackView(props: V5StackViewProps) {
     groups.map((group) => {
       const first = group[0]!;
       const descriptor = props.descriptors[first.key]!;
+      const visibleRoute = group.at(-1)!;
       return [
         first.key,
         {
           ...descriptor,
+          navigation: props.descriptors[visibleRoute.key]!.navigation,
+          // Focus belongs to the pushed page inside this presentation group.
+          route: visibleRoute,
           options: modalEnvelopeOptions(descriptor.options),
           render: () => (
             <V5CardStackView
@@ -236,6 +298,7 @@ export function V5StackView(props: V5StackViewProps) {
   );
   return (
     <NativeStackView
+      presentationEnvelope
       {...props}
       descriptors={descriptors}
       state={{ ...props.state, routes, index: routes.length - 1, preloadedRoutes: [] }}
