@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { SubagentPillSegment } from "@t3tools/client-runtime/state/thread-subagents";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import { GlassContainer, GlassView } from "expo-glass-effect";
@@ -80,6 +81,7 @@ export function FloatingWorkingControl(props: {
   /** Extra distance to rise above the anchor, e.g. an overlay card's coverage. */
   readonly lift?: SharedValue<number>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { width: windowWidth } = useWindowDimensions();
   const [overlayWidth, setOverlayWidth] = useState(windowWidth);
   const [queueWidth, setQueueWidth] = useState(0);
@@ -212,8 +214,8 @@ export function FloatingWorkingControl(props: {
       {agents !== null ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open agents, ${agents.accessibilityLabel}`}
-          accessibilityHint="Opens this turn's subagents"
+          accessibilityLabel={uiT("Open agents, {0}", { "0": agents.accessibilityLabel })}
+          accessibilityHint={uiT("Opens this turn's subagents")}
           onPress={props.onOpenAgents}
           onLayout={(event) => setAgentsWidth(event.nativeEvent.layout.width)}
           className="h-11 flex-row items-center gap-1.5 px-3 active:opacity-70"
@@ -221,15 +223,15 @@ export function FloatingWorkingControl(props: {
           {hasStatus || hasPreview ? <View className="mr-1 h-4 w-px bg-border" /> : null}
           <SymbolView name="person.2" size={13} tintColorClassName="accent-foreground-muted" />
           <Text className="font-t3-medium text-xs tabular-nums" numberOfLines={1}>
-            {agents.label}
+            {uiT(agents.label)}
           </Text>
         </Pressable>
       ) : null}
       {hasQueue ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open queue, ${props.queuedCount} messages`}
-          accessibilityHint="Opens queued messages for reordering, steering, or removal"
+          accessibilityLabel={uiT("Open queue, {0} messages", { "0": props.queuedCount })}
+          accessibilityHint={uiT("Opens queued messages for reordering, steering, or removal")}
           onPress={props.onOpenQueue}
           onLayout={(event) => setQueueWidth(event.nativeEvent.layout.width)}
           style={{ maxWidth: Math.min(overlayWidth, windowWidth) * 0.45 }}
@@ -240,7 +242,7 @@ export function FloatingWorkingControl(props: {
           ) : null}
           <SymbolView name="list.number" size={13} tintColorClassName="accent-foreground-muted" />
           <Text className="shrink font-t3-medium text-xs tabular-nums" numberOfLines={1}>
-            {props.queuedCount} queued
+            {props.queuedCount} {uiT("queued")}
           </Text>
         </Pressable>
       ) : null}
@@ -305,7 +307,7 @@ export function FloatingWorkingControl(props: {
             style={[arrowTransformStyle, arrowContentStyle]}
           >
             <ControlPill
-              accessibilityLabel="Scroll to end"
+              accessibilityLabel={uiT("Scroll to end")}
               activateOnPressIn
               className="h-11 w-11 border border-border bg-glass-fallback shadow-md shadow-black/10"
               disabled={!props.showScrollToEnd}
@@ -325,7 +327,7 @@ export function FloatingWorkingControl(props: {
         </UniwindGlassView>
       ) : (
         <ControlPill
-          accessibilityLabel="Scroll to end"
+          accessibilityLabel={uiT("Scroll to end")}
           activateOnPressIn
           className="h-11 w-11 border border-border bg-glass-fallback shadow-md shadow-black/10"
           icon={{ ios: "chevron.down", android: "keyboard_arrow_down" }}
@@ -337,15 +339,20 @@ export function FloatingWorkingControl(props: {
 }
 
 function CompactingLabel(props: { readonly onLayout: (event: LayoutChangeEvent) => void }) {
+  const { t: uiT } = useUiLanguage();
   return (
-    <StatusLabelRow accessibilityLabel="Compacting" className="gap-1.5" onLayout={props.onLayout}>
+    <StatusLabelRow
+      accessibilityLabel={uiT("Compacting")}
+      className="gap-1.5"
+      onLayout={props.onLayout}
+    >
       <SymbolView
         name="arrow.down.right.and.arrow.up.left"
         size={13}
         tintColorClassName="foreground"
         type="monochrome"
       />
-      <Text className="font-t3-medium text-xs text-foreground">Compacting…</Text>
+      <Text className="font-t3-medium text-xs text-foreground">{uiT("Compacting…")}</Text>
     </StatusLabelRow>
   );
 }
@@ -354,19 +361,20 @@ function FloatingStatusLabel(props: {
   readonly status: FloatingWorkingStatus;
   readonly onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   // Keyed by kind so a swap mounts a fresh row and the two cross-fade while
   // the capsule animates to the new row's measured width.
   if (props.status.kind === "syncing") {
     return (
       <StatusLabelRow
         key="syncing"
-        accessibilityLabel={props.status.label}
+        accessibilityLabel={uiT(props.status.label)}
         className="gap-2"
         onLayout={props.onLayout}
       >
         <AppActivityIndicator size="small" colorClassName="accent-icon-muted" />
         <Text className="shrink font-t3-medium text-xs text-foreground" numberOfLines={1}>
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -386,7 +394,7 @@ function FloatingStatusLabel(props: {
       >
         <SymbolView name="text.bubble" size={13} tintColorClassName="foreground" />
         <Text className="shrink font-t3-medium text-xs text-foreground" numberOfLines={1}>
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -395,7 +403,7 @@ function FloatingStatusLabel(props: {
     return (
       <StatusLabelRow
         key="connection"
-        accessibilityLabel={props.status.label}
+        accessibilityLabel={uiT(props.status.label)}
         accessibilityRole="button"
         className="gap-2"
         onLayout={props.onLayout}
@@ -410,7 +418,7 @@ function FloatingStatusLabel(props: {
           className="max-w-[260px] shrink font-t3-medium text-xs text-foreground"
           numberOfLines={1}
         >
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -432,7 +440,7 @@ function FloatingStatusLabel(props: {
           type="monochrome"
         />
         <Text className="shrink font-t3-medium text-xs text-foreground" numberOfLines={1}>
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -447,7 +455,7 @@ function FloatingStatusLabel(props: {
       >
         <SymbolView name="target" size={13} tintColorClassName="foreground" type="monochrome" />
         <Text className="shrink font-t3-medium text-xs text-foreground" numberOfLines={1}>
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -456,7 +464,7 @@ function FloatingStatusLabel(props: {
     return (
       <StatusLabelRow
         key="preparing"
-        accessibilityLabel={props.status.label}
+        accessibilityLabel={uiT(props.status.label)}
         className="gap-1.5"
         onLayout={props.onLayout}
       >
@@ -472,7 +480,7 @@ function FloatingStatusLabel(props: {
           compact
           icon="arrow.triangle.branch"
           iconSubtleColor="transparent"
-          label={props.status.label}
+          label={uiT(props.status.label)}
           showIcon={false}
         />
       </StatusLabelRow>
@@ -530,6 +538,7 @@ function WorkingDuration(props: {
 }
 
 export function WorkingTimer(props: { readonly startedAt: string }) {
+  const { t: uiT } = useUiLanguage();
   const nowMs = useVisibleSecondClock(true);
   return (
     <SystemText
@@ -537,7 +546,7 @@ export function WorkingTimer(props: { readonly startedAt: string }) {
       numberOfLines={1}
       style={{ fontVariant: ["tabular-nums"], fontWeight: "500" }}
     >
-      Working {formatWorkingDuration(props.startedAt, nowMs)}
+      {uiT("Working")} {formatWorkingDuration(props.startedAt, nowMs)}
     </SystemText>
   );
 }
@@ -562,9 +571,10 @@ function formatWorkingDuration(startedAt: string, nowMs: number): string {
 }
 
 function ScrollToEndButton(props: { readonly disabled?: boolean; readonly onPress: () => void }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <ControlPill
-      accessibilityLabel="Scroll to end"
+      accessibilityLabel={uiT("Scroll to end")}
       activateOnPressIn
       className="h-11 w-11 bg-transparent"
       disabled={props.disabled}

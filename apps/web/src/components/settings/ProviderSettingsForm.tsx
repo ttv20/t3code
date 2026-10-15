@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiLanguage } from "../../i18n";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -159,6 +161,7 @@ function ProviderCommandArguments({
   value,
   onChange,
 }: Pick<ProviderSettingsFormProps, "value" | "onChange">) {
+  const { t: uiT } = useUiLanguage();
   const args = useMemo(() => {
     const configured =
       value !== null && typeof value === "object"
@@ -200,8 +203,8 @@ function ProviderCommandArguments({
 
   return (
     <SettingsRow
-      title="Arguments"
-      description="One literal argument per row, in launch order."
+      title={uiT("Arguments")}
+      description={uiT("One literal argument per row, in launch order.")}
       control={
         <Button
           type="button"
@@ -210,7 +213,7 @@ function ProviderCommandArguments({
           onClick={() => updateArguments([...rowsRef.current, makeCommandArgumentDraftRow("")])}
         >
           <PlusIcon />
-          Add argument
+          {uiT("Add argument")}
         </Button>
       }
     >
@@ -229,7 +232,7 @@ function ProviderCommandArguments({
                     ),
                   )
                 }
-                aria-label={`Argument ${index + 1}`}
+                aria-label={uiT("Argument {0}", { "0": index + 1 })}
                 spellCheck={false}
               />
               <Button
@@ -239,7 +242,7 @@ function ProviderCommandArguments({
                 onClick={() =>
                   updateArguments(rowsRef.current.filter((current) => current.id !== argument.id))
                 }
-                aria-label={`Remove argument ${index + 1}`}
+                aria-label={uiT("Remove argument {0}", { "0": index + 1 })}
               >
                 <XIcon />
               </Button>
@@ -318,6 +321,7 @@ function ProviderSettingsSelect({
   readonly className?: string | undefined;
   readonly onChange: ProviderSettingsFormProps["onChange"];
 }) {
+  const { t: uiT } = useUiLanguage();
   const options = field.options ?? [];
   const fallback = options[0]?.value ?? "";
   const current = readProviderConfigString(value, field.key) || fallback;
@@ -330,13 +334,13 @@ function ProviderSettingsSelect({
         onChange(nextProviderConfigWithFieldValue(value, field, next === fallback ? "" : next));
       }}
     >
-      <SelectTrigger id={inputId} size={size} className={className} aria-label={field.label}>
-        <SelectValue>{label}</SelectValue>
+      <SelectTrigger id={inputId} size={size} className={className} aria-label={uiT(field.label)}>
+        <SelectValue>{uiT(label)}</SelectValue>
       </SelectTrigger>
       <SelectPopup align="start" alignItemWithTrigger={false}>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
-            {option.label}
+            {uiT(option.label)}
           </SelectItem>
         ))}
       </SelectPopup>
@@ -369,14 +373,15 @@ function ProviderSettingsFieldRow({
   variant,
   onChange,
 }: ProviderSettingsFieldRowProps) {
+  const { t: uiT } = useUiLanguage();
   const inputId = `${idPrefix}-${field.key}`;
   const descriptionClassName =
     variant === "dialog"
       ? "text-2xs text-muted-foreground"
       : "mt-1 block text-xs text-muted-foreground";
-  const label = <span className="text-xs font-medium text-foreground">{field.label}</span>;
+  const label = <span className="text-xs font-medium text-foreground">{uiT(field.label)}</span>;
   const description = field.description ? (
-    <span className={descriptionClassName}>{field.description}</span>
+    <span className={descriptionClassName}>{uiT(field.description)}</span>
   ) : null;
 
   if (variant === "settings") {
@@ -388,7 +393,7 @@ function ProviderSettingsFieldRow({
           onCheckedChange={(checked) =>
             onChange(nextProviderConfigWithFieldValue(value, field, Boolean(checked)))
           }
-          aria-label={field.label}
+          aria-label={uiT(field.label)}
           aria-describedby={descriptionId}
         />
       ) : field.control === "select" ? (
@@ -409,7 +414,7 @@ function ProviderSettingsFieldRow({
           onChange={(event) =>
             onChange(nextProviderConfigWithFieldValue(value, field, event.target.value))
           }
-          placeholder={field.placeholder}
+          placeholder={uiT(field.placeholder)}
           spellCheck={false}
         />
       ) : field.secret ? (
@@ -431,7 +436,7 @@ function ProviderSettingsFieldRow({
           type={field.control === "password" ? "password" : undefined}
           autoComplete={field.control === "password" ? "off" : undefined}
           value={readProviderConfigString(value, field.key)}
-          placeholder={field.placeholder}
+          placeholder={uiT(field.placeholder)}
           onCommit={(next) => {
             onChange(nextProviderConfigWithFieldValue(value, field, next));
           }}
@@ -442,10 +447,14 @@ function ProviderSettingsFieldRow({
     return (
       <SettingsRow
         title={
-          field.control === "switch" ? field.label : <label htmlFor={inputId}>{field.label}</label>
+          field.control === "switch" ? (
+            uiT(field.label)
+          ) : (
+            <label htmlFor={inputId}>{uiT(field.label)}</label>
+          )
         }
         description={
-          field.description ? <span id={descriptionId}>{field.description}</span> : undefined
+          field.description ? <span id={descriptionId}>{uiT(field.description)}</span> : undefined
         }
         control={control}
       />
@@ -457,15 +466,15 @@ function ProviderSettingsFieldRow({
       <FieldFrame variant={variant}>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            {label}
-            {description}
+            {uiT(label)}
+            {uiT(description)}
           </div>
           <Switch
             checked={readProviderConfigBoolean(value, field.key, field.defaultBooleanValue)}
             onCheckedChange={(checked) =>
               onChange(nextProviderConfigWithFieldValue(value, field, Boolean(checked)))
             }
-            aria-label={field.label}
+            aria-label={uiT(field.label)}
           />
         </div>
       </FieldFrame>
@@ -476,7 +485,7 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {label}
+          {uiT(label)}
           <ProviderSettingsSelect
             field={field}
             value={value}
@@ -485,7 +494,7 @@ function ProviderSettingsFieldRow({
             className={cn("w-full", variant === "card" && "mt-1.5")}
             onChange={onChange}
           />
-          {description}
+          {uiT(description)}
         </label>
       </FieldFrame>
     );
@@ -495,7 +504,7 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {label}
+          {uiT(label)}
           <Textarea
             id={inputId}
             className={cn(variant === "card" && "mt-1.5")}
@@ -503,10 +512,10 @@ function ProviderSettingsFieldRow({
             onChange={(event) =>
               onChange(nextProviderConfigWithFieldValue(value, field, event.target.value))
             }
-            placeholder={field.placeholder}
+            placeholder={uiT(field.placeholder)}
             spellCheck={false}
           />
-          {description}
+          {uiT(description)}
         </label>
       </FieldFrame>
     );
@@ -518,7 +527,7 @@ function ProviderSettingsFieldRow({
   return (
     <FieldFrame variant={variant}>
       <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-        {label}
+        {uiT(label)}
         {variant === "card" ? (
           <BufferedInput
             id={inputId}
@@ -544,7 +553,7 @@ function ProviderSettingsFieldRow({
             spellCheck={false}
           />
         )}
-        {description}
+        {uiT(description)}
       </label>
     </FieldFrame>
   );

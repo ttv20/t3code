@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { StackActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { Platform, View } from "react-native";
@@ -12,6 +13,7 @@ export function PullRequestStackCard(props: {
   readonly params: PullRequestParams;
   readonly state: PullRequestStackState;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const selectAndroidWorkspace = useAndroidWorkspaceSelection();
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +27,7 @@ export function PullRequestStackCard(props: {
     return (
       <PullRequestCardGroup>
         <PullRequestCardRow
-          title="Stack"
+          title={uiT("Stack")}
           icon="square.3.layers.3d"
           value={`${summary.position} of ${summary.size}`}
           last
@@ -37,10 +39,14 @@ export function PullRequestStackCard(props: {
   return (
     <PullRequestCardGroup>
       <PullRequestCardRow
-        title="Stack"
+        title={uiT("Stack")}
         icon="square.3.layers.3d"
         value={`${position} of ${stack.layers.length}`}
-        accessibilityLabel={`Stack, ${position} of ${stack.layers.length}${props.state.isFresh ? "" : ", showing saved stack"}`}
+        accessibilityLabel={uiT("Stack, {0} of {1}{2}", {
+          "0": position,
+          "1": stack.layers.length,
+          "2": props.state.isFresh ? "" : ", showing saved stack",
+        })}
         expanded={expanded}
         onPress={() => setExpanded(!expanded)}
         last={!expanded}
@@ -77,7 +83,8 @@ export function PullRequestStackCard(props: {
             );
           })}
           <Text className="px-4 py-3 text-xs text-foreground-muted">
-            Base: {stack.base}. Open a layer to review it or merge the stack through that layer.
+            {uiT("Base:")} {stack.base}
+            {uiT(". Open a layer to review it or merge the stack through that layer.")}
           </Text>
         </View>
       ) : null}

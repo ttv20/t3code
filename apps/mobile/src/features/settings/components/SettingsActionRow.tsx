@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import type { ComponentProps } from "react";
 import { Platform, Pressable } from "react-native";
 
@@ -15,6 +16,7 @@ export function SettingsActionRow(props: {
   readonly loading?: boolean;
   readonly onPress: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const danger = props.tone === "danger";
   const textClassName = danger ? "tabular-nums text-danger-foreground" : "text-foreground";
   const iconColorClassName = danger ? "accent-danger-foreground" : "accent-icon";
@@ -35,7 +37,7 @@ export function SettingsActionRow(props: {
     return (
       <MaterialListRow
         className="bg-grouped-card"
-        title={props.label}
+        title={uiT(props.label)}
         titleClassName={textClassName}
         leading={icon}
         trailing={spinner}
@@ -53,7 +55,7 @@ export function SettingsActionRow(props: {
       className="flex-row items-center gap-4 p-4 disabled:opacity-40"
     >
       {icon}
-      <Text className={cn("flex-1 text-lg", textClassName)}>{props.label}</Text>
+      <Text className={cn("flex-1 text-lg", textClassName)}>{uiT(props.label)}</Text>
       {spinner}
     </Pressable>
   );

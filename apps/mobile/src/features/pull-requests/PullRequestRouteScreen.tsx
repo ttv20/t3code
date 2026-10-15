@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import { pullRequestTabOffset } from "./pullRequestTabScroll";
 import { guideFocusedRows, type GuideDiffFocus } from "./guide/guideDiffFocus";
 import { PullRequestGuideContent } from "./guide/PullRequestGuideScreen";
@@ -128,6 +129,7 @@ function PullRequestTabScrollView(props: ScrollViewProps) {
 }
 
 function usePullRequestActivityRows(params: PullRequestParams, filter: ActivityFilter) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const result = useEnvironmentQuery(composerPullRequests.activity(requestTarget(params)));
   const filtered = useMemo(
@@ -148,12 +150,12 @@ function usePullRequestActivityRows(params: PullRequestParams, filter: ActivityF
         date: "",
         content: (
           <Text className="py-6 text-sm text-foreground-muted">
-            No activity matches these filters.
+            {uiT("No activity matches these filters.")}
           </Text>
         ),
       });
     return rows;
-  }, [filtered, filter.newestFirst, params, navigation]);
+  }, [filtered, filter.newestFirst, params, navigation, uiT]);
   return {
     rows,
     hiddenCount: filtered?.hiddenCount ?? 0,
@@ -166,6 +168,7 @@ function PullRequestIdentity(props: {
   readonly pr: PullRequestDetail | PullRequestListEntry;
   readonly params: PullRequestParams;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { pr } = props;
   const status = pullRequestStatus(pr);
   return (
@@ -176,13 +179,13 @@ function PullRequestIdentity(props: {
         ) : (
           <View className="min-h-8 flex-row items-center gap-1.5">
             <SymbolView name={status.icon} size={14} tintColorClassName={status.tint} />
-            <Text className={`text-xs font-t3-medium ${status.text}`}>{status.label}</Text>
+            <Text className={`text-xs font-t3-medium ${status.text}`}>{uiT(status.label)}</Text>
           </View>
         )}
         <PullRequestDiffStats additions={pr.additions} deletions={pr.deletions} compact />
         {"changedFiles" in pr ? (
           <Text className="text-2xs text-foreground-muted">
-            {pr.changedFiles} {pr.changedFiles === 1 ? "file" : "files"}
+            {pr.changedFiles} {pr.changedFiles === 1 ? uiT("file") : uiT("files")}
           </Text>
         ) : (
           <View className="h-3 w-12 rounded bg-subtle-strong" />
@@ -194,16 +197,16 @@ function PullRequestIdentity(props: {
       <View className="flex-row items-center gap-2">
         <PullRequestAvatar actor={pr.author} size={20} />
         <Text className="min-w-0 flex-1 text-xs font-t3-medium" numberOfLines={1}>
-          {pr.author?.login ?? "Unknown author"}
+          {pr.author?.login ?? uiT("Unknown author")}
         </Text>
         <Text className="shrink text-right text-2xs text-foreground-muted" numberOfLines={1}>
-          Updated {relativeTime(pr.updatedAt)} ago
+          <UiText message={"Updated {0} ago"} values={{ "0": relativeTime(pr.updatedAt) }} />
         </Text>
       </View>
       <View className="flex-row items-start gap-1.5">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Copy base branch ${pr.baseBranch}`}
+          accessibilityLabel={uiT("Copy base branch {0}", { "0": pr.baseBranch })}
           onPress={() => void Clipboard.setStringAsync(pr.baseBranch)}
           className="min-w-0 shrink active:opacity-70"
           hitSlop={8}
@@ -215,7 +218,7 @@ function PullRequestIdentity(props: {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Copy head branch ${pr.headBranch}`}
+          accessibilityLabel={uiT("Copy head branch {0}", { "0": pr.headBranch })}
           onPress={() => void Clipboard.setStringAsync(pr.headBranch)}
           className="min-w-0 shrink active:opacity-70"
           hitSlop={8}
@@ -281,6 +284,7 @@ function usePullRequestToolbarHeight(bottomInset: number) {
 }
 
 export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestParams>) {
+  const { t: uiT } = useUiLanguage();
   const returnToList = useAndroidWorkspaceBack("pullRequests");
   const { layout } = useAdaptiveWorkspaceLayout();
   const navigation = useNavigation();
@@ -422,8 +426,8 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
         ) : null}
         <NativeHeaderToolbar placement="right">
           <NativeHeaderToolbar.Menu
-            title="Pull request"
-            accessibilityLabel="Pull request actions"
+            title={uiT("Pull request")}
+            accessibilityLabel={uiT("Pull request actions")}
             icon="ellipsis"
           >
             {permissions.verdicts.length ? (
@@ -433,7 +437,7 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                   navigation.navigate("PullRequestReview", { ...params, mode: "review" })
                 }
               >
-                <NativeHeaderToolbar.Label>Submit review</NativeHeaderToolbar.Label>
+                <NativeHeaderToolbar.Label>{uiT("Submit review")}</NativeHeaderToolbar.Label>
               </NativeHeaderToolbar.MenuAction>
             ) : null}
             {permissions.canComment ? (
@@ -443,7 +447,7 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                   navigation.navigate("PullRequestReview", { ...params, mode: "comment" })
                 }
               >
-                <NativeHeaderToolbar.Label>Add comment</NativeHeaderToolbar.Label>
+                <NativeHeaderToolbar.Label>{uiT("Add comment")}</NativeHeaderToolbar.Label>
               </NativeHeaderToolbar.MenuAction>
             ) : null}
             {pr ? (
@@ -648,11 +652,11 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                           <SegmentedControl
                             className={Platform.OS === "android" ? undefined : "bg-grouped-card"}
                             options={[
-                              { value: "overview", label: "Overview" },
+                              { value: "overview", label: uiT("Overview") },
                               ...(guidesEnabled
-                                ? [{ value: "guide" as const, label: "Guide" }]
+                                ? [{ value: "guide" as const, label: uiT("Guide") }]
                                 : []),
-                              { value: "activity", label: "Activity" },
+                              { value: "activity", label: uiT("Activity") },
                             ]}
                             selected={section}
                             onSelect={selectSection}
@@ -680,11 +684,12 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
 }
 
 export function PullRequestFilesRouteScreen({ route }: StaticScreenProps<PullRequestDiffParams>) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const fileSelectionId = useRoute().key;
   return (
     <PullRequestSheetContent
-      title="Changed files"
+      title={uiT("Changed files")}
       scrollable={false}
       subtitle={`#${route.params.number}${route.params.commit ? ` · ${route.params.commit.slice(0, 7)}` : ` · ${route.params.repository}`}`}
     >
@@ -715,6 +720,7 @@ export function PullRequestFileRouteScreen({
     readonly focus?: GuideDiffFocus;
   }
 >) {
+  const { t: uiT } = useUiLanguage();
   const { layout } = useAdaptiveWorkspaceLayout();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -903,7 +909,7 @@ export function PullRequestFileRouteScreen({
     setSelectedRowId(null);
     filter.toggle();
   };
-  const title = commit ? "Commit changes" : "Changes";
+  const title = commit ? uiT("Commit changes") : uiT("Changes");
   const seekingFile = !targetFile && result.nextCursor !== null;
   const loadingDiff = (result.isPending && !data.rows.length) || (seekingFile && !result.error);
   return (
@@ -924,26 +930,28 @@ export function PullRequestFileRouteScreen({
               actions={[
                 {
                   id: "word-wrap",
-                  title: "Word wrap",
+                  title: uiT("Word wrap"),
                   image: "text.alignleft",
                   state: appearance.codeWordBreak ? "on" : "off",
                 },
                 {
                   id: "hide-tests",
-                  title: "Hide test files",
+                  title: uiT("Hide test files"),
                   image: "line.3.horizontal.decrease",
                   state: filter.hideTestFiles ? "on" : "off",
                 },
                 ...(permissions.verdicts.length
-                  ? [{ id: "submit-review", title: "Submit review", image: "text.bubble" }]
+                  ? [{ id: "submit-review", title: uiT("Submit review"), image: "text.bubble" }]
                   : []),
                 ...(permissions.canComment
-                  ? [{ id: "comment-on-pr", title: "Add comment", image: "plus.bubble" }]
+                  ? [{ id: "comment-on-pr", title: uiT("Add comment"), image: "plus.bubble" }]
                   : []),
                 ...(selectedRow && selectedFile
                   ? [
-                      ...(canCommentOnDiff ? [{ id: "comment", title: "Add review comment" }] : []),
-                      { id: "copy", title: "Copy line" },
+                      ...(canCommentOnDiff
+                        ? [{ id: "comment", title: uiT("Add review comment") }]
+                        : []),
+                      { id: "copy", title: uiT("Copy line") },
                     ]
                   : []),
               ]}
@@ -963,7 +971,7 @@ export function PullRequestFileRouteScreen({
               }}
             >
               <View pointerEvents="none">
-                <MaterialIconButton icon="ellipsis" accessibilityLabel="Diff options" />
+                <MaterialIconButton icon="ellipsis" accessibilityLabel={uiT("Diff options")} />
               </View>
             </ControlPillMenu>
           }
@@ -971,8 +979,8 @@ export function PullRequestFileRouteScreen({
       ) : null}
       <NativeHeaderToolbar placement="right">
         <NativeHeaderToolbar.Menu
-          title="Diff options"
-          accessibilityLabel="Diff options"
+          title={uiT("Diff options")}
+          accessibilityLabel={uiT("Diff options")}
           icon="ellipsis"
         >
           {permissions.verdicts.length ? (
@@ -982,7 +990,7 @@ export function PullRequestFileRouteScreen({
                 navigation.navigate("PullRequestReview", { ...route.params, mode: "review" })
               }
             >
-              <NativeHeaderToolbar.Label>Submit review</NativeHeaderToolbar.Label>
+              <NativeHeaderToolbar.Label>{uiT("Submit review")}</NativeHeaderToolbar.Label>
             </NativeHeaderToolbar.MenuAction>
           ) : null}
           {permissions.canComment ? (
@@ -992,7 +1000,7 @@ export function PullRequestFileRouteScreen({
                 navigation.navigate("PullRequestReview", { ...route.params, mode: "comment" })
               }
             >
-              <NativeHeaderToolbar.Label>Add comment</NativeHeaderToolbar.Label>
+              <NativeHeaderToolbar.Label>{uiT("Add comment")}</NativeHeaderToolbar.Label>
             </NativeHeaderToolbar.MenuAction>
           ) : null}
           <NativeHeaderToolbar.MenuAction
@@ -1000,19 +1008,21 @@ export function PullRequestFileRouteScreen({
             isOn={appearance.codeWordBreak}
             onPress={() => setCodeWordBreak(!appearance.codeWordBreak)}
           >
-            <NativeHeaderToolbar.Label>Word wrap</NativeHeaderToolbar.Label>
+            <NativeHeaderToolbar.Label>{uiT("Word wrap")}</NativeHeaderToolbar.Label>
           </NativeHeaderToolbar.MenuAction>
           <NativeHeaderToolbar.MenuAction
             icon="line.3.horizontal.decrease"
             isOn={filter.hideTestFiles}
             onPress={toggleTestFiles}
           >
-            <NativeHeaderToolbar.Label>Hide test files</NativeHeaderToolbar.Label>
+            <NativeHeaderToolbar.Label>{uiT("Hide test files")}</NativeHeaderToolbar.Label>
           </NativeHeaderToolbar.MenuAction>
           {selectedRow && selectedFile && canCommentOnDiff ? (
             <NativeHeaderToolbar.MenuAction icon="bubble.left" onPress={() => commentOnLine()}>
               <NativeHeaderToolbar.Label>
-                {route.params.replacingDraftId ? "Move draft to this line" : "Add review comment"}
+                {route.params.replacingDraftId
+                  ? uiT("Move draft to this line")
+                  : uiT("Add review comment")}
               </NativeHeaderToolbar.Label>
             </NativeHeaderToolbar.MenuAction>
           ) : null}
@@ -1021,14 +1031,14 @@ export function PullRequestFileRouteScreen({
               icon="document.on.document"
               onPress={() => void Clipboard.setStringAsync(selectedRow.content ?? "")}
             >
-              <NativeHeaderToolbar.Label>Copy line</NativeHeaderToolbar.Label>
+              <NativeHeaderToolbar.Label>{uiT("Copy line")}</NativeHeaderToolbar.Label>
             </NativeHeaderToolbar.MenuAction>
           ) : null}
         </NativeHeaderToolbar.Menu>
       </NativeHeaderToolbar>
       {route.params.replacingDraftId ? (
         <Text className="px-4 py-2 text-xs text-foreground-muted">
-          Select a current line, then choose “Move draft to this line” from its menu.
+          {uiT("Select a current line, then choose “Move draft to this line” from its menu.")}
         </Text>
       ) : null}
       {viewed.error ? (
@@ -1040,10 +1050,10 @@ export function PullRequestFileRouteScreen({
           style={{ paddingTop: Platform.OS === "ios" ? insets.top + 8 : 8 }}
         >
           <Text className="min-w-0 flex-1 text-xs text-foreground-muted">
-            The branch changed. Reload before adding line comments.
+            {uiT("The branch changed. Reload before adding line comments.")}
           </Text>
           <MaterialButton
-            label="Reload changes"
+            label={uiT("Reload changes")}
             onPress={() => {
               result.refresh();
               setDiffHead({ scopeKey, sha: detail.data?.headSha ?? null });
@@ -1148,17 +1158,21 @@ export function PullRequestFileRouteScreen({
           !seekingFile ? (
           <View style={{ paddingTop: Platform.OS === "ios" ? insets.top : 0 }}>
             <EmptyState
-              title="Only test files changed"
+              title={uiT("Only test files changed")}
               detail="Test files are hidden from this review."
               action={
-                <MaterialButton label="Show test files" tone="contrast" onPress={filter.showAll} />
+                <MaterialButton
+                  label={uiT("Show test files")}
+                  tone="contrast"
+                  onPress={filter.showAll}
+                />
               }
               variant="plain"
             />
           </View>
         ) : !result.isPending && !result.error && !seekingFile ? (
           <EmptyState
-            title="Diff unavailable"
+            title={uiT("Diff unavailable")}
             detail="Open this pull request on its provider to view the changes."
             variant="plain"
           />
@@ -1166,7 +1180,7 @@ export function PullRequestFileRouteScreen({
         {result.nextCursor && result.isPending && data.rows.length && !seekingFile ? (
           <View className="flex-row items-center justify-center gap-2 py-2">
             <ActivityIndicator size="small" />
-            <Text className="text-xs text-foreground-muted">Loading more files…</Text>
+            <Text className="text-xs text-foreground-muted">{uiT("Loading more files…")}</Text>
           </View>
         ) : null}
         {result.error && result.nextCursor ? (
@@ -1175,7 +1189,7 @@ export function PullRequestFileRouteScreen({
             onPress={result.refresh}
             className="min-h-11 items-center justify-center py-2"
           >
-            <Text className="text-sm font-t3-medium">Retry loading remaining files</Text>
+            <Text className="text-sm font-t3-medium">{uiT("Retry loading remaining files")}</Text>
           </Pressable>
         ) : null}
         {parsed.kind === "files" && parsed.notice ? (

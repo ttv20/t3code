@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { TextInputWrapper } from "expo-paste-input";
 import { AppTextInput as TextInput } from "../../components/AppText";
 import { useNativePaste } from "../../lib/useNativePaste";
@@ -36,6 +37,7 @@ export function QuestionAttachments(props: {
   onChangeText: (value: string) => void;
   onInputFocusChange?: ((focused: boolean) => void) | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { selectedThread } = useThreadSelection();
   const navigation = useNavigation();
   const [previewFile, setPreviewFile] = useState<FilePreviewSource | null>(null);
@@ -195,7 +197,7 @@ export function QuestionAttachments(props: {
           onChangeText={props.onChangeText}
           onFocus={() => props.onInputFocusChange?.(true)}
           onBlur={() => props.onInputFocusChange?.(false)}
-          placeholder="Or type a custom answer"
+          placeholder={uiT("Or type a custom answer")}
           className="min-h-[54px] rounded-2xl border border-input-border bg-input px-3.5 py-3 font-sans text-base text-foreground"
         />
       </TextInputWrapper>

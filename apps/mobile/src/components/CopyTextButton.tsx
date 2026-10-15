@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { SymbolView } from "../components/AppSymbol";
 import { memo, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, type ColorValue } from "react-native";
@@ -19,6 +20,7 @@ export const CopyTextButton = memo(function CopyTextButton(props: {
   readonly iconSize?: number;
   readonly buttonSize?: number;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [copied, setCopied] = useState(false);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -34,7 +36,7 @@ export const CopyTextButton = memo(function CopyTextButton(props: {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={copied ? "Copied" : props.accessibilityLabel}
+      accessibilityLabel={copied ? uiT("Copied") : props.accessibilityLabel}
       disabled={props.text.length === 0}
       hitSlop={8}
       onLongPress={props.onLongPress}

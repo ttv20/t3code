@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   AuthTerminalReadScope,
   AuthTerminalOperateScope,
@@ -108,9 +109,10 @@ function TerminalHeader(props: {
   readonly onOpenNewTerminal: () => void;
   readonly onSelectTerminal: (terminalId: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <ScreenHeader
-      title="Terminal"
+      title={uiT("Terminal")}
       subtitle={props.subtitle}
       onBack={props.onCloseTerminal}
       backInSplitView={{
@@ -121,25 +123,35 @@ function TerminalHeader(props: {
         props.isEnvironmentReady
           ? [
               {
-                title: "Terminal options",
+                title: uiT("Terminal options"),
                 icon: "terminal",
                 status: getTerminalStatusLabel(props.status),
                 items: [
                   {
                     id: "text-size",
-                    title: "Text size",
+                    title: uiT("Text size"),
                     icon: "textformat.size",
                     inline: true,
                     items: [
                       {
                         id: "font-decrease",
-                        title: `A- ${Math.max(MIN_TERMINAL_FONT_SIZE, props.fontSize - TERMINAL_FONT_SIZE_STEP).toFixed(1)} pt`,
+                        title: uiT("A- {0} pt", {
+                          "0": Math.max(
+                            MIN_TERMINAL_FONT_SIZE,
+                            props.fontSize - TERMINAL_FONT_SIZE_STEP,
+                          ).toFixed(1),
+                        }),
                         disabled: props.fontSize <= MIN_TERMINAL_FONT_SIZE,
                         onPress: props.onDecreaseFontSize,
                       },
                       {
                         id: "font-increase",
-                        title: `A+ ${Math.min(MAX_TERMINAL_FONT_SIZE, props.fontSize + TERMINAL_FONT_SIZE_STEP).toFixed(1)} pt`,
+                        title: uiT("A+ {0} pt", {
+                          "0": Math.min(
+                            MAX_TERMINAL_FONT_SIZE,
+                            props.fontSize + TERMINAL_FONT_SIZE_STEP,
+                          ).toFixed(1),
+                        }),
                         disabled: props.fontSize >= MAX_TERMINAL_FONT_SIZE,
                         onPress: props.onIncreaseFontSize,
                       },
@@ -164,9 +176,11 @@ function TerminalHeader(props: {
                   {
                     id: "terminal-new",
                     disabled: !props.canOperateTerminal,
-                    title: "Open new terminal",
+                    title: uiT("Open new terminal"),
                     icon: "plus",
-                    subtitle: `Start another shell in ${basename(props.workspaceRoot) ?? "this workspace"}`,
+                    subtitle: uiT("Start another shell in {0}", {
+                      "0": basename(props.workspaceRoot) ?? "this workspace",
+                    }),
                     onPress: props.onOpenNewTerminal,
                   },
                 ],
@@ -254,6 +268,7 @@ type ThreadTerminalRouteScreenProps = StaticScreenProps<{
 }>;
 
 export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps) {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const nativeColumnMetrics = useNativeColumnLayoutMetrics();
   const navigation = useNavigation();
@@ -563,20 +578,20 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
     const modifierActions: ReadonlyArray<TerminalToolbarAction> =
       hostPlatform === "mac"
         ? [
-            { kind: "modifier", key: "cmd", label: "cmd", modifier: "meta" },
-            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
+            { kind: "modifier", key: "cmd", label: uiT("cmd"), modifier: "meta" },
+            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
           ]
         : [
-            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
-            { kind: "modifier", key: "alt", label: "alt", modifier: "meta" },
+            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
+            { kind: "modifier", key: "alt", label: uiT("alt"), modifier: "meta" },
           ];
 
     return [
-      { kind: "send", key: "esc", label: "esc", data: "\u001b" },
+      { kind: "send", key: "esc", label: uiT("esc"), data: "\u001b" },
       ...modifierActions,
-      { kind: "send", key: "tab", label: "tab", data: "\t" },
-      { kind: "paste", key: "paste", label: "paste" },
-      { kind: "clear", key: "clear", label: "clear" },
+      { kind: "send", key: "tab", label: uiT("tab"), data: "\t" },
+      { kind: "paste", key: "paste", label: uiT("paste") },
+      { kind: "clear", key: "clear", label: uiT("clear") },
       { kind: "send", key: "up", label: "↑", data: "\u001b[A" },
       { kind: "send", key: "down", label: "↓", data: "\u001b[B" },
       { kind: "send", key: "left", label: "←", data: "\u001b[D" },
@@ -586,7 +601,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
       { kind: "send", key: "slash", label: "/", data: "/" },
       { kind: "send", key: "dash", label: "-", data: "-" },
     ];
-  }, [hostPlatform]);
+  }, [hostPlatform, uiT]);
   const keyboardState = useKeyboardState((state) => ({
     height: state.height,
     isVisible: state.isVisible,
@@ -1133,13 +1148,13 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
 
   if (!selectedThread) {
     if (!connectionsReady) {
-      return <LoadingScreen message="Opening terminal…" />;
+      return <LoadingScreen message={uiT("Opening terminal…")} />;
     }
 
     return (
       <View className="flex-1 bg-screen">
         <EmptyState
-          title="Thread unavailable"
+          title={uiT("Thread unavailable")}
           detail="This terminal route needs an active thread and workspace."
         />
       </View>
@@ -1150,7 +1165,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
     return (
       <View className="flex-1 bg-screen">
         <EmptyState
-          title="Terminal unavailable"
+          title={uiT("Terminal unavailable")}
           detail="This thread does not have a workspace root yet, so there is nowhere to open a shell."
         />
       </View>
@@ -1158,7 +1173,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
   }
 
   if (!environment.isReady && environment.presentation === null) {
-    return <LoadingScreen message="Opening terminal…" />;
+    return <LoadingScreen message={uiT("Opening terminal…")} />;
   }
 
   return (
@@ -1231,15 +1246,15 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
             />
           ) : terminalSession.data === null && terminalSession.error === null ? (
             <EmptyState
-              title="Checking terminal access"
+              title={uiT("Checking terminal access")}
               detail="Waiting for this connection's permissions."
             />
           ) : !canReadTerminal && !canOperateTerminal ? (
             <EmptyState
               title={
                 terminalSession.error
-                  ? "Could not check terminal access"
-                  : "Terminal access unavailable"
+                  ? uiT("Could not check terminal access")
+                  : uiT("Terminal access unavailable")
               }
               detail={
                 terminalSession.error ??
@@ -1247,16 +1262,19 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
               }
             />
           ) : !canOperateTerminal && !hasTerminalTarget && sessionsPending ? (
-            <EmptyState title="Loading terminals" detail="Reading existing terminal sessions." />
+            <EmptyState
+              title={uiT("Loading terminals")}
+              detail="Reading existing terminal sessions."
+            />
           ) : !canOperateTerminal && !hasTerminalTarget && sessionsError !== null ? (
-            <EmptyState title="Could not load terminals" detail={sessionsError} />
+            <EmptyState title={uiT("Could not load terminals")} detail={sessionsError} />
           ) : !canOperateTerminal && !hasTerminalTarget ? (
             <EmptyState
-              title="No terminal sessions"
+              title={uiT("No terminal sessions")}
               detail="Existing terminals will appear here when another client opens one."
             />
           ) : !canOperateTerminal && terminal.error !== null ? (
-            <EmptyState title="Terminal unavailable" detail={terminal.error} />
+            <EmptyState title={uiT("Terminal unavailable")} detail={terminal.error} />
           ) : (
             <>
               <View
@@ -1297,14 +1315,14 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
                 <View className="min-h-14 flex-row items-center gap-2 bg-card-alt px-2">
                   {selectedThread && hasNativeTerminalSurface() ? (
                     <MaterialButton
-                      label="Attach output"
+                      label={uiT("Attach output")}
                       tone="text"
                       onPress={() => setCaptureRequest((value) => value + 1)}
                     />
                   ) : null}
                   <View className="flex-1" />
                   <MaterialIconButton
-                    accessibilityLabel="Show keyboard"
+                    accessibilityLabel={uiT("Show keyboard")}
                     disabled={!canOperateTerminal}
                     icon="keyboard"
                     onPress={handleShowKeyboard}
@@ -1319,7 +1337,9 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
                   }}
                   className="px-4 py-2"
                 >
-                  <Text style={{ color: terminalTheme.foreground }}>Attach visible output</Text>
+                  <Text style={{ color: terminalTheme.foreground }}>
+                    {uiT("Attach visible output")}
+                  </Text>
                 </Pressable>
               ) : null}
               {isAccessoryVisible ? (
@@ -1364,7 +1384,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
                         })}
                       </ComposerToolbarScroller>
                       <ComposerToolbarButton
-                        accessibilityLabel="Dismiss keyboard"
+                        accessibilityLabel={uiT("Dismiss keyboard")}
                         icon={{ ios: "keyboard.chevron.compact.down", android: "keyboard_hide" }}
                         onPress={handleDismissKeyboard}
                         showChevron={false}
@@ -1374,7 +1394,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
                 </KeyboardStickyView>
               ) : canOperateTerminal && !keyboardState.isVisible && Platform.OS !== "android" ? (
                 <Pressable
-                  accessibilityLabel="Show keyboard"
+                  accessibilityLabel={uiT("Show keyboard")}
                   accessibilityRole="button"
                   onPress={handleShowKeyboard}
                   style={({ pressed }) => ({

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { HeaderBarButtonMailSearchToolbarItem } from "react-native-screens";
 import { useId } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
@@ -35,6 +36,7 @@ function mailMenuItems(items: ReadonlyArray<ScreenHeaderMenuItem>): MailMenu["it
 }
 
 export function ScreenHeader(props: ScreenHeaderProps) {
+  const { t: uiT } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const headerId = useId();
   const { layout, panes, togglePrimarySidebar } = useAdaptiveWorkspaceLayout();
@@ -128,8 +130,8 @@ export function ScreenHeader(props: ScreenHeaderProps) {
               axisBehavior={usesNativeWorkspaceColumns ? "horizontalOnly" : undefined}
               accessibilityLabel={
                 panes.primarySidebarVisible
-                  ? `Maximize ${props.title.toLowerCase()}`
-                  : "Show threads"
+                  ? uiT("Maximize {0}", { "0": props.title.toLowerCase() })
+                  : uiT("Show threads")
               }
               icon={
                 panes.primarySidebarVisible ? "arrow.up.left.and.arrow.down.right" : "sidebar.left"

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
@@ -72,6 +73,7 @@ function descendsFrom(
  * only open an app that call really produced.
  */
 export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   // A plain goBack pops whatever is on top, so it only runs while this modal
@@ -123,11 +125,11 @@ export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
     <View className="flex-1 bg-screen" style={{ paddingTop: insets.top }}>
       <View className="h-11 flex-row items-center justify-between px-3">
         <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-          {app?.server ?? "App"}
+          {app?.server ?? uiT("App")}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Exit full screen"
+          accessibilityLabel={uiT("Exit full screen")}
           hitSlop={8}
           onPress={onClose}
         >
@@ -146,7 +148,9 @@ export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
       >
         {app === undefined ? (
           detail.data === undefined ? null : (
-            <Text className="m-6 text-sm text-foreground-muted">This app cannot be shown.</Text>
+            <Text className="m-6 text-sm text-foreground-muted">
+              {uiT("This app cannot be shown.")}
+            </Text>
           )
         ) : size.width > 0 ? (
           <ThreadMcpApp

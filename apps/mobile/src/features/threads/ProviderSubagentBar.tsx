@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import {
   formatProviderSubagentStatus,
   type ProviderSubagentStatus,
@@ -25,6 +26,7 @@ export function ProviderSubagentBar(props: {
   readonly status: ProviderSubagentStatus | null;
   readonly onOpenParent: (() => void) | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const live = props.status !== null && isOrchestrationV2WorkActive(props.status.status);
   const nowMs = useVisibleSecondClock(live);
   const statusLabel = formatProviderSubagentStatus(props.status, nowMs);
@@ -36,7 +38,10 @@ export function ProviderSubagentBar(props: {
       {/* Only the text is one element, so "Open parent" stays reachable. */}
       <View
         accessible
-        accessibilityLabel={`${modelDescription} subagent, ${statusLabel}. It runs on its own and cannot take messages.`}
+        accessibilityLabel={uiT("{0} subagent, {1}. It runs on its own and cannot take messages.", {
+          "0": modelDescription,
+          "1": statusLabel,
+        })}
         className="min-w-0 flex-1 gap-0.5"
       >
         <View className="min-w-0 flex-row items-center gap-1.5">
@@ -64,11 +69,15 @@ export function ProviderSubagentBar(props: {
           className="font-sans text-xs text-foreground-secondary"
           style={{ fontVariant: ["tabular-nums"] }}
         >
-          {statusLabel} · Runs on its own
+          <UiText message={"{0} · Runs on its own"} values={{ "0": uiT(statusLabel) }} />
         </Text>
       </View>
       {props.onOpenParent ? (
-        <RequestActionButton label="Open parent" tone="secondary" onPress={props.onOpenParent} />
+        <RequestActionButton
+          label={uiT("Open parent")}
+          tone="secondary"
+          onPress={props.onOpenParent}
+        />
       ) : null}
     </View>
   );

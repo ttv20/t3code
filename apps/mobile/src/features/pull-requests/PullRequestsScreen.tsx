@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
 import { useNavigation } from "@react-navigation/native";
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -59,6 +60,7 @@ export function PullRequestsScreen(
     readonly selectedPullRequestKey?: string | null;
   } = {},
 ) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const primaryColumn = use(NativePrimaryColumnContext);
   const workspace = useWorkspaceTabs()!;
@@ -312,18 +314,18 @@ export function PullRequestsScreen(
             <View className="items-center py-5">
               <ActivityIndicator
                 colorClassName="accent-icon"
-                accessibilityLabel="Loading more pull requests"
+                accessibilityLabel={uiT("Loading more pull requests")}
               />
             </View>
           ) : result.loadMoreError ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Retry loading more pull requests"
+              accessibilityLabel={uiT("Retry loading more pull requests")}
               onPress={() => void result.loadMore(true)}
               className="items-center gap-2 px-8 py-4"
             >
               <Text className="text-xs text-foreground-muted">{result.loadMoreError}</Text>
-              <Text className="text-sm font-t3-medium text-link">Try again</Text>
+              <Text className="text-sm font-t3-medium text-link">{uiT("Try again")}</Text>
             </Pressable>
           ) : undefined
         }
@@ -337,14 +339,14 @@ export function PullRequestsScreen(
               <EmptyState
                 title={
                   result.error
-                    ? "Couldn't load pull requests"
+                    ? uiT("Couldn't load pull requests")
                     : targets.length && connectedTargets.length === 0
-                      ? "Environment offline"
+                      ? uiT("Environment offline")
                       : targets.length
                         ? query
-                          ? "No results"
-                          : "No matching pull requests"
-                        : "Connect an environment"
+                          ? uiT("No results")
+                          : uiT("No matching pull requests")
+                        : uiT("Connect an environment")
                 }
                 detail={
                   result.error ??

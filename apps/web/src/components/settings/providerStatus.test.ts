@@ -1,5 +1,6 @@
 import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 import { getProviderSummary, getProviderVersionAdvisoryPresentation } from "./providerStatus";
 
@@ -18,6 +19,17 @@ const provider: ServerProvider = {
 };
 
 describe("getProviderSummary", () => {
+  it("translates authentication status while retaining the account label", () => {
+    expect(
+      getProviderSummary(
+        { ...provider, auth: { status: "authenticated", label: "Settings" } },
+        createUiTranslator("he"),
+      ),
+    ).toEqual({
+      headline: "מאומת · Settings",
+      detail: null,
+    });
+  });
   it("reports ready providers with unknown authentication as available", () => {
     expect(getProviderSummary({ ...provider, auth: { status: "unknown" } })).toEqual({
       headline: "Available",

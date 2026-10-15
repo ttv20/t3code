@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
 import type { ComponentProps } from "react";
 import { View } from "react-native";
@@ -37,8 +38,10 @@ export function LocalEnvironmentList({
           />
         </View>
         <Text className="text-center text-sm leading-normal text-foreground-muted">
-          No environments connected yet.{"\n"}Tap{" "}
-          <Text className="font-t3-bold text-foreground">+</Text> to add one.
+          <UiText
+            message={"No environments connected yet.\nTap {0} to add one."}
+            values={{ "0": <Text className="font-t3-bold text-foreground">+</Text> }}
+          />
         </Text>
       </View>
     );

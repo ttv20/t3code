@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type {
   NativeStackHeaderItem,
   NativeStackHeaderItemMenu,
@@ -143,6 +144,7 @@ export function V5StackHeader(props: {
   readonly canGoBack: boolean;
   readonly primary?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { options } = props;
   const theme = useMobileNavigationTheme();
   const nativeMetrics = useNativeLayoutMetrics();
@@ -217,7 +219,7 @@ export function V5StackHeader(props: {
     leading.push({ type: "item", id: "custom-left", render: () => left });
   if (!options.unstable_headerRightItems && isValidElement(right))
     trailing.push({ type: "item", id: "custom-right", render: () => right });
-  const title = typeof options.headerTitle === "string" ? options.headerTitle : options.title;
+  const title = uiT(typeof options.headerTitle === "string" ? options.headerTitle : options.title);
   const titleElement =
     typeof options.headerTitle === "function"
       ? options.headerTitle({ children: title ?? "", tintColor: options.headerTintColor })
@@ -260,7 +262,7 @@ export function V5StackHeader(props: {
     <Stack.HeaderConfig
       hidden={options.headerShown === false}
       transparent={options.headerTransparent}
-      title={title}
+      title={uiT(title)}
       subtitle={options.unstable_headerSubtitle ?? options.headerSubtitle}
       backButtonHidden={options.headerBackVisible === false}
       ios={{
@@ -275,7 +277,7 @@ export function V5StackHeader(props: {
               hideWhenScrolling={false}
               allowToolbarIntegration={searchOptions?.allowToolbarIntegration ?? true}
               placement={bottomSearch ? "integrated" : (searchOptions?.placement ?? "automatic")}
-              placeholder={mailSearch?.placeholder ?? searchOptions?.placeholder ?? "Search"}
+              placeholder={mailSearch?.placeholder ?? searchOptions?.placeholder ?? uiT("Search")}
               onFocus={(event) => {
                 searchHasFocus.current = true;
                 searchOptions?.onFocus?.(event);

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import {
   Extension,
@@ -281,6 +282,7 @@ const ComposerMentionExtension = Node.create({
 });
 
 function ComposerMentionNodeView({ node }: NodeViewProps) {
+  const { t: uiT } = useUiLanguage();
   const actions = use(ComposerContextActionsContext);
   const path = (node.attrs.path as string) ?? "";
   const chip = (
@@ -288,7 +290,7 @@ function ComposerMentionNodeView({ node }: NodeViewProps) {
       kind="mention"
       render={<button type="button" />}
       onClick={() => actions.openMention(path)}
-      aria-label={`Preview ${path}`}
+      aria-label={uiT("Preview {0}", { "0": path })}
       contentEditable={false}
       spellCheck={false}
       data-composer-mention-chip="true"
@@ -343,6 +345,7 @@ const ComposerSkillExtension = Node.create({
 });
 
 function ComposerSkillNodeView({ node }: NodeViewProps) {
+  const { t: uiT } = useUiLanguage();
   const actions = use(ComposerContextActionsContext);
   const skills = use(RichComposerSkillsContext);
   const skillName = (node.attrs.skillName as string) ?? "";
@@ -355,18 +358,18 @@ function ComposerSkillNodeView({ node }: NodeViewProps) {
         kind="skill"
         icon={<SkillChipIcon />}
         label={skillLabel}
-        accessibleLabel={`Skill ${skillLabel}`}
+        accessibleLabel={uiT("Skill {0}", { "0": skillLabel })}
       >
         <div className="space-y-3 p-2 text-sm">
           <p className="font-medium">{skillLabel}</p>
           <p>
             {skill?.description ??
               skillDescription ??
-              "No description is available for this skill."}
+              uiT("No description is available for this skill.")}
           </p>
           {skill?.path ? (
             <Button variant="outline" size="sm" onClick={() => actions.openMention(skill.path)}>
-              View instructions
+              {uiT("View instructions")}
             </Button>
           ) : null}
         </div>
@@ -840,6 +843,7 @@ const ComposerUndoGroupingExtension = Extension.create<
 });
 
 function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
+  const { t: uiT } = useUiLanguage();
   const {
     value,
     cursor,
@@ -1881,7 +1885,7 @@ function ComposerPromptEditorTiptapInner(props: ComposerPromptEditorProps) {
                   placeholderClassName,
                 )}
               >
-                {placeholder}
+                {uiT(placeholder)}
               </div>
             ) : null}
           </div>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation, usePreventRemove, type StaticScreenProps } from "@react-navigation/native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, View } from "react-native";
@@ -29,6 +30,7 @@ type NewTaskDraftRouteParams = {
 };
 
 export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraftRouteParams>) {
+  const { t: uiT } = useUiLanguage();
   const params = useMemo(() => route.params ?? {}, [route.params]);
   const pendingTaskId = Array.isArray(params.pendingTaskId)
     ? params.pendingTaskId[0]
@@ -151,12 +153,12 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
     <>
       <NativeStackScreenOptions
         options={{
-          title: Array.isArray(params.title) ? params.title[0] : (params.title ?? "New task"),
+          title: Array.isArray(params.title) ? params.title[0] : (params.title ?? uiT("New task")),
         }}
       />
       {preparingBranch ? (
         <View className="flex-1 items-center justify-center bg-screen">
-          <Text className="text-foreground">Switching branch...</Text>
+          <Text className="text-foreground">{uiT("Switching branch...")}</Text>
         </View>
       ) : (
         <NewTaskDraftScreen

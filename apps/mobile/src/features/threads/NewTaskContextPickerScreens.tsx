@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
 import { MaterialListRow } from "../../components/MaterialListRow";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
@@ -196,6 +197,7 @@ function PickerSurface(props: { readonly children: ReactNode }) {
 }
 
 export function NewTaskEnvironmentPickerRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const flow = useNewTaskFlow();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -205,12 +207,12 @@ export function NewTaskEnvironmentPickerRouteScreen() {
       <NativeStackScreenOptions
         options={{
           headerShown: Platform.OS !== "android",
-          title: "Environment",
+          title: uiT("Environment"),
         }}
       />
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
-          title="Environment"
+          title={uiT("Environment")}
           hideBottomBorder
           onBack={() => navigation.goBack()}
         />
@@ -258,6 +260,7 @@ export function NewTaskEnvironmentPickerRouteScreen() {
 }
 
 export function NewTaskBranchPickerRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const flow = useNewTaskFlow();
   const canWriteSourceControl = useEnvironmentScope(
     flow.selectedProject?.environmentId ?? null,
@@ -352,7 +355,7 @@ export function NewTaskBranchPickerRouteScreen() {
 
   return (
     <BranchPickerScreen
-      title={flow.workspaceMode === "worktree" ? "Base branch" : "Branch"}
+      title={flow.workspaceMode === "worktree" ? uiT("Base branch") : uiT("Branch")}
       project={flow.selectedProject}
       branches={flow.filteredBranches}
       selectedBranchName={
@@ -404,6 +407,7 @@ export function BranchPickerScreen(props: {
     readonly onChangeStartFromOrigin: (value: boolean) => void;
   };
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const usesNativeMailSearchToolbar = useNativeMailSearchToolbar();
@@ -455,7 +459,7 @@ export function BranchPickerScreen(props: {
     >
       <ToggleRow
         onValueChange={props.worktree.onChangeStartFromOrigin}
-        title="Start from origin"
+        title={uiT("Start from origin")}
         value={props.worktree.startFromOrigin}
       />
     </View>
@@ -482,12 +486,12 @@ export function BranchPickerScreen(props: {
           {props.loading ? <AppActivityIndicator /> : null}
           <Text className="text-center text-sm text-foreground-muted">
             {props.loading
-              ? "Loading branches…"
+              ? uiT("Loading branches…")
               : props.error
                 ? props.error
                 : props.query
-                  ? "No matching branches"
-                  : "No branches available"}
+                  ? uiT("No matching branches")
+                  : uiT("No branches available")}
           </Text>
           {!props.loading && props.error ? (
             <Pressable
@@ -495,7 +499,7 @@ export function BranchPickerScreen(props: {
               className="rounded-full bg-card px-4 py-2 active:opacity-70"
               onPress={props.onRefresh}
             >
-              <Text className="text-sm font-t3-medium text-foreground">Try again</Text>
+              <Text className="text-sm font-t3-medium text-foreground">{uiT("Try again")}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -542,13 +546,13 @@ export function BranchPickerScreen(props: {
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
-            accessibilityLabel="Find a branch"
+            accessibilityLabel={uiT("Find a branch")}
             className="h-12 rounded-full border border-input-border bg-input px-4 font-sans text-base text-foreground"
             selectionColorClassName="accent-focus/32"
             cursorColorClassName="accent-focus"
             selectionHandleColorClassName="accent-focus"
             onChangeText={props.onQueryChange}
-            placeholder="Find a branch"
+            placeholder={uiT("Find a branch")}
             placeholderTextColorClassName="accent-placeholder"
             value={props.query}
           />
@@ -568,7 +572,7 @@ export function BranchPickerScreen(props: {
             ? () => [
                 createNativeMailSearchToolbarItem({
                   onSearchTextChange: props.onQueryChange,
-                  placeholder: "Find a branch",
+                  placeholder: uiT("Find a branch"),
                   searchTextChangeId: "new-task-branch-search-text",
                   showsSearchDismissButton: true,
                 }),
@@ -581,7 +585,7 @@ export function BranchPickerScreen(props: {
                 autoCapitalize: "none",
                 hideNavigationBar: false,
                 obscureBackground: false,
-                placeholder: "Find a branch",
+                placeholder: uiT("Find a branch"),
                 onChangeText: (event) => {
                   props.onQueryChange(event.nativeEvent.text);
                 },

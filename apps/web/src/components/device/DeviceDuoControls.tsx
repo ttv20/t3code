@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useState } from "react";
 import {
   duoFoldState,
@@ -32,6 +33,7 @@ export function DeviceDuoControls(props: {
   enabled: boolean;
   onCommand: (command: DuoCommand) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { screen } = props;
   const { fold, stand, phoneVertical: reportedVertical, settled } = duoFoldState(screen);
   // A fold never changes how the phone is held. Keep the last settled reading
@@ -74,14 +76,14 @@ export function DeviceDuoControls(props: {
       >
         {glyph}
       </TooltipTrigger>
-      <TooltipPopup side="left">{label}</TooltipPopup>
+      <TooltipPopup side="left">{uiT(label)}</TooltipPopup>
     </Tooltip>
   );
   const group =
     "pointer-events-auto flex shrink-0 flex-col items-center gap-1 rounded-full border border-border/50 bg-background/80 p-1 shadow-sm";
   return (
-    <div aria-label="iPhone Duo stands" className="flex flex-col items-center gap-2">
-      <div role="group" aria-label="Fold shape" className={group}>
+    <div aria-label={uiT("iPhone Duo stands")} className="flex flex-col items-center gap-2">
+      <div role="group" aria-label={uiT("Fold shape")} className={group}>
         {FOLDS.map(({ id, angle: value }) =>
           button(
             id,
@@ -100,7 +102,7 @@ export function DeviceDuoControls(props: {
           ),
         )}
       </div>
-      <div role="group" aria-label="Device stance" className={group}>
+      <div role="group" aria-label={uiT("Device stance")} className={group}>
         {STANDS.map(({ id, label }) =>
           button(
             id,

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useId, useMemo, useState } from "react";
 import { Image, Pressable, View } from "react-native";
 
@@ -14,6 +15,7 @@ function ResolvedWorkspaceFileImagePreview(props: {
   readonly uri: string;
   readonly actionsSource?: MediaActionsSource;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [loadError, setLoadError] = useState<string | null>(null);
   const [preview, setPreview] = useState<FilePreviewSource | null>(null);
   const sourceIdentifier = useId();
@@ -28,9 +30,11 @@ function ResolvedWorkspaceFileImagePreview(props: {
       <MediaActionsMenu media={mediaActions} style={{ flex: 1 }}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open full-screen preview of ${props.accessibilityLabel}`}
+          accessibilityLabel={uiT("Open full-screen preview of {0}", {
+            "0": props.accessibilityLabel,
+          })}
           accessibilityHint={
-            mediaActions.actions.length > 0 ? "Touch and hold for media actions" : undefined
+            mediaActions.actions.length > 0 ? uiT("Touch and hold for media actions") : undefined
           }
           disabled={loadError !== null}
           className="flex-1 p-4 active:bg-subtle-strong"
@@ -63,7 +67,7 @@ function ResolvedWorkspaceFileImagePreview(props: {
           pointerEvents="none"
           className="absolute inset-0 items-center justify-center bg-card px-6"
         >
-          <EmptyState title="Image unavailable" detail={loadError} />
+          <EmptyState title={uiT("Image unavailable")} detail={loadError} />
         </View>
       ) : null}
       <FilePreviewModal source={preview} onRequestClose={() => setPreview(null)} />
@@ -76,8 +80,9 @@ export function WorkspaceFileImagePreview(props: {
   readonly uri: string | null;
   readonly actionsSource?: MediaActionsSource;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (props.uri === null) {
-    return <FilePreviewLoading message="Preparing image preview..." background="card" />;
+    return <FilePreviewLoading message={uiT("Preparing image preview...")} background="card" />;
   }
 
   return (

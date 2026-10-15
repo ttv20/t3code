@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { PullRequestSectionHeading } from "./PullRequestSectionHeading";
 import type { PullRequestListEntry } from "@t3tools/contracts";
 import { View } from "react-native";
@@ -17,13 +18,14 @@ export function PullRequestOverviewLoading({
   readonly params: PullRequestParams;
   readonly stack: PullRequestStackState;
 }) {
+  const { t: uiT } = useUiLanguage();
   const review = pullRequestListReviewStatus(summary);
   const conflicting = summary.mergeability === "conflicting";
   const clean = summary.mergeability === "mergeable";
   return (
     <View
       className="gap-5"
-      accessibilityLabel="Loading pull request details"
+      accessibilityLabel={uiT("Loading pull request details")}
       accessibilityState={{ busy: true }}
     >
       <PullRequestStackCard params={params} state={stack} />
@@ -32,12 +34,12 @@ export function PullRequestOverviewLoading({
           compact
           title={
             summary.checksState === "passing"
-              ? "Checks completed"
+              ? uiT("Checks completed")
               : summary.checksState === "failing"
-                ? "Checks failing"
+                ? uiT("Checks failing")
                 : summary.checksState === "pending"
-                  ? "Checks running"
-                  : "Checks"
+                  ? uiT("Checks running")
+                  : uiT("Checks")
           }
           icon={
             summary.checksState === "passing"
@@ -58,7 +60,7 @@ export function PullRequestOverviewLoading({
         </PullRequestCardRow>
         <PullRequestCardRow
           compact
-          title={review?.accessibleLabel ?? "Reviews"}
+          title={review?.accessibleLabel ?? uiT("Reviews")}
           icon={review?.icon ?? "bubble.left"}
           tint={review?.tint}
         >
@@ -68,10 +70,10 @@ export function PullRequestOverviewLoading({
           compact
           title={
             conflicting
-              ? `Conflicts with ${summary.baseBranch}`
+              ? uiT("Conflicts with {0}", { "0": summary.baseBranch })
               : clean
-                ? `No conflicts with ${summary.baseBranch}`
-                : "Branch"
+                ? uiT("No conflicts with {0}", { "0": summary.baseBranch })
+                : uiT("Branch")
           }
           icon={
             conflicting ? "exclamationmark.triangle" : clean ? "checkmark.circle" : "arrow.branch"
@@ -98,7 +100,7 @@ export function PullRequestOverviewLoading({
         </View>
       ) : null}
       <View className="gap-3">
-        <PullRequestSectionHeading>Description</PullRequestSectionHeading>
+        <PullRequestSectionHeading>{uiT("Description")}</PullRequestSectionHeading>
         <View className="gap-3 py-1">
           <View className="h-4 w-full rounded bg-subtle-strong" />
           <View className="h-4 w-full rounded bg-subtle-strong" />

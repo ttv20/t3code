@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useNavigate } from "@tanstack/react-router";
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -32,6 +33,7 @@ export function PullRequestGuideRunCoordinator() {
 }
 
 function GuideRunWatcher({ runKey, watch }: { runKey: string; watch: GuideRunWatch }) {
+  const { t: uiT } = useUiLanguage();
   const query = useEnvironmentQuery(
     pullRequestEnvironment.reviewGuide({
       environmentId: watch.environmentId,
@@ -72,7 +74,7 @@ function GuideRunWatcher({ runKey, watch }: { runKey: string; watch: GuideRunWat
     const looking = document.visibilityState === "visible" && document.hasFocus();
     if (looking && store.shownKey === runKey) return;
 
-    const title = failure === null ? "Review guide ready" : "Review guide failed";
+    const title = failure === null ? uiT("Review guide ready") : uiT("Review guide failed");
     const body = watch.title ?? `${watch.reference.repository} #${watch.reference.number}`;
     const open = () => {
       useGuideRunStore.getState().requestOpen(runKey);
@@ -134,7 +136,7 @@ function GuideRunWatcher({ runKey, watch }: { runKey: string; watch: GuideRunWat
     } catch {
       // Some browsers expose Notification but reject desktop presentation.
     }
-  }, [data, navigate, runKey, watch]);
+  }, [data, navigate, runKey, watch, uiT]);
 
   return null;
 }

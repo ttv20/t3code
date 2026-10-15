@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   worktreeSetupStageLabel,
   type WorktreeSetupSnapshot,
@@ -39,6 +40,7 @@ const icons: Record<WorktreeSetupStage["status"], AppSymbolName> = {
 
 /** Setup stages collapse into the working header once the agent's turn is live. */
 export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
+  const { t: uiT } = useUiLanguage();
   const { snapshot, turnStarted, turnStartedAt, working } = props;
   const handedOff = turnStarted && worktreeSetupAgentStarted(snapshot);
   const running = snapshot.phase === "running";
@@ -50,24 +52,24 @@ export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
     snapshot.phase === "failed" || snapshot.stages.some((stage) => stage.status === "failed");
   const label =
     handedOff && working
-      ? `Working for ${elapsed(turnStartedAt, null, now) ?? "0s"}`
+      ? uiT("Working for {0}", { "0": elapsed(turnStartedAt, null, now) ?? "0s" })
       : running
         ? handedOff
-          ? "Setup continues…"
-          : "Setting up worktree…"
+          ? uiT("Setup continues…")
+          : uiT("Setting up worktree…")
         : snapshot.phase === "cancelled"
-          ? "Worktree setup cancelled"
+          ? uiT("Worktree setup cancelled")
           : snapshot.phase === "failed"
-            ? "Worktree setup failed"
+            ? uiT("Worktree setup failed")
             : failed
-              ? "Setup script failed"
-              : "Worktree ready";
+              ? uiT("Setup script failed")
+              : uiT("Worktree ready");
 
   return (
-    <View accessibilityLabel="Worktree setup" className="py-1">
+    <View accessibilityLabel={uiT("Worktree setup")} className="py-1">
       <View className="min-h-11 flex-row items-center gap-2 border-b border-border px-1">
         <HeaderLabel
-          label={label}
+          label={uiT(label)}
           active={(running || working) && !detailsOpen}
           failed={failed && !working}
         />
@@ -83,8 +85,8 @@ export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
           accessibilityRole="button"
           accessibilityLabel={
             backgroundSetup
-              ? `${scriptName} is still running. Show setup progress.`
-              : "Worktree setup details"
+              ? uiT("{0} is still running. Show setup progress.", { "0": scriptName })
+              : uiT("Worktree setup details")
           }
           accessibilityState={{ expanded: detailsOpen }}
           onPress={() => setDetailsOpen(true)}
@@ -115,7 +117,7 @@ export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
               />
             ) : null}
             <Text numberOfLines={1} className="shrink text-2xs text-foreground-secondary">
-              {backgroundSetup ? scriptName : "Details"}
+              {backgroundSetup ? scriptName : uiT("Details")}
             </Text>
             {!backgroundSetup ? (
               <SymbolView name="chevron.right" size={10} tintColorClassName="accent-icon-muted" />
@@ -147,11 +149,15 @@ export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
 }
 
 export function WorktreeWorkingHeader({ startedAt }: { startedAt: string }) {
+  const { t: uiT } = useUiLanguage();
   const now = useSetupClock(true);
   return (
     <View className="py-1">
       <View className="min-h-11 flex-row items-center border-b border-border px-1">
-        <HeaderLabel label={`Working for ${elapsed(startedAt, null, now) ?? "0s"}`} active />
+        <HeaderLabel
+          label={uiT("Working for {0}", { "0": elapsed(startedAt, null, now) ?? "0s" })}
+          active
+        />
       </View>
     </View>
   );
@@ -166,11 +172,12 @@ function HeaderLabel({
   active: boolean;
   failed?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   return active ? (
     <ShimmeringWorkContent
       icon="clock"
       iconSubtleColor="transparent"
-      label={label}
+      label={uiT(label)}
       showIcon={false}
     />
   ) : (
@@ -183,7 +190,7 @@ function HeaderLabel({
       }
       style={{ fontVariant: ["tabular-nums"] }}
     >
-      {label}
+      {uiT(label)}
     </Text>
   );
 }
@@ -211,6 +218,7 @@ function SetupDetailsSheet({
   onClose,
   now,
 }: WorktreeSetupCardProps & { onClose: () => void; now: number }) {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const [bodyHeight, setBodyHeight] = useState(0);
   const canCancel = snapshot.phase === "running" && !turnStarted;
@@ -247,14 +255,14 @@ function SetupDetailsSheet({
           <View className="mt-3 flex-row items-center justify-end gap-4 border-t border-border pt-1">
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Cancel worktree setup"
+              accessibilityLabel={uiT("Cancel worktree setup")}
               onPress={() => {
                 onClose();
                 onCancel();
               }}
               className="min-h-11 justify-center px-2"
             >
-              <Text className="text-sm text-danger-foreground">Cancel setup</Text>
+              <Text className="text-sm text-danger-foreground">{uiT("Cancel setup")}</Text>
             </Pressable>
             {onWorkLocally ? (
               <Pressable
@@ -265,7 +273,7 @@ function SetupDetailsSheet({
                 }}
                 className="min-h-11 justify-center px-2"
               >
-                <Text className="text-sm text-foreground">Work locally</Text>
+                <Text className="text-sm text-foreground">{uiT("Work locally")}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -288,6 +296,7 @@ function StageRow({
   compact?: boolean;
   animate?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const label =
     stage.id === "setup-script"
       ? (scriptName ?? worktreeSetupStageLabel(stage.id))
@@ -343,7 +352,7 @@ function StageRow({
               : "flex-1 text-sm text-foreground-secondary"
           }
         >
-          {label}
+          {uiT(label)}
         </Text>
       )}
       {detail ? (
@@ -367,9 +376,10 @@ const OUTPUT_TAIL_SLOTS = [0, 1, 2, 3] as const;
 
 /** Fixed four-line output window, shown only in Details. */
 function OutputTail({ lines, failed }: { lines: ReadonlyArray<string>; failed: boolean }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View
-      accessibilityLabel="Setup script output"
+      accessibilityLabel={uiT("Setup script output")}
       className={
         failed
           ? "mb-2 ml-8 rounded-md border border-danger-border bg-danger px-3 py-2"

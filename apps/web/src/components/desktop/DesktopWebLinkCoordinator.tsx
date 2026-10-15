@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
@@ -53,6 +54,7 @@ function threadShowingBrowser(
  * project, its browser panel maximized.
  */
 export function DesktopWebLinkCoordinator() {
+  const { t: uiT } = useUiLanguage();
   const router = useRouter();
   const primaryEnvironment = usePrimaryEnvironment();
   const { scratchEnvironmentId, openScratchProject } = useScratchProject();
@@ -72,7 +74,7 @@ export function DesktopWebLinkCoordinator() {
 
   const reportFailure = (url: string, description = url) =>
     toastManager.add(
-      stackedThreadToast({ type: "error", title: "Could not open the link", description }),
+      stackedThreadToast({ type: "error", title: uiT("Could not open the link"), description }),
     );
 
   // The OS hands each link over once, so a thread that could not start says so.

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   createContext,
   use,
@@ -52,6 +53,7 @@ type RowContent = {
 };
 
 function WorkLogLine({ icon, label, trailing, wrapLabel }: RowContent) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       className={cn(
@@ -75,7 +77,7 @@ function WorkLogLine({ icon, label, trailing, wrapLabel }: RowContent) {
             !wrapLabel && "truncate [&_*]:whitespace-nowrap",
           )}
         >
-          {label}
+          {uiT(label)}
         </div>
       </div>
       {trailing}
@@ -103,10 +105,11 @@ export function WorkLogButton({
   wrapLabel = false,
   ...buttonProps
 }: RowContent & Omit<ComponentProps<"button">, "className" | "style" | "children">) {
+  const { t: uiT } = useUiLanguage();
   const className = useRowClassName(true);
   return (
     <button {...buttonProps} type="button" className={className}>
-      <WorkLogLine icon={icon} label={label} trailing={trailing} wrapLabel={wrapLabel} />
+      <WorkLogLine icon={icon} label={uiT(label)} trailing={trailing} wrapLabel={wrapLabel} />
     </button>
   );
 }
@@ -120,10 +123,11 @@ export function WorkLogRow({
   children,
   ...rowProps
 }: RowContent & Omit<ComponentProps<"div">, "className" | "style">) {
+  const { t: uiT } = useUiLanguage();
   const className = useRowClassName(rowProps.onClick !== undefined);
   return (
     <div {...rowProps} className={className}>
-      <WorkLogLine icon={icon} label={label} trailing={trailing} wrapLabel={wrapLabel} />
+      <WorkLogLine icon={icon} label={uiT(label)} trailing={trailing} wrapLabel={wrapLabel} />
       {children}
     </div>
   );

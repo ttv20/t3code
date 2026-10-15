@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ComponentProps } from "react";
 import { Pressable } from "react-native";
 import type { MaterialFloatingActionButton as AndroidMaterialFloatingActionButton } from "./MaterialFloatingActionButton.android";
@@ -8,10 +9,11 @@ import { cn } from "../lib/cn";
 export function MaterialFloatingActionButton(
   props: ComponentProps<typeof AndroidMaterialFloatingActionButton>,
 ) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={props.label}
+      accessibilityLabel={uiT(props.label)}
       onPress={props.onPress}
       className={cn(
         "min-h-14 min-w-14 flex-row items-center justify-center gap-2 rounded-2xl px-4",
@@ -34,7 +36,7 @@ export function MaterialFloatingActionButton(
             props.tone === "primary" ? "text-primary-foreground" : "text-secondary-foreground",
           )}
         >
-          {props.label}
+          {uiT(props.label)}
         </AppText>
       ) : null}
     </Pressable>

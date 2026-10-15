@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { RefObject } from "react";
 import { Pressable, TextInput, type TextInputInstance, View } from "react-native";
 
@@ -19,6 +20,7 @@ export function MaterialSearchField({
   readonly value: string;
   readonly onChangeText: (value: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { scale, mediumIconSize } = useAndroidControlSizing();
   return (
     <View
@@ -41,7 +43,7 @@ export function MaterialSearchField({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        placeholder={placeholder}
+        placeholder={uiT(placeholder)}
         placeholderTextColorClassName="accent-placeholder"
         selectionColorClassName="accent-focus/32"
         cursorColorClassName="accent-focus"

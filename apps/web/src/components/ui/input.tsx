@@ -42,6 +42,7 @@ function Input({
 
     inputElement = (
       <input
+        dir="auto"
         className={inputClassName}
         data-slot="input"
         size={typeof size === "number" ? size : undefined}
@@ -52,6 +53,7 @@ function Input({
   } else {
     inputElement = (
       <InputPrimitive
+        dir="auto"
         className={inputClassName}
         data-slot="input"
         size={typeof size === "number" ? size : undefined}

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { formatPercent } from "@t3tools/shared/usageFormat";
 import type { ReactNode } from "react";
 
@@ -24,6 +25,7 @@ export function UsageShareBar({
   readonly format: (value: number) => string;
   readonly aside?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const visible = segments.filter((segment) => segment.value > 0);
   const total = visible.reduce((sum, segment) => sum + segment.value, 0);
   if (total <= 0) return null;
@@ -31,7 +33,7 @@ export function UsageShareBar({
   return (
     <div className="flex min-w-0 flex-col gap-2.5">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-medium text-foreground">{label}</h3>
+        <h3 className="text-sm font-medium text-foreground">{uiT(label)}</h3>
         {aside}
       </div>
       <div
@@ -50,7 +52,8 @@ export function UsageShareBar({
               }
             />
             <TooltipPopup>
-              {segment.label} · {format(segment.value)} · {formatPercent(segment.value / total)}
+              {uiT(segment.label)} · {format(segment.value)} ·{" "}
+              {formatPercent(segment.value / total)}
             </TooltipPopup>
           </Tooltip>
         ))}
@@ -63,7 +66,7 @@ export function UsageShareBar({
               className="size-2 rounded-xs"
               style={{ backgroundColor: segment.color }}
             />
-            <span className="text-muted-foreground">{segment.label}</span>
+            <span className="text-muted-foreground">{uiT(segment.label)}</span>
             <span className="text-foreground tabular-nums">{format(segment.value)}</span>
           </span>
         ))}

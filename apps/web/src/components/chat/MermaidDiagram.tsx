@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import DOMPurify from "dompurify";
 import type { Mermaid } from "mermaid";
 import { use, useState } from "react";
@@ -170,6 +171,7 @@ export function MermaidDiagram({
   theme: "light" | "dark";
   onExpand: (imageUrl: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [, setAttempt] = useState(0);
   const result = use(mermaidRenderPromise(source.trim(), theme));
 
@@ -177,7 +179,9 @@ export function MermaidDiagram({
     return (
       <div>
         <div className="flex items-center justify-between gap-2">
-          <p className="m-0 text-xs text-destructive">Unable to render diagram: {result.message}</p>
+          <p className="m-0 text-xs text-destructive">
+            <UiText message={"Unable to render diagram: {0}"} values={{ "0": result.message }} />
+          </p>
           {result.retryable ? (
             <Button
               type="button"
@@ -188,7 +192,7 @@ export function MermaidDiagram({
                 setAttempt((attempt) => attempt + 1);
               }}
             >
-              Retry
+              {uiT("Retry")}
             </Button>
           ) : null}
         </div>
@@ -207,7 +211,7 @@ export function MermaidDiagram({
     <div className="overflow-x-auto">
       <button
         type="button"
-        aria-label="Expand diagram"
+        aria-label={uiT("Expand diagram")}
         className="flex w-full cursor-zoom-in justify-center rounded-md focus-visible:outline-2 focus-visible:outline-ring [&_svg]:h-auto [&_svg]:max-w-full"
         onClick={() => onExpand(mermaidImageUrl(result.svg))}
         dangerouslySetInnerHTML={{ __html: result.svg }}

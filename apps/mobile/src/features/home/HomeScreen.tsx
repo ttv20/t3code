@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
 import { useAndroidControlSizing } from "../../components/useAndroidControlSizing";
 import type { ThreadMoveDestination } from "../threads/threadOrder";
@@ -271,6 +272,7 @@ function renderHomeScrollView(props: ScrollViewProps) {
 /* ─── Main screen ────────────────────────────────────────────────────── */
 
 export function HomeScreen(props: HomeScreenProps) {
+  const { t: uiT } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const workspace = useWorkspaceTabs();
   const [initialScrollOffset] = useState(() => workspace?.getScrollOffset("threads") ?? 0);
@@ -957,7 +959,7 @@ export function HomeScreen(props: HomeScreenProps) {
               action={
                 Platform.OS === "android" && !props.catalogState.hasReadyEnvironment ? (
                   <MaterialFloatingActionButton
-                    label="Add environment"
+                    label={uiT("Add environment")}
                     icon="plus"
                     variant="extended"
                     tone="primary"
@@ -1001,25 +1003,25 @@ export function HomeScreen(props: HomeScreenProps) {
   const v2ListEmpty =
     hasSearchQuery && threadSearch.isPending ? undefined : hasSearchQuery ? (
       <EmptyState
-        title="No results"
+        title={uiT("No results")}
         detail={`No threads matching "${props.searchQuery}".`}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : v2ScopedProjectGroup !== null ? (
       <EmptyState
-        title={`No threads in ${v2ScopedProjectGroup.title}`}
+        title={uiT("No threads in {0}", { "0": v2ScopedProjectGroup.title })}
         detail="Choose another project or create a new task."
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : selectedEnvironmentLabel ? (
       <EmptyState
-        title={`No threads in ${selectedEnvironmentLabel}`}
+        title={uiT("No threads in {0}", { "0": selectedEnvironmentLabel })}
         detail="Choose another environment or create a new task."
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : (
       <EmptyState
-        title="No threads yet"
+        title={uiT("No threads yet")}
         detail="Create a task to start a new coding session."
         variant={Platform.OS === "android" ? "plain" : undefined}
       />

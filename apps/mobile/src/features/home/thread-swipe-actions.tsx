@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { SymbolView } from "../../components/AppSymbol";
 import { ControlPillMenu } from "../../components/ControlPill";
 import type { MenuAction } from "@react-native-menu/menu";
@@ -518,6 +519,7 @@ function SwipeActionButton(props: {
   readonly stretchesOnFullSwipe: boolean;
   readonly translation: SharedValue<number>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const {
     actionsWidth,
     entryRange: [entryRangeStart, entryRangeEnd],
@@ -663,7 +665,7 @@ function SwipeActionButton(props: {
         ]}
       >
         <Text className="text-3xs font-t3-medium text-foreground-muted" numberOfLines={1}>
-          {props.label}
+          {uiT(props.label)}
         </Text>
       </Animated.View>
     </Pressable>
@@ -708,6 +710,7 @@ export function ThreadSwipeActions(props: {
   readonly secondaryAction: ThreadSwipeSecondaryAction | null;
   readonly translation: SharedValue<number>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { fullSwipeThreshold, onFullSwipeArmedChange, secondaryAction, translation } = props;
   const fullSwipeIsPrimary = props.fullSwipeAction === "primary" || secondaryAction === null;
   const actionsWidth = swipeActionsWidth(secondaryAction !== null);
@@ -742,7 +745,7 @@ export function ThreadSwipeActions(props: {
         }
         fullSwipeThreshold={props.fullSwipeThreshold}
         icon={props.primaryAction.icon}
-        label={props.primaryAction.label}
+        label={uiT(props.primaryAction.label)}
         onPress={props.primaryAction.onPress}
         stretchesOnFullSwipe={fullSwipeIsPrimary}
         translation={props.translation}

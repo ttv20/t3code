@@ -1,3 +1,4 @@
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
 import type { EnvironmentId, ServerConfig } from "@t3tools/contracts";
 import { cliReleaseChannelOf } from "@t3tools/shared/cliRelease";
@@ -287,22 +288,33 @@ export function collectUpdateEverythingResult(input: {
 export function getUpdateEverythingToastView(
   result: UpdateEverythingResult,
   appVersion: string,
+  locale: UiLocale = "en",
 ): {
   readonly type: "success" | "error";
   readonly title: string;
   readonly description?: string;
 } | null {
+  const t = createUiTranslator(locale);
   const parts = [
-    result.localVersion !== null && result.localVersion === appVersion ? "this app" : null,
-    countLabel(result.updatedServers, "server"),
-    countLabel(result.updatedProviders, "provider"),
+    result.localVersion !== null && result.localVersion === appVersion ? t("this app") : null,
+    result.updatedServers > 0
+      ? t(result.updatedServers === 1 ? "1 server" : "{0} servers", { "0": result.updatedServers })
+      : null,
+    result.updatedProviders > 0
+      ? t(result.updatedProviders === 1 ? "1 provider" : "{0} providers", {
+          "0": result.updatedProviders,
+        })
+      : null,
   ].filter((part) => part !== null);
   if (result.failures.length === 0) {
-    return parts.length === 0 ? null : { type: "success", title: `Updated ${joinList(parts)}` };
+    return parts.length === 0
+      ? null
+      : { type: "success", title: t("Updated {0}", { "0": joinList(parts, locale) }) };
   }
   return {
     type: "error",
-    title: parts.length === 0 ? "Update failed" : `Updated ${joinList(parts)}`,
+    title:
+      parts.length === 0 ? t("Update failed") : t("Updated {0}", { "0": joinList(parts, locale) }),
     description: result.failures.join("\n"),
   };
 }
@@ -321,13 +333,8 @@ export interface UpdateEverythingPlan {
   }>;
 }
 
-function countLabel(count: number, noun: string): string | null {
-  return count === 0 ? null : `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function joinList(parts: ReadonlyArray<string>): string {
-  if (parts.length <= 2) return parts.join(" and ");
-  return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)}`;
+function joinList(parts: ReadonlyArray<string>, locale: UiLocale = "en"): string {
+  return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(parts);
 }
 
 /**
@@ -335,21 +342,29 @@ function joinList(parts: ReadonlyArray<string>): string {
  * "Update this app, 2 servers, and 3 providers". `lines` has one entry per
  * machine, this app first, such as "alvin: server to 0.0.50, Codex, Claude".
  */
-export function describeUpdateEverything(plan: UpdateEverythingPlan): {
+export function describeUpdateEverything(
+  plan: UpdateEverythingPlan,
+  locale: UiLocale = "en",
+): {
   readonly summary: string;
   readonly lines: ReadonlyArray<string>;
 } {
+  const t = createUiTranslator(locale);
   const providerCount = plan.providerMachines.reduce(
     (count, machine) => count + machine.providers.length,
     0,
   );
-  const summary = `Update ${joinList(
-    [
-      plan.localVersion ? "this app" : null,
-      countLabel(plan.servers.length, "server"),
-      countLabel(providerCount, "provider"),
-    ].filter((part) => part !== null),
-  )}`;
+  const parts = [
+    plan.localVersion ? t("this app") : null,
+    plan.servers.length > 0
+      ? t(plan.servers.length === 1 ? "1 server" : "{0} servers", { "0": plan.servers.length })
+      : null,
+    providerCount > 0
+      ? t(providerCount === 1 ? "1 provider" : "{0} providers", { "0": providerCount })
+      : null,
+  ].filter((part) => part !== null);
+  const list = joinList(parts, locale);
+  const summary = t("Update {0}", { "0": list });
 
   const machines = new Map<EnvironmentId, { label: string; items: string[] }>();
   const itemsFor = (environmentId: EnvironmentId, label: string) => {
@@ -364,8 +379,8 @@ export function describeUpdateEverything(plan: UpdateEverythingPlan): {
     // offers, so it has no target version to show.
     itemsFor(server.environmentId, server.serverLabel).push(
       server.selfUpdate === "desktop-managed"
-        ? "desktop app update"
-        : `server to ${server.targetVersion}`,
+        ? t("desktop app update")
+        : t("server to {0}", { "0": server.targetVersion }),
     );
   }
   for (const machine of plan.providerMachines) {
@@ -375,7 +390,7 @@ export function describeUpdateEverything(plan: UpdateEverythingPlan): {
   return {
     summary,
     lines: [
-      ...(plan.localVersion ? [`This app: ${plan.localVersion}, restarts last`] : []),
+      ...(plan.localVersion ? [t("This app: {0}, restarts last", { "0": plan.localVersion })] : []),
       ...Array.from(machines.values(), ({ label, items }) => `${label}: ${items.join(", ")}`),
     ],
   };

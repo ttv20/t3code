@@ -11,7 +11,6 @@
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import type { ClientOs } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
-import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -30,6 +29,7 @@ import * as HttpClientResponse from "effect/http/HttpClientResponse";
 import packageJson from "../../package.json" with { type: "json" };
 import * as ServerConfig from "../config.ts";
 import { getTelemetryIdentifier } from "./Identify.ts";
+import { makeTelemetryConfig } from "./telemetryConfig.ts";
 
 interface BufferedAnalyticsEvent {
   readonly uuid: string;
@@ -65,21 +65,6 @@ export function retryDelayMs(failures: number, random: number): number {
   const ceiling = Math.min(RETRY_MAX_DELAY_MS, RETRY_BASE_DELAY_MS * 2 ** (failures - 1));
   return Math.round(ceiling / 2 + (ceiling / 2) * random);
 }
-
-const TelemetryEnvConfig = Config.all({
-  posthogKey: Config.String("T3CODE_POSTHOG_KEY").pipe(
-    Config.withDefault("phc_XOWci4oZP4VvLiEyrFqkFjP4CZn55mjYYBMREK5Wd6m"),
-  ),
-  posthogHost: Config.String("T3CODE_POSTHOG_HOST").pipe(
-    Config.withDefault("https://us.i.posthog.com"),
-  ),
-  enabled: Config.Boolean("T3CODE_TELEMETRY_ENABLED").pipe(Config.withDefault(false)),
-  flushBatchSize: Config.Number("T3CODE_TELEMETRY_FLUSH_BATCH_SIZE").pipe(Config.withDefault(20)),
-  maxBufferedEvents: Config.Number("T3CODE_TELEMETRY_MAX_BUFFERED_EVENTS").pipe(
-    Config.withDefault(1_000),
-  ),
-  wslDistroName: Config.String("WSL_DISTRO_NAME").pipe(Config.option),
-});
 
 export class AnalyticsService extends Context.Service<
   AnalyticsService,
@@ -121,8 +106,8 @@ function serverOsFromNodePlatform(platform: string): ClientOs {
 
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
-  const telemetryConfig = yield* TelemetryEnvConfig;
-  if (!telemetryConfig.enabled) {
+  const telemetryConfig = yield* makeTelemetryConfig();
+  if (!telemetryConfig.enabled || !telemetryConfig.posthogKey.trim()) {
     return AnalyticsService.of({
       record: () => Effect.void,
       flush: Effect.void,

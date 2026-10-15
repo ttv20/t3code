@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useMemo } from "react";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { ScreenHeaderButton } from "../../components/ScreenHeaderButton";
@@ -18,6 +19,7 @@ export function ThreadHeader(
     readonly onOpenFilesInspector: () => void;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   const returnToList = useWorkspaceListNavigation("threads");
   const { layout, panes, toggleAuxiliaryPane } = useAdaptiveWorkspaceLayout();
   const { onOpenTerminal, onMergeBack } = props.gitControls;
@@ -87,8 +89,8 @@ export function ThreadHeader(
             <ScreenHeaderButton
               accessibilityLabel={
                 props.inspectorMode !== null && panes.auxiliaryPaneVisible
-                  ? "Hide inspector"
-                  : "Show inspector"
+                  ? uiT("Hide inspector")
+                  : uiT("Show inspector")
               }
               icon="sidebar.right"
               selected={props.inspectorMode !== null && panes.auxiliaryPaneVisible}

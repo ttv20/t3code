@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { use, useCallback, useEffect, useRef } from "react";
 import { Platform } from "react-native";
@@ -16,6 +17,7 @@ export function WorkspaceToolbar(props: {
   readonly onNewTask: () => void;
   readonly sidebar?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const workspace = useWorkspaceTabs()!;
   const navigation = useNavigation();
   const metrics = useNativeLayoutMetrics();
@@ -78,7 +80,9 @@ export function WorkspaceToolbar(props: {
                   placement: NATIVE_LIQUID_GLASS_SUPPORTED ? "integratedButton" : "stacked",
                   allowToolbarIntegration: NATIVE_LIQUID_GLASS_SUPPORTED,
                   placeholder:
-                    selectedTab === "pullRequests" ? "Search pull requests" : "Search threads",
+                    selectedTab === "pullRequests"
+                      ? uiT("Search pull requests")
+                      : uiT("Search threads"),
                   cancelButtonText: "✕",
                   onFocus: () =>
                     tab.searchMode === "resting"
@@ -103,7 +107,7 @@ export function WorkspaceToolbar(props: {
       {/* UIKit lays trailing items out from the edge inward. */}
       <NativeHeaderToolbar placement="right">
         <NativeHeaderToolbar.Button
-          accessibilityLabel="Settings"
+          accessibilityLabel={uiT("Settings")}
           icon="gearshape"
           onPress={() =>
             navigation.navigate("SettingsSheet", {
@@ -115,7 +119,7 @@ export function WorkspaceToolbar(props: {
         {NATIVE_LIQUID_GLASS_SUPPORTED ? null : (
           <NativeHeaderToolbar.Button
             accessibilityLabel={
-              selectedTab === "pullRequests" ? "Search pull requests" : "Search threads"
+              selectedTab === "pullRequests" ? uiT("Search pull requests") : uiT("Search threads")
             }
             icon="magnifyingglass"
             onPress={focusSearch}
@@ -127,7 +131,7 @@ export function WorkspaceToolbar(props: {
         {nativeToolbarCompose ? (
           <NativeHeaderToolbar.Button
             identifier="workspace-compose"
-            accessibilityLabel="New chat"
+            accessibilityLabel={uiT("New chat")}
             icon="square.and.pencil"
             onPress={props.onNewTask}
             separateBackground

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useNavigate } from "@tanstack/react-router";
 import { useAtomValue } from "@effect/atom-react";
 import { DownloadIcon } from "lucide-react";
@@ -108,6 +109,7 @@ function addProviderUpdateToast(input: {
  * per-environment split is gated behind WSL presence.
  */
 export function ProviderUpdatePrimaryNotification() {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const providers = useAtomValue(primaryServerProvidersAtom);
   const primaryEnvironment = usePrimaryEnvironment();
@@ -302,7 +304,9 @@ export function ProviderUpdatePrimaryNotification() {
       title: initialView.title,
       description: canManageProviders
         ? initialView.description
-        : "This connection cannot manage provider accounts. View provider settings for update details.",
+        : uiT(
+            "This connection cannot manage provider accounts. View provider settings for update details.",
+          ),
       timeout: 0,
       actionProps:
         oneClickProviders.length > 0
@@ -351,6 +355,7 @@ export function ProviderUpdatePrimaryNotification() {
     openProviderSettings,
     primaryEnvironment,
     updateProviders,
+    uiT,
   ]);
 
   return null;

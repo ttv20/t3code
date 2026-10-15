@@ -84,7 +84,7 @@ export function ChatCanvas({
         findBarBottom: findBarBounds ? findBarBounds.bottom - canvasBounds.top : 0,
         width: element.clientWidth,
         height: element.clientHeight,
-        padding: Number.parseFloat(styles.paddingLeft),
+        padding: Number.parseFloat(styles.paddingInlineStart),
         maxChatWidth: Number.parseFloat(styles.width),
         minChatWidth: Number.parseFloat(styles.minWidth),
         composerHeight: composerOverlayElement?.getBoundingClientRect().height ?? 0,

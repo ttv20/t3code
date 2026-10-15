@@ -985,7 +985,7 @@ describe("DesktopBackendConfiguration", () => {
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 
-  it.effect("resolveWsl carries the kill switch into the distro", () =>
+  it.effect("resolveWsl carries the telemetry destination and kill switch into the distro", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const baseDir = yield* fileSystem.makeTempDirectoryScoped({
@@ -995,10 +995,14 @@ describe("DesktopBackendConfiguration", () => {
       const previousWslEnv = process.env.WSLENV;
       const previousDisabled = process.env.OTEL_SDK_DISABLED;
       const previousTelemetry = process.env.T3CODE_TELEMETRY_ENABLED;
+      const previousPosthogKey = process.env.T3CODE_POSTHOG_KEY;
+      const previousPosthogHost = process.env.T3CODE_POSTHOG_HOST;
       try {
         delete process.env.WSLENV;
         process.env.OTEL_SDK_DISABLED = "true";
         process.env.T3CODE_TELEMETRY_ENABLED = "false";
+        process.env.T3CODE_POSTHOG_KEY = "phc_test_rtl_project";
+        process.env.T3CODE_POSTHOG_HOST = "https://us.i.posthog.com";
 
         yield* Effect.gen(function* () {
           const configuration = yield* DesktopBackendConfiguration.DesktopBackendConfiguration;
@@ -1008,6 +1012,10 @@ describe("DesktopBackendConfiguration", () => {
           assert.include((config.env.WSLENV ?? "").split(":"), "OTEL_SDK_DISABLED");
           assert.equal(config.env.T3CODE_TELEMETRY_ENABLED, "false");
           assert.include((config.env.WSLENV ?? "").split(":"), "T3CODE_TELEMETRY_ENABLED");
+          assert.equal(config.env.T3CODE_POSTHOG_KEY, "phc_test_rtl_project");
+          assert.equal(config.env.T3CODE_POSTHOG_HOST, "https://us.i.posthog.com");
+          assert.include((config.env.WSLENV ?? "").split(":"), "T3CODE_POSTHOG_KEY");
+          assert.include((config.env.WSLENV ?? "").split(":"), "T3CODE_POSTHOG_HOST");
         }).pipe(
           Effect.provide(
             DesktopBackendConfiguration.layer.pipe(
@@ -1029,6 +1037,8 @@ describe("DesktopBackendConfiguration", () => {
         restoreEnv("WSLENV", previousWslEnv);
         restoreEnv("OTEL_SDK_DISABLED", previousDisabled);
         restoreEnv("T3CODE_TELEMETRY_ENABLED", previousTelemetry);
+        restoreEnv("T3CODE_POSTHOG_KEY", previousPosthogKey);
+        restoreEnv("T3CODE_POSTHOG_HOST", previousPosthogHost);
       }
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );

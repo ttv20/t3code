@@ -14,6 +14,7 @@ import {
   type PullRequestMergeMethod,
   type SidebarProjectGroupingMode,
 } from "@t3tools/contracts";
+import type { InterfaceLanguage, InterfaceDirection } from "@t3tools/contracts/settings";
 import type { ComposerEnterBehavior } from "../lib/composerEnterBehavior";
 import type { FollowUpBehavior } from "../lib/followUpBehavior";
 import { isMicrophoneKind, type MicrophoneEntry } from "../lib/microphonePriority";
@@ -53,6 +54,8 @@ const isThreadListFilters = Schema.is(ThreadListFilters);
 const isPullRequestListPreferences = Schema.is(PullRequestListPreferences);
 
 export interface Preferences {
+  readonly interfaceLanguage?: InterfaceLanguage;
+  readonly interfaceDirection?: InterfaceDirection;
   readonly pullRequestHideTestFiles?: boolean;
   readonly pullRequestMergeMethod?: PullRequestMergeMethod;
   readonly liveActivitiesEnabled?: boolean;
@@ -136,6 +139,8 @@ export class MobilePreferencesStore extends Context.Service<
 
 function sanitizePreferences(parsed: Preferences): Preferences {
   const preferences: {
+    interfaceLanguage?: InterfaceLanguage;
+    interfaceDirection?: InterfaceDirection;
     pullRequestHideTestFiles?: boolean;
     pullRequestMergeMethod?: PullRequestMergeMethod;
     liveActivitiesEnabled?: boolean;
@@ -164,6 +169,13 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     threadListFilters?: ThreadListFilters;
     pullRequestListFilters?: PullRequestListPreferences;
   } = {};
+
+  if (["system", "en", "he", "ar", "fa"].includes(parsed.interfaceLanguage ?? "")) {
+    preferences.interfaceLanguage = parsed.interfaceLanguage;
+  }
+  if (["auto", "ltr", "rtl"].includes(parsed.interfaceDirection ?? "")) {
+    preferences.interfaceDirection = parsed.interfaceDirection;
+  }
 
   if (typeof parsed.pullRequestHideTestFiles === "boolean") {
     preferences.pullRequestHideTestFiles = parsed.pullRequestHideTestFiles;

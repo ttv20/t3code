@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useEffect, useSyncExternalStore } from "react";
 
 import {
@@ -52,6 +53,7 @@ function resolveConfirmDialogCopy(message: string): ConfirmationCopy {
 }
 
 export function ConfirmDialogHost() {
+  const { t: uiT } = useUiLanguage();
   const state = useSyncExternalStore(
     subscribeConfirmDialog,
     readConfirmDialogState,
@@ -80,14 +82,14 @@ export function ConfirmDialogHost() {
           <AlertDialogTitle>{copy.title}</AlertDialogTitle>
           {copy.description ? (
             <AlertDialogDescription className="whitespace-pre-line">
-              {copy.description}
+              {uiT(copy.description)}
             </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+          <AlertDialogClose render={<Button variant="outline" />}>{uiT("Cancel")}</AlertDialogClose>
           <Button variant={confirmVariant} onClick={onConfirm}>
-            Confirm
+            {uiT("Confirm")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogPopup>

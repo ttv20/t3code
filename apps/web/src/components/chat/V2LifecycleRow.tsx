@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ThreadHoverCardPopup } from "../ThreadHoverCard";
 import { AgentElapsed } from "./AgentElapsed";
 import { projectedSubagentsToRuntime } from "@t3tools/client-runtime/state/subagentRuntime";
@@ -77,6 +78,7 @@ export function V2LifecycleRow(props: {
   readonly runs: ReadonlyArray<HandoffTimelineRun>;
   readonly onOpenThread: (threadId: ThreadId) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { item } = props;
   if (item.type === "run_interrupt_request") {
     return (
@@ -85,7 +87,7 @@ export function V2LifecycleRow(props: {
           <span aria-hidden="true" className="font-mono">
             ■
           </span>
-          <span className="font-medium">Interrupt requested</span>
+          <span className="font-medium">{uiT("Interrupt requested")}</span>
           <span aria-hidden="true" className="opacity-50">
             ·
           </span>
@@ -100,7 +102,7 @@ export function V2LifecycleRow(props: {
   if (item.type === "run_interrupt_result") {
     return (
       <TimelineSystemDivider
-        label="Run interrupted"
+        label={uiT("Run interrupted")}
         detail={item.message}
         tone="danger"
         icon={XIcon}
@@ -114,14 +116,18 @@ export function V2LifecycleRow(props: {
         : `${item.beforeTokenCount ?? "?"} → ${item.afterTokenCount ?? "?"} tokens`;
     const label =
       item.status === "failed"
-        ? "Context compaction failed"
+        ? uiT("Context compaction failed")
         : item.status === "cancelled" || item.status === "interrupted"
-          ? "Context compaction stopped"
+          ? uiT("Context compaction stopped")
           : item.status === "pending" || item.status === "running" || item.status === "waiting"
-            ? "Compacting context"
-            : "Context compacted";
+            ? uiT("Compacting context")
+            : uiT("Context compacted");
     return (
-      <TimelineSystemDivider label={label} detail={item.summary ?? tokenDetail} icon={MinusIcon} />
+      <TimelineSystemDivider
+        label={uiT(label)}
+        detail={item.summary ?? tokenDetail}
+        icon={MinusIcon}
+      />
     );
   }
   if (item.type === "handoff") {
@@ -137,7 +143,9 @@ export function V2LifecycleRow(props: {
     const relatedThreadId = item.source.type === "run" ? item.source.threadId : item.targetThreadId;
     return (
       <TimelineSystemDivider
-        label={item.source.type === "run" ? "Forked from conversation" : "Conversation fork"}
+        label={
+          item.source.type === "run" ? uiT("Forked from conversation") : uiT("Conversation fork")
+        }
         icon={GitForkIcon}
         actionLabel={item.source.type === "run" ? "Open source conversation" : "Open fork"}
         onAction={() => props.onOpenThread(relatedThreadId)}
@@ -155,15 +163,15 @@ export function V2LifecycleRow(props: {
             <MessageSquareIcon className="size-4 text-secondary-label" aria-hidden />
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {item.title ?? "Created thread"}
+            {item.title ?? uiT("Created thread")}
           </span>
           <Button
             size="xs"
             variant="outline"
-            aria-label={`Open ${item.title ?? "created thread"}`}
+            aria-label={uiT("Open {0}", { "0": item.title ?? "created thread" })}
             onClick={() => props.onOpenThread(item.targetThreadId)}
           >
-            Open chat
+            {uiT("Open chat")}
           </Button>
         </div>
       );
@@ -172,13 +180,18 @@ export function V2LifecycleRow(props: {
       <WorkLogRow
         data-v2-item-type={item.type}
         icon={<T3Wordmark className="size-4 text-icon-muted" aria-hidden />}
-        label={<>Created thread{item.title ? ` · ${item.title}` : ""}</>}
+        label={
+          <>
+            {uiT("Created thread")}
+            {item.title ? ` · ${item.title}` : ""}
+          </>
+        }
         trailing={
           <InlineButton
-            aria-label={`Open ${item.title ?? "created thread"}`}
+            aria-label={uiT("Open {0}", { "0": item.title ?? "created thread" })}
             onClick={() => props.onOpenThread(item.targetThreadId)}
           >
-            Open chat
+            {uiT("Open chat")}
           </InlineButton>
         }
       />
@@ -396,6 +409,7 @@ function SubagentTimelineLink(props: {
     readonly timestamp: string;
   };
 }) {
+  const { t: uiT } = useUiLanguage();
   const agent = useAtomValue(
     environmentThreadDetails.threadAtom(props.parentRef),
     (thread) => thread?.projection.subagents.find((agent) => agent.id === props.subagentId) ?? null,
@@ -435,7 +449,7 @@ function SubagentTimelineLink(props: {
                 failed ? "text-destructive" : "text-muted-foreground",
               )}
             >
-              {statusLabel}
+              {uiT(statusLabel)}
             </span>
           ) : null}
         </span>
@@ -446,7 +460,7 @@ function SubagentTimelineLink(props: {
           )}
         >
           {detail === null ? (
-            statusLabel
+            uiT(statusLabel)
           ) : detail.includes("/") && !detail.includes(" ") ? (
             <MiddleTruncate value={detail} showTitle={false} className="flex" />
           ) : (
@@ -480,7 +494,7 @@ function SubagentTimelineLink(props: {
             <button
               type="button"
               data-v2-item-type="subagent"
-              aria-label={`Open ${props.title}`}
+              aria-label={uiT("Open {0}", { "0": props.title })}
               aria-description={statusLabel}
               onClick={() => props.onOpenThread(threadId)}
               className={cn(
@@ -552,10 +566,11 @@ export function HandoffRow(props: {
   readonly pending?: boolean;
   readonly failed?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { from: fromEndpoints, to } = props.endpoints;
   return (
     <TimelineSystemDivider
-      label={props.pending ? "Context handoff pending" : "Context handoff"}
+      label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}
@@ -594,6 +609,7 @@ function HandoffEndpoint(props: {
   readonly instanceId: ProviderInstanceId;
   readonly model?: string | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const entry = getProviderInstanceEntry(props.providers, props.instanceId);
   const model = props.model?.trim();
   const providerModel =
@@ -628,13 +644,13 @@ function HandoffEndpoint(props: {
               className={cn("truncate font-medium", labelColor.className)}
               style={labelColor.style}
             >
-              {label}
+              {uiT(label)}
             </span>
           </span>
         }
       />
       <TooltipPopup>
-        {entry?.displayName ?? props.instanceId} · {label}
+        {entry?.displayName ?? props.instanceId} · {uiT(label)}
       </TooltipPopup>
     </Tooltip>
   );

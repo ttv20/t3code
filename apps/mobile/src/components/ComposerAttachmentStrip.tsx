@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { FilePreviewGallery, useFilePreviewGallery } from "./FilePreviewGallery";
 import { composerImageGallery } from "../lib/composerImageGallery";
 import { SymbolView } from "../components/AppSymbol";
@@ -63,6 +64,7 @@ type ComposerAttachmentThumbnailProps = {
 };
 
 export function ComposerAttachmentThumbnail(props: ComposerAttachmentThumbnailProps) {
+  const { t: uiT } = useUiLanguage();
   const upload = useComposerAttachmentUploadState(props.environmentId, props.attachment.id);
   return (
     <View style={{ width: props.size, height: props.size }}>
@@ -72,8 +74,11 @@ export function ComposerAttachmentThumbnail(props: ComposerAttachmentThumbnailPr
           accessibilityRole={upload.status === "failed" ? "button" : "text"}
           accessibilityLabel={
             upload.status === "failed"
-              ? `Retry uploading ${props.attachment.name}`
-              : `Uploading ${props.attachment.name}, ${Math.floor(upload.progress * 100)}%`
+              ? uiT("Retry uploading {0}", { "0": props.attachment.name })
+              : uiT("Uploading {0}, {1}%", {
+                  "0": props.attachment.name,
+                  "1": Math.floor(upload.progress * 100),
+                })
           }
           accessibilityHint={upload.status === "failed" ? upload.reason : undefined}
           disabled={upload.status !== "failed"}
@@ -91,7 +96,7 @@ export function ComposerAttachmentThumbnail(props: ComposerAttachmentThumbnailPr
           />
           {!props.compact ? (
             <Text className="text-2xs text-white">
-              {upload.status === "failed" ? "Retry" : `${Math.floor(upload.progress * 100)}%`}
+              {upload.status === "failed" ? uiT("Retry") : `${Math.floor(upload.progress * 100)}%`}
             </Text>
           ) : null}
         </Pressable>
@@ -187,6 +192,7 @@ function useComposerImagePreviewUri(attachment: DraftComposerImageAttachment): s
 function ComposerImageAttachment(
   props: ComposerAttachmentThumbnailProps & { readonly attachment: DraftComposerImageAttachment },
 ) {
+  const { t: uiT } = useUiLanguage();
   const { attachment } = props;
   const withGallery = useFilePreviewGallery();
   const style = { width: props.size, height: props.size, borderRadius: props.borderRadius };
@@ -196,7 +202,7 @@ function ComposerImageAttachment(
     <PresentationSource identifier={sourceIdentifier}>
       <Pressable
         accessibilityRole="imagebutton"
-        accessibilityLabel={`Open ${attachment.name}`}
+        accessibilityLabel={uiT("Open {0}", { "0": attachment.name })}
         disabled={!props.onPressPreview}
         onPress={() =>
           props.onPressPreview?.(
@@ -256,6 +262,7 @@ function ComposerAttachmentContent(props: ComposerAttachmentThumbnailProps) {
 function ComposerFileAttachment(
   props: ComposerAttachmentThumbnailProps & { readonly attachment: DraftComposerFileAttachment },
 ) {
+  const { t: uiT } = useUiLanguage();
   const { attachment } = props;
   const style = { width: props.size, height: props.size, borderRadius: props.borderRadius };
   const canPreview = isPdfFile(attachment) && props.onPressPreview !== undefined;
@@ -266,7 +273,7 @@ function ComposerFileAttachment(
       <PresentationSource identifier={sourceIdentifier}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open ${attachment.name}`}
+          accessibilityLabel={uiT("Open {0}", { "0": attachment.name })}
           disabled={!canPreview && onPressDocument === undefined}
           onPress={() =>
             canPreview

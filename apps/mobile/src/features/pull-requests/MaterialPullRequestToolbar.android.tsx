@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { useCallback, useEffect, useRef } from "react";
 import { BackHandler, Keyboard, View, type TextInputInstance } from "react-native";
@@ -10,6 +11,7 @@ import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
 
 /** PR search shares the thread list's native Android header placement. */
 export function MaterialPullRequestToolbar(props: { readonly onRequestVisibility?: () => void }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const workspace = useWorkspaceTabs()!;
   const { dispatch, getScrollOffset, recordScrollOffset, isTabActive } = workspace;
@@ -51,14 +53,14 @@ export function MaterialPullRequestToolbar(props: { readonly onRequestVisibility
   }, [searching, closeSearch, listFocused, navigation, isTabActive]);
   return (
     <AndroidScreenHeader
-      title="Pull requests"
+      title={uiT("Pull requests")}
       titleContent={
         searching ? (
           <MaterialSearchField
             inputRef={input}
-            accessibilityLabel="Search pull requests"
+            accessibilityLabel={uiT("Search pull requests")}
             clearAccessibilityLabel="Clear search"
-            placeholder="Search pull requests"
+            placeholder={uiT("Search pull requests")}
             value={tab.query}
             onChangeText={(query) => dispatch({ type: "query", tab: "pullRequests", query })}
           />
@@ -69,7 +71,7 @@ export function MaterialPullRequestToolbar(props: { readonly onRequestVisibility
               brand={
                 <CompactBrandTitle
                   allowFontScaling={false}
-                  accessibilityLabel="T3 Code, Pull requests"
+                  accessibilityLabel={uiT("T3 Code, Pull requests")}
                 />
               }
               onPress={() =>
@@ -85,7 +87,7 @@ export function MaterialPullRequestToolbar(props: { readonly onRequestVisibility
       leading={
         searching ? (
           <AndroidHeaderIconButton
-            accessibilityLabel="Close search"
+            accessibilityLabel={uiT("Close search")}
             icon="arrow.left"
             onPress={closeSearch}
           />

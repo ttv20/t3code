@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { SubagentStatusDot } from "./SubagentStatusDot";
 import { ThreadSubagentGroup } from "./thread-subagent-group";
 import {
@@ -212,6 +213,7 @@ function ShimmerWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View className="flex-row items-center gap-1.5">
       {props.showIcon ? (
@@ -243,7 +245,7 @@ function ShimmerWorkContent(props: {
         numberOfLines={1}
         onTextLayout={props.onTextLayout}
       >
-        {props.label}
+        {uiT(props.label)}
       </Text>
     </View>
   );
@@ -262,6 +264,7 @@ export function ShimmeringWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [availableWidth, setAvailableWidth] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
   const [appIsActive, setAppIsActive] = useState(AppState.currentState === "active");
@@ -334,7 +337,7 @@ export function ShimmeringWorkContent(props: {
         highlighted={false}
         icon={props.icon}
         iconSubtleColor={props.iconSubtleColor}
-        label={props.label}
+        label={uiT(props.label)}
         showIcon={props.showIcon}
         themeAppearance={props.themeAppearance}
         toolIcon={props.toolIcon}
@@ -819,6 +822,7 @@ function WorkspacePreparationRetryButton(props: {
   readonly threadId: ThreadId;
   readonly runId: RunId;
 }) {
+  const { t: uiT } = useUiLanguage();
   const retryable = useAtomValue(
     environmentThreadDetails.threadAtom(scopeThreadRef(props.environmentId, props.threadId)),
     (thread) => {
@@ -832,7 +836,7 @@ function WorkspacePreparationRetryButton(props: {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Retry workspace preparation"
+      accessibilityLabel={uiT("Retry workspace preparation")}
       disabled={busy}
       onPress={() => {
         setBusy(true);
@@ -846,7 +850,7 @@ function WorkspacePreparationRetryButton(props: {
       style={{ opacity: busy ? 0.5 : 1 }}
     >
       <SymbolView name="arrow.clockwise" size={13} tintColorClassName="accent-icon" />
-      <Text className="font-t3-medium text-sm text-foreground">Retry</Text>
+      <Text className="font-t3-medium text-sm text-foreground">{uiT("Retry")}</Text>
     </Pressable>
   );
 }
@@ -899,6 +903,7 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
     readonly expanded: boolean;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   const { row, expanded } = props;
   const navigation = useNavigation();
   const fetchedDetail = useTurnItemDetail(
@@ -920,12 +925,12 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
         })
       : null;
     const label = warning
-      ? `Usage limit reached.${resetTime ? ` Retry after ${resetTime}.` : ""}`
+      ? uiT("Usage limit reached.{0}", { "0": resetTime ? ` Retry after ${resetTime}.` : "" })
       : row.summary;
     return (
       <WorkLogPressable
-        accessibilityLabel={warning ? label : `${row.summary}: ${failureItem.failure.message}`}
-        accessibilityHint="Long press to copy."
+        accessibilityLabel={warning ? uiT(label) : `${row.summary}: ${failureItem.failure.message}`}
+        accessibilityHint={uiT("Long press to copy.")}
         onLongPress={() => props.onCopyRow(row.id, row.getCopyText())}
       >
         <View className="flex-1 py-1">
@@ -944,11 +949,11 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
                   : "min-w-0 flex-1 font-t3-medium text-sm text-adaptive-rose-600-400"
               }
             >
-              {label}
+              {uiT(label)}
             </Text>
             {props.copied ? (
               <Text className="pr-1 font-t3-medium text-3xs text-adaptive-emerald-600-400">
-                Copied
+                {uiT("Copied")}
               </Text>
             ) : null}
             <Text
@@ -1056,13 +1061,17 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
         accessibilityRole={
           notifiedSubagentThreadId !== undefined ? "link" : canExpand ? "button" : undefined
         }
-        accessibilityLabel={failed ? `${accessiblePreview}, tool call failed` : accessiblePreview}
+        accessibilityLabel={
+          failed ? uiT("{0}, tool call failed", { "0": accessiblePreview }) : accessiblePreview
+        }
         accessibilityHint={
           notifiedSubagentThreadId !== undefined
-            ? "Opens this agent's thread. Long press to copy."
+            ? uiT("Opens this agent's thread. Long press to copy.")
             : canExpand
-              ? `Double tap to ${expanded ? "hide" : "show"} full details. Long press to copy.`
-              : "Long press to copy."
+              ? uiT("Double tap to {0} full details. Long press to copy.", {
+                  "0": expanded ? "hide" : "show",
+                })
+              : uiT("Long press to copy.")
         }
         accessibilityState={canExpand ? { expanded } : undefined}
         onPress={() => {
@@ -1143,7 +1152,7 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
         <View className="shrink-0 flex-row items-center gap-px">
           {props.copied ? (
             <Text className="pr-1 font-t3-medium text-3xs text-adaptive-emerald-600-400">
-              Copied
+              {uiT("Copied")}
             </Text>
           ) : null}
           {failed && toolIcon !== undefined ? (
@@ -1276,7 +1285,7 @@ const ThreadWorkLogRow = memo(function ThreadWorkLogRow(
             ) : null}
             {failedExitCode !== null ? (
               <Text className="mt-1.5 font-mono text-2xs leading-normal text-danger-foreground">
-                exit {failedExitCode}
+                {uiT("exit")} {failedExitCode}
               </Text>
             ) : null}
           </ScrollView>
@@ -1303,7 +1312,10 @@ export function ThreadWorkGroupToggle(props: {
   readonly thought?: string | undefined;
   readonly onToggle: () => void;
 }) {
-  const statusLabel = props.hasFailure ? `${props.summary}, tool call failed` : props.summary;
+  const { t: uiT } = useUiLanguage();
+  const statusLabel = props.hasFailure
+    ? uiT("{0}, tool call failed", { "0": props.summary })
+    : props.summary;
   const accessibilityLabel = props.thought ? `${props.thought} ${statusLabel}` : statusLabel;
   const icon =
     props.summaryToolIcon ??
@@ -1339,7 +1351,11 @@ export function ThreadWorkGroupToggle(props: {
         accessibilityRole="button"
         accessibilityState={{ expanded: props.expanded }}
         accessibilityLabel={accessibilityLabel}
-        accessibilityHint={`Double tap to ${props.expanded ? "hide" : "show"} ${props.hiddenCount} tool ${props.hiddenCount === 1 ? "call" : "calls"}.`}
+        accessibilityHint={uiT("Double tap to {0} {1} tool {2}.", {
+          "0": props.expanded ? "hide" : "show",
+          "1": props.hiddenCount,
+          "2": props.hiddenCount === 1 ? "call" : "calls",
+        })}
         onPress={() => {
           void Haptics.selectionAsync();
           props.onToggle();
@@ -1396,6 +1412,7 @@ export const ThreadAgentSpawnCard = memo(function ThreadAgentSpawnCard(props: {
   readonly onToggle: () => void;
   readonly onCopy: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { summary, expanded } = props;
   const working = summary.tone === "working";
   const memberCount = summary.members.length;
@@ -1408,8 +1425,12 @@ export const ThreadAgentSpawnCard = memo(function ThreadAgentSpawnCard(props: {
         accessibilityLabel={`${summary.title}, ${summary.status}`}
         accessibilityHint={
           canExpand
-            ? `Double tap to ${expanded ? "hide" : "show"} ${memberCount} ${memberCount === 1 ? "subagent" : "subagents"}. Long press to copy.`
-            : "Long press to copy."
+            ? uiT("Double tap to {0} {1} {2}. Long press to copy.", {
+                "0": expanded ? "hide" : "show",
+                "1": memberCount,
+                "2": memberCount === 1 ? "subagent" : "subagents",
+              })
+            : uiT("Long press to copy.")
         }
         hitSlop={4}
         onPress={() => {
@@ -1503,10 +1524,11 @@ export function ThreadThinkingRow(props: {
   readonly rowSizing: ReturnType<typeof deriveThreadWorkLogSizing>;
   readonly iconSubtleColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View
       accessible
-      accessibilityLabel="Thinking"
+      accessibilityLabel={uiT("Thinking")}
       className="-mx-1 min-h-8 flex-row items-center px-1.5 py-0"
       style={{ minHeight: props.rowSizing.estimatedRowHeight }}
     >
@@ -1514,7 +1536,7 @@ export function ThreadThinkingRow(props: {
         key={props.rowSizing.textSizeKey}
         icon="brain"
         iconSubtleColor={props.iconSubtleColor}
-        label="Thinking"
+        label={uiT("Thinking")}
         showIcon
       />
     </View>

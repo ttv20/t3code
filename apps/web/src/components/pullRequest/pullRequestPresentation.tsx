@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Spinner } from "~/components/ui/spinner";
 import type {
   PullRequestActor,
@@ -102,14 +103,15 @@ export function PullRequestReviewDecisionGlyph({
 }: {
   decision: PullRequestReviewDecision;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = reviewDecisionPresentation(decision);
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
         <presentation.Icon aria-hidden className={cn("size-3.5", presentation.toneClassName)} />
-        <span className="sr-only">{presentation.label}</span>
+        <span className="sr-only">{uiT(presentation.label)}</span>
       </TooltipTrigger>
-      <TooltipPopup>{presentation.label}</TooltipPopup>
+      <TooltipPopup>{uiT(presentation.label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -160,6 +162,7 @@ export function PullRequestStateGlyph({
   isDraft: boolean;
   className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = resolvePullRequestState({ state, isDraft });
   return (
     <Tooltip>
@@ -168,11 +171,11 @@ export function PullRequestStateGlyph({
       <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
         <presentation.Icon
           role="img"
-          aria-label={presentation.label}
+          aria-label={uiT(presentation.label)}
           className={cn("size-4 shrink-0", presentation.toneClassName, className)}
         />
       </TooltipTrigger>
-      <TooltipPopup>{presentation.label}</TooltipPopup>
+      <TooltipPopup>{uiT(presentation.label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -190,6 +193,7 @@ export function PullRequestConflictGlyph({
   baseBranch?: string;
   className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = resolvePullRequestConflict({
     state,
     isDraft,
@@ -202,11 +206,11 @@ export function PullRequestConflictGlyph({
       <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
         <presentation.Icon
           role="img"
-          aria-label={presentation.label}
+          aria-label={uiT(presentation.label)}
           className={cn("size-4 shrink-0", presentation.toneClassName, className)}
         />
       </TooltipTrigger>
-      <TooltipPopup>{presentation.label}</TooltipPopup>
+      <TooltipPopup>{uiT(presentation.label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -405,11 +409,12 @@ export function PullRequestReviewOutcomeBadge({
   outcome: PullRequestReviewOutcome;
   className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = REVIEW_OUTCOME_PRESENTATION[outcome];
   return (
     <Badge size="sm" variant={presentation.badgeVariant} className={className}>
       <presentation.Icon aria-hidden className="size-3" />
-      {presentation.label}
+      {uiT(presentation.label)}
     </Badge>
   );
 }
@@ -466,6 +471,7 @@ export function PullRequestActorLabel({
   tooltip?: boolean;
   profileUrl?: string | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const login = actor?.login ?? "ghost";
   const label = (
     <span className={cn("flex min-w-0 items-center", variant === "label" && "gap-1.5")}>
@@ -476,7 +482,7 @@ export function PullRequestActorLabel({
     </span>
   );
   const placement = cn("flex min-w-0 shrink", className);
-  if (!tooltip) return <span className={placement}>{label}</span>;
+  if (!tooltip) return <span className={placement}>{uiT(label)}</span>;
   return (
     <Tooltip>
       <TooltipTrigger
@@ -489,7 +495,7 @@ export function PullRequestActorLabel({
                   href={profileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Open ${login}'s profile`}
+                  aria-label={uiT("Open {0}'s profile", { "0": login })}
                 />
               }
             />
@@ -498,11 +504,11 @@ export function PullRequestActorLabel({
           )
         }
       >
-        {label}
+        {uiT(label)}
       </TooltipTrigger>
       <TooltipPopup side="top">
         {actor?.name && actor.name !== login ? `${actor.name} (@${login})` : login}
-        {profileUrl ? " · Open profile" : ""}
+        {profileUrl ? uiT(" · Open profile") : ""}
       </TooltipPopup>
     </Tooltip>
   );
@@ -524,7 +530,7 @@ export function PullRequestDiffStat({
     return null;
   }
   return (
-    <span className={cn("inline-flex items-baseline gap-1 tabular-nums", className)}>
+    <span dir="ltr" className={cn("inline-flex items-baseline gap-1 tabular-nums", className)}>
       <span className="text-diff-addition-foreground">+{formatDiffCount(additions)}</span>
       <span className="text-diff-deletion">-{formatDiffCount(deletions)}</span>
     </span>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AuthProvidersManageScope } from "@t3tools/contracts";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import {
@@ -62,6 +63,7 @@ export function AcpRegistrySearchStep({
   onLoadingChange,
   onPreparingChange,
 }: AcpRegistrySearchStepProps) {
+  const { t: uiT } = useUiLanguage();
   const [query, setQuery] = useState("");
   // An empty registry query is the compact compatible catalog. Start there so
   // entering this step is useful before the user knows what to search for.
@@ -139,7 +141,7 @@ export function AcpRegistrySearchStep({
   return (
     <section className="grid gap-3" aria-labelledby="acp-registry-search-heading">
       <h3 className="sr-only" id="acp-registry-search-heading">
-        Choose an agent
+        {uiT("Choose an agent")}
       </h3>
 
       <form className="flex flex-wrap items-center gap-2" onSubmit={handleSearch}>
@@ -148,7 +150,7 @@ export function AcpRegistrySearchStep({
             <SearchIcon />
           </InputGroupAddon>
           <InputGroupInput
-            aria-label="Search ACP Registry"
+            aria-label={uiT("Search ACP Registry")}
             disabled={preparingId !== null}
             onChange={(event) => {
               const nextQuery = event.currentTarget.value;
@@ -160,7 +162,7 @@ export function AcpRegistrySearchStep({
                 setSubmittedQuery(nextQuery.trim());
               }, 300);
             }}
-            placeholder="Search agents…"
+            placeholder={uiT("Search agents…")}
             size="sm"
             type="search"
             value={query}
@@ -173,7 +175,7 @@ export function AcpRegistrySearchStep({
           type="button"
           variant="ghost-muted"
         >
-          Enter manually
+          {uiT("Enter manually")}
         </Button>
         {onLocalConfiguration ? (
           <Button
@@ -183,18 +185,21 @@ export function AcpRegistrySearchStep({
             type="button"
             variant="outline"
           >
-            Local ACP command
+            {uiT("Local ACP command")}
           </Button>
         ) : null}
       </form>
 
       <div className="sr-only" role="status">
         {isInitialSearch
-          ? "Searching the ACP Registry."
+          ? uiT("Searching the ACP Registry.")
           : isRefreshing
-            ? "Refreshing ACP Registry results."
+            ? uiT("Refreshing ACP Registry results.")
             : results
-              ? `${resultCount} compatible ${resultCount === 1 ? "agent" : "agents"} found.`
+              ? uiT("{0} compatible {1} found.", {
+                  "0": resultCount,
+                  "1": resultCount === 1 ? "agent" : "agents",
+                })
               : ""}
       </div>
 
@@ -206,15 +211,15 @@ export function AcpRegistrySearchStep({
 
       {isInitialSearch ? (
         <div className="flex min-h-20 items-center justify-center text-sm text-muted-foreground">
-          Searching the registry...
+          {uiT("Searching the registry...")}
         </div>
       ) : null}
 
       {results ? (
         results.length === 0 ? (
           <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed px-4 text-center">
-            <p className="text-sm font-medium">No compatible agents found</p>
-            <p className="mt-1 text-xs text-muted-foreground">Try a broader search.</p>
+            <p className="text-sm font-medium">{uiT("No compatible agents found")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{uiT("Try a broader search.")}</p>
           </div>
         ) : (
           <ScrollArea scrollFade className="max-h-64">
@@ -244,7 +249,7 @@ export function AcpRegistrySearchStep({
                           </div>
                           {agent.description ? (
                             <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                              {agent.description}
+                              {uiT(agent.description)}
                             </p>
                           ) : null}
                         </div>
@@ -257,7 +262,7 @@ export function AcpRegistrySearchStep({
                                 <Button
                                   size="icon-xs"
                                   variant="ghost-muted"
-                                  aria-label={`About ${agent.name}`}
+                                  aria-label={uiT("About {0}", { "0": agent.name })}
                                   render={
                                     <a
                                       href={agent.website || agent.repository || undefined}
@@ -270,7 +275,9 @@ export function AcpRegistrySearchStep({
                                 </Button>
                               }
                             />
-                            <TooltipPopup>About {agent.name}</TooltipPopup>
+                            <TooltipPopup>
+                              {uiT("About")} {agent.name}
+                            </TooltipPopup>
                           </Tooltip>
                         ) : null}
                         <Button
@@ -280,7 +287,7 @@ export function AcpRegistrySearchStep({
                           size="xs"
                           variant={isPreparing ? "secondary" : "outline"}
                         >
-                          {alreadyAdded ? "Added" : isPreparing ? progressLabel : "Add"}
+                          {alreadyAdded ? uiT("Added") : isPreparing ? progressLabel : uiT("Add")}
                         </Button>
                       </div>
                     </div>

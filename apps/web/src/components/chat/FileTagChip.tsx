@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { ContextChipLabel } from "../ContextChip";
 import { WorkspaceEntryIcon } from "./WorkspaceEntryIcon";
@@ -10,6 +11,7 @@ export function FileTagChipContent(props: {
   environmentId?: EnvironmentId | null | undefined;
   cwd?: string | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <>
       <WorkspaceEntryIcon
@@ -18,7 +20,7 @@ export function FileTagChipContent(props: {
         cwd={props.cwd}
         theme={props.theme}
       />
-      <ContextChipLabel>{props.label}</ContextChipLabel>
+      <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
     </>
   );
 }

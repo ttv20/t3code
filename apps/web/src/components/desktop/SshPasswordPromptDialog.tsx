@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import type { DesktopSshPasswordPromptRequest } from "@t3tools/contracts";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -67,6 +68,7 @@ function ActiveSshPasswordPrompt({
   readonly request: DesktopSshPasswordPromptRequest;
   readonly onRemove: (requestId: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [password, setPassword] = useState("");
   const [isResponding, setIsResponding] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -158,10 +160,14 @@ function ActiveSshPasswordPrompt({
     >
       <DialogPopup className="max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>SSH Password Required</DialogTitle>
+          <DialogTitle>{uiT("SSH Password Required")}</DialogTitle>
           <DialogDescription>
-            T3 needs your SSH password to connect to <code>{target}</code>. The password is passed
-            to the local SSH process for this connection attempt and is not saved by T3 Code.
+            <UiText
+              message={
+                "T3 needs your SSH password to connect to {0}. The password is passed to the local SSH process for this connection attempt and is not saved by T3 Code."
+              }
+              values={{ "0": <code>{target}</code> }}
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogPanel scrollFade={false}>
@@ -184,7 +190,7 @@ function ActiveSshPasswordPrompt({
                         : "shrink-0 text-xs text-muted-foreground"
                     }
                   >
-                    {isExpired ? "Expired" : remainingLabel}
+                    {isExpired ? uiT("Expired") : remainingLabel}
                   </span>
                 ) : null}
               </div>
@@ -202,17 +208,17 @@ function ActiveSshPasswordPrompt({
               <p className="text-sm text-destructive">{visibleResponseError}</p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Use SSH keys to avoid repeated password prompts on new SSH sessions.
+                {uiT("Use SSH keys to avoid repeated password prompts on new SSH sessions.")}
               </p>
             )}
           </form>
         </DialogPanel>
         <DialogFooter>
           <Button disabled={isResponding} type="button" variant="outline" onClick={cancelPrompt}>
-            {isExpired ? "Dismiss" : "Cancel"}
+            {isExpired ? uiT("Dismiss") : uiT("Cancel")}
           </Button>
           <Button disabled={isResponding || isExpired} form={formId} type="submit">
-            Continue
+            {uiT("Continue")}
           </Button>
         </DialogFooter>
       </DialogPopup>

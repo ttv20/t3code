@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   connectionCatalogDisplayUrl,
@@ -33,6 +34,7 @@ const options: ReadonlyArray<{
 ];
 
 export function GitHubRoutingSettings() {
+  const { t: uiT } = useUiLanguage();
   const catalog = useAtomValue(environmentCatalog.catalogValueAtom);
   const permissions = useAtomValue(environmentCatalog.githubRoutingPermissionsValueAtom);
   const update = useAtomCommand(environmentCatalog.setGitHubRoutingPermission);
@@ -42,7 +44,7 @@ export function GitHubRoutingSettings() {
 
   return (
     <View className="mt-5 gap-3">
-      <SettingsSection title="GitHub routing">
+      <SettingsSection title={uiT("GitHub routing")}>
         {[...catalog.entries.values()].map((entry) => {
           const environmentId = entry.target.environmentId;
           const selected = gitHubRoutingPermissionFor(entry, permissions);
@@ -51,21 +53,21 @@ export function GitHubRoutingSettings() {
             <View key={environmentId}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${entry.target.label} GitHub routing`}
+                accessibilityLabel={uiT("{0} GitHub routing", { "0": entry.target.label })}
                 accessibilityState={{ expanded: expanded === environmentId }}
                 className="flex-row items-center gap-3 p-4"
                 onPress={() => setExpanded(expanded === environmentId ? null : environmentId)}
               >
                 <View className="min-w-0 flex-1 gap-0.5">
                   <Text className="text-base font-t3-bold text-foreground">
-                    {entry.target.label}
+                    {uiT(entry.target.label)}
                   </Text>
                   <Text className="text-xs text-foreground-muted" numberOfLines={1}>
                     {connectionCatalogDisplayUrl(entry) ?? "T3 Connect"}
                   </Text>
                 </View>
                 <Text className="text-sm text-foreground-muted">
-                  {options.find((option) => option.value === selected)?.label}
+                  {uiT(options.find((option) => option.value === selected)?.label)}
                 </Text>
                 <SymbolView
                   name={expanded === environmentId ? "chevron.up" : "chevron.down"}
@@ -94,9 +96,9 @@ export function GitHubRoutingSettings() {
                       }}
                     >
                       <View className="min-w-0 flex-1 gap-1">
-                        <Text className="text-base text-foreground">{option.label}</Text>
+                        <Text className="text-base text-foreground">{uiT(option.label)}</Text>
                         <Text className="text-sm leading-normal text-foreground-muted">
-                          {option.description}
+                          {uiT(option.description)}
                         </Text>
                       </View>
                       {selected === option.value ? (
@@ -115,8 +117,9 @@ export function GitHubRoutingSettings() {
         })}
       </SettingsSection>
       <Text className="px-2 text-sm text-foreground-muted">
-        Choose environments you trust to share PR data and use each other's GitHub access. Enable
-        both environments. This applies only to this client.
+        {uiT(
+          "Choose environments you trust to share PR data and use each other's GitHub access. Enable both environments. This applies only to this client.",
+        )}
       </Text>
     </View>
   );

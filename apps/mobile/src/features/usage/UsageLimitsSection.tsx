@@ -1,3 +1,9 @@
+import {
+  formatUiUsageReset,
+  formatUiUsageWindowLabel,
+  formatUiResetCredits,
+} from "@t3tools/client-runtime/usage-localization";
+import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AuthProvidersManageScope,
@@ -9,14 +15,7 @@ import {
   type ServerProviderUsageWindow,
   type UsageProviderKind,
 } from "@t3tools/contracts";
-import {
-  elapsedShare,
-  formatDuration,
-  formatResetsIn,
-  limitsNotice,
-  paceOf,
-  remainingPercent,
-} from "@t3tools/shared/usageLimits";
+import { elapsedShare, limitsNotice, paceOf, remainingPercent } from "@t3tools/shared/usageLimits";
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from "react";
 import { refreshUsageLimits } from "@t3tools/client-runtime/state/usage";
 import { Alert, Linking, Pressable, View } from "react-native";
@@ -52,18 +51,21 @@ function WindowRow(props: {
   readonly color: string | null;
   readonly now: number;
 }) {
+  const { locale } = useUiLanguage();
   const { window, now } = props;
   const remaining = remainingPercent(window);
   const elapsed = elapsedShare(window, now);
   const timeLeft = elapsed === null ? null : Math.round((1 - elapsed) * 100);
   const pace = paceOf(window, now);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   return (
     <View className="gap-1">
       <View className="flex-row items-baseline justify-between gap-3">
-        <Text className="text-sm text-foreground">{window.label}</Text>
+        <Text className="text-sm text-foreground">
+          {formatUiUsageWindowLabel(window.label, locale)}
+        </Text>
         <Text className="text-sm font-t3-medium tabular-nums text-foreground">
-          {remaining}% left
+          <UiText message={"{0}% left"} values={{ "0": remaining }} />
         </Text>
       </View>
       <View className="h-3 justify-center">
@@ -101,6 +103,7 @@ function WindowRow(props: {
 }
 
 function AccountInstanceLabel({ value }: { readonly value: string }) {
+  const { t: uiT } = useUiLanguage();
   const [revealed, setRevealed] = useState(false);
   if (!value.includes("@")) {
     return (
@@ -113,7 +116,7 @@ function AccountInstanceLabel({ value }: { readonly value: string }) {
     <Pressable
       className="shrink active:opacity-60"
       accessibilityRole="button"
-      accessibilityLabel={revealed ? "Hide account label" : "Reveal account label"}
+      accessibilityLabel={revealed ? uiT("Hide account label") : uiT("Reveal account label")}
       onPress={() => setRevealed((current) => !current)}
     >
       <Text className="text-xs text-foreground-tertiary" numberOfLines={1}>
@@ -138,6 +141,7 @@ export function AccountLimits(props: {
   readonly trailing?: ReactNode;
   readonly footer?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { limits, now, dense = false } = props;
   const color = useBarColor(props.driver);
   if (!limits) return null;
@@ -153,7 +157,7 @@ export function AccountLimits(props: {
       <View className="flex-row items-center gap-2">
         <ProviderIcon provider={props.driver} size={16} />
         <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-          <Text className="text-base font-t3-medium text-foreground">{props.label}</Text>
+          <Text className="text-base font-t3-medium text-foreground">{uiT(props.label)}</Text>
           {props.instanceLabel !== props.label ? (
             <AccountInstanceLabel key={props.instanceLabel} value={props.instanceLabel} />
           ) : null}
@@ -180,7 +184,7 @@ export function AccountLimits(props: {
           className="min-h-11 justify-center"
           onPress={() => void Linking.openURL(externalUsage.url).catch(() => undefined)}
         >
-          <Text className="text-sm font-t3-medium text-primary">Manage usage</Text>
+          <Text className="text-sm font-t3-medium text-primary">{uiT("Manage usage")}</Text>
         </Pressable>
       ) : null}
       {props.footer}
@@ -208,6 +212,7 @@ export function ResetCredits(props: {
   /** A smaller pill for the composer card. */
   readonly dense?: boolean;
 }) {
+  const { t: uiT, locale } = useUiLanguage();
   const { environmentId, input, credits, now, dense = false } = props;
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
   const consume = useAtomCommand(serverEnvironment.consumeResetCredit, {
@@ -217,15 +222,7 @@ export function ResetCredits(props: {
   const [status, setStatus] = useState<string | null>(null);
   if (dense && credits.availableCount === 0 && status === null) return null;
 
-  const expiresIn = credits.nextExpiresAt
-    ? formatDuration(Date.parse(credits.nextExpiresAt) - now)
-    : null;
-  const summary =
-    credits.availableCount === 0
-      ? "No reset credits banked"
-      : `${credits.availableCount} ${credits.availableCount === 1 ? "reset credit" : "reset credits"} banked${
-          expiresIn ? ` · next expires in ${expiresIn}` : ""
-        }`;
+  const summary = formatUiResetCredits(credits, now, locale);
 
   const redeem = async () => {
     if (!readEnvironmentScope(environmentId, AuthProvidersManageScope)) return;
@@ -278,13 +275,13 @@ export function ResetCredits(props: {
                 : "text-sm font-t3-medium text-foreground"
             }
           >
-            {busy ? "Using…" : "Use reset"}
+            {busy ? uiT("Using…") : uiT("Use reset")}
           </Text>
         </Pressable>
       ) : null}
       {!canManageProviders ? (
         <Text className="text-xs text-foreground-tertiary">
-          This connection cannot manage provider accounts.
+          {uiT("This connection cannot manage provider accounts.")}
         </Text>
       ) : null}
       {status ? <Text className="text-sm text-foreground">{status}</Text> : null}

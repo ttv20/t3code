@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ArrowLeftIcon, FileDiffIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -25,9 +26,10 @@ export function PullRequestDetailHeaderBody({
   files: ReactNode;
   diffStat: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="col-span-2 mt-1 min-w-0 px-4 pb-4">
-      {title}
+      {uiT(title)}
       <div className="mt-2 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
         <PullRequestMetaLine className="min-w-0 whitespace-nowrap">
           {author}
@@ -39,7 +41,7 @@ export function PullRequestDetailHeaderBody({
         <span className="flex min-w-0 flex-1 items-center gap-1.5 font-mono text-xs text-muted-foreground/70">
           {base}
           <ArrowLeftIcon
-            aria-label="receives changes from"
+            aria-label={uiT("receives changes from")}
             className="size-3.5 shrink-0 opacity-60"
           />
           {head}
@@ -77,10 +79,11 @@ export function PullRequestDetailTabBar<Tab extends string>({
   inert?: boolean;
   children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <nav
       className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 border-t border-border/60 px-4 py-2"
-      aria-label="Pull request tabs"
+      aria-label={uiT("Pull request tabs")}
       inert={inert}
     >
       <ToggleGroup
@@ -100,7 +103,7 @@ export function PullRequestDetailTabBar<Tab extends string>({
             onPointerEnter={onTabIntent ? () => onTabIntent(tab.value) : undefined}
             onFocus={onTabIntent ? () => onTabIntent(tab.value) : undefined}
           >
-            {tab.label}
+            {uiT(tab.label)}
           </Toggle>
         ))}
       </ToggleGroup>
@@ -115,6 +118,7 @@ export function PullRequestChecksStatusLine({
   className,
   ...props
 }: Omit<ComponentProps<"span">, "children"> & { icon: ReactNode; label: ReactNode }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <span
       className={cn(
@@ -124,7 +128,7 @@ export function PullRequestChecksStatusLine({
       {...props}
     >
       {icon}
-      <span className="whitespace-nowrap">{label}</span>
+      <span className="whitespace-nowrap">{uiT(label)}</span>
     </span>
   );
 }

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { resolveProviderInstanceDisplayName } from "@t3tools/client-runtime/state/provider-instance-display";
 import { resolveSubagentMetadata } from "@t3tools/client-runtime/state/subagent-display";
@@ -38,6 +39,7 @@ export function SubagentRow(props: {
   readonly subagent: SubagentRowSubagent;
   readonly elapsed: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = resolveSubagentRowPresentation(props.subagent);
   const detail = subagentCardDetail(presentation.detail);
   return (
@@ -67,7 +69,7 @@ export function SubagentRow(props: {
                 SUBAGENT_TONE_TEXT_CLASS[presentation.tone],
               )}
             >
-              {presentation.statusLabel}
+              {uiT(presentation.statusLabel)}
             </Text>
           </View>
           {props.elapsed}

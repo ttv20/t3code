@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import Animated from "react-native-reanimated";
 import { PR_ROW_LAYOUT } from "./pullRequestAnimations";
 import { useNavigation } from "@react-navigation/native";
@@ -110,6 +111,7 @@ export function PullRequestActionToolbar(props: {
   readonly onOpenFiles?: () => void;
   readonly onHeightChange?: (height: number) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { draft } = usePullRequestReviewDraft(props.params);
   const { themeVariables: colors } = useAppearancePreferences();
@@ -155,14 +157,14 @@ export function PullRequestActionToolbar(props: {
           <View className="flex-row items-center gap-2">
             {showAgentControls ? (
               <ControlPillMenu
-                title="AI helpers"
+                title={uiT("AI helpers")}
                 actions={agentActions.map((action) => agent.menuAction(action.task))}
                 onPressAction={({ nativeEvent }) => agent.select(nativeEvent.event)}
               >
                 <View pointerEvents="none">
                   <MaterialIconButton
                     icon="sparkles"
-                    accessibilityLabel="PR agent actions"
+                    accessibilityLabel={uiT("PR agent actions")}
                     disabled={agent.disabled}
                   />
                 </View>
@@ -172,7 +174,7 @@ export function PullRequestActionToolbar(props: {
               <View className="min-w-0 shrink">
                 {!pendingReview && chooseThread ? (
                   <ControlPillMenu
-                    title="Open thread"
+                    title={uiT("Open thread")}
                     actions={threadMenuItems}
                     onPressAction={({ nativeEvent }) => agent.select(nativeEvent.event)}
                   >
@@ -185,7 +187,7 @@ export function PullRequestActionToolbar(props: {
             ) : null}
             <MaterialIconButton
               icon="file.diff"
-              accessibilityLabel="Changed files"
+              accessibilityLabel={uiT("Changed files")}
               onPress={openFiles}
             />
           </View>
@@ -248,8 +250,8 @@ export function PullRequestActionToolbar(props: {
     <NativeHeaderToolbar.Menu
       identifier="pull-request-agent"
       icon="sparkles"
-      title="AI helpers"
-      accessibilityLabel="PR agent actions"
+      title={uiT("AI helpers")}
+      accessibilityLabel={uiT("PR agent actions")}
       disabled={agent.disabled}
       separateBackground
     >
@@ -286,7 +288,7 @@ export function PullRequestActionToolbar(props: {
     <NativeHeaderToolbar.Button
       identifier="workspace-trailing-action"
       icon={{ type: "image", source: require("../../../assets/icons/file-diff.png") }}
-      accessibilityLabel="Changed files"
+      accessibilityLabel={uiT("Changed files")}
       onPress={openFiles}
       separateBackground
     />

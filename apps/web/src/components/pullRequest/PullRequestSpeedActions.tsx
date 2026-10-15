@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { PullRequestAction } from "@t3tools/contracts";
 import { pullRequestEnvironment } from "~/state/pullRequests";
@@ -42,6 +43,7 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
   sweeping?: boolean;
   onCloseSweepStart?: (entry: Entry, event: PointerEvent) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const canWrite = useAtomValue(
     pullRequestEnvironment.runAction.permissionAtom(entry.environmentId),
   );
@@ -81,7 +83,7 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
       className="shrink-0 items-center gap-1 pr-3"
       style={{ display: visible || busy ? "flex" : "none" }}
       role="group"
-      aria-label={`Quick actions for pull request #${entry.number}`}
+      aria-label={uiT("Quick actions for pull request #{0}", { "0": entry.number })}
       data-pull-request-action-pending={actionPending || closing}
     >
       {actions.map((action) => {
@@ -106,14 +108,14 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
               }
             >
               {busy ? <Spinner size="xs" /> : <Icon aria-hidden className="size-3" />}
-              {label}
+              {uiT(label)}
             </TooltipTrigger>
             <TooltipPopup>
               {action === "merge" && entry.stack
-                ? "Open this pull request to merge its stack"
+                ? uiT("Open this pull request to merge its stack")
                 : action === "close" && onCloseSweepStart
-                  ? "Close immediately, or drag across rows to close several"
-                  : `${label} immediately`}
+                  ? uiT("Close immediately, or drag across rows to close several")
+                  : uiT("{0} immediately", { "0": label })}
             </TooltipPopup>
           </Tooltip>
         );

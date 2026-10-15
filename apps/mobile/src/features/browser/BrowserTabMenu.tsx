@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { MenuAction } from "@react-native-menu/menu";
 import {
   DEFAULT_PREVIEW_ZOOM_FACTOR,
@@ -51,6 +52,7 @@ export function BrowserTabMenu({
   readonly tab: PreviewSessionSnapshot;
   readonly disabled: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const adjust = useAtomCommand(previewEnvironment.adjust, "browser tab change");
   const resize = useAtomCommand(previewEnvironment.resize, "browser viewport change");
   const target = { threadId: tab.threadId as PreviewAdjustInput["threadId"], tabId: tab.tabId };
@@ -69,10 +71,10 @@ export function BrowserTabMenu({
         : "custom";
 
   const actions: MenuAction[] = [
-    { id: "hard-reload", title: "Hard reload", image: "arrow.clockwise.circle" },
+    { id: "hard-reload", title: uiT("Hard reload"), image: "arrow.clockwise.circle" },
     {
       id: "appearance",
-      title: "Appearance",
+      title: uiT("Appearance"),
       image: "circle.lefthalf.filled",
       subactions: APPEARANCES.map((option) => ({
         id: `appearance:${option.id}`,
@@ -82,17 +84,17 @@ export function BrowserTabMenu({
     },
     {
       id: "zoom",
-      title: `Zoom (${Math.round(zoomFactor * 100)}%)`,
+      title: uiT("Zoom ({0}%)", { "0": Math.round(zoomFactor * 100) }),
       image: "plus.magnifyingglass",
       subactions: [
-        { id: "zoom:in", title: "Zoom in", image: "plus.magnifyingglass" },
-        { id: "zoom:out", title: "Zoom out", image: "minus.magnifyingglass" },
-        { id: "zoom:reset", title: "Actual size", image: "1.magnifyingglass" },
+        { id: "zoom:in", title: uiT("Zoom in"), image: "plus.magnifyingglass" },
+        { id: "zoom:out", title: uiT("Zoom out"), image: "minus.magnifyingglass" },
+        { id: "zoom:reset", title: uiT("Actual size"), image: "1.magnifyingglass" },
       ],
     },
     {
       id: "viewport",
-      title: "Viewport",
+      title: uiT("Viewport"),
       image: "rectangle.and.arrow.up.right.and.arrow.down.left",
       subactions: VIEWPORTS.map((option) => ({
         id: `viewport:${option.id}`,
@@ -102,11 +104,11 @@ export function BrowserTabMenu({
     },
     {
       id: "site-data",
-      title: "Site data",
+      title: uiT("Site data"),
       image: "trash",
       subactions: [
-        { id: "clear:cookies", title: "Clear cookies", attributes: { destructive: true } },
-        { id: "clear:cache", title: "Clear cache", attributes: { destructive: true } },
+        { id: "clear:cookies", title: uiT("Clear cookies"), attributes: { destructive: true } },
+        { id: "clear:cache", title: uiT("Clear cache"), attributes: { destructive: true } },
       ],
     },
   ];
@@ -140,13 +142,17 @@ export function BrowserTabMenu({
   };
 
   const pill = (
-    <ControlPill icon="ellipsis" accessibilityLabel="Browser tab options" disabled={disabled} />
+    <ControlPill
+      icon="ellipsis"
+      accessibilityLabel={uiT("Browser tab options")}
+      disabled={disabled}
+    />
   );
   if (disabled) return pill;
   return (
     <ControlPillMenu
       accessible
-      accessibilityLabel="Browser tab options"
+      accessibilityLabel={uiT("Browser tab options")}
       accessibilityRole="button"
       actions={actions}
       onPressAction={({ nativeEvent }) => onAction(nativeEvent.event)}

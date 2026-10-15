@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { InfoIcon, RotateCwIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -11,6 +12,7 @@ export function DiffFileStatus({
   truncated?: boolean | undefined;
   retry: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (!error && !truncated) return null;
   return (
     <Tooltip>
@@ -19,7 +21,7 @@ export function DiffFileStatus({
           <Button
             size="icon-micro"
             variant="ghost-muted"
-            aria-label={error ? "Retry loading diff" : "Partial diff preview"}
+            aria-label={error ? uiT("Retry loading diff") : uiT("Partial diff preview")}
             onClick={(event) => {
               event.stopPropagation();
               if (error) retry();
@@ -31,8 +33,8 @@ export function DiffFileStatus({
       </TooltipTrigger>
       <TooltipPopup>
         {error
-          ? "Retry loading diff"
-          : "This file is too large to show in full. Counts include all changes."}
+          ? uiT("Retry loading diff")
+          : uiT("This file is too large to show in full. Counts include all changes.")}
       </TooltipPopup>
     </Tooltip>
   );

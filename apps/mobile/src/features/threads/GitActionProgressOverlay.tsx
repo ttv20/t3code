@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import * as Haptics from "expo-haptics";
 import { GlassView } from "expo-glass-effect";
@@ -72,6 +73,7 @@ export function GitActionProgressOverlay(props: {
 }
 
 function OverlayContent(props: { readonly progress: GitActionProgress }) {
+  const { t: uiT } = useUiLanguage();
   const { progress } = props;
   const colors = useUniwindTheme();
   const glassSurface = colors["--color-glass-surface"];
@@ -87,12 +89,12 @@ function OverlayContent(props: { readonly progress: GitActionProgress }) {
       <View className="flex-1 gap-0.5">
         {progress.label ? (
           <Text className="text-sm font-t3-bold text-foreground" numberOfLines={1}>
-            {progress.label}
+            {uiT(progress.label)}
           </Text>
         ) : null}
         {progress.description ? (
           <Text className="text-2xs text-foreground-muted" numberOfLines={1}>
-            {progress.description}
+            {uiT(progress.description)}
           </Text>
         ) : null}
       </View>

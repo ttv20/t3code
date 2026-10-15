@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { SymbolView } from "./AppSymbol";
 import { AppText } from "./AppText";
 import { Image } from "expo-image";
@@ -147,6 +148,7 @@ function ProjectFaviconImage(props: {
   readonly projectTitle: string;
   readonly size: number;
 }) {
+  const { t: uiT } = useUiLanguage();
   const faviconRequest = useMemo(
     () => createProjectFaviconRequest(props.cacheKey, props.faviconUrl),
     [props.cacheKey, props.faviconUrl],
@@ -199,7 +201,7 @@ function ProjectFaviconImage(props: {
           }
           cachePolicy={faviconRequest.faviconUrl.startsWith("data:") ? "memory" : "memory-disk"}
           recyclingKey={faviconRequest.cacheKey}
-          accessibilityLabel={`${props.projectTitle} favicon`}
+          accessibilityLabel={uiT("{0} favicon", { "0": props.projectTitle })}
           style={{
             width: props.size,
             height: props.size,

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { DevicePlatform, EnvironmentId } from "@t3tools/contracts";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -67,6 +68,7 @@ export function DeviceStreamView(props: {
   readonly onHandle?: (handle: DeviceStreamHandle | null) => void;
   readonly onScreen?: (screen: DeviceScreenSize | null) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [duoControl, setDuoControl] = useState<DuoControlState>({
     pending: false,
     requested: null,
@@ -395,7 +397,9 @@ export function DeviceStreamView(props: {
         )}
         tabIndex={0}
         role="application"
-        aria-label={`${props.platform === "ios" ? "iOS Simulator" : "Android Emulator"} screen`}
+        aria-label={uiT("{0} screen", {
+          "0": props.platform === "ios" ? "iOS Simulator" : "Android Emulator",
+        })}
         onKeyDown={(event) => {
           if (event.target !== event.currentTarget) return;
           if (event.metaKey && !["r", "R"].includes(event.key)) return;
@@ -465,7 +469,7 @@ export function DeviceStreamView(props: {
                 >
                   {element.label ? (
                     <span className="absolute -top-3.5 left-0 max-w-full truncate rounded-sm bg-info px-1 text-3xs leading-3.5 text-white">
-                      {element.label}
+                      {uiT(element.label)}
                     </span>
                   ) : null}
                 </div>
@@ -510,7 +514,7 @@ export function DeviceStreamView(props: {
               size="xs"
               aria-pressed={!!showPhone}
               disabled={!!phoneUnavailableReason}
-              title={phoneUnavailableReason ?? "Show 3D phone"}
+              title={phoneUnavailableReason ?? uiT("Show 3D phone")}
               onClick={() => setPresentation("phone")}
             >
               3D
@@ -521,21 +525,23 @@ export function DeviceStreamView(props: {
               aria-pressed={!showPhone}
               onClick={() => setPresentation("flat")}
             >
-              Flat
+              {uiT("Flat")}
             </Button>
           </div>
         ) : null}
         {status === "streaming" && !inputState.connected ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-2">
             <span className="rounded-md bg-background/85 px-2 py-1 text-xs text-muted-foreground">
-              Input disconnected{inputState.detail ? ` (${inputState.detail})` : ""}, reconnecting…
+              {uiT("Input disconnected")}
+              {inputState.detail ? ` (${inputState.detail})` : ""}
+              {uiT(", reconnecting…")}
             </span>
           </div>
         ) : null}
         {retainingFrame && showPhone && showRestartNotice ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-2">
             <span className="rounded-md bg-background/85 px-2 py-1 text-xs text-muted-foreground">
-              Waiting for device video…
+              {uiT("Waiting for device video…")}
             </span>
           </div>
         ) : null}
@@ -545,7 +551,9 @@ export function DeviceStreamView(props: {
               name={props.deviceName ?? "Device"}
               description={props.deviceDescription ?? ""}
               stage="stream"
-              message={status === "error" ? (detail ?? "Stream failed.") : "Connecting video…"}
+              message={
+                status === "error" ? (detail ?? uiT("Stream failed.")) : uiT("Connecting video…")
+              }
               error={status === "error"}
             >
               {status === "error" ? (
@@ -560,7 +568,7 @@ export function DeviceStreamView(props: {
                     clientRef.current?.start();
                   }}
                 >
-                  Reconnect
+                  {uiT("Reconnect")}
                 </Button>
               ) : null}
             </DeviceLoadingView>

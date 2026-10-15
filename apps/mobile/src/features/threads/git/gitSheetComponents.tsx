@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { SymbolView } from "../../../components/AppSymbol";
 import type { ComponentProps } from "react";
 import { Platform, Pressable, View } from "react-native";
@@ -14,11 +15,12 @@ export function SheetActionButton(props: {
   readonly tone?: "primary" | "secondary" | "danger";
   readonly onPress: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (Platform.OS === "android")
     return (
       <View className="flex-1">
         <MaterialButton
-          label={props.label}
+          label={uiT(props.label)}
           tone={props.tone}
           disabled={props.disabled}
           onPress={props.onPress}
@@ -63,17 +65,18 @@ export function SheetActionButton(props: {
               : "text-secondary-foreground",
         )}
       >
-        {props.label}
+        {uiT(props.label)}
       </Text>
     </Pressable>
   );
 }
 
 export function MetaCard(props: { readonly label: string; readonly value: string }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View className="bg-card px-4 py-3 android:rounded-[20px] ios:rounded-[18px] ios:border ios:border-border">
       <Text className="text-foreground-muted text-2xs font-t3-bold tracking-[0.9px] uppercase">
-        {props.label}
+        {uiT(props.label)}
       </Text>
       <Text selectable className="text-foreground text-sm font-medium" numberOfLines={1}>
         {props.value}

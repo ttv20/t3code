@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { ManagedRelay, setManagedRelaySession } from "@t3tools/client-runtime/relay";
@@ -51,6 +52,7 @@ export function activateCloudRelayAccount(
 }
 
 function CloudAuthBridge(props: { readonly children: ReactNode }) {
+  const { t: uiT } = useUiLanguage();
   const { getToken, isLoaded, isSignedIn, userId } = useAuth({ treatPendingAsSignedOut: false });
   const removeRelayEnvironments = useAtomCommand(removeCloudEnvironments, {
     reportFailure: false,
@@ -109,7 +111,7 @@ function CloudAuthBridge(props: { readonly children: ReactNode }) {
       ];
       const results = await Promise.all(cleanup);
       for (const result of results) {
-        reportAtomCommandResult(result, { label: "cloud account cleanup" });
+        reportAtomCommandResult(result, { label: uiT("cloud account cleanup") });
       }
     };
     const queueAccountCleanup = (previous: typeof previousTokenProviderRef.current) => {
@@ -126,7 +128,7 @@ function CloudAuthBridge(props: { readonly children: ReactNode }) {
       deactivateCloudRelayAccount();
       if (previousObservedAccount !== null) {
         void settlePromise(() => queueAccountCleanup(previous)).then((result) => {
-          reportAtomCommandResult(result, { label: "cloud account cleanup" });
+          reportAtomCommandResult(result, { label: uiT("cloud account cleanup") });
         });
       }
       return;
@@ -158,7 +160,7 @@ function CloudAuthBridge(props: { readonly children: ReactNode }) {
       })();
       accountTransitionRef.current = activation;
       void settlePromise(() => activation).then((result) => {
-        reportAtomCommandResult(result, { label: "cloud account activation" });
+        reportAtomCommandResult(result, { label: uiT("cloud account activation") });
       });
     };
     if (
@@ -178,7 +180,7 @@ function CloudAuthBridge(props: { readonly children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [getToken, isLoaded, isSignedIn, removeRelayEnvironments, userId]);
+  }, [getToken, isLoaded, isSignedIn, removeRelayEnvironments, userId, uiT]);
 
   useEffect(
     () => () => {

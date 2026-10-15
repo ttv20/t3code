@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
 import { MaterialListRow } from "../../components/MaterialListRow";
 import { ScreenHeader } from "../../components/ScreenHeader";
@@ -108,6 +109,7 @@ function NewTaskHeader(props: {
   readonly searchText: string;
   readonly onSearchTextChange: (text: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { layout } = useAdaptiveWorkspaceLayout();
   return (
@@ -136,13 +138,14 @@ function NewTaskHeader(props: {
       search={{
         value: props.searchText,
         onChangeText: props.onSearchTextChange,
-        placeholder: "Search projects",
+        placeholder: uiT("Search projects"),
       }}
     />
   );
 }
 
 export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRouteParams | undefined>) {
+  const { t: uiT } = useUiLanguage();
   const projects = useProjects();
   const [searchText, setSearchText] = useState("");
   const { projectScopes, selectedEnvironmentId, setProject } = useNewTaskFlow();
@@ -324,8 +327,8 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
               <View collapsable={false} className="overflow-hidden rounded-[28px] bg-grouped-card">
                 <MaterialListRow
                   className="bg-grouped-card"
-                  title="No project"
-                  subtitle="Start a task without a project"
+                  title={uiT("No project")}
+                  subtitle={uiT("Start a task without a project")}
                   onPress={() => void startScratch()}
                   leading={
                     <SymbolView
@@ -341,7 +344,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
               <View collapsable={false} className="overflow-hidden rounded-[24px] bg-grouped-card">
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="No project"
+                  accessibilityLabel={uiT("No project")}
                   onPress={() => void startScratch()}
                   className="flex-row items-center gap-3 bg-grouped-card px-4 py-3.5"
                 >
@@ -354,9 +357,9 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                     />
                   </View>
                   <View className="min-w-0 flex-1">
-                    <Text className="text-base font-t3-bold leading-snug">No project</Text>
+                    <Text className="text-base font-t3-bold leading-snug">{uiT("No project")}</Text>
                     <Text className="text-xs leading-snug text-foreground-muted" numberOfLines={1}>
-                      Start a task without a project
+                      {uiT("Start a task without a project")}
                     </Text>
                   </View>
                   <SymbolView
@@ -389,7 +392,11 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
               {Platform.OS === "android" ? (
                 <>
                   <MaterialButton
-                    label={catalogState.hasReadyEnvironment ? "Add new project" : "Add environment"}
+                    label={
+                      catalogState.hasReadyEnvironment
+                        ? uiT("Add new project")
+                        : uiT("Add environment")
+                    }
                     tone="primary"
                     onPress={() =>
                       catalogState.hasReadyEnvironment
@@ -399,7 +406,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                   />
                   {canStartScratch ? (
                     <MaterialButton
-                      label="Start without a project"
+                      label={uiT("Start without a project")}
                       tone="secondary"
                       onPress={() => void startScratch()}
                     />
@@ -411,7 +418,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                   onPress={() => navigation.navigate("ConnectionsNew")}
                 >
                   <Text className="text-sm font-t3-bold text-primary-foreground">
-                    Add environment
+                    {uiT("Add environment")}
                   </Text>
                 </Pressable>
               ) : (
@@ -421,7 +428,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                     onPress={() => navigation.dispatch(StackActions.push("AddProject"))}
                   >
                     <Text className="text-sm font-t3-bold text-primary-foreground">
-                      Add new project
+                      {uiT("Add new project")}
                     </Text>
                   </Pressable>
                   {canStartScratch ? (
@@ -430,7 +437,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                       onPress={() => void startScratch()}
                     >
                       <Text className="text-sm font-t3-bold text-foreground">
-                        Start without a project
+                        {uiT("Start without a project")}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -440,10 +447,10 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
           ) : visibleScopes.length === 0 ? (
             <View className="items-center gap-2 px-6 py-8">
               <Text className="text-center text-lg font-t3-bold text-foreground">
-                No matching projects
+                {uiT("No matching projects")}
               </Text>
               <Text className="text-center text-sm leading-normal text-foreground-muted">
-                Try a different project name or workspace path.
+                {uiT("Try a different project name or workspace path.")}
               </Text>
             </View>
           ) : (
@@ -469,7 +476,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                       title={scope.title}
                       subtitle={
                         hasMultipleProjects
-                          ? `${scope.projects.length} workspaces`
+                          ? uiT("{0} workspaces", { "0": scope.projects.length })
                           : selectionTarget.workspaceRoot
                       }
                       subtitleNumberOfLines={1}
@@ -521,7 +528,7 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                           numberOfLines={1}
                         >
                           {hasMultipleProjects
-                            ? `${scope.projects.length} workspaces`
+                            ? uiT("{0} workspaces", { "0": scope.projects.length })
                             : selectionTarget.workspaceRoot}
                         </Text>
                       </View>

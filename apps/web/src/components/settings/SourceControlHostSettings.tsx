@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
 import type { SourceControlClientDefinition } from "@t3tools/client-runtime/source-control-clients";
 import { useState } from "react";
@@ -24,12 +25,13 @@ export function SourceControlHostSettings({
   };
   readonly onSaved: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const saved = useEnvironmentSettings(
     environmentId,
     (settings) => settings.sourceControlHosts[definition.kind],
   );
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: `save ${definition.label} settings`,
+    label: uiT("save {0} settings", { "0": definition.label }),
   });
   const [saving, setSaving] = useState(false);
   const formDefinition = { settingsSchema: definition.settings };
@@ -75,7 +77,7 @@ export function SourceControlHostSettings({
               void save(Object.fromEntries(Object.keys(saved ?? {}).map((key) => [key, ""])))
             }
           >
-            Remove
+            {uiT("Remove")}
           </Button>
         </div>
       ) : null}

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { PlayIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
@@ -45,6 +46,7 @@ export function MediaVideoPlayer({
   onRetry,
   actionsSource,
 }: MediaVideoPlayerProps) {
+  const { t: uiT } = useUiLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playbackSource, setPlaybackSource] = useState<{
     src: string;
@@ -146,7 +148,8 @@ export function MediaVideoPlayer({
         >
           <span className="inline-flex items-center gap-1.5">
             <TriangleAlertIcon aria-hidden className="size-3.5 shrink-0" />
-            Video unavailable{label ? ` · ${label}` : ""}
+            {uiT("Video unavailable")}
+            {label ? ` · ${label}` : ""}
           </span>
           <span className="flex flex-wrap items-center justify-center gap-2">
             {latestSrc !== null || onRetry ? (
@@ -157,7 +160,7 @@ export function MediaVideoPlayer({
                 onClick={() => void retry()}
               >
                 <RotateCwIcon />
-                {retrying ? "Retrying…" : "Retry video"}
+                {retrying ? uiT("Retrying…") : uiT("Retry video")}
               </Button>
             ) : null}
             <OpenMediaLink originalUrl={originalUrl} src={latestSrc ?? src} fileName={label} />
@@ -168,7 +171,7 @@ export function MediaVideoPlayer({
           key={loadAttempt}
           ref={videoRef}
           src={src}
-          aria-label={label || "Video preview"}
+          aria-label={label || uiT("Video preview")}
           aria-hidden={onOpen ? true : undefined}
           autoPlay={onOpen ? false : autoPlay}
           controls={!onOpen}
@@ -193,7 +196,7 @@ export function MediaVideoPlayer({
       ) : (
         <span
           role="status"
-          aria-label={failed ? "Video preview unavailable" : "Loading video"}
+          aria-label={failed ? uiT("Video preview unavailable") : uiT("Loading video")}
           className={cn("block aspect-video w-full rounded-lg bg-muted/60", stateClassName)}
           style={style}
         />
@@ -201,7 +204,7 @@ export function MediaVideoPlayer({
       {onOpen ? (
         <button
           type="button"
-          aria-label={label ? `Play ${label}` : "Play video"}
+          aria-label={label ? uiT("Play {0}", { "0": label }) : uiT("Play video")}
           onClick={onOpen}
           className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >

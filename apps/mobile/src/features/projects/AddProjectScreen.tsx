@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
 import { MaterialListRow } from "../../components/MaterialListRow";
 import { SettingsScreen } from "../settings/components/SettingsScreen";
@@ -263,6 +264,7 @@ function PrimaryActionButton(props: {
   readonly loading?: boolean;
   readonly onPress: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (Platform.OS === "android") return <MaterialButton {...props} tone="primary" fullWidth />;
   return (
     <Pressable
@@ -273,7 +275,7 @@ function PrimaryActionButton(props: {
       {props.loading ? (
         <AppActivityIndicator colorClassName={String("accent-primary-foreground")} />
       ) : (
-        <Text className="text-base font-t3-bold text-primary-foreground">{props.label}</Text>
+        <Text className="text-base font-t3-bold text-primary-foreground">{uiT(props.label)}</Text>
       )}
     </Pressable>
   );
@@ -284,6 +286,7 @@ function ProjectPathInput(props: {
   readonly onChangeText: (value: string) => void;
   readonly onSubmit: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <TextInput
       className="h-12 min-h-12 rounded-[24px] px-4 py-0 text-base leading-snug"
@@ -291,7 +294,7 @@ function ProjectPathInput(props: {
       onChangeText={props.onChangeText}
       autoCapitalize="none"
       autoCorrect={false}
-      placeholder="~/projects/my-app"
+      placeholder={uiT("~/projects/my-app")}
       returnKeyType="done"
       onSubmitEditing={props.onSubmit}
     />
@@ -455,19 +458,22 @@ function useSelectedEnvironment(): {
 }
 
 function EmptyEnvironmentState() {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
 
   return (
     <View className="items-center gap-3 rounded-2xl bg-grouped-card px-5 py-8">
-      <Text className="text-center text-lg font-t3-bold">Environment unavailable</Text>
+      <Text className="text-center text-lg font-t3-bold">{uiT("Environment unavailable")}</Text>
       <Text className="text-center text-sm leading-normal text-foreground-muted">
-        Start or reconnect an environment before adding a project.
+        {uiT("Start or reconnect an environment before adding a project.")}
       </Text>
       <Pressable
         onPress={() => navigation.dispatch(StackActions.replace("ConnectionsNew"))}
         className="mt-1 rounded-full bg-primary px-4 py-2.5 active:opacity-70"
       >
-        <Text className="text-sm font-t3-bold text-primary-foreground">Add environment</Text>
+        <Text className="text-sm font-t3-bold text-primary-foreground">
+          {uiT("Add environment")}
+        </Text>
       </Pressable>
     </View>
   );
@@ -480,9 +486,12 @@ function SourceControlRow(props: {
   readonly hint: string;
   readonly isFirst: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const title =
-    props.source === "url" ? "Git URL" : `${addProjectRemoteSourceLabel(props.source)} repository`;
+    props.source === "url"
+      ? uiT("Git URL")
+      : uiT("{0} repository", { "0": addProjectRemoteSourceLabel(props.source) });
   const subtitle =
     props.source === "url"
       ? "Clone from a remote URL"
@@ -505,13 +514,19 @@ function SourceControlRow(props: {
 
   if (!props.ready) {
     return (
-      <ListRow title={title} subtitle={props.hint} icon={icon} disabled isFirst={props.isFirst} />
+      <ListRow
+        title={uiT(title)}
+        subtitle={props.hint}
+        icon={icon}
+        disabled
+        isFirst={props.isFirst}
+      />
     );
   }
 
   return (
     <ListRow
-      title={title}
+      title={uiT(title)}
       subtitle={subtitle}
       icon={icon}
       isFirst={props.isFirst}
@@ -528,6 +543,7 @@ function SourceControlRow(props: {
 }
 
 export function AddProjectSourceScreen() {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { environmentOptions, selectedEnvironment, setSelectedEnvironmentId } =
     useSelectedEnvironment();
@@ -554,12 +570,12 @@ export function AddProjectSourceScreen() {
   );
 
   return (
-    <AddProjectShell title="Add project">
+    <AddProjectShell title={uiT("Add project")}>
       {selectedEnvironment === null ? <EmptyEnvironmentState /> : null}
 
       {environmentOptions.length > 1 ? (
         <>
-          <SectionTitle>Environments</SectionTitle>
+          <SectionTitle>{uiT("Environments")}</SectionTitle>
           <ListSection>
             {environmentOptions.map((environment, index) => (
               <ListRow
@@ -606,8 +622,8 @@ export function AddProjectSourceScreen() {
           <ListSection>
             {selectedEnvironment.newProjectsRoot !== null ? (
               <ListRow
-                title="New project"
-                subtitle="Start a new Git repository from a name"
+                title={uiT("New project")}
+                subtitle={uiT("Start a new Git repository from a name")}
                 icon={
                   <SymbolView
                     name="plus"
@@ -627,11 +643,11 @@ export function AddProjectSourceScreen() {
               />
             ) : null}
             <ListRow
-              title="Local folder"
+              title={uiT("Local folder")}
               subtitle={
                 canCreateProject
-                  ? "Browse a folder on disk"
-                  : "This connection cannot add projects."
+                  ? uiT("Browse a folder on disk")
+                  : uiT("This connection cannot add projects.")
               }
               icon={
                 <SymbolView
@@ -660,7 +676,7 @@ export function AddProjectSourceScreen() {
                   ready={canCloneProject && readiness(candidate).ready}
                   hint={
                     !canCloneProject
-                      ? "This connection cannot clone projects."
+                      ? uiT("This connection cannot clone projects.")
                       : readiness(candidate).ready
                         ? addProjectRemoteSourcePathHint(candidate)
                         : (readiness(candidate).hint ?? "")
@@ -796,6 +812,7 @@ export function AddProjectRepositoryScreen(props: {
   readonly environmentId?: string | string[];
   readonly source?: string | string[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const lookupRepositoryQuery = useAtomQueryRunner(sourceControlEnvironment.repository, {
     reportFailure: false,
   });
@@ -851,7 +868,9 @@ export function AddProjectRepositoryScreen(props: {
   }, [environment, isSubmitting, lookupRepositoryQuery, repositoryInput, navigation, source]);
 
   return (
-    <AddProjectShell title={source === "url" ? "Git URL" : addProjectRemoteSourceLabel(source)}>
+    <AddProjectShell
+      title={source === "url" ? uiT("Git URL") : addProjectRemoteSourceLabel(source)}
+    >
       {error ? <ErrorBanner message={error} /> : null}
       {environment ? (
         <>
@@ -870,7 +889,7 @@ export function AddProjectRepositoryScreen(props: {
             onSubmitEditing={() => void lookupRepository()}
           />
           <PrimaryActionButton
-            label={source === "url" ? "Continue" : "Lookup repository"}
+            label={source === "url" ? uiT("Continue") : uiT("Lookup repository")}
             disabled={isSubmitting || repositoryInput.trim().length === 0}
             onPress={() => void lookupRepository()}
             loading={isSubmitting}
@@ -893,6 +912,7 @@ function FolderBrowser(props: {
   }) => Promise<boolean>;
   readonly pinnedDirectoryName?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const browsePath = useMemo(
     () => getFilesystemBrowsePath(props.pathInput, props.environment.platform),
     [props.environment.platform, props.pathInput],
@@ -934,9 +954,11 @@ function FolderBrowser(props: {
 
   return (
     <>
-      <SectionTitle>Browse folders</SectionTitle>
+      <SectionTitle>{uiT("Browse folders")}</SectionTitle>
       {!canReadFiles && !fileAccess.isPending ? (
-        <ErrorBanner message={fileAccess.error ?? "This connection cannot browse host folders."} />
+        <ErrorBanner
+          message={fileAccess.error ?? uiT("This connection cannot browse host folders.")}
+        />
       ) : null}
       {browseState.error ? <ErrorBanner message={browseState.error} /> : null}
       <ListSection>
@@ -999,6 +1021,7 @@ function FolderBrowser(props: {
  * first commit. Optionally publishes it to GitHub as a private repository.
  */
 export function AddProjectNewScreen(props: { readonly environmentId?: string | string[] }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   // Starts on the machine picked in Add project; the rows below switch it.
   const environmentOptions = useEnvironmentOptions().filter(
@@ -1138,7 +1161,7 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
   };
 
   return (
-    <AddProjectShell title="New project">
+    <AddProjectShell title={uiT("New project")}>
       {error ? <ErrorBanner message={error} /> : null}
       {environment ? (
         <>
@@ -1148,23 +1171,25 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
             onChangeText={setName}
             autoCorrect={false}
             autoFocus
-            placeholder="Project name"
+            placeholder={uiT("Project name")}
             returnKeyType="done"
             onSubmitEditing={() => void submit()}
           />
           {pathPreview !== null ? (
             <Text className="px-1 text-sm leading-snug text-foreground-muted" numberOfLines={2}>
               {trimmedName.length > 0
-                ? `Creates ${pathPreview}`
-                : `Goes in ${environment.newProjectsRoot}`}
-              {showMachines ? ` on ${environment.label}` : null}
+                ? uiT("Creates {0}", { "0": pathPreview })
+                : uiT("Goes in {0}", { "0": environment.newProjectsRoot })}
+              {showMachines ? uiT(" on {0}", { "0": environment.label }) : null}
             </Text>
           ) : null}
           {machineRows}
           {publishTarget !== null ? (
             <ListSection>
               <ListRow
-                title={`Create private repository on ${publishTarget.definition.label}`}
+                title={uiT("Create private repository on {0}", {
+                  "0": publishTarget.definition.label,
+                })}
                 subtitle={
                   trimmedName.length > 0 && pathPreview !== null
                     ? getNewProjectRepository(publishTarget, pathPreview)
@@ -1180,7 +1205,9 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
                 isFirst
                 right={
                   <ThemedSwitch
-                    accessibilityLabel={`Create private repository on ${publishTarget.definition.label}`}
+                    accessibilityLabel={uiT("Create private repository on {0}", {
+                      "0": publishTarget.definition.label,
+                    })}
                     value={publishes}
                     onValueChange={setPublishes}
                   />
@@ -1221,15 +1248,15 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
             </ListSection>
           ) : null}
           <PrimaryActionButton
-            label="Create project"
+            label={uiT("Create project")}
             disabled={isSubmitting || trimmedName.length === 0}
             onPress={() => void submit()}
             loading={isSubmitting}
           />
           <ListSection>
             <ListRow
-              title="Add existing project"
-              subtitle="Open a folder or clone a repository"
+              title={uiT("Add existing project")}
+              subtitle={uiT("Open a folder or clone a repository")}
               icon={
                 <SymbolView
                   name="folder.badge.plus"
@@ -1259,6 +1286,7 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
 }
 
 export function AddProjectLocalFolderScreen(props: { readonly environmentId?: string | string[] }) {
+  const { t: uiT } = useUiLanguage();
   const environment = useEnvironmentFromParam(props.environmentId);
   const canCreateProject = useEnvironmentScope(
     environment?.environmentId ?? null,
@@ -1292,16 +1320,16 @@ export function AddProjectLocalFolderScreen(props: { readonly environmentId?: st
   }, [createProject, environment, isBrowseNavigating, isSubmitting, pathInput]);
 
   return (
-    <AddProjectShell title="Local folder">
+    <AddProjectShell title={uiT("Local folder")}>
       {error ? <ErrorBanner message={error} /> : null}
       {environment ? (
         <>
           {!canCreateProject ? (
-            <ErrorBanner message="This connection cannot add projects." />
+            <ErrorBanner message={uiT("This connection cannot add projects.")} />
           ) : null}
           <ProjectPathInput value={pathInput} onChangeText={setPathInput} onSubmit={submitPath} />
           <PrimaryActionButton
-            label="Add project"
+            label={uiT("Add project")}
             disabled={!canCreateProject || isBrowseNavigating || isSubmitting}
             onPress={submitPath}
             loading={isSubmitting}
@@ -1327,6 +1355,7 @@ export function AddProjectDestinationScreen(props: {
   readonly repositoryName?: string | string[];
   readonly prompt?: string | string[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const cloneRepository = useAtomCommand(sourceControlEnvironment.cloneRepository, {
     reportFailure: false,
   });
@@ -1462,7 +1491,7 @@ export function AddProjectDestinationScreen(props: {
   ]);
 
   return (
-    <AddProjectShell title="Clone destination">
+    <AddProjectShell title={uiT("Clone destination")}>
       {error ? <ErrorBanner message={error} /> : null}
       {repositoryTitle ? (
         <View className="rounded-[24px] bg-grouped-card px-4 py-3">
@@ -1476,14 +1505,14 @@ export function AddProjectDestinationScreen(props: {
         <>
           <ProjectPathInput value={pathInput} onChangeText={setPathInput} onSubmit={submitPath} />
           <PrimaryActionButton
-            label="Clone project"
+            label={uiT("Clone project")}
             disabled={!canCloneProject || isBrowseNavigating || isSubmitting || !remoteUrl}
             onPress={submitPath}
             loading={isSubmitting}
           />
           {!canCloneProject ? (
             <Text className="text-sm text-foreground-muted">
-              This connection cannot clone projects.
+              {uiT("This connection cannot clone projects.")}
             </Text>
           ) : null}
           <FolderBrowser

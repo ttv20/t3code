@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import {
   makeMcpAppHost,
@@ -121,6 +122,7 @@ export function ThreadMcpApp(props: {
   /** Full screen only: the screen's height, which the app is told it fills. */
   readonly height?: number;
 }) {
+  const { t: uiT } = useUiLanguage();
   // One reference per app: a new object with the same content (a refetch, a
   // rerender) must not rebuild the host of a document that is already live.
   const [height, setHeight] = useState(MCP_APP_INLINE_MAX_HEIGHT);
@@ -519,7 +521,7 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          The {app.server} app is open full screen
+          <UiText message={"The {0} app is open full screen"} values={{ "0": app.server }} />
         </Text>
       </View>
     );
@@ -531,7 +533,9 @@ export function ThreadMcpApp(props: {
         style={{ height, marginBottom: ROW_BOTTOM_MARGIN }}
         className="items-center justify-center gap-2 rounded-lg border border-border"
       >
-        <Text className="text-sm text-foreground-muted">The {app.server} app was closed</Text>
+        <Text className="text-sm text-foreground-muted">
+          <UiText message={"The {0} app was closed"} values={{ "0": app.server }} />
+        </Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -539,7 +543,7 @@ export function ThreadMcpApp(props: {
             setClosed(false);
           }}
         >
-          <Text className="text-sm text-foreground">Show app</Text>
+          <Text className="text-sm text-foreground">{uiT("Show app")}</Text>
         </Pressable>
       </View>
     );
@@ -550,7 +554,7 @@ export function ThreadMcpApp(props: {
       {navigatedAway ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            The {app.server} app left its page and was stopped
+            {uiT("The {0} app left its page and was stopped", { "0": app.server })}
           </Text>
         </View>
       ) : uri !== null && !crashed ? (
@@ -560,7 +564,7 @@ export function ThreadMcpApp(props: {
           onContentProcessDidTerminate={restart}
           onRenderProcessGone={restart}
           source={source!}
-          accessibilityLabel={`${app.server} app`}
+          accessibilityLabel={uiT("{0} app", { "0": app.server })}
           style={{ flex: 1, backgroundColor: "transparent" }}
           nestedScrollEnabled
           originWhitelist={["*"]}
@@ -599,7 +603,9 @@ export function ThreadMcpApp(props: {
         />
       ) : asset._tag === "Failure" || crashed ? (
         <View className="flex-1 items-center justify-center">
-          <Text className="text-sm text-foreground-muted">Unable to load the {app.server} app</Text>
+          <Text className="text-sm text-foreground-muted">
+            {uiT("Unable to load the")} {app.server} {uiT("app")}
+          </Text>
         </View>
       ) : null}
       {uri !== null && !loaded && !crashed && !navigatedAway ? (

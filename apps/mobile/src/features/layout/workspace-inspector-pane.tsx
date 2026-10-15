@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Animated, {
   runOnJS,
@@ -37,6 +38,7 @@ export function WorkspaceInspectorPane(props: {
   readonly renderInspector?: () => ReactNode;
   readonly setAuxiliaryPaneWidth: (width: number) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { panes, setAuxiliaryPaneWidth } = props;
   const inspectorWidth = panes.auxiliaryPaneWidth;
   const inspectorSupported = props.renderInspector !== undefined && inspectorWidth !== null;
@@ -123,7 +125,7 @@ export function WorkspaceInspectorPane(props: {
     <>
       {inspectorVisible ? (
         <WorkspacePaneDivider
-          accessibilityLabel="Resize detail pane"
+          accessibilityLabel={uiT("Resize detail pane")}
           currentWidth={inspectorWidth ?? 0}
           resizeDirection={-1}
           onResizeStart={beginResize}
@@ -144,7 +146,10 @@ export function WorkspaceInspectorPane(props: {
             <RenderErrorBoundary
               resetKeys={[props.pathname]}
               renderFallback={(fallback) => (
-                <RenderFailureView {...fallback} title="The inspector couldn't be displayed" />
+                <RenderFailureView
+                  {...fallback}
+                  title={uiT("The inspector couldn't be displayed")}
+                />
               )}
             >
               <InspectorRenderer render={props.renderInspector} />

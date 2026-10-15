@@ -1,3 +1,5 @@
+import { useLayoutEffect } from "react";
+import { useUiLanguage } from "./i18n";
 import { PullRequestGuideStopScreen } from "./features/pull-requests/guide/PullRequestGuideScreen";
 import { PullRequestInlineCommentScreen } from "./features/pull-requests/PullRequestInlineCommentScreen";
 import { PullRequestDiscussionScreen } from "./features/pull-requests/PullRequestDiscussionScreen";
@@ -215,6 +217,64 @@ const LEGAL_DOCUMENT_HEADER_OPTIONS: AppScreenOptions = {
 // A navigator container leaves horizontal safe-area handling to its leaf screens.
 const NESTED_NAVIGATOR_OPTIONS = { nativeContentInsetHorizontally: false, headerShown: false };
 
+const SCREEN_TITLES: Readonly<Record<string, string>> = {
+  Settings: "Settings",
+  SettingsEnvironments: "Environments",
+  SettingsEnvironmentDetail: "Environment",
+  SettingsEnvironmentNewThreads: "New threads",
+  SettingsEnvironmentSourceControl: "Source control",
+  SettingsEnvironmentAgentBehavior: "Agent behavior",
+  SettingsProviderAccounts: "Provider accounts",
+  SettingsEnvironmentMaintenance: "Maintenance",
+  SettingsNotifications: "Notifications",
+  SettingsThreads: "Thread behavior",
+  SettingsAbout: "About T3 Code",
+  SettingsEnvironmentNew: "Add Environment",
+  SettingsArchive: "Archived Threads",
+  SettingsAppearance: "Appearance",
+  SettingsProjectGrouping: "Organization",
+  SettingsOrganization: "Organization",
+  SettingsProjectOverview: "Project overview",
+  SettingsKeyboard: "Keyboard",
+  SettingsMicrophone: "Microphone",
+  SettingsFollowUp: "Follow-ups",
+  SettingsScheduledTasks: "Scheduled Tasks",
+  SettingsScheduledTaskNew: "New scheduled task",
+  SettingsScheduledTaskEdit: "Edit scheduled task",
+  SettingsScheduledTaskBranch: "Base branch",
+  SettingsClientStorage: "Client Storage",
+  SettingsDiagnostics: "Diagnostics",
+  SettingsUsageAccount: "Account",
+  SettingsOpenSourceLicenses: "Open source licenses",
+  SettingsOpenSourceLicense: "License notice",
+  SettingsUsage: "Usage",
+  NewTask: "Choose project",
+  NewTaskEnvironment: "Environment",
+  NewTaskBranch: "Branch",
+  AddProject: "Add Project",
+  ThreadFiles: "Files",
+  SettingsLegal: "Legal",
+  ConnectOnboarding: "Set up T3 Connect",
+  Connections: "Environments",
+  ConnectionsNew: "Add Environment",
+};
+
+function LocalizedScreenLayout({
+  children,
+  route,
+}: {
+  children: ReactNode;
+  route: { name: string };
+}) {
+  const { t } = useUiLanguage();
+  const navigation = useNavigation();
+  const title = SCREEN_TITLES[route.name];
+  useLayoutEffect(() => {
+    if (title) navigation.setOptions({ title: t(title) });
+  }, [navigation, t, title]);
+  return <>{children}</>;
+}
+
 const SettingsContentStack = createV5SheetStackNavigator({
   initialRouteName: "Settings",
   screenOptions: {
@@ -427,6 +487,8 @@ const SettingsContentStack = createV5SheetStackNavigator({
       },
     }),
   },
+}).with(function LocalizedNavigator({ Navigator }) {
+  return <Navigator screenLayout={LocalizedScreenLayout} />;
 });
 
 // The outer stack never owns visible chrome. Settings routes render inside a
@@ -564,6 +626,8 @@ const NewTaskSheetStack = createNativeStackNavigator({
       linking: "add-project/new",
     }),
   },
+}).with(function LocalizedNavigator({ Navigator }) {
+  return <Navigator screenLayout={LocalizedScreenLayout} />;
 });
 
 // Routes presented as sheets/overlays ON TOP of the workspace. They must not
@@ -671,6 +735,7 @@ function RootStackLayout(props: {
 }
 
 function NotFoundScreen() {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const screenBgStyle = StyleSheet.flatten(useResolveClassNames("bg-screen"));
   const primaryBgStyle = StyleSheet.flatten(useResolveClassNames("bg-primary"));
@@ -697,13 +762,13 @@ function NotFoundScreen() {
       style={[{ flex: 1 }, screenBgStyle]}
     >
       <Text className="text-3xl font-t3-bold text-foreground" selectable>
-        Route not found
+        {uiT("Route not found")}
       </Text>
       <Pressable
         style={returnHomeButtonStyle}
         onPress={() => navigation.dispatch(StackActions.replace("Home"))}
       >
-        <Text className="text-base font-t3-bold text-primary-foreground">Return home</Text>
+        <Text className="text-base font-t3-bold text-primary-foreground">{uiT("Return home")}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -1040,12 +1105,16 @@ function GuardedScreenLayout(props: {
 }
 
 function ScreenRenderFallback(props: RenderFailureProps & { readonly routeName: string }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const exit = navigation.canGoBack()
-    ? { label: "Go back", onPress: () => navigation.goBack() }
+    ? { label: uiT("Go back"), onPress: () => navigation.goBack() }
     : props.routeName === "Home"
-      ? { label: "Open settings", onPress: () => navigation.navigate("SettingsSheet") }
-      : { label: "Return home", onPress: () => navigation.dispatch(StackActions.replace("Home")) };
+      ? { label: uiT("Open settings"), onPress: () => navigation.navigate("SettingsSheet") }
+      : {
+          label: uiT("Return home"),
+          onPress: () => navigation.dispatch(StackActions.replace("Home")),
+        };
 
   return <RenderFailureView {...props} exit={exit} />;
 }

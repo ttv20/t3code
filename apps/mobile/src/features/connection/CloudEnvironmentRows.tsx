@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
 import { ConnectionTraceId } from "./ConnectionTraceId";
 import { useAuth } from "@clerk/expo";
@@ -79,6 +80,7 @@ function ConnectedOnlyCloudEnvironmentRows(props: CloudEnvironmentRowsProps) {
 function CloudEnvironmentRowsContent(
   props: CloudEnvironmentRowsProps & { readonly discoveryAvailable?: boolean },
 ) {
+  const { t: uiT } = useUiLanguage();
   const controller = useConnectionController();
   const discoveryAvailable = props.discoveryAvailable ?? true;
   const availableCloudEnvironments = discoveryAvailable
@@ -152,13 +154,13 @@ function CloudEnvironmentRowsContent(
         <View collapsable={false} className="items-center gap-3 rounded-[24px] bg-grouped-card p-6">
           <AppActivityIndicator colorClassName={"accent-icon"} />
           <Text className="text-center text-sm leading-normal text-foreground-muted">
-            Loading linked cloud environments.
+            {uiT("Loading linked cloud environments.")}
           </Text>
         </View>
       ) : controller.relayDiscovery.error ? null : (
         <View collapsable={false} className="rounded-[24px] bg-grouped-card p-5">
           <Text className="text-sm leading-normal text-foreground-muted">
-            No additional linked cloud environments.
+            {uiT("No additional linked cloud environments.")}
           </Text>
         </View>
       )}
@@ -170,7 +172,7 @@ function CloudEnvironmentRowsContent(
       !controller.relayDiscovery.isRefreshing ? (
         <View collapsable={false} className="gap-3 rounded-[24px] bg-grouped-card p-5">
           <Text className="text-base font-t3-bold text-foreground">
-            Could not load T3 Connect environments
+            {uiT("Could not load T3 Connect environments")}
           </Text>
           <Text className="text-sm text-foreground-muted">{controller.relayDiscovery.error}</Text>
           {controller.relayDiscovery.errorTraceId ? (
@@ -183,7 +185,7 @@ function CloudEnvironmentRowsContent(
             }}
             className="self-start rounded-full bg-subtle px-3.5 py-2 active:opacity-70"
           >
-            <Text className="text-xs font-t3-bold text-foreground">Try again</Text>
+            <Text className="text-xs font-t3-bold text-foreground">{uiT("Try again")}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -206,6 +208,7 @@ function ConnectedCloudEnvironmentRow(props: {
   readonly onOpen?: (() => void) | undefined;
   readonly onToggleError: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const serverConfig = useAtomValue(
     serverEnvironment.configValueAtom(props.environment.environmentId),
   );
@@ -219,9 +222,11 @@ function ConnectedCloudEnvironmentRow(props: {
   }
   return (
     <Pressable
-      accessibilityHint="Long press to remove from this device"
+      accessibilityHint={uiT("Long press to remove from this device")}
       accessibilityRole={props.onOpen ? "button" : undefined}
-      accessibilityLabel={props.onOpen ? `Manage ${props.environment.environmentLabel}` : undefined}
+      accessibilityLabel={
+        props.onOpen ? uiT("Manage {0}", { "0": props.environment.environmentLabel }) : undefined
+      }
       onPress={props.onOpen}
       onLongPress={props.onRemove}
     >
@@ -300,6 +305,7 @@ function CloudEnvironmentRowShell(props: {
   readonly statusText?: string;
   readonly value: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const isRetrying =
     props.connectionState === "connecting" || props.connectionState === "reconnecting";
   const shouldPulse = isRetrying;
@@ -355,7 +361,7 @@ function CloudEnvironmentRowShell(props: {
             className="min-w-0 flex-shrink text-base font-t3-bold leading-snug text-foreground"
             numberOfLines={1}
           >
-            {props.label}
+            {uiT(props.label)}
           </Text>
         </View>
         {props.connectionError ? (
@@ -420,6 +426,7 @@ function CloudEnvironmentRowShell(props: {
 }
 
 function CopyTraceIdButton(props: { readonly traceId: string }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       accessibilityRole="button"
@@ -434,7 +441,7 @@ function CopyTraceIdButton(props: { readonly traceId: string }) {
         tintColorClassName={"accent-icon"}
         type="monochrome"
       />
-      <Text className="text-xs font-t3-bold text-foreground">Copy trace ID</Text>
+      <Text className="text-xs font-t3-bold text-foreground">{uiT("Copy trace ID")}</Text>
     </Pressable>
   );
 }

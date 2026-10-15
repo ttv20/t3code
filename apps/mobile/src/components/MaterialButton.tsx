@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Pressable } from "react-native";
 import { AppText } from "./AppText";
 import { cn } from "../lib/cn";
@@ -20,6 +21,7 @@ const TONE_CLASS_NAMES = {
 } as const;
 
 export function MaterialButton(props: MaterialButtonProps) {
+  const { t: uiT } = useUiLanguage();
   const [containerClassName, labelClassName] = TONE_CLASS_NAMES[props.tone ?? "secondary"];
   const disabled = Boolean(props.disabled || props.loading);
   return (
@@ -40,7 +42,7 @@ export function MaterialButton(props: MaterialButtonProps) {
           disabled ? "text-foreground-muted" : labelClassName,
         )}
       >
-        {props.label}
+        {uiT(props.label)}
       </AppText>
     </Pressable>
   );

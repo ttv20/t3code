@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import type { ComponentType } from "react";
@@ -154,13 +155,16 @@ function useSourceFileModel(props: SourceFileSurfaceProps) {
 }
 
 function SourceHighlightStatusView(props: { readonly status: SourceHighlightStatus }) {
+  const { t: uiT } = useUiLanguage();
   if (props.status === "highlighting") {
     return <LoadingStrip />;
   }
   if (props.status === "error") {
     return (
       <View className="border-b border-border bg-card px-4 py-2">
-        <Text className="text-2xs font-t3-medium uppercase text-foreground-muted">Plain text</Text>
+        <Text className="text-2xs font-t3-medium uppercase text-foreground-muted">
+          {uiT("Plain text")}
+        </Text>
       </View>
     );
   }

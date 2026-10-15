@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   DatePicker,
   Host,
@@ -52,6 +53,7 @@ export function CustomSnoozeSheet(props: {
   readonly onClose: () => void;
   readonly onSnooze: (snoozedUntil: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { width, height } = useWindowDimensions();
   const [mode, setMode] = useState<CustomSnoozeInput["mode"]>("date");
   const [date, setDate] = useState(() => new Date(Date.now() + 3_600_000));
@@ -116,7 +118,7 @@ export function CustomSnoozeSheet(props: {
                 modifiers={[padding({ all: 16 }), foregroundStyle(colors["--color-foreground"])]}
               >
                 <Picker
-                  label="Snooze mode"
+                  label={uiT("Snooze mode")}
                   selection={mode}
                   onSelectionChange={(value: CustomSnoozeInput["mode"]) => {
                     setMode(value);
@@ -126,13 +128,13 @@ export function CustomSnoozeSheet(props: {
                 >
                   {modes.map((option) => (
                     <Text key={option.value} modifiers={[tag(option.value)]}>
-                      {option.label}
+                      {uiT(option.label)}
                     </Text>
                   ))}
                 </Picker>
                 {mode === "date" ? (
                   <DatePicker
-                    title="Snooze until"
+                    title={uiT("Snooze until")}
                     selection={date}
                     displayedComponents={["date", "hourAndMinute"]}
                     onDateChange={updateDate}
@@ -145,7 +147,7 @@ export function CustomSnoozeSheet(props: {
                 ) : (
                   <HStack spacing={0}>
                     <Picker
-                      label="Duration amount"
+                      label={uiT("Duration amount")}
                       selection={amount}
                       onSelectionChange={(value: number) => {
                         setAmount(value);
@@ -168,7 +170,7 @@ export function CustomSnoozeSheet(props: {
                       ))}
                     </Picker>
                     <Picker
-                      label="Duration unit"
+                      label={uiT("Duration unit")}
                       selection={unit}
                       onSelectionChange={(value: typeof unit) => {
                         setUnit(value);
@@ -189,7 +191,7 @@ export function CustomSnoozeSheet(props: {
                             foregroundStyle(colors["--color-foreground"]),
                           ]}
                         >
-                          {option.label}
+                          {uiT(option.label)}
                         </Text>
                       ))}
                     </Picker>
@@ -222,6 +224,7 @@ function SnoozePopoverNavigation(props: {
   readonly onSubmit: () => void;
   readonly children: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigationTheme = useMobileNavigationTheme();
   const { themeVariables: colors } = useAppearancePreferences();
 
@@ -243,7 +246,7 @@ function SnoozePopoverNavigation(props: {
                   headerTintColor: colors["--color-foreground"],
                   headerTitleStyle: { fontSize: 17, fontWeight: "700" },
                   headerTransparent: NATIVE_LIQUID_GLASS_SUPPORTED,
-                  title: "Custom snooze",
+                  title: uiT("Custom snooze"),
                 }}
               >
                 <SnoozeStack.Screen name="CustomSnooze">
@@ -251,13 +254,16 @@ function SnoozePopoverNavigation(props: {
                     <>
                       <NativeHeaderToolbar placement="left">
                         <NativeHeaderToolbar.Button
-                          accessibilityLabel="Cancel custom snooze"
+                          accessibilityLabel={uiT("Cancel custom snooze")}
                           icon="xmark"
                           onPress={props.onClose}
                         />
                       </NativeHeaderToolbar>
                       <NativeHeaderToolbar placement="right">
-                        <NativeHeaderToolbar.Button label="Snooze" onPress={props.onSubmit} />
+                        <NativeHeaderToolbar.Button
+                          label={uiT("Snooze")}
+                          onPress={props.onSubmit}
+                        />
                       </NativeHeaderToolbar>
                       <ScrollView
                         contentInsetAdjustmentBehavior="automatic"

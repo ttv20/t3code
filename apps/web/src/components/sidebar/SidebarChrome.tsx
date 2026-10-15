@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ArrowLeftIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
@@ -36,6 +37,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
 }: {
   isElectron: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const stageLabel = useEnvironmentStageLabel();
   const environmentIdentificationMode = useEnvironmentIdentificationMode();
   const backdropVariant = resolveSidebarStageBackdropVariant(
@@ -62,7 +64,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           // Over the stage artwork: the media viewer's control-on-imagery treatment.
           variant={backdropVariant ? "media-navigation" : "ghost"}
           className="relative top-auto translate-y-0"
-          aria-label="Toggle main sidebar"
+          aria-label={uiT("Toggle main sidebar")}
         />
       </div>
       {/* One visible line: the pill wraps onto the clipped second line once it no longer fits.
@@ -111,9 +113,10 @@ export function SidebarBrandWidthProbe({
 }
 
 function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Link
-      aria-label="Go to threads"
+      aria-label={uiT("Go to threads")}
       className={cn(
         "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 focus-visible:ring-inset md:flex",
         onBackdrop ? "text-white" : "text-foreground",
@@ -129,7 +132,10 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   return (
     // Center the visible capitals, without the font's ascender/descender space.
     // Padding keeps ascenders and round-letter overshoot inside the truncation clip.
-    <span className="inline-flex min-w-0 items-baseline gap-1 text-sm font-medium tracking-tight">
+    <span
+      dir="ltr"
+      className="inline-flex min-w-0 items-center gap-1 text-sm font-medium tracking-tight"
+    >
       <T3Wordmark aria-label="T3" className="h-[1cap] w-auto shrink-0" />
       <span
         className={cn(
@@ -138,6 +144,11 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
         )}
       >
         Code
+      </span>
+      <span className="flex items-center pl-1">
+        <Badge size="sm" variant="secondary">
+          RTL
+        </Badge>
       </span>
     </span>
   );
@@ -152,23 +163,25 @@ function SidebarUtilityItem({
   label: string;
   onClick: () => void;
 }) {
+  const { t } = useUiLanguage();
   return (
     <SidebarMenuItem className="shrink-0">
       <Tooltip>
         <TooltipTrigger
           render={
-            <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
+            <SidebarMenuButton aria-label={t(label)} onClick={onClick} size="icon">
               {icon}
             </SidebarMenuButton>
           }
         />
-        <TooltipPopup side="top">{label}</TooltipPopup>
+        <TooltipPopup side="top">{t(label)}</TooltipPopup>
       </Tooltip>
     </SidebarMenuItem>
   );
 }
 
 export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const navigateToMainApp = useNavigateToMainApp();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -211,26 +224,26 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
         <SidebarMenuItem className="min-w-0 flex-1">
           <SidebarMenuButton onClick={handleBackClick}>
             <ArrowLeftIcon />
-            <span>Back</span>
+            <span>{uiT("Back")}</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ) : (
         <>
           <SidebarUtilityItem
             icon={<SettingsIcon />}
-            label="Settings"
+            label={uiT("Settings")}
             onClick={handleSettingsClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
               icon={<PullRequestGlyph.pullRequest />}
-              label="Pull Requests"
+              label={uiT("Pull Requests")}
               onClick={handlePullRequestsClick}
             />
           ) : null}
           <SidebarUtilityItem
             icon={<ChartNoAxesColumnIcon />}
-            label="Usage"
+            label={uiT("Usage")}
             onClick={handleUsageClick}
           />
         </>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { PullRequestStack } from "@t3tools/contracts";
 import { cn } from "~/lib/utils";
 import { resolvePullRequestState } from "./pullRequestPresentation";
@@ -9,6 +10,7 @@ export function PullRequestStackLayerContent({
   layer: PullRequestStack["layers"][number];
   compact?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const state = resolvePullRequestState({
     state: layer.state,
     isDraft: layer.isDraft ?? false,
@@ -20,7 +22,7 @@ export function PullRequestStackLayerContent({
         <span className="block truncate">{layer.title || layer.headBranch}</span>
         <span className="block truncate text-xs font-normal text-muted-foreground">
           #{layer.number} · {compact ? null : `${layer.headBranch} · `}
-          {state.label}
+          {uiT(state.label)}
         </span>
       </span>
     </>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { PullRequestSectionHeading } from "./PullRequestSectionHeading";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import Animated from "react-native-reanimated";
@@ -33,6 +34,7 @@ export function usePullRequestFilesContent(props: {
   readonly onSelectFile?: (path: string) => void;
   readonly groupByDirectory?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const result = usePullRequestDiff(props.params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(requestTarget(props.params)));
@@ -67,7 +69,7 @@ export function usePullRequestFilesContent(props: {
           {showDirectory ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={directory || "Repository root"}
+              accessibilityLabel={directory || uiT("Repository root")}
               accessibilityState={{ expanded: !collapsed }}
               onPress={() =>
                 setCollapsedDirectories((current) => {
@@ -86,14 +88,18 @@ export function usePullRequestFilesContent(props: {
               />
               <SymbolView name="folder" size={16} tintColorClassName="accent-icon-muted" />
               <Text className="min-w-0 flex-1 text-xs text-foreground-muted" numberOfLines={2}>
-                {directory || "Repository root"}
+                {directory || uiT("Repository root")}
               </Text>
             </Pressable>
           ) : null}
           {!collapsed ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`View diff for ${file.path}, ${file.additions} additions, ${file.deletions} deletions`}
+              accessibilityLabel={uiT("View diff for {0}, {1} additions, {2} deletions", {
+                "0": file.path,
+                "1": file.additions,
+                "2": file.deletions,
+              })}
               onPress={() => {
                 if (props.onSelectFile) props.onSelectFile(file.path);
                 else
@@ -116,7 +122,7 @@ export function usePullRequestFilesContent(props: {
                 ) : null}
                 {file.previousPath ? (
                   <Text className="mt-0.5 text-2xs text-foreground-muted" numberOfLines={1}>
-                    Renamed from {file.previousPath}
+                    {uiT("Renamed from")} {file.previousPath}
                   </Text>
                 ) : null}
               </View>
@@ -164,15 +170,15 @@ export function usePullRequestFilesContent(props: {
         <PullRequestReadStatus pending={false} error={result.error} />
         {loading ? (
           <View
-            accessibilityLabel="Loading changed files"
+            accessibilityLabel={uiT("Loading changed files")}
             accessibilityState={{ busy: true }}
             className="min-h-17 flex-row items-center gap-2 py-3"
           >
             <View className="min-w-0 flex-1 gap-1">
-              <PullRequestSectionHeading>Changed files</PullRequestSectionHeading>
+              <PullRequestSectionHeading>{uiT("Changed files")}</PullRequestSectionHeading>
               {fileCount !== undefined ? (
                 <Text className="text-2xs text-foreground-muted">
-                  {fileCount} {fileCount === 1 ? "file" : "files"}
+                  {fileCount} {fileCount === 1 ? uiT("file") : uiT("files")}
                 </Text>
               ) : (
                 <View className="h-2.5 w-28 rounded bg-subtle-strong" />
@@ -197,17 +203,22 @@ export function usePullRequestFilesContent(props: {
           <>
             <View className="min-h-17 flex-row items-center gap-2 py-3">
               <View className="min-w-0 flex-1 gap-1">
-                <PullRequestSectionHeading>Changed files</PullRequestSectionHeading>
+                <PullRequestSectionHeading>{uiT("Changed files")}</PullRequestSectionHeading>
                 <Text className="text-2xs text-foreground-muted">
-                  {parsed.fileCount} {filter.hiddenCount ? "visible" : "changed"}{" "}
-                  {parsed.fileCount === 1 ? "file" : "files"}
+                  {parsed.fileCount} {filter.hiddenCount ? uiT("visible") : uiT("changed")}{" "}
+                  {parsed.fileCount === 1 ? uiT("file") : uiT("files")}
                   {viewed.supported
-                    ? ` · ${parsed.files.filter((file) => viewed.isViewed(file.path)).length} viewed`
+                    ? uiT(" · {0} viewed", {
+                        "0": parsed.files.filter((file) => viewed.isViewed(file.path)).length,
+                      })
                     : ""}
                   {" · "}
                   {filter.hideTestFiles
-                    ? `${filter.hiddenCount} test ${filter.hiddenCount === 1 ? "file" : "files"} hidden`
-                    : "Test files included"}
+                    ? uiT("{0} test {1} hidden", {
+                        "0": filter.hiddenCount,
+                        "1": filter.hiddenCount === 1 ? "file" : "files",
+                      })
+                    : uiT("Test files included")}
                 </Text>
               </View>
               <PullRequestDiffStats
@@ -216,11 +227,11 @@ export function usePullRequestFilesContent(props: {
                 compact
               />
               <ControlPillMenu
-                title="Review files"
+                title={uiT("Review files")}
                 actions={[
                   {
                     id: "hide-tests",
-                    title: "Hide test files",
+                    title: uiT("Hide test files"),
                     image: "line.3.horizontal.decrease",
                     state: filter.hideTestFiles ? "on" : "off",
                   },
@@ -230,7 +241,7 @@ export function usePullRequestFilesContent(props: {
                 <View pointerEvents="none">
                   <MaterialIconButton
                     icon="line.3.horizontal.decrease"
-                    accessibilityLabel="Filter review files"
+                    accessibilityLabel={uiT("Filter review files")}
                     selected={filter.hideTestFiles}
                   />
                 </View>
@@ -239,12 +250,14 @@ export function usePullRequestFilesContent(props: {
             {parsed.files.length === 0 && filter.hiddenCount > 0 ? (
               <EmptyState
                 title={
-                  result.nextCursor ? "No non-test files loaded yet" : "Only test files changed"
+                  result.nextCursor
+                    ? uiT("No non-test files loaded yet")
+                    : uiT("Only test files changed")
                 }
                 detail="Test files are hidden from this review."
                 action={
                   <MaterialButton
-                    label="Show test files"
+                    label={uiT("Show test files")}
                     tone="contrast"
                     onPress={filter.showAll}
                   />
@@ -254,7 +267,9 @@ export function usePullRequestFilesContent(props: {
             ) : null}
           </>
         ) : !result.isPending && !result.error ? (
-          <Text className="py-6 text-sm text-foreground-muted">No text changes available.</Text>
+          <Text className="py-6 text-sm text-foreground-muted">
+            {uiT("No text changes available.")}
+          </Text>
         ) : null}
       </>
     ),
@@ -270,7 +285,7 @@ export function usePullRequestFilesContent(props: {
               <ActivityIndicator />
             ) : (
               <Text className="text-sm font-t3-medium">
-                {result.error ? "Retry loading files" : "Load more files"}
+                {result.error ? uiT("Retry loading files") : uiT("Load more files")}
               </Text>
             )}
           </Pressable>

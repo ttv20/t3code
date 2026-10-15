@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import type { EnvironmentId, ScopedThreadRef, ThreadPullRequestLink } from "@t3tools/contracts";
 import {
@@ -73,6 +74,7 @@ export function ThreadDetailsPrRows({
   currentLink: ThreadPullRequestLink | null;
   onOpenLink: (event: ReactMouseEvent<HTMLElement>, url: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [expanded, setExpanded] = useState(false);
   const watch = useAtomCommand(threadEnvironment.watchPullRequest, { reportFailure: true });
   // Only watched links get the eye; the row hides it once the server records the stop.
@@ -123,7 +125,7 @@ export function ThreadDetailsPrRows({
         className="w-full active:scale-100"
       >
         <MorphIcon aria-hidden className="size-4 shrink-0" icon={expanded ? Minus : Plus} />
-        {expanded ? "Show less" : `Show ${rest.length} more`}
+        {expanded ? uiT("Show less") : uiT("Show {0} more", { "0": rest.length })}
       </ThreadDetailsControl>
     </>
   );

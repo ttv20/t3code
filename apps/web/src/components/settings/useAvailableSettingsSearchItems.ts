@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useMemo } from "react";
 import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
 
@@ -18,6 +19,7 @@ import {
 } from "./settingsSearch";
 
 export function useAvailableSettingsSearchItems(scopeSearch: SettingsScopeSearch = {}) {
+  const { t } = useUiLanguage();
   const { environments } = useEnvironments();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const localEnvironmentDisabled = isLocalEnvironmentDisabled();
@@ -61,8 +63,13 @@ export function useAvailableSettingsSearchItems(scopeSearch: SettingsScopeSearch
         hasThreadAutoSettlement:
           getThreadAutoSettlementSearchAvailability(environments).eligibleEnvironmentIds.length > 0,
         managedTunnelActive,
-      }),
+      }).map((item) => ({
+        ...item,
+        title: t(item.title),
+        searchTerms: [item.title, ...(item.searchTerms ?? []), t(item.title)],
+      })),
     [
+      t,
       managedTunnelActive,
       canManageLocalBackend,
       desktopWsl.data,

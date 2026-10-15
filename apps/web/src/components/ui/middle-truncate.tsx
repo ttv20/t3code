@@ -31,6 +31,7 @@ export function MiddleTruncate({
   const split = splitForMiddleTruncate(value, tail);
   return (
     <span
+      dir="ltr"
       {...(showTitle ? { title: value } : {})}
       className={cn(
         "inline-flex min-w-0 max-w-full overflow-hidden whitespace-nowrap",

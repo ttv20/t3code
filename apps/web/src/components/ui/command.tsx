@@ -1,5 +1,7 @@
 "use client";
 
+import { useUiLanguage } from "../../i18n";
+
 import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
 import { SearchIcon } from "lucide-react";
 import type * as React from "react";
@@ -98,6 +100,7 @@ function CommandInput({
   placeholder,
   ...props
 }: React.ComponentProps<typeof AutocompleteInput>) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="px-[var(--command-shell-inset)] py-1.5 [&_[data-slot=autocomplete-start-addon]]:ps-[calc(var(--command-shell-inset)+0.0625rem)]">
       <AutocompleteInput
@@ -106,7 +109,7 @@ function CommandInput({
           "border-transparent! bg-transparent! shadow-none before:hidden has-focus-visible:ring-0 placeholder:text-placeholder *:data-[slot=autocomplete-input]:ps-9! sm:*:data-[slot=autocomplete-input]:ps-[calc(var(--command-shell-inset)+1.5rem)]!",
           className,
         )}
-        placeholder={placeholder}
+        placeholder={uiT(placeholder)}
         size="lg"
         startAddon={<SearchIcon className="translate-x-0.5 text-icon-muted" />}
         {...props}

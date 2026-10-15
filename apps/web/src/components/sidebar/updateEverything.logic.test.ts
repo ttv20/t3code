@@ -265,6 +265,23 @@ describe("update everything summary", () => {
 });
 
 describe("describeUpdateEverything", () => {
+  it("localizes update labels while retaining machine and provider names", () => {
+    expect(
+      describeUpdateEverything(
+        {
+          localVersion: null,
+          servers: [],
+          providerMachines: [
+            { environmentId: EnvironmentId.make("alvin"), label: "alvin", providers: ["Codex"] },
+          ],
+        },
+        "he",
+      ),
+    ).toEqual({
+      summary: "עדכון ספק אחד",
+      lines: ["alvin: Codex"],
+    });
+  });
   it("summarizes the run and lists each machine once", () => {
     const alvin = EnvironmentId.make("alvin");
     expect(

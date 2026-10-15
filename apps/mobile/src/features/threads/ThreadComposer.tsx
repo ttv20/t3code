@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
@@ -277,6 +278,7 @@ function SendActionButton(props: {
   readonly disabled: boolean;
   readonly onSend: (followUp?: ActiveTurnComposerAction) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { presentation } = props;
   const button = (
     <ComposerActionButton
@@ -295,7 +297,7 @@ function SendActionButton(props: {
   );
   return (
     <ControlPillMenu
-      accessibilityLabel="Choose how to send this message"
+      accessibilityLabel={uiT("Choose how to send this message")}
       shouldOpenOnLongPress
       actions={actions.map((action) => ({
         id: action,
@@ -377,6 +379,7 @@ export function ComposerSurface(props: {
 }
 
 export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposerProps) {
+  const { t: uiT } = useUiLanguage();
   const project = useProject(scopeProjectRef(props.environmentId, props.selectedThread.projectId));
   const { themeVariables: materialTheme } = useAppearancePreferences();
   const composerPanel = materialTheme["--color-composer-panel"];
@@ -518,7 +521,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
   });
   const voiceInput = useVoiceInputController({
     ownerKey: composerDraftKey,
-    label: props.selectedThread.title || "Untitled thread",
+    label: props.selectedThread.title || uiT("Untitled thread"),
     readDraftMessage: () => getComposerDraftSnapshot(composerDraftKey).text,
     subscribeToDraftChanges: (onChange) => appAtomRegistry.subscribe(composerDraftsAtom, onChange),
     selection: composerMenu.selection,
@@ -836,7 +839,9 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
         ) : null}
         {modelUnavailable ? (
           <Pressable accessibilityRole="button" className="px-3 py-2" onPress={openSettings}>
-            <Text className="text-xs text-foreground">Model unavailable. Open model settings.</Text>
+            <Text className="text-xs text-foreground">
+              {uiT("Model unavailable. Open model settings.")}
+            </Text>
           </Pressable>
         ) : null}
 
@@ -1012,7 +1017,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                   }
                   insertPaste();
                 }}
-                placeholder={props.placeholder}
+                placeholder={uiT(props.placeholder)}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 // Command-Return sends the other way, matching web's Mod+Enter.
@@ -1084,7 +1089,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                 />
                 {showStopAction ? (
                   <ComposerActionButton
-                    accessibilityLabel="Stop agent"
+                    accessibilityLabel={uiT("Stop agent")}
                     icon="stop.fill"
                     variant="danger"
                     disabled={!props.canOperateThread}
@@ -1152,7 +1157,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                     />
                     <View className="min-w-0 shrink">
                       <ComposerInlineControl
-                        accessibilityLabel="Model and reasoning settings"
+                        accessibilityLabel={uiT("Model and reasoning settings")}
                         emphasized
                         renderIcon={(size) => (
                           <ProviderIcon
@@ -1179,7 +1184,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                   />
                   {showStopAction ? (
                     <ComposerActionButton
-                      accessibilityLabel="Stop agent"
+                      accessibilityLabel={uiT("Stop agent")}
                       icon="stop.fill"
                       variant="danger"
                       disabled={!props.canOperateThread}
@@ -1201,7 +1206,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
 
         {props.connectionState === "connected" && !props.canOperateThread ? (
           <Text className="pt-2 text-xs text-foreground-muted">
-            This connection cannot control this task. You can still edit your draft.
+            {uiT("This connection cannot control this task. You can still edit your draft.")}
           </Text>
         ) : null}
       </Animated.View>

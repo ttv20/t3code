@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   environmentUpdateTarget,
@@ -40,6 +41,7 @@ export function ServerReleaseUpdateAction({
   serverConfig: ServerConfig;
   appearance?: "button" | "icon";
 }) {
+  const { t: uiT } = useUiLanguage();
   const currentVersion = serverConfig.environment.serverVersion;
   const [check, setCheck] = useState<{
     environmentId: EnvironmentId;
@@ -99,7 +101,7 @@ export function ServerReleaseUpdateAction({
           result: {
             status: "failed",
             message:
-              error instanceof Error ? error.message : "Could not check releases. Try again.",
+              error instanceof Error ? error.message : uiT("Could not check releases. Try again."),
           },
         });
       }
@@ -109,17 +111,17 @@ export function ServerReleaseUpdateAction({
   };
 
   if (updateState.status === "running") return null;
-  const checkLabel = result?.status === "checking" ? "Checking…" : "Check for updates";
+  const checkLabel = uiT(result?.status === "checking" ? "Checking…" : "Check for updates");
   const detail =
     result?.status === "failed"
       ? result.message
       : result?.status === "checked" && targetVersion === null
-        ? "Up to date"
-        : `Current version: ${currentVersion}`;
+        ? uiT("Up to date")
+        : uiT("Current version: {0}", { "0": currentVersion });
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       {appearance === "button" && result?.status === "checked" && targetVersion === null ? (
-        <span className="text-xs text-muted-foreground">Up to date</span>
+        <span className="text-xs text-muted-foreground">{uiT("Up to date")}</span>
       ) : null}
       <Tooltip>
         <TooltipTrigger
@@ -127,7 +129,7 @@ export function ServerReleaseUpdateAction({
             <Button
               variant="ghost-muted"
               size={appearance === "icon" ? "icon-xs" : "sm"}
-              aria-label={`${checkLabel} for ${serverLabel}`}
+              aria-label={uiT("{0} for {1}", { "0": checkLabel, "1": serverLabel })}
               disabled={result?.status === "checking"}
               onClick={() => void checkReleases()}
             />
@@ -154,7 +156,7 @@ export function ServerReleaseUpdateAction({
           threadContinuation={supportsServerUpdateThreadContinuation(serverConfig)}
           targetVersion={targetVersion}
           currentVersion={currentVersion}
-          label={`Update to ${targetVersion}`}
+          label={uiT("Update to {0}", { "0": targetVersion })}
           appearance={appearance}
           size="sm"
           confirmRestart

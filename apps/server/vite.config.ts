@@ -111,6 +111,13 @@ export default mergeConfig(
         js: "#!/usr/bin/env node\n",
       },
       define: {
+        __T3CODE_BUILD_POSTHOG_KEY__: JSON.stringify(repoEnv.T3CODE_POSTHOG_KEY?.trim() ?? ""),
+        __T3CODE_BUILD_POSTHOG_HOST__: JSON.stringify(
+          repoEnv.T3CODE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com",
+        ),
+        __T3CODE_BUILD_TELEMETRY_ENABLED__: JSON.stringify(
+          repoEnv.T3CODE_TELEMETRY_ENABLED === "true",
+        ),
         __T3CODE_BUILD_CHANNEL__: JSON.stringify(cliBuildChannel),
         __T3CODE_BUILD_RELAY_URL__: JSON.stringify(repoEnv.T3CODE_RELAY_URL?.trim() ?? ""),
         __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__: JSON.stringify(

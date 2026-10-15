@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   SubagentWorkflowGroup,
   RuntimeSubagent,
@@ -71,6 +72,7 @@ function WorkflowMemberRow({
   onOpen: (threadId: string) => void;
   isThreadAvailable: (threadId: string) => boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const threadId = member.childThreadId;
   const canOpen = threadId !== null && isThreadAvailable(threadId);
   return (
@@ -81,7 +83,7 @@ function WorkflowMemberRow({
           render={
             <ThreadDetailsControl
               part="row"
-              aria-label={`Open ${member.title} chat`}
+              aria-label={uiT("Open {0} chat", { "0": member.title })}
               disabled={!canOpen}
               onClick={() => canOpen && onOpen(threadId)}
             />
@@ -141,6 +143,7 @@ export function ThreadLineageWorkflowRow({
   readonly stopping: boolean;
   readonly stopDisabled: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [expanded, setExpanded] = useState(false);
   // The running phase opens itself until the user picks a side for it.
   const [phaseOpen, setPhaseOpen] = useState<ReadonlyMap<number, boolean>>(() => new Map());
@@ -161,7 +164,7 @@ export function ThreadLineageWorkflowRow({
                     variant="ghost"
                     part="icon"
                     tone="destructive"
-                    aria-label={`Stop workflow ${label}`}
+                    aria-label={uiT("Stop workflow {0}", { "0": label })}
                     disabled={stopDisabled}
                     onClick={onStop}
                   />
@@ -173,7 +176,7 @@ export function ThreadLineageWorkflowRow({
                   <SquareIcon aria-hidden className="size-3 fill-current" />
                 )}
               </TooltipTrigger>
-              <TooltipPopup side="left">Stop entire workflow</TooltipPopup>
+              <TooltipPopup side="left">{uiT("Stop entire workflow")}</TooltipPopup>
             </Tooltip>
           </div>
         ) : null}
@@ -206,16 +209,20 @@ export function ThreadLineageWorkflowRow({
                   variant="panel"
                   tone={phase.state === "running" ? "emphasized" : "muted"}
                   expanded={open}
-                  aria-label={`${open ? "Collapse" : "Expand"} ${phase.title} phase, ${status}`}
+                  aria-label={uiT("{0} {1} phase, {2}", {
+                    "0": open ? "Collapse" : "Expand",
+                    "1": phase.title,
+                    "2": status,
+                  })}
                   onClick={() => setPhaseOpen((phases) => new Map(phases).set(phase.index, !open))}
                   accessory={
                     <>
                       {status === "failed" ? (
-                        <SectionHeaderStatus>Failed</SectionHeaderStatus>
+                        <SectionHeaderStatus>{uiT("Failed")}</SectionHeaderStatus>
                       ) : null}
                       <span className="shrink-0 text-2xs font-normal tabular-nums">
                         {phase.settledCount}/{phase.members.length}{" "}
-                        {phase.members.length === 1 ? "agent" : "agents"}
+                        {phase.members.length === 1 ? uiT("agent") : uiT("agents")}
                       </span>
                       <span className="shrink-0 text-2xs font-normal tabular-nums empty:hidden">
                         <AgentElapsed agent={phaseElapsed(phase)} />
@@ -257,7 +264,9 @@ export function ThreadLineageWorkflowRow({
             />
           ))}
           {phases.length === 0 && group.unphasedMembers.length === 0 ? (
-            <li className="px-2.5 py-1.5 text-2xs text-muted-foreground/70">No agents yet</li>
+            <li className="px-2.5 py-1.5 text-2xs text-muted-foreground/70">
+              {uiT("No agents yet")}
+            </li>
           ) : null}
         </ul>
       ) : null}

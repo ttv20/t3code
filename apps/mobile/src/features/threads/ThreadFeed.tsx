@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useOpenPullRequest } from "../../native/useOpenPullRequest";
 import { ThreadMarkdownVideo, ThreadMediaVisibleContext } from "./ThreadMarkdownVideo";
 import { useMarkdownImageSource } from "../../native/useMarkdownImageSource";
@@ -340,9 +341,10 @@ function UserMessageCopyButton(props: {
   readonly onCopy: (() => Promise<void>) | undefined;
   readonly tintColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   const button = (
     <CopyTextButton
-      accessibilityLabel="Copy message"
+      accessibilityLabel={uiT("Copy message")}
       text={props.text}
       onCopy={props.onCopy}
       tintColor={props.tintColor}
@@ -372,6 +374,7 @@ function AssistantForkButton(props: {
   readonly projectedItem: OrchestrationV2ProjectedTurnItem;
   readonly sourceTitle: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const support = useV2ItemSupport({
     environmentId: props.environmentId,
     sourceThreadId: props.projectedItem.sourceThreadId,
@@ -391,7 +394,7 @@ function AssistantForkButton(props: {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Fork from this response"
+      accessibilityLabel={uiT("Fork from this response")}
       disabled={busy}
       onPress={() => {
         const targetThreadId = ThreadId.make(uuidv4());
@@ -403,7 +406,7 @@ function AssistantForkButton(props: {
             sourceThreadId: props.projectedItem.sourceThreadId,
             targetThreadId,
             runId,
-            title: `${props.sourceTitle} fork`,
+            title: uiT("{0} fork", { "0": props.sourceTitle }),
             creationSource: "mobile",
           },
         })
@@ -448,6 +451,7 @@ function MessageAttachmentImage(props: {
   readonly className: string;
   readonly onPressPreview: (source: FilePreviewSource) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const withGallery = useFilePreviewGallery();
   const sourceIdentifier = useId();
   const resource = useMemo(
@@ -476,7 +480,7 @@ function MessageAttachmentImage(props: {
     <PresentationSource identifier={sourceIdentifier}>
       <Pressable
         accessibilityRole="imagebutton"
-        accessibilityLabel={`Open ${props.name}`}
+        accessibilityLabel={uiT("Open {0}", { "0": props.name })}
         onPress={() =>
           // The viewer mints its own URL from the resource so the image survives a refresh.
           props.onPressPreview(
@@ -534,6 +538,7 @@ function MessageAttachmentFile(props: {
   readonly onPressPreview: (source: FilePreviewSource) => void;
   readonly onPressVideo: (attachment: ChatFileAttachment, sourceIdentifier: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const sourceIdentifier = useId();
   const navigation = useNavigation();
   const { selectedThread } = useThreadSelection();
@@ -652,7 +657,7 @@ function MessageAttachmentFile(props: {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Open ${attachment.name}`}
+          accessibilityLabel={uiT("Open {0}", { "0": attachment.name })}
           accessibilityValue={{ text: `${fileTypeLabel}, ${sizeLabel}` }}
           accessibilityState={{ disabled: opening || httpBaseUrl === null, busy: opening }}
           disabled={opening || httpBaseUrl === null}
@@ -773,6 +778,7 @@ function ArtifactTemplateCard(props: {
   readonly template: CodexArtifactTemplate;
   readonly onUse?: ((template: CodexArtifactTemplate) => void) | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View className="my-2 min-w-0 flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3">
       <View className="relative h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-subtle">
@@ -802,11 +808,11 @@ function ArtifactTemplateCard(props: {
       {props.onUse ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Use ${props.template.displayName} template`}
+          accessibilityLabel={uiT("Use {0} template", { "0": props.template.displayName })}
           className="min-h-9 justify-center rounded-lg border border-border bg-subtle px-3 active:opacity-65"
           onPress={() => props.onUse?.(props.template)}
         >
-          <Text className="font-t3-bold text-xs text-foreground">Use template</Text>
+          <Text className="font-t3-bold text-xs text-foreground">{uiT("Use template")}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -957,17 +963,18 @@ function AgentMessageAttribution(props: {
   readonly environmentId: EnvironmentId;
   readonly senderThreadId?: ThreadId;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const senderThreadId = props.senderThreadId;
   const label = (
     <Text className="mb-1 pr-1 font-t3-medium text-2xs text-foreground-muted opacity-60">
-      Sent by another agent
+      {uiT("Sent by another agent")}
     </Text>
   );
   return senderThreadId ? (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Open sending thread"
+      accessibilityLabel={uiT("Open sending thread")}
       hitSlop={4}
       onPress={() =>
         navigation.navigate("Thread", {
@@ -976,7 +983,7 @@ function AgentMessageAttribution(props: {
         })
       }
     >
-      {label}
+      {uiT(label)}
     </Pressable>
   ) : (
     label
@@ -1027,6 +1034,7 @@ function renderFeedEntry(
     readonly contentWidth: number;
     readonly threadTitle: string;
   },
+  uiT: ReturnType<typeof useUiLanguage>["t"],
 ) {
   const entry = info.item;
   const { markdownStyles, iconSubtleColor, userBubbleColor } = props;
@@ -1196,11 +1204,11 @@ function renderFeedEntry(
         >
           {presentation.attribution === "automation" ? (
             <Text className="mb-1 pr-1 font-t3-medium text-2xs text-foreground-muted opacity-60">
-              Sent by automation
+              {uiT("Sent by automation")}
             </Text>
           ) : presentation.attribution === "t3code" ? (
             <Text className="mb-1 pr-1 font-t3-medium text-2xs text-foreground-muted opacity-60">
-              Sent by T3 Code
+              {uiT("Sent by T3 Code")}
             </Text>
           ) : presentation.attribution === "agent" ? (
             <AgentMessageAttribution
@@ -1337,7 +1345,7 @@ function renderFeedEntry(
               </View>
             ) : null}
             <Text className="font-t3-medium text-xs tabular-nums text-foreground-secondary">
-              {entry.pendingMessage && !entry.acknowledged ? "Pending" : timestampLabel}
+              {entry.pendingMessage && !entry.acknowledged ? uiT("Pending") : timestampLabel}
             </Text>
             {props.onEditPendingMessage !== null &&
             entry.pendingMessage &&
@@ -1346,7 +1354,7 @@ function renderFeedEntry(
             entry.pendingMessage.messageId !== props.dispatchingMessageId ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Edit pending message"
+                accessibilityLabel={uiT("Edit pending message")}
                 hitSlop={8}
                 className="size-7 items-center justify-center"
                 onPress={() => {
@@ -1439,7 +1447,7 @@ function renderFeedEntry(
         {showAssistantMeta ? (
           <View className="mt-1 flex-row items-center gap-1">
             <CopyTextButton
-              accessibilityLabel="Copy message"
+              accessibilityLabel={uiT("Copy message")}
               text={renderedText}
               tintColor={iconSubtleColor}
               buttonSize={28}
@@ -1499,6 +1507,7 @@ type UserMessageContentProps = {
 };
 
 function UserMessageContent(props: UserMessageContentProps) {
+  const { t: uiT } = useUiLanguage();
   const [selected, setSelected] = useState<{ contextId: string; label: string } | null>(null);
   const navigation = useNavigation();
   const { selectedThread } = useThreadSelection();
@@ -1537,7 +1546,10 @@ function UserMessageContent(props: UserMessageContentProps) {
       });
       return;
     }
-    setSelected({ contextId: reference.contextId, label: record?.label ?? "Context unavailable" });
+    setSelected({
+      contextId: reference.contextId,
+      label: record?.label ?? uiT("Context unavailable"),
+    });
   };
   return (
     <>
@@ -1554,10 +1566,10 @@ function UserMessageContent(props: UserMessageContentProps) {
               (item) => item.contextId === reference.contextId,
             );
             return {
-              title: record?.label ?? "Context unavailable",
+              title: record?.label ?? uiT("Context unavailable"),
               actions: [
-                { id: "open-context", title: "Open context" },
-                { id: "copy-context", title: "Copy context", disabled: !record },
+                { id: "open-context", title: uiT("Open context") },
+                { id: "copy-context", title: uiT("Copy context"), disabled: !record },
               ],
             };
           },
@@ -1697,6 +1709,7 @@ function ThreadFeedPlaceholder(props: {
 }
 
 export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
+  const { t: uiT } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const openPullRequest = useOpenPullRequest();
   const navigation = useNavigation();
@@ -2515,44 +2528,48 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
           workspaceRoot={props.workspaceRoot}
         >
           <ThreadMediaVisibility>
-            {renderFeedEntry(info, {
-              environmentId: props.environmentId,
-              dispatchingMessageId: props.dispatchingMessageId,
-              onEditPendingMessage: props.onEditPendingMessage,
-              onUseArtifactTemplate: props.onUseArtifactTemplate,
-              threadId: props.threadId,
-              copiedRowId,
-              expandedWorkRows,
-              workRowSizing,
-              workGroupScrollPositions,
-              terminalAssistantMessageIds,
-              unsettledTurnId,
-              failedRunIds,
-              onCopyWorkRow,
-              onToggleWorkGroup,
-              onToggleWorkRow,
-              onToggleTurnFold,
-              onPressPreview,
-              onPressVideo,
-              markdownLinkHandlers,
-              renderMarkdownImage,
-              renderViewedImage,
-              renderReasoning,
-              iconSubtleColor,
-              screenColor,
-              userBubbleColor,
-              markdownStyles,
-              reviewCommentColors,
-              reviewCommentBubbleWidth,
-              themeAppearance,
-              usesNativeWorkspaceColumns,
-              userBubbleMaxWidth,
-              markdownContentWidth,
-              contentWidth,
-              threadTitle: props.threadTitle,
-              skills: props.skills,
-              workspaceRoot: props.workspaceRoot,
-            })}
+            {renderFeedEntry(
+              info,
+              {
+                environmentId: props.environmentId,
+                dispatchingMessageId: props.dispatchingMessageId,
+                onEditPendingMessage: props.onEditPendingMessage,
+                onUseArtifactTemplate: props.onUseArtifactTemplate,
+                threadId: props.threadId,
+                copiedRowId,
+                expandedWorkRows,
+                workRowSizing,
+                workGroupScrollPositions,
+                terminalAssistantMessageIds,
+                unsettledTurnId,
+                failedRunIds,
+                onCopyWorkRow,
+                onToggleWorkGroup,
+                onToggleWorkRow,
+                onToggleTurnFold,
+                onPressPreview,
+                onPressVideo,
+                markdownLinkHandlers,
+                renderMarkdownImage,
+                renderViewedImage,
+                renderReasoning,
+                iconSubtleColor,
+                screenColor,
+                userBubbleColor,
+                markdownStyles,
+                reviewCommentColors,
+                reviewCommentBubbleWidth,
+                themeAppearance,
+                usesNativeWorkspaceColumns,
+                userBubbleMaxWidth,
+                markdownContentWidth,
+                contentWidth,
+                threadTitle: props.threadTitle,
+                skills: props.skills,
+                workspaceRoot: props.workspaceRoot,
+              },
+              uiT,
+            )}
             {props.worktreeSetup && info.index === setupAnchorIndex ? (
               <WorktreeSetupCard key={props.threadId} {...props.worktreeSetup} />
             ) : props.setupWorkingStartedAt && info.index === setupAnchorIndex ? (
@@ -2604,6 +2621,7 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
       renderMarkdownImage,
       renderViewedImage,
       renderReasoning,
+      uiT,
     ],
   );
 
@@ -2764,7 +2782,7 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
                   environmentId={props.environmentId}
                   endpoints={props.pendingHandoff}
                   iconColor={iconSubtleColor}
-                  label="Context handoff pending"
+                  label={uiT("Context handoff pending")}
                 />
               ) : null
             }
@@ -2784,7 +2802,7 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
             style={[StyleSheet.absoluteFill, { left: contentLeftInset, right: contentRightInset }]}
           >
             <ThreadFeedPlaceholder
-              title="No conversation yet"
+              title={uiT("No conversation yet")}
               detail="Ask the agent to inspect the repo, run a command, or continue the active thread."
               topInset={topContentInset}
               bottomInset={bottomContentInset}
@@ -2800,6 +2818,7 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
 });
 
 function ThreadFeedLoadEarlierControl(props: ThreadFeedHistoryControls) {
+  const { t: uiT } = useUiLanguage();
   const theme = useUniwindTheme();
   const mutedColor = theme["--color-icon-subtle"];
   const accentColor = theme["--color-primary"];
@@ -2811,7 +2830,7 @@ function ThreadFeedLoadEarlierControl(props: ThreadFeedHistoryControls) {
       {props.hasMoreHistory ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Load earlier activity"
+          accessibilityLabel={uiT("Load earlier activity")}
           disabled={props.loading}
           onPress={props.onLoadEarlier}
           className="min-h-9 flex-row items-center justify-center gap-2 rounded-full border border-border/60 bg-card/80 px-4 py-2 disabled:opacity-50"
@@ -2822,7 +2841,7 @@ function ThreadFeedLoadEarlierControl(props: ThreadFeedHistoryControls) {
             <SymbolView name="chevron.up" size={12} tintColor={accentColor} type="monochrome" />
           )}
           <Text className="text-sm font-medium text-foreground">
-            {props.loading ? "Loading earlier activity…" : "Load earlier activity"}
+            {props.loading ? uiT("Loading earlier activity…") : uiT("Load earlier activity")}
           </Text>
         </Pressable>
       ) : null}

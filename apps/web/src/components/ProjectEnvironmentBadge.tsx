@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { EnvironmentId, EnvironmentMachineKind } from "@t3tools/contracts";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
@@ -17,6 +18,7 @@ export function ProjectEnvironmentBadge(props: {
   readonly primaryEnvironmentId: EnvironmentId | null;
   readonly machineByEnvironmentId: ReadonlyMap<EnvironmentId, EnvironmentMachineKind>;
 }) {
+  const { t: uiT } = useUiLanguage();
   // Member order follows registration order and can differ between sessions,
   // so sort by label to keep the icon and tooltip stable.
   const remoteMembers = props.group.memberProjects
@@ -48,7 +50,7 @@ export function ProjectEnvironmentBadge(props: {
           className="size-3.5"
         />
       </TooltipTrigger>
-      <TooltipPopup side="top">{description}</TooltipPopup>
+      <TooltipPopup side="top">{uiT(description)}</TooltipPopup>
     </Tooltip>
   );
 }

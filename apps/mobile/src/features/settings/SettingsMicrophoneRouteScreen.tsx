@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
@@ -94,6 +95,7 @@ const KINDS: Record<
  * during dictation; until then its kind's row ranks it.
  */
 export function SettingsMicrophoneRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
@@ -154,10 +156,10 @@ export function SettingsMicrophoneRouteScreen() {
       >
         {permission === "ask" || permission === "denied" ? (
           <>
-            <SettingsSection title="Microphone access">
+            <SettingsSection title={uiT("Microphone access")}>
               <SettingsActionRow
                 icon="mic"
-                label={permission === "ask" ? "Allow microphone access" : "Open Settings"}
+                label={permission === "ask" ? uiT("Allow microphone access") : uiT("Open Settings")}
                 onPress={
                   permission === "ask" ? requestPermission : () => void Linking.openSettings()
                 }
@@ -165,13 +167,17 @@ export function SettingsMicrophoneRouteScreen() {
             </SettingsSection>
             <Text className="px-2 text-sm text-foreground-muted">
               {permission === "ask"
-                ? "Voice input needs microphone access before it can record or list your microphones."
-                : "Microphone access is off for T3 Code. Turn it on in Settings to use voice input."}
+                ? uiT(
+                    "Voice input needs microphone access before it can record or list your microphones.",
+                  )
+                : uiT(
+                    "Microphone access is off for T3 Code. Turn it on in Settings to use voice input.",
+                  )}
             </Text>
           </>
         ) : null}
         <SettingsSection
-          title="Preferred order"
+          title={uiT("Preferred order")}
           trailing={
             hasDevices ? (
               <Pressable
@@ -180,7 +186,7 @@ export function SettingsMicrophoneRouteScreen() {
                 className="px-2 py-1 active:opacity-70"
               >
                 <Text className="text-sm font-t3-medium text-foreground">
-                  {editing ? "Done" : "Edit"}
+                  {editing ? uiT("Done") : uiT("Edit")}
                 </Text>
               </Pressable>
             ) : undefined
@@ -221,9 +227,9 @@ export function SettingsMicrophoneRouteScreen() {
           })}
         </SettingsSection>
         <Text className="px-2 text-sm text-foreground-muted">
-          Voice input records from the first connected microphone in this list. Wired and Bluetooth
-          devices are added by name after you use voice input with them connected; until then, the
-          Other row ranks them.
+          {uiT(
+            "Voice input records from the first connected microphone in this list. Wired and Bluetooth devices are added by name after you use voice input with them connected; until then, the Other row ranks them.",
+          )}
         </Text>
       </ScrollView>
     </View>
@@ -245,6 +251,7 @@ function MicrophoneRow(props: {
   readonly onStep: (direction: "up" | "down") => void;
   readonly onForget: (() => void) | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { lifted, offset, entry } = props;
   const kind = KINDS[entry.kind];
   const title = isMicrophoneDevice(entry) ? entry.name : kind.row;
@@ -272,7 +279,7 @@ function MicrophoneRow(props: {
       {props.editing && props.onForget ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Forget ${title}`}
+          accessibilityLabel={uiT("Forget {0}", { "0": title })}
           hitSlop={8}
           onPress={props.onForget}
           className="active:opacity-70"
@@ -289,7 +296,12 @@ function MicrophoneRow(props: {
       ) : null}
       <View
         accessible
-        accessibilityLabel={`${title}, ${kind.label}, ${props.position} of ${props.count}`}
+        accessibilityLabel={uiT("{0}, {1}, {2} of {3}", {
+          "0": title,
+          "1": kind.label,
+          "2": props.position,
+          "3": props.count,
+        })}
         className="min-w-0 flex-1 flex-row items-center gap-4 py-4"
       >
         <SymbolView
@@ -301,10 +313,10 @@ function MicrophoneRow(props: {
         />
         <View className="min-w-0 flex-1 gap-0.5">
           <Text numberOfLines={1} className="text-lg text-foreground">
-            {title}
+            {uiT(title)}
           </Text>
           <Text numberOfLines={1} className="text-sm text-foreground-muted">
-            {isMicrophoneDevice(entry) ? kind.label : kind.rowDescription}
+            {isMicrophoneDevice(entry) ? uiT(kind.label) : kind.rowDescription}
           </Text>
         </View>
       </View>

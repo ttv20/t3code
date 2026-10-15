@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { memo } from "react";
 import { Pressable, View } from "react-native";
 import { AppText as Text } from "../../components/AppText";
@@ -30,6 +31,7 @@ export const PullRequestListRow = memo(
     readonly getActions: (item: EnvironmentPullRequestListEntry) => ControlPillMenuProps["actions"];
     readonly onAction: (item: EnvironmentPullRequestListEntry, action: string) => void;
   }) {
+    const { t: uiT } = useUiLanguage();
     const { item } = props;
     const foreground = props.selected
       ? selectedThreadRowColors.foregroundClassName
@@ -65,8 +67,24 @@ export const PullRequestListRow = memo(
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: props.selected, busy: props.busy }}
-            accessibilityLabel={`Pull request ${item.number}, ${item.title}, ${status.label}, by ${item.author?.login ?? "unknown author"}${review ? `, ${review.accessibleLabel}` : ""}${item.checksState ? `, checks ${item.checksState}` : ""}${item.stack ? `, stack ${item.stack.position} of ${item.stack.size}` : ""}${item.labels.length ? `, ${item.labels.map((label) => label.name).join(", ")}` : ""}, ${item.additions} additions, ${item.deletions} deletions`}
-            accessibilityHint="Double tap to open. Touch and hold for quick actions."
+            accessibilityLabel={uiT(
+              "Pull request {0}, {1}, {2}, by {3}{4}{5}{6}{7}, {8} additions, {9} deletions",
+              {
+                "0": item.number,
+                "1": item.title,
+                "2": status.label,
+                "3": item.author?.login ?? "unknown author",
+                "4": review ? `, ${review.accessibleLabel}` : "",
+                "5": item.checksState ? `, checks ${item.checksState}` : "",
+                "6": item.stack ? `, stack ${item.stack.position} of ${item.stack.size}` : "",
+                "7": item.labels.length
+                  ? `, ${item.labels.map((label) => label.name).join(", ")}`
+                  : "",
+                "8": item.additions,
+                "9": item.deletions,
+              },
+            )}
+            accessibilityHint={uiT("Double tap to open. Touch and hold for quick actions.")}
             onPress={() => props.onSelect(item)}
             disabled={props.busy}
             style={props.sidebar ? THREAD_LIST_V2_SIDEBAR_ROW_STYLE : undefined}
@@ -156,7 +174,10 @@ export const PullRequestListRow = memo(
                   ) : null}
                 </View>
                 {item.checksState ? (
-                  <View className="shrink-0" accessibilityLabel={`Checks ${item.checksState}`}>
+                  <View
+                    className="shrink-0"
+                    accessibilityLabel={uiT("Checks {0}", { "0": item.checksState })}
+                  >
                     <SymbolView
                       name={
                         item.checksState === "passing"

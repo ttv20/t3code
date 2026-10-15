@@ -146,6 +146,9 @@ export function renderGhosttySnapshot(options: {
   }
 
   context.textBaseline = "alphabetic";
+  // Terminal coordinates always start at the left, including inside an RTL UI.
+  context.direction = "ltr";
+  context.textAlign = "left";
   for (const rowIndex of rowsToDraw) {
     const row = snapshot.rowData[rowIndex];
     if (!row) continue;

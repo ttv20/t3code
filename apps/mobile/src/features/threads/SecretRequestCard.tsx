@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   SECRET_REQUEST_DEFAULT_PLACEHOLDER,
   SECRET_REQUEST_PRIVACY_NOTE,
@@ -33,6 +34,7 @@ export function SecretRequestCard(props: {
   readonly projectedItem: OrchestrationV2ProjectedTurnItem;
   readonly iconColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { item, visibility } = props.projectedItem;
   if (item.type !== "secret_request") return null;
   const display = secretRequestDisplay(item, visibility);
@@ -55,7 +57,7 @@ export function SecretRequestCard(props: {
     <View className="mb-3 min-h-9 flex-row items-center gap-2 px-1">
       <SymbolView name={icon} size={13} tintColor={props.iconColor} type="monochrome" />
       <Text className="flex-1 font-sans text-sm text-foreground-muted" numberOfLines={2}>
-        {item.label} · {display.label}
+        {uiT(item.label)} · {uiT(display.label)}
       </Text>
     </View>
   );
@@ -66,9 +68,10 @@ function PendingSecretRequestForm(props: {
   readonly item: SecretRequestItem;
   readonly iconColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { item } = props;
   const answer = useAtomCommand(serverEnvironment.answerSecretRequest, {
-    label: "answer secret request",
+    label: uiT("answer secret request"),
     // The failure cause holds the request; keep it out of the console.
     reportFailure: false,
     reportDefect: false,
@@ -106,13 +109,13 @@ function PendingSecretRequestForm(props: {
   return (
     <View className="mb-3 gap-3 rounded-[20px] border border-border bg-card-alt p-4">
       <View className="gap-1">
-        <Text className="font-t3-bold text-base text-foreground">{item.label}</Text>
+        <Text className="font-t3-bold text-base text-foreground">{uiT(item.label)}</Text>
         {item.reason.trim() ? (
           <Text className="font-sans text-sm leading-5 text-foreground-muted">{item.reason}</Text>
         ) : null}
       </View>
       <TextInput
-        accessibilityLabel={item.label}
+        accessibilityLabel={uiT(item.label)}
         placeholder={item.placeholder ?? SECRET_REQUEST_DEFAULT_PLACEHOLDER}
         value={secret}
         onChangeText={setSecret}
@@ -137,7 +140,7 @@ function PendingSecretRequestForm(props: {
         </Text>
       ) : null}
       <RequestActionButton
-        label="Save securely"
+        label={uiT("Save securely")}
         disabled={submitting || secret.trim().length === 0}
         onPress={() => void send({ type: "save", secret })}
       />
@@ -162,7 +165,7 @@ function PendingSecretRequestForm(props: {
           className="px-1 py-1 active:opacity-60 disabled:opacity-50"
           onPress={() => void send({ type: "decline" })}
         >
-          <Text className="font-sans text-xs text-foreground-muted">Decline</Text>
+          <Text className="font-sans text-xs text-foreground-muted">{uiT("Decline")}</Text>
         </Pressable>
       </View>
     </View>

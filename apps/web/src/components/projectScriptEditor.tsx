@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../i18n";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -169,6 +170,7 @@ export function ProjectScriptEditorDialog({
   onDelete: (scriptId: string) => void;
   onClose: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const canEditActions = useEnvironmentScope(environmentId, editScope);
   const canWriteSettings = useEnvironmentScope(environmentId, AuthSettingsWriteScope);
   const formId = React.useId();
@@ -335,16 +337,18 @@ export function ProjectScriptEditorDialog({
       >
         <DialogPopup>
           <DialogHeader>
-            <DialogTitle>{isEditing ? "Edit Action" : "Add Action"}</DialogTitle>
+            <DialogTitle>{isEditing ? uiT("Edit Action") : uiT("Add Action")}</DialogTitle>
             <DialogDescription>
-              Actions are project-scoped commands you can run from the top bar or keybindings.
+              {uiT(
+                "Actions are project-scoped commands you can run from the top bar or keybindings.",
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogPanel>
             <form id={formId} onSubmit={submit}>
               <fieldset className="space-y-4" disabled={isSaving || !canEditActions}>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-name">Name</Label>
+                  <Label htmlFor="script-name">{uiT("Name")}</Label>
                   <div className="flex items-center gap-2">
                     <Popover onOpenChange={setIconPickerOpen} open={iconPickerOpen}>
                       <PopoverTrigger
@@ -353,7 +357,7 @@ export function ProjectScriptEditorDialog({
                             type="button"
                             variant="outline"
                             className="size-9 shrink-0"
-                            aria-label="Choose icon"
+                            aria-label={uiT("Choose icon")}
                           />
                         }
                       >
@@ -378,7 +382,7 @@ export function ProjectScriptEditorDialog({
                                 }}
                               >
                                 <ScriptIcon icon={entry.id} className="size-4" />
-                                <span>{entry.label}</span>
+                                <span>{uiT(entry.label)}</span>
                               </button>
                             );
                           })}
@@ -388,38 +392,42 @@ export function ProjectScriptEditorDialog({
                     <Input
                       id="script-name"
                       autoFocus
-                      placeholder="Test"
+                      placeholder={uiT("Test")}
                       value={name}
                       onChange={(event) => setName(event.target.value)}
                     />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-keybinding">Keybinding</Label>
+                  <Label htmlFor="script-keybinding">{uiT("Keybinding")}</Label>
                   <Input
                     disabled={!canWriteSettings}
                     id="script-keybinding"
-                    placeholder="Press shortcut"
+                    placeholder={uiT("Press shortcut")}
                     value={keybinding}
                     readOnly
                     onKeyDown={captureKeybinding}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Press a shortcut. Use <code>Backspace</code> to clear. Shortcuts are
-                    environment-wide. Projects using the same action share its shortcut.
+                    <UiText
+                      message={
+                        "Press a shortcut. Use {0} to clear. Shortcuts are environment-wide. Projects using the same action share its shortcut."
+                      }
+                      values={{ "0": <code>Backspace</code> }}
+                    />
                   </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-command">Command</Label>
+                  <Label htmlFor="script-command">{uiT("Command")}</Label>
                   <Textarea
                     id="script-command"
-                    placeholder="bun test"
+                    placeholder={uiT("bun test")}
                     value={command}
                     onChange={(event) => setCommand(event.target.value)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="script-preview-url">Preview URL (optional)</Label>
+                  <Label htmlFor="script-preview-url">{uiT("Preview URL (optional)")}</Label>
                   <Input
                     id="script-preview-url"
                     placeholder="http://localhost:5173"
@@ -427,11 +435,11 @@ export function ProjectScriptEditorDialog({
                     onChange={(event) => setPreviewUrl(event.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Open this URL in the in-app preview when this action runs.
+                    {uiT("Open this URL in the in-app preview when this action runs.")}
                   </p>
                 </div>
                 <label className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-sm dark:border-transparent dark:bg-white/[0.035]">
-                  <span>Run automatically on worktree creation</span>
+                  <span>{uiT("Run automatically on worktree creation")}</span>
                   <Switch
                     checked={runOnWorktreeCreate}
                     onCheckedChange={(checked) => setRunOnWorktreeCreate(Boolean(checked))}
@@ -442,7 +450,7 @@ export function ProjectScriptEditorDialog({
                     runOnWorktreeCreate ? "" : "opacity-60"
                   }`}
                 >
-                  <span>Wait for it to finish before the agent starts</span>
+                  <span>{uiT("Wait for it to finish before the agent starts")}</span>
                   <Switch
                     checked={waitForSetup}
                     disabled={!runOnWorktreeCreate}
@@ -450,7 +458,7 @@ export function ProjectScriptEditorDialog({
                   />
                 </label>
                 <label className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-sm dark:border-transparent dark:bg-white/[0.035]">
-                  <span>Run in the thread's worktree when the thread settles</span>
+                  <span>{uiT("Run in the thread's worktree when the thread settles")}</span>
                   <Switch
                     checked={runOnSettle}
                     onCheckedChange={(checked) => setRunOnSettle(Boolean(checked))}
@@ -461,7 +469,7 @@ export function ProjectScriptEditorDialog({
                     previewUrl.trim().length === 0 ? "opacity-60" : ""
                   }`}
                 >
-                  <span>Open preview automatically when this action runs</span>
+                  <span>{uiT("Open preview automatically when this action runs")}</span>
                   <Switch
                     checked={autoOpenPreview}
                     disabled={previewUrl.trim().length === 0}
@@ -485,10 +493,10 @@ export function ProjectScriptEditorDialog({
               </Button>
             )}
             <Button type="button" variant="outline" onClick={close}>
-              Cancel
+              {uiT("Cancel")}
             </Button>
             <Button form={formId} type="submit" disabled={isSaving || !canEditActions}>
-              {isSaving ? "Saving…" : isEditing ? "Save changes" : "Save action"}
+              {isSaving ? uiT("Saving…") : isEditing ? uiT("Save changes") : uiT("Save action")}
             </Button>
           </DialogFooter>
         </DialogPopup>
@@ -497,11 +505,15 @@ export function ProjectScriptEditorDialog({
       <AlertDialog open={deleteConfirmOpen && canEditActions} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogPopup>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete action "{name}"?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>
+              <UiText message={'Delete action "{0}"?'} values={{ "0": name }} />
+            </AlertDialogTitle>
+            <AlertDialogDescription>{uiT("This action cannot be undone.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+            <AlertDialogClose render={<Button variant="outline" />}>
+              {uiT("Cancel")}
+            </AlertDialogClose>
             <Button
               variant="destructive"
               disabled={isSaving || !canEditActions}
@@ -516,7 +528,7 @@ export function ProjectScriptEditorDialog({
                 onDelete(request.scriptId);
               }}
             >
-              Delete action
+              {uiT("Delete action")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>

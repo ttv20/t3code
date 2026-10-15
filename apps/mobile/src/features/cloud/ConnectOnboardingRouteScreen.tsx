@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { NativeHeaderToolbar } from "../../native/StackHeader";
 import { useAuth } from "@clerk/expo";
@@ -43,6 +44,7 @@ export function ConnectOnboardingRouteScreen() {
 }
 
 function ConfiguredConnectOnboardingRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { isSignedIn, userId } = useAuth({ treatPendingAsSignedOut: false });
@@ -76,17 +78,17 @@ function ConfiguredConnectOnboardingRouteScreen() {
     void (async () => {
       if (userId) {
         const result = await settlePromise(() => optOutOfConnectOnboarding(userId));
-        reportAtomCommandResult(result, { label: "connect onboarding opt-out" });
+        reportAtomCommandResult(result, { label: uiT("connect onboarding opt-out") });
       }
       navigation.goBack();
     })();
-  }, [navigation, userId]);
+  }, [navigation, userId, uiT]);
 
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
       {Platform.OS === "android" ? (
         <AndroidSheetHeader
-          title="Set up T3 Connect"
+          title={uiT("Set up T3 Connect")}
           actions={[
             {
               accessibilityLabel: "Refresh environments",
@@ -131,7 +133,7 @@ function ConfiguredConnectOnboardingRouteScreen() {
         ) : (
           <View collapsable={false} className="rounded-[24px] bg-grouped-card p-5">
             <Text className="text-sm leading-normal text-foreground-muted">
-              Sign in to your T3 account to set up T3 Connect.
+              {uiT("Sign in to your T3 account to set up T3 Connect.")}
             </Text>
           </View>
         )}
@@ -143,7 +145,7 @@ function ConfiguredConnectOnboardingRouteScreen() {
             onPress={handleDontShowAgain}
             className="items-center py-1 active:opacity-70"
           >
-            <Text className="text-xs text-foreground-muted">{"Don't show this again"}</Text>
+            <Text className="text-xs text-foreground-muted">{uiT("Don't show this again")}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

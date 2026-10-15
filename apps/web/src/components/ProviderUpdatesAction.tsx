@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import { useMemo, useRef, useState } from "react";
 
@@ -24,6 +25,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
  * toast, for a caller that reports the results itself.
  */
 export function useProviderUpdates() {
+  const { t: uiT } = useUiLanguage();
   const { environments } = useEnvironments();
   const updateProvider = useAtomCommand(serverEnvironment.updateProvider, {
     reportFailure: false,
@@ -65,7 +67,7 @@ export function useProviderUpdates() {
       toastManager.add(
         stackedThreadToast({
           ...view,
-          description: <span className="whitespace-pre-line">{view.description}</span>,
+          description: <span className="whitespace-pre-line">{uiT(view.description)}</span>,
         }),
       );
     }
@@ -78,6 +80,7 @@ export function useProviderUpdates() {
 /** Provider settings button for {@link useProviderUpdates}. Renders nothing
     when no machine has a one-click update. */
 export function ProviderUpdatesAction() {
+  const { t: uiT } = useUiLanguage();
   const { machines, updateAll } = useProviderUpdates();
   const pending = useRef(false);
   const [isPending, setIsPending] = useState(false);
@@ -109,14 +112,14 @@ export function ProviderUpdatesAction() {
             disabled={isPending}
             onClick={() => void handleUpdate()}
           >
-            {isPending ? "Updating…" : "Update all"}
+            {isPending ? uiT("Updating…") : uiT("Update all")}
           </Button>
         }
       />
       <TooltipPopup side="top">
         {machines.map((machine) => (
           <div key={machine.environmentId}>
-            {machine.label}:{" "}
+            {uiT(machine.label)}:{" "}
             {machine.candidates
               .map((candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver)
               .join(", ")}

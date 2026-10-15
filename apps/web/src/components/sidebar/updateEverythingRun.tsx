@@ -1,3 +1,5 @@
+import type { UiLocale } from "@t3tools/client-runtime/i18n";
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import * as Option from "effect/Option";
@@ -97,8 +99,11 @@ function takeSavedUpdateEverythingResult(): UpdateEverythingResult | null {
 }
 
 /** Shows the one summary toast for a finished pass. */
-export function showUpdateEverythingResult(result: UpdateEverythingResult): void {
-  const view = getUpdateEverythingToastView(result, APP_VERSION);
+export function showUpdateEverythingResult(
+  result: UpdateEverythingResult,
+  locale: UiLocale = "en",
+): void {
+  const view = getUpdateEverythingToastView(result, APP_VERSION, locale);
   if (!view) return;
   toastManager.add(
     stackedThreadToast({
@@ -119,12 +124,13 @@ let notifiedNotAppliedVersion: string | null = null;
  * Mount once at the app root.
  */
 export function DesktopUpdateLaunchNotice() {
+  const { t: uiT, locale } = useUiLanguage();
   const notAppliedVersion = useDesktopUpdateState()?.notAppliedVersion ?? null;
 
   useEffect(() => {
     const result = takeSavedUpdateEverythingResult();
-    if (result) showUpdateEverythingResult(result);
-  }, []);
+    if (result) showUpdateEverythingResult(result, locale);
+  }, [locale]);
 
   useEffect(() => {
     if (notAppliedVersion === null || notifiedNotAppliedVersion === notAppliedVersion) return;
@@ -132,11 +138,14 @@ export function DesktopUpdateLaunchNotice() {
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Update did not apply",
-        description: `T3 Code is still on ${APP_VERSION}. Install ${notAppliedVersion} again from the update button.`,
+        title: uiT("Update did not apply"),
+        description: uiT("T3 Code is still on {0}. Install {1} again from the update button.", {
+          "0": APP_VERSION,
+          "1": notAppliedVersion,
+        }),
       }),
     );
-  }, [notAppliedVersion]);
+  }, [notAppliedVersion, uiT]);
 
   return null;
 }

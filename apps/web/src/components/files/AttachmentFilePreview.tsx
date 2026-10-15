@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import { filePreviewDelimiter } from "@t3tools/shared/delimitedPreview";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
@@ -68,6 +69,7 @@ export function AttachmentFilePreview(props: {
   onRemove?: () => void;
   onClose?: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const kind = filePreviewKind(props);
   const delimiter = filePreviewDelimiter(props);
   const renderedMode =
@@ -215,8 +217,8 @@ export function AttachmentFilePreview(props: {
       } catch (cause) {
         toastManager.add({
           type: "error",
-          title: "Could not save file",
-          description: cause instanceof Error ? cause.message : "Please try again.",
+          title: uiT("Could not save file"),
+          description: cause instanceof Error ? cause.message : uiT("Please try again."),
         });
       } finally {
         setSaving(false);
@@ -279,10 +281,12 @@ export function AttachmentFilePreview(props: {
     </div>
   ) : (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-6 text-center">
-      <p className="text-sm font-medium">No preview for this file</p>
+      <p className="text-sm font-medium">{uiT("No preview for this file")}</p>
       <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-        Save it to open in an app that supports {props.name.split(".").at(-1) || "this format"}{" "}
-        files.
+        <UiText
+          message={"Save it to open in an app that supports {0} files."}
+          values={{ "0": props.name.split(".").at(-1) || uiT("this format") }}
+        />
       </p>
     </div>
   );
@@ -292,7 +296,7 @@ export function AttachmentFilePreview(props: {
       <div className={cn(FILE_SURFACE_SUBHEADER_CLASS)} data-surface-subheader>
         <div className="flex min-w-0 flex-1 items-center text-xs">
           <span className="shrink-0 px-0.5 text-muted-foreground">
-            {props.origin ?? "Attachment"}
+            {props.origin ?? uiT("Attachment")}
           </span>
           <ChevronRightIcon className="mx-1 size-3.5 shrink-0 text-muted-foreground/60" />
           <span aria-current="page" className="min-w-0 truncate px-0.5 font-medium text-foreground">
@@ -318,7 +322,7 @@ export function AttachmentFilePreview(props: {
         ) : null}
         {showsRawText ? (
           <FileSurfaceAction
-            label={wordWrap ? "Disable word wrap" : "Enable word wrap"}
+            label={wordWrap ? uiT("Disable word wrap") : uiT("Enable word wrap")}
             pressed={wordWrap}
             onPress={() => updateClientSettings({ wordWrap: !wordWrap })}
           >
@@ -327,7 +331,13 @@ export function AttachmentFilePreview(props: {
         ) : null}
         {content ? (
           <FileSurfaceAction
-            label={isCopied ? "Copied" : content.truncated ? "Copy preview" : "Copy contents"}
+            label={
+              isCopied
+                ? uiT("Copied")
+                : content.truncated
+                  ? uiT("Copy preview")
+                  : uiT("Copy contents")
+            }
             onPress={() => copyToClipboard(content.text, undefined)}
           >
             <MorphIcon className="size-3.5" icon={isCopied ? Check : Copy} />
@@ -335,7 +345,7 @@ export function AttachmentFilePreview(props: {
         ) : null}
         {url ? (
           <FileSurfaceAction
-            label={saving ? "Preparing file…" : "Save file"}
+            label={saving ? uiT("Preparing file…") : uiT("Save file")}
             disabled={saving}
             onPress={save}
           >
@@ -343,21 +353,23 @@ export function AttachmentFilePreview(props: {
           </FileSurfaceAction>
         ) : null}
         {props.onRemove ? (
-          <FileSurfaceAction label="Remove from draft" onPress={props.onRemove}>
+          <FileSurfaceAction label={uiT("Remove from draft")} onPress={props.onRemove}>
             <Trash2Icon className="size-3.5" />
           </FileSurfaceAction>
         ) : null}
         {props.onClose ? (
-          <FileSurfaceAction label="Close" onPress={props.onClose}>
+          <FileSurfaceAction label={uiT("Close")} onPress={props.onClose}>
             <XIcon className="size-3.5" />
           </FileSurfaceAction>
         ) : null}
       </div>
       {content?.truncated ? (
         <FileSurfaceNotice>
-          Preview limited to the first 1 MB
-          {props.sizeBytes > 0 ? ` of a ${props.sizeBytes.toLocaleString()} byte file` : ""}. Save
-          the file to read it in full.
+          {uiT("Preview limited to the first 1 MB")}
+          {props.sizeBytes > 0
+            ? uiT(" of a {0} byte file", { "0": props.sizeBytes.toLocaleString() })
+            : ""}
+          {uiT(". Save the file to read it in full.")}
         </FileSurfaceNotice>
       ) : null}
       {body}

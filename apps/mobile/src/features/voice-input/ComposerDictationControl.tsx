@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { VoiceInputPhase, VoiceInputState } from "@t3tools/client-runtime/voice-input";
 import { memo, useCallback, useLayoutEffect, useState, type ReactNode } from "react";
 import {
@@ -329,6 +330,7 @@ export function ComposerDictationStatus(props: {
   readonly presentation: VoiceComposerPresentation;
   readonly onDismissError: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const recordingVisibility = useSharedValue(props.phase === "recording" ? 1 : 0);
   useLayoutEffect(() => {
     recordingVisibility.value = withTiming(props.phase === "recording" ? 1 : 0, DICTATION_TIMING);
@@ -347,10 +349,10 @@ export function ComposerDictationStatus(props: {
       {isError ? (
         <View className="min-w-0 flex-row items-center gap-1.5 px-2">
           <Text className="min-w-0 flex-1 text-sm text-danger-foreground" numberOfLines={2}>
-            {props.presentation.statusLabel}
+            {uiT(props.presentation.statusLabel)}
           </Text>
           <Pressable
-            accessibilityLabel="Dismiss voice input error"
+            accessibilityLabel={uiT("Dismiss voice input error")}
             accessibilityRole="button"
             className="size-7 items-center justify-center active:opacity-70"
             hitSlop={8}
@@ -383,7 +385,7 @@ export function ComposerDictationStatus(props: {
           </Animated.View>
           <Animated.View className="absolute inset-0 justify-center px-2" style={labelStyle}>
             <Text className="text-center text-sm text-foreground-muted" numberOfLines={1}>
-              {props.presentation.statusLabel}
+              {uiT(props.presentation.statusLabel)}
             </Text>
           </Animated.View>
         </View>
@@ -396,10 +398,11 @@ export function ComposerDictationCancelAction(props: {
   readonly presentation: VoiceComposerPresentation;
   readonly onCancel: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (props.presentation.leadingAction !== "cancel") return null;
   return (
     <VoiceActionButton
-      accessibilityLabel="Cancel dictation"
+      accessibilityLabel={uiT("Cancel dictation")}
       icon="xmark"
       onPress={props.onCancel}
     />
@@ -415,13 +418,14 @@ export function ComposerDictationPrimaryAction(props: {
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (props.presentation.trailingAction === "confirm") {
     return (
       <VoiceActionButton
         accessibilityLabel={
           props.presentation.confirmationEnabled
-            ? "Finish dictation"
-            : (props.presentation.statusLabel ?? "Preparing voice input")
+            ? uiT("Finish dictation")
+            : (props.presentation.statusLabel ?? uiT("Preparing voice input"))
         }
         disabled={!props.presentation.confirmationEnabled}
         icon="checkmark"
@@ -442,11 +446,12 @@ export function ComposerDictationStartAction(props: {
   readonly onStart: () => void;
   readonly onCancel: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (!props.isAvailable) return null;
   const openSettings = props.state.phase === "error" && props.state.errorAction === "settings";
   return (
     <VoiceActionButton
-      accessibilityLabel={openSettings ? "Open microphone settings" : "Start dictation"}
+      accessibilityLabel={openSettings ? uiT("Open microphone settings") : uiT("Start dictation")}
       disabled={props.disabled}
       icon="mic"
       onPress={

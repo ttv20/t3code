@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useState } from "react";
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
@@ -13,6 +14,7 @@ export interface AutoSettleDaysFieldProps {
 }
 
 export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
+  const { t: uiT } = useUiLanguage();
   const [draft, setDraft] = useState<string | null>(null);
   const commit = () => {
     if (props.disabled) {
@@ -41,7 +43,7 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
       onChangeText={setDraft}
       onBlur={commit}
       onSubmitEditing={commit}
-      accessibilityLabel="Days before auto-settle"
+      accessibilityLabel={uiT("Days before auto-settle")}
       editable={!props.disabled}
     />
   );

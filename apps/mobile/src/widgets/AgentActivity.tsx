@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import type { ComponentProps } from "react";
 import {
@@ -55,7 +56,8 @@ export function AgentActivity(
   props: AgentActivityProps,
   environment: LiveActivityEnvironment,
 ): LiveActivityLayout {
-  "widget";
+  const { t: uiT } = useUiLanguage();
+  ("widget");
 
   // Hierarchical styles inherit the system's foreground treatment, including
   // tinted and vibrant presentations, rather than resolving to a label color.
@@ -354,8 +356,8 @@ export function AgentActivity(
       <Text modifiers={[font({ weight: "semibold", size: 11 }), foregroundStyle(tint)]}>
         {attentionRow
           ? attentionRow.phase === "waiting_for_approval"
-            ? "Approval"
-            : "Input"
+            ? uiT("Approval")
+            : uiT("Input")
           : activeLabel}
       </Text>
     ),

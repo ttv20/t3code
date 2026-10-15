@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { AppText as Text } from "../../components/AppText";
@@ -39,6 +40,7 @@ export function ModelRowContent(
       readonly selectedClassName?: string;
     },
 ) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View
       style={props.minimumHeight === undefined ? undefined : { minHeight: props.minimumHeight }}
@@ -67,23 +69,25 @@ export function ModelRowContent(
               className="min-w-0 shrink text-base font-t3-medium text-foreground"
               numberOfLines={props.labelNumberOfLines}
             >
-              {props.option.label}
+              {uiT(props.option.label)}
             </Text>
             {props.option.isDefault ? (
               <View className="rounded-md bg-subtle-strong px-1.5 py-0.5">
-                <Text className="text-3xs font-t3-bold text-foreground-muted">Default</Text>
+                <Text className="text-3xs font-t3-bold text-foreground-muted">
+                  {uiT("Default")}
+                </Text>
               </View>
             ) : null}
             {props.option.isLegacy ? (
               <View className="rounded-md bg-subtle px-1.5 py-0.5">
-                <Text className="text-3xs font-t3-bold text-foreground-muted">Legacy</Text>
+                <Text className="text-3xs font-t3-bold text-foreground-muted">{uiT("Legacy")}</Text>
               </View>
             ) : null}
             {props.option.isHidden ? (
-              <Text className="text-xs text-foreground-muted">Hidden</Text>
+              <Text className="text-xs text-foreground-muted">{uiT("Hidden")}</Text>
             ) : null}
             {props.option.isUnavailable ? (
-              <Text className="text-xs text-foreground">Unavailable</Text>
+              <Text className="text-xs text-foreground">{uiT("Unavailable")}</Text>
             ) : null}
           </View>
           {props.option.subtitle ? (
@@ -99,7 +103,11 @@ export function ModelRowContent(
       </Pressable>
       {props.onToggleHidden ? (
         <Pressable
-          accessibilityLabel={`${props.option.isHidden ? "Show" : "Hide"} model: ${props.option.providerLabel}, ${props.option.label}`}
+          accessibilityLabel={uiT("{0} model: {1}, {2}", {
+            "0": props.option.isHidden ? "Show" : "Hide",
+            "1": props.option.providerLabel,
+            "2": props.option.label,
+          })}
           accessibilityRole="button"
           accessibilityState={{ disabled: props.hiddenUpdatePending === true }}
           className="min-h-11 min-w-11 items-center justify-center"
@@ -115,9 +123,11 @@ export function ModelRowContent(
         </Pressable>
       ) : null}
       <Pressable
-        accessibilityLabel={`${props.isFavorite ? "Remove from" : "Add to"} favorites: ${
-          props.option.providerLabel
-        }, ${props.option.label}`}
+        accessibilityLabel={uiT("{0} favorites: {1}, {2}", {
+          "0": props.isFavorite ? "Remove from" : "Add to",
+          "1": props.option.providerLabel,
+          "2": props.option.label,
+        })}
         accessibilityRole="button"
         accessibilityState={{ disabled: !props.favoritesLoaded, selected: props.isFavorite }}
         className="min-h-11 min-w-11 items-center justify-center"
@@ -137,9 +147,12 @@ export function ModelRowContent(
 
 /** Single option inside a submenu panel. */
 export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
-      accessibilityLabel={props.description ? `${props.label}. ${props.description}` : props.label}
+      accessibilityLabel={
+        props.description ? `${props.label}. ${props.description}` : uiT(props.label)
+      }
       accessibilityRole="radio"
       accessibilityState={{ checked: props.selected }}
       onPress={props.onPress}
@@ -151,9 +164,9 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
     >
       {props.leadingSelection}
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text className="text-base font-t3-medium text-foreground">{props.label}</Text>
+        <Text className="text-base font-t3-medium text-foreground">{uiT(props.label)}</Text>
         {props.description ? (
-          <Text className="text-sm leading-5 text-foreground-muted">{props.description}</Text>
+          <Text className="text-sm leading-5 text-foreground-muted">{uiT(props.description)}</Text>
         ) : null}
       </View>
       {props.trailingSelection}

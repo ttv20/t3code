@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { MessageCircle, Trash2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
@@ -43,6 +44,7 @@ export function DiffCommentAnnotation({
   secondaryAction,
   focusOnMount = true,
 }: DiffCommentAnnotationProps) {
+  const { t: uiT } = useUiLanguage();
   const [localDraftText, setLocalDraftText] = useState("");
   const displayedText = kind === "draft" && !onTextChange ? localDraftText : text;
   const trimmedText = displayedText.trim();
@@ -71,7 +73,7 @@ export function DiffCommentAnnotation({
             <Button
               variant="ghost-muted"
               size="icon-xs"
-              aria-label="Delete comment"
+              aria-label={uiT("Delete comment")}
               onClick={onDelete}
             >
               <Trash2 className="size-3" />
@@ -94,8 +96,8 @@ export function DiffCommentAnnotation({
         autoFocus={focusOnMount}
         size="sm"
         value={displayedText}
-        placeholder={placeholder}
-        aria-label={`Comment on lines ${rangeLabel}`}
+        placeholder={uiT(placeholder)}
+        aria-label={uiT("Comment on lines {0}", { "0": rangeLabel })}
         onChange={(event) => (onTextChange ?? setLocalDraftText)(event.target.value)}
         onFocus={(event) => {
           const end = event.currentTarget.value.length;
@@ -113,9 +115,11 @@ export function DiffCommentAnnotation({
         }}
       />
       <div className="mt-1.5 flex items-center gap-1">
-        <span className="mr-auto text-3xs text-muted-foreground/70">⌘/Ctrl Enter to send</span>
+        <span className="mr-auto text-3xs text-muted-foreground/70">
+          {uiT("⌘/Ctrl Enter to send")}
+        </span>
         <Button variant="ghost-muted" size="xs" onClick={onCancel}>
-          Cancel
+          {uiT("Cancel")}
         </Button>
         {secondaryAction ? (
           <Button
@@ -125,7 +129,7 @@ export function DiffCommentAnnotation({
             onClick={() => secondaryAction.onAction(trimmedText)}
           >
             {secondaryAction.icon}
-            {secondaryAction.label}
+            {uiT(secondaryAction.label)}
           </Button>
         ) : null}
         <Button size="xs" disabled={pending || !trimmedText} onClick={() => onComment(trimmedText)}>

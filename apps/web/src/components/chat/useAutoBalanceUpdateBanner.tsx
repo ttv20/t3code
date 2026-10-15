@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
 import { Atom } from "effect/reactivity";
@@ -30,6 +31,7 @@ import { ComposerServerUpdateIcon } from "./ComposerServerUpdateStatus";
 export function useAutoBalanceUpdateBanner(
   environments: readonly EnvironmentPresentation[],
 ): ComposerBannerStackItem | null {
+  const { t: uiT } = useUiLanguage();
   const statesAtom = useMemo(
     () =>
       Atom.make((get) =>
@@ -99,9 +101,9 @@ export function useAutoBalanceUpdateBanner(
         <PopoverTrigger
           render={<InlineButton />}
           className="max-w-full"
-          aria-label={`${title}. View machines`}
+          aria-label={uiT("{0}. View machines", { "0": title })}
         >
-          <span className="min-w-0 truncate">{title}</span>
+          <span className="min-w-0 truncate">{uiT(title)}</span>
         </PopoverTrigger>
         <PopoverPopup side="top" align="start" width="md">
           <div className="space-y-3 text-xs">
@@ -112,14 +114,14 @@ export function useAutoBalanceUpdateBanner(
                   <ServerUpdateProgress state={machine.state} />
                 ) : !machine.remoteUpdate ? (
                   <>
-                    <div className="text-muted-foreground">Manual update required</div>
+                    <div className="text-muted-foreground">{uiT("Manual update required")}</div>
                     <ServerUpdateAction {...machine} />
                   </>
                 ) : (
                   <div className="text-muted-foreground">
                     {machine.connected
-                      ? `Ready to update to ${machine.targetVersion}`
-                      : "Reconnect this machine to update"}
+                      ? uiT("Ready to update to {0}", { "0": machine.targetVersion })
+                      : uiT("Reconnect this machine to update")}
                   </div>
                 )}
               </div>
@@ -129,7 +131,9 @@ export function useAutoBalanceUpdateBanner(
       </Popover>
     ),
     description:
-      manual > 0 ? `${manual} ${manual === 1 ? "needs" : "need"} a manual update` : undefined,
+      manual > 0
+        ? uiT("{0} {1} a manual update", { "0": manual, "1": manual === 1 ? "needs" : "need" })
+        : undefined,
     actions:
       running === 0 && targets.length > 0 ? (
         <ServerUpdatesAction
@@ -137,10 +141,13 @@ export function useAutoBalanceUpdateBanner(
           variant="ghost"
           label={
             failed > 0
-              ? "Retry"
+              ? uiT("Retry")
               : targets.length === machines.length
-                ? "Update all"
-                : `Update ${targets.length} ${targets.length === 1 ? "machine" : "machines"}`
+                ? uiT("Update all")
+                : uiT("Update {0} {1}", {
+                    "0": targets.length,
+                    "1": targets.length === 1 ? "machine" : "machines",
+                  })
           }
         />
       ) : undefined,

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import { use, useCallback, useMemo } from "react";
 import { Platform, View, useWindowDimensions } from "react-native";
@@ -37,12 +38,15 @@ function WorkspaceRootTitle(props: {
   readonly maxWidth: number;
   readonly onOpenEnvironments: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { state } = useWorkspaceTabs()!;
   return (
     <View style={{ width: props.maxWidth, minHeight: 32, justifyContent: "center" }}>
       <WorkspaceConnectionTitle
         brand={
-          <CompactBrandTitle accessibilityLabel={`T3 Code, ${TAB_TITLES[state.selectedTab]}`} />
+          <CompactBrandTitle
+            accessibilityLabel={`T3 Code RTL, ${uiT(TAB_TITLES[state.selectedTab])}`}
+          />
         }
         maxWidth={props.maxWidth}
         onPress={props.onOpenEnvironments}
@@ -114,7 +118,7 @@ function WorkspaceRootContent() {
           />
         ) : (
           <AndroidScreenHeader
-            title="T3 Code"
+            title="T3 Code RTL"
             titleContent={renderHeaderTitle()}
             actions={[
               {

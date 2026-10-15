@@ -1184,3 +1184,33 @@ describe("server model preferences", () => {
     });
   });
 });
+
+describe("ClientSettings interface language and direction", () => {
+  it("defaults to the system language and automatic direction when no choice is saved", () => {
+    expect(decodeClientSettings({})).toMatchObject({
+      interfaceLanguage: "system",
+      interfaceDirection: "auto",
+    });
+    expect(decodeClientSettingsPatch({})).not.toHaveProperty("interfaceLanguage");
+    expect(decodeClientSettingsPatch({})).not.toHaveProperty("interfaceDirection");
+  });
+
+  it.each(["system", "en", "he", "ar", "fa"])("persists language %s", (interfaceLanguage) => {
+    const patch = { interfaceLanguage };
+    expect(decodeClientSettingsPatch(patch)).toEqual(patch);
+    expect(encodeClientSettings(decodeClientSettings(patch))).toMatchObject(patch);
+  });
+
+  it.each(["auto", "ltr", "rtl"])("persists direction %s", (interfaceDirection) => {
+    const patch = { interfaceDirection };
+    expect(decodeClientSettingsPatch(patch)).toEqual(patch);
+    expect(encodeClientSettings(decodeClientSettings(patch))).toMatchObject(patch);
+  });
+
+  it("rejects unsupported preferences", () => {
+    expect(() => decodeClientSettings({ interfaceLanguage: "bad" })).toThrow();
+    expect(() => decodeClientSettingsPatch({ interfaceLanguage: "bad" })).toThrow();
+    expect(() => decodeClientSettings({ interfaceDirection: "bad" })).toThrow();
+    expect(() => decodeClientSettingsPatch({ interfaceDirection: "bad" })).toThrow();
+  });
+});

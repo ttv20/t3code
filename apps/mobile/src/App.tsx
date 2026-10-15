@@ -1,3 +1,5 @@
+import { UiLanguageProvider } from "./UiLanguageProvider";
+import { useUiLanguage } from "./i18n";
 import { PermissionUpdateNotice } from "./components/PermissionUpdateNotice";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
@@ -65,7 +67,9 @@ export default function App() {
     <RegistryContext.Provider value={appAtomRegistry}>
       <CloudAuthProvider>
         <AppearancePreferencesProvider>
-          <AppContent />
+          <UiLanguageProvider>
+            <AppContent />
+          </UiLanguageProvider>
         </AppearancePreferencesProvider>
       </CloudAuthProvider>
     </RegistryContext.Provider>
@@ -73,6 +77,7 @@ export default function App() {
 }
 
 function AppContent() {
+  const { direction } = useUiLanguage();
   const { themeAppearance } = useAppearancePreferences();
   const navigationTheme = useMobileNavigationTheme();
 
@@ -94,7 +99,11 @@ function AppContent() {
               <GlobalVoiceInputControl>
                 <NativeLayoutMetricsProvider>
                   <IncomingShareProvider>
-                    <Navigation linking={appLinking} theme={navigationTheme} />
+                    <Navigation
+                      linking={appLinking}
+                      theme={navigationTheme}
+                      direction={direction}
+                    />
                   </IncomingShareProvider>
                   <ConfirmDialogHost />
                   <ThreadArrangementHost />

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import {
   HTML_RENDER_COLUMN_WIDTH,
@@ -32,6 +33,7 @@ export function HtmlRenderFrame(props: {
   readonly threadRef: ScopedThreadRef | undefined;
   readonly onFullscreenChange?: (fullscreen: boolean) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { attachmentId, title } = props.htmlRender;
   // The frame takes the page's measured height at its own width, read before
   // first paint so the reserved box is already the right size.
@@ -115,7 +117,7 @@ export function HtmlRenderFrame(props: {
               <TooltipTrigger
                 render={
                   <Button
-                    aria-label="Open full screen"
+                    aria-label={uiT("Open full screen")}
                     size="icon-xs"
                     variant="glass"
                     onClick={async () => {
@@ -124,8 +126,8 @@ export function HtmlRenderFrame(props: {
                       else
                         toastManager.add({
                           type: "error",
-                          title: "Page unavailable",
-                          description: "Reconnect to the environment and try again.",
+                          title: uiT("Page unavailable"),
+                          description: uiT("Reconnect to the environment and try again."),
                         });
                     }}
                   />
@@ -133,7 +135,7 @@ export function HtmlRenderFrame(props: {
               >
                 <Maximize2Icon className="size-3.5" />
               </TooltipTrigger>
-              <TooltipPopup side="left">Open full screen</TooltipPopup>
+              <TooltipPopup side="left">{uiT("Open full screen")}</TooltipPopup>
             </Tooltip>
           </div>
           {expandedSrc !== null ? (
@@ -147,7 +149,7 @@ export function HtmlRenderFrame(props: {
         </>
       ) : failed ? (
         <p className="flex size-full items-center justify-center text-muted-foreground text-xs">
-          Unable to load {title}
+          {uiT("Unable to load")} {uiT(title)}
         </p>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { NativeHeaderToolbar, NativeStackScreenOptions } from "../../native/StackHeader";
 import { use, useCallback, useEffect, useRef } from "react";
 import { useNavigation, type ParamListBase } from "@react-navigation/native";
@@ -18,6 +19,7 @@ import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
 export type { HomeHeaderEnvironment } from "./HomeHeader.types";
 
 export function HomeHeader(props: HomeHeaderProps) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { layout, panes, togglePrimarySidebar } = useAdaptiveWorkspaceLayout();
   const usesNativeMailSearchToolbar = useNativeMailSearchToolbar();
@@ -115,7 +117,7 @@ export function HomeHeader(props: HomeHeaderProps) {
                   obscureBackground: false,
                   placement: "stacked" as const,
                   allowToolbarIntegration: false,
-                  placeholder: "Search",
+                  placeholder: uiT("Search"),
                   onCancelButtonPress: () => props.onSearchQueryChange(""),
                   onChangeText: (event) => props.onSearchQueryChange(event.nativeEvent.text),
                 },
@@ -139,7 +141,7 @@ export function HomeHeader(props: HomeHeaderProps) {
                         : "line.3.horizontal.decrease",
                       onComposePress: props.onStartNewTask,
                       onSearchTextChange: props.onSearchQueryChange,
-                      placeholder: "Search",
+                      placeholder: uiT("Search"),
                       searchTextChangeId: "home-search-text",
                       showsSearchDismissButton: true,
                     }),
@@ -152,7 +154,7 @@ export function HomeHeader(props: HomeHeaderProps) {
                     ref: searchBarRef,
                     autoCapitalize: "none" as const,
                     hideNavigationBar: false,
-                    placeholder: "Search",
+                    placeholder: uiT("Search"),
                     onCancelButtonPress: () => {
                       props.onSearchQueryChange("");
                     },
@@ -167,23 +169,23 @@ export function HomeHeader(props: HomeHeaderProps) {
       {sidebarHeader || usesNativeMailSearchToolbar ? null : (
         <NativeHeaderToolbar placement="bottom">
           <NativeHeaderToolbar.Menu
-            accessibilityLabel="Filter threads"
+            accessibilityLabel={uiT("Filter threads")}
             icon={
               hasCustomListOptions
                 ? "line.3.horizontal.decrease.circle.fill"
                 : "line.3.horizontal.decrease.circle"
             }
-            title="Thread list options"
+            title={uiT("Thread list options")}
             separateBackground
           >
-            <NativeHeaderToolbar.Menu title="Environment">
-              <NativeHeaderToolbar.Label>Environment</NativeHeaderToolbar.Label>
+            <NativeHeaderToolbar.Menu title={uiT("Environment")}>
+              <NativeHeaderToolbar.Label>{uiT("Environment")}</NativeHeaderToolbar.Label>
               <NativeHeaderToolbar.MenuAction
                 isOn={props.selectedEnvironmentId === null}
                 onPress={() => props.onEnvironmentChange(null)}
-                subtitle="Show threads from every environment"
+                subtitle={uiT("Show threads from every environment")}
               >
-                <NativeHeaderToolbar.Label>All environments</NativeHeaderToolbar.Label>
+                <NativeHeaderToolbar.Label>{uiT("All environments")}</NativeHeaderToolbar.Label>
               </NativeHeaderToolbar.MenuAction>
               {props.environments.map((environment) => (
                 <NativeHeaderToolbar.MenuAction
@@ -197,14 +199,14 @@ export function HomeHeader(props: HomeHeaderProps) {
             </NativeHeaderToolbar.Menu>
 
             {props.projects.length > 0 ? (
-              <NativeHeaderToolbar.Menu title="Project">
-                <NativeHeaderToolbar.Label>Project</NativeHeaderToolbar.Label>
+              <NativeHeaderToolbar.Menu title={uiT("Project")}>
+                <NativeHeaderToolbar.Label>{uiT("Project")}</NativeHeaderToolbar.Label>
                 <NativeHeaderToolbar.MenuAction
                   isOn={props.selectedProjectKey === null}
                   onPress={() => props.onProjectChange(null)}
-                  subtitle="Show threads from every project"
+                  subtitle={uiT("Show threads from every project")}
                 >
-                  <NativeHeaderToolbar.Label>All projects</NativeHeaderToolbar.Label>
+                  <NativeHeaderToolbar.Label>{uiT("All projects")}</NativeHeaderToolbar.Label>
                 </NativeHeaderToolbar.MenuAction>
                 {props.projects.map((project) => (
                   <NativeHeaderToolbar.MenuAction
@@ -220,7 +222,7 @@ export function HomeHeader(props: HomeHeaderProps) {
           </NativeHeaderToolbar.Menu>
           <NativeHeaderToolbar.Spacer flexible />
           <NativeHeaderToolbar.Button
-            accessibilityLabel="New task"
+            accessibilityLabel={uiT("New task")}
             icon="square.and.pencil"
             onPress={props.onStartNewTask}
             separateBackground

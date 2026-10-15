@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
@@ -9,6 +10,7 @@ import { MaterialIconButton } from "../../../components/MaterialIconButton";
 import type { AutoSettleDaysFieldProps } from "./AutoSettleDaysField";
 
 export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
+  const { t: uiT } = useUiLanguage();
   const adjust = (amount: number) => {
     if (props.disabled) return;
     const next = Math.max(
@@ -28,21 +30,24 @@ export function AutoSettleDaysField(props: AutoSettleDaysFieldProps) {
       />
       <MaterialIconButton
         icon="minus"
-        accessibilityLabel="Decrease days before auto-settle"
+        accessibilityLabel={uiT("Decrease days before auto-settle")}
         disabled={props.disabled || props.value <= MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS}
         onPress={() => adjust(-1)}
       />
       <AppText
         className="min-w-8 text-center text-base"
         style={{ fontVariant: ["tabular-nums"] }}
-        accessibilityLabel={`${props.value} ${props.value === 1 ? "day" : "days"} before auto-settle`}
+        accessibilityLabel={uiT("{0} {1} before auto-settle", {
+          "0": props.value,
+          "1": props.value === 1 ? "day" : "days",
+        })}
         accessibilityLiveRegion="polite"
       >
         {props.value}
       </AppText>
       <MaterialIconButton
         icon="plus"
-        accessibilityLabel="Increase days before auto-settle"
+        accessibilityLabel={uiT("Increase days before auto-settle")}
         disabled={props.disabled || props.value >= MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS}
         onPress={() => adjust(1)}
       />

@@ -21,6 +21,15 @@ Android uses **Material You Layout** by default unless you have turned it off in
 It changes shapes, spacing, and controls independently
 of the selected theme.
 
+## Language and direction
+
+In **Settings → Appearance**, choose English, Hebrew, Arabic, Persian, or the system language for interface
+labels. Hebrew, Arabic, and Persian use a right-to-left layout automatically. You can also choose the interface
+direction independently. Code and terminals keep their left-to-right direction.
+
+New installations follow the browser or device language. Web and desktop also offer a language
+selector on the welcome screen. These preferences are saved on each device.
+
 ## Composer context
 
 Git-backed projects show branch and worktree controls below the composer while you create a thread.

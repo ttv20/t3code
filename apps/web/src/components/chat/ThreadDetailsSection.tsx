@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "../../lib/utils";
@@ -18,11 +19,12 @@ export function ThreadDetailsSection({
   separated?: boolean;
   showHeading?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <section
       {...props}
       aria-labelledby={showHeading ? headingId : undefined}
-      aria-label={showHeading ? undefined : title}
+      aria-label={showHeading ? undefined : uiT(title)}
       className={cn("px-2 pt-2 pb-2.5", separated && "border-t border-border/65")}
     >
       <div
@@ -35,7 +37,7 @@ export function ThreadDetailsSection({
           id={headingId}
           className="min-w-0 truncate text-2xs font-medium text-muted-foreground select-none"
         >
-          {title}
+          {uiT(title)}
         </h3>
         {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
       </div>

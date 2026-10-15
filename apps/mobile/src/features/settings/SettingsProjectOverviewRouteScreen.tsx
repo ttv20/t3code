@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { AppText as Text, AppTextInput } from "../../components/AppText";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
@@ -18,6 +19,7 @@ import {
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 
 export function SettingsProjectOverviewRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const group = projectGroups.find((entry) => entry.key === selectedProjectKey);
@@ -30,7 +32,10 @@ export function SettingsProjectOverviewRouteScreen() {
   return (
     <>
       <SettingsEnvironmentFilterHeader />
-      <SettingsScreen title="Project overview" trailing={<AndroidSettingsEnvironmentFilter />}>
+      <SettingsScreen
+        title={uiT("Project overview")}
+        trailing={<AndroidSettingsEnvironmentFilter />}
+      >
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
@@ -40,8 +45,9 @@ export function SettingsProjectOverviewRouteScreen() {
         >
           {members.length === 0 ? (
             <Text className="px-2 text-base text-foreground-muted">
-              This project has no checkout on the selected connected environments. Change the filter
-              above.
+              {uiT(
+                "This project has no checkout on the selected connected environments. Change the filter above.",
+              )}
             </Text>
           ) : (
             <ProjectOverviewContent
@@ -60,12 +66,13 @@ function ProjectOverviewContent(props: {
   readonly members: readonly EnvironmentProject[];
   readonly environments: readonly SettingsTarget[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const representative = props.members[0]!;
   const displayName = deriveProjectGroupLabel({ representative, members: props.members });
   const [draftName, setDraftName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const updateProject = useAtomCommand(projectEnvironment.update, {
-    label: "project name update",
+    label: uiT("project name update"),
     reportFailure: true,
   });
   const nextName = (draftName ?? displayName).trim();
@@ -107,17 +114,19 @@ function ProjectOverviewContent(props: {
             {displayName}
           </Text>
           <Text className="text-sm text-foreground-muted">
-            {props.members.length === 1 ? "1 checkout" : `${props.members.length} checkouts`}
+            {props.members.length === 1
+              ? uiT("1 checkout")
+              : uiT("{0} checkouts", { "0": props.members.length })}
           </Text>
         </View>
       </View>
 
-      <SettingsSection title="Project">
+      <SettingsSection title={uiT("Project")}>
         <View className="gap-3 p-4">
-          <Text className="text-sm font-t3-medium text-foreground-muted">Name</Text>
+          <Text className="text-sm font-t3-medium text-foreground-muted">{uiT("Name")}</Text>
           <View className="flex-row items-center gap-3">
             <AppTextInput
-              accessibilityLabel="Project name"
+              accessibilityLabel={uiT("Project name")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border-continuous bg-card px-3 text-base text-foreground"
               value={draftName ?? displayName}
               onChangeText={setDraftName}
@@ -128,18 +137,18 @@ function ProjectOverviewContent(props: {
             {canSave ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Save project name"
+                accessibilityLabel={uiT("Save project name")}
                 onPress={saveName}
                 className="rounded-full bg-subtle-strong px-4 py-2 active:opacity-70"
               >
-                <Text className="text-sm font-t3-medium text-foreground">Save</Text>
+                <Text className="text-sm font-t3-medium text-foreground">{uiT("Save")}</Text>
               </Pressable>
             ) : null}
           </View>
         </View>
       </SettingsSection>
 
-      <SettingsSection title="Checkouts">
+      <SettingsSection title={uiT("Checkouts")}>
         {props.members.map((member, index) => {
           const environment = props.environments.find(
             (entry) => entry.environmentId === member.environmentId,
@@ -156,7 +165,7 @@ function ProjectOverviewContent(props: {
                     : "text-lg text-foreground"
                 }
               >
-                {environment?.label ?? "Environment"}
+                {environment?.label ?? uiT("Environment")}
               </Text>
               {environment?.displayUrl ? (
                 <Text className="text-sm leading-normal text-foreground-muted">

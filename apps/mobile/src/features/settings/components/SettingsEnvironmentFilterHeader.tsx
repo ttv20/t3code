@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackHeaderItem } from "@react-navigation/native-stack";
 import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
@@ -15,6 +16,7 @@ export function SettingsEnvironmentFilterHeader(props: {
   readonly closeSettings?: boolean;
   readonly trailingItems?: readonly NativeStackHeaderItem[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { layout } = useAdaptiveWorkspaceLayout();
   const closeSettings = props.closeSettings === true && !layout.usesSplitView;
@@ -60,18 +62,18 @@ export function SettingsEnvironmentFilterHeader(props: {
             label: "",
             type: "menu",
             menu: {
-              title: "Settings scope",
+              title: uiT("Settings scope"),
               items: [
                 {
                   type: "submenu",
                   label:
                     selectedIds === null
-                      ? "All environments"
+                      ? uiT("All environments")
                       : `${selectedTargets.length} ${selectedTargets.length === 1 ? "environment" : "environments"}`,
                   items: [
                     {
                       type: "action",
-                      label: "All connected environments",
+                      label: uiT("All connected environments"),
                       state: selectedIds === null ? "on" : undefined,
                       onPress: selectAll,
                     },
@@ -98,11 +100,13 @@ export function SettingsEnvironmentFilterHeader(props: {
                   label:
                     selectableProjectGroups.find((group) => group.key === selectedProjectKey)
                       ?.label ??
-                    (selectedProjectKey === null ? "All projects" : "Unavailable project"),
+                    (selectedProjectKey === null
+                      ? uiT("All projects")
+                      : uiT("Unavailable project")),
                   items: [
                     {
                       type: "action",
-                      label: "All projects",
+                      label: uiT("All projects"),
                       state: selectedProjectKey === null ? "on" : undefined,
                       onPress: () => selectProject(null),
                     },
@@ -138,6 +142,7 @@ export function SettingsEnvironmentFilterHeader(props: {
 }
 
 export function AndroidSettingsEnvironmentFilter() {
+  const { t: uiT } = useUiLanguage();
   const {
     availableTargets,
     selectedIds,
@@ -156,17 +161,17 @@ export function AndroidSettingsEnvironmentFilter() {
     <ControlPillMenu
       accessible
       accessibilityRole="button"
-      accessibilityLabel="Filter settings environments and projects"
-      title="Settings scope"
+      accessibilityLabel={uiT("Filter settings environments and projects")}
+      title={uiT("Settings scope")}
       actions={[
         {
           id: "all",
-          title: "All connected environments",
+          title: uiT("All connected environments"),
           state: selectedIds === null ? ("on" as const) : ("off" as const),
         },
         ...availableTargets.map((entry) => ({
           id: `environment:${entry.environmentId}`,
-          title: `Environment · ${entry.label}`,
+          title: uiT("Environment · {0}", { "0": entry.label }),
           image: ENVIRONMENT_MACHINE_SYMBOLS[resolveEnvironmentMachineKind(entry.serverConfig)],
           subtitle: entry.displayUrl ?? undefined,
           state:
@@ -176,12 +181,12 @@ export function AndroidSettingsEnvironmentFilter() {
         })),
         {
           id: "project:all",
-          title: "All projects",
+          title: uiT("All projects"),
           state: selectedProjectKey === null ? ("on" as const) : ("off" as const),
         },
         ...selectableProjectGroups.map((group) => ({
           id: `project:${group.key}`,
-          title: `Project · ${group.label}`,
+          title: uiT("Project · {0}", { "0": group.label }),
           state: selectedProjectKey === group.key ? ("on" as const) : ("off" as const),
         })),
       ]}
@@ -203,7 +208,7 @@ export function AndroidSettingsEnvironmentFilter() {
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Filter settings environments and projects"
+        accessibilityLabel={uiT("Filter settings environments and projects")}
         className="size-11 items-center justify-center rounded-full"
       >
         <SymbolView name={filterIcon} size={22} tintColorClassName="accent-icon" />

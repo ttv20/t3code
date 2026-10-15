@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { memo } from "react";
 import { QrCode } from "@t3tools/shared/qrCode";
 
@@ -59,6 +60,7 @@ export const QRCodeSvg = memo(function QRCodeSvg({
   foregroundColor = "#000",
   backgroundColor = "#fff",
 }: QRCodeSvgProps) {
+  const { t: uiT } = useUiLanguage();
   const qrCode = QrCode.encodeText(value, ERROR_CORRECTION_LEVELS[level]);
   const viewBoxSize = qrCode.size + marginSize * 2;
 
@@ -70,10 +72,10 @@ export const QRCodeSvg = memo(function QRCodeSvg({
       height={size}
       shapeRendering="crispEdges"
       role={title ? "img" : undefined}
-      aria-label={title}
+      aria-label={uiT(title)}
       className={className}
     >
-      {title ? <title>{title}</title> : null}
+      {title ? <title>{uiT(title)}</title> : null}
       <rect width={viewBoxSize} height={viewBoxSize} fill={backgroundColor} />
       <path d={buildQrPathData(qrCode, marginSize)} fill={foregroundColor} />
     </svg>

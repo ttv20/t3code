@@ -105,6 +105,9 @@ jobs:
     # "Wait for Linux CLI archive"), so it gets that wait on top of the usual 30.
     timeout-minutes: ${{ inputs.platform == 'win' && 70 || 30 }}
     env:
+      T3CODE_POSTHOG_KEY: ${{ secrets.T3CODE_POSTHOG_KEY }}
+      T3CODE_POSTHOG_HOST: ${{ vars.T3CODE_POSTHOG_HOST || 'https://us.i.posthog.com' }}
+      T3CODE_TELEMETRY_ENABLED: ${{ vars.T3CODE_TELEMETRY_ENABLED || 'false' }}
       T3CODE_CLERK_PUBLISHABLE_KEY: ${{ inputs.clerk_publishable_key }}
       T3CODE_CLERK_JWT_TEMPLATE: ${{ inputs.clerk_jwt_template }}
       T3CODE_CLERK_CLI_OAUTH_CLIENT_ID: ${{ inputs.clerk_cli_oauth_client_id }}

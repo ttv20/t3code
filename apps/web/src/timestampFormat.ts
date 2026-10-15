@@ -1,3 +1,4 @@
+import { UI_DATE_LOCALES, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 
 function getTimestampFormatOptions(
@@ -113,10 +114,22 @@ export function formatTimestamp(isoDate: string, timestampFormat: TimestampForma
   return getTimestampFormatter(timestampFormat, true).format(date);
 }
 
-// Deliberately not the host locale: the tooltip's ordinal suffix and
-// day-before-month order below are English, so a localized month alone would
-// read "4th Juni 2026". Localizing the whole label is a separate change.
+// English keeps its ordinal format; other languages localize the complete date.
 const monthNameFormatter = new Intl.DateTimeFormat("en-US", { month: "long" });
+const localizedDateFormatters = new Map<UiLocale, Intl.DateTimeFormat>();
+
+function localizedDateFormatter(locale: UiLocale) {
+  let formatter = localizedDateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(UI_DATE_LOCALES[locale], {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    localizedDateFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
 
 function ordinalSuffix(day: number): string {
   const lastTwo = day % 100;
@@ -140,10 +153,12 @@ function ordinalSuffix(day: number): string {
 export function formatChatTimestampTooltip(
   isoDate: string,
   timestampFormat: TimestampFormat,
+  locale: UiLocale = "en",
 ): string {
   const date = parseTimestampDate(isoDate);
   if (!date) return "";
   const time = formatShortTimestamp(isoDate, timestampFormat);
+  if (locale !== "en") return `${time}, ${localizedDateFormatter(locale).format(date)}`;
   const day = date.getDate();
   const month = monthNameFormatter.format(date);
   const year = date.getFullYear();

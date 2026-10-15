@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { type ProviderInstanceId, type ServerProvider } from "@t3tools/contracts";
 import { memo } from "react";
 import { InfoIcon, XIcon } from "lucide-react";
@@ -97,6 +98,7 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
   onOpenProviderSetup?: (instanceId: ProviderInstanceId) => void;
   status: ServerProvider | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (!status || getProviderStatusBannerKey(status) === null) {
     return null;
   }
@@ -105,10 +107,14 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
   const isUnauthenticated = status.status === "error" && status.auth.status === "unauthenticated";
   const incompatible = getIncompatibleVersion(status);
   const title = isUnauthenticated
-    ? `${providerName} is unauthenticated`
+    ? uiT("{0} is unauthenticated", { "0": providerName })
     : incompatible
-      ? `${providerName} ${status.version ?? ""} is ${incompatible.status === "broken" ? "known to be broken" : "unsupported"}`
-      : `${providerName} provider status`;
+      ? uiT("{0} {1} is {2}", {
+          "0": providerName,
+          "1": status.version ?? "",
+          "2": incompatible.status === "broken" ? "known to be broken" : "unsupported",
+        })
+      : uiT("{0} provider status", { "0": providerName });
   const message = incompatible?.message ?? getProviderStatusMessage(status);
   const isWarning =
     incompatible?.status !== "broken" && (status.status === "warning" || incompatible !== null);
@@ -122,7 +128,7 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
         controlAlignment="first-line"
       >
         <InfoIcon />
-        <AlertTitle>{title}</AlertTitle>
+        <AlertTitle>{uiT(title)}</AlertTitle>
         <AlertDescription>
           <Tooltip>
             <TooltipTrigger render={<div className="line-clamp-3" />}>{message}</TooltipTrigger>
@@ -132,13 +138,13 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
           </Tooltip>
           {onOpenProviderSetup && hasProviderSetup(status) ? (
             <InlineButton onClick={() => onOpenProviderSetup(status.instanceId)}>
-              Open provider setup
+              {uiT("Open provider setup")}
             </InlineButton>
           ) : null}
         </AlertDescription>
         <AlertAction>
           <Button
-            aria-label={`Dismiss ${providerName} provider ${status.status}`}
+            aria-label={uiT("Dismiss {0} provider {1}", { "0": providerName, "1": status.status })}
             onClick={onDismiss}
             size="icon-xs"
             variant="ghost-muted"

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   EditorId,
   EnvironmentId,
@@ -66,6 +67,7 @@ export interface ThreadDetailsPanelProps extends Pick<
 }
 
 export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
+  const { t: uiT } = useUiLanguage();
   const isMobile = useMediaQuery("max-sm");
   const fileScripts = useT3ProjectFileScripts(
     props.environmentId,
@@ -106,7 +108,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
         <>
           <ThreadDetailsSection
             headingId="thread-details-workspace-heading"
-            title="Workspace"
+            title={uiT("Workspace")}
             separated={false}
             showHeading={false}
           >
@@ -152,7 +154,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
           {props.gitCwd ? (
             <ThreadDetailsSection
               headingId="thread-details-version-control-heading"
-              title="Version Control"
+              title={uiT("Version Control")}
               showHeading={false}
               separated={density === "full"}
             >

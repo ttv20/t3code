@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../i18n";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
@@ -53,6 +54,7 @@ export function PullRequestThreadDialog({
   onOpenChange,
   onPrepared,
 }: PullRequestThreadDialogProps) {
+  const { t: uiT } = useUiLanguage();
   const referenceInputRef = useRef<HTMLInputElement>(null);
   const [reference, setReference] = useState(initialReference ?? "");
   const [referenceDirty, setReferenceDirty] = useState(false);
@@ -210,7 +212,7 @@ export function PullRequestThreadDialog({
       : preparePullRequestThreadAction.error instanceof Error
         ? preparePullRequestThreadAction.error.message
         : preparePullRequestThreadAction.error
-          ? `Failed to prepare ${terminology.singular} thread.`
+          ? uiT("Failed to prepare {0} thread.", { "0": terminology.singular })
           : null);
 
   return (
@@ -226,11 +228,15 @@ export function PullRequestThreadDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <SourceControlIcon className="me-2 size-4" />
-            Checkout {terminology.singular}
+            {uiT("Checkout")} {terminology.singular}
           </DialogTitle>
           <DialogDescription>
-            Resolve a {sourceControlPresentation.providerName} {terminology.singular}, then create
-            the draft thread in the main repo or in a dedicated worktree.
+            <UiText
+              message={
+                "Resolve a {0} {1}, then create the draft thread in the main repo or in a dedicated worktree."
+              }
+              values={{ "0": sourceControlPresentation.providerName, "1": terminology.singular }}
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
@@ -240,7 +246,9 @@ export function PullRequestThreadDialog({
             </span>
             <Input
               ref={referenceInputRef}
-              placeholder={`${terminology.shortLabel} URL, checkout command, or #42`}
+              placeholder={uiT("{0} URL, checkout command, or #42", {
+                "0": terminology.shortLabel,
+              })}
               value={reference}
               onChange={(event) => {
                 setReferenceDirty(true);
@@ -267,7 +275,7 @@ export function PullRequestThreadDialog({
                 <div className="min-w-0">
                   <p className="truncate font-medium text-sm">{resolvedPullRequest.title}</p>
                   <p className="truncate text-muted-foreground text-xs">
-                    #{resolvedPullRequest.number} · {resolvedPullRequest.headBranch} to{" "}
+                    #{resolvedPullRequest.number} · {resolvedPullRequest.headBranch} {uiT("to")}{" "}
                     {resolvedPullRequest.baseBranch}
                   </p>
                 </div>
@@ -281,11 +289,11 @@ export function PullRequestThreadDialog({
           {isResolving ? (
             <div className="flex items-center gap-2 text-muted-foreground text-xs">
               <Spinner size="sm" />
-              Resolving {terminology.singular}...
+              {uiT("Resolving")} {terminology.singular}...
             </div>
           ) : null}
 
-          {errorMessage ? <p className="text-destructive text-xs">{errorMessage}</p> : null}
+          {errorMessage ? <p className="text-destructive text-xs">{uiT(errorMessage)}</p> : null}
         </DialogPanel>
         <DialogFooter>
           <Button
@@ -295,7 +303,7 @@ export function PullRequestThreadDialog({
             onClick={() => onOpenChange(false)}
             disabled={preparePullRequestThreadAction.isPending}
           >
-            Cancel
+            {uiT("Cancel")}
           </Button>
           <Button
             type="button"
@@ -310,7 +318,7 @@ export function PullRequestThreadDialog({
               preparePullRequestThreadAction.isPending
             }
           >
-            {preparingMode === "local" ? "Preparing local..." : "Local"}
+            {preparingMode === "local" ? uiT("Preparing local...") : uiT("Local")}
           </Button>
           <Button
             type="button"
@@ -325,7 +333,7 @@ export function PullRequestThreadDialog({
               preparePullRequestThreadAction.isPending
             }
           >
-            {preparingMode === "worktree" ? "Preparing worktree..." : "Worktree"}
+            {preparingMode === "worktree" ? uiT("Preparing worktree...") : uiT("Worktree")}
           </Button>
         </DialogFooter>
       </DialogPopup>

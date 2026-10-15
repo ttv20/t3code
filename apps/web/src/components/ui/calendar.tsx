@@ -1,6 +1,9 @@
 "use client";
 
 import { DayPicker } from "@daypicker/react";
+import { ar, faIR, he } from "@daypicker/react/locale";
+import { UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";
+import { useUiLanguage } from "~/i18n";
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "~/lib/utils";
@@ -49,6 +52,7 @@ export function Calendar({
   mode = "single",
   ...props
 }: React.ComponentProps<typeof DayPicker>): React.ReactElement {
+  const { locale, direction } = useUiLanguage();
   const defaultClassNames = {
     button_next: buttonClassNames,
     button_previous: buttonClassNames,
@@ -101,9 +105,12 @@ export function Calendar({
     components: mergedComponents,
     "data-slot": "calendar",
     formatters: {
-      formatMonthDropdown: (date: Date) => date.toLocaleString("default", { month: "short" }),
+      formatMonthDropdown: (date: Date) =>
+        date.toLocaleString(UI_DATE_LOCALES[locale], { month: "short" }),
     } as React.ComponentProps<typeof DayPicker>["formatters"],
     mode,
+    locale: { en: undefined, he, ar, fa: faIR }[locale],
+    dir: direction,
     showOutsideDays,
     ...props,
   };

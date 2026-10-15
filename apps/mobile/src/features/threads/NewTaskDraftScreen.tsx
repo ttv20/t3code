@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
@@ -198,6 +199,7 @@ export function NewTaskDraftScreen(props: {
   /** Durable native share inbox item to merge into this project draft. */
   readonly incomingShareId?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const projects = useProjects();
   const flow = useNewTaskFlow();
   const navigation = useNavigation();
@@ -521,7 +523,9 @@ export function NewTaskDraftScreen(props: {
   });
   const voiceInput = useVoiceInputController({
     ownerKey: flow.draftKey,
-    label: selectedProjectLabel ? `New task in ${selectedProjectLabel}` : "New task",
+    label: selectedProjectLabel
+      ? uiT("New task in {0}", { "0": selectedProjectLabel })
+      : uiT("New task"),
     readDraftMessage: () => (flow.draftKey ? getComposerDraftSnapshot(flow.draftKey).text : null),
     subscribeToDraftChanges: (onChange) => appAtomRegistry.subscribe(composerDraftsAtom, onChange),
     selection: composerMenu.selection,
@@ -1399,13 +1403,13 @@ export function NewTaskDraftScreen(props: {
           <>
             <NativeStackScreenOptions options={{ headerShown: false }} />
             <AndroidScreenHeader
-              title="New thread"
+              title={uiT("New thread")}
               hideBottomBorder
               onBack={() => navigation.goBack()}
             />
           </>
         ) : (
-          <NativeStackScreenOptions options={{ title: "Loading task" }} />
+          <NativeStackScreenOptions options={{ title: uiT("Loading task") }} />
         )}
       </View>
     );
@@ -1485,7 +1489,7 @@ export function NewTaskDraftScreen(props: {
         onBlur={() => setIsComposerFocused(false)}
         onPasteImages={(uris) => void handleNativePasteImages(uris)}
         onPasteText={(paste) => void handleNativePasteText(paste)}
-        placeholder="Ask anything…"
+        placeholder={uiT("Ask anything…")}
         singleLineCentered={false}
         contentInsetVertical={0}
         style={{
@@ -1526,7 +1530,7 @@ export function NewTaskDraftScreen(props: {
 
   const environmentControl = (
     <ComposerInlineControl
-      accessibilityLabel={`Environment: ${selectedEnvironmentLabel}`}
+      accessibilityLabel={uiT("Environment: {0}", { "0": selectedEnvironmentLabel })}
       chevronDirection="right"
       disabled={isComposerInteractionLocked || voiceInput.isBusy}
       renderIcon={(size) => (
@@ -1536,7 +1540,7 @@ export function NewTaskDraftScreen(props: {
           tintColorClassName="accent-icon-muted"
         />
       )}
-      label={`on ${selectedEnvironmentLabel}`}
+      label={uiT("on {0}", { "0": selectedEnvironmentLabel })}
       maxWidth={flow.isScratchDraft ? 170 : 260}
       onPress={
         flow.environments.length > 1 ? () => openContextPicker("NewTaskEnvironment") : undefined
@@ -1550,17 +1554,17 @@ export function NewTaskDraftScreen(props: {
   const hero = flow.isScratchDraft ? (
     <View className="items-center gap-2 px-6" testID="new-task-hero">
       <Text className="text-center text-2xl font-t3-medium tracking-tight text-foreground">
-        What should we work on?
+        {uiT("What should we work on?")}
       </Text>
       {/* Wraps onto two lines only when a long machine name leaves no room. */}
       <View className="flex-row flex-wrap items-center justify-center gap-x-1">
         <ComposerInlineControl
-          accessibilityHint="Opens the project picker"
-          accessibilityLabel="Choose a project"
+          accessibilityHint={uiT("Opens the project picker")}
+          accessibilityLabel={uiT("Choose a project")}
           chevronDirection="right"
           disabled={isComposerInteractionLocked}
           icon="folder"
-          label="Choose a project"
+          label={uiT("Choose a project")}
           onPress={chooseProject}
         />
         {environmentControl}
@@ -1570,12 +1574,14 @@ export function NewTaskDraftScreen(props: {
     <View className="items-center gap-6 px-6" testID="new-task-hero">
       <View className="w-full items-center gap-1.5">
         <Text className="text-center text-2xl font-t3-medium tracking-tight text-foreground">
-          What should we build
+          {uiT("What should we build")}
         </Text>
         <View className="max-w-full flex-row items-center justify-center">
-          <Text className="text-2xl font-t3-medium tracking-tight text-foreground">in </Text>
+          <Text className="text-2xl font-t3-medium tracking-tight text-foreground">
+            {uiT("in")}{" "}
+          </Text>
           <Pressable
-            accessibilityHint="Opens the project picker"
+            accessibilityHint={uiT("Opens the project picker")}
             accessibilityLabel={selectedProjectLabel ?? selectedProject.title}
             accessibilityRole="button"
             disabled={isComposerInteractionLocked}
@@ -1617,7 +1623,9 @@ export function NewTaskDraftScreen(props: {
   const workspaceControls = (
     <View className="flex-row items-center gap-1 px-2">
       <ComposerInlineControl
-        accessibilityHint={`Switches to ${flow.workspaceMode === "local" ? "a new worktree" : "the current checkout"}`}
+        accessibilityHint={uiT("Switches to {0}", {
+          "0": flow.workspaceMode === "local" ? "a new worktree" : "the current checkout",
+        })}
         accessibilityLabel={workspaceLabel}
         disabled={isComposerInteractionLocked || voiceInput.isBusy}
         renderIcon={(size) => (
@@ -1638,7 +1646,7 @@ export function NewTaskDraftScreen(props: {
         chevronDirection="right"
         disabled={isComposerInteractionLocked}
         icon="arrow.triangle.branch"
-        label={showBranchLoading ? "Loading branches…" : selectedBranchLabel}
+        label={showBranchLoading ? uiT("Loading branches…") : selectedBranchLabel}
         maxWidth={190}
         onPress={() => openContextPicker("NewTaskBranch")}
       />
@@ -1704,7 +1712,9 @@ export function NewTaskDraftScreen(props: {
           disabled={isComposerInteractionLocked}
           onPress={settingsSheetPresentation.open}
         >
-          <Text className="text-xs text-foreground">Model unavailable. Open model settings.</Text>
+          <Text className="text-xs text-foreground">
+            {uiT("Model unavailable. Open model settings.")}
+          </Text>
         </Pressable>
       ) : null}
 
@@ -1786,7 +1796,7 @@ export function NewTaskDraftScreen(props: {
                   <View className="min-w-0 flex-1 flex-row items-center justify-end gap-2">
                     <View className="min-w-0 shrink">
                       <ComposerInlineControl
-                        accessibilityLabel="Model and reasoning settings"
+                        accessibilityLabel={uiT("Model and reasoning settings")}
                         disabled={isComposerInteractionLocked}
                         emphasized
                         renderIcon={(size) => (
@@ -1796,15 +1806,19 @@ export function NewTaskDraftScreen(props: {
                             size={size}
                           />
                         )}
-                        label={flow.selectedModelOption?.label ?? "Choose model"}
+                        label={flow.selectedModelOption?.label ?? uiT("Choose model")}
                         maxWidth="100%"
                         onPress={settingsSheetPresentation.open}
                       />
                     </View>
                     {flow.planModeEnabled ? (
                       <ComposerInlineControl
-                        accessibilityHint={`Switches to ${flow.interactionMode === "plan" ? "Build" : "Plan"} mode`}
-                        accessibilityLabel={`Interaction mode: ${flow.interactionMode === "plan" ? "Plan" : "Build"}`}
+                        accessibilityHint={uiT("Switches to {0} mode", {
+                          "0": flow.interactionMode === "plan" ? "Build" : "Plan",
+                        })}
+                        accessibilityLabel={uiT("Interaction mode: {0}", {
+                          "0": flow.interactionMode === "plan" ? "Plan" : "Build",
+                        })}
                         disabled={isComposerInteractionLocked}
                         emphasized
                         icon={
@@ -1812,7 +1826,7 @@ export function NewTaskDraftScreen(props: {
                             ? { ios: "list.bullet.clipboard", android: "auto_awesome" }
                             : { ios: "hammer", android: "construction" }
                         }
-                        label={flow.interactionMode === "plan" ? "Plan" : "Build"}
+                        label={flow.interactionMode === "plan" ? uiT("Plan") : uiT("Build")}
                         onPress={() =>
                           flow.setInteractionMode(
                             flow.interactionMode === "plan" ? "default" : "plan",
@@ -1840,17 +1854,17 @@ export function NewTaskDraftScreen(props: {
                     attachmentBlockReason ??
                     (cloneBlocksStart
                       ? projectClone === null || projectClone.phase === "running"
-                        ? "Cloning repository"
-                        : "Repository not cloned"
+                        ? uiT("Cloning repository")
+                        : uiT("Repository not cloned")
                       : pendingPastedTextAttachmentCount > 0
-                        ? "Attaching pasted text"
+                        ? uiT("Attaching pasted text")
                         : flow.submitting
-                          ? "Starting task"
+                          ? uiT("Starting task")
                           : attachmentsUploading
-                            ? "Queue task, sends when uploads finish"
+                            ? uiT("Queue task, sends when uploads finish")
                             : environmentConnected
-                              ? "Start task"
-                              : "Queue task")
+                              ? uiT("Start task")
+                              : uiT("Queue task"))
                   }
                   disabled={!canStart}
                   icon={queuesInsteadOfStarting ? "tray.and.arrow.up" : "arrow.up"}
@@ -1871,7 +1885,7 @@ export function NewTaskDraftScreen(props: {
     return (
       <View className="flex-1 bg-sheet" collapsable={false}>
         <NativeStackScreenOptions options={{ headerShown: false }} />
-        <AndroidScreenHeader title="New thread" hideBottomBorder onBack={closeNewTask} />
+        <AndroidScreenHeader title={uiT("New thread")} hideBottomBorder onBack={closeNewTask} />
         <MaterialScreenContent>
           {heroViewport}
 
@@ -1892,13 +1906,13 @@ export function NewTaskDraftScreen(props: {
         options={{
           headerBackVisible: false,
           headerShadowVisible: false,
-          title: "New thread",
+          title: uiT("New thread"),
         }}
       />
       <NativeHeaderToolbar placement="left">
         <NativeHeaderToolbar.Button
-          accessibilityLabel="Cancel new task"
-          label="Cancel"
+          accessibilityLabel={uiT("Cancel new task")}
+          label={uiT("Cancel")}
           onPress={closeNewTask}
         />
       </NativeHeaderToolbar>

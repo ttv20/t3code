@@ -33,55 +33,62 @@ export type ProviderStatusKey = keyof typeof PROVIDER_STATUS_STYLES;
  * driver this build does not ship. A ready provider without account metadata
  * remains available and does not imply an authentication failure.
  */
-export function getProviderSummary(provider: ServerProvider | undefined) {
+export function getProviderSummary(
+  provider: ServerProvider | undefined,
+  translate: (label: string) => string = (label) => label,
+) {
   if (!provider) {
     return {
-      headline: "Checking provider status",
+      headline: translate("Checking provider status"),
       detail: "Waiting for the server to report installation and authentication details.",
     };
   }
   if (!provider.enabled || provider.status === "disabled") {
     return {
-      headline: "Disabled",
+      headline: translate("Disabled"),
       detail:
         provider.message ?? "This provider is installed but disabled for new sessions in T3 Code.",
     };
   }
   if (!provider.installed) {
     return {
-      headline: "Not found",
+      headline: translate("Not found"),
       detail: provider.message ?? "CLI not detected on PATH.",
     };
   }
   if (provider.auth.status === "unauthenticated") {
     const authLabel = provider.auth.label ?? provider.auth.type;
     return {
-      headline: authLabel ? `Not authenticated · ${authLabel}` : "Not authenticated",
+      headline: authLabel
+        ? `${translate("Not authenticated")} · ${authLabel}`
+        : translate("Not authenticated"),
       detail: provider.message ?? null,
     };
   }
   if (provider.status === "warning") {
     return {
-      headline: "Needs attention",
+      headline: translate("Needs attention"),
       detail:
         provider.message ?? "The provider is installed, but the server could not fully verify it.",
     };
   }
   if (provider.status === "error") {
     return {
-      headline: "Unavailable",
+      headline: translate("Unavailable"),
       detail: provider.message ?? "The provider failed its startup checks.",
     };
   }
   if (provider.auth.status === "authenticated") {
     const authLabel = provider.auth.label ?? provider.auth.type;
     return {
-      headline: authLabel ? `Authenticated · ${authLabel}` : "Authenticated",
+      headline: authLabel
+        ? `${translate("Authenticated")} · ${authLabel}`
+        : translate("Authenticated"),
       detail: provider.message ?? null,
     };
   }
   return {
-    headline: "Available",
+    headline: translate("Available"),
     detail: provider.message ?? null,
   };
 }

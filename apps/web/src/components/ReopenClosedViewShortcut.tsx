@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   scopeProjectRef,
@@ -54,6 +55,7 @@ const isGlobalPullRequests = (ref: ScopedThreadRef) =>
   scopedThreadKey(ref) === scopedThreadKey(PULL_REQUESTS_PANEL_REF);
 
 export function ReopenClosedViewShortcut() {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const params = useParams({ strict: false });
   const target = resolveThreadRouteTarget(params);
@@ -139,7 +141,7 @@ export function ReopenClosedViewShortcut() {
       .catch((error: unknown) => {
         toastManager.add({
           type: "error",
-          title: "Could not reopen view",
+          title: uiT("Could not reopen view"),
           description: error instanceof Error ? error.message : String(error),
         });
       });

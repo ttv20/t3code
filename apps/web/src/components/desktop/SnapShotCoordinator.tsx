@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type DesktopPendingSnapShot,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
@@ -195,6 +196,7 @@ export async function deliverSnapShot(
 }
 
 export function SnapShotCoordinator() {
+  const { t: uiT } = useUiLanguage();
   const {
     activeDraftThread,
     activeThread,
@@ -285,8 +287,8 @@ export function SnapShotCoordinator() {
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot taken, but no project is available",
-                description: "Add a project, then capture the window again.",
+                title: uiT("Snapshot taken, but no project is available"),
+                description: uiT("Add a project, then capture the window again."),
               }),
             );
             continue;
@@ -302,10 +304,11 @@ export function SnapShotCoordinator() {
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot failed",
-                description: `Capture ${item.id}: ${
-                  error instanceof Error ? error.message : "Try the capture again."
-                }`,
+                title: uiT("Snapshot failed"),
+                description: uiT("Capture {0}: {1}", {
+                  "0": item.id,
+                  "1": error instanceof Error ? error.message : "Try the capture again.",
+                }),
               }),
             );
           }
@@ -317,8 +320,8 @@ export function SnapShotCoordinator() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Snapshot failed",
-            description: error instanceof Error ? error.message : "Try the capture again.",
+            title: uiT("Snapshot failed"),
+            description: error instanceof Error ? error.message : uiT("Try the capture again."),
           }),
         );
       })
@@ -327,7 +330,7 @@ export function SnapShotCoordinator() {
       });
     drainingRef.current = operation;
     return operation;
-  }, [playCaptureSound, resolveCaptureTarget, routeThreadRef]);
+  }, [playCaptureSound, resolveCaptureTarget, routeThreadRef, uiT]);
 
   useEffect(() => {
     const bridge = getDesktopSnapShotBridge();
@@ -376,8 +379,8 @@ export function SnapShotCoordinator() {
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: "Snapshot failed",
-                description: state.message ?? "Try the capture again.",
+                title: uiT("Snapshot failed"),
+                description: state.message ?? uiT("Try the capture again."),
               }),
             );
           });
@@ -388,7 +391,7 @@ export function SnapShotCoordinator() {
       }
     });
     return unsubscribe;
-  }, [animateCaptures, drain, playCaptureSound, resolveCaptureTarget, routeThreadRef]);
+  }, [animateCaptures, drain, playCaptureSound, resolveCaptureTarget, routeThreadRef, uiT]);
 
   useEffect(() => {
     const dismissOnBlur = () => {

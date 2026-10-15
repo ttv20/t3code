@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { presentThreadShell } from "@t3tools/client-runtime/state/models";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -101,6 +102,7 @@ function EnvironmentNotifications({
   environmentId: EnvironmentId;
   onNotification: (environmentId: EnvironmentId, notification: Notification) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const shell = useAtomValue(environmentShell.stateValueAtom(environmentId));
   // The shell reducer keeps the thread list and unchanged thread objects
   // stable, so this only rescans when a thread actually changed.
@@ -156,14 +158,14 @@ function EnvironmentNotifications({
       if (!kind) continue;
       const title =
         kind === "completion"
-          ? "Thread completed"
+          ? uiT("Thread completed")
           : status === "approval"
-            ? "Approval needed"
+            ? uiT("Approval needed")
             : status === "limited"
-              ? "Usage limit reached"
+              ? uiT("Usage limit reached")
               : status === "failed"
-                ? "Thread failed"
-                : "Input needed";
+                ? uiT("Thread failed")
+                : uiT("Input needed");
       if (hasNotificationSound(mode)) {
         void playNotificationSound(kind, () =>
           hasNotificationSound(getClientSettings().notificationMode),
@@ -241,6 +243,7 @@ function EnvironmentNotifications({
     navigate,
     onNotification,
     threads,
+    uiT,
   ]);
 
   return null;

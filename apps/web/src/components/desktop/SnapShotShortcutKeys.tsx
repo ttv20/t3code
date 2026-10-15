@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { SnapShotShortcut } from "@t3tools/contracts";
 import { snapShotShortcutKeyLabels } from "../../lib/snapShotShortcut";
 import { Kbd, KbdGroup } from "../ui/kbd";
@@ -9,6 +10,7 @@ export function SnapShotShortcutKeys({
   shortcut: SnapShotShortcut;
   platform?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const seenLabels = new Map<string, number>();
   return (
     <KbdGroup>
@@ -17,7 +19,7 @@ export function SnapShotShortcutKeys({
         seenLabels.set(label, seen + 1);
         return (
           <Kbd aria-hidden key={`${label}-${seen}`}>
-            {label}
+            {uiT(label)}
           </Kbd>
         );
       })}

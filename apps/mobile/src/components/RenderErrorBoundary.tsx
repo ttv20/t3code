@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Component, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 
@@ -88,7 +89,8 @@ export function RenderFailureView(
     readonly exit?: { readonly label: string; readonly onPress: () => void };
   },
 ) {
-  const title = props.title ?? "This screen couldn't be displayed";
+  const { t: uiT } = useUiLanguage();
+  const title = props.title ?? uiT("This screen couldn't be displayed");
   return (
     <ScrollView
       className="flex-1 bg-screen"
@@ -98,18 +100,18 @@ export function RenderFailureView(
       }
     >
       <Text accessibilityRole="header" className="text-center text-xl font-t3-bold">
-        {title}
+        {uiT(title)}
       </Text>
       <Text className="text-center text-sm text-foreground-muted">
-        Try again. If it keeps happening, copy the details for a bug report.
+        {uiT("Try again. If it keeps happening, copy the details for a bug report.")}
       </Text>
       <Text selectable className="text-center font-mono text-xs text-danger-foreground">
         {props.details.split("\n", 1)[0]?.slice(0, 300)}
       </Text>
       <View className="w-full max-w-xs gap-2">
-        <MaterialButton label="Try again" onPress={props.retry} tone="primary" fullWidth />
+        <MaterialButton label={uiT("Try again")} onPress={props.retry} tone="primary" fullWidth />
         <MaterialButton
-          label="Copy details"
+          label={uiT("Copy details")}
           onPress={() => copyTextWithHaptic(props.details, { target: "error details" })}
           fullWidth
         />

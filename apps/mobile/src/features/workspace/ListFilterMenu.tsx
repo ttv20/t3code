@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { GlassView } from "expo-glass-effect";
 import { Pressable, View } from "react-native";
 import { withUniwind } from "uniwind";
@@ -25,6 +26,7 @@ export function ListFilterMenu(props: {
   readonly actions: ControlPillMenuProps["actions"];
   readonly onSelect: (id: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { themeAppearance } = useAppearancePreferences();
   const content = (
     <>
@@ -42,7 +44,7 @@ export function ListFilterMenu(props: {
           props.active ? "text-primary-foreground" : "text-foreground-muted",
         )}
       >
-        {props.label}
+        {uiT(props.label)}
       </Text>
       {!props.icon ? (
         <SymbolView

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   OrchestrationV2ThreadShell,
   OrchestrationV2TurnItemStatus,
@@ -51,6 +52,7 @@ export function SubagentTooltipContent(props: {
   result?: string | null | undefined;
   progress?: string | null | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { modelLabel, workspace: metadata } = resolveSubagentMetadata(props);
   const preview = subagentDetailPreview(props);
   const model = props.model?.trim();
@@ -175,7 +177,7 @@ export function SubagentTooltipContent(props: {
         return (
           <div key={label} className="flex min-w-0 items-center gap-2">
             <Icon aria-hidden className="size-3 shrink-0" />
-            <span className="sr-only">{label}</span>
+            <span className="sr-only">{uiT(label)}</span>
             <MiddleTruncate value={value} className="flex" showTitle={false} />
           </div>
         );

@@ -33,3 +33,27 @@ clients. The release becomes the public latest release after both desktop
 builds are uploaded.
 No provider credentials or T3 database are required. The fork's inherited
 upstream workflows are disabled in GitHub.
+
+## PostHog for distributed builds
+
+In PostHog US, create or select the fork's project and copy its **Project token**
+from **Settings → Project**. Use the public ingestion token starting with `phc_`.
+
+In the GitHub repository, open **Settings → Secrets and variables → Actions**:
+
+| Type                | Name                       | Value                                    |
+| ------------------- | -------------------------- | ---------------------------------------- |
+| Repository secret   | `T3CODE_POSTHOG_KEY`       | The project's `phc_` token               |
+| Repository variable | `T3CODE_POSTHOG_HOST`      | `https://us.i.posthog.com`               |
+| Repository variable | `T3CODE_TELEMETRY_ENABLED` | `true` to enable collection in the build |
+
+Push to `patched` or manually run **Build patched T3** after these code changes
+are merged. The workflow embeds these defaults in the server bundled with the
+Windows, Linux, and npm/Bun release artifacts. Updating GitHub settings does not
+change artifacts that were already built. The ingestion token is public in the
+distributed binary even though GitHub stores its source value as a secret.
+
+At runtime, `T3CODE_POSTHOG_KEY` and `T3CODE_POSTHOG_HOST` can override the build's
+destination. `T3CODE_TELEMETRY_ENABLED=false` disables collection, including in
+builds that enable it by default. Source builds and releases without a configured
+project token send no product usage events.

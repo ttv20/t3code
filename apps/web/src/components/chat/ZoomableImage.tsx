@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import {
   useCallback,
   useEffect,
@@ -26,6 +27,7 @@ export function ZoomableImage({
   onError: () => void;
   ref?: Ref<ZoomableImageHandle>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const viewportRef = useRef<HTMLDivElement>(null);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
   const [windowSize, setWindowSize] = useState(() => ({
@@ -147,7 +149,7 @@ export function ZoomableImage({
       <div
         ref={viewportRef}
         role="region"
-        aria-label={`${name}, zoomable image`}
+        aria-label={uiT("{0}, zoomable image", { "0": name })}
         aria-description="Click to zoom in or return to fit. Scroll to zoom, drag to pan. Use Enter to toggle zoom, plus or minus to zoom, and 0 to fit."
         tabIndex={0}
         className="max-w-[var(--media-width)] overflow-auto overscroll-contain rounded-lg bg-background shadow-2xl ring-1 ring-border/70 outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-ring"
@@ -240,7 +242,7 @@ export function ZoomableImage({
         />
       </div>
       <span className="sr-only" aria-live="polite">
-        {Math.round(zoom * 100)}% zoom
+        <UiText message={"{0}% zoom"} values={{ "0": Math.round(zoom * 100) }} />
       </span>
     </div>
   );

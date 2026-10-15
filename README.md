@@ -1,3 +1,58 @@
+# T3 Code RTL
+
+A community fork of [T3 Code](https://github.com/pingdotgg/t3code) with Hebrew, Arabic, and Persian interface translations and right-to-left layouts. The original T3 Code README is preserved below.
+
+## What's changed
+
+- **Interface languages:** English, Hebrew, Arabic, Persian, or the device's system language. Language and direction preferences are saved per device or browser.
+- **RTL layouts:** Automatic direction based on the selected language, with independent LTR and RTL overrides. Menus, settings, navigation, and controls follow the chosen direction.
+- **Readable code and terminals:** Code, diffs, terminal output, paths, and filenames keep their left-to-right reading order inside an RTL interface.
+- **Translations across the clients:** Shared translation catalogs for web, desktop, and mobile, including settings, command labels, shortcuts, model options, dialogs, and notifications. User messages and project names retain their original content.
+- **Display fixes:** Mixed-language text, inline file links, font previews, diff previews, and terminal previews work within RTL layouts. Dates and relative times use the interface language.
+- **Updates from upstream:** Web RTL styles are generated at build time with RTLCSS. The original visual identity is retained with a small RTL label.
+
+New installations follow the browser or device language by default. Choose a language on the welcome screen or under **Settings → Appearance → Interface language**. **Interface direction** can follow the language automatically or be set separately.
+
+Arabic and Persian include machine-assisted translations with terminology corrections; contributions from native speakers are welcome.
+
+## Hebrew preview
+
+Screenshots from two 640 × 720 windows. The sample conversation includes Hebrew sentences that start with English words, alongside left-to-right code.
+
+<table>
+  <tr>
+    <th width="50%">Hebrew interface</th>
+    <th width="50%">Hebrew and English conversation</th>
+  </tr>
+  <tr>
+    <td><a href="docs/images/rtl-interface-he.png"><img src="docs/images/rtl-interface-he.png" alt="Hebrew settings with language selection and RTL layout" width="100%" /></a></td>
+    <td><a href="docs/images/rtl-chat-he.png"><img src="docs/images/rtl-chat-he.png" alt="Sample Hebrew conversation with English-first sentences and left-to-right TypeScript code" width="100%" /></a></td>
+  </tr>
+</table>
+
+## Downloads
+
+[GitHub Releases](https://github.com/ttv20/t3code/releases) includes:
+
+- **Windows x64:** desktop installer (`.exe`).
+- **Linux x64:** desktop packages (`.AppImage` and `.deb`) and a standalone CLI archive.
+- **npm / Bun:** a self-contained `.tgz` package with the server and web UI. Download the package from the release and pass its local path to `npm install --global` or `bun add --global`.
+
+Use the release notes to check which changes are included in each build.
+
+## Run this fork
+
+From a clone of this repository, with [Vite+](https://vite.plus) installed:
+
+```bash
+vp i
+vp run dev
+```
+
+The installation links and published packages in the original README below install upstream T3 Code. Use this checkout to run the RTL changes.
+
+---
+
 # T3 Code
 
 T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).

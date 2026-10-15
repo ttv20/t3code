@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import type { UsageProviderKind } from "@t3tools/contracts";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -253,6 +254,7 @@ export function UsageProviderChart({
   resolution,
   timeZone,
 }: UsageProviderChartProps) {
+  const { t: uiT } = useUiLanguage();
   const periods = resolution === "hour" ? hours : days;
   const byPeriod = useMemo(
     () =>
@@ -372,7 +374,10 @@ export function UsageProviderChart({
             viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
             preserveAspectRatio="none"
             role="img"
-            aria-label={`${resolution === "hour" ? "Hourly" : "Daily"} ${metric === "tokens" ? "processed tokens" : "cost"} by provider`}
+            aria-label={uiT("{0} {1} by provider", {
+              "0": resolution === "hour" ? "Hourly" : "Daily",
+              "1": metric === "tokens" ? "processed tokens" : "cost",
+            })}
           >
             {scale.ticks.map((tick) => {
               const y = toY(tick);
@@ -447,7 +452,7 @@ export function UsageProviderChart({
                         displayName={label}
                         iconClassName="size-3"
                       />
-                      {label}
+                      {uiT(label)}
                     </span>
                     <span
                       className={cn(
@@ -465,7 +470,7 @@ export function UsageProviderChart({
                 );
               })}
               <div className="mt-1 flex items-center justify-between gap-3 border-t border-border pt-1">
-                <span className="text-muted-foreground">Total</span>
+                <span className="text-muted-foreground">{uiT("Total")}</span>
                 <span
                   className={cn(
                     "tabular-nums",

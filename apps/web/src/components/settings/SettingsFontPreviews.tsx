@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { preloadPatchFile } from "@pierre/diffs/ssr";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ComposerPromptEditor, type ComposerPromptEditorHandle } from "../ComposerPromptEditor";
@@ -20,18 +21,24 @@ const EMPTY_SKILLS: ReadonlyArray<never> = [];
 // Serialized the way the composer stores inline tokens: the $skill and the
 // markdown-style file links render as chips, so the preview shows prompt
 // text and pills exactly as the real composer draws them.
-const PROMPT_PREVIEW_TEXT =
-  "Use $frontend-design to fix the flaky test in " +
-  "[surface.test.ts](apps/web/src/terminal/ghostty/surface.test.ts) and align the header with " +
-  "[SettingsPanels.tsx](apps/web/src/components/settings/SettingsPanels.tsx) before shipping.";
 
 function noop() {}
 
 /** A live composer editor: type in it to feel the family and size. */
 export function PromptFontPreview() {
+  const { t: uiT } = useUiLanguage();
   const editorRef = useRef<ComposerPromptEditorHandle>(null);
-  const [prompt, setPrompt] = useState(PROMPT_PREVIEW_TEXT);
-  const [cursor, setCursor] = useState(PROMPT_PREVIEW_TEXT.length);
+  const translatedPrompt = uiT(
+    "Use {0} to fix the flaky test in {1} and align the header with {2} before shipping.",
+    {
+      "0": "$frontend-design",
+      "1": "[surface.test.ts](apps/web/src/terminal/ghostty/surface.test.ts)",
+      "2": "[SettingsPanels.tsx](apps/web/src/components/settings/SettingsPanels.tsx)",
+    },
+  );
+  const [editedPrompt, setPrompt] = useState<string | null>(null);
+  const prompt = editedPrompt ?? translatedPrompt;
+  const [cursor, setCursor] = useState(translatedPrompt.length);
   const onChange = useCallback((nextValue: string, nextCursor: number) => {
     setPrompt(nextValue);
     setCursor(nextCursor);
@@ -39,7 +46,7 @@ export function PromptFontPreview() {
   return (
     <div className="mt-1 mb-2 rounded-lg border border-border bg-background px-3 py-2">
       <ComposerPromptEditor
-        ariaLabel="Prompt font preview"
+        ariaLabel={uiT("Prompt font preview")}
         editorRef={editorRef}
         value={prompt}
         cursor={cursor}
@@ -118,7 +125,7 @@ function StaticDiffHtml({ html }: { html: string }) {
     bridge.textContent = DIFF_PREVIEW_THEME_BRIDGE;
     shadow.append(bridge);
   }, [html]);
-  return <div ref={hostRef} />;
+  return <div ref={hostRef} dir="ltr" />;
 }
 
 /** The diff panel's file diff, statically rendered by its real pipeline. */
@@ -180,6 +187,7 @@ function previewTerminalFont(family: string, size: number): { family?: string; s
  * terminal drawer uses.
  */
 export function TerminalFontPreview({ family, size }: { family: string; size: number }) {
+  const { t: uiT } = useUiLanguage();
   const mountRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<GhosttyTerminalSurface | null>(null);
   const fontRef = useRef({ family, size });
@@ -266,8 +274,9 @@ export function TerminalFontPreview({ family, size }: { family: string; size: nu
   return (
     <div
       ref={mountRef}
+      dir="ltr"
       className="relative mt-1 mb-2 h-52 overflow-hidden rounded-lg border border-border"
-      aria-label="Terminal font preview"
+      aria-label={uiT("Terminal font preview")}
     />
   );
 }

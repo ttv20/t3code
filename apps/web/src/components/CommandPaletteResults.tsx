@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { type ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { ChevronRightIcon } from "lucide-react";
@@ -33,17 +34,19 @@ interface CommandPaletteResultsProps {
 }
 
 function CommandPaletteEmptyState(props: { emptyStateMessage?: string; isActionsOnly: boolean }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="py-10 text-center text-sm text-muted-foreground">
       {props.emptyStateMessage ??
         (props.isActionsOnly
-          ? "No matching actions."
-          : "No matching commands, projects, or threads.")}
+          ? uiT("No matching actions.")
+          : uiT("No matching commands, projects, or threads."))}
     </div>
   );
 }
 
 export function CommandPaletteResults(props: CommandPaletteResultsProps) {
+  const { t: uiT } = useUiLanguage();
   if (props.groups.length === 0) {
     return <CommandPaletteEmptyState {...props} />;
   }
@@ -52,7 +55,7 @@ export function CommandPaletteResults(props: CommandPaletteResultsProps) {
     <CommandList>
       {props.groups.map((group) => (
         <CommandGroup items={group.items} key={group.value}>
-          {group.label ? <CommandGroupLabel>{group.label}</CommandGroupLabel> : null}
+          {group.label ? <CommandGroupLabel>{uiT(group.label)}</CommandGroupLabel> : null}
           <CommandCollection>
             {(item) =>
               item.disabled ? (
@@ -99,6 +102,7 @@ interface CommandPaletteVirtualizedResultsProps extends Omit<CommandPaletteResul
  * view through `listRef`, and runs Enter itself since the row may be unmounted.
  */
 export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualizedResultsProps) {
+  const { t: uiT } = useUiLanguage();
   const { listRef } = props;
   const [scrollFade, setScrollFade] = useState({ top: false, bottom: false });
   const updateScrollFade = useCallback(() => {
@@ -127,7 +131,7 @@ export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualize
         renderItem={({ item: row }) =>
           row.kind === "label" ? (
             <div className={row.first ? undefined : "pt-1.5"}>
-              <CommandListHeading>{row.label}</CommandListHeading>
+              <CommandListHeading>{uiT(row.label)}</CommandListHeading>
             </div>
           ) : row.itemIndex === null ? (
             <DisabledCommandPaletteResultRow item={row.item} />
@@ -158,6 +162,7 @@ export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualize
 function DisabledCommandPaletteResultRow(props: {
   item: CommandPaletteActionItem | CommandPaletteSubmenuItem;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="flex min-h-8 select-none items-center gap-2 rounded-sm px-2 py-1.5 text-base opacity-64 sm:min-h-7 sm:text-sm">
       {props.item.icon}
@@ -172,7 +177,7 @@ function DisabledCommandPaletteResultRow(props: {
           ) : null}
           {props.item.description ? (
             <span className="min-w-0 text-muted-foreground/70 text-xs">
-              {props.item.description}
+              {uiT(props.item.description)}
             </span>
           ) : null}
         </span>
@@ -194,6 +199,7 @@ function CommandPaletteResultRow(props: {
   keybindings: ResolvedKeybindingsConfig;
   onExecuteItem: (item: CommandPaletteActionItem | CommandPaletteSubmenuItem) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const shortcutLabel = props.item.shortcutCommand
     ? shortcutLabelForCommand(props.keybindings, props.item.shortcutCommand)
     : null;
@@ -222,7 +228,7 @@ function CommandPaletteResultRow(props: {
           ) : null}
           {props.item.description ? (
             <span className="min-w-0 text-muted-foreground/70 text-xs">
-              {props.item.description}
+              {uiT(props.item.description)}
             </span>
           ) : null}
         </span>

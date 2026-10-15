@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { DeviceHubAccess } from "@t3tools/client-runtime/state/deviceHubAccess";
 import type { DevicePermission, DeviceSummary, DeviceTextSize } from "@t3tools/contracts";
 import { ChevronDown, X } from "lucide-react";
@@ -91,6 +92,7 @@ export function DeviceToolsPanel(props: {
   readonly onClose: () => void;
   readonly className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { device, controls } = props;
   const { detail, pending, error, foregroundApp, disabled, act } = controls;
   const settings = detail?.settings;
@@ -101,12 +103,12 @@ export function DeviceToolsPanel(props: {
       className={cn("flex min-h-0 flex-col border-border bg-background text-sm", props.className)}
     >
       <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3">
-        <span className="font-medium">Tools</span>
+        <span className="font-medium">{uiT("Tools")}</span>
         {pending ? <Spinner size="sm" /> : null}
         <Button
           size="icon-xs"
           variant="ghost-muted"
-          aria-label="Close tools"
+          aria-label={uiT("Close tools")}
           className="ml-auto"
           onClick={props.onClose}
         >
@@ -119,20 +121,20 @@ export function DeviceToolsPanel(props: {
         ) : null}
         {detail === null && !error ? (
           <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-            <Spinner size="sm" /> Reading device settings…
+            <Spinner size="sm" /> {uiT("Reading device settings…")}
           </div>
         ) : null}
 
         {props.hostDiagnostics ? (
-          <Section title="Host diagnostics">
+          <Section title={uiT("Host diagnostics")}>
             <p className="whitespace-pre-line text-xs text-muted-foreground">
               {props.hostDiagnostics}
             </p>
           </Section>
         ) : null}
 
-        <Section title="App">
-          <Row label="Foreground">
+        <Section title={uiT("App")}>
+          <Row label={uiT("Foreground")}>
             <span className="truncate font-mono text-xs">{foregroundApp?.id ?? "—"}</span>
           </Row>
           {foregroundApp ? (
@@ -143,7 +145,7 @@ export function DeviceToolsPanel(props: {
                 disabled={disabled}
                 onClick={() => void act({ type: "terminateApp", appId: foregroundApp.id })}
               >
-                Terminate
+                {uiT("Terminate")}
               </Button>
               <Button
                 size="xs"
@@ -151,7 +153,7 @@ export function DeviceToolsPanel(props: {
                 disabled={disabled}
                 onClick={() => void act({ type: "launchApp", appId: foregroundApp.id })}
               >
-                Relaunch
+                {uiT("Relaunch")}
               </Button>
             </div>
           ) : null}
@@ -162,17 +164,17 @@ export function DeviceToolsPanel(props: {
             onSubmit={(url) => act({ type: "openUrl", url })}
           />
           <SubmitRow
-            placeholder={isIos ? "Bundle ID to launch" : "Package name to launch"}
+            placeholder={isIos ? uiT("Bundle ID to launch") : uiT("Package name to launch")}
             action="Launch"
             disabled={disabled}
             onSubmit={(appId) => act({ type: "launchApp", appId })}
           />
         </Section>
 
-        <Section title={isIos ? "Simulator" : "Emulator"}>
-          <Row label="Appearance">
+        <Section title={isIos ? uiT("Simulator") : uiT("Emulator")}>
+          <Row label={uiT("Appearance")}>
             <ToggleGroup
-              aria-label="Appearance"
+              aria-label={uiT("Appearance")}
               value={settings?.appearance ? [settings.appearance] : []}
               disabled={disabled}
               onValueChange={(value) => {
@@ -181,13 +183,13 @@ export function DeviceToolsPanel(props: {
                   void act({ type: "setAppearance", value: next });
               }}
             >
-              <Toggle value="light">Light</Toggle>
-              <Toggle value="dark">Dark</Toggle>
+              <Toggle value="light">{uiT("Light")}</Toggle>
+              <Toggle value="dark">{uiT("Dark")}</Toggle>
             </ToggleGroup>
           </Row>
-          <Row label="Text size">
+          <Row label={uiT("Text size")}>
             <ChoiceSelect
-              ariaLabel="Text size"
+              ariaLabel={uiT("Text size")}
               value={settings?.textSize ?? null}
               options={TEXT_SIZES}
               disabled={disabled}
@@ -196,9 +198,9 @@ export function DeviceToolsPanel(props: {
           </Row>
           {isIos ? (
             <>
-              <Row label="Liquid Glass">
+              <Row label={uiT("Liquid Glass")}>
                 <ToggleGroup
-                  aria-label="Liquid Glass"
+                  aria-label={uiT("Liquid Glass")}
                   value={settings?.liquidGlass ? [settings.liquidGlass] : []}
                   disabled={disabled || settings?.liquidGlass === undefined}
                   onValueChange={(value) => {
@@ -208,13 +210,13 @@ export function DeviceToolsPanel(props: {
                     }
                   }}
                 >
-                  <Toggle value="clear">Clear</Toggle>
-                  <Toggle value="tinted">Tinted</Toggle>
+                  <Toggle value="clear">{uiT("Clear")}</Toggle>
+                  <Toggle value="tinted">{uiT("Tinted")}</Toggle>
                 </ToggleGroup>
               </Row>
-              <Row label="Color filter">
+              <Row label={uiT("Color filter")}>
                 <ChoiceSelect
-                  ariaLabel="Color filter"
+                  ariaLabel={uiT("Color filter")}
                   value={settings?.colorFilter ?? null}
                   options={COLOR_FILTERS}
                   disabled={disabled}
@@ -223,11 +225,11 @@ export function DeviceToolsPanel(props: {
               </Row>
             </>
           ) : (
-            <Row label="Orientation">
+            <Row label={uiT("Orientation")}>
               <ChoiceSelect
-                ariaLabel="Orientation"
+                ariaLabel={uiT("Orientation")}
                 value={null}
-                placeholder="Rotate to…"
+                placeholder={uiT("Rotate to…")}
                 options={ORIENTATIONS}
                 disabled={disabled}
                 onChange={(value) => act({ type: "setOrientation", value })}
@@ -235,7 +237,7 @@ export function DeviceToolsPanel(props: {
             </Row>
           )}
           <SwitchRow
-            label="Reduce Motion"
+            label={uiT("Reduce Motion")}
             checked={settings?.reduceMotion}
             disabled={disabled}
             onChange={(value) => act({ type: "setToggle", setting: "reduceMotion", value })}
@@ -243,13 +245,13 @@ export function DeviceToolsPanel(props: {
           {isIos ? (
             <>
               <SwitchRow
-                label="Increase Contrast"
+                label={uiT("Increase Contrast")}
                 checked={settings?.increaseContrast}
                 disabled={disabled}
                 onChange={(value) => act({ type: "setToggle", setting: "increaseContrast", value })}
               />
               <SwitchRow
-                label="Reduce Transparency"
+                label={uiT("Reduce Transparency")}
                 checked={settings?.reduceTransparency}
                 disabled={disabled}
                 onChange={(value) =>
@@ -257,13 +259,13 @@ export function DeviceToolsPanel(props: {
                 }
               />
               <SwitchRow
-                label="Show Borders"
+                label={uiT("Show Borders")}
                 checked={settings?.showBorders}
                 disabled={disabled}
                 onChange={(value) => act({ type: "setToggle", setting: "showBorders", value })}
               />
               <SwitchRow
-                label="VoiceOver"
+                label={uiT("VoiceOver")}
                 checked={settings?.voiceOver}
                 disabled={disabled}
                 onChange={(value) => act({ type: "setToggle", setting: "voiceOver", value })}
@@ -271,7 +273,7 @@ export function DeviceToolsPanel(props: {
             </>
           ) : (
             <SwitchRow
-              label="Network"
+              label={uiT("Network")}
               checked={settings?.networkEnabled}
               disabled={disabled}
               onChange={(value) => act({ type: "setToggle", setting: "networkEnabled", value })}
@@ -279,9 +281,9 @@ export function DeviceToolsPanel(props: {
           )}
         </Section>
 
-        <Section title="Accessibility">
+        <Section title={uiT("Accessibility")}>
           <SwitchRow
-            label="Overlay element frames"
+            label={uiT("Overlay element frames")}
             checked={props.axOverlay}
             disabled={props.access === null}
             onChange={(value) => {
@@ -309,9 +311,9 @@ export function DeviceToolsPanel(props: {
         />
 
         {isIos ? (
-          <Section title="Push notification">
+          <Section title={uiT("Push notification")}>
             <SubmitRow
-              placeholder="Alert text"
+              placeholder={uiT("Alert text")}
               action="Send"
               disabled={disabled || !foregroundApp}
               onSubmit={(payload) =>
@@ -321,7 +323,7 @@ export function DeviceToolsPanel(props: {
               }
             />
             {!foregroundApp ? (
-              <p className="text-xs text-muted-foreground">Open an app first.</p>
+              <p className="text-xs text-muted-foreground">{uiT("Open an app first.")}</p>
             ) : null}
           </Section>
         ) : null}
@@ -342,9 +344,10 @@ function Section(props: { readonly title: string; readonly children: React.React
 }
 
 function Row(props: { readonly label: string; readonly children: React.ReactNode }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="flex min-h-7 items-center justify-between gap-3">
-      <span className="shrink-0 text-xs text-muted-foreground">{props.label}</span>
+      <span className="shrink-0 text-xs text-muted-foreground">{uiT(props.label)}</span>
       <div className="flex min-w-0 items-center justify-end">{props.children}</div>
     </div>
   );
@@ -356,11 +359,12 @@ function SwitchRow(props: {
   readonly disabled: boolean;
   readonly onChange: (value: boolean) => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
-    <Row label={props.label}>
+    <Row label={uiT(props.label)}>
       <Switch
         size="sm"
-        aria-label={props.label}
+        aria-label={uiT(props.label)}
         checked={props.checked ?? false}
         disabled={props.disabled || props.checked === undefined}
         onCheckedChange={(checked) => void props.onChange(checked)}
@@ -377,6 +381,7 @@ function ChoiceSelect<V extends string>(props: {
   readonly placeholder?: string;
   readonly onChange: (value: V) => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const current = props.options.find((option) => option.value === props.value);
   return (
     <Select
@@ -389,16 +394,16 @@ function ChoiceSelect<V extends string>(props: {
       <SelectTrigger size="xs" className="w-40" aria-label={props.ariaLabel}>
         <SelectValue>
           {current ? (
-            current.label
+            uiT(current.label)
           ) : (
-            <span className="text-muted-foreground">{props.placeholder ?? "Unknown"}</span>
+            <span className="text-muted-foreground">{props.placeholder ?? uiT("Unknown")}</span>
           )}
         </SelectValue>
       </SelectTrigger>
       <SelectPopup align="end" alignItemWithTrigger={false}>
         {props.options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
-            {option.label}
+            {uiT(option.label)}
           </SelectItem>
         ))}
       </SelectPopup>
@@ -412,6 +417,7 @@ function SubmitRow(props: {
   readonly disabled: boolean;
   readonly onSubmit: (value: string) => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [value, setValue] = useState("");
   const submit = () => {
     const trimmed = value.trim();
@@ -430,7 +436,7 @@ function SubmitRow(props: {
         size="compact"
         font="mono"
         className="min-w-0 flex-1"
-        placeholder={props.placeholder}
+        placeholder={uiT(props.placeholder)}
         value={value}
         disabled={props.disabled}
         onChange={(event) => setValue(event.target.value)}
@@ -453,6 +459,7 @@ function LocationSection(props: {
   readonly onSet: (latitude: number, longitude: number) => Promise<void>;
   readonly onClear: () => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const parsed = { latitude: Number(latitude), longitude: Number(longitude) };
@@ -462,13 +469,13 @@ function LocationSection(props: {
     Math.abs(parsed.latitude) <= 90 &&
     Math.abs(parsed.longitude) <= 180;
   return (
-    <Section title="Location">
+    <Section title={uiT("Location")}>
       <div className="flex gap-1.5">
         <Input
           size="compact"
           font="mono"
           className="min-w-0 flex-1"
-          placeholder="Latitude"
+          placeholder={uiT("Latitude")}
           inputMode="decimal"
           value={latitude}
           disabled={props.disabled}
@@ -478,7 +485,7 @@ function LocationSection(props: {
           size="compact"
           font="mono"
           className="min-w-0 flex-1"
-          placeholder="Longitude"
+          placeholder={uiT("Longitude")}
           inputMode="decimal"
           value={longitude}
           disabled={props.disabled}
@@ -497,15 +504,15 @@ function LocationSection(props: {
             void props.onSet(preset.latitude, preset.longitude);
           }}
         >
-          <SelectTrigger size="xs" className="w-32" aria-label="Location preset">
+          <SelectTrigger size="xs" className="w-32" aria-label={uiT("Location preset")}>
             <SelectValue>
-              <span className="text-muted-foreground">Preset…</span>
+              <span className="text-muted-foreground">{uiT("Preset…")}</span>
             </SelectValue>
           </SelectTrigger>
           <SelectPopup align="start" alignItemWithTrigger={false}>
             {LOCATION_PRESETS.map((preset) => (
               <SelectItem key={preset.label} value={preset.label}>
-                {preset.label}
+                {uiT(preset.label)}
               </SelectItem>
             ))}
           </SelectPopup>
@@ -516,7 +523,7 @@ function LocationSection(props: {
           disabled={props.disabled || !valid}
           onClick={() => void props.onSet(parsed.latitude, parsed.longitude)}
         >
-          Set
+          {uiT("Set")}
         </Button>
         {props.canClear ? (
           <Button
@@ -529,7 +536,7 @@ function LocationSection(props: {
               void props.onClear();
             }}
           >
-            Clear
+            {uiT("Clear")}
           </Button>
         ) : null}
       </div>
@@ -548,24 +555,25 @@ function PermissionsSection(props: {
     decision: "grant" | "revoke" | "reset",
   ) => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [appId, setAppId] = useState("");
   const [permission, setPermission] = useState<DevicePermission>("camera");
   const resolvedAppId = appId.trim() || props.defaultAppId;
   const decide = (decision: "grant" | "revoke" | "reset") =>
     void props.onDecide(resolvedAppId, permission, decision);
   return (
-    <Section title="Permissions">
+    <Section title={uiT("Permissions")}>
       <Input
         size="compact"
         font="mono"
-        placeholder={props.defaultAppId || "App ID"}
+        placeholder={props.defaultAppId || uiT("App ID")}
         value={appId}
         disabled={props.disabled}
         onChange={(event) => setAppId(event.target.value)}
       />
       <div className="flex flex-wrap items-center gap-1.5">
         <ChoiceSelect
-          ariaLabel="Permission"
+          ariaLabel={uiT("Permission")}
           value={permission}
           options={props.permissions}
           disabled={props.disabled}
@@ -580,7 +588,7 @@ function PermissionsSection(props: {
           disabled={props.disabled || !resolvedAppId}
           onClick={() => decide("grant")}
         >
-          Grant
+          {uiT("Grant")}
         </Button>
         <Button
           size="xs"
@@ -588,7 +596,7 @@ function PermissionsSection(props: {
           disabled={props.disabled || !resolvedAppId}
           onClick={() => decide("revoke")}
         >
-          Revoke
+          {uiT("Revoke")}
         </Button>
         {props.canReset ? (
           <Button
@@ -597,7 +605,7 @@ function PermissionsSection(props: {
             disabled={props.disabled || !resolvedAppId}
             onClick={() => decide("reset")}
           >
-            Reset
+            {uiT("Reset")}
           </Button>
         ) : null}
       </div>
@@ -611,6 +619,7 @@ function EventLogSection(props: {
   readonly access: DeviceHubAccess;
   readonly device: DeviceSummary;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<ReadonlyArray<DeviceEventLogEntry>>([]);
 
@@ -634,7 +643,7 @@ function EventLogSection(props: {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex w-full items-center gap-1.5 border-b px-3 py-2.5 text-left text-xs font-medium text-muted-foreground">
-        Event log
+        {uiT("Event log")}
         <ChevronDown
           className={cn("ml-auto size-3.5 transition-transform", open && "rotate-180")}
         />
@@ -642,7 +651,7 @@ function EventLogSection(props: {
       <CollapsiblePanel>
         <ol className="max-h-64 overflow-y-auto px-3 py-2 font-mono text-2xs leading-relaxed">
           {entries.length === 0 ? (
-            <li className="text-muted-foreground">No events yet.</li>
+            <li className="text-muted-foreground">{uiT("No events yet.")}</li>
           ) : (
             entries.map((entry) => (
               <li key={entry.id} className="flex gap-2">

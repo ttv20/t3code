@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useEffect, useRef, type RefObject } from "react";
 import type { DuoViewer } from "@t3tools/client-runtime/device/duo-viewer";
 import type { DeviceModelSource } from "@t3tools/client-runtime/device/model";
@@ -23,6 +24,7 @@ export function DeviceDuoViewport(props: {
   readonly controlError: string | null;
   readonly onUnavailable: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewerRef = useRef<DuoViewer | null>(null);
@@ -182,7 +184,9 @@ export function DeviceDuoViewport(props: {
         />
         <canvas
           ref={canvasRef}
-          aria-label="Interactive 3D iPhone Duo. Drag the screen to interact. Drag outside it or swipe with two fingers to turn. Pinch over the device to open or close its hinge."
+          aria-label={uiT(
+            "Interactive 3D iPhone Duo. Drag the screen to interact. Drag outside it or swipe with two fingers to turn. Pinch over the device to open or close its hinge.",
+          )}
           className="size-full touch-none"
           onPointerDown={(event) => {
             if (event.button !== 0) return;

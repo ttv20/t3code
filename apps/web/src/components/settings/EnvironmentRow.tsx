@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type ConnectionTarget,
   connectionRouteId,
@@ -79,6 +80,7 @@ export function EnvironmentRow({
   readonly className?: string;
   readonly children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       className={cn(
@@ -89,7 +91,7 @@ export function EnvironmentRow({
     >
       <EnvironmentMachineIcon aria-hidden kind={kind} className="size-4 text-muted-foreground" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-foreground">{label}</p>
+        <p className="truncate text-sm font-medium text-foreground">{uiT(label)}</p>
         <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
         {below}
       </div>

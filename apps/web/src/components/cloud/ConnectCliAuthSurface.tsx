@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAuth, useClerk } from "@clerk/react";
 import { readConnectAuthorizeRequest } from "@t3tools/shared/connectAuth";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,13 +21,14 @@ function ConnectCliAuthMessage({
   readonly title: string;
   readonly description: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <>
       {eyebrow ? (
         <p className="text-3xs font-semibold tracking-widest text-primary uppercase">{eyebrow}</p>
       ) : null}
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{uiT(title)}</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{uiT(description)}</p>
     </>
   );
 }
@@ -45,6 +47,7 @@ const invalidLinkMessage = {
  * CLI. Headless hosts use Clerk's device authorization page instead.
  */
 export function ConnectCliAuthorizeSurface() {
+  const { t: uiT } = useUiLanguage();
   const [request] = useState(() => readConnectAuthorizeRequest(new URL(window.location.href)));
   const clerk = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
@@ -94,17 +97,17 @@ export function ConnectCliAuthorizeSurface() {
     <AuthSurfaceShell>
       <ConnectCliAuthMessage
         eyebrow="Browser authorization"
-        title="Connecting your terminal"
+        title={uiT("Connecting your terminal")}
         description={
           isSignedIn
-            ? "Redirecting to authorize T3 Connect for your CLI…"
-            : "Sign in to continue authorizing T3 Connect for your CLI."
+            ? uiT("Redirecting to authorize T3 Connect for your CLI…")
+            : uiT("Sign in to continue authorizing T3 Connect for your CLI.")
         }
       />
       {isLoaded && !isSignedIn ? (
         <div className="mt-6">
           <Button type="button" onClick={openSignIn}>
-            Sign in
+            {uiT("Sign in")}
           </Button>
         </div>
       ) : null}

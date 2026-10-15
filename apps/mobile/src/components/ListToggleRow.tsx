@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Pressable } from "react-native";
 
 import { AppText } from "./AppText";
@@ -11,16 +12,17 @@ export function ListToggleRow(
     readonly onValueChange: (value: boolean) => void;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   return (
     <ListRowLayout
       icon={props.icon}
-      label={props.label}
-      description={props.description}
+      label={uiT(props.label)}
+      description={uiT(props.description)}
       disabled={props.disabled}
       accessory={
         props.value === null ? (
           <Pressable
-            accessibilityLabel={`Set ${props.label} on for selected environments`}
+            accessibilityLabel={uiT("Set {0} on for selected environments", { "0": props.label })}
             accessibilityRole="button"
             accessibilityHint={props.description}
             accessibilityState={{ disabled: Boolean(props.disabled) }}
@@ -28,7 +30,9 @@ export function ListToggleRow(
             className="rounded-full bg-subtle px-3 py-2 active:opacity-70"
             onPress={() => props.onValueChange(true)}
           >
-            <AppText className="text-sm font-t3-medium text-foreground">Mixed · Set on</AppText>
+            <AppText className="text-sm font-t3-medium text-foreground">
+              {uiT("Mixed · Set on")}
+            </AppText>
           </Pressable>
         ) : (
           <ThemedSwitch

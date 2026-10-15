@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Host, Switch as ComposeSwitch } from "@expo/ui/jetpack-compose";
 import { View } from "react-native";
 import type { ThemedSwitchProps } from "./MaterialSwitch.types";
@@ -6,6 +7,7 @@ import { useAppearancePreferences } from "../features/settings/appearance/Appear
 
 /** Material's native switch, with the same palette and accessibility contract as our RN controls. */
 export function MaterialSwitch(props: ThemedSwitchProps) {
+  const { t: uiT } = useUiLanguage();
   const { themeAppearance, themeVariables: colors } = useAppearancePreferences();
   const toggle = () => {
     if (!props.disabled) props.onValueChange?.(!props.value);
@@ -18,7 +20,7 @@ export function MaterialSwitch(props: ThemedSwitchProps) {
       accessibilityHint={props.accessibilityHint}
       accessibilityRole="switch"
       accessibilityState={{ checked: Boolean(props.value), disabled: Boolean(props.disabled) }}
-      accessibilityActions={[{ name: "activate", label: "Toggle" }]}
+      accessibilityActions={[{ name: "activate", label: uiT("Toggle") }]}
       onAccessibilityAction={toggle}
       style={props.style}
       testID={props.testID}

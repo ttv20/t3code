@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ConnectionTraceId } from "./ConnectionTraceId";
 import { SymbolView } from "../../components/AppSymbol";
 import type { AtomCommandResult } from "@t3tools/client-runtime/state/runtime";
@@ -45,6 +46,7 @@ export function ConnectionEnvironmentRow(props: {
     updates: { readonly label: string; readonly displayUrl: string },
   ) => Promise<AtomCommandResult<unknown, unknown>>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [label, setLabel] = useState(props.environment.environmentLabel);
   const [url, setUrl] = useState(props.environment.displayUrl);
   const serverConfig = useAtomValue(
@@ -82,7 +84,9 @@ export function ConnectionEnvironmentRow(props: {
         className="flex-row items-center gap-3 px-4 py-3.5 active:opacity-70"
         accessibilityRole="button"
         accessibilityLabel={
-          props.opensDetails ? `Manage ${props.environment.environmentLabel}` : undefined
+          props.opensDetails
+            ? uiT("Manage {0}", { "0": props.environment.environmentLabel })
+            : undefined
         }
         onPress={props.onToggle}
       >
@@ -119,7 +123,7 @@ export function ConnectionEnvironmentRow(props: {
               numberOfLines={props.expanded ? undefined : 1}
               selectable={props.expanded}
             >
-              {statusLabel}
+              {uiT(statusLabel)}
               {statusTraceId ? (
                 <ConnectionTraceId
                   traceId={statusTraceId}
@@ -156,21 +160,21 @@ export function ConnectionEnvironmentRow(props: {
         >
           {props.environment.isRelayManaged ? (
             <Text className="text-sm text-foreground-muted">
-              Managed by T3 Connect. Tunnel details update automatically.
+              {uiT("Managed by T3 Connect. Tunnel details update automatically.")}
             </Text>
           ) : (
             <>
               <ConnectionFormField
-                label="Label"
+                label={uiT("Label")}
                 autoCapitalize="words"
                 autoCorrect={false}
-                placeholder="My MacBook"
+                placeholder={uiT("My MacBook")}
                 value={label}
                 onChangeText={setLabel}
               />
 
               <ConnectionFormField
-                label="URL"
+                label={uiT("URL")}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
@@ -186,7 +190,7 @@ export function ConnectionEnvironmentRow(props: {
               {props.environment.isRelayManaged ? null : (
                 <View className="flex-1">
                   <MaterialButton
-                    label="Save"
+                    label={uiT("Save")}
                     tone="primary"
                     fullWidth
                     onPress={() => {
@@ -196,14 +200,14 @@ export function ConnectionEnvironmentRow(props: {
                 </View>
               )}
               <MaterialIconButton
-                accessibilityLabel="Reconnect environment"
+                accessibilityLabel={uiT("Reconnect environment")}
                 icon="arrow.clockwise"
                 variant="tonal"
                 disabled={!enabled}
                 onPress={() => props.onReconnect(props.environment.environmentId)}
               />
               <MaterialIconButton
-                accessibilityLabel="Remove environment"
+                accessibilityLabel={uiT("Remove environment")}
                 icon="trash"
                 variant="danger"
                 onPress={() => props.onRemove(props.environment.environmentId)}
@@ -223,7 +227,7 @@ export function ConnectionEnvironmentRow(props: {
                     type="monochrome"
                   />
                   <Text className="text-xs font-t3-bold tracking-[0.8px] uppercase text-primary-foreground">
-                    Save
+                    {uiT("Save")}
                   </Text>
                 </Pressable>
               )}

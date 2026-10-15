@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   PullRequestActor,
   PullRequestMergeability,
@@ -98,7 +99,9 @@ export function PullRequestRowLines({
     <span className="min-w-0 flex-1">
       <span className="flex min-w-0 items-center gap-1.5">
         {number}
-        <span className="min-w-0 truncate text-sm">{title}</span>
+        <span dir="auto" className="min-w-0 truncate text-sm">
+          {title}
+        </span>
         {signals ? (
           <span className="flex shrink-0 items-center gap-1 text-2xs">{signals}</span>
         ) : null}
@@ -140,7 +143,9 @@ export function PullRequestRowAuthor({
         render={<span className={cn("inline-flex min-w-0 items-center gap-1", className)} />}
       >
         <PullRequestActorAvatar actor={actor} className="size-3.5" />
-        <span className={cn("truncate", labelClassName)}>{login}</span>
+        <span dir="auto" className={cn("truncate", labelClassName)}>
+          {login}
+        </span>
       </TooltipTrigger>
       <TooltipPopup side="top">
         {actor?.name && actor.name !== login ? `${actor.name} (@${login})` : login}

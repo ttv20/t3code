@@ -1,3 +1,4 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { EnvironmentId, MessageId, ThreadId, type AssistantCitation } from "@t3tools/contracts";
 import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
 import { describe, expect, it } from "vite-plus/test";
@@ -91,6 +92,27 @@ describe("splitPromptIntoComposerSegments", () => {
       },
       { type: "text", text: " before continuing" },
     ]);
+  });
+
+  it("keeps translated font-preview links and skills atomic", () => {
+    const text = createUiTranslator("he")(
+      "Use {0} to fix the flaky test in {1} and align the header with {2} before shipping.",
+      {
+        "0": "$frontend-design",
+        "1": "[surface.test.ts](apps/web/src/terminal/ghostty/surface.test.ts)",
+        "2": "[SettingsPanels.tsx](apps/web/src/components/settings/SettingsPanels.tsx)",
+      },
+    );
+    const segments = splitPromptIntoComposerSegments(text);
+    expect(
+      segments.filter((segment) => segment.type === "mention").map((segment) => segment.path),
+    ).toEqual([
+      "apps/web/src/terminal/ghostty/surface.test.ts",
+      "apps/web/src/components/settings/SettingsPanels.tsx",
+    ]);
+    expect(
+      segments.filter((segment) => segment.type === "skill").map((segment) => segment.name),
+    ).toEqual(["frontend-design"]);
   });
 
   it("does not turn normal web links into file mention segments", () => {

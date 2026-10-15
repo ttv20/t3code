@@ -25,6 +25,9 @@ jobs:
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       T3CODE_WEB_SOURCEMAP: "false"
+      T3CODE_POSTHOG_KEY: ${{ secrets.T3CODE_POSTHOG_KEY }}
+      T3CODE_POSTHOG_HOST: ${{ vars.T3CODE_POSTHOG_HOST || 'https://us.i.posthog.com' }}
+      T3CODE_TELEMETRY_ENABLED: ${{ vars.T3CODE_TELEMETRY_ENABLED || 'false' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -89,6 +92,8 @@ jobs:
           sha256sum t3-*.tar.gz > SHA256SUMS
 
       - name: Smoke-test archive
+        env:
+          T3CODE_TELEMETRY_ENABLED: "false"
         run: node scripts/smoke-cli-archive.ts --archive release-cli/*.tar.gz --expect-version "${{ steps.release.outputs.version }}"
 
       - name: Build npm and Bun installable package
@@ -104,6 +109,8 @@ jobs:
           sha256sum t3-*.tar.gz t3-*.tgz > SHA256SUMS
 
       - name: Smoke-test npm package in an isolated prefix
+        env:
+          T3CODE_TELEMETRY_ENABLED: "false"
         shell: bash
         run: |
           prefix="$RUNNER_TEMP/t3-npm-smoke"
@@ -142,7 +149,7 @@ jobs:
         run: |
           tag="${{ steps.release.outputs.tag }}"
           version="${{ steps.release.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive and npm/Bun-installable package with the web UI. Desktop installers are added after their builds finish. Anonymous product analytics are disabled by default."
+          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive and npm/Bun-installable package with the web UI. Desktop installers are added after their builds finish. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" release-cli/* --clobber
             gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
@@ -225,6 +232,6 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Anonymous product analytics are disabled by default."
+          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease=false --latest --repo "$GITHUB_REPOSITORY"

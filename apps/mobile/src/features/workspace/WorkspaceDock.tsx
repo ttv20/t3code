@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Keyboard, Pressable, View } from "react-native";
 
 import { SymbolView } from "../../components/AppSymbol";
@@ -7,6 +8,7 @@ import { WORKSPACE_DOCK } from "./workspace-tabs-state";
 
 /** Equal-sized glass controls share a baseline without resizing the native tab controller. */
 export function WorkspaceDock(props: { readonly onNewTask: () => void }) {
+  const { t: uiT } = useUiLanguage();
   const workspace = useWorkspaceTabs()!;
   return (
     <View
@@ -27,7 +29,7 @@ export function WorkspaceDock(props: { readonly onNewTask: () => void }) {
               <Pressable
                 key={tab}
                 accessibilityRole="tab"
-                accessibilityLabel={tab === "threads" ? "Threads" : "Pull requests"}
+                accessibilityLabel={tab === "threads" ? uiT("Threads") : uiT("Pull requests")}
                 accessibilityState={{ selected }}
                 onPress={() => {
                   if (selected) return;
@@ -59,7 +61,7 @@ export function WorkspaceDock(props: { readonly onNewTask: () => void }) {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="New chat"
+          accessibilityLabel={uiT("New chat")}
           onPress={props.onNewTask}
           className="flex-1 items-center justify-center"
         >

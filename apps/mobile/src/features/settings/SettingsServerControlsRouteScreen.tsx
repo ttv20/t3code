@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import { SettingsRow } from "./components/SettingsRow";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
@@ -139,6 +140,7 @@ export function SettingsEnvironmentMaintenanceRouteScreen() {
 }
 
 function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
@@ -167,7 +169,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     reference === null ||
     displayTargets.some((entry) => entry.settings[key] !== reference.settings[key]);
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: "environment settings update",
+    label: uiT("environment settings update"),
     reportFailure: true,
   });
   const write = (patch: ServerSettingsPatch) => {
@@ -254,8 +256,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
           {!hasConnectedSelection || reference === null ? (
             <Text className="px-2 text-base text-foreground-muted">
               {projectSelected
-                ? "Select a project with a checkout on a connected environment."
-                : "Use the filter above to select a connected environment."}
+                ? uiT("Select a project with a checkout on a connected environment.")
+                : uiT("Use the filter above to select a connected environment.")}
             </Text>
           ) : (
             <>
@@ -274,7 +276,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "new-threads" ? (
                 <>
                   <SettingsSection
-                    title="Default workspace"
+                    title={uiT("Default workspace")}
                     trailing={
                       pendingWrites === 0 && isMixed("defaultThreadEnvMode") ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -299,7 +301,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ))}
                   </SettingsSection>
                   <SettingsSection
-                    title="Worktree submodules"
+                    title={uiT("Worktree submodules")}
                     trailing={
                       pendingWrites === 0 && isMixed("worktreeSubmodules") ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -324,7 +326,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ))}
                   </SettingsSection>
                   <SettingsSection
-                    title="Default permissions"
+                    title={uiT("Default permissions")}
                     trailing={
                       pendingWrites === 0 && uniform("defaultRuntimeMode") === null ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -358,31 +360,35 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     disabled={disabledFor("branchNamingMode")}
                     onChange={write}
                   />
-                  <SettingsSection title="Pull requests">
+                  <SettingsSection title={uiT("Pull requests")}>
                     <SettingsSwitchRow
                       icon="arrow.triangle.merge"
-                      label="Remove agent credits when merging"
-                      subtitle="Remove recognized agent credits from GitHub merge and squash messages, keeping human co-authors. Includes auto-merge. Excludes merge queues, stack merges, and existing commits."
+                      label={uiT("Remove agent credits when merging")}
+                      subtitle={uiT(
+                        "Remove recognized agent credits from GitHub merge and squash messages, keeping human co-authors. Includes auto-merge. Excludes merge queues, stack merges, and existing commits.",
+                      )}
                       value={uniform("removeAgentCreditsOnMerge")}
                       disabled={disabledFor("removeAgentCreditsOnMerge")}
                       onValueChange={(value) => write({ removeAgentCreditsOnMerge: value })}
                     />
                   </SettingsSection>
-                  <SettingsSection title="Default branch">
+                  <SettingsSection title={uiT("Default branch")}>
                     <SettingsSwitchRow
                       icon="arrow.down.circle"
-                      label="Automatically pull"
-                      subtitle="Keep the default branch current when there are no local changes."
+                      label={uiT("Automatically pull")}
+                      subtitle={uiT(
+                        "Keep the default branch current when there are no local changes.",
+                      )}
                       value={uniform("defaultAutoPull")}
                       disabled={disabledFor("defaultAutoPull")}
                       onValueChange={(value) => write({ defaultAutoPull: value })}
                     />
                   </SettingsSection>
-                  <SettingsSection title="Worktrees">
+                  <SettingsSection title={uiT("Worktrees")}>
                     <SettingsSwitchRow
                       icon="arrow.triangle.branch"
-                      label="Start from origin"
-                      subtitle="Base new worktrees on the remote branch."
+                      label={uiT("Start from origin")}
+                      subtitle={uiT("Base new worktrees on the remote branch.")}
                       value={uniform("newWorktreesStartFromOrigin")}
                       disabled={disabledFor("newWorktreesStartFromOrigin")}
                       onValueChange={(value) => write({ newWorktreesStartFromOrigin: value })}
@@ -394,7 +400,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "agent-behavior" ? (
                 <>
                   <SettingsSection
-                    title="Response streaming"
+                    title={uiT("Response streaming")}
                     trailing={
                       pendingWrites === 0 && uniform("responseStreamingMode") === null ? (
                         <MixedValuesLabel projectSelected={projectSelected} />
@@ -413,11 +419,11 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       />
                     ))}
                   </SettingsSection>
-                  <SettingsSection title="Preview browser">
+                  <SettingsSection title={uiT("Preview browser")}>
                     <SettingsSwitchRow
                       icon="globe"
-                      label="Agent browser access"
-                      subtitle="Allow agents to use the in-app preview browser."
+                      label={uiT("Agent browser access")}
+                      subtitle={uiT("Allow agents to use the in-app preview browser.")}
                       value={uniform("enableAgentBrowserAccess")}
                       disabled={disabledFor("enableAgentBrowserAccess")}
                       onValueChange={(value) => write({ enableAgentBrowserAccess: value })}
@@ -429,7 +435,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "maintenance" ? (
                 <>
                   {!projectSelected ? (
-                    <SettingsSection title="Manage environments">
+                    <SettingsSection title={uiT("Manage environments")}>
                       {selectedTargets.map((target) => (
                         <SettingsRow
                           key={target.environmentId}
@@ -449,14 +455,16 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       ))}
                     </SettingsSection>
                   ) : null}
-                  <SettingsSection title="Updates">
+                  <SettingsSection title={uiT("Updates")}>
                     <SettingsSwitchRow
                       icon="arrow.clockwise"
-                      label="Check provider updates"
+                      label={uiT("Check provider updates")}
                       subtitle={
                         projectSelected
-                          ? "Environment-wide setting. Select All projects to change it."
-                          : "Check installed provider CLIs for newer versions and fetch model catalog updates. When off, new models may not appear."
+                          ? uiT("Environment-wide setting. Select All projects to change it.")
+                          : uiT(
+                              "Check installed provider CLIs for newer versions and fetch model catalog updates. When off, new models may not appear.",
+                            )
                       }
                       value={uniform("enableProviderUpdateChecks")}
                       disabled={disabledFor("enableProviderUpdateChecks")}
@@ -465,11 +473,11 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     <View className="border-t border-border-subtle">
                       <SettingsSwitchRow
                         icon="arrow.uturn.forward"
-                        label="Continue after restart"
+                        label={uiT("Continue after restart")}
                         subtitle={
                           supportsContinuation
-                            ? "Resume interrupted threads after an update or restart."
-                            : "Update older servers to control restart continuation."
+                            ? uiT("Resume interrupted threads after an update or restart.")
+                            : uiT("Update older servers to control restart continuation.")
                         }
                         value={uniform("continueThreadsAfterServerUpdate")}
                         disabled={
@@ -492,16 +500,17 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
 }
 
 function MixedValuesLabel(props: { readonly projectSelected: boolean }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Text
       accessibilityLabel={
         props.projectSelected
-          ? "Selected project checkouts use different values"
-          : "Selected environments use different values"
+          ? uiT("Selected project checkouts use different values")
+          : uiT("Selected environments use different values")
       }
       className="px-2 text-sm text-foreground-muted android:px-4"
     >
-      Mixed
+      {uiT("Mixed")}
     </Text>
   );
 }

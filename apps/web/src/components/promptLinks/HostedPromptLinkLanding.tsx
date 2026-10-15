@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type LinkedPrompt,
   parseNewThreadLink,
@@ -108,6 +109,7 @@ function HostedPromptLinkLanding({
   readonly openInAppRemembered: boolean;
   readonly onChoose: (choice: "app" | "browser", remember: boolean) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const summary = useMemo(() => summarize(appPath), [appPath]);
   const [remember, setRemember] = useState(false);
   const deepLink = promptLinkDeepLink(appPath);
@@ -127,7 +129,7 @@ function HostedPromptLinkLanding({
       <StandalonePage tone="error">
         <StandalonePageHeader
           eyebrow={APP_DISPLAY_NAME}
-          title="Could not open the link"
+          title={uiT("Could not open the link")}
           description={summary.error}
         />
       </StandalonePage>
@@ -139,15 +141,19 @@ function HostedPromptLinkLanding({
     <StandalonePage tone="brand">
       <StandalonePageHeader
         eyebrow={APP_DISPLAY_NAME}
-        title="Open this prompt"
-        description="It opens as a draft. Nothing runs until you press Send."
+        title={uiT("Open this prompt")}
+        description={uiT("It opens as a draft. Nothing runs until you press Send.")}
       />
       {prompt !== null && prompt.hiddenCharacters > 0 ? (
         <Alert className="mt-5" variant="error">
-          <AlertTitle>This prompt had hidden characters, it may be malicious</AlertTitle>
+          <AlertTitle>{uiT("This prompt had hidden characters, it may be malicious")}</AlertTitle>
           <AlertDescription>
-            T3 Code removed {prompt.hiddenCharacters} hidden character
-            {prompt.hiddenCharacters === 1 ? "" : "s"}. Read the prompt before you send it.
+            {uiT(
+              prompt.hiddenCharacters === 1
+                ? "T3 Code removed {0} hidden character. Read the prompt before you send it."
+                : "T3 Code removed {0} hidden characters. Read the prompt before you send it.",
+              { "0": prompt.hiddenCharacters },
+            )}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -159,20 +165,20 @@ function HostedPromptLinkLanding({
       <p className="mt-3 text-xs text-muted-foreground">{details.join(" · ")}</p>
       <div className="mt-6 flex flex-wrap gap-2">
         <Button render={<a href={deepLink} />} onClick={() => onChoose("app", remember)}>
-          {onPhone ? "Open in app" : "Open in desktop app"}
+          {onPhone ? uiT("Open in app") : uiT("Open in desktop app")}
         </Button>
         {canContinue ? (
           <Button variant="outline" onClick={() => onChoose("browser", remember)}>
-            Continue here
+            {uiT("Continue here")}
           </Button>
         ) : null}
         <Button variant="ghost" render={<a href={DOWNLOAD_URL} />}>
-          Get T3 Code
+          {uiT("Get T3 Code")}
         </Button>
       </div>
       <label className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Checkbox checked={remember} onCheckedChange={(checked) => setRemember(checked === true)} />
-        Remember my choice
+        {uiT("Remember my choice")}
       </label>
     </StandalonePage>
   );

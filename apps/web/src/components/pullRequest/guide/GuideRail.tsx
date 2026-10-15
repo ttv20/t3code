@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../../i18n";
 import type { PullRequestReviewGuideStop } from "@t3tools/contracts";
 import { CheckIcon } from "lucide-react";
 
@@ -22,6 +23,7 @@ export function GuideRail({
   seen: ReadonlySet<number>;
   onSelect: (position: number) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const reviewed = seen.size;
   const renderStop = (stop: PullRequestReviewGuideStop, index: number) => (
     <li key={index}>
@@ -34,7 +36,7 @@ export function GuideRail({
           <>
             {stop.attention !== null ? (
               <Badge size="sm" variant="warning">
-                Look closely
+                {uiT("Look closely")}
               </Badge>
             ) : null}
             <span>{stopSubline(stop)}</span>
@@ -45,10 +47,10 @@ export function GuideRail({
   );
 
   return (
-    <nav aria-label="Review tour" className="flex min-h-0 flex-col gap-4">
+    <nav aria-label={uiT("Review tour")} className="flex min-h-0 flex-col gap-4">
       {/* Beside the stop only; narrow, the stop's own header says where the reader is. */}
       <p className="text-xs text-muted-foreground tabular-nums @max-[56rem]/guide:hidden">
-        {reviewed} of {stops.length} read
+        <UiText message={"{0} of {1} read"} values={{ "0": reviewed, "1": stops.length }} />
       </p>
       <div className="flex flex-col gap-4">
         <ol className="flex flex-col gap-0.5">{stops.map(renderStop)}</ol>
@@ -71,6 +73,7 @@ function RailRow({
   title: string;
   detail: React.ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <button
       type="button"
@@ -83,7 +86,7 @@ function RailRow({
     >
       {lead}
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-sm text-foreground">{title}</span>
+        <span className="text-sm text-foreground">{uiT(title)}</span>
         {detail !== null ? (
           <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {detail}
@@ -95,6 +98,7 @@ function RailRow({
 }
 
 function StopBullet({ number, seen }: { number: number; seen: boolean }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <span
       className={cn(
@@ -102,7 +106,11 @@ function StopBullet({ number, seen }: { number: number; seen: boolean }) {
         seen ? "border-success/40 text-success-foreground" : "border-border text-muted-foreground",
       )}
     >
-      {seen ? <CheckIcon aria-label={`Stop ${number}, read`} className="size-3" /> : number}
+      {seen ? (
+        <CheckIcon aria-label={uiT("Stop {0}, read", { "0": number })} className="size-3" />
+      ) : (
+        number
+      )}
     </span>
   );
 }

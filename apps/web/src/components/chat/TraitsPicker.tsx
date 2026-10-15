@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type ModelSelection,
   type ProviderDriverKind,
@@ -93,9 +94,10 @@ type TraitsPersistence =
 const ULTRATHINK_PROMPT_PREFIX = "Ultrathink:\n";
 
 function DefaultBadge() {
+  const { t: uiT } = useUiLanguage();
   return (
     <Badge variant="outline" size="sm" className="min-w-0">
-      Default
+      {uiT("Default")}
     </Badge>
   );
 }
@@ -296,6 +298,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
   planModeEnabled,
   ...persistence
 }: TraitsMenuContentProps & TraitsPersistence) {
+  const { t: uiT } = useUiLanguage();
   const modelSelection =
     instanceId && model ? { instanceId, model, options: modelOptions ?? [] } : null;
   const setProviderModelOptions = useComposerDraftStore((store) => store.setProviderModelOptions);
@@ -379,9 +382,9 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
               {index > 0 ? <MenuDivider /> : null}
               <MenuGroup>
                 <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">
-                  {descriptor.label}
+                  {uiT(descriptor.label)}
                 </div>
-                <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">{value}</div>
+                <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">{uiT(value)}</div>
               </MenuGroup>
             </div>
           );
@@ -403,12 +406,13 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
             {index > 0 ? <MenuDivider /> : null}
             <MenuGroup>
               <div className="px-2 pt-1.5 pb-1 font-medium text-muted-foreground text-xs">
-                {descriptor.label}
+                {uiT(descriptor.label)}
               </div>
               {ultrathinkInBodyText && descriptor.id === primarySelectDescriptor?.id ? (
                 <div className="px-2 pb-1.5 text-muted-foreground/80 text-xs">
-                  Your prompt contains &quot;ultrathink&quot; in the text. Remove it to change this
-                  option.
+                  {uiT(
+                    'Your prompt contains "ultrathink" in the text. Remove it to change this option.',
+                  )}
                 </div>
               ) : null}
               <MenuRadioGroup
@@ -428,7 +432,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                     <span className="flex w-full min-w-0 flex-col">
                       <span className="flex w-full min-w-0 items-center justify-between gap-3">
                         <span className="min-w-0 truncate">
-                          {option.label}
+                          {uiT(option.label)}
                           {option.isDefault ? (
                             <>
                               {" "}
@@ -439,7 +443,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                       </span>
                       {option.description ? (
                         <span className="max-w-56 text-pretty text-muted-foreground/80 text-xs">
-                          {option.description}
+                          {uiT(option.description)}
                         </span>
                       ) : null}
                     </span>
@@ -458,7 +462,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
             {index > 0 || selectDescriptors.length > 0 ? <MenuDivider /> : null}
             <MenuGroup>
               <div className="px-2 py-1.5 font-medium text-muted-foreground text-xs">
-                {descriptor.label}
+                {uiT(descriptor.label)}
               </div>
               <MenuRadioGroup
                 value={selectedValue}
@@ -471,7 +475,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                 {(["on", "off"] as const).map((value) => (
                   <MenuRadioItem key={value} value={value} hideIndicator closeOnClick>
                     <span className="flex w-full min-w-0 items-center justify-between gap-3">
-                      <span>{value === "on" ? "On" : "Off"}</span>
+                      <span>{value === "on" ? uiT("On") : uiT("Off")}</span>
                     </span>
                   </MenuRadioItem>
                 ))}
@@ -589,6 +593,7 @@ export const TraitsPicker = memo(function TraitsPicker({
     hidden?: boolean;
     disabled?: boolean;
   }) {
+  const { t: uiT } = useUiLanguage();
   const composerFloatingLayerProps = useComposerMenuProps();
   const [isMenuOpen, setIsMenuOpen] = useComposerMenuState(hidden || disabled);
   const { descriptors, primarySelectDescriptor, ultrathinkPromptControlled } =
@@ -615,7 +620,7 @@ export const TraitsPicker = memo(function TraitsPicker({
     return null;
   }
 
-  const { label: triggerLabel } = buildTraitsTriggerDisplay({
+  const { label: originalTriggerLabel } = buildTraitsTriggerDisplay({
     provider,
     descriptors,
     primarySelectDescriptorId: primarySelectDescriptor?.id ?? null,
@@ -623,6 +628,10 @@ export const TraitsPicker = memo(function TraitsPicker({
     modelSelection: instanceId && model ? { instanceId, model, options: modelOptions ?? [] } : null,
     reportedModelSelection,
   });
+  const triggerLabel = originalTriggerLabel
+    .split(" · ")
+    .map((label) => uiT(label))
+    .join(" · ");
   const isCodexStyle = provider === "codex";
 
   return (
@@ -639,7 +648,7 @@ export const TraitsPicker = memo(function TraitsPicker({
               render={
                 <ComposerControl
                   disabled={disabled}
-                  aria-label={triggerLabel}
+                  aria-label={uiT(triggerLabel)}
                   data-composer-shortcut={isComposerOwned ? "composer.effort" : undefined}
                   size={size}
                   className={cn(
@@ -664,19 +673,19 @@ export const TraitsPicker = memo(function TraitsPicker({
             >
               <ComposerControlIcon icon={BrainIcon} size={size} />
               <span data-composer-control-label className="min-w-0 truncate">
-                {triggerLabel}
+                {uiT(triggerLabel)}
               </span>
               <ComposerControlChevron size={size} />
             </span>
           ) : (
             <>
               <ComposerControlIcon icon={BrainIcon} size={size} />
-              <span data-composer-control-label>{triggerLabel}</span>
+              <span data-composer-control-label>{uiT(triggerLabel)}</span>
               <ComposerControlChevron size={size} />
             </>
           )}
         </TooltipTrigger>
-        <TooltipPopup side="top">{triggerLabel}</TooltipPopup>
+        <TooltipPopup side="top">{uiT(triggerLabel)}</TooltipPopup>
       </Tooltip>
       <MenuPopup align="start" {...(isComposerOwned ? composerFloatingLayerProps : {})}>
         <TraitsMenuContent

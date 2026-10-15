@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ComponentProps, ReactNode } from "react";
 
 export function DiscoveryList({ children }: { readonly children: ReactNode }) {
@@ -20,6 +21,7 @@ export function DiscoveryListRow({
   readonly description: ReactNode;
   readonly action?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <button
       type="button"
@@ -28,8 +30,8 @@ export function DiscoveryListRow({
     >
       {icon}
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-medium text-foreground">{title}</span>
-        <span className="truncate text-xs text-muted-foreground">{description}</span>
+        <span className="truncate text-sm font-medium text-foreground">{uiT(title)}</span>
+        <span className="truncate text-xs text-muted-foreground">{uiT(description)}</span>
       </div>
       {action}
     </button>

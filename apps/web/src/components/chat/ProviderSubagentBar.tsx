@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   formatProviderSubagentStatus,
   type ProviderSubagentStatus,
@@ -27,6 +28,7 @@ export function ProviderSubagentBar(props: {
   readonly status: ProviderSubagentStatus | null;
   readonly onOpenParent: (() => void) | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const statusRef = useRef<HTMLSpanElement>(null);
   const { status } = props;
   const live = status !== null && isOrchestrationV2WorkActive(status.status);
@@ -79,13 +81,15 @@ export function ProviderSubagentBar(props: {
         className="min-w-0 truncate text-muted-foreground tabular-nums"
       />
       <span role="status" className="sr-only">
-        {`${modelDescription} subagent: ${announcement}`}
+        {uiT("{0} subagent: {1}", { "0": modelDescription, "1": announcement })}
       </span>
-      <span className="ms-auto shrink-0 text-muted-foreground max-sm:hidden">Runs on its own</span>
+      <span className="ms-auto shrink-0 text-muted-foreground max-sm:hidden">
+        {uiT("Runs on its own")}
+      </span>
       {props.onOpenParent ? (
         <Button size="sm" variant="ghost" onClick={props.onOpenParent}>
           <ArrowUpLeftIcon />
-          Open parent
+          {uiT("Open parent")}
         </Button>
       ) : null}
     </div>

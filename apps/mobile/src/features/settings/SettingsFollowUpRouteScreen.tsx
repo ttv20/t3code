@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { useNavigation } from "@react-navigation/native";
@@ -31,6 +32,7 @@ const FOLLOW_UP_OPTIONS: ReadonlyArray<{
 ];
 
 export function SettingsFollowUpRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
@@ -45,7 +47,7 @@ export function SettingsFollowUpRouteScreen() {
       {Platform.OS === "android" ? (
         <>
           <NativeStackScreenOptions options={{ headerShown: false }} />
-          <AndroidScreenHeader title="Follow-ups" onBack={() => navigation.goBack()} />
+          <AndroidScreenHeader title={uiT("Follow-ups")} onBack={() => navigation.goBack()} />
         </>
       ) : null}
       <ScrollView
@@ -55,7 +57,7 @@ export function SettingsFollowUpRouteScreen() {
         contentContainerClassName="gap-3 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
-        <SettingsSection title="While the agent is running">
+        <SettingsSection title={uiT("While the agent is running")}>
           {FOLLOW_UP_OPTIONS.map((option, index) => (
             <SettingsChoiceRow
               key={option.behavior}
@@ -69,8 +71,9 @@ export function SettingsFollowUpRouteScreen() {
           ))}
         </SettingsSection>
         <Text className="px-2 text-sm text-foreground-muted">
-          Long-press the send button to use the other option for a single message. With a hardware
-          keyboard, hold Command while sending.
+          {uiT(
+            "Long-press the send button to use the other option for a single message. With a hardware keyboard, hold Command while sending.",
+          )}
         </Text>
       </ScrollView>
     </View>

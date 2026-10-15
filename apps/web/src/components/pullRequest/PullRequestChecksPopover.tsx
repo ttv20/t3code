@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type * as React from "react";
 import type {
   EnvironmentId,
@@ -40,6 +41,7 @@ function LazyChecksBody({
   reference: PullRequestRef;
   threadRef: ScopedThreadRef | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const detailQuery = useEnvironmentQuery(
     pullRequestEnvironment.detail({ environmentId, input: reference }),
   );
@@ -49,7 +51,7 @@ function LazyChecksBody({
   if (detailQuery.data === null) {
     return (
       <p className="text-muted-foreground text-xs">
-        {detailQuery.isPending ? "Loading checks…" : "No checks reported"}
+        {detailQuery.isPending ? uiT("Loading checks…") : uiT("No checks reported")}
       </p>
     );
   }
@@ -63,13 +65,14 @@ function ChecksBody({
   checks: ReadonlyArray<PullRequestCheck>;
   threadRef: ScopedThreadRef | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const openLink = useOpenLink(threadRef);
   const [showAll, setShowAll] = useState(false);
   const { attention, running, completed } = groupPullRequestChecks(checks);
   const canCollapse = attention.length + running.length > 0 && completed.length > 0;
   const visibleChecks = [...attention, ...running, ...(showAll || !canCollapse ? completed : [])];
   if (checks.length === 0) {
-    return <p className="text-muted-foreground text-xs">No checks reported</p>;
+    return <p className="text-muted-foreground text-xs">{uiT("No checks reported")}</p>;
   }
   return (
     <>
@@ -97,11 +100,14 @@ function ChecksBody({
                     if (!check.url) return;
                     void openLink(check.url).catch((error: unknown) => {
                       console.error(error);
-                      toastManager.add({ type: "error", title: "Unable to open check details" });
+                      toastManager.add({
+                        type: "error",
+                        title: uiT("Unable to open check details"),
+                      });
                     });
                   }}
                 >
-                  Details
+                  {uiT("Details")}
                 </button>
               )}
             </li>
@@ -115,7 +121,7 @@ function ChecksBody({
           aria-expanded={showAll}
           onClick={() => setShowAll(!showAll)}
         >
-          {showAll ? "Show less" : "Show all"}
+          {showAll ? uiT("Show less") : uiT("Show all")}
         </Button>
       ) : null}
     </>
@@ -152,6 +158,7 @@ export function PullRequestChecksPopover({
   className?: string;
   render?: React.ReactElement;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentation = pullRequestChecksStatePresentation(checksState);
   // Counts beat the rollup's own wording where they are known, the way GitHub's own header reads.
   const runningCount = checks?.filter((check) => check.status === "pending").length ?? 0;
@@ -168,8 +175,8 @@ export function PullRequestChecksPopover({
         nativeButton={variant === "count"}
         aria-label={
           variant === "count"
-            ? `Open checks: ${summary ?? presentation.label}`
-            : `Checks: ${presentation.label}`
+            ? uiT("Open checks: {0}", { "0": summary ?? presentation.label })
+            : uiT("Checks: {0}", { "0": presentation.label })
         }
         render={
           variant === "count" ? (
@@ -192,17 +199,19 @@ export function PullRequestChecksPopover({
                 {runningCount}/{checks.length}
               </span>
             ) : failedCount > 0 ? (
-              <span className="tabular-nums">{failedCount} failed</span>
+              <span className="tabular-nums">
+                {failedCount} {uiT("failed")}
+              </span>
             ) : null}
           </>
         ) : null}
       </PopoverTrigger>
       <PopoverPopup align="start" width="md" side="bottom">
-        <p className="mb-2 font-medium text-sm">{presentation.label}</p>
+        <p className="mb-2 font-medium text-sm">{uiT(presentation.label)}</p>
         {summary === null ? null : <p className="mb-2 text-muted-foreground text-xs">{summary}</p>}
         {stale ? (
           <p className="text-muted-foreground text-xs">
-            Check details are out of date. Refresh the pull request to update them.
+            {uiT("Check details are out of date. Refresh the pull request to update them.")}
           </p>
         ) : checks !== undefined ? (
           <ChecksBody checks={checks} threadRef={threadRef} />

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import {
   Box,
   ExtendedFloatingActionButton,
@@ -23,6 +24,7 @@ export function MaterialFloatingActionButton(props: {
   readonly className?: string;
   readonly style?: StyleProp<ViewStyle>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { themeAppearance, themeVariables: colors } = useAppearancePreferences();
   const typography = useScaledTextRole("footnote");
   const { scale, iconSize: standardIconSize, fabSize, largeFabSize } = useAndroidControlSizing();
@@ -42,7 +44,7 @@ export function MaterialFloatingActionButton(props: {
     <View
       accessible
       accessibilityRole="button"
-      accessibilityLabel={props.label}
+      accessibilityLabel={uiT(props.label)}
       accessibilityActions={[{ name: "activate" }]}
       onAccessibilityAction={props.onPress}
       className={props.className}
@@ -66,7 +68,7 @@ export function MaterialFloatingActionButton(props: {
             {props.variant === "extended" ? (
               <ExtendedFloatingActionButton.Text>
                 <Text color={contentColor} style={{ ...typography, fontWeight: "500" }}>
-                  {props.label}
+                  {uiT(props.label)}
                 </Text>
               </ExtendedFloatingActionButton.Text>
             ) : null}

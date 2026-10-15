@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../../i18n";
 import type { PullRequestReviewGuide } from "@t3tools/contracts";
 import { stopFilePaths } from "@t3tools/client-runtime/review-guide-tour";
 import { Pressable, View } from "react-native";
@@ -18,28 +19,34 @@ export function GuideOutline({
   readonly onOpen: (position: number) => void;
   readonly onRewrite?: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { appearance, setCodeWordBreak } = useAppearancePreferences();
   const files = new Set(guide.stops.flatMap(stopFilePaths));
   return (
     <View>
       <View className="mb-5 flex-row items-center justify-between">
         <View className="flex-row items-baseline gap-2">
-          <Text className="text-base font-t3-semibold">{guide.stops.length} stops</Text>
+          <Text className="text-base font-t3-semibold">
+            <UiText message={"{0} stops"} values={{ "0": guide.stops.length }} />
+          </Text>
           <Text className="text-sm text-foreground-muted">
-            through {files.size} {files.size === 1 ? "file" : "files"}
+            <UiText
+              message={"through {0} {1}"}
+              values={{ "0": files.size, "1": files.size === 1 ? uiT("file") : uiT("files") }}
+            />
           </Text>
         </View>
         <ControlPillMenu
-          title="Guide options"
+          title={uiT("Guide options")}
           actions={[
             {
               id: "word-wrap",
-              title: "Word wrap",
+              title: uiT("Word wrap"),
               image: "text.alignleft",
               state: appearance.codeWordBreak ? "on" : "off",
             },
             ...(onRewrite
-              ? [{ id: "rewrite", title: "Rewrite guide", image: "arrow.clockwise" }]
+              ? [{ id: "rewrite", title: uiT("Rewrite guide"), image: "arrow.clockwise" }]
               : []),
           ]}
           onPressAction={({ nativeEvent }) =>
@@ -50,7 +57,7 @@ export function GuideOutline({
         >
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Guide options"
+            accessibilityLabel={uiT("Guide options")}
             className="h-11 w-11 items-center justify-center rounded-full active:bg-grouped-card"
           >
             <SymbolView name="ellipsis" size={20} tintColorClassName="accent-icon-muted" />
@@ -70,7 +77,7 @@ export function GuideOutline({
           <Pressable
             key={`${guide.headSha}:${JSON.stringify(stop)}`}
             accessibilityRole="button"
-            accessibilityLabel={`Stop ${position + 1}: ${stop.title}`}
+            accessibilityLabel={uiT("Stop {0}: {1}", { "0": position + 1, "1": stop.title })}
             onPress={() => onOpen(position)}
             className="flex-row gap-4 active:opacity-60"
           >
@@ -89,7 +96,7 @@ export function GuideOutline({
                   <SymbolView name="eye" size={14} tintColorClassName="accent-warning-foreground" />
                 ) : null}
                 <Text className="shrink text-xs text-foreground-muted" numberOfLines={1}>
-                  {filename ?? "Context"}
+                  {filename ?? uiT("Context")}
                   {paths.length > 1 ? ` +${paths.length - 1}` : ""}
                 </Text>
               </View>
@@ -106,7 +113,7 @@ export function GuideOutline({
           onPress={() => onOpen(0)}
           className="min-h-11 flex-row items-center justify-end gap-2 active:opacity-60"
         >
-          <Text className="text-sm font-t3-medium">Start tour</Text>
+          <Text className="text-sm font-t3-medium">{uiT("Start tour")}</Text>
           <SymbolView name="arrow.right" size={17} tintColorClassName="accent-foreground" />
         </Pressable>
       ) : null}

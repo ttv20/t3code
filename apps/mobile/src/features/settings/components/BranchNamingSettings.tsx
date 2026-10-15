@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { BranchNamingMode, type ServerSettingsPatch } from "@t3tools/contracts";
 import { useRef } from "react";
 import { View } from "react-native";
@@ -25,13 +26,16 @@ export function BranchNamingSettings(props: {
   disabled: boolean;
   onChange: (patch: ServerSettingsPatch) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const prefixEdited = useRef(false);
   const instructionsEdited = useRef(false);
   return (
     <SettingsSection
-      title="Worktree branch naming"
+      title={uiT("Worktree branch naming")}
       trailing={
-        props.mode === null ? <Text className="text-xs text-foreground-muted">Mixed</Text> : null
+        props.mode === null ? (
+          <Text className="text-xs text-foreground-muted">{uiT("Mixed")}</Text>
+        ) : null
       }
     >
       {BranchNamingMode.literals.map((mode, index) => (
@@ -48,16 +52,16 @@ export function BranchNamingSettings(props: {
       {props.mode === "static" ? (
         <View className="gap-2 px-4 py-3">
           <Text className="text-sm text-foreground-muted">
-            Use t3 or t3/ for t3/add-search. Leave empty for no prefix.
+            {uiT("Use t3 or t3/ for t3/add-search. Leave empty for no prefix.")}
           </Text>
           <AppTextInput
             key={props.prefix}
-            accessibilityLabel="Branch prefix"
+            accessibilityLabel={uiT("Branch prefix")}
             onChangeText={() => {
               prefixEdited.current = true;
             }}
             defaultValue={props.prefix ?? ""}
-            placeholder={props.prefix === null ? "Mixed" : "No prefix"}
+            placeholder={props.prefix === null ? uiT("Mixed") : uiT("No prefix")}
             editable={!props.disabled}
             autoCapitalize="none"
             autoCorrect={false}
@@ -78,19 +82,19 @@ export function BranchNamingSettings(props: {
       {props.mode === "custom" ? (
         <View className="gap-2 px-4 py-3">
           <Text className="text-sm text-foreground-muted">
-            Append instructions to the naming prompt.
+            {uiT("Append instructions to the naming prompt.")}
           </Text>
           <AppTextInput
             key={props.instructions}
-            accessibilityLabel="Branch naming instructions"
+            accessibilityLabel={uiT("Branch naming instructions")}
             onChangeText={() => {
               instructionsEdited.current = true;
             }}
             defaultValue={props.instructions ?? ""}
             placeholder={
               props.instructions === null
-                ? "Mixed. Enter instructions for all selected targets."
-                : "Use julius/ followed by the issue ID and a short description."
+                ? uiT("Mixed. Enter instructions for all selected targets.")
+                : uiT("Use julius/ followed by the issue ID and a short description.")
             }
             editable={!props.disabled}
             multiline

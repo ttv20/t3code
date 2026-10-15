@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import { PullRequestEntryRow } from "./PullRequestEntryRow";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
@@ -58,6 +59,7 @@ function TimelineEvent(props: {
 }
 
 function TimelineComment({ comment }: { comment: PullRequestComment }) {
+  const { t: uiT } = useUiLanguage();
   const [expanded, setExpanded] = useState(false);
   const { themeVariables: colors } = useAppearancePreferences();
   const long = comment.body.length > 450 || comment.body.split("\n").length > 8;
@@ -77,9 +79,13 @@ function TimelineComment({ comment }: { comment: PullRequestComment }) {
         <PullRequestAvatar actor={comment.author} size={22} />
         <View className="min-w-0 flex-1">
           <Text className="text-sm">
-            <Text className="font-t3-medium">{comment.author?.login ?? "Unknown author"}</Text>
+            <Text className="font-t3-medium">{comment.author?.login ?? uiT("Unknown author")}</Text>
             <Text className="text-foreground-muted">
-              {approved ? " approved" : changes ? " requested changes" : " commented"}
+              {approved
+                ? uiT(" approved")
+                : changes
+                  ? uiT(" requested changes")
+                  : uiT(" commented")}
             </Text>
           </Text>
         </View>
@@ -158,7 +164,7 @@ function TimelineComment({ comment }: { comment: PullRequestComment }) {
               className="flex-row items-center justify-center gap-1 py-2 active:opacity-70"
             >
               <Text className="text-xs font-t3-medium text-foreground">
-                {expanded ? "Show less" : "Show more"}
+                {expanded ? uiT("Show less") : uiT("Show more")}
               </Text>
               <SymbolView
                 name={expanded ? "chevron.up" : "chevron.down"}
@@ -200,7 +206,10 @@ export function pullRequestTimelineRows(
               <Text className="font-t3-medium">
                 {thread.comments[0]?.author?.login ?? "Unknown author"}
               </Text>
-              <Text className="text-foreground-muted"> started a discussion</Text>
+              <Text className="text-foreground-muted">
+                {" "}
+                <UiText message={"started a discussion"} />
+              </Text>
             </Text>
             {thread.comments[0] ? (
               <Text className="text-2xs text-foreground-tertiary">
@@ -225,9 +234,14 @@ export function pullRequestTimelineRows(
               <SymbolView name="chevron.right" size={12} tintColorClassName="accent-icon-muted" />
             </View>
             <Text className="text-xs text-foreground-muted">
-              {thread.isResolved ? "Resolved" : "Unresolved"}
-              {thread.isOutdated ? " · Outdated" : ""} ·{" "}
-              {thread.commentCount ?? thread.comments.length} comments
+              <UiText
+                message={"{0}{1} · {2} comments"}
+                values={{
+                  "0": thread.isResolved ? "Resolved" : "Unresolved",
+                  "1": thread.isOutdated ? " · Outdated" : "",
+                  "2": thread.commentCount ?? thread.comments.length,
+                }}
+              />
             </Text>
           </Pressable>
         </TimelineEvent>
@@ -266,7 +280,7 @@ export function pullRequestTimelineRows(
       date: "",
       content: (
         <Text className="py-3 text-xs text-foreground-muted">
-          More activity is available on the provider.
+          <UiText message={"More activity is available on the provider."} />
         </Text>
       ),
     });

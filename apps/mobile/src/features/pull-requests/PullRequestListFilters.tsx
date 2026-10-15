@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScrollView } from "react-native";
 import type { ControlPillMenuProps } from "../../components/ControlPillMenu.types";
 import { ListFilterMenu } from "../workspace/ListFilterMenu";
@@ -38,6 +39,7 @@ export function PullRequestListFilters(props: {
   readonly labels: readonly string[];
   readonly projects: readonly { id: string; title: string; environmentId: string }[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const { value } = props;
   const selectedLabels = value.filters.labels?.flat() ?? [];
   const selectedLabelSet = new Set(selectedLabels);
@@ -149,17 +151,19 @@ export function PullRequestListFilters(props: {
   const more: ControlPillMenuProps["actions"] = [
     {
       id: "drafts",
-      title: value.filters.draft ? DRAFTS[value.filters.draft] : "Drafts",
+      title: value.filters.draft ? DRAFTS[value.filters.draft] : uiT("Drafts"),
       subactions: choices("draft", DRAFTS, value.filters.draft ?? "all"),
     },
     {
       id: "reviews",
-      title: value.filters.review ? REVIEWS[value.filters.review] : "Reviews",
+      title: value.filters.review ? REVIEWS[value.filters.review] : uiT("Reviews"),
       subactions: choices("review", REVIEWS, value.filters.review ?? "all"),
     },
     {
       id: "checks",
-      title: value.filters.checks ? `${CHECKS[value.filters.checks]} checks` : "Checks",
+      title: value.filters.checks
+        ? uiT("{0} checks", { "0": CHECKS[value.filters.checks] })
+        : uiT("Checks"),
       subactions: choices("checks", CHECKS, value.filters.checks ?? "all"),
     },
     {
@@ -168,7 +172,7 @@ export function PullRequestListFilters(props: {
         props.projects.find(
           (project) =>
             project.id === value.projectId && project.environmentId === value.projectEnvironmentId,
-        )?.title ?? "Project",
+        )?.title ?? uiT("Project"),
       subactions: choices(
         "project",
         Object.fromEntries([
@@ -184,7 +188,7 @@ export function PullRequestListFilters(props: {
     { id: "sort", title: SORTS[value.sort], subactions: choices("sort", SORTS, value.sort) },
     {
       id: id("reset", ""),
-      title: "Reset filters",
+      title: uiT("Reset filters"),
       attributes: { disabled: count === 0 && value.sort === "updated" },
     },
   ];
@@ -199,10 +203,12 @@ export function PullRequestListFilters(props: {
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10, gap: 8 }}
     >
       <ListFilterMenu
-        label={count ? String(count) : "Filters"}
+        label={count ? String(count) : uiT("Filters")}
         icon
         active={count > 0}
-        accessibilityLabel={count ? `Filters, ${count} active` : "More filters"}
+        accessibilityLabel={
+          count ? uiT("Filters, {0} active", { "0": count }) : uiT("More filters")
+        }
         actions={more}
         onSelect={select}
       />
@@ -210,9 +216,9 @@ export function PullRequestListFilters(props: {
         <ListFilterMenu
           label={
             props.environments.find((environment) => environment.id === props.environmentId)
-              ?.label ?? "All environments"
+              ?.label ?? uiT("All environments")
           }
-          accessibilityLabel="Choose pull request environment"
+          accessibilityLabel={uiT("Choose pull request environment")}
           actions={choices(
             "environment",
             Object.fromEntries([
@@ -227,25 +233,27 @@ export function PullRequestListFilters(props: {
       <ListFilterMenu
         label={STATES[value.state]}
         active={value.state !== "open"}
-        accessibilityLabel="Filter by state"
+        accessibilityLabel={uiT("Filter by state")}
         actions={choices("state", STATES, value.state)}
         onSelect={select}
       />
       <ListFilterMenu
         label={INVOLVEMENT[value.involvement]}
         active={value.involvement !== "all"}
-        accessibilityLabel="Filter by involvement"
+        accessibilityLabel={uiT("Filter by involvement")}
         actions={choices("involvement", INVOLVEMENT, value.involvement)}
         onSelect={select}
       />
       <ListFilterMenu
-        label={selectedLabels.length ? `Labels ${selectedLabels.length}` : "Labels"}
+        label={
+          selectedLabels.length ? uiT("Labels {0}", { "0": selectedLabels.length }) : uiT("Labels")
+        }
         active={selectedLabels.length > 0}
-        accessibilityLabel="Filter by label"
+        accessibilityLabel={uiT("Filter by label")}
         actions={[
           {
             id: id("labels", ""),
-            title: "All labels",
+            title: uiT("All labels"),
             state: selectedLabels.length ? "off" : "on",
           },
           ...labels.map((label) => ({
@@ -257,9 +265,9 @@ export function PullRequestListFilters(props: {
         onSelect={select}
       />
       <ListFilterMenu
-        label={author === "me" ? "By you" : (author ?? "Author")}
+        label={author === "me" ? uiT("By you") : (author ?? uiT("Author"))}
         active={Boolean(author)}
-        accessibilityLabel="Filter by author"
+        accessibilityLabel={uiT("Filter by author")}
         actions={choices(
           "author",
           Object.fromEntries([

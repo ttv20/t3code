@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
@@ -252,6 +253,7 @@ function AdaptiveWorkspaceLayoutContent(
     readonly savedThreadListFilters?: ThreadListFilters | undefined;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   const projectGroupingMode = props.projectGroupingMode;
   const nativeWorkspace = use(NativeWorkspaceModeContext);
   const windowDimensions = useWindowDimensions();
@@ -736,8 +738,8 @@ function AdaptiveWorkspaceLayoutContent(
                   renderFallback={(fallback) => (
                     <RenderFailureView
                       {...fallback}
-                      title="The sidebar couldn't be displayed"
-                      exit={{ label: "Open settings", onPress: handleOpenSettings }}
+                      title={uiT("The sidebar couldn't be displayed")}
+                      exit={{ label: uiT("Open settings"), onPress: handleOpenSettings }}
                     />
                   )}
                 >

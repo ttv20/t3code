@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { DeviceHostUpdates } from "./DeviceHostUpdates";
 import type {
   DevicePlatform,
@@ -38,6 +39,7 @@ export function DevicePanel(props: {
   readonly visible: boolean;
   readonly onDismissSetup: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { environmentId, threadId } = props.threadRef;
   const { state, loaded } = useDeviceState(environmentId);
   const list = useAtomCommand(deviceEnvironment.list, { reportFailure: false });
@@ -178,7 +180,8 @@ export function DevicePanel(props: {
       <DeviceHostUpdates state={state} environmentId={environmentId} />
       {bootingDevices.length > 0 ? (
         <div role="status" className="border-b px-3 py-2 text-xs text-muted-foreground">
-          Starting {bootingDevices.map((device) => device.name).join(", ")}… This can take a minute.
+          {uiT("Starting")} {bootingDevices.map((device) => device.name).join(", ")}
+          {uiT("… This can take a minute.")}
         </div>
       ) : null}
       {operationError ? (
@@ -190,7 +193,7 @@ export function DevicePanel(props: {
           <Button
             size="icon-xs"
             variant="ghost"
-            aria-label="Dismiss device error"
+            aria-label={uiT("Dismiss device error")}
             onClick={() => setOperationError(null)}
           >
             <X className="size-3" />
@@ -224,11 +227,11 @@ export function DevicePanel(props: {
             message={
               pendingDevice
                 ? pendingDevice.booted
-                  ? "Opening device…"
-                  : "Starting device…"
+                  ? uiT("Opening device…")
+                  : uiT("Starting device…")
                 : state.hostStatus === "installing"
-                  ? (state.hostStatusDetail ?? "Installing device support…")
-                  : "Finding devices…"
+                  ? (state.hostStatusDetail ?? uiT("Installing device support…"))
+                  : uiT("Finding devices…")
             }
           />
         ) : (
@@ -244,8 +247,8 @@ export function DevicePanel(props: {
                   <Smartphone className="size-6 opacity-60" />
                   <p className="max-w-sm">
                     {state.hostStatus === "failed"
-                      ? (state.hostStatusDetail ?? "The device hub failed to start.")
-                      : "No simulators or emulators were found on this environment."}
+                      ? (state.hostStatusDetail ?? uiT("The device hub failed to start."))
+                      : uiT("No simulators or emulators were found on this environment.")}
                   </p>
                 </>
               ) : null}
@@ -276,7 +279,7 @@ export function DevicePanel(props: {
                                 <Spinner size="xs" />
                               ) : (
                                 <span className="text-xs text-muted-foreground">
-                                  {device.booted ? "Open" : "Start"}
+                                  {device.booted ? uiT("Open") : uiT("Start")}
                                 </span>
                               )
                             }
@@ -291,8 +294,9 @@ export function DevicePanel(props: {
               !state.devices.some((device) => device.platform === "android") &&
               !unavailablePlatforms.some((platform) => platform.platform === "android") ? (
                 <p className="max-w-sm text-xs">
-                  No Android virtual devices found. Create one in Android Studio's Device Manager,
-                  then refresh.
+                  {uiT(
+                    "No Android virtual devices found. Create one in Android Studio's Device Manager, then refresh.",
+                  )}
                 </p>
               ) : null}
               {loaded && !hostBusy ? (
@@ -302,7 +306,7 @@ export function DevicePanel(props: {
                   size="sm"
                   onClick={() => void list({ environmentId, input: {} })}
                 >
-                  Refresh devices
+                  {uiT("Refresh devices")}
                 </Button>
               ) : null}
             </div>

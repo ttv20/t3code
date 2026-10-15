@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
@@ -151,6 +152,7 @@ const CommandRow = memo(function CommandRow(props: {
   readonly isLast: boolean;
   readonly isSlashSkill: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const iconName = itemIcon(props.item);
 
   return (
@@ -173,16 +175,16 @@ const CommandRow = memo(function CommandRow(props: {
       <Text className="shrink-0 text-base font-t3-medium text-foreground" numberOfLines={1}>
         {props.isSlashSkill && props.item.type === "skill" ? (
           <>
-            <Text className="text-foreground-muted">skill:</Text>
+            <Text className="text-foreground-muted">{uiT("skill:")}</Text>
             {props.item.skill.name}
           </>
         ) : (
-          props.item.label
+          uiT(props.item.label)
         )}
       </Text>
       {props.item.description ? (
         <Text className="min-w-0 flex-1 text-xs text-foreground-muted" numberOfLines={1}>
-          {props.item.description}
+          {uiT(props.item.description)}
         </Text>
       ) : null}
     </Pressable>
@@ -192,6 +194,7 @@ const CommandRow = memo(function CommandRow(props: {
 export const ComposerCommandPopover = memo(function ComposerCommandPopover(
   props: ComposerCommandPopoverProps,
 ) {
+  const { t: uiT } = useUiLanguage();
   const label = groupLabel(props.triggerKind);
 
   return (
@@ -199,7 +202,7 @@ export const ComposerCommandPopover = memo(function ComposerCommandPopover(
       {label ? (
         <View className="px-3.5 pt-2.5 pb-1">
           <Text className="text-3xs font-t3-bold tracking-[0.8px] uppercase text-foreground-muted">
-            {label}
+            {uiT(label)}
           </Text>
         </View>
       ) : null}

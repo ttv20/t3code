@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
@@ -39,7 +40,7 @@ export function feedbackBannerItem(
             );
           }}
         >
-          Copy ID
+          <UiText message={"Copy ID"} />
         </Button>
       ) : undefined,
     ...(submission.status !== "uploading"

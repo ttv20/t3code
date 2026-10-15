@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../../i18n";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
@@ -24,6 +25,7 @@ type GitCommitSheetProps = StaticScreenProps<{
 }>;
 
 export function GitCommitSheet(_props: GitCommitSheetProps) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -96,7 +98,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
       ) : null}
       {Platform.OS === "android" ? (
         <AndroidSheetHeader
-          title="Commit changes"
+          title={uiT("Commit changes")}
           onBack={() => navigation.goBack()}
           hideBottomBorder
         />
@@ -117,14 +119,14 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
         >
           <View className="gap-3 bg-card p-4 android:rounded-[20px] ios:rounded-[22px] ios:border ios:border-border">
             <View className="android:gap-1 ios:flex-row ios:items-center ios:justify-between ios:gap-3">
-              <Text className="text-foreground-muted text-sm font-medium">Branch</Text>
+              <Text className="text-foreground-muted text-sm font-medium">{uiT("Branch")}</Text>
               <Text className="text-foreground text-base android:font-t3-medium ios:font-t3-bold">
-                {gitStatus.data?.refName ?? "(detached HEAD)"}
+                {gitStatus.data?.refName ?? uiT("(detached HEAD)")}
               </Text>
             </View>
             {isDefaultRef ? (
               <Text className="text-xs leading-normal text-warning-foreground">
-                Warning: this is the default branch.
+                {uiT("Warning: this is the default branch.")}
               </Text>
             ) : null}
           </View>
@@ -133,11 +135,17 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
             <View className="flex-row items-center justify-between gap-3">
               <View className="gap-1">
                 <Text className="text-foreground text-base android:font-t3-medium ios:font-t3-bold">
-                  Files
+                  {uiT("Files")}
                 </Text>
                 <Text className="text-foreground-muted text-xs leading-normal">
-                  {selectedFiles.length} selected · +{formatDiffCount(selectedInsertions)} / -
-                  {formatDiffCount(selectedDeletions)}
+                  <UiText
+                    message={"{0} selected · +{1} / -{2}"}
+                    values={{
+                      "0": selectedFiles.length,
+                      "1": formatDiffCount(selectedInsertions),
+                      "2": formatDiffCount(selectedDeletions),
+                    }}
+                  />
                 </Text>
               </View>
               <View className="flex-row items-center gap-2">
@@ -147,7 +155,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
                     onPress={() => setExcludedFiles(new Set())}
                   >
                     <Text className="android:text-primary-text android:text-sm android:font-t3-medium ios:text-foreground ios:text-2xs ios:font-t3-bold ios:uppercase">
-                      Reset
+                      {uiT("Reset")}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -156,7 +164,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
                   onPress={() => setIsEditingFiles((current) => !current)}
                 >
                   <Text className="android:text-primary-text android:text-sm android:font-t3-medium ios:text-foreground ios:text-2xs ios:font-t3-bold ios:uppercase">
-                    {isEditingFiles ? "Done" : "Edit"}
+                    {isEditingFiles ? uiT("Done") : uiT("Edit")}
                   </Text>
                 </Pressable>
               </View>
@@ -164,7 +172,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
 
             {allFiles.length === 0 ? (
               <Text className="text-foreground-secondary text-sm leading-normal">
-                No changed files are available to commit.
+                {uiT("No changed files are available to commit.")}
               </Text>
             ) : !isEditingFiles ? (
               <View className="gap-2">
@@ -183,7 +191,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
                 ))}
                 {selectedFiles.length > selectedFilePreview.length ? (
                   <Text className="text-foreground-muted text-xs leading-snug">
-                    +{selectedFiles.length - selectedFilePreview.length} more files
+                    +{selectedFiles.length - selectedFilePreview.length} {uiT("more files")}
                   </Text>
                 ) : null}
               </View>
@@ -247,7 +255,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
                           </Text>
                           {!included ? (
                             <Text className="text-foreground-muted text-2xs leading-normal">
-                              Excluded from this commit
+                              {uiT("Excluded from this commit")}
                             </Text>
                           ) : null}
                         </View>
@@ -269,14 +277,14 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
 
           <View className="android:gap-3 android:rounded-[20px] android:bg-card android:p-4 ios:gap-2">
             <Text className="text-foreground android:text-base android:font-t3-medium ios:text-sm ios:font-t3-bold">
-              Commit message
+              {uiT("Commit message")}
             </Text>
             <TextInput
               multiline
-              accessibilityLabel="Commit message"
+              accessibilityLabel={uiT("Commit message")}
               value={dialogCommitMessage}
               onChangeText={setDialogCommitMessage}
-              placeholder="Leave empty to auto-generate"
+              placeholder={uiT("Leave empty to auto-generate")}
               textAlignVertical="top"
               className="min-h-[128px] px-4 py-3.5 android:rounded-xl android:bg-sheet-solid ios:rounded-[20px]"
             />
@@ -286,7 +294,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
             <View className="ios:flex-1">
               <SheetActionButton
                 icon="arrow.branch"
-                label="Commit on new branch"
+                label={uiT("Commit on new branch")}
                 disabled={!canChangeThreadBranch || noneSelected || busy}
                 onPress={() => void runCommitAction(true)}
               />
@@ -294,7 +302,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
             <View className="ios:flex-1">
               <SheetActionButton
                 icon="checkmark.circle"
-                label="Commit"
+                label={uiT("Commit")}
                 tone="primary"
                 disabled={!canWriteSourceControl || noneSelected || busy}
                 onPress={() => void runCommitAction(false)}

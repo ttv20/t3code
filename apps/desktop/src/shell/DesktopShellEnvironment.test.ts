@@ -358,12 +358,16 @@ describe("DesktopShellEnvironment", () => {
             PATH: "/home/linuxbrew/.linuxbrew/bin:/usr/bin",
             SSH_AUTH_SOCK: "/tmp/secretive.sock",
             T3CODE_TELEMETRY_ENABLED: "false",
+            T3CODE_POSTHOG_KEY: "phc_test_rtl_project",
+            T3CODE_POSTHOG_HOST: "https://us.i.posthog.com",
           }),
       });
 
       assert.equal(env.PATH, "/home/linuxbrew/.linuxbrew/bin:/usr/bin");
       assert.equal(env.SSH_AUTH_SOCK, "/tmp/secretive.sock");
       assert.equal(env.T3CODE_TELEMETRY_ENABLED, "false");
+      assert.equal(env.T3CODE_POSTHOG_KEY, "phc_test_rtl_project");
+      assert.equal(env.T3CODE_POSTHOG_HOST, "https://us.i.posthog.com");
     }),
   );
 

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import type { EnvironmentThreadSearchMatch } from "@t3tools/client-runtime/state/thread-search";
 import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
@@ -137,6 +138,7 @@ export function CommandPalette(props: {
   readonly onClose: () => void;
   readonly onCommand: (command: HardwareKeyboardCommand) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { themeVariables } = useAppearancePreferences();
   const { selectThread } = useAdaptiveWorkspaceLayout();
@@ -182,21 +184,21 @@ export function CommandPalette(props: {
       {
         key: "newTask",
         kind: "action",
-        title: "New thread in…",
+        title: uiT("New thread in…"),
         searchTerms: ["new task", "chat", "create", "project"],
         run: () => navigation.navigate("NewTaskSheet", { screen: "NewTask" }),
       },
       {
         key: "addProject",
         kind: "action",
-        title: "Add project",
+        title: uiT("Add project"),
         searchTerms: ["folder", "clone", "repository", "git"],
         run: () => navigation.navigate("NewTaskSheet", { screen: "AddProject" }),
       },
       {
         key: "settings",
         kind: "action",
-        title: "Open settings",
+        title: uiT("Open settings"),
         searchTerms: ["preferences", "configuration"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -207,7 +209,7 @@ export function CommandPalette(props: {
       {
         key: "appearance",
         kind: "action",
-        title: "Appearance",
+        title: uiT("Appearance"),
         searchTerms: ["theme", "colors", "dark", "light"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -218,7 +220,7 @@ export function CommandPalette(props: {
       {
         key: "environments",
         kind: "action",
-        title: "Manage environments",
+        title: uiT("Manage environments"),
         searchTerms: ["connections", "server", "remote"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -229,7 +231,7 @@ export function CommandPalette(props: {
       {
         key: "scheduledTasks",
         kind: "action",
-        title: "Scheduled tasks",
+        title: uiT("Scheduled tasks"),
         searchTerms: ["schedule", "automations", "recurring"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -240,7 +242,7 @@ export function CommandPalette(props: {
       {
         key: "usage",
         kind: "action",
-        title: "Usage",
+        title: uiT("Usage"),
         searchTerms: ["limits", "accounts", "quota"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -251,7 +253,7 @@ export function CommandPalette(props: {
       {
         key: "archive",
         kind: "action",
-        title: "Archived threads",
+        title: uiT("Archived threads"),
         searchTerms: ["restore", "history"],
         run: () =>
           navigation.navigate("SettingsSheet", {
@@ -270,7 +272,7 @@ export function CommandPalette(props: {
       actions.unshift({
         key: "newThread",
         kind: "action",
-        title: `New thread in ${activeProject.title}`,
+        title: uiT("New thread in {0}", { "0": activeProject.title }),
         searchTerms: ["new task", "chat", "create"],
         run: () =>
           navigation.navigate("NewTaskSheet", {
@@ -304,7 +306,9 @@ export function CommandPalette(props: {
       key: `project:${scopedProjectKey(project.environmentId, project.id)}`,
       kind: "project",
       title: project.title,
-      detail: `New thread · ${savedConnectionsById[project.environmentId]?.environmentLabel ?? project.environmentId}`,
+      detail: uiT("New thread · {0}", {
+        "0": savedConnectionsById[project.environmentId]?.environmentLabel ?? project.environmentId,
+      }),
       searchTerms: [project.workspaceRoot, "new thread", "project"],
       run: () =>
         navigation.navigate("NewTaskSheet", {
@@ -330,7 +334,7 @@ export function CommandPalette(props: {
         return {
           key: scopedThreadKey(thread.environmentId, thread.id),
           kind: "thread",
-          title: thread.title || "Untitled thread",
+          title: thread.title || uiT("Untitled thread"),
           detail: [project?.title, environment].filter(Boolean).join(" · "),
           searchTerms: [
             project?.title ?? "",
@@ -351,6 +355,7 @@ export function CommandPalette(props: {
     savedConnectionsById,
     selectThread,
     threads,
+    uiT,
   ]);
   const results = useMemo(
     () => filterCommandPaletteItems(items, query, matchedThreadKeys),
@@ -426,7 +431,7 @@ export function CommandPalette(props: {
           >
             <Pressable
               className="absolute inset-0 bg-backdrop"
-              accessibilityLabel="Close command palette"
+              accessibilityLabel={uiT("Close command palette")}
               onPress={() => close()}
             />
             <GlassSurface
@@ -450,8 +455,8 @@ export function CommandPalette(props: {
                   />
                   <TextInput
                     ref={inputRef}
-                    accessibilityLabel="Search commands, projects, and threads"
-                    placeholder="Search commands, projects, and threads…"
+                    accessibilityLabel={uiT("Search commands, projects, and threads")}
+                    placeholder={uiT("Search commands, projects, and threads…")}
                     placeholderTextColorClassName="accent-placeholder"
                     autoCorrect={false}
                     autoCapitalize="none"
@@ -486,7 +491,7 @@ export function CommandPalette(props: {
                 contentContainerClassName="pb-2"
                 ListEmptyComponent={
                   <Text className="p-5 text-center text-foreground-muted">
-                    {search.isPending ? "Searching…" : "No results"}
+                    {search.isPending ? uiT("Searching…") : uiT("No results")}
                   </Text>
                 }
                 renderItem={({ item, index }) => (

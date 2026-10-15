@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useOpenPullRequest } from "../native/useOpenPullRequest";
 import { SourceFileSurface } from "../features/files/SourceFileSurface";
 import { filePreviewKind } from "@t3tools/shared/filePreview";
@@ -29,10 +30,11 @@ import { useAppearancePreferences } from "../features/settings/appearance/Appear
 import { getMobileTerminalTheme } from "../features/terminal/terminalTheme";
 
 function ContextField(props: { label: string; value: string | null | undefined; code?: boolean }) {
+  const { t: uiT } = useUiLanguage();
   if (!props.value) return null;
   return (
     <View className="gap-1">
-      <Text className="text-xs text-foreground-muted">{props.label}</Text>
+      <Text className="text-xs text-foreground-muted">{uiT(props.label)}</Text>
       {props.code && (props.label === "HTML" || props.label === "Styles") ? (
         <View
           className="overflow-hidden rounded-xl border border-border"
@@ -58,6 +60,7 @@ function ContextField(props: { label: string; value: string | null | undefined; 
 }
 
 function ContextSource(props: { source: ElementContextSource | null }) {
+  const { t: uiT } = useUiLanguage();
   const source = props.source;
   if (!source) return null;
   const location = source.fileName
@@ -65,7 +68,7 @@ function ContextSource(props: { source: ElementContextSource | null }) {
     : null;
   return (
     <ContextField
-      label="Source"
+      label={uiT("Source")}
       value={[source.functionName, location].filter(Boolean).join("\n")}
       code
     />
@@ -88,6 +91,7 @@ export function ComposerContextSheet(props: {
   readonly records?: ReadonlyArray<ComposerContextRecord>;
   readonly attachments?: ReadonlyArray<DraftComposerAttachment>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const openPullRequest = useOpenPullRequest({
     context:
       props.environmentId && props.projectId
@@ -183,7 +187,7 @@ export function ComposerContextSheet(props: {
       : undefined;
   const terminal = record?.kind === "terminal" && !("payload" in record) ? record : null;
   return (
-    <AppSheet title={terminal?.terminalLabel ?? props.label} onClose={props.onClose}>
+    <AppSheet title={terminal?.terminalLabel ?? uiT(props.label)} onClose={props.onClose}>
       <ScrollView
         className="flex-1"
         contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
@@ -196,18 +200,20 @@ export function ComposerContextSheet(props: {
       >
         {terminal ? (
           <Text className="text-sm text-foreground-muted">
-            Lines {terminal.lineStart}–{terminal.lineEnd}
+            {uiT("Lines")} {terminal.lineStart}–{terminal.lineEnd}
           </Text>
         ) : null}
         {!record ? (
           <Text className="text-foreground">
-            Context unavailable. The reference was copied without its payload. Copy it again from
-            the original message or remove it.
+            {uiT(
+              "Context unavailable. The reference was copied without its payload. Copy it again from the original message or remove it.",
+            )}
           </Text>
         ) : "payload" in record ? (
           <Text className="text-foreground">
-            This context type is not supported by this version of the app. Its payload will be
-            preserved when sent.
+            {uiT(
+              "This context type is not supported by this version of the app. Its payload will be preserved when sent.",
+            )}
           </Text>
         ) : (
           <>
@@ -256,47 +262,53 @@ export function ComposerContextSheet(props: {
             ) : null}
             {record.kind === "preview-annotation" ? (
               <>
-                <ContextField label="Page" value={record.pageTitle ?? record.pageUrl} />
-                <ContextField label="URL" value={record.pageUrl} />
-                <ContextField label="Comment" value={record.comment} />
-                <ContextField label="Selection" value={record.targetSummary} />
-                <ContextField label="Requested changes" value={record.styleChanges.join("\n")} />
+                <ContextField label={uiT("Page")} value={record.pageTitle ?? record.pageUrl} />
+                <ContextField label={uiT("URL")} value={record.pageUrl} />
+                <ContextField label={uiT("Comment")} value={record.comment} />
+                <ContextField label={uiT("Selection")} value={record.targetSummary} />
+                <ContextField
+                  label={uiT("Requested changes")}
+                  value={record.styleChanges.join("\n")}
+                />
                 {record.elements?.map((element, index) => (
                   <View key={`${element.selector ?? element.tagName}:${index}`} className="gap-3">
                     <ContextField
-                      label="Element"
+                      label={uiT("Element")}
                       value={element.componentName ?? element.tagName}
                     />
-                    <ContextField label="Selector" value={element.selector} code />
+                    <ContextField label={uiT("Selector")} value={element.selector} code />
                     <ContextSource source={element.source} />
-                    <ContextField label="HTML" value={element.htmlPreview} code />
-                    <ContextField label="Styles" value={element.styles} code />
+                    <ContextField label={uiT("HTML")} value={element.htmlPreview} code />
+                    <ContextField label={uiT("Styles")} value={element.styles} code />
                   </View>
                 ))}
               </>
             ) : null}
             {record.kind === "element" ? (
               <>
-                <ContextField label="Page" value={record.pageUrl} />
-                <ContextField label="Element" value={record.componentName ?? record.tagName} />
-                <ContextField label="Selector" value={record.selector} code />
+                <ContextField label={uiT("Page")} value={record.pageUrl} />
+                <ContextField
+                  label={uiT("Element")}
+                  value={record.componentName ?? record.tagName}
+                />
+                <ContextField label={uiT("Selector")} value={record.selector} code />
                 <ContextSource source={record.source} />
-                <ContextField label="HTML" value={record.htmlPreview} code />
-                <ContextField label="Styles" value={record.styles} code />
+                <ContextField label={uiT("HTML")} value={record.htmlPreview} code />
+                <ContextField label={uiT("Styles")} value={record.styles} code />
               </>
             ) : null}
             {record.kind === "image" ? (
               <ContextField
-                label="File"
+                label={uiT("File")}
                 value={`${record.mimeType} · ${formatAttachmentSize(record.sizeBytes)}`}
               />
             ) : null}
             {record.kind === "mention" ? (
-              <ContextField label="Path" value={record.path} code />
+              <ContextField label={uiT("Path")} value={record.path} code />
             ) : null}
             {record.kind === "thread" ? (
               <View className="gap-3">
-                <ContextField label="Thread" value={record.title} />
+                <ContextField label={uiT("Thread")} value={record.title} />
                 {props.onOpenThread ? (
                   <Pressable
                     accessibilityRole="button"
@@ -308,16 +320,16 @@ export function ComposerContextSheet(props: {
                     }
                     className="rounded-xl bg-subtle p-4"
                   >
-                    <Text className="text-foreground">Open thread</Text>
+                    <Text className="text-foreground">{uiT("Open thread")}</Text>
                   </Pressable>
                 ) : null}
               </View>
             ) : null}
             {record.kind === "skill" ? (
               <View className="gap-3">
-                <ContextField label="Skill" value={record.name} />
+                <ContextField label={uiT("Skill")} value={record.name} />
                 <ContextField
-                  label="Description"
+                  label={uiT("Description")}
                   value={props.skillDescription ?? "No description is available for this skill."}
                 />
                 {props.onOpenSkill ? (
@@ -326,7 +338,7 @@ export function ComposerContextSheet(props: {
                     onPress={props.onOpenSkill}
                     className="rounded-xl bg-subtle p-4"
                   >
-                    <Text className="text-foreground">View instructions</Text>
+                    <Text className="text-foreground">{uiT("View instructions")}</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -359,7 +371,7 @@ export function ComposerContextSheet(props: {
             }}
             className="rounded-xl bg-subtle p-4"
           >
-            <Text className="text-foreground">Open pull request</Text>
+            <Text className="text-foreground">{uiT("Open pull request")}</Text>
           </Pressable>
         ) : null}
         {props.onOpenAttachment ? (
@@ -368,7 +380,7 @@ export function ComposerContextSheet(props: {
             onPress={props.onOpenAttachment}
             className="rounded-xl bg-subtle p-4"
           >
-            <Text className="text-foreground">Open attachment</Text>
+            <Text className="text-foreground">{uiT("Open attachment")}</Text>
           </Pressable>
         ) : null}
         {props.onOpenPullRequest && !pullRequestUrl ? (
@@ -377,7 +389,7 @@ export function ComposerContextSheet(props: {
             onPress={props.onOpenPullRequest}
             className="rounded-xl bg-subtle p-4"
           >
-            <Text className="text-foreground">Open pull request</Text>
+            <Text className="text-foreground">{uiT("Open pull request")}</Text>
           </Pressable>
         ) : null}
         {props.onRemove ? (
@@ -386,7 +398,7 @@ export function ComposerContextSheet(props: {
             onPress={props.onRemove}
             className="rounded-xl bg-subtle p-4"
           >
-            <Text className="text-foreground">Remove from draft</Text>
+            <Text className="text-foreground">{uiT("Remove from draft")}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

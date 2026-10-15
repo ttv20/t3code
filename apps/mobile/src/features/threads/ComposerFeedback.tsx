@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
@@ -15,6 +16,7 @@ export function ComposerFeedback({
   readonly submission: CodexFeedbackSubmission;
   readonly onDismiss: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const notice = codexFeedbackNotice(submission);
   if (!notice) return null;
   return (
@@ -26,7 +28,7 @@ export function ComposerFeedback({
           </Text>
           {submission.status !== "uploading" ? (
             <Pressable
-              accessibilityLabel="Dismiss feedback notice"
+              accessibilityLabel={uiT("Dismiss feedback notice")}
               accessibilityRole="button"
               hitSlop={12}
               onPress={onDismiss}
@@ -43,7 +45,7 @@ export function ComposerFeedback({
         </View>
         {notice.description ? (
           <Text selectable className="text-xs text-foreground-muted">
-            {notice.description}
+            {uiT(notice.description)}
           </Text>
         ) : null}
         {submission.status === "sent" ? (
@@ -54,7 +56,7 @@ export function ComposerFeedback({
             }
             className="self-start py-1 active:opacity-60"
           >
-            <Text className="text-sm text-foreground">Copy ID</Text>
+            <Text className="text-sm text-foreground">{uiT("Copy ID")}</Text>
           </Pressable>
         ) : null}
       </View>

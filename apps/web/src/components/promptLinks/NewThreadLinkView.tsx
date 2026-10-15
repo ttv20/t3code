@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { getCloneDestinationPath } from "@t3tools/client-runtime/operations/projects";
 import {
@@ -59,6 +60,7 @@ const openedLinkKeys = new Set<string>();
  * still reads the prompt and presses Send.
  */
 export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
+  const { t: uiT } = useUiLanguage();
   const locationKey = useLocation({ select: (location) => location.state.__TSR_key ?? "" });
   const navigate = useNavigate();
   // The link needs every reachable machine's projects and threads to find its repository.
@@ -99,7 +101,7 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
       replace: true,
     }).catch(() => null);
     if (opened === null) {
-      setState({ status: "failed", message: "T3 Code could not open a new thread." });
+      setState({ status: "failed", message: uiT("T3 Code could not open a new thread.") });
       return;
     }
     setState({ status: "opened" });
@@ -146,7 +148,7 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
     if (project === null) {
       setState({
         status: "failed",
-        message: "None of your machines can start a thread without a project right now.",
+        message: uiT("None of your machines can start a thread without a project right now."),
       });
       return;
     }
@@ -168,8 +170,9 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
     ) {
       setState({
         status: "failed",
-        message:
+        message: uiT(
           "This machine cannot clone from a link. Update T3 Code on it, or clone the repository from the command palette.",
+        ),
       });
       return;
     }
@@ -191,8 +194,8 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Clone failed",
-            description: error instanceof Error ? error.message : "An error occurred.",
+            title: uiT("Clone failed"),
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       }
@@ -205,15 +208,18 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
       () => null,
     );
     if (project === null) {
-      setState({ status: "failed", message: "The clone started, but its project did not appear." });
+      setState({
+        status: "failed",
+        message: uiT("The clone started, but its project did not appear."),
+      });
       return;
     }
     // A pull request checks out from the cloned repository, which is not there yet.
     if (link.kind === "pull-request") {
       setState({
         status: "failed",
-        title: `Cloning ${repository.owner}/${repository.name}`,
-        message: "Open this link again when the clone finishes.",
+        title: uiT("Cloning {0}/{1}", { "0": repository.owner, "1": repository.name }),
+        message: uiT("Open this link again when the clone finishes."),
       });
       return;
     }
@@ -262,10 +268,10 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
 
   switch (state.status) {
     case "opening":
-      return <LinkPage title="Opening the link..." />;
+      return <LinkPage title={uiT("Opening the link...")} />;
     case "opened":
       return (
-        <LinkPage title="This link is open">
+        <LinkPage title={uiT("This link is open")}>
           <Button
             size="sm"
             variant="outline"
@@ -275,26 +281,29 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
               setState({ status: "opening" });
             }}
           >
-            Open it again
+            {uiT("Open it again")}
           </Button>
         </LinkPage>
       );
     case "failed":
       return (
-        <LinkPage title={state.title ?? "Could not open the link"} description={state.message} />
+        <LinkPage
+          title={state.title ?? uiT("Could not open the link")}
+          description={state.message}
+        />
       );
     case "missing-repository": {
       const name = `${state.repository.owner}/${state.repository.name}`;
       return (
         <LinkPage
-          title={`You don't have ${name}`}
-          description="Clone it to work on it here, or start without a project."
+          title={uiT("You don't have {0}", { "0": name })}
+          description={uiT("Clone it to work on it here, or start without a project.")}
         >
           <Button size="sm" onClick={() => void cloneRepository(state.repository)}>
-            Clone {name}
+            <UiText message={"Clone {0}"} values={{ "0": name }} />
           </Button>
           <Button size="sm" variant="outline" onClick={() => void openWithoutProject()}>
-            Use without project
+            {uiT("Use without project")}
           </Button>
         </LinkPage>
       );
@@ -318,6 +327,7 @@ function PullRequestLinkCheckout({
   readonly link: Extract<NewThreadLink, { kind: "pull-request" }>;
   readonly project: EnvironmentProject;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { handoff, startHandoff } = usePullRequestHandoffs({
     environmentId: project.environmentId,
     detail: {
@@ -335,8 +345,10 @@ function PullRequestLinkCheckout({
   const { owner, name, number } = link.pullRequest;
   return (
     <LinkPage
-      title={`Check out ${owner}/${name}#${number}?`}
-      description="This puts the pull request's code in a new worktree and runs your project's setup script on it."
+      title={uiT("Check out {0}/{1}#{2}?", { "0": owner, "1": name, "2": number })}
+      description={uiT(
+        "This puts the pull request's code in a new worktree and runs your project's setup script on it.",
+      )}
     >
       <Button
         size="sm"
@@ -349,7 +361,7 @@ function PullRequestLinkCheckout({
           )
         }
       >
-        {handoff !== null ? "Checking out..." : "Check out"}
+        {handoff !== null ? uiT("Checking out...") : uiT("Check out")}
       </Button>
     </LinkPage>
   );
@@ -364,13 +376,14 @@ function LinkPage({
   readonly description?: string;
   readonly children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none">
       {isElectron ? <WorkspacePageHeader electron /> : null}
       <Empty className="flex-1">
         <EmptyHeader className="max-w-md">
-          <EmptyTitle>{title}</EmptyTitle>
-          {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+          <EmptyTitle>{uiT(title)}</EmptyTitle>
+          {description ? <EmptyDescription>{uiT(description)}</EmptyDescription> : null}
           {children ? <div className="mt-5 flex justify-center gap-2">{children}</div> : null}
         </EmptyHeader>
       </Empty>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ReactNode } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
 
@@ -22,6 +23,8 @@ export function ListRowLayout({
   disabled,
   accessory,
 }: ListRowContentProps & { readonly accessory?: ReactNode }) {
+  const { direction } = useUiLanguage();
+  const labelStyle = { textAlign: direction === "rtl" ? ("right" as const) : ("left" as const) };
   const { fontScale } = useWindowDimensions();
   // Leave the label room to wrap at accessibility text sizes.
   const stackDetail = fontScale >= 1.5;
@@ -45,17 +48,24 @@ export function ListRowLayout({
         </View>
       ) : null}
       <View className="min-w-0 flex-1 gap-1">
-        <AppText className="text-base text-foreground">{label}</AppText>
+        <AppText style={labelStyle} className="text-base text-foreground">
+          {label}
+        </AppText>
         {description ? (
-          <AppText className="text-sm text-foreground-muted">{description}</AppText>
+          <AppText style={labelStyle} className="text-sm text-foreground-muted">
+            {description}
+          </AppText>
         ) : null}
         {detail && stackDetail ? (
-          <AppText className="text-sm text-foreground-muted">{detail}</AppText>
+          <AppText style={labelStyle} className="text-sm text-foreground-muted">
+            {detail}
+          </AppText>
         ) : null}
       </View>
       {detail && !stackDetail ? (
         <AppText
-          className="max-w-[40%] shrink text-right text-sm text-foreground-muted"
+          style={{ textAlign: direction === "rtl" ? "left" : "right" }}
+          className="max-w-[40%] shrink text-sm text-foreground-muted"
           numberOfLines={1}
           ellipsizeMode="middle"
         >

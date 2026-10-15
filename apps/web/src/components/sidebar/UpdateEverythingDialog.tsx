@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
@@ -76,6 +77,7 @@ function UpdateEverythingDialogContent({
   skipped,
   onConfirm,
 }: Omit<UpdateEverythingDialogProps, "open" | "onOpenChange">) {
+  const { t: uiT } = useUiLanguage();
   const stopped = useAtomValue(
     runningThreadCountAtom(
       restarts
@@ -105,10 +107,13 @@ function UpdateEverythingDialogContent({
         {running > 0 ? (
           <p className="pt-2 text-sm">
             {stopped === 0
-              ? `${threads} will be interrupted and can resume after the restart.`
+              ? uiT("{0} will be interrupted and can resume after the restart.", { "0": threads })
               : continuing === 0
-                ? `${threads} will be interrupted.`
-                : `${threads} will be interrupted. ${continuing} can resume after the restart.`}
+                ? uiT("{0} will be interrupted.", { "0": threads })
+                : uiT("{0} will be interrupted. {1} can resume after the restart.", {
+                    "0": threads,
+                    "1": continuing,
+                  })}
           </p>
         ) : null}
         {skipped.length > 0 ? (
@@ -118,8 +123,8 @@ function UpdateEverythingDialogContent({
         ) : null}
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
-        <Button onClick={onConfirm}>Update</Button>
+        <AlertDialogClose render={<Button variant="outline" />}>{uiT("Cancel")}</AlertDialogClose>
+        <Button onClick={onConfirm}>{uiT("Update")}</Button>
       </AlertDialogFooter>
     </>
   );

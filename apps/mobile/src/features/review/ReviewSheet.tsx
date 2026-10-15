@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -80,6 +81,7 @@ function ReviewHeader(
     readonly onReturnToThread: () => void;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   const { panes, toggleAuxiliaryPane } = useAdaptiveWorkspaceLayout();
   const presentation = useReviewHeaderPresentation(props);
   const sectionAction = (
@@ -121,7 +123,7 @@ function ReviewHeader(
         ...(props.showSectionToolbar
           ? [
               {
-                title: "Select diff",
+                title: uiT("Select diff"),
                 icon: presentation.menuIcon,
                 items: [
                   {
@@ -137,7 +139,7 @@ function ReviewHeader(
                     ? [
                         {
                           id: "turns",
-                          title: "Turn",
+                          title: uiT("Turn"),
                           items: props.sectionMenu.turns.map((section) => ({
                             id: `section:${section.id}`,
                             title: section.title,
@@ -161,6 +163,7 @@ function ReviewHeader(
 const SHOWCASE_ENABLED = process.env.EXPO_PUBLIC_SHOWCASE === "1";
 
 const ReviewNotice = memo(function ReviewNotice(props: { readonly notice: string }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View
       className={cn(
@@ -168,7 +171,9 @@ const ReviewNotice = memo(function ReviewNotice(props: { readonly notice: string
         Platform.OS === "android" ? "m-2 rounded-[20px]" : "border-b border-warning-border",
       )}
     >
-      <Text className="text-xs font-t3-bold uppercase text-warning-foreground">Partial diff</Text>
+      <Text className="text-xs font-t3-bold uppercase text-warning-foreground">
+        {uiT("Partial diff")}
+      </Text>
       <Text className="text-xs leading-normal text-warning-foreground">{props.notice}</Text>
     </View>
   );
@@ -312,6 +317,7 @@ function ReviewFileNavigator({
   onSelectFile,
   ref,
 }: ReviewFileNavigatorProps) {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const theme = useUniwindTheme();
   const sheetColor = theme["--color-sheet"];
@@ -405,7 +411,7 @@ function ReviewFileNavigator({
               hideShadow={false}
               navigationItemStyle="editor"
               subtitle={`${files.length} ${files.length === 1 ? "file" : "files"}`}
-              title="Changed files"
+              title={uiT("Changed files")}
               titleColor={foregroundColor}
               titleFontSize={17}
               titleFontWeight="700"
@@ -425,16 +431,16 @@ function ReviewFileNavigator({
     >
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
-          title="Changed files"
+          title={uiT("Changed files")}
           subtitle={`${files.length} ${files.length === 1 ? "file" : "files"}`}
           hideBottomBorder
         />
       ) : (
         <View className="border-b border-border" style={{ paddingTop: headerInset }}>
           <View className="px-4 py-3">
-            <Text className="text-sm font-t3-bold text-foreground">Changed files</Text>
+            <Text className="text-sm font-t3-bold text-foreground">{uiT("Changed files")}</Text>
             <Text className="text-xs text-foreground-muted">
-              {files.length} {files.length === 1 ? "file" : "files"}
+              {files.length} {files.length === 1 ? uiT("file") : uiT("files")}
             </Text>
           </View>
         </View>
@@ -450,6 +456,7 @@ type ReviewSheetProps = StaticScreenProps<{
 }>;
 
 export function ReviewSheet(props: ReviewSheetProps) {
+  const { t: uiT } = useUiLanguage();
   const { nativeReviewDiffStyle } = useAppearanceCodeSurface();
   useAdaptiveWorkspacePaneRole("inspector");
   const { panes, showAuxiliaryPane } = useAdaptiveWorkspaceLayout();
@@ -692,7 +699,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
             Platform.OS === "android" ? "m-2 rounded-[20px]" : "border-b border-border",
           )}
         >
-          <Text className="text-sm font-t3-bold text-foreground">Review unavailable</Text>
+          <Text className="text-sm font-t3-bold text-foreground">{uiT("Review unavailable")}</Text>
           <Text className="text-xs leading-normal text-foreground-muted">{error}</Text>
         </View>,
       );
@@ -707,7 +714,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
     }
 
     return <>{children}</>;
-  }, [error, parsedDiffNotice]);
+  }, [error, parsedDiffNotice, uiT]);
   const headerSubtitle = [
     headerDiffSummary.additions,
     headerDiffSummary.deletions,
@@ -837,14 +844,16 @@ export function ReviewSheet(props: ReviewSheetProps) {
                         : "border-b border-border bg-card px-4 py-5"
                     }
                   >
-                    <Text className="text-sm font-t3-bold text-foreground">No review diffs</Text>
+                    <Text className="text-sm font-t3-bold text-foreground">
+                      {uiT("No review diffs")}
+                    </Text>
                     <Text
                       className={cn(
                         "text-xs leading-normal text-foreground-muted",
                         Platform.OS === "android" && "mt-2 text-center",
                       )}
                     >
-                      This thread has no ready turn diffs and the worktree diff is empty.
+                      {uiT("This thread has no ready turn diffs and the worktree diff is empty.")}
                     </Text>
                   </View>
                 )
@@ -856,7 +865,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
                   )}
                 >
                   <AppActivityIndicator size="small" />
-                  <Text className="text-xs text-foreground-muted">Loading diff…</Text>
+                  <Text className="text-xs text-foreground-muted">{uiT("Loading diff…")}</Text>
                 </View>
               ) : parsedDiff.kind === "empty" ? (
                 <View
@@ -866,14 +875,14 @@ export function ReviewSheet(props: ReviewSheetProps) {
                       : "border-b border-border bg-card px-4 py-5"
                   }
                 >
-                  <Text className="text-sm font-t3-bold text-foreground">No changes</Text>
+                  <Text className="text-sm font-t3-bold text-foreground">{uiT("No changes")}</Text>
                   <Text
                     className={cn(
                       "text-xs leading-normal text-foreground-muted",
                       Platform.OS === "android" && "mt-2 text-center",
                     )}
                   >
-                    {selectedSection.subtitle ?? "This diff is empty."}
+                    {selectedSection.subtitle ?? uiT("This diff is empty.")}
                   </Text>
                 </View>
               ) : parsedDiff.kind === "raw" ? (
@@ -902,7 +911,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
                   )}
                 >
                   <Text className="text-xs leading-normal text-foreground-muted">
-                    Native diff view unavailable. Showing the raw patch.
+                    {uiT("Native diff view unavailable. Showing the raw patch.")}
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false}>
                     <Text selectable className="font-mono text-xs leading-relaxed text-foreground">

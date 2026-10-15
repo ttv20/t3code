@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { parseSemver } from "@t3tools/shared/semver";
 import { useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
@@ -54,15 +55,17 @@ function dismissNotice() {
  * corner button, swipe, Dismiss, or the action) hides it for good on this client.
  */
 export function NightlyMobileBetaNotice() {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!IS_NIGHTLY_BUILD || noticeShown || isNoticeDismissed()) return;
     noticeShown = true;
     const toastId = toastManager.add({
-      title: "Nightly needs the beta mobile app",
-      description:
+      title: uiT("Nightly needs the beta mobile app"),
+      description: uiT(
         "Nightly uses the new orchestrator. The App Store and Google Play versions of T3 Code cannot connect to it.",
+      ),
       timeout: 0,
       onClose: dismissNotice,
       actionProps: {
@@ -82,21 +85,22 @@ export function NightlyMobileBetaNotice() {
         secondaryActionVariant: "ghost",
       },
     });
-  }, [navigate]);
+  }, [navigate, uiT]);
 
   return null;
 }
 
 /** QR code plus a copy button for one beta link. */
 function BetaLinkQr({ url, label }: { url: string; label: string }) {
+  const { t: uiT } = useUiLanguage();
   const { copyToClipboard, isCopied } = useCopyToClipboard();
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="rounded-lg bg-white p-1.5">
-        <QRCodeSvg value={url} size={128} level="M" marginSize={1} title={label} />
+        <QRCodeSvg value={url} size={128} level="M" marginSize={1} title={uiT(label)} />
       </div>
       <Button size="xs" variant="outline" onClick={() => copyToClipboard(url)}>
-        {isCopied ? "Copied" : "Copy link"}
+        {isCopied ? uiT("Copied") : uiT("Copy link")}
       </Button>
     </div>
   );
@@ -104,42 +108,47 @@ function BetaLinkQr({ url, label }: { url: string; label: string }) {
 
 /** Settings → General → About row with the beta app links. Render it only for Nightly. */
 export function NightlyMobileBetaRow() {
+  const { t: uiT } = useUiLanguage();
   return (
     <SettingsRow
       id={ROW_ID}
-      title="Mobile app"
-      description="Nightly needs the beta app. The App Store and Google Play versions cannot connect."
+      title={uiT("Mobile app")}
+      description={uiT(
+        "Nightly needs the beta app. The App Store and Google Play versions cannot connect.",
+      )}
       control={
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger render={<Button size="sm" variant="outline" />}>
               <AppleIcon />
-              iPhone
+              {uiT("iPhone")}
             </PopoverTrigger>
             <PopoverPopup align="end">
               <div className="flex flex-col gap-3">
                 <div className="space-y-1">
-                  <PopoverTitle>TestFlight beta</PopoverTitle>
-                  <p className="text-xs text-muted-foreground">Scan with your iPhone camera.</p>
+                  <PopoverTitle>{uiT("TestFlight beta")}</PopoverTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {uiT("Scan with your iPhone camera.")}
+                  </p>
                 </div>
-                <BetaLinkQr url={IOS_TESTFLIGHT_URL} label="TestFlight beta link" />
+                <BetaLinkQr url={IOS_TESTFLIGHT_URL} label={uiT("TestFlight beta link")} />
               </div>
             </PopoverPopup>
           </Popover>
           <Popover>
             <PopoverTrigger render={<Button size="sm" variant="outline" />}>
               <AndroidIcon />
-              Android
+              {uiT("Android")}
             </PopoverTrigger>
             <PopoverPopup align="end">
               <div className="flex flex-col gap-3">
                 <div className="space-y-1">
-                  <PopoverTitle>Android beta APK</PopoverTitle>
+                  <PopoverTitle>{uiT("Android beta APK")}</PopoverTitle>
                   <p className="max-w-56 text-xs text-muted-foreground">
-                    Scan with your phone, then download and install the APK.
+                    {uiT("Scan with your phone, then download and install the APK.")}
                   </p>
                 </div>
-                <BetaLinkQr url={ANDROID_APK_RELEASE_URL} label="Android beta APK link" />
+                <BetaLinkQr url={ANDROID_APK_RELEASE_URL} label={uiT("Android beta APK link")} />
               </div>
             </PopoverPopup>
           </Popover>

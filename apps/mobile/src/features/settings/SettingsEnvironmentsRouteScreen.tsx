@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useNavigation } from "@react-navigation/native";
 import { useAtomValue } from "@effect/atom-react";
@@ -28,6 +29,7 @@ import {
 const SHOWCASE_ENABLED = process.env.EXPO_PUBLIC_SHOWCASE === "1";
 
 export function SettingsEnvironmentsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const {
     connectedEnvironments,
     onReconnectEnvironment,
@@ -105,15 +107,15 @@ export function SettingsEnvironmentsRouteScreen() {
 
   return (
     <SettingsScreen
-      title="Environments"
+      title={uiT("Environments")}
       trailing={
         Platform.OS === "android" && relaySession ? (
           <AndroidAnchoredMenu
-            title="Environment options"
+            title={uiT("Environment options")}
             actions={[
               {
                 id: "refresh",
-                title: "Refresh cloud environments",
+                title: uiT("Refresh cloud environments"),
                 attributes: { disabled: isRefreshingCloud },
               },
             ]}
@@ -123,7 +125,7 @@ export function SettingsEnvironmentsRouteScreen() {
           >
             {(open) => (
               <AndroidHeaderIconButton
-                accessibilityLabel="Environment options"
+                accessibilityLabel={uiT("Environment options")}
                 icon="ellipsis"
                 onPress={open}
               />

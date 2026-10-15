@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Box, ExtendedFloatingActionButton, Host, Icon, Text } from "@expo/ui/jetpack-compose";
 import {
   defaultMinSize,
@@ -20,6 +21,7 @@ export function MaterialScrollComposeButton(props: {
   readonly className?: string;
   readonly style?: StyleProp<ViewStyle>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { appearance, themeAppearance, themeVariables: colors } = useAppearancePreferences();
   const typography = resolveScaledTextRole("footnote", appearance.baseFontSize);
   const { iconSize, fabSize } = useAndroidControlSizing();
@@ -78,7 +80,7 @@ export function MaterialScrollComposeButton(props: {
                     fontWeight: "500",
                   }}
                 >
-                  New thread
+                  {uiT("New thread")}
                 </Text>
               </ExtendedFloatingActionButton.Text>
             </ExtendedFloatingActionButton>
@@ -89,7 +91,7 @@ export function MaterialScrollComposeButton(props: {
       <Pressable
         onPress={props.onPress}
         accessibilityRole="button"
-        accessibilityLabel="New thread"
+        accessibilityLabel={uiT("New thread")}
         android_ripple={{ foreground: true }}
         style={{
           position: "absolute",

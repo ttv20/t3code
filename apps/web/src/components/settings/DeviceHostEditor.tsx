@@ -1,3 +1,4 @@
+import { useUiLanguage, UiText } from "../../i18n";
 import { useState } from "react";
 import * as Option from "effect/Option";
 import type { SshDeviceHostConfig } from "@t3tools/contracts";
@@ -37,6 +38,7 @@ export function DeviceHostEditor({
   onSave: (host: SshDeviceHostConfig) => void;
   onClose: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [draft, setDraft] = useState(host);
   const { checks, testConnection } = useHostConnectionChecks(targets);
   const results = checks[deviceHostConnectionKey(draft)];
@@ -64,44 +66,49 @@ export function DeviceHostEditor({
         }
       >
         <DialogHeader>
-          <DialogTitle>{isNew ? "Add device host" : "Edit device host"}</DialogTitle>
+          <DialogTitle>{isNew ? uiT("Add device host") : uiT("Edit device host")}</DialogTitle>
           <DialogDescription>
-            {targets.length === 1
-              ? `Connect from ${targets[0]?.label}.`
-              : `Connect from ${targets.length} selected environments.`}{" "}
-            Hosts on the same machine are skipped.
+            <UiText
+              message={"{0} Hosts on the same machine are skipped."}
+              values={{
+                "0":
+                  targets.length === 1
+                    ? uiT("Connect from {0}.", { "0": targets[0]?.label })
+                    : uiT("Connect from {0} selected environments.", { "0": targets.length }),
+              }}
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
           <label className="block space-y-1.5 text-sm">
-            <span>Name</span>
+            <span>{uiT("Name")}</span>
             <Input
               autoFocus
               required
               value={draft.label}
               disabled={busy}
               onChange={(event) => setDraft({ ...draft, label: event.target.value })}
-              placeholder="Mac mini"
+              placeholder={uiT("Mac mini")}
             />
           </label>
           <label className="block space-y-1.5 text-sm">
-            <span>SSH target</span>
+            <span>{uiT("SSH target")}</span>
             <Input
               required
               value={draft.target}
               disabled={busy}
               onChange={(event) => setDraft({ ...draft, target: event.target.value })}
-              placeholder="user@host or SSH alias"
+              placeholder={uiT("user@host or SSH alias")}
             />
           </label>
           <details
             open={host.port !== undefined || host.identityFile !== undefined || undefined}
             className="text-sm"
           >
-            <summary className="cursor-pointer text-muted-foreground">SSH options</summary>
+            <summary className="cursor-pointer text-muted-foreground">{uiT("SSH options")}</summary>
             <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
               <label className="block space-y-1.5">
-                <span>Identity file</span>
+                <span>{uiT("Identity file")}</span>
                 <Input
                   value={draft.identityFile ?? ""}
                   disabled={busy}
@@ -111,11 +118,11 @@ export function DeviceHostEditor({
                       event.target.value ? { ...rest, identityFile: event.target.value } : rest,
                     );
                   }}
-                  placeholder="SSH config default"
+                  placeholder={uiT("SSH config default")}
                 />
               </label>
               <label className="block space-y-1.5">
-                <span>Port</span>
+                <span>{uiT("Port")}</span>
                 <Input
                   type="number"
                   min={1}
@@ -128,24 +135,24 @@ export function DeviceHostEditor({
                       event.target.value ? { ...rest, port: Number(event.target.value) } : rest,
                     );
                   }}
-                  placeholder="Default"
+                  placeholder={uiT("Default")}
                 />
               </label>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Optional. Resolved separately on each environment.
+              {uiT("Optional. Resolved separately on each environment.")}
             </p>
           </details>
           <div className="rounded-lg border border-border/60">
             <div className="flex items-center justify-between gap-3 px-3 py-2.5">
               <p role="status" className="text-xs text-muted-foreground">
                 {checking
-                  ? "Checking environments…"
+                  ? uiT("Checking environments…")
                   : results
                     ? failed
-                      ? `${failed} of ${targets.length} failed`
-                      : "Connection checks passed"
-                    : "Check access before saving"}
+                      ? uiT("{0} of {1} failed", { "0": failed, "1": targets.length })
+                      : uiT("Connection checks passed")
+                    : uiT("Check access before saving")}
               </p>
               <Button
                 type="button"
@@ -156,7 +163,10 @@ export function DeviceHostEditor({
                   if (Option.isSome(input)) void testConnection(input.value);
                 }}
               >
-                {checking ? <Spinner size="xs" /> : null} Test connection
+                <UiText
+                  message={"{0} Test connection"}
+                  values={{ "0": checking ? <Spinner size="xs" /> : null }}
+                />
               </Button>
             </div>
             {results ? (
@@ -167,25 +177,25 @@ export function DeviceHostEditor({
                   return (
                     <li key={target.environmentId} className="px-3 py-2.5 text-xs">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="truncate font-medium">{target.label}</span>
+                        <span className="truncate font-medium">{uiT(target.label)}</span>
                         <span
                           className={`flex shrink-0 items-center gap-1.5 ${result.status === "failed" ? "text-destructive" : "text-muted-foreground"}`}
                         >
                           {result.status === "pending" ? (
                             <>
-                              <Spinner size="xs" /> Checking…
+                              <Spinner size="xs" /> {uiT("Checking…")}
                             </>
                           ) : result.status === "local" ? (
                             <>
-                              <MonitorIcon className="size-3" /> Already available locally
+                              <MonitorIcon className="size-3" /> {uiT("Already available locally")}
                             </>
                           ) : result.status === "failed" ? (
                             <>
-                              <XIcon className="size-3" /> Failed
+                              <XIcon className="size-3" /> {uiT("Failed")}
                             </>
                           ) : (
                             <>
-                              <CheckIcon className="size-3" /> Connected
+                              <CheckIcon className="size-3" /> {uiT("Connected")}
                             </>
                           )}
                         </span>
@@ -197,7 +207,7 @@ export function DeviceHostEditor({
                       ) : null}
                       {result.status === "failed" ? (
                         <details className="mt-1.5 text-muted-foreground">
-                          <summary className="cursor-pointer">Show error</summary>
+                          <summary className="cursor-pointer">{uiT("Show error")}</summary>
                           <p className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-words">
                             {result.error}
                           </p>
@@ -212,10 +222,13 @@ export function DeviceHostEditor({
         </DialogPanel>
         <DialogFooter>
           <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
-            Cancel
+            {uiT("Cancel")}
           </Button>
           <Button type="submit" disabled={busy || checking || !valid || !draft.label.trim()}>
-            {busy ? <Spinner size="xs" /> : null} Save host
+            <UiText
+              message={"{0} Save host"}
+              values={{ "0": busy ? <Spinner size="xs" /> : null }}
+            />
           </Button>
         </DialogFooter>
       </DialogPopup>

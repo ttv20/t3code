@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 /**
  * Loading states specific to the pull request surface — the first list, a search under way,
  * and a detail panel opening — use bars in the geometry of the content they stand for, pulsing
@@ -63,10 +64,11 @@ export function PullRequestListGhost({
   /** Said where the group headers speak, for the states with something to say — a search. */
   caption?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="status"
-      aria-label={caption ?? "Loading pull requests"}
+      aria-label={caption ?? uiT("Loading pull requests")}
       className="motion-safe:animate-skeleton space-y-0.5"
     >
       {caption ? (
@@ -121,6 +123,7 @@ export function PullRequestDetailGhost({
   onClose?: (() => void) | undefined;
   onCheckoutError?: ((error: Error) => void) | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const seed = summary
     ? {
         ...entry,
@@ -147,7 +150,7 @@ export function PullRequestDetailGhost({
   return (
     <div
       role="status"
-      aria-label="Loading pull request"
+      aria-label={uiT("Loading pull request")}
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden bg-background",
         !seed && "motion-safe:animate-skeleton",
@@ -162,7 +165,7 @@ export function PullRequestDetailGhost({
                 variant="ghost-muted"
                 className="-ml-1.5"
                 onClick={onBack}
-                aria-label="Back to this thread's pull requests"
+                aria-label={uiT("Back to this thread's pull requests")}
               >
                 <ArrowLeftIcon aria-hidden className="size-3.5" />
               </Button>
@@ -172,7 +175,7 @@ export function PullRequestDetailGhost({
                 <span className="min-w-0 truncate font-medium">{seed.repository}</span>
                 <InlineButton
                   onClick={() => void readLocalApi()?.shell.openExternal(seed.url)}
-                  aria-label={`Open pull request #${seed.number} on host`}
+                  aria-label={uiT("Open pull request #{0} on host", { "0": seed.number })}
                 >
                   <span className={statePresentation?.toneClassName}>#{seed.number}</span>
                   <ExternalLinkIcon aria-hidden className="size-2.5" />
@@ -188,14 +191,19 @@ export function PullRequestDetailGhost({
         </div>
         <div className="mr-4 flex h-7 shrink-0 items-center justify-end gap-1">
           {actions ?? <GhostBar className="h-6 w-16 rounded-md" />}
-          <Button size="icon-xs" variant="ghost" disabled aria-label="Pull request actions loading">
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            disabled
+            aria-label={uiT("Pull request actions loading")}
+          >
             <EllipsisIcon aria-hidden className="size-4" />
           </Button>
           {onClose ? (
             <Button
               size="icon-xs"
               variant="ghost"
-              aria-label="Collapse pull request panel"
+              aria-label={uiT("Collapse pull request panel")}
               onClick={onClose}
             >
               <PanelRightIcon aria-hidden className="size-3.5" />
@@ -227,7 +235,9 @@ export function PullRequestDetailGhost({
               }
               updated={
                 seed ? (
-                  <span>updated {formatRelativeTimeLabel(seed.updatedAt)}</span>
+                  <span>
+                    {uiT("updated")} {formatRelativeTimeLabel(seed.updatedAt)}
+                  </span>
                 ) : (
                   <GhostBar className="h-3 w-16" />
                 )
@@ -315,11 +325,16 @@ export function PullRequestDetailGhost({
             <div className="grid min-h-7 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs sm:min-h-6">
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <UsersIcon aria-hidden className="size-3.5" />
-                Reviewers
+                {uiT("Reviewers")}
               </span>
               <span className="flex min-w-0 items-center gap-1.5 text-foreground">
                 <GhostBar className="h-3 w-10" />
-                <Button size="icon-xs" variant="ghost" disabled aria-label="Reviewers loading">
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  disabled
+                  aria-label={uiT("Reviewers loading")}
+                >
                   <UserPlusIcon aria-hidden className="size-3.5" />
                 </Button>
               </span>
@@ -327,7 +342,7 @@ export function PullRequestDetailGhost({
             <div className="grid min-h-7 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs sm:min-h-6">
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <TagIcon aria-hidden className="size-3.5" />
-                Labels
+                {uiT("Labels")}
               </span>
               <span className="flex min-w-0 flex-wrap items-center gap-1 text-foreground">
                 {entry?.labels ? (
@@ -341,7 +356,7 @@ export function PullRequestDetailGhost({
                       />
                     ))
                   ) : (
-                    <span className="text-muted-foreground">None</span>
+                    <span className="text-muted-foreground">{uiT("None")}</span>
                   )
                 ) : (
                   <>
@@ -349,7 +364,7 @@ export function PullRequestDetailGhost({
                     <GhostBar className="h-4.5 w-20" />
                   </>
                 )}
-                <Button size="icon-xs" variant="ghost" disabled aria-label="Labels loading">
+                <Button size="icon-xs" variant="ghost" disabled aria-label={uiT("Labels loading")}>
                   <TagIcon aria-hidden className="size-3.5" />
                 </Button>
               </span>
@@ -360,7 +375,7 @@ export function PullRequestDetailGhost({
         <section>
           <div className="sticky top-0 z-10 flex w-full items-center bg-background pr-4">
             <div className="flex min-w-0 flex-1 items-center gap-1.5 px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-              <span>Description</span>
+              <span>{uiT("Description")}</span>
               <ChevronRightIcon
                 aria-hidden
                 className="size-3.5 rotate-90 text-muted-foreground/60"
@@ -384,10 +399,11 @@ export function PullRequestDetailGhost({
 
 /** People-shaped: an avatar and a name, in the reviewer picker's own row height. */
 export function PullRequestPeopleGhost({ rows = 4 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="status"
-      aria-label="Loading people"
+      aria-label={uiT("Loading people")}
       className="motion-safe:animate-skeleton space-y-1 p-1"
     >
       {Array.from({ length: rows }, (_, index) => (
@@ -402,10 +418,11 @@ export function PullRequestPeopleGhost({ rows = 4 }: { rows?: number }) {
 
 /** The timeline's own shape: dots on the rail, a line and a date to each. */
 export function PullRequestTimelineGhost({ rows = 6 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="status"
-      aria-label="Loading timeline"
+      aria-label={uiT("Loading timeline")}
       className="motion-safe:animate-skeleton px-4 py-5"
     >
       <div className="relative ml-2 border-l border-border/70 pl-5">
@@ -423,10 +440,11 @@ export function PullRequestTimelineGhost({ rows = 6 }: { rows?: number }) {
 
 /** A compact placeholder for the conversation while the core detail is already readable. */
 export function PullRequestConversationGhost({ rows = 3 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="status"
-      aria-label="Loading pull request conversation"
+      aria-label={uiT("Loading pull request conversation")}
       className="motion-safe:animate-skeleton space-y-4 py-2"
     >
       {Array.from({ length: rows }, (_, index) => (

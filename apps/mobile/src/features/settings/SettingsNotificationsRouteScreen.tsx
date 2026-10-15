@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AuthRelayWriteScope } from "@t3tools/contracts";
 import { readEnvironmentScope } from "../../state/session";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
@@ -59,15 +60,16 @@ function useDeviceRegistered(): boolean {
 }
 
 export function SettingsNotificationsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   if (!hasCloudPublicConfig()) {
     return (
-      <SettingsScreen title="Notifications">
+      <SettingsScreen title={uiT("Notifications")}>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
           contentContainerClassName="px-5 pt-4"
         >
           <Text className="text-base text-foreground-muted">
-            Notifications require T3 Connect in this app build.
+            {uiT("Notifications require T3 Connect in this app build.")}
           </Text>
         </ScrollView>
       </SettingsScreen>
@@ -78,6 +80,7 @@ export function SettingsNotificationsRouteScreen() {
 }
 
 function ConfiguredSettingsNotificationsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
   const agentAwarenessPushAvailable = supportsAgentAwarenessPush();
@@ -111,12 +114,12 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     }
     const result = await settlePromise(() => Notifications.getPermissionsAsync());
     if (result._tag === "Failure") {
-      reportAtomCommandResult(result, { label: "notification permission refresh" });
+      reportAtomCommandResult(result, { label: uiT("notification permission refresh") });
       setNotificationStatus("disabled");
       return;
     }
     setNotificationStatus(result.value.granted ? "enabled" : "disabled");
-  }, []);
+  }, [uiT]);
 
   useEffect(() => {
     void refreshNotifications();
@@ -137,7 +140,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     }
     if (!AsyncResult.isSuccess(preferencesResult)) {
       if (AsyncResult.isFailure(preferencesResult)) {
-        reportAtomCommandResult(preferencesResult, { label: "live activity preference load" });
+        reportAtomCommandResult(preferencesResult, { label: uiT("live activity preference load") });
         setLiveActivityStatus("enabled");
       } else {
         setLiveActivityStatus("checking");
@@ -147,7 +150,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     setLiveActivityStatus(
       preferencesResult.value.liveActivitiesEnabled === false ? "disabled" : "enabled",
     );
-  }, [isLoaded, isSignedIn, preferencesResult]);
+  }, [isLoaded, isSignedIn, preferencesResult, uiT]);
 
   const requestNotifications = useCallback(async () => {
     const result = await settleAsyncResult(() =>
@@ -364,7 +367,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
               if (tokenResult._tag === "Failure") {
                 setLiveActivityStatus("enabled");
                 reportAtomCommandResult(tokenResult, {
-                  label: "live activity disable token lookup",
+                  label: uiT("live activity disable token lookup"),
                 });
                 return;
               }
@@ -386,7 +389,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
             if (updateResult._tag === "Failure") {
               setLiveActivityStatus(isSignedIn ? "enabled" : "signed-out");
               reportAtomCommandResult(updateResult, {
-                label: "live activity disable",
+                label: uiT("live activity disable"),
               });
               return;
             }
@@ -422,7 +425,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
   );
 
   return (
-    <SettingsScreen title="Notifications">
+    <SettingsScreen title={uiT("Notifications")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -432,10 +435,10 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           paddingBottom: Math.max(insets.bottom, 18) + 18,
         }}
       >
-        <SettingsSection title="Agent activity">
+        <SettingsSection title={uiT("Agent activity")}>
           <SettingsSwitchRow
             icon="bell.badge"
-            label="Device Notifications"
+            label={uiT("Device Notifications")}
             disabled={
               !agentAwarenessPlatform.supported ||
               !agentAwarenessPushAvailable ||
@@ -463,9 +466,9 @@ function ConfiguredSettingsNotificationsRouteScreen() {
             label={
               Platform.OS === "android"
                 ? supportsAndroidLiveUpdateSettings()
-                  ? "Agent Live Updates"
-                  : "Ongoing Agent Activity"
-                : "Live Activity Updates"
+                  ? uiT("Agent Live Updates")
+                  : uiT("Ongoing Agent Activity")
+                : uiT("Live Activity Updates")
             }
             subtitle={agentAwarenessSubtitle}
             // Same gate: a saved preference is meaningless until the device
@@ -480,14 +483,14 @@ function ConfiguredSettingsNotificationsRouteScreen() {
           {liveActivityStatus === "signed-out" && canClearLiveActivitiesPreference ? (
             <SettingsRow
               icon="bolt.circle"
-              label="Turn off Live Activity preference"
+              label={uiT("Turn off Live Activity preference")}
               onPress={() => handleLiveActivitiesChange(false)}
             />
           ) : null}
           {supportsAndroidLiveUpdateSettings() ? (
             <SettingsRow
               icon="bolt.circle"
-              label="Live Update Settings"
+              label={uiT("Live Update Settings")}
               onPress={() => {
                 void openAndroidLiveUpdateSettings().catch(() => {
                   Alert.alert(

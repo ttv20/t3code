@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ReactNode } from "react";
 
 import { isElectron } from "~/env";
@@ -90,12 +91,13 @@ function DiffCodeLineSkeleton({ width }: { width: "short" | "medium" | "long" })
 }
 
 export function DiffPanelLoadingState(props: { label: string }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       className="min-h-0 flex-1 overflow-hidden bg-background"
       role="status"
       aria-live="polite"
-      aria-label={props.label}
+      aria-label={uiT(props.label)}
     >
       <DiffFileHeaderSkeleton titleWidth="medium" />
       <div className="flex h-6 items-center gap-2 px-2 pr-3">
@@ -110,7 +112,7 @@ export function DiffPanelLoadingState(props: { label: string }) {
       </div>
       <DiffFileHeaderSkeleton titleWidth="short" />
       <DiffFileHeaderSkeleton titleWidth="long" />
-      <span className="sr-only">{props.label}</span>
+      <span className="sr-only">{uiT(props.label)}</span>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useCallback, useEffect, useState } from "react";
 import { Platform, Modal, Pressable, TextInput, View } from "react-native";
 
@@ -35,6 +36,7 @@ export function showTextInputDialog(request: TextInputDialogRequest): void {
  * button color and a dimmer message than the title.
  */
 export function ConfirmDialogHost() {
+  const { t: uiT } = useUiLanguage();
   const [presented, setPresented] = useState<DialogRequest | null>(null);
   const [inputValue, setInputValue] = useState("");
   useEffect(() => {
@@ -119,7 +121,7 @@ export function ConfirmDialogHost() {
                   onPress={handleCancel}
                 >
                   <AppText className="text-base font-t3-medium">
-                    {presented.request.cancelText ?? "Cancel"}
+                    {presented.request.cancelText ?? uiT("Cancel")}
                   </AppText>
                 </Pressable>
               </View>

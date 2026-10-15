@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useEffect, useState, type ReactNode } from "react";
 import { View } from "react-native";
 
@@ -13,6 +14,7 @@ function InspectorContentPane(props: {
   readonly resetKeys: readonly [string | null, string | null];
   readonly visible: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (!props.mounted) {
     return null;
   }
@@ -33,7 +35,7 @@ function InspectorContentPane(props: {
       <RenderErrorBoundary
         resetKeys={props.resetKeys}
         renderFallback={(fallback) => (
-          <RenderFailureView {...fallback} title="The inspector couldn't be displayed" />
+          <RenderFailureView {...fallback} title={uiT("The inspector couldn't be displayed")} />
         )}
       >
         {props.children}

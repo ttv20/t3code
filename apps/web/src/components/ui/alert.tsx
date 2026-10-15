@@ -133,6 +133,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<"div">) 
   return (
     <div
       className={cn("flex flex-col gap-2.5 text-muted-foreground", className)}
+      dir="auto"
       data-slot="alert-description"
       {...props}
     />

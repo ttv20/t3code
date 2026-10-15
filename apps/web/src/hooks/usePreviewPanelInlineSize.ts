@@ -1,6 +1,7 @@
 import { type RefObject, useLayoutEffect, useState } from "react";
 
 import { type ResizableWidthHandlers, useResizableWidth } from "./useResizableWidth";
+import { useUiLanguage } from "../i18n";
 import { observeResize } from "../lib/observeResize";
 
 export interface PreviewPanelInlineSize {
@@ -33,13 +34,14 @@ export function usePreviewPanelInlineSize(
     readonly container?: HTMLElement | null | undefined;
   } = {},
 ): PreviewPanelInlineSize {
+  const { direction } = useUiLanguage();
   const maxWidth = useViewportClampedMaxWidth(hostRef, options.enabled ?? true, options.container);
   return useResizableWidth({
     storageKey: options.widthStorageKey ?? PREVIEW_PANEL_WIDTH_STORAGE_KEY,
     defaultWidth: options.defaultWidth ?? PREVIEW_PANEL_DEFAULT_WIDTH,
     minWidth: PREVIEW_PANEL_MIN_WIDTH,
     maxWidth,
-    edge: "left",
+    edge: direction === "rtl" ? "right" : "left",
   });
 }
 

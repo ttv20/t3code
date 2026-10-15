@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useAuth } from "@clerk/react";
 import { ManagedRelay, setManagedRelaySession } from "@t3tools/client-runtime/relay";
 import {
@@ -29,6 +30,7 @@ export function activateManagedRelayAuthentication(
 }
 
 export function ManagedRelayAuthProvider({ children }: { readonly children: ReactNode }) {
+  const { t: uiT } = useUiLanguage();
   const { getToken, isLoaded, isSignedIn, userId } = useAuth({
     treatPendingAsSignedOut: false,
   });
@@ -63,7 +65,7 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
           ),
         ]);
         for (const result of results) {
-          reportAtomCommandResult(result, { label: "cloud account cleanup" });
+          reportAtomCommandResult(result, { label: uiT("cloud account cleanup") });
         }
       });
       return accountTransitionRef.current;
@@ -87,7 +89,7 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
             await transition;
             activateSession();
           });
-          reportAtomCommandResult(result, { label: "cloud account activation" });
+          reportAtomCommandResult(result, { label: uiT("cloud account activation") });
         })();
       };
       if (previousAccount !== undefined && previousAccount !== null && previousAccount !== userId) {
@@ -100,7 +102,7 @@ export function ManagedRelayAuthProvider({ children }: { readonly children: Reac
     return () => {
       cancelled = true;
     };
-  }, [getToken, isLoaded, isSignedIn, removeRelayEnvironments, userId]);
+  }, [getToken, isLoaded, isSignedIn, removeRelayEnvironments, userId, uiT]);
 
   useEffect(() => () => deactivateManagedRelayAuthentication(), []);
 

@@ -422,6 +422,14 @@
     "./pull-request-markdown": {
       "types": "./src/pullRequestMarkdown.ts",
       "default": "./src/pullRequestMarkdown.ts"
+    },
+    "./i18n": {
+      "types": "./src/i18n.ts",
+      "default": "./src/i18n.ts"
+    },
+    "./usage-localization": {
+      "types": "./src/usageLocalization.ts",
+      "default": "./src/usageLocalization.ts"
     }
   },
   "scripts": {

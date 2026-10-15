@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { resolveFilesystemReadAccess } from "@t3tools/client-runtime/state/filesystem";
 import { useEnvironmentPresentation } from "../../state/presentation";
 import { environmentSession } from "../../state/session";
@@ -260,6 +261,7 @@ type NewTaskFlowContextValue = {
 const NewTaskFlowContext = React.createContext<NewTaskFlowContextValue | null>(null);
 
 export function NewTaskFlowProvider(props: React.PropsWithChildren) {
+  const { t: uiT } = useUiLanguage();
   const projects = useProjects();
   const threads = useThreadShells();
   const { savedConnectionsById } = useSavedRemoteConnections();
@@ -345,7 +347,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
     return {
       environmentId: editingPendingTask.environmentId,
       id: creation.projectId,
-      title: creation.projectTitle ?? "Unknown project",
+      title: creation.projectTitle ?? uiT("Unknown project"),
       // Deliberately empty when the snapshot has no cwd — downstream consumers
       // (branch queries, worktree bootstrap) must skip it, not receive a
       // fabricated path.
@@ -356,7 +358,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
       createdAt: editingPendingTask.createdAt,
       updatedAt: editingPendingTask.createdAt,
     };
-  }, [editingPendingTask]);
+  }, [editingPendingTask, uiT]);
 
   const selectedProject =
     projectsForEnvironment.find(

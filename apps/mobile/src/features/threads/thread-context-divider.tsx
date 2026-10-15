@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 import { View, type ColorValue } from "react-native";
 import { AppText as Text } from "../../components/AppText";
@@ -12,6 +13,7 @@ export function ThreadContextDivider(props: {
   failed?: boolean;
   children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View className="mb-3 flex-row items-center gap-3 px-1 py-1">
       <View className="h-px min-w-2 flex-1 bg-separator" />
@@ -35,7 +37,7 @@ export function ThreadContextDivider(props: {
                 : "font-t3-medium text-xs text-foreground-muted"
             }
           >
-            {props.label}
+            {uiT(props.label)}
           </Text>
         )}
         {props.children}

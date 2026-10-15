@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { StackActions, useIsFocused, useNavigation } from "@react-navigation/native";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
@@ -69,6 +70,7 @@ export function ThreadSubagentGroup(props: {
   readonly iconSubtleColor: ColorValue;
   readonly onToggleRow: (rowId: string, anchorKey: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const config = useAtomValue(serverEnvironment.configValueAtom(props.environmentId));
   const navigation = useNavigation();
   const members = props.activities.flatMap(({ projectedItem }) =>
@@ -92,7 +94,7 @@ export function ThreadSubagentGroup(props: {
     };
   });
   const grouped = agents.length > 1;
-  const label = `${agents.length} subagents`;
+  const label = uiT("{0} subagents", { "0": agents.length });
   const summary = summarizeSubagentStatuses(agents.map((agent) => agent.status));
   const expanded = props.expandedRows[props.anchorKey] ?? false;
   const iconUrl = (item: SubagentItem) =>
@@ -121,7 +123,7 @@ export function ThreadSubagentGroup(props: {
           </View>
           <View className="min-w-0 flex-1 gap-0.5">
             <Text numberOfLines={1} className="font-t3-medium text-sm text-foreground">
-              {label}
+              {uiT(label)}
             </Text>
             <Text
               numberOfLines={1}
@@ -154,7 +156,9 @@ export function ThreadSubagentGroup(props: {
                 accessible
                 accessibilityRole={threadId === null ? undefined : "link"}
                 accessibilityHint={
-                  threadId === null ? "Provider-managed agent" : "Opens this agent's thread"
+                  threadId === null
+                    ? uiT("Provider-managed agent")
+                    : uiT("Opens this agent's thread")
                 }
                 disabled={threadId === null}
                 onPress={() => {

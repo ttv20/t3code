@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
 
@@ -10,6 +11,7 @@ export function ListSection(props: {
   readonly children: ReactNode;
   readonly footer?: string;
 }) {
+  const { t } = useUiLanguage();
   return (
     <View className="gap-2">
       {props.title ? (
@@ -23,7 +25,7 @@ export function ListSection(props: {
           >
             {props.titleIcon}
             <Text className="shrink text-sm font-t3-medium text-foreground-muted">
-              {props.title}
+              {t(props.title)}
             </Text>
           </View>
           {props.trailing}
@@ -39,7 +41,7 @@ export function ListSection(props: {
         {props.children}
       </View>
       {props.footer ? (
-        <Text className="px-4 text-sm text-foreground-muted">{props.footer}</Text>
+        <Text className="px-4 text-sm text-foreground-muted">{t(props.footer)}</Text>
       ) : null}
     </View>
   );

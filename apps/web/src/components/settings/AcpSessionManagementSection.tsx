@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   AuthOrchestrationOperateScope,
   AuthProvidersManageScope,
@@ -51,6 +52,7 @@ export function AcpSessionManagementSection(props: {
   readonly projects: ReadonlyArray<AcpSessionProject>;
   readonly readOnly: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const canOperate = useEnvironmentScope(props.environmentId, AuthOrchestrationOperateScope);
   const canRead = useEnvironmentScope(props.environmentId, AuthOrchestrationReadScope);
   const [projectId, setProjectId] = useState<ProjectId | null>(props.projects[0]?.id ?? null);
@@ -153,7 +155,9 @@ export function AcpSessionManagementSection(props: {
       );
       toastManager.add({
         type: "success",
-        title: result.value.imported ? "ACP session imported" : "ACP session already imported",
+        title: result.value.imported
+          ? uiT("ACP session imported")
+          : uiT("ACP session already imported"),
       });
       return;
     }
@@ -179,7 +183,7 @@ export function AcpSessionManagementSection(props: {
       setSessions((current) =>
         current.filter((candidate) => candidate.sessionId !== session.sessionId),
       );
-      toastManager.add({ type: "success", title: "ACP session deleted" });
+      toastManager.add({ type: "success", title: uiT("ACP session deleted") });
       return;
     }
     reportFailure("Could not delete ACP session", result);
@@ -237,8 +241,8 @@ export function AcpSessionManagementSection(props: {
       } catch (error) {
         toastManager.add({
           type: "error",
-          title: "Invalid provider headers",
-          description: error instanceof Error ? error.message : "Headers must be valid JSON.",
+          title: uiT("Invalid provider headers"),
+          description: error instanceof Error ? error.message : uiT("Headers must be valid JSON."),
         });
         return;
       }
@@ -257,7 +261,7 @@ export function AcpSessionManagementSection(props: {
     });
     setSavingProviderId(null);
     if (result._tag === "Success") {
-      toastManager.add({ type: "success", title: "ACP provider configured" });
+      toastManager.add({ type: "success", title: uiT("ACP provider configured") });
       await loadProviders();
       return;
     }
@@ -278,7 +282,7 @@ export function AcpSessionManagementSection(props: {
     });
     setSavingProviderId(null);
     if (result._tag === "Success") {
-      toastManager.add({ type: "success", title: "ACP provider disabled" });
+      toastManager.add({ type: "success", title: uiT("ACP provider disabled") });
       await loadProviders();
       return;
     }
@@ -296,7 +300,7 @@ export function AcpSessionManagementSection(props: {
     if (result._tag === "Success") {
       setSessions([]);
       setNextCursor(null);
-      toastManager.add({ type: "success", title: "Logged out of ACP agent" });
+      toastManager.add({ type: "success", title: uiT("Logged out of ACP agent") });
       return;
     }
     reportFailure("Could not log out of ACP agent", result);
@@ -305,8 +309,8 @@ export function AcpSessionManagementSection(props: {
   return (
     <div className="grid gap-3">
       <SettingsRow
-        title="Native sessions"
-        description="Resume agent-owned conversations as T3 threads."
+        title={uiT("Native sessions")}
+        description={uiT("Resume agent-owned conversations as T3 threads.")}
         status={
           canList && props.projects.length === 0
             ? "Add a project before importing sessions."
@@ -322,7 +326,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={props.readOnly || loggingOut}
                 onClick={() => void logoutProvider()}
               >
-                {loggingOut ? "Logging out" : "Log out"}
+                {loggingOut ? uiT("Logging out") : uiT("Log out")}
               </Button>
             ) : null}
             {canList && props.projects.length > 0 ? (
@@ -339,7 +343,11 @@ export function AcpSessionManagementSection(props: {
                     setProviderDrafts({});
                   }}
                 >
-                  <SelectTrigger aria-label="Project for ACP sessions" className="w-40" size="sm">
+                  <SelectTrigger
+                    aria-label={uiT("Project for ACP sessions")}
+                    className="w-40"
+                    size="sm"
+                  >
                     <SelectValue>
                       {props.projects.find((project) => project.id === projectId)?.title}
                     </SelectValue>
@@ -359,7 +367,11 @@ export function AcpSessionManagementSection(props: {
                   disabled={!canRead || loading || projectId === null}
                   onClick={() => void loadSessions()}
                 >
-                  {loading ? "Loading" : sessions.length === 0 ? "List sessions" : "Refresh"}
+                  {loading
+                    ? uiT("Loading")
+                    : sessions.length === 0
+                      ? uiT("List sessions")
+                      : uiT("Refresh")}
                 </Button>
               </>
             ) : null}
@@ -397,10 +409,10 @@ export function AcpSessionManagementSection(props: {
                         onClick={() => void importNativeSession(session)}
                       >
                         {session.importedThreadId !== null
-                          ? "Imported"
+                          ? uiT("Imported")
                           : importingSessionId === session.sessionId
-                            ? "Importing"
-                            : "Import"}
+                            ? uiT("Importing")
+                            : uiT("Import")}
                       </Button>
                       {canDelete ? (
                         <Button
@@ -414,7 +426,7 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void deleteNativeSession(session)}
                         >
-                          {deletingSessionId === session.sessionId ? "Deleting" : "Delete"}
+                          {deletingSessionId === session.sessionId ? uiT("Deleting") : "Delete"}
                         </Button>
                       ) : null}
                     </div>
@@ -432,7 +444,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={!canRead || loading}
                 onClick={() => void loadSessions(nextCursor)}
               >
-                {loading ? "Loading" : "Load more"}
+                {loading ? uiT("Loading") : uiT("Load more")}
               </Button>
             ) : null}
           </>
@@ -443,9 +455,9 @@ export function AcpSessionManagementSection(props: {
         <div className="grid gap-3 border-t border-border/60 px-3 py-3 sm:px-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-medium text-foreground">Agent providers</p>
+              <p className="text-xs font-medium text-foreground">{uiT("Agent providers")}</p>
               <p className="text-xs text-muted-foreground">
-                Configure non-secret routing. Headers are write-only.
+                {uiT("Configure non-secret routing. Headers are write-only.")}
               </p>
             </div>
             <Button
@@ -455,7 +467,11 @@ export function AcpSessionManagementSection(props: {
               disabled={!canRead || loadingProviders || projectId === null}
               onClick={() => void loadProviders()}
             >
-              {loadingProviders ? "Loading" : providers.length === 0 ? "List providers" : "Refresh"}
+              {loadingProviders
+                ? uiT("Loading")
+                : providers.length === 0
+                  ? uiT("List providers")
+                  : uiT("Refresh")}
             </Button>
           </div>
 
@@ -470,7 +486,11 @@ export function AcpSessionManagementSection(props: {
                 setProviderDrafts({});
               }}
             >
-              <SelectTrigger aria-label="Project for ACP providers" className="min-w-48" size="xs">
+              <SelectTrigger
+                aria-label={uiT("Project for ACP providers")}
+                className="min-w-48"
+                size="xs"
+              >
                 <SelectValue>
                   {props.projects.find((project) => project.id === projectId)?.title}
                 </SelectValue>
@@ -506,8 +526,8 @@ export function AcpSessionManagementSection(props: {
                           {provider.providerId}
                         </p>
                         <p className="text-3xs text-muted-foreground">
-                          {provider.current === null ? "Disabled" : "Configured"}
-                          {provider.required ? " · Required" : ""}
+                          {provider.current === null ? uiT("Disabled") : uiT("Configured")}
+                          {provider.required ? uiT(" · Required") : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -523,7 +543,7 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void saveProvider(provider)}
                         >
-                          {savingProviderId === provider.providerId ? "Saving" : "Save"}
+                          {savingProviderId === provider.providerId ? uiT("Saving") : uiT("Save")}
                         </Button>
                         {!provider.required && provider.current !== null ? (
                           <Button
@@ -533,7 +553,7 @@ export function AcpSessionManagementSection(props: {
                             disabled={props.readOnly || savingProviderId !== null}
                             onClick={() => void disableConfiguredProvider(provider)}
                           >
-                            Disable
+                            {uiT("Disable")}
                           </Button>
                         ) : null}
                       </div>
@@ -546,7 +566,10 @@ export function AcpSessionManagementSection(props: {
                           if (value !== null) updateDraft({ apiType: value });
                         }}
                       >
-                        <SelectTrigger aria-label={`${provider.providerId} protocol`} size="sm">
+                        <SelectTrigger
+                          aria-label={uiT("{0} protocol", { "0": provider.providerId })}
+                          size="sm"
+                        >
                           <SelectValue>{draft.apiType}</SelectValue>
                         </SelectTrigger>
                         <SelectPopup>
@@ -560,7 +583,7 @@ export function AcpSessionManagementSection(props: {
                       <Input
                         size="sm"
                         type="url"
-                        aria-label={`${provider.providerId} base URL`}
+                        aria-label={uiT("{0} base URL", { "0": provider.providerId })}
                         placeholder="https://api.example.com"
                         value={draft.baseUrl}
                         disabled={props.readOnly || savingProviderId !== null}
@@ -570,8 +593,10 @@ export function AcpSessionManagementSection(props: {
                     <Input
                       size="sm"
                       type="password"
-                      aria-label={`${provider.providerId} write-only headers JSON`}
-                      placeholder='Write-only headers JSON, e.g. {"Authorization":"Bearer …"}'
+                      aria-label={uiT("{0} write-only headers JSON", { "0": provider.providerId })}
+                      placeholder={uiT(
+                        'Write-only headers JSON, e.g. {"Authorization":"Bearer …"}',
+                      )}
                       value={draft.headers}
                       disabled={props.readOnly || savingProviderId !== null}
                       onValueChange={(value) => updateDraft({ headers: value })}

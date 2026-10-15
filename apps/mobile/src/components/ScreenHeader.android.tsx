@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BackHandler,
@@ -21,6 +22,7 @@ import type { ScreenHeaderProps } from "./ScreenHeader.types";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function ScreenHeader(props: ScreenHeaderProps) {
+  const { t: uiT } = useUiLanguage();
   const { search } = props;
   const { paddingTop, paddingBottom } = useMaterialToolbarLayout();
   const { scale, buttonSize, iconSize, smallIconSize } = useAndroidControlSizing();
@@ -100,7 +102,7 @@ export function ScreenHeader(props: ScreenHeaderProps) {
           <View className="flex-row items-center gap-2" style={{ minHeight: buttonSize }}>
             {props.onBack ? (
               <Pressable
-                accessibilityLabel="Navigate up"
+                accessibilityLabel={uiT("Navigate up")}
                 accessibilityRole="button"
                 hitSlop={8}
                 onPress={props.onBack}
@@ -131,14 +133,14 @@ export function ScreenHeader(props: ScreenHeaderProps) {
                 type="monochrome"
               />
               <TextInput
-                accessibilityLabel={search.placeholder}
+                accessibilityLabel={uiT(search.placeholder)}
                 autoCapitalize="none"
                 onChangeText={search.onChangeText}
                 value={search.value}
                 placeholder={
                   search.compactToolbar
-                    ? (search.compactPlaceholder ?? search.placeholder)
-                    : search.placeholder
+                    ? (search.compactPlaceholder ?? uiT(search.placeholder))
+                    : uiT(search.placeholder)
                 }
                 placeholderTextColorClassName="accent-placeholder"
                 className="flex-1 text-base font-sans text-header-foreground"
@@ -204,7 +206,7 @@ export function ScreenHeader(props: ScreenHeaderProps) {
             <View className="absolute inset-0 bg-header px-2" style={{ paddingTop, paddingBottom }}>
               <View className="flex-1 flex-row items-center gap-1">
                 <ScreenHeaderButton
-                  accessibilityLabel={search.closeAccessibilityLabel ?? "Close search"}
+                  accessibilityLabel={search.closeAccessibilityLabel ?? uiT("Close search")}
                   icon="arrow.left"
                   onPress={closeSearch}
                 />

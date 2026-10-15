@@ -1,3 +1,4 @@
+import { UiText, useUiLanguage } from "../../i18n";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { ChevronDownIcon } from "lucide-react";
 import * as Duration from "effect/Duration";
@@ -144,10 +145,11 @@ function authPresentation(auth: SourceControlProviderAuth): {
 }
 
 function RedactedAccount(props: { readonly account: string | null }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <RedactedSensitiveText
       value={props.account}
-      ariaLabel="Toggle source control account visibility"
+      ariaLabel={uiT("Toggle source control account visibility")}
       revealTooltip="Click to reveal account"
       hideTooltip="Click to hide account"
     />
@@ -194,17 +196,30 @@ function itemSummary({
   item,
   auth,
   authAccount,
+  translate,
 }: {
+  readonly translate: (message: string) => string;
   readonly item: VcsDiscoveryItem | SourceControlProviderDiscoveryItem;
   readonly auth: SourceControlProviderAuth | null;
   readonly authAccount: string | null;
 }) {
   if (isVcsNotReady(item)) {
-    return <span>Support for {item.label} is coming soon.</span>;
+    return (
+      <span>
+        <UiText message={"Support for {0} is coming soon."} values={{ "0": item.label }} />
+      </span>
+    );
   }
 
   if (item.status !== "available") {
-    return <span>Not available on this server: {item.installHint}</span>;
+    return (
+      <span>
+        <UiText
+          message={"Not available on this server: {0}"}
+          values={{ "0": translate(item.installHint) }}
+        />
+      </span>
+    );
   }
 
   if (auth) {
@@ -214,14 +229,16 @@ function itemSummary({
       const authDetail = optionLabel(auth.detail);
       return (
         <>
-          <span>Authenticated</span>
+          <span>
+            <UiText message={"Authenticated"} />
+          </span>
           {authAccount ? (
             <>
-              <span aria-hidden>as</span>
+              <span aria-hidden>{translate("as")}</span>
               <RedactedAccount account={authAccount} />
             </>
           ) : null}
-          {authDetail ? <span>· {authDetail}</span> : null}
+          {authDetail ? <span>· {translate(authDetail)}</span> : null}
         </>
       );
     }
@@ -229,7 +246,11 @@ function itemSummary({
     // API integrations have no CLI to sign in with; an unverified saved credential falls
     // through to the "could not verify" detail instead of repeating the setup hint.
     if (!item.executable && auth.status === "unauthenticated") {
-      return <span>Available. {item.installHint}</span>;
+      return (
+        <span>
+          <UiText message={"Available. {0}"} values={{ "0": translate(item.installHint) }} />
+        </span>
+      );
     }
 
     // Signed in, but every login is turned off here: the fix is the switch below, not the CLI.
@@ -240,21 +261,34 @@ function itemSummary({
     if (auth.status === "unauthenticated") {
       return (
         <span>
-          {item.label} is not authenticated on this server. Sign in or configure credentials using
-          the <code className="rounded bg-muted px-1 py-px text-2xs">{item.executable}</code> tool
-          on the server host to enable change request features.
+          <UiText
+            message={
+              "{0} is not authenticated on this server. Sign in or configure credentials using the {1} tool on the server host to enable change request features."
+            }
+            values={{
+              "0": item.label,
+              "1": <code className="rounded bg-muted px-1 py-px text-2xs">{item.executable}</code>,
+            }}
+          />
         </span>
       );
     }
     const authDetail = optionLabel(auth.detail);
     return (
       <span>
-        Could not verify {item.label}. {authDetail ?? item.installHint}
+        <UiText
+          message={"Could not verify {0}. {1}"}
+          values={{ "0": item.label, "1": translate(authDetail ?? item.installHint) }}
+        />
       </span>
     );
   }
 
-  return <span>Available</span>;
+  return (
+    <span>
+      <UiText message={"Available"} />
+    </span>
+  );
 }
 
 function DiscoveryItemRow({
@@ -264,6 +298,7 @@ function DiscoveryItemRow({
   readonly item: VcsDiscoveryItem | SourceControlProviderDiscoveryItem;
   readonly children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const version = optionLabel(item.version);
   const enabled = isProviderDiscoveryItem(item)
     ? item.status === "available" && item.auth.status === "authenticated"
@@ -297,21 +332,23 @@ function DiscoveryItemRow({
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <SourceControlItemMark item={item} />
-              <span className="truncate text-sm font-medium text-foreground">{item.label}</span>
+              <span className="truncate text-sm font-medium text-foreground">
+                {uiT(item.label)}
+              </span>
               {version ? <code className="text-xs text-muted-foreground">{version}</code> : null}
               {isVcsNotReady(item) ? (
                 <Badge variant="warning" size="sm">
-                  Coming Soon
+                  {uiT("Coming Soon")}
                 </Badge>
               ) : null}
               {authStatus?.badge ? (
                 <Badge variant={authStatus.badge} size="sm">
-                  {authStatus.label}
+                  {uiT(authStatus.label)}
                 </Badge>
               ) : null}
             </div>
             <p className="flex min-w-0 flex-wrap items-center gap-x-1 text-xs leading-normal text-muted-foreground/80">
-              {itemSummary({ item, auth, authAccount })}
+              {itemSummary({ item, auth, authAccount, translate: uiT })}
             </p>
           </div>
           <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:justify-end">
@@ -321,7 +358,7 @@ function DiscoveryItemRow({
                 variant="ghost-muted"
                 onClick={() => setIsExpanded((open) => !open)}
                 aria-expanded={isExpanded}
-                aria-label={`Toggle ${item.label} details`}
+                aria-label={uiT("Toggle {0} details", { "0": item.label })}
               >
                 <ChevronDownIcon
                   className={cn("size-3.5 transition-transform", isExpanded && "rotate-180")}
@@ -329,7 +366,11 @@ function DiscoveryItemRow({
               </Button>
             ) : null}
             {!isVcsNotReady(item) ? (
-              <Switch checked={enabled} disabled aria-label={`${item.label} availability`} />
+              <Switch
+                checked={enabled}
+                disabled
+                aria-label={uiT("{0} availability", { "0": item.label })}
+              />
             ) : null}
           </div>
         </div>
@@ -347,6 +388,7 @@ function DiscoveryItemRow({
 }
 
 function GitFetchIntervalSettings() {
+  const { t: uiT } = useUiLanguage();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const resolvedBackgroundActivity = resolveServerBackgroundActivitySettings(settings);
@@ -369,9 +411,9 @@ function GitFetchIntervalSettings() {
           <div className="flex min-w-0 items-center gap-1">
             <span className="text-xs font-medium text-foreground">{setting.title}</span>
             <PolicyTooltip>
-              This interval is configured for Git only. The shared Background activity policy still
-              decides whether Git refreshes may run when the timer fires. Custom intervals appear as
-              Advanced in General settings.
+              {uiT(
+                "This interval is configured for Git only. The shared Background activity policy still decides whether Git refreshes may run when the timer fires. Custom intervals appear as Advanced in General settings.",
+              )}
             </PolicyTooltip>
             <span
               className={cn(
@@ -382,7 +424,7 @@ function GitFetchIntervalSettings() {
             >
               {canResetFetchInterval ? (
                 <SettingResetButton
-                  label="fetch interval"
+                  label={uiT("fetch interval")}
                   onClick={() =>
                     updateSettings(
                       backgroundActivityOverrideSettings(settings.backgroundActivity, {
@@ -395,7 +437,9 @@ function GitFetchIntervalSettings() {
             </span>
           </div>
           <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            Refresh remote branches in the background. Set to 0 to avoid automatic Git prompts.
+            {uiT(
+              "Refresh remote branches in the background. Set to 0 to avoid automatic Git prompts.",
+            )}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -414,12 +458,12 @@ function GitFetchIntervalSettings() {
             }
           >
             <NumberFieldGroup>
-              <NumberFieldDecrement aria-label="Decrease fetch interval" />
-              <NumberFieldInput aria-label="Automatic Git fetch interval in seconds" />
-              <NumberFieldIncrement aria-label="Increase fetch interval" />
+              <NumberFieldDecrement aria-label={uiT("Decrease fetch interval")} />
+              <NumberFieldInput aria-label={uiT("Automatic Git fetch interval in seconds")} />
+              <NumberFieldIncrement aria-label={uiT("Increase fetch interval")} />
             </NumberFieldGroup>
           </NumberField>
-          <span className="text-xs text-muted-foreground">seconds</span>
+          <span className="text-xs text-muted-foreground">{uiT("seconds")}</span>
         </div>
       </div>
     </SettingsSearchTarget>
@@ -433,8 +477,9 @@ function SourceControlSectionSkeleton({
   readonly title: string;
   readonly headerAction?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
-    <SettingsSection title={title} headerAction={headerAction}>
+    <SettingsSection title={uiT(title)} headerAction={headerAction}>
       {SOURCE_CONTROL_SKELETON_ROWS.map((row) => (
         <div key={row} className="first:rounded-t-xl last:rounded-b-xl px-3 py-3 sm:px-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -473,28 +518,31 @@ function EmptySourceControlDiscovery({
   readonly isPending: boolean;
   readonly onScan: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const hasError = error !== null;
 
   return (
-    <SettingsSection id={searchableSetting("source-control").id} title="Server environment">
+    <SettingsSection id={searchableSetting("source-control").id} title={uiT("Server environment")}>
       <Empty>
         <EmptyMedia variant="icon">
           <PullRequestGlyph.pullRequest />
         </EmptyMedia>
         <EmptyHeader>
           <EmptyTitle>
-            {hasError ? "Could not scan the server environment" : "Nothing detected yet"}
+            {hasError ? uiT("Could not scan the server environment") : uiT("Nothing detected yet")}
           </EmptyTitle>
           <EmptyDescription>
             {hasError
               ? error
-              : "Install Git on the server, add optional hosting integrations or credentials your workspace needs, then rescan."}
+              : uiT(
+                  "Install Git on the server, add optional hosting integrations or credentials your workspace needs, then rescan.",
+                )}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button size="sm" variant="outline" onClick={onScan} disabled={isPending}>
             <RefreshIcon size="sm" refreshing={isPending} />
-            Scan
+            {uiT("Scan")}
           </Button>
         </EmptyContent>
       </Empty>
@@ -503,6 +551,7 @@ function EmptySourceControlDiscovery({
 }
 
 export function SourceControlSettingsPanel() {
+  const { t: uiT } = useUiLanguage();
   const { scope, environment, connectedEnvironments } = useSettingsScope();
   // Discovery scans one machine's tools, so it shows the representative
   // environment (named in the section title when several are selected);
@@ -551,13 +600,13 @@ export function SourceControlSettingsPanel() {
             variant="ghost-muted"
             onClick={handleScan}
             disabled={discovery.isPending}
-            aria-label="Rescan server environment"
+            aria-label={uiT("Rescan server environment")}
           >
             <RefreshIcon refreshing={discovery.isPending} />
           </Button>
         }
       />
-      <TooltipPopup side="top">Rescan Git and hosting integrations</TooltipPopup>
+      <TooltipPopup side="top">{uiT("Rescan Git and hosting integrations")}</TooltipPopup>
     </Tooltip>
   );
 
@@ -565,25 +614,30 @@ export function SourceControlSettingsPanel() {
     <SettingsPageContainer>
       <ProjectDefaultsSettings category="source-control" />
       {environmentId === null ? (
-        <SettingsSection id={searchableSetting("source-control").id} title="Server environment">
+        <SettingsSection
+          id={searchableSetting("source-control").id}
+          title={uiT("Server environment")}
+        >
           <p className="px-4 py-3 text-sm text-muted-foreground">
-            Connect an environment to inspect its version control tools and hosting integrations.
+            {uiT(
+              "Connect an environment to inspect its version control tools and hosting integrations.",
+            )}
           </p>
         </SettingsSection>
       ) : isInitialScanPending ? (
         <>
           <SourceControlSectionSkeleton
-            title={`Version Control${environmentSuffix}`}
+            title={uiT("Version Control{0}", { "0": environmentSuffix })}
             headerAction={scanButton}
           />
-          <SourceControlSectionSkeleton title="Source Control Providers" />
+          <SourceControlSectionSkeleton title={uiT("Source Control Providers")} />
         </>
       ) : hasDiscoveryItems ? (
         <>
           {hasVersionControlSystems ? (
             <SettingsSection
               id={searchableSetting("source-control").id}
-              title={`Version Control${environmentSuffix}`}
+              title={uiT("Version Control{0}", { "0": environmentSuffix })}
               headerAction={scanButton}
             >
               {result.versionControlSystems.map((item) => (
@@ -599,8 +653,8 @@ export function SourceControlSettingsPanel() {
               id={hasVersionControlSystems ? undefined : searchableSetting("source-control").id}
               title={
                 hasVersionControlSystems
-                  ? "Source Control Providers"
-                  : `Source Control Providers${environmentSuffix}`
+                  ? uiT("Source Control Providers")
+                  : uiT("Source Control Providers{0}", { "0": environmentSuffix })
               }
               headerAction={hasVersionControlSystems ? null : scanButton}
             >

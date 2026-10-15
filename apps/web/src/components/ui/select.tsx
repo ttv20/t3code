@@ -94,6 +94,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       className={cn("flex-1 truncate data-placeholder:text-placeholder", className)}
+      dir="auto"
       data-slot="select-value"
       {...props}
     />

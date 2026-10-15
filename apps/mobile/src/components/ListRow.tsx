@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Platform } from "react-native";
 
 import { useResolveClassNames } from "uniwind";
@@ -7,6 +8,7 @@ import { RowPressable } from "./RowPressable";
 
 /** A navigation row owns its look; callers supply content and destination behavior. */
 export function ListRow(props: ListRowContentProps & { readonly onPress: () => void }) {
+  const { direction } = useUiLanguage();
   const rippleStyle = useResolveClassNames("bg-subtle-strong");
   return (
     <RowPressable
@@ -23,7 +25,7 @@ export function ListRow(props: ListRowContentProps & { readonly onPress: () => v
         {...props}
         accessory={
           <SymbolView
-            name="chevron.right"
+            name={direction === "rtl" ? "chevron.left" : "chevron.right"}
             size={16}
             tintColorClassName="accent-chevron"
             type="monochrome"

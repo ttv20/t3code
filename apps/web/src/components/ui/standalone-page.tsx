@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 
 const backdropClassNames = {
@@ -55,13 +56,14 @@ export function StandalonePageHeader({
   readonly title: ReactNode;
   readonly description: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <>
       <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
         {eyebrow}
       </p>
-      <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{uiT(title)}</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{uiT(description)}</p>
     </>
   );
 }

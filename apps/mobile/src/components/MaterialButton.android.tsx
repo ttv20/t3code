@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import {
   Box,
   Button,
@@ -17,6 +18,7 @@ import type { MaterialButtonProps } from "./MaterialButton";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function MaterialButton(props: MaterialButtonProps) {
+  const { t: uiT } = useUiLanguage();
   const { themeAppearance, themeVariables: colors } = useAppearancePreferences();
   const typography = useScaledTextRole("footnote");
   const { scale, mediumIconSize } = useAndroidControlSizing();
@@ -43,7 +45,7 @@ export function MaterialButton(props: MaterialButtonProps) {
     <View
       accessible
       accessibilityRole="button"
-      accessibilityLabel={props.label}
+      accessibilityLabel={uiT(props.label)}
       accessibilityState={{
         disabled: Boolean(props.disabled || props.loading),
         busy: Boolean(props.loading),
@@ -85,7 +87,7 @@ export function MaterialButton(props: MaterialButtonProps) {
                   <Box modifiers={[size(8 * scale, 1)]} />
                 </>
               ) : null}
-              <Text style={{ ...typography, fontWeight: "500" }}>{props.label}</Text>
+              <Text style={{ ...typography, fontWeight: "500" }}>{uiT(props.label)}</Text>
             </Row>
           </Component>
         </Host>

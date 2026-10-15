@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import {
@@ -200,6 +201,7 @@ export function ThreadHtmlRender(props: {
   readonly frameWidth: number;
   readonly iconColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const { attachmentId, title } = props.render;
   const height = htmlRenderFrameHeight(props.render, props.frameWidth);
@@ -251,7 +253,7 @@ export function ThreadHtmlRender(props: {
         ) : failed || asset._tag === "Failure" ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Reload ${title}`}
+            accessibilityLabel={uiT("Reload {0}", { "0": title })}
             className="flex-1 items-center justify-center"
             onPress={() => {
               retried.current = false;
@@ -259,7 +261,7 @@ export function ThreadHtmlRender(props: {
               if (uri === null) void refresh().then((next) => next !== null && setUri(next));
             }}
           >
-            <Text className="text-sm text-foreground-muted">Page unavailable</Text>
+            <Text className="text-sm text-foreground-muted">{uiT("Page unavailable")}</Text>
           </Pressable>
         ) : (
           <View className="flex-1 items-center justify-center">
@@ -269,7 +271,7 @@ export function ThreadHtmlRender(props: {
         {uri !== null && !failed ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Open ${title}`}
+            accessibilityLabel={uiT("Open {0}", { "0": title })}
             hitSlop={8}
             className="absolute right-1.5 top-1.5 h-7 w-7 items-center justify-center rounded-full border border-border/60 bg-card/80"
             onPress={() =>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type AuthMcpApprovalDecision,
   type AuthMcpApprovalDetails,
@@ -102,6 +103,7 @@ function oneClickApproves(details: AuthMcpApprovalDetails, access: AuthMcpClient
 }
 
 export function ConnectAgentSurface() {
+  const { t: uiT } = useUiLanguage();
   const [authorization] = useState(readAuthorizationRequest);
   const [loaded, setLoaded] = useState<Loaded>({ status: "loading" });
   const [access, setAccess] = useState<AuthMcpClientAccess>("read-only");
@@ -159,8 +161,8 @@ export function ConnectAgentSurface() {
     return (
       <AuthSurfaceShell>
         <ConnectAgentHeading
-          title="Checking the sign-in request"
-          description="One moment while this environment verifies the agent's request."
+          title={uiT("Checking the sign-in request")}
+          description={uiT("One moment while this environment verifies the agent's request.")}
         />
         <Spinner className="mt-6" size="lg" tone="muted" />
       </AuthSurfaceShell>
@@ -170,9 +172,12 @@ export function ConnectAgentSurface() {
   if (loaded.status === "invalid") {
     return (
       <AuthSurfaceShell>
-        <ConnectAgentHeading title="This sign-in cannot continue" description={loaded.message} />
+        <ConnectAgentHeading
+          title={uiT("This sign-in cannot continue")}
+          description={loaded.message}
+        />
         <p className="mt-4 text-sm text-muted-foreground">
-          Close this page and start the sign-in again from your agent.
+          {uiT("Close this page and start the sign-in again from your agent.")}
         </p>
       </AuthSurfaceShell>
     );
@@ -185,10 +190,10 @@ export function ConnectAgentSurface() {
   return (
     <AuthSurfaceShell>
       <ConnectAgentHeading
-        title={`Connect ${details.clientName}`}
+        title={uiT("Connect {0}", { "0": details.clientName })}
         description={
           <>
-            This agent wants to use the threads in every project on{" "}
+            {uiT("This agent wants to use the threads in every project on")}{" "}
             <span className="font-medium text-foreground">{details.environmentHost}</span>.
           </>
         }
@@ -196,14 +201,14 @@ export function ConnectAgentSurface() {
       <p className="mt-2 text-xs text-muted-foreground">
         {redirectsToThisComputer(details.redirectHost) ? (
           <>
-            The name is chosen by the agent. Approval returns to {details.redirectHost} on the
-            computer that opened this page. Only approve a sign-in you just started.
+            {uiT("The name is chosen by the agent. Approval returns to")} {details.redirectHost}{" "}
+            {uiT("on the computer that opened this page. Only approve a sign-in you just started.")}
           </>
         ) : (
           <>
-            The name is chosen by the agent. Approval gives access to whoever runs{" "}
-            <span className="font-medium text-foreground">{details.redirectHost}</span>. Only
-            approve a sign-in you just started there.
+            {uiT("The name is chosen by the agent. Approval gives access to whoever runs")}{" "}
+            <span className="font-medium text-foreground">{details.redirectHost}</span>
+            {uiT(". Only approve a sign-in you just started there.")}
           </>
         )}
       </p>
@@ -217,7 +222,7 @@ export function ConnectAgentSurface() {
       >
         <div className="space-y-2">
           <span id="connect-agent-access-label" className="text-sm font-medium">
-            What it may do
+            {uiT("What it may do")}
           </span>
           <RadioGroup
             aria-labelledby="connect-agent-access-label"
@@ -229,15 +234,16 @@ export function ConnectAgentSurface() {
             ))}
           </RadioGroup>
           <p className="text-xs text-muted-foreground">
-            Beyond read only, it can start, message and stop threads, and none of them can run with
-            more than the mode you pick.
+            {uiT(
+              "Beyond read only, it can start, message and stop threads, and none of them can run with more than the mode you pick.",
+            )}
           </p>
         </div>
 
         {oneClick ? null : (
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="connect-agent-pairing-code">
-              Pairing code
+              {uiT("Pairing code")}
             </label>
             <Input
               id="connect-agent-pairing-code"
@@ -247,26 +253,26 @@ export function ConnectAgentSurface() {
               disabled={pending !== null}
               nativeInput
               onChange={(event) => setPairingCode(event.currentTarget.value)}
-              placeholder="Paste a one-time pairing code"
+              placeholder={uiT("Paste a one-time pairing code")}
               spellCheck={false}
               value={pairingCode}
             />
             <p className="text-xs text-muted-foreground">
-              Create one in Settings → Connections, or run <code>t3 auth pairing create</code> on
-              this machine.
+              {uiT("Create one in Settings → Connections, or run")}{" "}
+              <code>t3 auth pairing create</code> {uiT("on this machine.")}
             </p>
           </div>
         )}
 
         {errorMessage ? (
           <Alert variant="error">
-            <AlertDescription>{errorMessage}</AlertDescription>
+            <AlertDescription>{uiT(errorMessage)}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
           <Button disabled={!canApprove} type="submit">
-            {pending === "approve" ? "Approving…" : "Approve"}
+            {pending === "approve" ? uiT("Approving…") : uiT("Approve")}
           </Button>
           <Button
             disabled={pending !== null}
@@ -274,7 +280,7 @@ export function ConnectAgentSurface() {
             type="button"
             variant="outline"
           >
-            {pending === "deny" ? "Denying…" : "Deny"}
+            {pending === "deny" ? uiT("Denying…") : uiT("Deny")}
           </Button>
         </div>
       </form>
@@ -289,11 +295,14 @@ function ConnectAgentHeading({
   readonly title: string;
   readonly description: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <>
-      <p className="text-3xs font-semibold tracking-widest text-primary uppercase">Agent sign-in</p>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+      <p className="text-3xs font-semibold tracking-widest text-primary uppercase">
+        {uiT("Agent sign-in")}
+      </p>
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{uiT(title)}</h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{uiT(description)}</p>
     </>
   );
 }
@@ -305,6 +314,7 @@ function AccessOption({
   readonly access: AuthMcpClientAccess;
   readonly selected: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { label, description, icon: Icon } = accessConfig[access];
   return (
     <RadioPrimitive.Root
@@ -325,8 +335,8 @@ function AccessOption({
         )}
       />
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-foreground">{label}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
+        <span className="block text-sm font-medium text-foreground">{uiT(label)}</span>
+        <span className="block text-xs text-muted-foreground">{uiT(description)}</span>
       </span>
     </RadioPrimitive.Root>
   );

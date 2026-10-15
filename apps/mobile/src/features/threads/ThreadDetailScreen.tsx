@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useChildThreadInputs, useThreadReportedModelSelection } from "../../state/entities";
 import { UsageLimitRecoveryCard } from "./UsageLimitRecoveryCard";
@@ -329,6 +330,7 @@ const USER_INPUT_TOGGLE_TIMING = {
 };
 
 export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: ThreadDetailScreenProps) {
+  const { t: uiT } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const navigation = useNavigation();
   const { session: voiceInputSession } = useGlobalVoiceInput();
@@ -510,7 +512,9 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
       if (props.worktreeSetup) return null;
       return {
         kind: "preparing",
-        label: props.creationState.preparingWorktree ? "Setting up worktree…" : "Starting…",
+        label: props.creationState.preparingWorktree
+          ? uiT("Setting up worktree…")
+          : uiT("Starting…"),
       };
     }
     if (props.creationState?.kind === "failed") {
@@ -525,8 +529,8 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
         kind: "child-input",
         label:
           childThreadInputs.length === 1
-            ? "Subagent needs input"
-            : `${childThreadInputs.length} subagents need input`,
+            ? uiT("Subagent needs input")
+            : uiT("{0} subagents need input", { "0": childThreadInputs.length }),
         accessibilityLabel: `Open question from ${childInput.title}`,
         onPress: () => {
           Keyboard.dismiss();
@@ -1151,7 +1155,7 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
             renderFallback={(fallback) => (
               <RenderFailureView
                 {...fallback}
-                title="The conversation couldn't be displayed"
+                title={uiT("The conversation couldn't be displayed")}
                 bottomInset={estimatedOverlayHeight}
               />
             )}
@@ -1434,7 +1438,7 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
                         editorRef={composerEditorRef}
                         draftMessage={props.draftMessage}
                         draftAttachments={props.draftAttachments}
-                        placeholder="Ask the repo agent, or run a command…"
+                        placeholder={uiT("Ask the repo agent, or run a command…")}
                         contentMaxWidth={contentMaxWidth}
                         connectionState={props.connectionStateLabel}
                         environmentLabel={props.environmentLabel}

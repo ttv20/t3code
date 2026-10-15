@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import type {
   DiffLineAnnotation,
   FileDiffContentsLoader,
@@ -109,6 +110,7 @@ export function GuideExcerpt({
   loadDiffFiles: FileDiffContentsLoader;
   onOpenFile: (path: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [draft, setDraft] = useState<ExcerptDraft | null>(null);
   const { resolvedTheme } = useTheme();
   const slice = useMemo(() => {
@@ -289,13 +291,15 @@ export function GuideExcerpt({
                     rangeLabel={`${excerpt.path}:${getReviewPositionAnchor(draft.position).line}`}
                     text=""
                     placeholder={
-                      commenting.canComment ? "Add a comment…" : "Ask the agent about these lines…"
+                      commenting.canComment
+                        ? uiT("Add a comment…")
+                        : uiT("Ask the agent about these lines…")
                     }
                     submitLabel={commenting.canComment ? "Add to review" : "Ask agent"}
                     {...(commenting.canComment && onAskAgent !== null
                       ? {
                           secondaryAction: {
-                            label: "Ask agent",
+                            label: uiT("Ask agent"),
                             onAction: (text: string) => askAgent(text),
                           },
                         }
@@ -321,13 +325,13 @@ export function GuideExcerpt({
             renderHeaderMetadata={() => (
               <span className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="tabular-nums">
-                  {excerpt.side === "old" ? "removed code, " : ""}showing {slice.shown} of{" "}
-                  {slice.total} diff lines
+                  {excerpt.side === "old" ? uiT("removed code, ") : ""}
+                  {uiT("showing")} {slice.shown} {uiT("of")} {slice.total} {uiT("diff lines")}
                 </span>
                 <Button
                   size="icon-xs"
                   variant="ghost-muted"
-                  aria-label={`Open ${excerpt.path} in Code`}
+                  aria-label={uiT("Open {0} in Code", { "0": excerpt.path })}
                   onClick={() => onOpenFile(excerpt.path)}
                 >
                   <ArrowUpRightIcon aria-hidden />
@@ -338,16 +342,16 @@ export function GuideExcerpt({
         </div>
       ) : loading ? (
         <p className="rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
-          Loading {excerpt.path}...
+          {uiT("Loading")} {excerpt.path}...
         </p>
       ) : (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
           <span className="min-w-0 truncate">
-            <span className="font-mono text-foreground">{excerpt.path}</span> lines {excerpt.start}-
-            {excerpt.end} are not in the loaded diff.
+            <span className="font-mono text-foreground">{excerpt.path}</span> {uiT("lines")}{" "}
+            {excerpt.start}-{excerpt.end} {uiT("are not in the loaded diff.")}
           </span>
           <Button size="xs" variant="outline" onClick={() => onOpenFile(excerpt.path)}>
-            Open in Code
+            {uiT("Open in Code")}
           </Button>
         </div>
       )}

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
@@ -16,11 +17,12 @@ export function SettingsScreen(
   },
 ) {
   const navigation = useNavigation();
+  const { t } = useUiLanguage();
 
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
       <ScreenHeader
-        title={props.title}
+        title={t(props.title)}
         actions={props.actions}
         trailing={Platform.OS === "android" ? props.trailing : undefined}
         sidebar={false}

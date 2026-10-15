@@ -7,11 +7,19 @@ permission mode, turn result, duration, and main-agent token totals when availab
 Events do not include prompts, responses, file contents, authentication tokens, conversation IDs,
 raw provider events, or child-agent output. Child-agent token use is excluded from the totals.
 
-Collection is disabled by default in the patched build. To opt in, set
-`T3CODE_TELEMETRY_ENABLED=true` in the server's environment before starting it.
+Collection is disabled by default in source builds. Release builds can include a
+PostHog project and enable collection by default. Set `T3CODE_TELEMETRY_ENABLED=false`
+in the server's environment to disable it, or `true` to enable it when a project
+token is configured.
 
 The desktop app reads the variable from your shell profile (for example `~/.zshrc`) on macOS and
 Linux, so export it there and restart the app. On Windows, set it as a user environment variable.
+
+To send these events to your own PostHog project, also set `T3CODE_POSTHOG_KEY` to that
+project's ingestion key and `T3CODE_POSTHOG_HOST` to its ingestion endpoint. PostHog US
+uses `https://us.i.posthog.com`, which is the default host. Restart the server or desktop
+app after changing these variables. These settings apply to the server receiving the
+client's connection, including when the client connects remotely.
 
 ## Export diagnostics to your own receiver
 

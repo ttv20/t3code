@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { DesktopBridge, DesktopUpdateState } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
@@ -126,6 +127,7 @@ export function SidebarUpdateArchitectureWarning() {
 }
 
 function SidebarUpdateArchitectureWarningContent() {
+  const { t: uiT } = useUiLanguage();
   const state = useDesktopUpdateState();
   const visible = shouldShowArm64IntelBuildWarning(state);
   const description = state && visible ? getArm64IntelBuildWarningDescription(state) : null;
@@ -135,8 +137,8 @@ function SidebarUpdateArchitectureWarningContent() {
   return (
     <Alert variant="warning">
       <TriangleAlertIcon />
-      <AlertTitle>Intel build on Apple Silicon</AlertTitle>
-      <AlertDescription>{description}</AlertDescription>
+      <AlertTitle>{uiT("Intel build on Apple Silicon")}</AlertTitle>
+      <AlertDescription>{uiT(description)}</AlertDescription>
     </Alert>
   );
 }
@@ -250,6 +252,7 @@ export function SidebarUpdatePill() {
 }
 
 function SidebarUpdateControl() {
+  const { t: uiT } = useUiLanguage();
   const state = useDesktopUpdateState();
   const [isActionPending, setIsActionPending] = useState(false);
   const [isConfirmingEverything, setIsConfirmingEverything] = useState(false);
@@ -303,7 +306,7 @@ function SidebarUpdateControl() {
             : "Update available"
           : showCheckIcon
             ? "Checking for updates…"
-            : "Check for updates";
+            : uiT("Check for updates");
   const disabled = showCheckIcon
     ? true
     : runsEverything
@@ -358,8 +361,9 @@ function SidebarUpdateControl() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not confirm update",
-            description: error instanceof Error ? error.message : "Update confirmation failed.",
+            title: uiT("Could not confirm update"),
+            description:
+              error instanceof Error ? error.message : uiT("Update confirmation failed."),
           }),
         );
         return;
@@ -383,9 +387,9 @@ function SidebarUpdateControl() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not check for updates",
+            title: uiT("Could not check for updates"),
             description:
-              result.state.message ?? "Automatic updates are not available in this build.",
+              result.state.message ?? uiT("Automatic updates are not available in this build."),
           }),
         );
       })
@@ -393,13 +397,13 @@ function SidebarUpdateControl() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not check for updates",
-            description: error instanceof Error ? error.message : "Update check failed.",
+            title: uiT("Could not check for updates"),
+            description: error instanceof Error ? error.message : uiT("Update check failed."),
           }),
         );
       })
       .finally(() => setIsActionPending(false));
-  }, [action, isInteractionDisabled, prefersReducedMotion, runsEverything, state]);
+  }, [action, isInteractionDisabled, prefersReducedMotion, runsEverything, state, uiT]);
 
   const runEverything = useCallback(async () => {
     const bridge = window.desktopBridge;
@@ -421,14 +425,15 @@ function SidebarUpdateControl() {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Could not update everything",
-          description: error instanceof Error ? error.message : "An unexpected error occurred.",
+          title: uiT("Could not update everything"),
+          description:
+            error instanceof Error ? error.message : uiT("An unexpected error occurred."),
         }),
       );
     } finally {
       setIsActionPending(false);
     }
-  }, [action, everything]);
+  }, [action, everything, uiT]);
 
   const handleCheckAnimationIteration = useCallback(() => {
     setIsCheckAnimationLatched(
@@ -537,7 +542,7 @@ function SidebarUpdateControl() {
         {showReleaseNotesPopover && state ? (
           <PopoverPopup
             align="center"
-            aria-label="Nightly update release notes"
+            aria-label={uiT("Nightly update release notes")}
             initialFocus={false}
             onKeyDownCapture={(event) => {
               if (

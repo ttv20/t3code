@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
@@ -43,6 +44,7 @@ export type ReportLocalUpdateError = (title: string, description: string) => voi
  * When this app installs, the summary waits for the relaunch.
  */
 export function useUpdateEverything(localUpdateVersion: string | null) {
+  const { locale } = useUiLanguage();
   const targetVersion = localUpdateVersion ?? APP_VERSION;
   const { environments } = useEnvironments();
   const machinesAtom = useMemo(
@@ -91,17 +93,20 @@ export function useUpdateEverything(localUpdateVersion: string | null) {
   const providers = useProviderUpdates();
   const updateServer = useServerUpdate();
 
-  const { summary, lines } = describeUpdateEverything({
-    localVersion: localUpdateVersion,
-    servers,
-    providerMachines: providers.machines.map((machine) => ({
-      environmentId: machine.environmentId,
-      label: machine.label,
-      providers: machine.candidates.map(
-        (candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver,
-      ),
-    })),
-  });
+  const { summary, lines } = describeUpdateEverything(
+    {
+      localVersion: localUpdateVersion,
+      servers,
+      providerMachines: providers.machines.map((machine) => ({
+        environmentId: machine.environmentId,
+        label: machine.label,
+        providers: machine.candidates.map(
+          (candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver,
+        ),
+      })),
+    },
+    locale,
+  );
 
   return {
     hasUpdates: servers.length > 0 || providers.machines.length > 0,
@@ -201,7 +206,7 @@ export function useUpdateEverything(localUpdateVersion: string | null) {
           if (await installLocal(reportLocalError)) return;
           clearSavedUpdateEverythingResult();
         }
-        showUpdateEverythingResult(result());
+        showUpdateEverythingResult(result(), locale);
       } finally {
         setUpdateEverythingRun(() => null);
       }

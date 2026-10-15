@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import type { FileDiffMetadata } from "@pierre/diffs";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -47,13 +48,14 @@ const attentionLabels = {
 };
 
 export function PullRequestGuideContent({ params }: { readonly params: PullRequestParams }) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const state = useReviewGuide(params);
   const { guide, stale } = reviewGuideState(state.data);
   return (
     <Animated.View layout={PR_ROW_LAYOUT} className="w-full max-w-[760px] self-center">
       {!state.enabled ? (
-        <Text>Review guides are disabled for this server.</Text>
+        <Text>{uiT("Review guides are disabled for this server.")}</Text>
       ) : (
         <>
           <GuideNotice state={state} />
@@ -91,6 +93,7 @@ export function PullRequestGuideContent({ params }: { readonly params: PullReque
 }
 
 export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideStopParams>) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const state = useReviewGuide(route.params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(pullRequestTarget(route.params)));
@@ -135,20 +138,20 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
     <View className="flex-1 bg-screen">
       <NativeStackScreenOptions
         options={{
-          title: `Stop ${route.params.position + 1}`,
+          title: uiT("Stop {0}", { "0": route.params.position + 1 }),
           headerTitle: `Stop ${route.params.position + 1} of ${guide?.stops.length ?? "…"}`,
         }}
       />
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
-          title={`Stop ${route.params.position + 1}`}
+          title={uiT("Stop {0}", { "0": route.params.position + 1 })}
           onBack={() => navigation.goBack()}
           trailing={
             <ControlPillMenu
               actions={[
                 {
                   id: "word-wrap",
-                  title: "Word wrap",
+                  title: uiT("Word wrap"),
                   image: "text.alignleft",
                   state: appearance.codeWordBreak ? "on" : "off",
                 },
@@ -156,7 +159,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
               onPressAction={() => setCodeWordBreak(!appearance.codeWordBreak)}
             >
               <View pointerEvents="none">
-                <MaterialIconButton icon="ellipsis" accessibilityLabel="Guide options" />
+                <MaterialIconButton icon="ellipsis" accessibilityLabel={uiT("Guide options")} />
               </View>
             </ControlPillMenu>
           }
@@ -164,8 +167,8 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
       ) : null}
       <NativeHeaderToolbar placement="right">
         <NativeHeaderToolbar.Menu
-          title="Guide options"
-          accessibilityLabel="Guide options"
+          title={uiT("Guide options")}
+          accessibilityLabel={uiT("Guide options")}
           icon="ellipsis"
         >
           <NativeHeaderToolbar.MenuAction
@@ -173,7 +176,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
             isOn={appearance.codeWordBreak}
             onPress={() => setCodeWordBreak(!appearance.codeWordBreak)}
           >
-            <NativeHeaderToolbar.Label>Word wrap</NativeHeaderToolbar.Label>
+            <NativeHeaderToolbar.Label>{uiT("Word wrap")}</NativeHeaderToolbar.Label>
           </NativeHeaderToolbar.MenuAction>
         </NativeHeaderToolbar.Menu>
       </NativeHeaderToolbar>
@@ -187,11 +190,11 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
         >
           <View className="w-full max-w-[760px] self-center gap-5">
             {!state.enabled ? (
-              <Text>Review guides are disabled for this server.</Text>
+              <Text>{uiT("Review guides are disabled for this server.")}</Text>
             ) : changedGuide ? (
-              <Text>This guide was rewritten. Go back to start the new tour.</Text>
+              <Text>{uiT("This guide was rewritten. Go back to start the new tour.")}</Text>
             ) : !stop ? (
-              <Text>{state.error ?? "Loading stop…"}</Text>
+              <Text>{state.error ?? uiT("Loading stop…")}</Text>
             ) : (
               <>
                 <GuideNotice state={state} />
@@ -210,7 +213,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                 ) : null}
                 {stale ? (
                   <Text className="text-sm text-foreground-muted">
-                    Excerpts are hidden until the guide is rewritten for the current head.
+                    {uiT("Excerpts are hidden until the guide is rewritten for the current head.")}
                   </Text>
                 ) : (
                   stop.excerpts.map((excerpt) => (
@@ -235,7 +238,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                 {diff.error ? <Text className="text-danger-foreground">{diff.error}</Text> : null}
                 {notes.length ? (
                   <View className="gap-4">
-                    <Text className="font-t3-semibold">Notes on this stop</Text>
+                    <Text className="font-t3-semibold">{uiT("Notes on this stop")}</Text>
                     {notes.map(({ marker, note }) => (
                       <View key={marker} className="flex-row gap-3">
                         <View className="h-7 w-7 items-center justify-center rounded-lg bg-grouped-card">
@@ -273,7 +276,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                 ) : null}
                 {stop.questions.length ? (
                   <View className="gap-3">
-                    <Text className="font-t3-semibold">Questions to consider</Text>
+                    <Text className="font-t3-semibold">{uiT("Questions to consider")}</Text>
                     {stop.questions.map((question) => (
                       <PullRequestMarkdown key={question} markdown={question} />
                     ))}
@@ -283,10 +286,10 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                   accessibilityRole="button"
                   accessibilityLabel={
                     guide && position < guide.stops.length - 1
-                      ? "Next stop"
+                      ? uiT("Next stop")
                       : canReview
-                        ? "Finish review"
-                        : "Finish tour"
+                        ? uiT("Finish review")
+                        : uiT("Finish tour")
                   }
                   className="mt-2 flex-row items-center gap-4 border-t border-border-subtle pt-5 pb-2 active:opacity-60"
                   onPress={() =>
@@ -308,15 +311,15 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                   <View className="min-w-0 flex-1 gap-1">
                     <Text className="text-xs text-foreground-muted">
                       {guide && position < guide.stops.length - 1
-                        ? `Next · ${position + 2} of ${guide.stops.length}`
-                        : "End of guide"}
+                        ? uiT("Next · {0} of {1}", { "0": position + 2, "1": guide.stops.length })
+                        : uiT("End of guide")}
                     </Text>
                     <Text className="text-base font-t3-semibold">
                       {guide && position < guide.stops.length - 1
                         ? guide.stops[position + 1]?.title
                         : canReview
-                          ? "Finish review"
-                          : "Finish tour"}
+                          ? uiT("Finish review")
+                          : uiT("Finish tour")}
                     </Text>
                   </View>
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-foreground">

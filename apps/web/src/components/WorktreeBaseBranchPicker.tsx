@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
@@ -31,6 +32,7 @@ export function WorktreeBaseBranchPicker({
   disabled?: boolean;
   id?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim());
@@ -50,13 +52,16 @@ export function WorktreeBaseBranchPicker({
   const selectedRef =
     branches.refs.find((branch) => branch.name === value) ??
     selectedRefQuery.data?.refs.find((branch) => branch.name === value);
-  const label = resolveBranchTriggerLabel({
-    activeWorktreePath: null,
-    effectiveEnvMode: "worktree",
-    resolvedActiveBranch: value || null,
-    resolvedActiveBranchIsRemote: selectedRef ? selectedRef.isRemote === true : null,
-    startFromOrigin,
-  });
+  const label = resolveBranchTriggerLabel(
+    {
+      activeWorktreePath: null,
+      effectiveEnvMode: "worktree",
+      resolvedActiveBranch: value || null,
+      resolvedActiveBranchIsRemote: selectedRef ? selectedRef.isRemote === true : null,
+      startFromOrigin,
+    },
+    uiT,
+  );
   const branchByName = useMemo(
     () => new Map(branches.refs.map((branch) => [branch.name, branch])),
     [branches.refs],
@@ -66,11 +71,14 @@ export function WorktreeBaseBranchPicker({
   const statusText =
     branches.error ??
     (branches.isPending && branches.data === null
-      ? "Loading refs..."
+      ? uiT("Loading refs...")
       : branches.isFetchingNextPage
-        ? "Loading more refs..."
+        ? uiT("Loading more refs...")
         : hasNextPage
-          ? `Showing ${branches.refs.length} of ${branches.data?.totalCount} refs`
+          ? uiT("Showing {0} of {1} refs", {
+              "0": branches.refs.length,
+              "1": branches.data?.totalCount,
+            })
           : null);
   const handleOpenChange = (next: boolean) => {
     setOpen(next);

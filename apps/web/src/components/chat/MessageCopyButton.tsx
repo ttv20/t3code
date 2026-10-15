@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { memo, useRef } from "react";
 import { Check, Copy } from "lucide";
 import { Button } from "../ui/button";
@@ -30,6 +31,7 @@ export const MessageCopyButton = memo(function MessageCopyButton({
   variant?: "outline" | "ghost";
   className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const ref = useRef<HTMLButtonElement>(null);
   const { copyToClipboard, isCopied } = useCopyToClipboard<void>({
     onCopy: () => showAnchoredCopySuccessToast(ref),
@@ -43,7 +45,7 @@ export const MessageCopyButton = memo(function MessageCopyButton({
       <TooltipTrigger
         render={
           <Button
-            aria-label={label}
+            aria-label={uiT(label)}
             disabled={isCopied}
             onClick={() => copyToClipboard(text)}
             ref={ref}
@@ -60,7 +62,7 @@ export const MessageCopyButton = memo(function MessageCopyButton({
         />
       </TooltipTrigger>
       <TooltipPopup>
-        <p>{label}</p>
+        <p>{uiT(label)}</p>
       </TooltipPopup>
     </Tooltip>
   );

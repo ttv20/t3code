@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../../i18n";
 import * as Haptics from "expo-haptics";
 import { SymbolView } from "../../../../components/AppSymbol";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -35,6 +36,7 @@ export function FontSizeSliderRow(props: {
   readonly value: number;
   readonly onChange: (value: number) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const latest = useRef(props);
   latest.current = props;
 
@@ -142,7 +144,7 @@ export function FontSizeSliderRow(props: {
           type="monochrome"
           weight="regular"
         />
-        <Text className="flex-1 text-lg text-foreground">{props.label}</Text>
+        <Text className="flex-1 text-lg text-foreground">{uiT(props.label)}</Text>
         <Text className="text-base font-t3-medium text-foreground-muted">{props.valueLabel}</Text>
       </View>
       <View className="flex-row items-center gap-3">
@@ -157,10 +159,10 @@ export function FontSizeSliderRow(props: {
           <View
             accessible
             accessibilityActions={[
-              { name: "increment", label: `Increase ${props.label}` },
-              { name: "decrement", label: `Decrease ${props.label}` },
+              { name: "increment", label: uiT("Increase {0}", { "0": props.label }) },
+              { name: "decrement", label: uiT("Decrease {0}", { "0": props.label }) },
             ]}
-            accessibilityLabel={props.label}
+            accessibilityLabel={uiT(props.label)}
             accessibilityRole="adjustable"
             accessibilityState={{ disabled: Boolean(disabled) }}
             accessibilityValue={{ min, max, now: value, text: props.valueLabel }}

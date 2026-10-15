@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import Constants from "expo-constants";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,10 +18,11 @@ import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
 
 export function SettingsAboutRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
 
   return (
-    <SettingsScreen title="About T3 Code">
+    <SettingsScreen title={uiT("About T3 Code")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -35,6 +37,7 @@ export function SettingsAboutRouteScreen() {
 }
 
 function AppSettingsSection() {
+  const { t: uiT } = useUiLanguage();
   const [updateState, setUpdateState] = useState<AppUpdateCheckState>("idle");
   const updateInFlight = useRef(false);
   const hiddenUpdateTapCount = useRef(0);
@@ -86,17 +89,17 @@ function AppSettingsSection() {
 
   const statusLabel =
     updateState === "checking"
-      ? "Checking…"
+      ? uiT("Checking…")
       : updateState === "downloading"
-        ? "Downloading…"
+        ? uiT("Downloading…")
         : // "ready" appears only when this check joined an in-flight background-mode
           // check; that download installs at the next backgrounding.
           updateState === "ready"
-          ? "Update ready"
+          ? uiT("Update ready")
           : updateState === "restarting"
-            ? "Restarting…"
+            ? uiT("Restarting…")
             : updateState === "current"
-              ? "Up to date"
+              ? uiT("Up to date")
               : null;
 
   const versionRow = (
@@ -108,29 +111,33 @@ function AppSettingsSection() {
         type="monochrome"
         weight="regular"
       />
-      <Text className="flex-1 text-lg text-foreground">Version</Text>
+      <Text className="flex-1 text-lg text-foreground">{uiT("Version")}</Text>
       <View className="items-end">
         <Text className="text-lg text-foreground-muted">{versionLabel}</Text>
         {statusLabel ? (
-          <Text className="text-xs text-foreground-muted/70">{statusLabel}</Text>
+          <Text className="text-xs text-foreground-muted/70">{uiT(statusLabel)}</Text>
         ) : null}
       </View>
     </View>
   );
 
   return (
-    <SettingsSection title="App">
-      <SettingsRow icon="internaldrive" label="Client Storage" target="SettingsClientStorage" />
-      <SettingsRow icon="stethoscope" label="Diagnostics" target="SettingsDiagnostics" />
+    <SettingsSection title={uiT("App")}>
+      <SettingsRow
+        icon="internaldrive"
+        label={uiT("Client Storage")}
+        target="SettingsClientStorage"
+      />
+      <SettingsRow icon="stethoscope" label={uiT("Diagnostics")} target="SettingsDiagnostics" />
       <SettingsRow
         icon="doc.on.doc"
-        label="Open source licenses"
+        label={uiT("Open source licenses")}
         target="SettingsOpenSourceLicenses"
       />
-      <SettingsRow icon="doc.text" label="Legal" fullScreenTarget="SettingsLegal" />
+      <SettingsRow icon="doc.text" label={uiT("Legal")} fullScreenTarget="SettingsLegal" />
       {updateCheckAvailable ? (
         <Pressable
-          accessibilityLabel={`Version ${versionLabel}`}
+          accessibilityLabel={uiT("Version {0}", { "0": versionLabel })}
           accessibilityRole="text"
           disabled={busy}
           onPress={handleVersionPress}

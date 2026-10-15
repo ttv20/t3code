@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { ExternalLinkIcon } from "lucide-react";
 
@@ -18,13 +19,14 @@ export function PullRequestsUnavailableState({
   refreshing?: boolean;
   gitHubUrl?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Empty className="scrollbar-gutter-both min-h-0 justify-center-safe overflow-y-auto [&>*]:shrink-0">
       <EmptyMedia variant="icon">
         <PullRequestGlyph.pullRequest />
       </EmptyMedia>
       <EmptyHeader>
-        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyTitle>{uiT(title)}</EmptyTitle>
         {/* The caller names the fix — update the environment, install gh, sign in — so this
             shows its message rather than trying to infer one from the failure text. */}
         <EmptyDescription>{error}</EmptyDescription>
@@ -40,7 +42,7 @@ export function PullRequestsUnavailableState({
               aria-busy={refreshing}
             >
               <RefreshIcon size="sm" refreshing={refreshing} />
-              Retry
+              {uiT("Retry")}
             </Button>
           ) : null}
           {gitHubUrl ? (
@@ -50,7 +52,7 @@ export function PullRequestsUnavailableState({
               render={<a href={gitHubUrl} target="_blank" rel="noopener noreferrer" />}
             >
               <ExternalLinkIcon aria-hidden className="size-3.5" />
-              Open on GitHub
+              {uiT("Open on GitHub")}
             </Button>
           ) : null}
         </div>

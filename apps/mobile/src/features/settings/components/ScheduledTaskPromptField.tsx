@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { TextInput, View } from "react-native";
 
 import { AppText as Text } from "../../../components/AppText";
@@ -20,6 +21,7 @@ export function ScheduledTaskPromptField(props: {
   readonly disabled: boolean;
   readonly voiceInput: ReturnType<typeof useVoiceInputController>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const voice = props.voiceInput;
   const presentation = resolveVoiceComposerPresentation(voice.state, voice.elapsedSeconds);
   const showsDictation = presentation.statusLabel !== null;
@@ -27,10 +29,10 @@ export function ScheduledTaskPromptField(props: {
 
   return (
     <View className="gap-2 border-t border-border-subtle px-4 py-3">
-      <Text className="text-sm text-foreground-muted">Prompt</Text>
+      <Text className="text-sm text-foreground-muted">{uiT("Prompt")}</Text>
       <View className="relative">
         <TextInput
-          accessibilityLabel="Prompt"
+          accessibilityLabel={uiT("Prompt")}
           value={props.value}
           onChangeText={props.onChange}
           selection={props.selection}
@@ -39,7 +41,7 @@ export function ScheduledTaskPromptField(props: {
           multiline
           scrollEnabled
           textAlignVertical="top"
-          placeholder="What should the agent do each time?"
+          placeholder={uiT("What should the agent do each time?")}
           placeholderTextColorClassName="accent-foreground-muted"
           className="max-h-40 min-h-24 font-sans text-base text-foreground"
         />

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { createContext, useContext, useMemo, useState } from "react";
 import { pullRequestMediaSource, pullRequestImageSource } from "./pullRequestMediaSource";
 import { useFilePreviewGallery } from "../../components/FilePreviewGallery";
@@ -113,13 +114,14 @@ export function PullRequestImageAttachment(props: {
   readonly source: FilePreviewItem;
   readonly gallery: readonly FilePreviewItem[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const media = usePullRequestMediaUrl(props.url);
   const [preview, setPreview] = useState<FilePreviewSource | null>(null);
   return (
     <>
       <Pressable
         accessibilityRole="imagebutton"
-        accessibilityLabel={`View attachment: ${props.caption}`}
+        accessibilityLabel={uiT("View attachment: {0}", { "0": props.caption })}
         onPress={() => setPreview({ ...props.source, gallery: props.gallery })}
         className="gap-2 active:opacity-70"
         style={{ width: 176 }}

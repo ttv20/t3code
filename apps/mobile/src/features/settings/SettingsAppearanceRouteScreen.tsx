@@ -1,3 +1,5 @@
+import { useUiLanguage } from "../../i18n";
+import { LanguageSettingsSection } from "./LanguageSettingsSection";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -8,10 +10,11 @@ import { TextAppearanceSection } from "./appearance/sections/TextAppearanceSecti
 import { ThemeAppearanceSection } from "./appearance/sections/ThemeAppearanceSection";
 
 export function SettingsAppearanceRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
 
   return (
-    <SettingsScreen title="Appearance">
+    <SettingsScreen title={uiT("Appearance")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -21,6 +24,7 @@ export function SettingsAppearanceRouteScreen() {
           paddingBottom: Math.max(insets.bottom, 18) + 18,
         }}
       >
+        <LanguageSettingsSection />
         <ThemeAppearanceSection />
         <TextAppearanceSection />
         <TerminalAppearanceSection />

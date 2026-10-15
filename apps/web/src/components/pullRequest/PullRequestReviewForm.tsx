@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomCommand } from "~/state/use-atom-command";
 /**
  * The review half of the floating composer: the summary and the verdict that sends it, together
@@ -66,6 +67,7 @@ export function PullRequestReviewForm({
   onPendingChange: (pending: boolean) => void;
   onSubmitted: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [requestedVerdict, setRequestedVerdict] = useState<PullRequestReviewVerdict>("comment");
   const comments = usePendingReviewComments(reference);
   const reviewKey = pullRequestReviewKey(reference);
@@ -101,7 +103,7 @@ export function PullRequestReviewForm({
     onPendingChange(false);
     if (result._tag === "Failure") {
       // The draft is kept: whatever went wrong, retyping the review is not the answer.
-      toastManager.add({ type: "error", title: "The review could not be submitted" });
+      toastManager.add({ type: "error", title: uiT("The review could not be submitted") });
       return;
     }
     // More remarks may have been added while the host was accepting this snapshot. Leave those,
@@ -129,10 +131,10 @@ export function PullRequestReviewForm({
         value={body}
         placeholder={
           requestChangesSummaryRequired && verdicts.includes("request-changes")
-            ? "Summarize your review (required to request changes)"
-            : "Summarize your review (optional)"
+            ? uiT("Summarize your review (required to request changes)")
+            : uiT("Summarize your review (optional)")
         }
-        aria-label="Review summary"
+        aria-label={uiT("Review summary")}
         onChange={(event) => setSummary(reviewKey, event.target.value)}
       />
       <div className="mt-2 flex justify-between gap-2">
@@ -143,10 +145,10 @@ export function PullRequestReviewForm({
             if (value !== null) setRequestedVerdict(value);
           }}
         >
-          <SelectTrigger size="xs" className="w-auto min-w-0" aria-label="Review verdict">
+          <SelectTrigger size="xs" className="w-auto min-w-0" aria-label={uiT("Review verdict")}>
             <span className="flex items-center gap-1.5">
               {selectedVerdict?.icon}
-              {selectedVerdict?.label}
+              {uiT(selectedVerdict?.label)}
             </span>
           </SelectTrigger>
           <SelectPopup side="top" alignItemWithTrigger={false}>
@@ -154,7 +156,7 @@ export function PullRequestReviewForm({
               <SelectItem key={verdict.value} value={verdict.value}>
                 <span className="flex items-center gap-1.5">
                   {verdict.icon}
-                  {verdict.label}
+                  {uiT(verdict.label)}
                 </span>
               </SelectItem>
             ))}
@@ -167,7 +169,7 @@ export function PullRequestReviewForm({
             if (selectedVerdict !== undefined) void submit(selectedVerdict);
           }}
         >
-          {pending ? "Submitting..." : "Submit review"}
+          {pending ? uiT("Submitting...") : uiT("Submit review")}
         </Button>
       </div>
     </>

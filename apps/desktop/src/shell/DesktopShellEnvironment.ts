@@ -87,6 +87,8 @@ const LOGIN_SHELL_ENV_NAMES = [
   "XDG_SESSION_TYPE",
   "WAYLAND_DISPLAY",
   "T3CODE_TELEMETRY_ENABLED",
+  "T3CODE_POSTHOG_KEY",
+  "T3CODE_POSTHOG_HOST",
   "__MISE_DIFF",
 ] as const;
 const WINDOWS_PROFILE_ENV_NAMES = ["PATH", "FNM_DIR", "FNM_MULTISHELL_PATH"] as const;
@@ -454,8 +456,10 @@ const installPosixEnvironment = Effect.fn("desktop.shellEnvironment.installPosix
       "XDG_DATA_HOME",
       "XDG_RUNTIME_DIR",
       "WAYLAND_DISPLAY",
-      // The telemetry opt-out is documented as a shell variable; GUI launches never see it.
+      // GUI launches need the shell's telemetry destination as well as its opt-in.
       "T3CODE_TELEMETRY_ENABLED",
+      "T3CODE_POSTHOG_KEY",
+      "T3CODE_POSTHOG_HOST",
     ] as const) {
       if (!config.env[name] && shellEnvironment[name]) {
         config.env[name] = shellEnvironment[name];

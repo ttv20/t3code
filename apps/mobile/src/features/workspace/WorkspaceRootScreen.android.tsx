@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useMemo } from "react";
 import { View } from "react-native";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +15,7 @@ import { AndroidWorkspaceNavigation } from "./AndroidWorkspaceNavigation";
 import { WorkspaceTabsContext, useWorkspaceTabs } from "./WorkspaceTabsContext";
 
 export function WorkspaceRootScreen() {
+  const { t: uiT } = useUiLanguage();
   const { layout } = useAdaptiveWorkspaceLayout();
   const workspace = useWorkspaceTabs()!;
   const insets = useSafeAreaInsets();
@@ -33,10 +35,10 @@ export function WorkspaceRootScreen() {
     ) : (
       <>
         <NativeStackScreenOptions options={{ headerShown: false }} />
-        <AndroidScreenHeader title="Pull requests" />
+        <AndroidScreenHeader title={uiT("Pull requests")} />
         <View className="flex-1 items-center justify-center px-10">
           <EmptyState
-            title="Select a pull request"
+            title={uiT("Select a pull request")}
             detail="Choose a pull request from the sidebar to review it."
             variant="plain"
           />

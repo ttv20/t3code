@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Spinner } from "~/components/ui/spinner";
 import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
 import { CircleAlertIcon, DownloadIcon } from "lucide-react";
@@ -29,6 +30,7 @@ export function ComposerServerUpdateStatus({
   readonly state: Exclude<ServerUpdateState, { status: "idle" }>;
   readonly serverLabel?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const triggerId = useId();
   const title = `${state.status === "failed" ? "Could not update" : "Updating"} ${serverLabel}`;
@@ -50,14 +52,14 @@ export function ComposerServerUpdateStatus({
               className="block max-w-full cursor-help truncate rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               onClick={() => setDetailsOpen(true)}
             >
-              {title}
+              {uiT(title)}
               <ComposerBanner.Separator />
               <span className="font-normal text-muted-foreground">{detail}</span>
             </button>
           }
         />
         <TooltipPopup side="top">
-          {title}: {detail}
+          {uiT(title)}: {detail}
         </TooltipPopup>
       </Tooltip>
     </span>

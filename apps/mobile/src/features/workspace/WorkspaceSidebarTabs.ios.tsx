@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Host, Picker, Text } from "@expo/ui/swift-ui";
 import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
 import { StackActions, useNavigation } from "@react-navigation/native";
@@ -8,6 +9,7 @@ import type { WorkspaceTab } from "./workspace-tabs-state";
 
 /** Wide iPad navigation belongs to the sidebar, leaving the detail's header unobstructed. */
 export function WorkspaceSidebarTabs() {
+  const { t: uiT } = useUiLanguage();
   const workspace = useWorkspaceTabs()!;
   const navigation = useNavigation();
   const { themeAppearance } = useAppearancePreferences();
@@ -19,7 +21,7 @@ export function WorkspaceSidebarTabs() {
         style={{ width: "100%" }}
       >
         <Picker
-          label="Workspace"
+          label={uiT("Workspace")}
           selection={workspace.state.selectedTab}
           onSelectionChange={(tab: WorkspaceTab) => {
             if (tab === workspace.state.selectedTab) return;
@@ -29,8 +31,8 @@ export function WorkspaceSidebarTabs() {
           }}
           modifiers={[pickerStyle("segmented")]}
         >
-          <Text modifiers={[tag("threads")]}>Threads</Text>
-          <Text modifiers={[tag("pullRequests")]}>Pull requests</Text>
+          <Text modifiers={[tag("threads")]}>{uiT("Threads")}</Text>
+          <Text modifiers={[tag("pullRequests")]}>{uiT("Pull requests")}</Text>
         </Picker>
       </Host>
     </View>

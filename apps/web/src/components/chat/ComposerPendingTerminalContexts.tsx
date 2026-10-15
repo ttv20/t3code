@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type TerminalContextDraft,
   formatTerminalContextLabel,
@@ -15,12 +16,13 @@ export function ComposerPendingTerminalContextChip({
   context,
   detailsMode,
 }: ComposerPendingTerminalContextChipProps) {
+  const { t: uiT } = useUiLanguage();
   const label = formatTerminalContextLabel(context);
   const expired = isTerminalContextExpired(context);
 
   return (
     <TerminalContextInlineChip
-      label={label}
+      label={uiT(label)}
       terminalLabel={context.terminalLabel}
       lineStart={context.lineStart}
       lineEnd={context.lineEnd}

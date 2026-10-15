@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { DesktopCliCommandState } from "@t3tools/contracts";
 import { useCallback, useEffect, useState } from "react";
 
@@ -11,6 +12,7 @@ import { searchableSetting } from "./settingsSearch";
  * it off again. Hidden where the desktop build has no launcher to install.
  */
 export function CliCommandSettingsRow() {
+  const { t: uiT } = useUiLanguage();
   const bridge = typeof window === "undefined" ? undefined : window.desktopBridge?.cliCommand;
   const [state, setState] = useState<DesktopCliCommandState | null>(null);
   const [pending, setPending] = useState(false);
@@ -39,30 +41,36 @@ export function CliCommandSettingsRow() {
           toastManager.add(
             stackedThreadToast({
               type: "error",
-              title: action === "install" ? "Could not install t3" : "Could not remove t3",
-              description: error instanceof Error ? error.message : "Something went wrong.",
+              title:
+                action === "install" ? uiT("Could not install t3") : uiT("Could not remove t3"),
+              description: error instanceof Error ? error.message : uiT("Something went wrong."),
             }),
           );
         })
         .finally(() => setPending(false));
     },
-    [bridge, pending],
+    [bridge, pending, uiT],
   );
 
   if (!bridge || !state?.supported) return null;
   const installed = state.installedPath !== null;
   const description = state.shadowedBy
-    ? `Another t3 at ${state.shadowedBy} runs first in a new terminal. Remove it to use T3 Code's.`
+    ? uiT("Another t3 at {0} runs first in a new terminal. Remove it to use T3 Code's.", {
+        "0": state.shadowedBy,
+      })
     : !installed
-      ? "Run T3 Code's CLI as `t3` from any terminal."
+      ? uiT("Run T3 Code's CLI as `t3` from any terminal.")
       : state.onPath
-        ? `Installed at ${state.installedPath}. Open a new terminal to use it.`
-        : `Installed at ${state.installedPath}, which is not on your PATH yet. Add its folder to your PATH to run \`t3\`.`;
+        ? uiT("Installed at {0}. Open a new terminal to use it.", { "0": state.installedPath })
+        : uiT(
+            "Installed at {0}, which is not on your PATH yet. Add its folder to your PATH to run `t3`.",
+            { "0": state.installedPath },
+          );
 
   return (
     <SettingsRow
       {...searchableSetting("cli-command")}
-      description={description}
+      description={uiT(description)}
       control={
         <Button
           size="sm"
@@ -70,7 +78,7 @@ export function CliCommandSettingsRow() {
           disabled={pending}
           onClick={() => change(installed ? "uninstall" : "install")}
         >
-          {installed ? "Remove" : "Install"}
+          {installed ? uiT("Remove") : uiT("Install")}
         </Button>
       }
     />

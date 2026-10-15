@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
@@ -426,6 +427,8 @@ export function TerminalViewport({
   drawerHeight,
   keybindings,
 }: TerminalViewportProps) {
+  const { t: uiT } = useUiLanguage();
+  const translateForTerminalEvents = useEffectEvent(uiT);
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<GhosttyTerminalSurface | null>(null);
   const visibleRef = useRef(visible);
@@ -935,8 +938,11 @@ export function TerminalViewport({
             toastManager.add(
               stackedThreadToast({
                 type: "error",
-                title: "Unable to open link",
-                description: error instanceof Error ? error.message : "An error occurred.",
+                title: translateForTerminalEvents("Unable to open link"),
+                description:
+                  error instanceof Error
+                    ? error.message
+                    : translateForTerminalEvents("An error occurred."),
               }),
             );
           });
@@ -1108,6 +1114,7 @@ export function TerminalViewport({
   return (
     <div
       ref={containerRef}
+      dir="ltr"
       tabIndex={-1}
       className="relative h-full w-full overflow-hidden bg-(--terminal-background)"
     />
@@ -1161,6 +1168,7 @@ function TerminalActionButton({
   children,
   disabled,
 }: TerminalActionButtonProps) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Popover>
       <PopoverTrigger
@@ -1184,7 +1192,7 @@ function TerminalActionButton({
         align="center"
         className="pointer-events-none select-none"
       >
-        {label}
+        {uiT(label)}
       </PopoverPopup>
     </Popover>
   );
@@ -1219,6 +1227,7 @@ export default function ThreadTerminalDrawer({
   terminalLabelsById,
   terminalLaunchLocationsById,
 }: ThreadTerminalDrawerProps) {
+  const { t: uiT } = useUiLanguage();
   const canOperateTerminal = useEnvironmentScope(threadRef.environmentId, AuthTerminalOperateScope);
   const isPanel = mode === "panel";
   const [advancedTypography] = useLocalStorage(
@@ -1559,6 +1568,7 @@ export default function ThreadTerminalDrawer({
   if (normalizedTerminalIds.length === 0) {
     return (
       <aside
+        dir="ltr"
         data-thread-terminal-drawer
         data-terminal-owner={isPanel ? "right-panel" : "drawer"}
         className={cn(
@@ -1578,7 +1588,7 @@ export default function ThreadTerminalDrawer({
           />
         ) : null}
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>No terminal sessions for this thread yet.</p>
+          <p>{uiT("No terminal sessions for this thread yet.")}</p>
           <Button
             size="xs"
             variant="outline"
@@ -1596,6 +1606,7 @@ export default function ThreadTerminalDrawer({
 
   return (
     <aside
+      dir="ltr"
       data-thread-terminal-drawer
       data-terminal-owner={isPanel ? "right-panel" : "drawer"}
       className={cn(

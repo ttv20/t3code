@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { type PendingUserInput } from "../../session-logic";
@@ -85,6 +86,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
   onAdvance: () => void;
   onDismiss: (requestId: RuntimeRequestId) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   // Message-mode requests remain answerable after their provider turn ends.
   const canRespond = prompt.responseCapability !== "not_resumable";
   const responseDisabled = disabled || isResponding || !canRespond;
@@ -212,7 +214,9 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       <CollapsibleTrigger
         render={<ComposerBanner.Row render={<button type="button" />} />}
         title={
-          isCollapsed ? "Show the question and its options" : "Hide the question and its options"
+          isCollapsed
+            ? uiT("Show the question and its options")
+            : uiT("Hide the question and its options")
         }
         data-pending-user-input-toggle={isCollapsed ? "collapsed" : "expanded"}
       >
@@ -245,8 +249,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
             // the disclosure. Dismiss closes the question without a reply.
             <ComposerBanner.Dismiss
               render={<span role="button" tabIndex={0} />}
-              aria-label="Dismiss question without answering"
-              title="Dismiss question without answering"
+              aria-label={uiT("Dismiss question without answering")}
+              title={uiT("Dismiss question without answering")}
               disabled={isResponding}
               data-pending-user-input-dismiss
               onClick={(event) => {
@@ -278,7 +282,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
             />
             {activeQuestion.multiSelect ? (
               <p dir="ltr" className="mt-1 text-secondary-label text-xs">
-                Select one or more options.
+                {uiT("Select one or more options.")}
               </p>
             ) : null}
             <div className="mt-2 space-y-0.5">
@@ -302,9 +306,11 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                 const content = (
                   <>
                     <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                      <span className="text-sm font-medium">{option.label}</span>
+                      <span className="text-sm font-medium">{uiT(option.label)}</span>
                       {option.description && option.description !== option.label ? (
-                        <span className="text-secondary-label text-2xs">{option.description}</span>
+                        <span className="text-secondary-label text-2xs">
+                          {uiT(option.description)}
+                        </span>
                       ) : null}
                     </div>
                     {isSelected ? (

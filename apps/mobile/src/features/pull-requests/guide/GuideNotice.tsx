@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { Pressable, View } from "react-native";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import { AppText as Text } from "../../../components/AppText";
@@ -10,6 +11,7 @@ const NOTICE_ENTER = FadeIn.delay(180).duration(120).reduceMotion(ReduceMotion.S
 
 /** Keep the action in one place as loading, writing, and retry states change. */
 export function GuideNotice({ state }: { readonly state: ReturnType<typeof useReviewGuide> }) {
+  const { t: uiT } = useUiLanguage();
   const notice = guideNoticeState(state);
   if (notice.kind === "ready") return null;
   const compact = state.data?.guide != null;
@@ -33,11 +35,11 @@ export function GuideNotice({ state }: { readonly state: ReturnType<typeof useRe
           tintColorClassName={failed ? "accent-danger-foreground" : "accent-icon-muted"}
         />
         <Text className="text-base font-t3-semibold">
-          {compact ? notice.title : "Review guide"}
+          {compact ? notice.title : uiT("Review guide")}
         </Text>
       </View>
       <View style={compact ? undefined : { minHeight: 100 }} className="pt-3 pb-4">
-        <Text className="text-sm leading-6 text-foreground-muted">{notice.description}</Text>
+        <Text className="text-sm leading-6 text-foreground-muted">{uiT(notice.description)}</Text>
       </View>
       <View className="min-h-12 flex-row items-center justify-between gap-3">
         {state.canWrite || busy || notice.kind === "unavailable" ? (
@@ -66,13 +68,13 @@ export function GuideNotice({ state }: { readonly state: ReturnType<typeof useRe
         ) : (
           <Text className="text-xs text-foreground-muted">
             {notice.kind === "failed"
-              ? "Reconnect or ask someone with write access to retry."
-              : "Writing a guide requires a connection and write access."}
+              ? uiT("Reconnect or ask someone with write access to retry.")
+              : uiT("Writing a guide requires a connection and write access.")}
           </Text>
         )}
         {notice.kind === "writing" && state.data?.run?._tag === "Running" ? (
           <Text className="shrink text-xs text-foreground-muted">
-            Started{" "}
+            {uiT("Started")}{" "}
             {new Date(state.data.run.startedAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",

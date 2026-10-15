@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { CheckIcon } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -120,6 +121,7 @@ function EnvironmentUpdateRow({
   readonly status: ProviderUpdateRowStatus;
   readonly onUpdate: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const canManageProviders = useEnvironmentScope(group.environmentId, AuthProvidersManageScope);
   let trailing: ReactNode;
   switch (status.kind) {
@@ -133,14 +135,14 @@ function EnvironmentUpdateRow({
     case "unchanged":
       trailing = (
         <Button size="xs" variant="outline" disabled={!canManageProviders} onClick={onUpdate}>
-          Retry
+          {uiT("Retry")}
         </Button>
       );
       break;
     default:
       trailing = (
         <Button size="xs" variant="outline" disabled={!canManageProviders} onClick={onUpdate}>
-          Update
+          {uiT("Update")}
         </Button>
       );
       break;
@@ -149,11 +151,11 @@ function EnvironmentUpdateRow({
   return (
     <div className="flex items-center justify-between gap-3 py-0.5">
       <div className="flex min-w-0 flex-col">
-        <span className="truncate font-medium text-foreground">{group.label}</span>
+        <span className="truncate font-medium text-foreground">{uiT(group.label)}</span>
         <span className={cn("truncate text-xs", rowToneClass(status.kind))}>{status.text}</span>
         {!canManageProviders ? (
           <span className="text-xs text-muted-foreground">
-            This connection cannot manage provider accounts.
+            {uiT("This connection cannot manage provider accounts.")}
           </span>
         ) : null}
       </div>

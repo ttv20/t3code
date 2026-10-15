@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomCommand } from "~/state/use-atom-command";
 import type {
   EnvironmentId,
@@ -90,7 +91,8 @@ function TimelineBody({
 }
 
 function ActorName({ actor }: { actor: PullRequestActor | null }) {
-  return <span className="font-semibold text-foreground">{actor?.login ?? "ghost"}</span>;
+  const { t: uiT } = useUiLanguage();
+  return <span className="font-semibold text-foreground">{actor?.login ?? uiT("ghost")}</span>;
 }
 
 function TimelineMarker({
@@ -161,12 +163,13 @@ function ReviewStateBadge({ state }: { state: string }) {
 }
 
 function OpenOnHostButton({ url, onOpen }: { url: string | null; onOpen: (url: string) => void }) {
+  const { t: uiT } = useUiLanguage();
   return url === null ? null : (
     <Button
       size="icon-xs"
       variant="ghost-muted"
       className="-mr-1 -mt-1 shrink-0"
-      aria-label="Open activity on host"
+      aria-label={uiT("Open activity on host")}
       onClick={() => onOpen(url)}
     >
       <ExternalLinkIcon className="size-3" />
@@ -188,6 +191,7 @@ function ConversationCard({
   onOpen: (url: string) => void;
   reactions: ReactionSurface;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const updateComment = useAtomCommand(pullRequestEnvironment.updateComment, {
@@ -205,7 +209,7 @@ function ConversationCard({
     });
     setSaving(false);
     if (result._tag === "Failure") {
-      toastManager.add({ type: "error", title: "Could not save the comment" });
+      toastManager.add({ type: "error", title: uiT("Could not save the comment") });
       return;
     }
     setEditing(false);
@@ -235,7 +239,7 @@ function ConversationCard({
           {editable !== null && !editing ? (
             <PullRequestEditButton
               className="-mt-1"
-              aria-label="Edit comment"
+              aria-label={uiT("Edit comment")}
               onClick={() => setEditing(true)}
             />
           ) : null}
@@ -260,7 +264,7 @@ function ConversationCard({
             cwd={cwd}
             environmentId={reactions.environmentId}
             threadRef={reactions.threadRef}
-            label="Edit comment"
+            label={uiT("Edit comment")}
             saving={saving}
             onSave={(body) => void save(body)}
             onCancel={() => setEditing(false)}
@@ -303,6 +307,7 @@ function ConversationGroup({
   onOpen: (url: string) => void;
   reactions: ReactionSurface;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [open, setOpen] = useState(false);
   const actors = uniqueConversationActors(events);
   const first = events[0];
@@ -326,10 +331,12 @@ function ConversationGroup({
           >
             <span className="min-w-0 flex-1">
               <span className="block text-xs font-semibold">
-                {events.length.toLocaleString()} {events.length === 1 ? "comment" : "comments"}
+                {events.length.toLocaleString()}{" "}
+                {events.length === 1 ? uiT("comment") : uiT("comments")}
               </span>
               <span className="block truncate text-3xs text-muted-foreground">
-                {actors.length.toLocaleString()} {actors.length === 1 ? "author" : "authors"} ·{" "}
+                {actors.length.toLocaleString()}{" "}
+                {actors.length === 1 ? uiT("author") : uiT("authors")} ·{" "}
                 {formatRelativeTimeLabel(first.at)}
               </span>
             </span>
@@ -373,11 +380,12 @@ function CommitEvent({
   event: PullRequestTimelineEvent;
   onOpen: (oid: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <button
       type="button"
       className="group relative mb-5 block w-full cursor-pointer rounded-sm pl-12 text-left outline-none [contain-intrinsic-block-size:48px] [content-visibility:auto] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-      aria-label={`View commit ${event.id}`}
+      aria-label={uiT("View commit {0}", { "0": event.id })}
       onClick={() => onOpen(event.id)}
     >
       <ActorTimelineMarker
@@ -387,7 +395,7 @@ function CommitEvent({
       <div className="flex min-w-0 items-center gap-2.5 py-1.5">
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
-            {event.body ?? "Untitled commit"}
+            {event.body ?? uiT("Untitled commit")}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-3xs text-muted-foreground">
             <code className="font-mono">{event.id.slice(0, 7)}</code>
@@ -407,20 +415,21 @@ function CommitEvent({
 }
 
 function LifecycleEvent({ event }: { event: PullRequestTimelineEvent }) {
+  const { t: uiT } = useUiLanguage();
   const presentation =
     event.kind === "opened"
       ? {
           icon: <PullRequestGlyph.pullRequest className="size-3.5" />,
-          label: "Pull request opened",
+          label: uiT("Pull request opened"),
         }
       : event.kind === "merged"
         ? {
             icon: <PullRequestGlyph.merged className="size-3.5" />,
-            label: "Pull request merged",
+            label: uiT("Pull request merged"),
           }
         : {
             icon: <PullRequestGlyph.closed className="size-3.5" />,
-            label: "Pull request closed",
+            label: uiT("Pull request closed"),
           };
 
   return (
@@ -429,7 +438,7 @@ function LifecycleEvent({ event }: { event: PullRequestTimelineEvent }) {
       <div className="py-1.5 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
           {event.actor ? <ActorName actor={event.actor} /> : null}
-          <span className="font-semibold text-foreground">{presentation.label}</span>
+          <span className="font-semibold text-foreground">{uiT(presentation.label)}</span>
         </div>
         <div className="mt-0.5 text-2xs text-muted-foreground">
           {formatRelativeTimeLabel(event.at)}
@@ -460,6 +469,7 @@ function ReviewVerdictEvent({
   onOpen: (url: string) => void;
   reactions: ReactionSurface;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div className="group relative mb-5 pl-12 [contain-intrinsic-block-size:48px] [content-visibility:auto]">
       {/* Pinned rather than centred: this row grows with a body, and a
@@ -492,7 +502,9 @@ function ReviewVerdictEvent({
                 }
               >
                 {pullRequestReviewOutcomeLabel(outcome)}
-                {stale ? <span className="sr-only">, before the latest commits</span> : null}
+                {stale ? (
+                  <span className="sr-only">{uiT(", before the latest commits")}</span>
+                ) : null}
               </TooltipTrigger>
               <TooltipPopup>{pullRequestReviewOutcomeStaleLabel(outcome)}</TooltipPopup>
             </Tooltip>
@@ -556,6 +568,7 @@ export function PullRequestTimelineTab({
   onOpenCommit: (oid: string) => void;
   onRefresh: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const events = buildPullRequestTimeline(detail);
   const newestCommitAt = newestPullRequestCommitAt(detail.commits);
   const reactions: ReactionSurface = {
@@ -621,7 +634,7 @@ export function PullRequestTimelineTab({
         {events.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
             <PullRequestGlyph.pullRequest className="mb-2 size-5" />
-            <p className="text-xs">No activity yet.</p>
+            <p className="text-xs">{uiT("No activity yet.")}</p>
           </div>
         ) : null}
       </div>

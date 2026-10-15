@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useEffect, useState } from "react";
 import { I18nManager, Platform, Pressable, View } from "react-native";
 import Animated, {
@@ -17,6 +18,7 @@ export type { SegmentedControlProps } from "./SegmentedControl.types";
 export function SegmentedControl<Value extends number | string>(
   props: SegmentedControlProps<Value>,
 ) {
+  const { t: uiT } = useUiLanguage();
   const compact = props.size === "compact";
   const [width, setWidth] = useState(0);
   const index = Math.max(
@@ -79,7 +81,7 @@ export function SegmentedControl<Value extends number | string>(
                 active ? "font-t3-medium text-secondary-foreground" : "text-foreground-muted",
               )}
             >
-              {option.label}
+              {uiT(option.label)}
             </Text>
           </Pressable>
         );

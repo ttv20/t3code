@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../../i18n";
 import { Host, Slider } from "@expo/ui/jetpack-compose";
 import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import * as Haptics from "expo-haptics";
@@ -10,6 +11,7 @@ import { useAppearancePreferences } from "../AppearancePreferencesProvider";
 import type { FontSizeSliderRow as SharedFontSizeSliderRow } from "./FontSizeSliderRow.shared";
 
 export function FontSizeSliderRow(props: ComponentProps<typeof SharedFontSizeSliderRow>) {
+  const { t: uiT } = useUiLanguage();
   const {
     themeAppearance,
     systemColorsActive,
@@ -30,12 +32,12 @@ export function FontSizeSliderRow(props: ComponentProps<typeof SharedFontSizeSli
     <View className={props.disabled ? "gap-2 p-4 opacity-45" : "gap-2 p-4"}>
       <View className="flex-row items-center gap-4">
         <SymbolView name={props.icon} size={24} tintColorClassName="accent-icon" />
-        <Text className="min-w-0 flex-1 text-base">{props.label}</Text>
+        <Text className="min-w-0 flex-1 text-base">{uiT(props.label)}</Text>
         <Text className="text-sm text-foreground-muted">{props.valueLabel}</Text>
       </View>
       <View
         accessible
-        accessibilityLabel={props.label}
+        accessibilityLabel={uiT(props.label)}
         accessibilityRole="adjustable"
         accessibilityState={{ disabled: Boolean(props.disabled) }}
         accessibilityValue={{

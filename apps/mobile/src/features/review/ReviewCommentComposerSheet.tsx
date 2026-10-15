@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { TextInputWrapper } from "expo-paste-input";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
@@ -40,6 +41,7 @@ type ReviewCommentComposerSheetProps = StaticScreenProps<{
 }>;
 
 export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProps) {
+  const { t: uiT } = useUiLanguage();
   const isAndroid = Platform.OS === "android";
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -174,16 +176,16 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
               />
             </Pressable>
 
-            <Text className="text-lg font-t3-bold text-foreground">Add Comment</Text>
+            <Text className="text-lg font-t3-bold text-foreground">{uiT("Add Comment")}</Text>
 
             <View className="h-12 w-12" />
           </View>
 
           {!target ? (
             <View className="rounded-[22px] border border-border bg-card px-4 py-5">
-              <Text className="text-base font-t3-bold text-foreground">No selection</Text>
+              <Text className="text-base font-t3-bold text-foreground">{uiT("No selection")}</Text>
               <Text className="mt-1 text-sm leading-normal text-foreground-muted">
-                Select a diff line or range first.
+                {uiT("Select a diff line or range first.")}
               </Text>
             </View>
           ) : (
@@ -250,7 +252,7 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
               </View>
 
               <View className="min-h-0 flex-1 gap-2">
-                <Text className="text-sm font-t3-bold text-foreground">Comment</Text>
+                <Text className="text-sm font-t3-bold text-foreground">{uiT("Comment")}</Text>
                 <View className="min-h-[132px] flex-1 overflow-hidden rounded-[20px] border border-border bg-card">
                   <View className="min-h-0 flex-1 px-4 pt-3.5">
                     <TextInputWrapper onPaste={handleNativePaste} style={{ flex: 1, minHeight: 0 }}>
@@ -258,7 +260,7 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
                         autoFocus
                         multiline
                         scrollEnabled
-                        placeholder="Leave a comment..."
+                        placeholder={uiT("Leave a comment...")}
                         textAlignVertical="top"
                         value={commentText}
                         onChangeText={setCommentText}
@@ -290,15 +292,15 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
         {!isAndroid && target ? (
           <View className="flex-row items-center gap-3 bg-sheet px-5 py-2">
             <ControlPill
-              accessibilityLabel="Add image"
+              accessibilityLabel={uiT("Add image")}
               icon="plus"
               onPress={() => void handlePickImages()}
             />
             <View className="flex-1" />
             <ControlPill
-              accessibilityLabel="Comment"
+              accessibilityLabel={uiT("Comment")}
               icon="arrow.up"
-              label="Comment"
+              label={uiT("Comment")}
               variant="primary"
               disabled={!canSubmit}
               onPress={handleSubmit}
@@ -316,15 +318,15 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
             style={{ paddingBottom: Math.max(insets.bottom, 10) }}
           >
             <ControlPill
-              accessibilityLabel="Add image"
+              accessibilityLabel={uiT("Add image")}
               icon="plus"
               onPress={() => void handlePickImages()}
             />
             <View className="flex-1" />
             <ControlPill
-              accessibilityLabel="Comment"
+              accessibilityLabel={uiT("Comment")}
               icon="arrow.up"
-              label="Comment"
+              label={uiT("Comment")}
               variant="primary"
               disabled={!canSubmit}
               onPress={handleSubmit}

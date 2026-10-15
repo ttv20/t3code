@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Pressable, View } from "react-native";
 
 import { AppText } from "../../components/AppText";
@@ -9,12 +10,15 @@ export function BrowserPreviewButton(props: {
   readonly onPress: () => void;
   readonly compact?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const compact = props.compact ?? true;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={props.count === 1 ? "View browser" : `View ${props.count} browser tabs`}
-      accessibilityHint="Watch and control browser tabs open in this thread"
+      accessibilityLabel={
+        props.count === 1 ? uiT("View browser") : uiT("View {0} browser tabs", { "0": props.count })
+      }
+      accessibilityHint={uiT("Watch and control browser tabs open in this thread")}
       onPress={props.onPress}
       className={
         compact
@@ -25,7 +29,7 @@ export function BrowserPreviewButton(props: {
       <SymbolView name="globe" size={20} tintColorClassName="accent-icon" type="monochrome" />
       {!compact ? (
         <AppText className="font-t3-medium text-xs text-foreground">
-          {props.count === 1 ? "One tab open" : `${props.count} tabs open`}
+          {props.count === 1 ? uiT("One tab open") : uiT("{0} tabs open", { "0": props.count })}
         </AppText>
       ) : props.count > 1 ? (
         <View className="absolute right-1.5 top-1.5 min-w-4 items-center rounded-full bg-primary px-1">

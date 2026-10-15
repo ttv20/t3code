@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useId, useState, type ReactNode } from "react";
 import { Platform, View } from "react-native";
 import { FormSheet, Screen, ScreenStack, ScreenStackHeaderConfig } from "react-native-screens";
@@ -19,6 +20,7 @@ export function AppSheet(props: {
   readonly children: ReactNode;
   readonly onClose: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const containerStyle = useResolveClassNames("bg-sheet");
   const screenId = useId();
   const [isOpen, setIsOpen] = useState(true);
@@ -58,7 +60,7 @@ export function AppSheet(props: {
                 headerRightBarButtonItems={[
                   {
                     type: "button",
-                    title: "Done",
+                    title: uiT("Done"),
                     variant: "done",
                     accessibilityLabel: `Close ${props.title}`,
                     identifier: `app-sheet-done-${screenId}`,

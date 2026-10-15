@@ -1,3 +1,9 @@
+import {
+  formatUiUsageReset,
+  formatUiUsageWindowLabel,
+  formatUiResetCredits,
+} from "@t3tools/client-runtime/usage-localization";
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { EnvironmentId } from "@t3tools/contracts";
@@ -8,7 +14,6 @@ import {
   collectLimitPools,
   cursorUsageWindowDetails,
   displayLimitWindows,
-  formatResetsIn,
   remainingPercent,
   type LimitAccount,
   type LimitPoolWindow,
@@ -86,6 +91,7 @@ function PoolWindowCard({
   readonly label?: string;
   readonly description?: string;
 }) {
+  const { t: uiT, locale } = useUiLanguage();
   const navigation = useNavigation();
   const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
   const openAccount = (account: LimitAccount) =>
@@ -106,25 +112,27 @@ function PoolWindowCard({
     <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
       <View className="flex-row items-start justify-between gap-3">
         <View className="gap-1">
-          <Text className="text-sm font-t3-medium text-foreground">{label ?? pool.label}</Text>
+          <Text className="text-sm font-t3-medium text-foreground">
+            {formatUiUsageWindowLabel(label ?? pool.label, locale)}
+          </Text>
           <View className="flex-row items-baseline gap-1.5">
             <Text className="text-3xl font-t3-bold tabular-nums text-foreground">
               {pool.remainingPercent}%
             </Text>
-            <Text className="text-sm text-foreground-muted">left</Text>
+            <Text className="text-sm text-foreground-muted">{uiT("Remaining quota")}</Text>
           </View>
         </View>
         {pool.pace ? (
-          <Text className="text-xs text-foreground-tertiary">{PACE_LABEL[pool.pace]}</Text>
+          <Text className="text-xs text-foreground-tertiary">{uiT(PACE_LABEL[pool.pace])}</Text>
         ) : null}
       </View>
-      {description ? <Text className="text-xs text-foreground-muted">{description}</Text> : null}
+      {description ? (
+        <Text className="text-xs text-foreground-muted">{uiT(description)}</Text>
+      ) : null}
       {nextRefill ? (
         <Text className="text-xs tabular-nums text-foreground-muted">
           ↻ +{nextRefill.restoresPercent}%{" "}
-          {formatResetsIn(nextRefill.member.window, now)
-            ?.replace("resets in ", "in ")
-            .replace("resets now", "now")}
+          {formatUiUsageReset(nextRefill.member.window, now, locale)}
         </Text>
       ) : null}
       <View className="flex-row gap-1">
@@ -134,8 +142,12 @@ function PoolWindowCard({
             <Pressable
               key={account.key}
               accessibilityRole="button"
-              accessibilityLabel={`Segment ${index + 1}, ${accountName(account)}, ${remainingPercent(window)}% left`}
-              accessibilityHint="Show account details"
+              accessibilityLabel={uiT("Segment {0}, {1}, {2}% left", {
+                "0": index + 1,
+                "1": accountName(account),
+                "2": remainingPercent(window),
+              })}
+              accessibilityHint={uiT("Show account details")}
               onPress={() => openAccount(account)}
               className="h-7 min-w-0 flex-1 overflow-hidden rounded-md bg-subtle"
             >
@@ -157,13 +169,21 @@ function PoolWindowCard({
         {pool.columns.map(({ account, window }, index) => {
           if (!window) return null;
           const credits = account.limits.resetCredits?.availableCount ?? 0;
-          const resetsIn = formatResetsIn(window, now);
+          const resetsIn = formatUiUsageReset(window, now, locale);
           return (
             <Pressable
               key={account.key}
               accessibilityRole="button"
-              accessibilityLabel={`Segment ${index + 1}, ${accountName(account)}, ${remainingPercent(window)}% left${resetsIn ? `, ${resetsIn}` : ""}${credits ? `, ${credits} reset credits banked` : ""}`}
-              accessibilityHint="Show account details"
+              accessibilityLabel={uiT("Segment {0}, {1}, {2}% left{3}{4}", {
+                "0": index + 1,
+                "1": accountName(account),
+                "2": remainingPercent(window),
+                "3": resetsIn ? `, ${resetsIn}` : "",
+                "4": credits
+                  ? `, ${formatUiResetCredits({ availableCount: credits }, now, locale)}`
+                  : "",
+              })}
+              accessibilityHint={uiT("Show account details")}
               onPress={() => openAccount(account)}
               className="min-h-[44px] flex-row items-center gap-2 active:opacity-60"
             >
@@ -223,6 +243,7 @@ export function UsageLimitsSection({
   readonly selectedEnvironmentIds: ReadonlySet<EnvironmentId> | null;
   readonly cursorPrompt?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const presentations = useAtomValue(environmentPresentations.presentationsAtom);
   const selected =
     selectedEnvironmentIds === null
@@ -246,8 +267,8 @@ export function UsageLimitsSection({
       externalLinks.length === 0 ? (
         <Text className="py-12 text-center text-base text-foreground-muted">
           {selected.size === 0
-            ? "Select an environment to see limits."
-            : "No provider on the selected environments reports subscription limits."}
+            ? uiT("Select an environment to see limits.")
+            : uiT("No provider on the selected environments reports subscription limits.")}
         </Text>
       ) : null}
       {pools.map((pool, index) => {
@@ -302,7 +323,7 @@ export function UsageLimitsSection({
             className="min-h-11 justify-center"
             onPress={() => void Linking.openURL(link.url).catch(() => undefined)}
           >
-            <Text className="text-sm font-t3-medium text-primary">Manage usage</Text>
+            <Text className="text-sm font-t3-medium text-primary">{uiT("Manage usage")}</Text>
           </Pressable>
         </View>
       ))}
@@ -326,7 +347,8 @@ export function UsageLimitsSection({
             ))}
             {failedLabels.length > 0 ? (
               <Text className="text-sm font-t3-medium text-warning-foreground">
-                {failedLabels.join(", ")} could not refresh limits. Showing the last known values.
+                {failedLabels.join(", ")}{" "}
+                {uiT("could not refresh limits. Showing the last known values.")}
               </Text>
             ) : null}
           </View>
@@ -346,6 +368,7 @@ type AccountScreenProps = StaticScreenProps<{
 
 /** Resolve the account again so live quota and credit updates reach the open detail screen. */
 export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
+  const { t: uiT, locale } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const presentations = useAtomValue(environmentPresentations.presentationsAtom);
   const { accountKey, windowId, windowKind, environmentIds, now } = route.params;
@@ -364,7 +387,7 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
   const reset = pool?.resets.find((candidate) => candidate.member.account.key === accountKey);
   const [revealed, setRevealed] = useState(false);
   return (
-    <SettingsScreen title="Account">
+    <SettingsScreen title={uiT("Account")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-5 p-5"
@@ -372,7 +395,7 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
       >
         {!account || !window ? (
           <Text className="text-base text-foreground-muted">
-            This account is no longer reporting limits on the selected environments.
+            {uiT("This account is no longer reporting limits on the selected environments.")}
           </Text>
         ) : (
           <>
@@ -386,7 +409,9 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               {account.email ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={revealed ? "Hide account email" : "Reveal account email"}
+                  accessibilityLabel={
+                    revealed ? uiT("Hide account email") : uiT("Reveal account email")
+                  }
                   onPress={() => setRevealed((value) => !value)}
                   className="min-h-[44px] justify-center"
                 >
@@ -397,18 +422,21 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               ) : null}
               {account.plan ? (
                 <Text selectable className="text-sm text-foreground-muted">
-                  {account.plan}
+                  {uiT(account.plan)}
                 </Text>
               ) : null}
             </View>
             <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
-              <Text className="text-sm font-t3-medium text-foreground">{window.label}</Text>
+              <Text className="text-sm font-t3-medium text-foreground">
+                {formatUiUsageWindowLabel(window.label, locale)}
+              </Text>
               <Text className="text-3xl font-t3-bold tabular-nums text-foreground">
-                {remainingPercent(window)}% left
+                {remainingPercent(window)}
+                {uiT("% left")}
               </Text>
               {window.resetsAt ? (
                 <Text selectable className="text-sm text-foreground-muted">
-                  Resets{" "}
+                  {uiT("Quota resets")}{" "}
                   {new Date(window.resetsAt).toLocaleString(undefined, {
                     dateStyle: "medium",
                     timeStyle: "short",
@@ -417,13 +445,14 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               ) : null}
               {reset && reset.restoresPercent > 0 ? (
                 <Text className="text-sm text-foreground-muted">
-                  Restores {reset.restoresPercent}% of the pool
+                  {uiT("Quota restored")} {reset.restoresPercent}
+                  {uiT("% of the pool")}
                 </Text>
               ) : null}
             </View>
             <View className="gap-2 rounded-[24px] border-continuous bg-grouped-card p-4">
               <Text className="text-sm font-t3-medium text-foreground">
-                {account.environments.length ? "Signed in" : "Source"}
+                {account.environments.length ? uiT("Signed in") : uiT("Source")}
               </Text>
               {account.environments.length ? (
                 account.environments.map((environment) => (
@@ -437,7 +466,9 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
             </View>
             {account.redeem && account.limits.resetCredits ? (
               <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
-                <Text className="text-sm font-t3-medium text-foreground">Reset credits</Text>
+                <Text className="text-sm font-t3-medium text-foreground">
+                  {uiT("Reset credits")}
+                </Text>
                 <ResetCredits
                   key={account.key}
                   environmentId={account.redeem.environmentId}

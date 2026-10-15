@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactElement } from "react";
 import { AppSheet } from "../../components/AppSheet";
 
@@ -8,8 +9,9 @@ export interface WorktreeSetupSheetProps {
 }
 
 export function WorktreeSetupSheet({ children, onClose }: WorktreeSetupSheetProps) {
+  const { t: uiT } = useUiLanguage();
   return (
-    <AppSheet title="Worktree setup" onClose={onClose}>
+    <AppSheet title={uiT("Worktree setup")} onClose={onClose}>
       {children}
     </AppSheet>
   );

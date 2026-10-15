@@ -127,7 +127,7 @@ describe("renderGhosttySnapshot", () => {
     ]);
   });
 
-  it("constrains text runs and cursor glyphs to their terminal cells", () => {
+  it.each(["ltr", "rtl"] as const)("keeps text inside its cells in a %s host", (direction) => {
     const fillTextCalls: unknown[][] = [];
     const context = {
       canvas: { width: 200, height: 40 },
@@ -143,6 +143,8 @@ describe("renderGhosttySnapshot", () => {
       set font(_value: string) {},
       set textBaseline(_value: string) {},
     } as unknown as CanvasRenderingContext2D;
+    context.direction = direction;
+    context.textAlign = "start";
     const cells = [cell("a"), cell("b"), cell("x")];
     const snapshot: GhosttySnapshot = {
       cols: 3,
@@ -170,6 +172,8 @@ describe("renderGhosttySnapshot", () => {
       cursorOn: true,
     });
 
+    expect(context.direction).toBe("ltr");
+    expect(context.textAlign).toBe("left");
     expect(fillTextCalls).toEqual([
       ["abx", 4, 15, 21.6],
       ["x", 18.4, 15, 7.2],

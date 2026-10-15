@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { Platform, View } from "react-native";
 import { useResolveClassNames } from "uniwind";
 
@@ -15,12 +16,13 @@ export function ListChoiceRow(props: {
   readonly disabled?: boolean;
   readonly onPress: () => void;
 }) {
+  const { t } = useUiLanguage();
   const rippleStyle = useResolveClassNames("bg-subtle-strong");
   return (
     <RowPressable
       accessibilityRole="radio"
-      accessibilityLabel={props.label}
-      accessibilityHint={props.description}
+      accessibilityLabel={t(props.label)}
+      accessibilityHint={props.description ? t(props.description) : undefined}
       accessibilityState={{ checked: props.selected, disabled: Boolean(props.disabled) }}
       disabled={props.disabled}
       onPress={props.onPress}
@@ -32,8 +34,8 @@ export function ListChoiceRow(props: {
       )}
     >
       <ListRowLayout
-        label={props.label}
-        description={props.description}
+        label={t(props.label)}
+        description={props.description ? t(props.description) : undefined}
         disabled={props.disabled}
         accessory={
           <View

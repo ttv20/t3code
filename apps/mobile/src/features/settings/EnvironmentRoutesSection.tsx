@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type ConnectionRoute,
@@ -57,6 +58,7 @@ export function EnvironmentRoutesSection({
   readonly connected: boolean;
   readonly onAddRoute: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const entry = useAtomValue(environmentCatalog.catalogValueAtom).entries.get(environmentId);
   const prepared = useAtomValue(environmentSession.preparedConnectionValueAtom(environmentId));
   const sessionResult = useAtomValue(environmentSession.sessionStateAtom(environmentId));
@@ -137,7 +139,7 @@ export function EnvironmentRoutesSection({
 
   return (
     <SettingsSection
-      title="Routes"
+      title={uiT("Routes")}
       trailing={
         routes.length > 1 ? (
           <Pressable
@@ -146,7 +148,7 @@ export function EnvironmentRoutesSection({
             className="px-2 py-1 active:opacity-70"
           >
             <Text className="text-sm font-t3-medium text-foreground android:text-primary-text">
-              {editing ? "Done" : "Edit"}
+              {editing ? uiT("Done") : uiT("Edit")}
             </Text>
           </Pressable>
         ) : undefined
@@ -154,7 +156,7 @@ export function EnvironmentRoutesSection({
     >
       <SettingsActionRow
         icon="checkmark.circle"
-        label="Your permissions"
+        label={uiT("Your permissions")}
         onPress={() => setPermissionsOpen((open) => !open)}
       />
       {permissionsOpen ? (
@@ -165,19 +167,22 @@ export function EnvironmentRoutesSection({
           session?.authenticated ? (
             <>
               <Text className="text-sm text-foreground-muted">
-                Applies to the route marked In use. Other routes may have different permissions and
-                have not been checked.
+                {uiT(
+                  "Applies to the route marked In use. Other routes may have different permissions and have not been checked.",
+                )}
               </Text>
               {AUTH_SCOPE_OPTIONS.map(({ scope, title }) => (
                 <Text key={scope} className="text-sm text-foreground">
-                  {title}: {sessionGrantsScope(session, scope) ? "Allowed" : "Not granted"}
+                  {uiT(title)}:{" "}
+                  {sessionGrantsScope(session, scope) ? uiT("Allowed") : uiT("Not granted")}
                 </Text>
               ))}
             </>
           ) : (
             <Text className="text-sm text-foreground-muted">
-              Permissions not checked. Connect to this environment to view this session’s
-              permissions.
+              {uiT(
+                "Permissions not checked. Connect to this environment to view this session’s permissions.",
+              )}
             </Text>
           )}
         </View>
@@ -225,7 +230,7 @@ export function EnvironmentRoutesSection({
           />
         );
       })}
-      <SettingsActionRow icon="plus" label="Add route" onPress={onAddRoute} />
+      <SettingsActionRow icon="plus" label={uiT("Add route")} onPress={onAddRoute} />
     </SettingsSection>
   );
 }
@@ -245,6 +250,7 @@ function RouteRow(props: {
   readonly onStep: (direction: "up" | "down") => void;
   readonly onRemove: (() => void) | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { route, lifted, offset } = props;
   const label = connectionRouteLabel(route);
   const address = connectionRouteAddress(route);
@@ -267,7 +273,7 @@ function RouteRow(props: {
       {props.editing && props.onRemove ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Remove ${label} route`}
+          accessibilityLabel={uiT("Remove {0} route", { "0": label })}
           hitSlop={8}
           onPress={props.onRemove}
           className="active:opacity-70"
@@ -310,15 +316,15 @@ function RouteRow(props: {
         <View className="min-w-0 flex-1 gap-0.5 android:gap-1">
           <View className="flex-row items-center gap-2">
             <Text numberOfLines={1} className="shrink text-lg text-foreground android:text-base">
-              {label}
+              {uiT(label)}
             </Text>
             {props.inUse ? (
-              <StatusPill {...connectionTone("connected")} label="In use" size="compact" />
+              <StatusPill {...connectionTone("connected")} label={uiT("In use")} size="compact" />
             ) : null}
           </View>
           {address !== null ? (
             <Text numberOfLines={1} className="text-sm text-foreground-muted">
-              {isLearned(route) ? `${address} · found automatically` : address}
+              {isLearned(route) ? uiT("{0} · found automatically", { "0": address }) : address}
             </Text>
           ) : null}
         </View>

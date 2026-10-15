@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ExternalLinkIcon, PaperclipIcon } from "lucide-react";
 import { markdownImageSourceFragment } from "@t3tools/client-runtime/markdown-images";
 import { githubMediaFetchUrl } from "@t3tools/shared/githubMedia";
@@ -36,6 +37,7 @@ function PullRequestGitHubVideo({
   /** The canonical GitHub media URL: a `blob` link addresses the page, not the bytes. */
   fetchUrl: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const resource = useMemo<AssetResource>(
     () => ({ _tag: "github-media", cwd, url: fetchUrl }),
     [cwd, fetchUrl],
@@ -50,7 +52,7 @@ function PullRequestGitHubVideo({
     <MediaVideoPlayer
       src={src === null ? null : src + markdownImageSourceFragment(url)}
       originalUrl={url}
-      label="Pull request video"
+      label={uiT("Pull request video")}
       className="w-full"
       videoClassName="rounded-lg border border-border/60"
       onRetry={refreshAssetUrl}
@@ -73,6 +75,7 @@ export function PullRequestMarkdown({
   threadRef?: ScopedThreadRef | null;
   className?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const segments = splitPullRequestBody(text);
   const context = useContext(PullRequestMarkdownContext);
   const repositoryUrl = context?.repositoryUrl;
@@ -122,7 +125,7 @@ export function PullRequestMarkdown({
               key={`${segment.id}:${segment.url}`}
               src={segment.url}
               originalUrl={segment.url}
-              label="Pull request video"
+              label={uiT("Pull request video")}
               className="w-full"
               videoClassName="rounded-lg border border-border/60"
             />
@@ -140,7 +143,7 @@ export function PullRequestMarkdown({
             className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm hover:bg-muted/60"
           >
             <PaperclipIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate">Open attachment on GitHub</span>
+            <span className="min-w-0 flex-1 truncate">{uiT("Open attachment on GitHub")}</span>
             <ExternalLinkIcon aria-hidden className="size-3 shrink-0 text-muted-foreground" />
           </a>
         );

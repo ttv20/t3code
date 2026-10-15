@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
@@ -13,11 +14,12 @@ export function TimelineSystemDivider(props: {
   readonly actionLabel?: string;
   readonly onAction?: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const Icon = props.icon;
   const content = (
     <>
       {Icon ? <Icon className="size-3 shrink-0" /> : null}
-      <span className="font-medium">{props.label}</span>
+      <span className="font-medium">{uiT(props.label)}</span>
       {props.detail ? (
         <span
           className={cn(

@@ -313,6 +313,12 @@ export function getDiffCollapseIconClassName(fileDiff: FileDiffMetadata): string
  * panel and the file preview.
  */
 export const DIFF_SURFACE_THEME_UNSAFE_CSS = `
+:host {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
 [data-diffs-header],
 [data-diff],
 [data-file],

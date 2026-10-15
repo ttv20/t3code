@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
 
 import { AppText, AppTextInput, type AppTextInputProps } from "../../components/AppText";
@@ -10,6 +11,7 @@ type ConnectionFormFieldProps = Omit<AppTextInputProps, "accessibilityLabel" | "
 
 /** Labeled connection input with a native wrapper retained inside form sheets. */
 export function ConnectionFormField({ label, className, ...inputProps }: ConnectionFormFieldProps) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View collapsable={false} className={cn("gap-1.5", className)}>
       <AppText
@@ -17,11 +19,11 @@ export function ConnectionFormField({ label, className, ...inputProps }: Connect
         importantForAccessibility="no-hide-descendants"
         className="text-2xs font-t3-bold tracking-[0.8px] uppercase text-foreground-muted"
       >
-        {label}
+        {uiT(label)}
       </AppText>
       <AppTextInput
         {...inputProps}
-        accessibilityLabel={label}
+        accessibilityLabel={uiT(label)}
         className="rounded-[14px] px-4 py-3.5"
       />
     </View>

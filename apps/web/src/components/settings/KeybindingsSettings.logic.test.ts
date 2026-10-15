@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 import {
   buildKeybindingRows,
@@ -18,6 +19,15 @@ import {
 } from "./KeybindingsSettings.logic";
 
 describe("KeybindingsSettings.logic", () => {
+  it("finds shortcuts by the translated label while retaining command identifiers", () => {
+    const t = createUiTranslator("he");
+    expect(buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "רמת חשיבה", t)).toContainEqual(
+      expect.objectContaining({ command: "composer.effort" }),
+    );
+    expect(buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "composer.effort", t)).toContainEqual(
+      expect.objectContaining({ command: "composer.effort" }),
+    );
+  });
   it("lists composer, provider, and pull request commands with editable defaults", () => {
     const rows = buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS, "");
     for (const command of [

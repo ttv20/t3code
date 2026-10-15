@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { resolveHandoffEndpoints, type HandoffEndpoints } from "@t3tools/client-runtime/handoff";
@@ -39,6 +40,7 @@ export function ThreadHandoffRow(props: {
   projectedItem: OrchestrationV2ProjectedTurnItem;
   iconColor: ColorValue;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { item } = props.projectedItem;
   const endpointsAtom = useMemo(
     () => handoffEndpointsAtom(props.environmentId, props.projectedItem),
@@ -52,7 +54,7 @@ export function ThreadHandoffRow(props: {
       environmentId={props.environmentId}
       endpoints={endpoints}
       iconColor={color}
-      label="Context handoff"
+      label={uiT("Context handoff")}
       failed={item.status === "failed"}
     />
   );
@@ -65,11 +67,12 @@ export function ThreadHandoffDivider(props: {
   label: string;
   failed?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const config = useAtomValue(serverEnvironment.configValueAtom(props.environmentId));
   const { endpoints } = props;
   return (
     <ThreadContextDivider
-      label={props.label}
+      label={uiT(props.label)}
       icon="arrow.left.arrow.right"
       iconColor={props.iconColor}
       failed={props.failed}
@@ -99,6 +102,7 @@ function HandoffEndpoint(props: {
   model?: string | undefined;
   providers: ReadonlyArray<ServerProvider>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const provider = props.providers.find((candidate) => candidate.instanceId === props.instanceId);
   const model = provider?.models.find((candidate) => candidate.slug === props.model);
   const label =
@@ -109,8 +113,8 @@ function HandoffEndpoint(props: {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint="Show provider account"
+      accessibilityLabel={uiT(label)}
+      accessibilityHint={uiT("Show provider account")}
       className="min-h-6 max-w-full flex-row items-center justify-center gap-1"
       hitSlop={{ top: 8, bottom: 8 }}
       onPress={() =>
@@ -126,7 +130,7 @@ function HandoffEndpoint(props: {
         size={12}
       />
       <Text numberOfLines={1} className="shrink text-xs text-foreground-muted">
-        {label}
+        {uiT(label)}
       </Text>
     </Pressable>
   );

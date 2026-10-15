@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAuth, useUser } from "@clerk/expo";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,8 @@ import {
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
 
 export function SettingsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
+  const { t, direction } = useUiLanguage();
   const navigation = useNavigation();
   const { layout } = useAdaptiveWorkspaceLayout();
   const content = hasCloudPublicConfig() ? (
@@ -30,14 +33,16 @@ export function SettingsRouteScreen() {
   return (
     <>
       {Platform.OS === "ios" ? (
-        <NativeStackScreenOptions options={{ headerBackVisible: !layout.usesSplitView }} />
+        <NativeStackScreenOptions
+          options={{ title: t("Settings"), headerBackVisible: !layout.usesSplitView }}
+        />
       ) : null}
       {Platform.OS === "ios" && layout.usesSplitView ? (
         <>
           <NativeHeaderToolbar placement="left">
             <NativeHeaderToolbar.Button
-              accessibilityLabel="Go back"
-              icon="chevron.left"
+              accessibilityLabel={t("Go back")}
+              icon={direction === "rtl" ? "chevron.right" : "chevron.left"}
               onPress={() => navigation.goBack()}
             />
           </NativeHeaderToolbar>
@@ -45,7 +50,7 @@ export function SettingsRouteScreen() {
       ) : null}
       <SettingsEnvironmentFilterHeader closeSettings />
       {Platform.OS === "android" ? (
-        <SettingsScreen title="Settings" trailing={<AndroidSettingsEnvironmentFilter />}>
+        <SettingsScreen title={uiT("Settings")} trailing={<AndroidSettingsEnvironmentFilter />}>
           {content}
         </SettingsScreen>
       ) : (
@@ -56,6 +61,7 @@ export function SettingsRouteScreen() {
 }
 
 function ConfiguredSettingsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
@@ -76,22 +82,26 @@ function ConfiguredSettingsRouteScreen() {
         contentContainerClassName="gap-4 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
-        <SettingsSection title="Connections">
+        <SettingsSection title={uiT("Connections")}>
           <SettingsRow
             icon="person.crop.circle"
-            label="T3 Account"
+            label={uiT("T3 Account")}
             value={accountLabel}
             disabled={!isLoaded}
             onPress={() => navigation.navigate("SettingsSheet", { screen: "SettingsAuth" })}
           />
           <SettingsRow
             icon="desktopcomputer"
-            label="Environments"
+            label={uiT("Environments")}
             value={`${Object.keys(savedConnectionsById).length}`}
             valuePosition="trailing"
             target="SettingsEnvironments"
           />
-          <SettingsRow icon="bell.badge" label="Notifications" target="SettingsNotifications" />
+          <SettingsRow
+            icon="bell.badge"
+            label={uiT("Notifications")}
+            target="SettingsNotifications"
+          />
         </SettingsSection>
 
         <SettingsIndexSections />
@@ -101,6 +111,7 @@ function ConfiguredSettingsRouteScreen() {
 }
 
 function LocalSettingsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const { savedConnectionsById } = useSavedRemoteConnections();
   const environmentCount = Object.keys(savedConnectionsById).length;
@@ -116,10 +127,10 @@ function LocalSettingsRouteScreen() {
           paddingBottom: Math.max(insets.bottom, 18) + 18,
         }}
       >
-        <SettingsSection title="Connections">
+        <SettingsSection title={uiT("Connections")}>
           <SettingsRow
             icon="desktopcomputer"
-            label="Environments"
+            label={uiT("Environments")}
             value={`${environmentCount}`}
             valuePosition="trailing"
             target="SettingsEnvironments"
@@ -133,6 +144,7 @@ function LocalSettingsRouteScreen() {
 }
 
 function SettingsIndexSections() {
+  const { t: uiT } = useUiLanguage();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const noServerTargets = selectedTargets.length === 0;
   const selectedProject = projectGroups.find((group) => group.key === selectedProjectKey);
@@ -151,71 +163,75 @@ function SettingsIndexSections() {
       : (selectedProject?.label ?? "Unavailable project");
   return (
     <>
-      <SettingsSection title="Interface">
-        <SettingsRow icon="paintbrush" label="Appearance" target="SettingsAppearance" />
+      <SettingsSection title={uiT("Interface")}>
+        <SettingsRow icon="paintbrush" label={uiT("Appearance")} target="SettingsAppearance" />
         {Platform.OS === "ios" ? (
           <>
-            <SettingsRow icon="keyboard" label="Keyboard" target="SettingsKeyboard" />
-            <SettingsRow icon="mic" label="Microphone" target="SettingsMicrophone" />
+            <SettingsRow icon="keyboard" label={uiT("Keyboard")} target="SettingsKeyboard" />
+            <SettingsRow icon="mic" label={uiT("Microphone")} target="SettingsMicrophone" />
           </>
         ) : null}
       </SettingsSection>
 
-      <SettingsSection title="Automations">
-        <SettingsRow icon="clock" label="Scheduled tasks" target="SettingsScheduledTasks" />
+      <SettingsSection title={uiT("Automations")}>
+        <SettingsRow icon="clock" label={uiT("Scheduled tasks")} target="SettingsScheduledTasks" />
       </SettingsSection>
 
-      <SettingsSection title="Projects & threads">
+      <SettingsSection title={uiT("Projects & threads")}>
         {selectedProjectKey !== null ? (
           <SettingsRow
             icon="folder"
-            label="Overview"
+            label={uiT("Overview")}
             value={projectLabel}
             target="SettingsProjectOverview"
           />
         ) : null}
-        <SettingsRow icon="folder" label="Organization" target="SettingsOrganization" />
-        <SettingsRow icon="text.bubble" label="Thread behavior" target="SettingsThreads" />
-        <SettingsRow icon="arrow.turn.left.up" label="Follow-ups" target="SettingsFollowUp" />
-        <SettingsRow icon="archivebox" label="Archived Threads" target="SettingsArchive" />
+        <SettingsRow icon="folder" label={uiT("Organization")} target="SettingsOrganization" />
+        <SettingsRow icon="text.bubble" label={uiT("Thread behavior")} target="SettingsThreads" />
+        <SettingsRow
+          icon="arrow.turn.left.up"
+          label={uiT("Follow-ups")}
+          target="SettingsFollowUp"
+        />
+        <SettingsRow icon="archivebox" label={uiT("Archived Threads")} target="SettingsArchive" />
       </SettingsSection>
 
-      <SettingsSection title="Server settings">
+      <SettingsSection title={uiT("Server settings")}>
         <SettingsRow
           icon="person.crop.circle"
-          label="Provider accounts"
+          label={uiT("Provider accounts")}
           target="SettingsProviderAccounts"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="text.bubble"
-          label="New threads"
+          label={uiT("New threads")}
           target="SettingsEnvironmentNewThreads"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="arrow.triangle.branch"
-          label="Source control"
+          label={uiT("Source control")}
           target="SettingsEnvironmentSourceControl"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="text.alignleft"
-          label="Agent behavior"
+          label={uiT("Agent behavior")}
           target="SettingsEnvironmentAgentBehavior"
           disabled={noServerTargets}
         />
         <SettingsRow
           icon="arrow.clockwise"
-          label="Maintenance"
+          label={uiT("Maintenance")}
           target="SettingsEnvironmentMaintenance"
           disabled={noServerTargets}
         />
       </SettingsSection>
 
-      <SettingsSection title="App">
-        <SettingsRow icon="chart.bar.xaxis" label="Usage" target="SettingsUsage" />
-        <SettingsRow icon="info.circle" label="About T3 Code" target="SettingsAbout" />
+      <SettingsSection title={uiT("App")}>
+        <SettingsRow icon="chart.bar.xaxis" label={uiT("Usage")} target="SettingsUsage" />
+        <SettingsRow icon="info.circle" label={uiT("About T3 Code")} target="SettingsAbout" />
       </SettingsSection>
     </>
   );

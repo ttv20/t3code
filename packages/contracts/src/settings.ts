@@ -318,7 +318,18 @@ export type ModelPreferences = {
   readonly providerModelPreferences: typeof ProviderModelPreferences.Type;
 };
 
+export const InterfaceLanguage = Schema.Literals(["system", "en", "he", "ar", "fa"]);
+export type InterfaceLanguage = typeof InterfaceLanguage.Type;
+export const InterfaceDirection = Schema.Literals(["auto", "ltr", "rtl"]);
+export type InterfaceDirection = typeof InterfaceDirection.Type;
+
 export const ClientSettingsSchema = Schema.Struct({
+  interfaceLanguage: InterfaceLanguage.pipe(
+    Schema.withDecodingDefault(Effect.succeed("system" as const)),
+  ),
+  interfaceDirection: InterfaceDirection.pipe(
+    Schema.withDecodingDefault(Effect.succeed("auto" as const)),
+  ),
   notificationMode: NotificationMode.pipe(
     Schema.withDecodingDefault(Effect.succeed("off" as const)),
   ),
@@ -1682,6 +1693,8 @@ export function requiredScopesForProjectMutation(
 }
 
 export const ClientSettingsPatch = Schema.Struct({
+  interfaceLanguage: Schema.optionalKey(InterfaceLanguage),
+  interfaceDirection: Schema.optionalKey(InterfaceDirection),
   notificationMode: Schema.optionalKey(NotificationMode),
   inAppNotificationsEnabled: Schema.optionalKey(Schema.Boolean),
   diffColorScheme: Schema.optionalKey(DiffColorScheme),

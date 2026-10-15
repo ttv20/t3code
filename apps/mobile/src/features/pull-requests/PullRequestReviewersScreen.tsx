@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { usePullRequestConnected } from "./usePullRequestConnected";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -48,6 +49,7 @@ function ReviewerScrollView(props: ScrollViewProps) {
 }
 
 export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequestParams>) {
+  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<PullRequestReviewerCandidate>>(null);
@@ -128,7 +130,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
   };
   const listCandidates = pr?.capabilities.reviewers.listCandidates === true;
   const searchOptions = {
-    placeholder: "Search reviewers",
+    placeholder: uiT("Search reviewers"),
     autoCapitalize: "none" as const,
     onChangeText: (event: { nativeEvent: { text: string } }) => setQuery(event.nativeEvent.text),
     onCancelButtonPress: () => setQuery(""),
@@ -143,20 +145,20 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
       <NativeHeaderToolbar placement="left">
         <NativeHeaderToolbar.Button
           icon="xmark"
-          accessibilityLabel="Close request review"
+          accessibilityLabel={uiT("Close request review")}
           onPress={() => navigation.goBack()}
         />
       </NativeHeaderToolbar>
       <NativeStackScreenOptions
         options={{
-          title: "Request review",
+          title: uiT("Request review"),
           unstable_headerSubtitle: `#${route.params.number} · ${route.params.repository}`,
           headerSearchBarOptions: listCandidates ? searchOptions : undefined,
           unstable_headerToolbarItems: () =>
             listCandidates && integratedSearch
               ? [
                   createNativeMailSearchToolbarItem({
-                    placeholder: "Search reviewers",
+                    placeholder: uiT("Search reviewers"),
                     onSearchTextChange: setQuery,
                     showsSearchDismissButton: true,
                     searchTextChangeId: "pr-reviewer-search",
@@ -166,7 +168,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
         }}
       />
       {Platform.OS === "android" ? (
-        <AndroidScreenHeader title="Request review" onBack={() => navigation.goBack()} />
+        <AndroidScreenHeader title={uiT("Request review")} onBack={() => navigation.goBack()} />
       ) : null}
       {listCandidates ? (
         <FlatList
@@ -184,12 +186,14 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
           ListHeaderComponent={
             <View className="gap-3 px-4 py-4">
               <Text className="text-xs text-foreground-muted">
-                Tap someone to request a review. Tap a requested reviewer to remove the request.
+                {uiT(
+                  "Tap someone to request a review. Tap a requested reviewer to remove the request.",
+                )}
               </Text>
               {Platform.OS === "android" ? (
                 <TextInput
-                  accessibilityLabel="Search reviewers"
-                  placeholder="Search reviewers"
+                  accessibilityLabel={uiT("Search reviewers")}
+                  placeholder={uiT("Search reviewers")}
                   placeholderTextColorClassName="accent-foreground-muted"
                   value={query}
                   onChangeText={setQuery}
@@ -199,7 +203,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               ) : null}
               {!allowed ? (
                 <Text className="text-xs text-foreground-muted">
-                  Requesting reviews requires write access and an open pull request.
+                  {uiT("Requesting reviews requires write access and an open pull request.")}
                 </Text>
               ) : null}
               {error ? (
@@ -227,14 +231,14 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                   </Text>
                   <Text className="text-xs text-foreground-muted" numberOfLines={1}>
                     {item.login}
-                    {item.kind === "team" ? " · Team" : ""}
+                    {item.kind === "team" ? uiT(" · Team") : ""}
                   </Text>
                 </View>
                 {pending === id ? (
                   <ActivityIndicator />
                 ) : item.isRequested ? (
                   <View className="flex-row items-center gap-1.5">
-                    <Text className="text-xs text-foreground-muted">Requested</Text>
+                    <Text className="text-xs text-foreground-muted">{uiT("Requested")}</Text>
                     <SymbolView name="checkmark" size={14} tintColorClassName="accent-icon" />
                   </View>
                 ) : (
@@ -251,23 +255,26 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                 <EmptyState
                   title={
                     result.error
-                      ? "Couldn't load reviewers"
+                      ? uiT("Couldn't load reviewers")
                       : query.trim()
-                        ? "No matching reviewers"
-                        : "No reviewers available"
+                        ? uiT("No matching reviewers")
+                        : uiT("No reviewers available")
                   }
                   detail={result.error ?? "Search people and teams with access to this repository."}
                   variant="plain"
                 />
-                {result.error ? <MaterialButton label="Retry" onPress={result.refresh} /> : null}
+                {result.error ? (
+                  <MaterialButton label={uiT("Retry")} onPress={result.refresh} />
+                ) : null}
               </View>
             )
           }
           ListFooterComponent={
             result.data?.truncated ? (
               <Text className="px-4 py-4 text-xs text-foreground-muted">
-                The provider has more reviewers than it returned. Find additional reviewers on the
-                provider.
+                {uiT(
+                  "The provider has more reviewers than it returned. Find additional reviewers on the provider.",
+                )}
               </Text>
             ) : undefined
           }
@@ -284,17 +291,17 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               <ActivityIndicator />
             ) : (
               <Text className="text-danger-foreground">
-                {detail.error ?? "Couldn't load this pull request."}
+                {detail.error ?? uiT("Couldn't load this pull request.")}
               </Text>
             )
           ) : (
             <>
               <Text className="text-sm text-foreground-muted">
-                This provider accepts a reviewer ID but cannot list candidates.
+                {uiT("This provider accepts a reviewer ID but cannot list candidates.")}
               </Text>
               <TextInput
-                accessibilityLabel="Reviewer ID"
-                placeholder="Reviewer login or ID"
+                accessibilityLabel={uiT("Reviewer ID")}
+                placeholder={uiT("Reviewer login or ID")}
                 placeholderTextColorClassName="accent-foreground-muted"
                 value={query}
                 onChangeText={setQuery}
@@ -303,13 +310,13 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                 className="min-h-12 rounded-xl bg-grouped-card px-3 text-base"
               />
               <MaterialButton
-                label="Request review"
+                label={uiT("Request review")}
                 fullWidth
                 disabled={!allowed || !query.trim() || pending !== null}
                 onPress={() => void update({ id: query.trim(), kind: "user", isRequested: false })}
               />
               <MaterialButton
-                label="Remove review request"
+                label={uiT("Remove review request")}
                 fullWidth
                 tone="text"
                 disabled={!allowed || !query.trim() || pending !== null}

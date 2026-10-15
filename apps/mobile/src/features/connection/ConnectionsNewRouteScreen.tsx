@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
 import { useAuth } from "@clerk/expo";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -42,6 +43,7 @@ type ConnectionsNewRouteParams = {
 export function ConnectionsNewRouteScreen({
   route,
 }: StaticScreenProps<ConnectionsNewRouteParams | undefined>) {
+  const { t: uiT } = useUiLanguage();
   const {
     connectionPairingUrl,
     onChangeConnectionPairingUrl,
@@ -197,7 +199,7 @@ export function ConnectionsNewRouteScreen({
   return (
     <SettingsScreen
       formSheet={routeName === "ConnectionsNew"}
-      title="Add environment"
+      title={uiT("Add environment")}
       actions={[
         {
           accessibilityLabel: isSubmitting ? "Connecting" : "Add environment",
@@ -233,7 +235,9 @@ export function ConnectionsNewRouteScreen({
           />
 
           <View collapsable={false} className="gap-2">
-            <Text className="px-4 text-sm font-t3-medium text-foreground-muted">Or enter it</Text>
+            <Text className="px-4 text-sm font-t3-medium text-foreground-muted">
+              {uiT("Or enter it")}
+            </Text>
             <View
               collapsable={false}
               className={cn(
@@ -242,7 +246,7 @@ export function ConnectionsNewRouteScreen({
               )}
             >
               <PairingInputRow
-                label="Address"
+                label={uiT("Address")}
                 keyboardType="url"
                 placeholder="192.168.1.100:3773"
                 value={hostInput}
@@ -251,7 +255,7 @@ export function ConnectionsNewRouteScreen({
               <View className="ml-4 border-t border-border-subtle" />
               <PairingInputRow
                 label="Code"
-                placeholder="Pairing code"
+                placeholder={uiT("Pairing code")}
                 returnKeyType="go"
                 value={codeInput}
                 onChangeText={handleCodeChange}
@@ -268,7 +272,9 @@ export function ConnectionsNewRouteScreen({
               )}
             >
               {pairingConnectionError ??
-                "For machines on your local network or tailnet. The machine keeps its own provider credentials."}
+                uiT(
+                  "For machines on your local network or tailnet. The machine keeps its own provider credentials.",
+                )}
             </Text>
           </View>
 
@@ -294,11 +300,12 @@ function PairingScanCard(props: {
   readonly onScan: (result: { readonly data: string }) => void;
   readonly onScanPress: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const light = useAppearancePreferences().themeAppearance === "light";
   return (
     <Pressable
       accessibilityRole={props.cameraActive ? undefined : "button"}
-      accessibilityLabel={props.cameraActive ? undefined : "Scan QR code"}
+      accessibilityLabel={props.cameraActive ? undefined : uiT("Scan QR code")}
       disabled={props.cameraActive}
       onPress={props.onScanPress}
       className={cn(
@@ -363,13 +370,13 @@ function PairingScanCard(props: {
               <Text
                 className={cn("font-t3-medium text-sm", light ? "text-black/70" : "text-white/80")}
               >
-                Tap to scan
+                {uiT("Tap to scan")}
               </Text>
             </>
           )}
         </View>
         <Text className={cn("text-center text-sm", light ? "text-black/70" : "text-white/80")}>
-          Scan the code from t3 pair or desktop Connections settings
+          {uiT("Scan the code from t3 pair or desktop Connections settings")}
         </Text>
       </View>
     </Pressable>
@@ -382,6 +389,7 @@ function PairingScanCard(props: {
  * T3 Account sheet.
  */
 function T3ConnectSection() {
+  const { t: uiT } = useUiLanguage();
   const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const navigation = useNavigation();
   const { connectedEnvironments, onSetEnvironmentEnabled, onRemoveEnvironmentPress } =
@@ -394,7 +402,7 @@ function T3ConnectSection() {
   return (
     <View collapsable={false} className="gap-2">
       <Text className="px-4 text-sm font-t3-medium text-foreground-muted">
-        Or use the managed relay
+        {uiT("Or use the managed relay")}
       </Text>
       {isSignedIn ? (
         <CloudEnvironmentRows
@@ -411,9 +419,9 @@ function T3ConnectSection() {
           className="min-h-13 flex-row items-center gap-3 rounded-[26px] border-continuous bg-grouped-card px-4 active:opacity-70"
         >
           <View className="min-w-0 flex-1 py-3">
-            <Text className="text-base text-foreground">Sign in to T3 Connect</Text>
+            <Text className="text-base text-foreground">{uiT("Sign in to T3 Connect")}</Text>
             <Text className="text-sm text-foreground-muted">
-              Reach your machines from anywhere, no network setup.
+              {uiT("Reach your machines from anywhere, no network setup.")}
             </Text>
           </View>
           <SymbolView
@@ -436,6 +444,7 @@ function PairingInputRow({
 }: Omit<AppTextInputProps, "accessibilityLabel" | "className"> & {
   readonly label: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <View collapsable={false} className="h-13 flex-row items-center gap-3 px-4">
       <Text
@@ -443,11 +452,11 @@ function PairingInputRow({
         importantForAccessibility="no-hide-descendants"
         className="w-20 text-base leading-[23px] text-foreground-muted"
       >
-        {label}
+        {uiT(label)}
       </Text>
       <AppTextInput
         {...inputProps}
-        accessibilityLabel={label}
+        accessibilityLabel={uiT(label)}
         autoCapitalize="none"
         autoCorrect={false}
         className="min-h-0 flex-1 rounded-none border-0 bg-transparent p-0 text-base leading-[23px]"

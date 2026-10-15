@@ -1,3 +1,4 @@
+import { UiLanguageProvider } from "./UiLanguageProvider";
 import { RouterProvider } from "@tanstack/react-router";
 
 import { BrowserProfileReporter } from "./browser/BrowserProfileReporter";
@@ -14,10 +15,12 @@ import type { AppRouter } from "./router";
 export function AppRoot({ router }: { readonly router: AppRouter }) {
   return (
     <AppAtomRegistryProvider>
-      <RouterProvider router={router} />
-      <ElectronBrowserHost />
-      <BrowserProfileReporter />
-      <QuitHoldOverlay />
+      <UiLanguageProvider>
+        <RouterProvider router={router} />
+        <ElectronBrowserHost />
+        <BrowserProfileReporter />
+        <QuitHoldOverlay />
+      </UiLanguageProvider>
     </AppAtomRegistryProvider>
   );
 }

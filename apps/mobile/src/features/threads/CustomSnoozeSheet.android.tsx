@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { MaterialSegmentedButtons } from "../../components/MaterialSegmentedButtons.android";
 import {
   BasicAlertDialog,
@@ -58,6 +59,7 @@ function systemUses24HourClock() {
 }
 
 export function CustomSnoozeSheet(props: Props) {
+  const { t: uiT } = useUiLanguage();
   const { themeAppearance, themeVariables: colors } = useAppearancePreferences();
   const [is24Hour, setIs24Hour] = useState(systemUses24HourClock);
   useEffect(() => {
@@ -140,7 +142,7 @@ export function CustomSnoozeSheet(props: Props) {
                 verticalArrangement={{ spacedBy: 16 }}
                 modifiers={[fillMaxWidth(), padding(24, 24, 24, 16)]}
               >
-                <Text style={titleTypography}>Custom snooze</Text>
+                <Text style={titleTypography}>{uiT("Custom snooze")}</Text>
                 <MaterialSegmentedButtons
                   options={modes}
                   selected={mode}
@@ -241,13 +243,13 @@ export function CustomSnoozeSheet(props: Props) {
                     onClick={props.onClose}
                     colors={{ contentColor: colors["--color-foreground"] }}
                   >
-                    <Text style={bodyTypography}>Cancel</Text>
+                    <Text style={bodyTypography}>{uiT("Cancel")}</Text>
                   </TextButton>
                   <TextButton
                     onClick={submit}
                     colors={{ contentColor: colors["--color-foreground"] }}
                   >
-                    <Text style={bodyTypography}>Snooze</Text>
+                    <Text style={bodyTypography}>{uiT("Snooze")}</Text>
                   </TextButton>
                 </Row>
               </Column>

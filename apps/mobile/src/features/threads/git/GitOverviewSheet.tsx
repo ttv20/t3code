@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useOpenPullRequest } from "../../../native/useOpenPullRequest";
 import {
   type GitActionRequestInput,
@@ -68,6 +69,7 @@ export function GitOverviewSheet(props: GitOverviewSheetProps) {
 }
 
 function GitOverviewSheetContent(props: GitOverviewSheetProps) {
+  const { t: uiT } = useUiLanguage();
   const { layout } = useAdaptiveWorkspaceLayout();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -309,11 +311,16 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
             {Platform.OS !== "android" ? <View className="ml-12 h-px bg-border" /> : null}
             <SheetListRow
               icon="arrow.down.circle"
-              title="Pull latest"
+              title={uiT("Pull latest")}
               subtitle={
                 canWriteSourceControl
-                  ? `${behindCount} commit${behindCount === 1 ? "" : "s"} behind upstream`
-                  : "This connection cannot change source control."
+                  ? uiT(
+                      behindCount === 1
+                        ? "{0} commit behind upstream"
+                        : "{0} commits behind upstream",
+                      { "0": behindCount, "1": behindCount === 1 ? "" : "s" },
+                    )
+                  : uiT("This connection cannot change source control.")
               }
               disabled={!canWriteSourceControl || busy || !isRepo}
               onPress={() => void gitActions.onPullSelectedThreadBranch()}
@@ -323,8 +330,8 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         {Platform.OS !== "android" ? <View className="ml-12 h-px bg-border" /> : null}
         <SheetListRow
           icon="text.bubble"
-          title="Review changes"
-          subtitle="Inspect changes, uncommitted edits, and turn diffs"
+          title={uiT("Review changes")}
+          subtitle={uiT("Inspect changes, uncommitted edits, and turn diffs")}
           disabled={busy || !isRepo}
           onPress={() => {
             const params = { environmentId, threadId };
@@ -338,11 +345,11 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         {Platform.OS !== "android" ? <View className="ml-12 h-px bg-border" /> : null}
         <SheetListRow
           icon="point.topleft.down.curvedto.point.bottomright.up"
-          title="Branches & worktrees"
+          title={uiT("Branches & worktrees")}
           subtitle={
             canChangeThreadBranch
-              ? "Switch branch, create branch, or move to a worktree"
-              : "View branches and worktrees"
+              ? uiT("Switch branch, create branch, or move to a worktree")
+              : uiT("View branches and worktrees")
           }
           disabled={busy || !isRepo}
           onPress={() =>
@@ -357,7 +364,7 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
       {linkedPrChains.length > 0 ? (
         <View className="gap-2">
           <Text className="px-1 text-xs font-t3-bold text-foreground-muted">
-            Linked pull requests
+            {uiT("Linked pull requests")}
           </Text>
           {linkedPrChains.map((chain) => (
             <View
@@ -372,8 +379,8 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
                     tintColorClassName="accent-foreground-muted"
                   />
                   <Text className="text-xs text-foreground-muted">
-                    {chain.kind === "native" ? "Stack" : "Branch stack"} · {chain.layers.length} PRs
-                    · bottom to top
+                    {chain.kind === "native" ? uiT("Stack") : uiT("Branch stack")} ·{" "}
+                    {chain.layers.length} {uiT("PRs · bottom to top")}
                   </Text>
                 </View>
               ) : null}
@@ -400,7 +407,9 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         </View>
       ) : null}
 
-      {currentWorktreePath ? <MetaCard label="Worktree" value={currentWorktreePath} /> : null}
+      {currentWorktreePath ? (
+        <MetaCard label={uiT("Worktree")} value={currentWorktreePath} />
+      ) : null}
     </ScrollView>
   );
 
@@ -473,11 +482,11 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
 
   const refreshMenu = (
     <AndroidAnchoredMenu
-      title="Repository options"
+      title={uiT("Repository options")}
       actions={[
         {
           id: "refresh",
-          title: "Refresh repository status",
+          title: uiT("Refresh repository status"),
           attributes: { disabled: busy || isRefreshing },
         },
       ]}
@@ -487,7 +496,7 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
     >
       {(open) => (
         <AndroidHeaderIconButton
-          accessibilityLabel="Repository options"
+          accessibilityLabel={uiT("Repository options")}
           icon="ellipsis"
           onPress={open}
         />
@@ -544,7 +553,7 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
             </Pressable>
           )}
           <Text className="text-xs font-t3-bold tracking-[1px] uppercase text-foreground-muted">
-            Repository
+            {uiT("Repository")}
           </Text>
           <Text className="pr-10 text-xl font-t3-bold">{currentBranchLabel}</Text>
           <Text className="text-foreground-secondary text-sm font-medium leading-normal">

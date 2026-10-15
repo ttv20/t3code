@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { View } from "react-native";
 
 import { AppText as Text } from "./AppText";
@@ -14,6 +15,7 @@ export function StatusPill(
     readonly size?: "default" | "compact";
   },
 ) {
+  const { t: uiT } = useUiLanguage();
   const size = props.size ?? "default";
   return (
     <View
@@ -30,7 +32,7 @@ export function StatusPill(
           props.textClassName,
         )}
       >
-        {props.label}
+        {uiT(props.label)}
       </Text>
     </View>
   );

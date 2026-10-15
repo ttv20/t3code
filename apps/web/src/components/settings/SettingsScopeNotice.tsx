@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
 import { Alert, AlertAction, AlertDescription } from "../ui/alert";
 import { SettingsPageContainer } from "./settingsLayout";
@@ -20,6 +21,7 @@ export function SettingsScopeNotice({
   targetId?: string;
   eligibleEnvironmentIds?: readonly EnvironmentId[];
 }) {
+  const { t: uiT } = useUiLanguage();
   const { selectScope, search } = useSettingsScope();
   const navigate = useNavigate({ from: "/settings" });
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -60,7 +62,7 @@ export function SettingsScopeNotice({
                   : entry.label,
                 search: { machine: entry.environmentId },
               }))
-          : [{ label: "Open all environments", search: {} }];
+          : [{ label: uiT("Open all environments"), search: {} }];
   return (
     <SettingsPageContainer>
       <Alert role="status">
@@ -79,7 +81,7 @@ export function SettingsScopeNotice({
                   else selectScope(choice.search);
                 }}
               >
-                {choice.label}
+                {uiT(choice.label)}
               </Button>
             ))}
           </AlertAction>

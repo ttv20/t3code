@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Keyboard, Platform, View, type NativeSyntheticEvent } from "react-native";
@@ -56,6 +57,7 @@ export function WorkspaceNativeTabs(props: {
   readonly onSelect: () => void;
   readonly onNewTask: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const workspace = useWorkspaceTabs()!;
   const metrics = useNativeLayoutMetrics();
   const phoneBar =
@@ -97,7 +99,7 @@ export function WorkspaceNativeTabs(props: {
           <Tabs.Screen
             key={tab}
             screenKey={tab}
-            title={tab === "threads" ? "Threads" : "Pulls"}
+            title={tab === "threads" ? uiT("Threads") : uiT("Pulls")}
             tabBarItemAccessibilityLabel={tab === "threads" ? "Threads" : "Pull requests"}
             ios={{
               icon:
@@ -118,7 +120,7 @@ export function WorkspaceNativeTabs(props: {
           <Tabs.Screen
             key={COMPOSE_TAB}
             screenKey={COMPOSE_TAB}
-            title="New chat"
+            title={uiT("New chat")}
             preventNativeSelection
             ios={{
               role: "search",

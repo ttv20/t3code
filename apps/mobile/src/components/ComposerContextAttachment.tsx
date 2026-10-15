@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ComposerContextRecord, EnvironmentId } from "@t3tools/contracts";
 import { Alert, Pressable, View } from "react-native";
 import { Image } from "expo-image";
@@ -17,6 +18,7 @@ export function ComposerContextAttachment(props: {
   environmentId?: EnvironmentId;
   attachment?: DraftComposerAttachment;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { record, attachment } = props;
   const shareSourceIdentifier = useId();
   const resource = useMemo(
@@ -95,7 +97,7 @@ export function ComposerContextAttachment(props: {
       {record.kind === "image" && uri ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Preview ${record.name}`}
+          accessibilityLabel={uiT("Preview {0}", { "0": record.name })}
           onPress={() => setPreviewOpen(true)}
         >
           <Image
@@ -112,7 +114,7 @@ export function ComposerContextAttachment(props: {
       ) : null}
       {error || (!local && asset._tag === "Failure") ? (
         <Text className="text-foreground-muted">
-          {error ?? "Attachment unavailable. Reconnect and try again."}
+          {error ?? uiT("Attachment unavailable. Reconnect and try again.")}
         </Text>
       ) : null}
       <PresentationSource identifier={shareSourceIdentifier}>
@@ -123,7 +125,7 @@ export function ComposerContextAttachment(props: {
           className="rounded-xl bg-subtle p-4"
         >
           <Text className="text-foreground">
-            {sharing ? "Opening attachment…" : "Open or share attachment"}
+            {sharing ? uiT("Opening attachment…") : uiT("Open or share attachment")}
           </Text>
         </Pressable>
       </PresentationSource>

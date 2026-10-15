@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { memo, useCallback, useEffect, useRef } from "react";
 import {
   Pressable,
@@ -69,15 +70,16 @@ function estimateGridSize(input: {
 const FallbackTerminalSurface = memo(function FallbackTerminalSurface(
   props: ReadyTerminalSurfaceProps,
 ) {
+  const { t: uiT } = useUiLanguage();
   const fontSize = props.fontSize ?? MOBILE_TYPOGRAPHY.label.fontSize;
   const inputRef = useRef<TextInputInstance>(null);
   const { themeAppearance, themeId } = useAppearancePreferences();
   const theme = props.theme ?? getMobileTerminalTheme(themeId, themeAppearance);
   const statusLabel = props.readOnly
-    ? "Viewing terminal output."
+    ? uiT("Viewing terminal output.")
     : props.isRunning
-      ? "Native terminal unavailable. Using text fallback."
-      : "Open terminal to start a shell.";
+      ? uiT("Native terminal unavailable. Using text fallback.")
+      : uiT("Open terminal to start a shell.");
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -99,6 +101,7 @@ const FallbackTerminalSurface = memo(function FallbackTerminalSurface(
       className="flex-1"
       style={[
         {
+          direction: "ltr",
           backgroundColor: theme.background,
           borderRadius: 8,
           overflow: "hidden",
@@ -114,7 +117,7 @@ const FallbackTerminalSurface = memo(function FallbackTerminalSurface(
             color: theme.mutedForeground,
           }}
         >
-          {statusLabel}
+          {uiT(statusLabel)}
         </Text>
         <ScrollView
           className="flex-1"
@@ -146,7 +149,7 @@ const FallbackTerminalSurface = memo(function FallbackTerminalSurface(
           autoCorrect={false}
           blurOnSubmit={false}
           editable={props.isRunning && !props.readOnly}
-          placeholder="type and press return"
+          placeholder={uiT("type and press return")}
           placeholderTextColor={theme.mutedForeground}
           returnKeyType="send"
           className="text-sm"
@@ -176,7 +179,7 @@ const FallbackTerminalSurface = memo(function FallbackTerminalSurface(
           onPress={() => props.onInput("\u0003")}
         >
           <Text className="text-2xs font-t3-bold" style={{ color: theme.foreground }}>
-            Ctrl-C
+            {uiT("Ctrl-C")}
           </Text>
         </Pressable>
       </View>
@@ -231,7 +234,7 @@ const ReadyTerminalSurface = memo(function ReadyTerminalSurface(props: ReadyTerm
 
   if (NativeTerminalSurfaceView) {
     return (
-      <View style={props.style}>
+      <View style={[props.style, { direction: "ltr" }]}>
         <NativeTerminalSurfaceView
           appearanceScheme={themeAppearance}
           autoFocus={!props.readOnly && (props.autoFocus ?? true)}

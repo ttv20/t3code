@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
@@ -75,6 +76,7 @@ function BrowserPreviewScreen({
   readonly initialTabId: string | null;
   readonly onClose: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const { themeVariables } = useAppearancePreferences();
   const focused = useIsFocused();
@@ -116,7 +118,7 @@ function BrowserPreviewScreen({
   return (
     <View className="flex-1 bg-sheet" style={{ paddingBottom: insets.bottom }}>
       <ScreenHeader
-        title={tab ? browserTabTitle(tab) : "Browser"}
+        title={tab ? browserTabTitle(tab) : uiT("Browser")}
         sidebar={false}
         onBack={onClose}
         options={{ headerBackVisible: false }}
@@ -142,7 +144,7 @@ function BrowserPreviewScreen({
           tabs.length > 1
             ? [
                 {
-                  title: "Tabs",
+                  title: uiT("Tabs"),
                   icon: "square.on.square",
                   items: tabs.map((entry) => ({
                     id: entry.tabId,
@@ -160,7 +162,7 @@ function BrowserPreviewScreen({
         <NativeHeaderToolbar placement="left">
           <NativeHeaderToolbar.Button
             icon="xmark"
-            accessibilityLabel="Close browser"
+            accessibilityLabel={uiT("Close browser")}
             onPress={onClose}
             separateBackground
           />
@@ -219,6 +221,7 @@ function BrowserAddressBar({
   readonly streaming: boolean;
   readonly onCommand: PreviewStreamRef["command"];
 }) {
+  const { t: uiT } = useUiLanguage();
   const url = browserTabUrl(tab);
   // Null while not editing, so agent navigation keeps the field current.
   const [draft, setDraft] = useState<string | null>(null);
@@ -235,24 +238,24 @@ function BrowserAddressBar({
     <View className="flex-row items-center gap-1 px-2 pb-2">
       <ControlPill
         icon="chevron.left"
-        accessibilityLabel="Back"
+        accessibilityLabel={uiT("Back")}
         disabled={!ready || !tab.canGoBack}
         onPress={() => onCommand({ type: "history", delta: -1 })}
       />
       <ControlPill
         icon="chevron.right"
-        accessibilityLabel="Forward"
+        accessibilityLabel={uiT("Forward")}
         disabled={!ready || !tab.canGoForward}
         onPress={() => onCommand({ type: "history", delta: 1 })}
       />
       <TextInput
-        accessibilityLabel="Address"
+        accessibilityLabel={uiT("Address")}
         editable={ready}
         value={draft ?? url}
         onChangeText={setDraft}
         onBlur={() => setDraft(null)}
         onSubmitEditing={submit}
-        placeholder="Enter a URL"
+        placeholder={uiT("Enter a URL")}
         placeholderTextColorClassName="accent-placeholder"
         autoCapitalize="none"
         autoCorrect={false}
@@ -263,7 +266,7 @@ function BrowserAddressBar({
       />
       <ControlPill
         icon="arrow.clockwise"
-        accessibilityLabel="Reload page"
+        accessibilityLabel={uiT("Reload page")}
         disabled={!ready}
         onPress={() => onCommand({ type: "reload" })}
       />

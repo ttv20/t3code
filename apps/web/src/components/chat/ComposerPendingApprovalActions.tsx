@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   type ProviderApprovalDecision,
   type ProviderApprovalOption,
@@ -37,6 +38,7 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
   options = DEFAULT_APPROVAL_OPTIONS,
   onRespondToApproval,
 }: ComposerPendingApprovalActionsProps) {
+  const { t: uiT } = useUiLanguage();
   const primaryOptions = options.filter(
     (option) => option.decision === "decline" || option.decision === "accept",
   );
@@ -61,7 +63,7 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
             }}
           >
             {option.warning ? <TriangleAlertIcon className="size-3 shrink-0" /> : null}
-            <span className="max-w-40 truncate">{option.label}</span>
+            <span className="max-w-40 truncate">{uiT(option.label)}</span>
           </Button>
         );
         return option.warning ? (
@@ -77,7 +79,9 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
         <Menu>
           <MenuTrigger
             disabled={disabled || isResponding}
-            render={<Button size="icon-xs" variant="outline" aria-label="More approval options" />}
+            render={
+              <Button size="icon-xs" variant="outline" aria-label={uiT("More approval options")} />
+            }
           >
             <EllipsisIcon />
           </MenuTrigger>
@@ -96,7 +100,9 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
                   className="mb-1 last:mb-0"
                 >
                   {option.warning ? <TriangleAlertIcon className="size-3 text-warning" /> : null}
-                  <span className="min-w-0 whitespace-normal wrap-break-word">{option.label}</span>
+                  <span className="min-w-0 whitespace-normal wrap-break-word">
+                    {uiT(option.label)}
+                  </span>
                 </MenuItem>
               );
               return option.warning ? (

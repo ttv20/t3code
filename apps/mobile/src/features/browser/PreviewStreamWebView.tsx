@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import previewStreamScript from "@t3tools/mobile-preview-stream";
 import {
   previewStreamControlLabel,
@@ -121,6 +122,7 @@ export function PreviewStreamWebView(
       readonly paused?: boolean;
     },
 ) {
+  const { t: uiT } = useUiLanguage();
   const { access, error, refresh } = usePreviewStreamAccess(props.environmentId);
   if (access && !props.paused) {
     return <AuthorizedPreviewStream {...props} access={access} onUnauthorized={refresh} />;
@@ -142,7 +144,7 @@ export function PreviewStreamWebView(
               error ? "text-center text-sm text-foreground-muted" : "text-sm text-foreground-muted"
             }
           >
-            {error || "Connecting to browser..."}
+            {error || uiT("Connecting to browser...")}
           </AppText>
           {error && (
             <Pressable
@@ -150,7 +152,7 @@ export function PreviewStreamWebView(
               className="rounded-full border border-secondary-border bg-secondary px-6 py-3"
               onPress={refresh}
             >
-              <AppText className="text-secondary-foreground">Retry</AppText>
+              <AppText className="text-secondary-foreground">{uiT("Retry")}</AppText>
             </Pressable>
           )}
         </>
@@ -248,6 +250,7 @@ function PreviewStreamDocumentView({
   readonly onStreaming: () => void;
   readonly onRecoverProcess: () => boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const webView = useRef<WebView<object>>(null);
   const active = useRef(true);
   const failed = useRef(false);
@@ -340,7 +343,7 @@ function PreviewStreamDocumentView({
               }
             >
               <AppText className="text-xs text-secondary-foreground">
-                {control.controller === "you" ? "Release control" : "Take control"}
+                {control.controller === "you" ? uiT("Release control") : uiT("Take control")}
               </AppText>
             </Pressable>
           ) : null}
@@ -431,7 +434,7 @@ function PreviewStreamDocumentView({
       {!compact && fileChooser && control?.controller === "you" ? (
         <View className="absolute inset-x-3 top-16 gap-3 rounded-xl border border-secondary-border bg-secondary p-4">
           <AppText className="text-sm text-secondary-foreground">
-            The page asks for {fileChooser.multiple ? "files" : "a file"}.
+            {uiT("The page asks for")} {fileChooser.multiple ? uiT("files") : uiT("a file")}.
           </AppText>
           <View className="flex-row justify-end gap-3">
             <Pressable
@@ -439,7 +442,7 @@ function PreviewStreamDocumentView({
               className="px-3 py-2"
               onPress={() => answerFileChooser(false)}
             >
-              <AppText className="text-secondary-foreground">Cancel</AppText>
+              <AppText className="text-secondary-foreground">{uiT("Cancel")}</AppText>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -447,7 +450,7 @@ function PreviewStreamDocumentView({
               onPress={() => answerFileChooser(true)}
             >
               <AppText className="text-secondary-foreground">
-                Choose {fileChooser.multiple ? "files" : "file"}
+                {uiT("Choose")} {fileChooser.multiple ? uiT("files") : uiT("file")}
               </AppText>
             </Pressable>
           </View>
@@ -460,7 +463,7 @@ function PreviewStreamDocumentView({
             <>
               {control.dialog.type === "prompt" ? (
                 <TextInput
-                  accessibilityLabel="Dialog response"
+                  accessibilityLabel={uiT("Dialog response")}
                   className="rounded-lg border border-input-border bg-input px-3 py-2 text-foreground"
                   placeholderTextColorClassName="accent-placeholder"
                   selectionColorClassName="accent-focus/32"
@@ -474,7 +477,7 @@ function PreviewStreamDocumentView({
                   className="px-3 py-2"
                   onPress={() => command({ type: "dialog", accept: false })}
                 >
-                  <AppText className="text-secondary-foreground">Dismiss</AppText>
+                  <AppText className="text-secondary-foreground">{uiT("Dismiss")}</AppText>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -487,12 +490,14 @@ function PreviewStreamDocumentView({
                     })
                   }
                 >
-                  <AppText className="text-secondary-foreground">Accept</AppText>
+                  <AppText className="text-secondary-foreground">{uiT("Accept")}</AppText>
                 </Pressable>
               </View>
             </>
           ) : (
-            <AppText className="text-xs text-foreground-muted">Take control to respond.</AppText>
+            <AppText className="text-xs text-foreground-muted">
+              {uiT("Take control to respond.")}
+            </AppText>
           )}
         </View>
       ) : null}
@@ -507,13 +512,13 @@ function PreviewStreamDocumentView({
               accessibilityLiveRegion="polite"
               className="text-center text-sm text-foreground-muted"
             >
-              {status === "error" ? error : "Connecting to browser..."}
+              {status === "error" ? error : uiT("Connecting to browser...")}
             </AppText>
           )}
           {status === "error" && hostSetup && !compact ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Copy ${hostSetup.command}`}
+              accessibilityLabel={uiT("Copy {0}", { "0": hostSetup.command })}
               className="w-full flex-row items-center gap-2 rounded-xl border border-secondary-border bg-secondary px-4 py-3"
               onPress={() => {
                 void Clipboard.setStringAsync(hostSetup.command).catch(() => undefined);
@@ -522,7 +527,7 @@ function PreviewStreamDocumentView({
               <AppText selectable className="flex-1 font-mono text-sm text-secondary-foreground">
                 {hostSetup.command}
               </AppText>
-              <AppText className="text-xs text-foreground-muted">Copy</AppText>
+              <AppText className="text-xs text-foreground-muted">{uiT("Copy")}</AppText>
             </Pressable>
           ) : null}
           {status === "error" && !gone && !compact ? (
@@ -532,7 +537,7 @@ function PreviewStreamDocumentView({
               onPress={onRetry}
             >
               <AppText className="text-secondary-foreground">
-                {hostSetup ? "Try again" : "Reconnect"}
+                {hostSetup ? uiT("Try again") : uiT("Reconnect")}
               </AppText>
             </Pressable>
           ) : null}

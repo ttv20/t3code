@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
@@ -16,11 +17,12 @@ export function PanelTabCloseButton({
   onClick,
   tooltip,
 }: PanelTabCloseButtonProps) {
+  const { t: uiT } = useUiLanguage();
   const button = (
     <button
       type="button"
       className="cursor-pointer group/close relative flex size-4 shrink-0 items-center justify-center rounded-sm hover:bg-muted"
-      aria-label={label}
+      aria-label={uiT(label)}
       onClick={onClick}
     >
       <span className="relative flex size-3 items-center justify-center group-hover/tab:hidden group-focus-visible/close:hidden">

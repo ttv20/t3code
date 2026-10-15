@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import deviceStreamScript from "@t3tools/mobile-device-stream";
 import {
   useEffect,
@@ -90,6 +91,7 @@ function DeviceStreamDocumentView({
   readonly onStreaming: () => void;
   readonly onRecoverProcess: () => boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const webView = useRef<WebView<object>>(null);
   const active = useRef(true);
   const failed = useRef(false);
@@ -193,7 +195,7 @@ function DeviceStreamDocumentView({
             accessibilityLiveRegion="polite"
             className="text-center text-sm text-foreground-muted"
           >
-            {status === "error" ? error : "Connecting to device..."}
+            {status === "error" ? error : uiT("Connecting to device...")}
           </AppText>
           {status === "error" ? (
             <Pressable
@@ -201,7 +203,7 @@ function DeviceStreamDocumentView({
               className="rounded-full border border-secondary-border bg-secondary px-6 py-3"
               onPress={onRetry}
             >
-              <AppText className="text-secondary-foreground">Reconnect</AppText>
+              <AppText className="text-secondary-foreground">{uiT("Reconnect")}</AppText>
             </Pressable>
           ) : null}
         </View>

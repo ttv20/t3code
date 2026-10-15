@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ComponentProps } from "react";
 import { Pressable } from "react-native";
 
@@ -16,6 +17,7 @@ export function RequestActionButton({
   tone?: "primary" | "secondary" | "danger";
   size?: "default" | "large";
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       {...props}
@@ -38,7 +40,7 @@ export function RequestActionButton({
               : "font-t3-bold text-foreground",
         )}
       >
-        {label}
+        {uiT(label)}
       </Text>
     </Pressable>
   );

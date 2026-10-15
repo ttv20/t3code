@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { parseThreadLinkPrompt, withoutPromptLinkParams } from "@t3tools/shared/promptLinks";
 import { useLocation, useNavigate } from "@tanstack/react-router";
@@ -13,6 +14,7 @@ const handledLinkKeys = new Set<string>();
  * reload or a copied address does not bring it back. Rendered beside the thread view.
  */
 export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThreadRef }) {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const location = useLocation({
     select: (current) => ({
@@ -32,7 +34,7 @@ export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThre
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: "Could not open the linked prompt",
+            title: uiT("Could not open the linked prompt"),
             description: parsed.error,
           }),
         );
@@ -44,7 +46,7 @@ export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThre
       href: `${location.pathname}${withoutPromptLinkParams(location.search)}`,
       replace: true,
     });
-  }, [location, navigate, threadRef]);
+  }, [location, navigate, threadRef, uiT]);
 
   return null;
 }

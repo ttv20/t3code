@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import {
   scopeProjectRef,
   scopedThreadKey,
@@ -354,6 +355,7 @@ export function ThreadPullRequestsMiniList({
   pullRequests: ReadonlyArray<ThreadPullRequestLink>;
   onOpenPullRequest?: (event: MouseEvent<HTMLAnchorElement>, url: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const lines = useMemo(
     () =>
       pullRequestListLines(resolveThreadPullRequestChains(visibleThreadPullRequests(pullRequests))),
@@ -380,7 +382,7 @@ export function ThreadPullRequestsMiniList({
           >
             {line.stack ? (
               <span className="ml-auto shrink-0 pl-1 text-3xs">
-                {line.stack.kind === "native" ? "stack" : "chain"} · {line.stack.size}
+                {line.stack.kind === "native" ? uiT("stack") : uiT("chain")} · {line.stack.size}
               </span>
             ) : null}
           </ThreadPullRequestMiniListItem>
@@ -407,6 +409,7 @@ function ThreadPullRequestMiniListItem({
   onOpenPullRequest?: ((event: MouseEvent<HTMLAnchorElement>, url: string) => void) | undefined;
   children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const Icon = presentation?.Icon ?? PullRequestGlyph.pullRequest;
   const content = (
     <>
@@ -415,7 +418,7 @@ function ThreadPullRequestMiniListItem({
         className={cn("size-3 shrink-0", presentation?.toneClassName ?? "stroke-muted-foreground")}
       />
       <span className="shrink-0 font-mono tabular-nums">#{number}</span>
-      <span className="min-w-0 truncate text-foreground/75">{title}</span>
+      <span className="min-w-0 truncate text-foreground/75">{uiT(title)}</span>
       {children}
     </>
   );
@@ -797,13 +800,14 @@ export function ThreadTerminalStatusButton({
   terminalIds: readonly string[];
   onThreadActivate: (threadRef: ScopedThreadRef) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const terminalId = terminalIds[0];
   if (terminalId === undefined) return null;
   const status = terminalStatusFromRunningIds(terminalIds);
   const label =
     terminalIds.length === 1
-      ? "1 terminal process running. Open terminal"
-      : `${terminalIds.length} terminal processes running. Open terminal`;
+      ? uiT("1 terminal process running. Open terminal")
+      : uiT("{0} terminal processes running. Open terminal", { "0": terminalIds.length });
   return (
     <Tooltip>
       <TooltipTrigger
@@ -832,7 +836,7 @@ export function ThreadTerminalStatusButton({
           onAnimationStart={synchronizeTerminalPulse}
         />
       </TooltipTrigger>
-      <TooltipPopup side="top">{label}</TooltipPopup>
+      <TooltipPopup side="top">{uiT(label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -878,6 +882,7 @@ export function ThreadStatusLabel({
   status: ThreadStatusPill;
   compact?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (compact) {
     return (
       <Tooltip>
@@ -896,7 +901,7 @@ export function ThreadStatusLabel({
             }`}
           />
         </TooltipTrigger>
-        <TooltipPopup side="top">{status.label}</TooltipPopup>
+        <TooltipPopup side="top">{uiT(status.label)}</TooltipPopup>
       </Tooltip>
     );
   }
@@ -917,9 +922,9 @@ export function ThreadStatusLabel({
             status.pulse ? "animate-status-pulse" : ""
           }`}
         />
-        <span className="hidden md:inline">{status.label}</span>
+        <span className="hidden md:inline">{uiT(status.label)}</span>
       </TooltipTrigger>
-      <TooltipPopup side="top">{status.label}</TooltipPopup>
+      <TooltipPopup side="top">{uiT(status.label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -936,6 +941,7 @@ export function ThreadRowLeadingStatus({
   thread: SidebarThreadSummary;
   snapshot?: ThreadChangeRequestSnapshot | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { leaseLiveStatus, rowRef } = useSidebarRowSubscriptionLease(false);
   // Observe the containing title even when this thread has no badge yet.
   const statusRef = useCallback(
@@ -1025,7 +1031,7 @@ export function ThreadRowLeadingStatus({
       {pendingLink ? (
         <PullRequestGlyph.pullRequest
           className="size-3 text-muted-foreground"
-          aria-label={`PR #${pendingLink.number}, status pending`}
+          aria-label={uiT("PR #{0}, status pending", { "0": pendingLink.number })}
         />
       ) : null}
       {threadStatus ? <ThreadStatusLabel status={threadStatus} /> : null}
@@ -1039,6 +1045,7 @@ export function ThreadRowLeadingStatus({
  * environment indicator, matching the sidebar's trailing indicators.
  */
 export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSummary }) {
+  const { t: uiT } = useUiLanguage();
   const runningTerminalIds = useThreadRunningTerminalIds({
     environmentId: thread.environmentId,
     threadId: thread.id,
@@ -1075,7 +1082,7 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
               onAnimationStart={synchronizeTerminalPulse}
             />
           </TooltipTrigger>
-          <TooltipPopup side="top">{terminalStatus.label}</TooltipPopup>
+          <TooltipPopup side="top">{uiT(terminalStatus.label)}</TooltipPopup>
         </Tooltip>
       ) : null}
       {isRemoteThread ? (
@@ -1083,7 +1090,7 @@ export function ThreadRowTrailingStatus({ thread }: { thread: SidebarThreadSumma
           <TooltipTrigger
             render={
               <span
-                aria-label={threadEnvironmentLabel ?? "Remote"}
+                aria-label={threadEnvironmentLabel ?? uiT("Remote")}
                 className="inline-flex items-center justify-center"
               />
             }
@@ -1138,6 +1145,7 @@ export function ThreadSearchPullRequestNumber({
   enabled?: boolean;
   settled?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const matchedLink = visibleThreadPullRequests(thread.pullRequests).find((pr) =>
     pullRequestMatchesSearchQuery({ pullRequests: [pr] }, query),
   );
@@ -1171,7 +1179,7 @@ export function ThreadSearchPullRequestNumber({
             )
           : (status?.colorClass ?? "text-secondary-label")
       }
-      aria-label={status?.tooltip ?? `Pull request #${reference.number}`}
+      aria-label={status?.tooltip ?? uiT("Pull request #{0}", { "0": reference.number })}
     />
   ) : null;
 }

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { StackActions, useNavigation } from "@react-navigation/native";
 import { useMemo } from "react";
 import { Platform } from "react-native";
@@ -22,6 +23,7 @@ export function useThreadHeaderOptions(props: {
   readonly gitControls: Parameters<typeof ThreadGitControls>[0];
   readonly onReturnToThread?: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const usesDuoHeader = usesNativeWorkspaceColumns && Platform.OS === "ios" && !Platform.isPad;
   const navigation = useNavigation();
@@ -61,7 +63,7 @@ export function useThreadHeaderOptions(props: {
           type: "sfSymbol" as const,
         },
         identifier: "thread-left-sidebar",
-        label: panes.primarySidebarVisible ? "Maximize content" : "Show thread sidebar",
+        label: panes.primarySidebarVisible ? uiT("Maximize content") : uiT("Show thread sidebar"),
         onPress: togglePrimarySidebar,
         type: "button" as const,
       }),
@@ -71,7 +73,7 @@ export function useThreadHeaderOptions(props: {
               accessibilityLabel: "New task",
               icon: { name: "square.and.pencil", type: "sfSymbol" as const },
               identifier: "thread-left-new-task",
-              label: "New task",
+              label: uiT("New task"),
               onPress: () => navigation.navigate("NewTaskSheet", { screen: "NewTask" }),
               type: "button" as const,
             }),
@@ -85,6 +87,7 @@ export function useThreadHeaderOptions(props: {
       togglePrimarySidebar,
       usesDuoHeader,
       usesNativeWorkspaceColumns,
+      uiT,
     ],
   );
   // Deep links / cold starts land with Thread as the ONLY route, where the
@@ -117,7 +120,7 @@ export function useThreadHeaderOptions(props: {
               type: "button" as const,
               axisBehavior: "verticalPreferred",
               identifier: "thread-right-search",
-              label: "Search threads",
+              label: uiT("Search threads"),
               accessibilityLabel: "Search threads",
               icon: { name: "magnifyingglass", type: "sfSymbol" as const },
               onPress: () => {
@@ -130,13 +133,13 @@ export function useThreadHeaderOptions(props: {
         type: "button" as const,
         axisBehavior: "verticalPreferred",
         identifier: "thread-right-new-task",
-        label: "New task",
+        label: uiT("New task"),
         accessibilityLabel: "New task",
         icon: { name: "square.and.pencil", type: "sfSymbol" as const },
         onPress: () => navigation.navigate("NewTaskSheet", { screen: "NewTask" }),
       }),
     ],
-    [navigation, threadCenterHeaderItems, layout.usesSplitView, panes.primarySidebarVisible],
+    [navigation, threadCenterHeaderItems, layout.usesSplitView, panes.primarySidebarVisible, uiT],
   );
 
   const options: AppNativeStackNavigationOptions = {

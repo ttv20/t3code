@@ -17,6 +17,8 @@ import {
 import { loadRepoEnv } from "../../scripts/lib/public-config";
 import { thirdPartyLicensesPlugin } from "../../scripts/lib/third-party-licenses";
 import { tailwindPlugins } from "./vite/tailwind";
+import { rtlStyles } from "./vite/rtl";
+import nesting from "postcss-nesting";
 
 const repoEnv = loadRepoEnv();
 Object.assign(process.env, repoEnv);
@@ -278,6 +280,7 @@ export default defineConfig(() => {
     // @tailwindcss/vite only emits a CSS sourcemap when devSourcemap is on; without it
     // rolldown flags the transform as SOURCEMAP_BROKEN on every sourcemapped build.
     css: {
+      postcss: { plugins: [nesting(), rtlStyles()] },
       devSourcemap: buildSourcemap !== false,
     },
     build: {

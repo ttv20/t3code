@@ -45,6 +45,29 @@ const ITEMS: ReadonlyArray<SettingsSearchItem> = [
 ];
 
 describe("searchSettings", () => {
+  it.each(["Hebrew", "עברית", "שפה", "translation"])(
+    "finds the interface language for %s",
+    (query) => {
+      expect(searchSettings(query)).toContainEqual(
+        expect.objectContaining({
+          id: "interface-language",
+          targetId: "language-direction",
+          to: "/settings/appearance",
+        }),
+      );
+    },
+  );
+
+  it.each(["RTL", "LTR", "כיוון"])("finds interface direction for %s", (query) => {
+    expect(searchSettings(query)).toContainEqual(
+      expect.objectContaining({
+        id: "interface-direction",
+        targetId: "language-direction",
+        to: "/settings/appearance",
+      }),
+    );
+  });
+
   it.each(["OTel", "OTLP", "telemetry export", "Grafana"])(
     "finds environment telemetry settings for %s",
     (query) => {

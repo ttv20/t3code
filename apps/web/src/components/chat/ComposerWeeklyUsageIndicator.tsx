@@ -1,3 +1,5 @@
+import { formatUiUsageWindowLabel } from "@t3tools/client-runtime/usage-localization";
+import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, ServerProvider } from "@t3tools/contracts";
 import { remainingPercent } from "@t3tools/shared/usageLimits";
 import { useState } from "react";
@@ -24,6 +26,7 @@ export function ComposerUsageIndicator(props: {
   readonly environmentId: EnvironmentId;
   readonly provider: ServerProvider | null;
 }) {
+  const { t: uiT, locale } = useUiLanguage();
   const { environmentId, provider } = props;
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
@@ -98,7 +101,9 @@ export function ComposerUsageIndicator(props: {
       >
         <div className="flex flex-col gap-2 py-1">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium text-xs text-foreground">{usage.providerLabel} usage</span>
+            <span className="font-medium text-xs text-foreground">
+              <UiText message={"{0} usage"} values={{ "0": usage.providerLabel }} />
+            </span>
             {provider.auth.email ? (
               <span className="truncate text-2xs text-muted-foreground">{provider.auth.email}</span>
             ) : null}
@@ -106,20 +111,23 @@ export function ComposerUsageIndicator(props: {
           <div className="flex flex-col gap-1.5 text-2xs">
             {usage.details.map((window) => (
               <div key={window.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3">
-                <span className="truncate text-muted-foreground">{window.label}</span>
+                <span className="truncate text-muted-foreground">
+                  {formatUiUsageWindowLabel(window.label, locale)}
+                </span>
                 <span className="text-end font-medium tabular-nums">
                   {remainingPercent(window)}%
                 </span>
                 {window.resetsAt ? (
                   <span className="col-span-2 text-end text-muted-foreground tabular-nums">
-                    Resets {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)}
+                    {uiT("Quota resets")}{" "}
+                    {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)}
                   </span>
                 ) : null}
               </div>
             ))}
           </div>
           <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-2xs">
-            <span className="text-muted-foreground">Last checked</span>
+            <span className="text-muted-foreground">{uiT("Last checked")}</span>
             <span className="text-end tabular-nums">
               {formatDayAwareTimestamp(provider.usageLimits.checkedAt, timestampFormat)}
             </span>
@@ -133,7 +141,7 @@ export function ComposerUsageIndicator(props: {
             onClick={() => void refresh()}
           >
             <RefreshIcon size="sm" refreshing={isRefreshing} />
-            {isRefreshing ? "Refreshing…" : "Refresh now"}
+            {isRefreshing ? uiT("Refreshing…") : uiT("Refresh now")}
           </Button>
         </div>
       </PopoverPopup>

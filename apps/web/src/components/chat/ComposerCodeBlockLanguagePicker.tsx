@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -45,6 +46,7 @@ export function ComposerCodeBlockLanguagePicker(props: {
   disabled: boolean;
   onChange: (language: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [query, setQuery] = useState("");
   const current = codeLanguageEntry(props.language)?.id ?? props.language;
   const items = useMemo<CodeBlockLanguage[]>(
@@ -89,7 +91,7 @@ export function ComposerCodeBlockLanguagePicker(props: {
               variant="ghost-muted"
               size="xs"
               disabled={props.disabled}
-              aria-label={`Code language: ${codeLanguageLabel(props.language)}`}
+              aria-label={uiT("Code language: {0}", { "0": codeLanguageLabel(props.language) })}
             />
           }
         >
@@ -99,17 +101,17 @@ export function ComposerCodeBlockLanguagePicker(props: {
         </ComboboxTrigger>
         <ComboboxPopup align="start" className="w-56">
           <ComboboxSearchInput
-            aria-label="Search languages"
-            placeholder="Search languages"
+            aria-label={uiT("Search languages")}
+            placeholder={uiT("Search languages")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          <ComboboxEmpty>No matching languages.</ComboboxEmpty>
+          <ComboboxEmpty>{uiT("No matching languages.")}</ComboboxEmpty>
           <ComboboxList>
             {(entry: CodeBlockLanguage) => (
               <ComboboxItem key={entry.id || "plain"} value={entry}>
                 <LanguageIcon language={entry.id} theme={props.theme} />
-                <span className="min-w-0 flex-1 truncate">{entry.label}</span>
+                <span className="min-w-0 flex-1 truncate">{uiT(entry.label)}</span>
                 {entry.id === current ? <CheckIcon className="ml-auto" /> : null}
               </ComboboxItem>
             )}

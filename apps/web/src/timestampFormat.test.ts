@@ -83,6 +83,12 @@ describe("resolveWeekStartsOn", () => {
 });
 
 describe("formatChatTimestampTooltip", () => {
+  it("localizes the complete tooltip date for Hebrew", async () => {
+    const { formatChatTimestampTooltip: format } = await import("./timestampFormat");
+    const date = new Date(2026, 5, 4, 14, 4).toISOString();
+    expect(format(date, "24-hour", "he")).toBe("14:04, 4 ביוני 2026");
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import {
   resolveProviderSkillSourceKind,
@@ -88,6 +89,7 @@ export const ComposerCommandMenu = memo(function ComposerCommandMenu(props: {
   onHighlightedItemChange: (itemId: string | null) => void;
   onSelect: (item: ComposerCommandItem) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const listRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -139,16 +141,16 @@ export const ComposerCommandMenu = memo(function ComposerCommandMenu(props: {
             <p className="text-secondary-label text-xs">
               {props.isLoading
                 ? props.triggerKind === "skill"
-                  ? "Searching workspace skills..."
+                  ? uiT("Searching workspace skills...")
                   : props.triggerKind === "pull-request"
-                    ? "Finding pull request..."
-                    : "Searching workspace files..."
+                    ? uiT("Finding pull request...")
+                    : uiT("Searching workspace files...")
                 : (props.emptyStateText ??
                   (props.triggerKind === "skill"
-                    ? "No skills found. Try / to browse provider commands."
+                    ? uiT("No skills found. Try / to browse provider commands.")
                     : props.triggerKind === "path"
-                      ? "No matching files or folders."
-                      : "No matching command."))}
+                      ? uiT("No matching files or folders.")
+                      : uiT("No matching command.")))}
             </p>
           </div>
         )}
@@ -166,6 +168,7 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
   onHighlight: (itemId: string | null) => void;
   onSelect: (item: ComposerCommandItem) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const skillSourceKind =
     props.item.type === "skill" ? resolveProviderSkillSourceKind(props.item.skill) : null;
   const isSlashSkill =
@@ -215,11 +218,11 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
               {formatProviderSkillDisplayName(isSlashSkill)}
             </>
           ) : (
-            props.item.label
+            uiT(props.item.label)
           )}
         </span>
         <span className="min-w-0 flex-1 truncate text-left text-secondary-label text-xs">
-          {props.item.description}
+          {uiT(props.item.description)}
         </span>
         {skillSourceKind ? (
           <SkillSourceBadge
@@ -263,12 +266,13 @@ const SKILL_SOURCE_LABEL_BY_KIND: Record<ProviderSkillSourceKind, string> = {
 };
 
 function SkillSourceBadge(props: { kind: ProviderSkillSourceKind; showSkillSuffix: boolean }) {
+  const { t: uiT } = useUiLanguage();
   const Icon = SKILL_SOURCE_ICON_BY_KIND[props.kind];
   return (
     <Badge className="ms-auto" variant="secondary">
       <Icon aria-hidden="true" className="text-current" />
       {SKILL_SOURCE_LABEL_BY_KIND[props.kind]}
-      {props.showSkillSuffix ? " Skill" : null}
+      {props.showSkillSuffix ? uiT(" Skill") : null}
     </Badge>
   );
 }

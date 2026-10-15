@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 
 import { Spinner } from "~/components/ui/spinner";
@@ -76,6 +77,7 @@ export function FileSurfaceAction(props: {
   readonly onPress: () => void;
   readonly children: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const pressed = props.pressed;
   return (
     <Tooltip>
@@ -108,7 +110,7 @@ export function FileSurfaceAction(props: {
           )
         }
       />
-      <TooltipPopup>{props.label}</TooltipPopup>
+      <TooltipPopup>{uiT(props.label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -125,10 +127,11 @@ export function FileSurfaceNotice(props: { readonly children: ReactNode }) {
 }
 
 export function FileSurfaceLoading(props: { readonly className?: string }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="status"
-      aria-label="Loading file"
+      aria-label={uiT("Loading file")}
       className={cn(
         "flex min-h-0 flex-1 items-center justify-center text-muted-foreground",
         props.className,
@@ -143,6 +146,7 @@ export function FileSurfaceFailure(props: {
   readonly message: string;
   readonly onRetry?: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="alert"
@@ -155,7 +159,7 @@ export function FileSurfaceFailure(props: {
           onClick={props.onRetry}
           className="rounded-md border border-input px-2.5 py-1 text-xs text-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          Try again
+          {uiT("Try again")}
         </button>
       ) : null}
     </div>

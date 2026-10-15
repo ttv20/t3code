@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { LegendList } from "@legendapp/list/react-native";
 import type { ProjectEntry } from "@t3tools/contracts";
 import { AppActivityIndicator } from "../../components/AppActivityIndicator";
@@ -48,6 +49,7 @@ const FileTreeRow = memo(function FileTreeRow(props: {
   readonly onPreviewFile?: (path: string) => void;
   readonly onPressFile: (path: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { node, depth } = props.item;
 
   return (
@@ -98,7 +100,10 @@ const FileTreeRow = memo(function FileTreeRow(props: {
         {node.name}
       </Text>
       {node.kind === "directory" && props.expanded && props.loading ? (
-        <AppActivityIndicator size="small" accessibilityLabel={`Loading ${node.name}`} />
+        <AppActivityIndicator
+          size="small"
+          accessibilityLabel={uiT("Loading {0}", { "0": node.name })}
+        />
       ) : null}
     </Pressable>
   );
@@ -118,6 +123,7 @@ export function FileTreeBrowser(props: {
   readonly onRefresh: () => void;
   readonly onSelectFile: (path: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const [expandedPaths, setExpandedPaths] = useState<ReadonlySet<string>>(() => new Set());
   const [pendingSelection, setPendingSelection] = useState<{
     readonly path: string;
@@ -272,7 +278,7 @@ export function FileTreeBrowser(props: {
           ) : null}
           {props.searchTruncated ? (
             <Text className="mx-4 my-2 text-xs text-foreground-muted">
-              More search results available. Refine your search to see them.
+              {uiT("More search results available. Refine your search to see them.")}
             </Text>
           ) : null}
         </>
@@ -281,7 +287,9 @@ export function FileTreeBrowser(props: {
         <View className="px-4 py-5">
           {props.error && props.entries.length === 0 ? (
             <>
-              <Text className="text-sm font-t3-bold text-foreground">Files unavailable</Text>
+              <Text className="text-sm font-t3-bold text-foreground">
+                {uiT("Files unavailable")}
+              </Text>
               <Text
                 accessibilityRole="alert"
                 className="mt-1 text-xs leading-normal text-foreground-muted"
@@ -294,18 +302,18 @@ export function FileTreeBrowser(props: {
                 disabled={props.isPending}
                 className="mt-3 min-h-11 self-start justify-center rounded-full bg-subtle px-4 active:opacity-70 disabled:opacity-50"
               >
-                <Text className="text-sm font-t3-medium text-foreground">Try again</Text>
+                <Text className="text-sm font-t3-medium text-foreground">{uiT("Try again")}</Text>
               </Pressable>
             </>
           ) : props.isPending ? (
             <AppActivityIndicator size="small" />
           ) : (
             <>
-              <Text className="text-sm font-t3-bold text-foreground">No files found</Text>
+              <Text className="text-sm font-t3-bold text-foreground">{uiT("No files found")}</Text>
               <Text className="mt-1 text-xs leading-normal text-foreground-muted">
                 {props.searchQuery.trim().length > 0
-                  ? "Try a different search."
-                  : "The workspace is empty."}
+                  ? uiT("Try a different search.")
+                  : uiT("The workspace is empty.")}
               </Text>
             </>
           )}

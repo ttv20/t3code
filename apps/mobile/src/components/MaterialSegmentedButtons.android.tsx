@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { SegmentedButton, SingleChoiceSegmentedButtonRow, Text } from "@expo/ui/jetpack-compose";
 import { defaultMinSize, fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
@@ -8,6 +9,7 @@ import type { SegmentedControlProps } from "./SegmentedControl.types";
 export function MaterialSegmentedButtons<Value extends number | string>(
   props: SegmentedControlProps<Value>,
 ) {
+  const { t: uiT } = useUiLanguage();
   const { themeVariables: colors } = useAppearancePreferences();
   const typography = useScaledTextRole("footnote");
   return (
@@ -28,7 +30,7 @@ export function MaterialSegmentedButtons<Value extends number | string>(
           }}
         >
           <SegmentedButton.Label>
-            <Text style={typography}>{option.label}</Text>
+            <Text style={typography}>{uiT(option.label)}</Text>
           </SegmentedButton.Label>
         </SegmentedButton>
       ))}

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useParams } from "@tanstack/react-router";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
@@ -52,6 +53,7 @@ function renderKey(clone: ProjectCloneSnapshot): string {
 }
 
 function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentId }) {
+  const { t: uiT } = useUiLanguage();
   const clones = useEnvironmentProjectClones(environmentId);
   const handleNewThread = useNewThreadHandler();
   const { draftId: routeDraftId } = useParams({ strict: false });
@@ -72,12 +74,12 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
           stackedThreadToast({
             type: "error",
             title,
-            description: error instanceof Error ? error.message : "An error occurred.",
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       }
     },
-    [],
+    [uiT],
   );
   const removeClonedProject = useRemoveClonedProject();
   const toasts = useRef(new Map<ProjectId, TrackedToast>());
@@ -124,7 +126,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       if (clone.phase === "running") {
         const options = stackedThreadToast({
           type: "loading",
-          title: `Cloning ${name}`,
+          title: uiT("Cloning {0}", { "0": name }),
           description: projectCloneProgressSummary(clone),
           timeout: 0,
           actionProps: {
@@ -150,7 +152,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       if (clone.phase === "done") {
         const options = stackedThreadToast({
           type: "success",
-          title: `Cloned ${name}`,
+          title: uiT("Cloned {0}", { "0": name }),
           description: clone.destinationPath,
           timeout: 8_000,
           actionProps: {
@@ -177,8 +179,10 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       const cancelled = clone.phase === "cancelled";
       const options = stackedThreadToast({
         type: cancelled ? "info" : "error",
-        title: cancelled ? `Cancelled cloning ${name}` : `Failed to clone ${name}`,
-        description: cancelled ? clone.destinationPath : (clone.error ?? "The clone failed."),
+        title: cancelled
+          ? uiT("Cancelled cloning {0}", { "0": name })
+          : uiT("Failed to clone {0}", { "0": name }),
+        description: cancelled ? clone.destinationPath : (clone.error ?? uiT("The clone failed.")),
         timeout: 0,
         actionProps: {
           children: "Retry",
@@ -226,6 +230,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
     removeClonedProject,
     retryClone,
     runCloneAction,
+    uiT,
   ]);
 
   useEffect(

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { HStack, ProgressView, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   accessibilityElement,
@@ -25,7 +26,8 @@ function SubscriptionUsage(
   props: SubscriptionUsageProps,
   environment: WidgetEnvironment<UsageConfiguration>,
 ) {
-  "widget";
+  const { t: uiT } = useUiLanguage();
+  ("widget");
   // The extension evaluates this function without the app's module scope.
   const family = environment.widgetFamily;
   // Gallery snapshots can render an old timeline entry after it has expired.
@@ -39,8 +41,8 @@ function SubscriptionUsage(
   const monochrome =
     environment.widgetRenderingMode !== "fullColor" || environment.isLuminanceReduced;
   const providers = props.providers ?? [
-    { name: "Codex", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
-    { name: "Claude", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
+    { name: "Codex", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
+    { name: "Claude", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
   ];
   const columns = providers.map((provider) => {
     const stale = provider.windows.length > 0 && now >= provider.expiresAt;
@@ -118,10 +120,10 @@ function SubscriptionUsage(
               ]}
             >
               {tightest
-                ? `${tightest.remaining}% left`
+                ? uiT("{0}% left", { "0": tightest.remaining })
                 : period !== "auto" && !stale && provider.windows.length > 0
                   ? "N/A"
-                  : "Open T3"}
+                  : uiT("Open T3")}
             </Text>
           </HStack>
           {tightest ? (
@@ -180,7 +182,7 @@ function SubscriptionUsage(
                   lineLimit(1),
                 ]}
               >
-                {window.label}
+                {uiT(window.label)}
               </Text>
               <Spacer />
               <Text
@@ -200,7 +202,8 @@ function SubscriptionUsage(
                   ),
                 ]}
               >
-                {window.remaining}% left
+                {window.remaining}
+                {uiT("% left")}
               </Text>
             </HStack>
             <ProgressView value={window.remaining / 100} modifiers={barModifiers} />
@@ -223,7 +226,7 @@ function SubscriptionUsage(
           >
             {(period === "auto" ? (provider.totalWindows ?? windows.length) : windows.length) -
               limit}{" "}
-            more in T3
+            {uiT("more in T3")}
           </Text>
         ) : null}
       </VStack>
@@ -237,7 +240,7 @@ function SubscriptionUsage(
     >
       {providers.length === 0 ? (
         <Text modifiers={[font({ textStyle: "caption" }), foregroundStyle("secondary")]}>
-          No subscription limits available.
+          {uiT("No subscription limits available.")}
         </Text>
       ) : compact ? (
         <VStack alignment="leading" spacing={accessory || dense ? 4 : 8}>
@@ -254,8 +257,15 @@ function SubscriptionUsage(
           modifiers={[font({ textStyle: "caption2" }), foregroundStyle("secondary"), lineLimit(1)]}
         >
           {props.checkedAt
-            ? `As of ${new Date(props.checkedAt).toLocaleString(undefined, { hour: "numeric", minute: "2-digit", month: "short", day: "numeric" })}`
-            : "Tap to connect in T3"}
+            ? uiT("As of {0}", {
+                "0": new Date(props.checkedAt).toLocaleString(undefined, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  month: "short",
+                  day: "numeric",
+                }),
+              })
+            : uiT("Tap to connect in T3")}
         </Text>
       ) : null}
     </VStack>

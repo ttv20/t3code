@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { PullRequestActor } from "@t3tools/contracts";
 import { Image } from "expo-image";
 import { ActivityIndicator, View } from "react-native";
@@ -10,10 +11,15 @@ export function PullRequestReadStatus(props: {
   readonly pending: boolean;
   readonly error: string | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   return props.pending ? (
     <ActivityIndicator className="my-12" colorClassName="accent-icon" />
   ) : props.error ? (
-    <EmptyState title="Couldn't load this pull request" detail={props.error} variant="plain" />
+    <EmptyState
+      title={uiT("Couldn't load this pull request")}
+      detail={props.error}
+      variant="plain"
+    />
   ) : null;
 }
 

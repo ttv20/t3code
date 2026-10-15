@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { NATIVE_WORKSPACE_COLUMNS_SUPPORTED } from "../native/NativeWorkspaceColumns";
 import Constants from "expo-constants";
 import type { NativeStackNavigationOptions } from "@react-navigation/native-stack";
@@ -27,6 +28,7 @@ export function CompactBrandTitle(
     readonly accessibilityLabel?: string;
   } = {},
 ) {
+  const { t: uiT } = useUiLanguage();
   const stageLabel = resolveMobileStageLabel(Constants.expoConfig?.extra?.appVariant);
   const titleOffset = brandTitleOffset();
   const { scale } = useAndroidControlSizing();
@@ -34,7 +36,7 @@ export function CompactBrandTitle(
   return (
     <View
       aria-level={1}
-      accessibilityLabel={props.accessibilityLabel ?? "T3 Code, Threads"}
+      accessibilityLabel={props.accessibilityLabel ?? `T3 Code RTL, ${uiT("Threads")}`}
       accessible
       role="heading"
       className="flex-row items-center gap-1.5"
@@ -47,6 +49,13 @@ export function CompactBrandTitle(
         style={{ fontSize: 21 * scale, letterSpacing: -0.5 * scale }}
       >
         Code
+      </Text>
+      <Text
+        allowFontScaling={props.allowFontScaling}
+        className="font-t3-bold text-foreground-muted"
+        style={{ fontSize: 10 * scale, letterSpacing: 0.5 * scale }}
+      >
+        RTL
       </Text>
       <View
         className="rounded-full bg-subtle px-1.5 py-0.5"

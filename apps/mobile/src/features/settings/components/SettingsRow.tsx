@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import type { ComponentProps } from "react";
 import { Platform } from "react-native";
@@ -16,13 +17,14 @@ export function SettingsRow(props: {
   readonly onPress?: () => void;
 }) {
   const navigation = useNavigation();
+  const { t } = useUiLanguage();
   const valueBelow =
     props.valuePosition === "below" ||
     (props.valuePosition === undefined && Platform.OS === "android");
   return (
     <ListRow
       icon={props.icon}
-      label={props.label}
+      label={t(props.label)}
       description={valueBelow ? props.value : undefined}
       detail={valueBelow ? undefined : props.value}
       disabled={props.disabled}

@@ -165,6 +165,22 @@ const SOURCE_CONTROL_HOST_SEARCH_ITEMS = sourceControlClients.definitions.flatMa
  */
 export const SETTINGS_SEARCH_ITEMS = [
   {
+    id: "interface-language",
+    targetId: "language-direction",
+    title: "Interface language",
+    to: "/settings/appearance",
+    searchTerms: [
+      "language translation locale English Hebrew Arabic Persian עברית العربية فارسی שפה תרגום لغة زبان",
+    ],
+  },
+  {
+    id: "interface-direction",
+    targetId: "language-direction",
+    title: "Interface direction",
+    to: "/settings/appearance",
+    searchTerms: ["RTL LTR direction right left כיוון ימין שמאל"],
+  },
+  {
     id: "storage-worktree-keep-when",
     targetId: "storage-worktrees",
     title: "Keep worktrees with local changes",

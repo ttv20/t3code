@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { InlineButton } from "../ui/button";
 import { useId, useState } from "react";
 
@@ -18,6 +19,7 @@ export function ExpandableText({
   collapsedClassName?: string;
   expandLabel?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
   const textId = useId();
   const [expanded, setExpanded] = useState(false);
   const canExpand = text.length > 180 || text.includes("\n");
@@ -41,7 +43,7 @@ export function ExpandableText({
           className="mt-1"
           onClick={() => setExpanded((value) => !value)}
         >
-          {expanded ? "Show less" : expandLabel}
+          {expanded ? uiT("Show less") : expandLabel}
         </InlineButton>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   CheckIcon,
   CopyIcon,
@@ -89,10 +90,11 @@ function downloadThemeFile(filename: string, contents: string): void {
 }
 
 function ThemeVariantTooltip({ label, children }: { label: string; children: ReactElement }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Tooltip>
       <TooltipTrigger render={children} />
-      <TooltipPopup>{label}</TooltipPopup>
+      <TooltipPopup>{uiT(label)}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -129,6 +131,7 @@ function ThemeLibraryCard({
     onSelectAndUse: (themeIndex: number, mode: ThemeAppearance) => void;
   };
 }) {
+  const { t: uiT } = useUiLanguage();
   // A one-appearance theme can only take its own side of the mix, so the card
   // tooltip promises exactly what clicking it does.
   const cardModes = theme.previews.map((preview) => preview.mode);
@@ -164,7 +167,7 @@ function ThemeLibraryCard({
             <div className="relative">
               {variantNavigation ? (
                 <div
-                  aria-label="Light and dark theme variants"
+                  aria-label={uiT("Light and dark theme variants")}
                   className="relative h-20"
                   role="group"
                   onBlurCapture={(event) => {
@@ -193,8 +196,15 @@ function ThemeLibraryCard({
                           <button
                             aria-label={
                               options.length > 1
-                                ? `Choose ${mode} variant, ${options.length} options, currently ${selected.option.label}`
-                                : `Use ${mode} variant, currently ${selected.option.label}`
+                                ? uiT("Choose {0} variant, {1} options, currently {2}", {
+                                    "0": mode,
+                                    "1": options.length,
+                                    "2": selected.option.label,
+                                  })
+                                : uiT("Use {0} variant, currently {1}", {
+                                    "0": mode,
+                                    "1": selected.option.label,
+                                  })
                             }
                             aria-pressed={isActive}
                             className="absolute left-1/2 top-2 z-20 flex size-14 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-ring"
@@ -234,7 +244,7 @@ function ThemeLibraryCard({
                           className="pointer-events-none absolute bottom-0 left-1/2 inline-flex max-w-24 -translate-x-1/2 items-center gap-1 text-2xs font-medium text-foreground"
                           style={{ marginLeft: rootOffsetX }}
                         >
-                          <span className="truncate">{selected.option.label}</span>
+                          <span className="truncate">{uiT(selected.option.label)}</span>
                           {options.length > 1 ? (
                             <span className="shrink-0 rounded-full bg-muted px-1 text-3xs text-muted-foreground">
                               +{options.length - 1}
@@ -250,10 +260,17 @@ function ThemeLibraryCard({
                               return (
                                 <ThemeVariantTooltip
                                   key={option.label}
-                                  label={`Use ${option.label} for ${mode} mode`}
+                                  label={uiT("Use {0} for {1} mode", {
+                                    "0": option.label,
+                                    "1": uiT(mode),
+                                  })}
                                 >
                                   <button
-                                    aria-label={`Use ${option.label} for ${mode} mode${optionIsActive ? ", currently active" : ""}`}
+                                    aria-label={uiT("Use {0} for {1} mode{2}", {
+                                      "0": option.label,
+                                      "1": mode,
+                                      "2": optionIsActive ? ", currently active" : "",
+                                    })}
                                     aria-pressed={optionIsActive}
                                     className={cn(
                                       "absolute left-1/2 top-1 z-30 flex size-7 items-center justify-center rounded-full bg-background shadow-sm outline-none transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
@@ -303,7 +320,12 @@ function ThemeLibraryCard({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <button
-                    aria-label={`Use ${variantNavigation ? `${variantNavigation.collectionLabel}, ${theme.label} variant` : `${theme.label} theme`}${isActive ? ", currently active" : ""}`}
+                    aria-label={uiT("Use {0}{1}", {
+                      "0": variantNavigation
+                        ? `${variantNavigation.collectionLabel}, ${theme.label} variant`
+                        : `${theme.label} theme`,
+                      "1": isActive ? ", currently active" : "",
+                    })}
                     aria-pressed={isActive}
                     className="min-w-0 cursor-pointer truncate rounded-sm text-left text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                     type="button"
@@ -323,7 +345,7 @@ function ThemeLibraryCard({
                       <TooltipTrigger
                         render={
                           <Button
-                            aria-label={`Duplicate ${theme.label}`}
+                            aria-label={uiT("Duplicate {0}", { "0": theme.label })}
                             size="icon-xs"
                             variant="ghost"
                             onClick={(event) => {
@@ -335,7 +357,7 @@ function ThemeLibraryCard({
                           </Button>
                         }
                       />
-                      <TooltipPopup>Duplicate theme</TooltipPopup>
+                      <TooltipPopup>{uiT("Duplicate theme")}</TooltipPopup>
                     </Tooltip>
                   ) : null}
                   {onEdit ? (
@@ -343,7 +365,7 @@ function ThemeLibraryCard({
                       <TooltipTrigger
                         render={
                           <Button
-                            aria-label={`Edit ${theme.label}`}
+                            aria-label={uiT("Edit {0}", { "0": theme.label })}
                             size="icon-xs"
                             variant="ghost"
                             onClick={(event) => {
@@ -355,7 +377,7 @@ function ThemeLibraryCard({
                           </Button>
                         }
                       />
-                      <TooltipPopup>Edit theme</TooltipPopup>
+                      <TooltipPopup>{uiT("Edit theme")}</TooltipPopup>
                     </Tooltip>
                   ) : null}
                   {onDownload ? (
@@ -363,7 +385,7 @@ function ThemeLibraryCard({
                       <TooltipTrigger
                         render={
                           <Button
-                            aria-label={`Export ${theme.label}`}
+                            aria-label={uiT("Export {0}", { "0": theme.label })}
                             size="icon-xs"
                             variant="ghost"
                             onClick={(event) => {
@@ -375,7 +397,7 @@ function ThemeLibraryCard({
                           </Button>
                         }
                       />
-                      <TooltipPopup>Export theme file</TooltipPopup>
+                      <TooltipPopup>{uiT("Export theme file")}</TooltipPopup>
                     </Tooltip>
                   ) : null}
                   {onRemove ? (
@@ -385,8 +407,10 @@ function ThemeLibraryCard({
                           <Button
                             aria-label={
                               variantNavigation
-                                ? `Remove themes from ${variantNavigation.collectionLabel}`
-                                : `Remove ${theme.label}`
+                                ? uiT("Remove themes from {0}", {
+                                    "0": variantNavigation.collectionLabel,
+                                  })
+                                : uiT("Remove {0}", { "0": theme.label })
                             }
                             size="icon-xs"
                             variant="ghost-destructive"
@@ -400,7 +424,7 @@ function ThemeLibraryCard({
                         }
                       />
                       <TooltipPopup>
-                        {variantNavigation ? "Remove themes" : "Remove theme"}
+                        {variantNavigation ? uiT("Remove themes") : uiT("Remove theme")}
                       </TooltipPopup>
                     </Tooltip>
                   ) : null}
@@ -412,10 +436,10 @@ function ThemeLibraryCard({
       />
       <TooltipPopup>
         {variantNavigation
-          ? "Use the first variants for light and dark"
+          ? uiT("Use the first variants for light and dark")
           : cardModes.length > 1
-            ? "Use for both light and dark"
-            : `Use for ${cardModes[0]} mode only`}
+            ? uiT("Use for both light and dark")
+            : uiT("Use for {0} mode only", { "0": uiT(cardModes[0]) })}
       </TooltipPopup>
     </Tooltip>
   );
@@ -527,6 +551,8 @@ export function ThemeLibrary({
   themeHalves: ThemeHalves | null;
   setThemeHalf: (appearance: ThemeAppearance, themeId: string | null) => boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
+  const { t } = useUiLanguage();
   const openThemeEditor = useThemeEditorStore((store) => store.openThemeEditor);
   const environmentThemes = useEnvironmentThemeDefinitions();
   const [themeRemovalTarget, setThemeRemovalTarget] = useState<{
@@ -548,21 +574,21 @@ export function ThemeLibrary({
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Couldn’t save theme selection",
-        description: "Try again.",
+        title: uiT("Couldn’t save theme selection"),
+        description: uiT("Try again."),
       }),
     );
-  }, []);
+  }, [uiT]);
 
   const notifyThemeRemovalFailure = useCallback(() => {
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: "Couldn’t remove theme",
-        description: "Try again.",
+        title: uiT("Couldn’t remove theme"),
+        description: uiT("Try again."),
       }),
     );
-  }, []);
+  }, [uiT]);
 
   const persistTheme = useCallback(
     (nextTheme: string) => {
@@ -720,12 +746,16 @@ export function ThemeLibrary({
   );
 
   const renderModeTiles = () => (
-    <div aria-label="Appearance mode" className="grid w-full grid-cols-3 gap-3" role="group">
+    <div aria-label={uiT("Appearance mode")} className="grid w-full grid-cols-3 gap-3" role="group">
       {(["system", "light", "dark"] as const).map((mode) => {
         const isActive = appearanceMode === mode;
         return (
           <button
-            aria-label={mode === "system" ? "Follow the system appearance" : `Use ${mode} mode`}
+            aria-label={
+              mode === "system"
+                ? uiT("Follow the system appearance")
+                : uiT("Use {0} mode", { "0": uiT(mode) })
+            }
             aria-pressed={isActive}
             className={cn(
               "flex cursor-pointer flex-col items-stretch gap-1.5 rounded-xl border p-2 outline-none transition-colors focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-ring",
@@ -745,7 +775,7 @@ export function ThemeLibrary({
                 isActive ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {mode === "system" ? "System" : mode === "light" ? "Light" : "Dark"}
+              {mode === "system" ? uiT("System") : mode === "light" ? uiT("Light") : uiT("Dark")}
             </span>
           </button>
         );
@@ -887,12 +917,12 @@ export function ThemeLibrary({
   return (
     <div className="space-y-3">
       <h3 className="px-3 text-sm font-normal text-foreground/70 sm:px-4">
-        {searchableSetting("color-scheme").title}
+        {uiT(searchableSetting("color-scheme").title)}
       </h3>
       {renderModeTiles()}
       <div className="flex min-h-8 flex-wrap items-center justify-between gap-3 px-3 pt-2 sm:px-4">
         <h3 className="text-sm font-normal text-foreground/70">
-          {searchableSetting("theme").title}
+          {uiT(searchableSetting("theme").title)}
         </h3>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
@@ -908,11 +938,11 @@ export function ThemeLibrary({
             }
           >
             <PaintbrushIcon />
-            Create theme
+            {uiT("Create theme")}
           </Button>
           <Button size="xs" variant="outline" onClick={() => onImportOpenChange(true)}>
             <PlusIcon />
-            Add theme
+            {uiT("Add theme")}
           </Button>
         </div>
       </div>
@@ -929,7 +959,7 @@ export function ThemeLibrary({
               title:
                 importedThemes.length === 1
                   ? `${importedThemes[0]!.label} ${verb}`
-                  : `${importedThemes.length} themes ${verb}`,
+                  : uiT("{0} themes {1}", { "0": importedThemes.length, "1": verb }),
               description: importedThemes.map((imported) => imported.label).join(", "),
             }),
           );
@@ -943,8 +973,8 @@ export function ThemeLibrary({
             toastManager.add(
               stackedThreadToast({
                 type: "success",
-                title: `${importedTheme.label} added`,
-                description: `It’s now your ${modes[0]!} theme.`,
+                title: uiT("{0} added", { "0": importedTheme.label }),
+                description: uiT("It’s now your {0} theme.", { "0": uiT(modes[0]!) }),
               }),
             );
             return true;
@@ -953,8 +983,8 @@ export function ThemeLibrary({
           toastManager.add(
             stackedThreadToast({
               type: "success",
-              title: `${importedTheme.label} added`,
-              description: "It’s now active.",
+              title: uiT("{0} added", { "0": importedTheme.label }),
+              description: uiT("It’s now active."),
             }),
           );
           return true;
@@ -967,13 +997,15 @@ export function ThemeLibrary({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {canRemoveCollection
-                ? `Remove themes from “${removeDialogCollectionLabel}”?`
-                : `Remove “${removeDialogTheme?.label}”?`}
+                ? uiT("Remove themes from “{0}”?", { "0": removeDialogCollectionLabel })
+                : uiT("Remove “{0}”?", { "0": removeDialogTheme?.label })}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {canRemoveCollection
-                ? "Select the variants you want to remove. You can restore them by importing the extension again."
-                : "You can bring it back anytime by importing its JSON file."}
+                ? uiT(
+                    "Select the variants you want to remove. You can restore them by importing the extension again.",
+                  )
+                : uiT("You can bring it back anytime by importing its JSON file.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           {canRemoveCollection ? (
@@ -1019,7 +1051,7 @@ export function ThemeLibrary({
                       ))}
                     </span>
                     <p className="max-w-full truncate text-center text-base font-medium text-foreground sm:text-sm">
-                      {customTheme.label}
+                      {uiT(customTheme.label)}
                     </p>
                   </label>
                 );
@@ -1027,15 +1059,17 @@ export function ThemeLibrary({
             </div>
           ) : null}
           <AlertDialogFooter>
-            <AlertDialogClose render={<Button variant="outline" />}>Cancel</AlertDialogClose>
+            <AlertDialogClose render={<Button variant="outline" />}>{t("Cancel")}</AlertDialogClose>
             <Button
               disabled={themeIdsToRemove.length === 0}
               variant="destructive"
               onClick={handleConfirmRemoveTheme}
             >
               {canRemoveCollection
-                ? `Remove selected${themeIdsToRemove.length > 0 ? ` (${themeIdsToRemove.length})` : ""}`
-                : "Remove theme"}
+                ? uiT("Remove selected{0}", {
+                    "0": themeIdsToRemove.length > 0 ? ` (${themeIdsToRemove.length})` : "",
+                  })
+                : uiT("Remove theme")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>
