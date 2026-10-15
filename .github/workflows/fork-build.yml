@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: fork-build-${{ github.ref }}
-  cancel-in-progress: true
+  # Finish signing and uploading the current release before building newer fixes.
+  cancel-in-progress: false
 
 jobs:
   build_linux_x64:
