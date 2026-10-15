@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./markdown-rtl": {
+      "types": "./src/markdownRtl.ts",
+      "default": "./src/markdownRtl.ts"
+    },
     "./environment-updates": {
       "types": "./src/environmentUpdates.ts",
       "default": "./src/environmentUpdates.ts"

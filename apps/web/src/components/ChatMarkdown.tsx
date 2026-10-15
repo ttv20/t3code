@@ -1,4 +1,5 @@
 import { MarkdownFindContext, useFindRevealRef } from "./chat/markdownFindContext";
+import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
@@ -3475,6 +3476,7 @@ function ChatMarkdown({
       ...(lineBreaks ? CHAT_MARKDOWN_REMARK_PLUGINS_WITH_BREAKS : CHAT_MARKDOWN_REMARK_PLUGINS),
       ...extraRemarkPlugins,
       ...(incrementalParsing ? [createIncrementalMarkdownPlugin()] : []),
+      remarkRtlSentenceBoundaries,
     ],
     [extraRemarkPlugins, incrementalParsing, lineBreaks],
   );
