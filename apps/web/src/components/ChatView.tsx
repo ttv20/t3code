@@ -1578,7 +1578,7 @@ function releaseChatTimelineAnchor<T extends { readonly messageId: MessageId | n
 const retryingWorkspacePreparationRunIds = new Set<RunId>();
 
 export default function ChatView(props: ChatViewProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const {
     environmentId,
     threadId,
@@ -7613,7 +7613,7 @@ export default function ChatView(props: ChatViewProps) {
   const activeGoal = activeThreadShell?.goal ?? null;
   const goalBannerItem = useMemo<ComposerBannerStackItem | null>(() => {
     if (!activeThread || activeGoal === null) return null;
-    const presentation = presentProviderGoal(activeGoal, isWorking);
+    const presentation = presentProviderGoal(activeGoal, isWorking, locale);
     return {
       id: `goal:${activeThread.id}`,
       variant: "default",
@@ -7646,10 +7646,10 @@ export default function ChatView(props: ChatViewProps) {
         </>
       ),
     };
-  }, [activeGoal, activeThread, isWorking, sendStandaloneCommand, uiT]);
+  }, [activeGoal, activeThread, isWorking, locale, sendStandaloneCommand, uiT]);
 
   const backgroundWorkBannerItem = useMemo<ComposerBannerStackItem | null>(() => {
-    const presentation = presentPendingBackgroundWork(activeBackgroundTasks);
+    const presentation = presentPendingBackgroundWork(activeBackgroundTasks, locale);
     if (presentation === null || !activeThread) {
       return null;
     }
@@ -7679,14 +7679,14 @@ export default function ChatView(props: ChatViewProps) {
                 <Fragment key={item.taskId}>
                   {index > 0 ? ", " : null}
                   {childThreadId === undefined ? (
-                    uiT(item.label)
+                    item.label
                   ) : (
                     <InlineButton
                       tone="muted"
                       aria-label={uiT("Open subagent {0}", { "0": item.label })}
                       onClick={() => onOpenRelatedThread(childThreadId)}
                     >
-                      {uiT(item.label)}
+                      {item.label}
                     </InlineButton>
                   )}
                 </Fragment>
@@ -7709,6 +7709,7 @@ export default function ChatView(props: ChatViewProps) {
     canOperateThread,
     handleStopBackgroundWork,
     isStoppingBackgroundWork,
+    locale,
     onOpenRelatedThread,
     uiT,
   ]);

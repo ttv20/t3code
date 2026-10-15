@@ -330,7 +330,7 @@ const USER_INPUT_TOGGLE_TIMING = {
 };
 
 export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: ThreadDetailScreenProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const navigation = useNavigation();
   const { session: voiceInputSession } = useGlobalVoiceInput();
@@ -493,6 +493,7 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
   // The shell's roster is the server's post-settlement view of what still runs.
   const pendingBackgroundWork = presentPendingBackgroundWork(
     props.selectedThread.pendingBackgroundTasks,
+    locale,
   );
   const floatingStatus = ((): FloatingWorkingStatus | null => {
     const connectionStatus = connectionFloatingStatus({
@@ -558,7 +559,7 @@ export const ThreadDetailScreen = memo(function ThreadDetailScreen(props: Thread
       };
     }
     if (props.selectedThread.goal !== null && contentPresentationKind === "ready") {
-      const goal = presentProviderGoal(props.selectedThread.goal, false);
+      const goal = presentProviderGoal(props.selectedThread.goal, false, locale);
       return {
         kind: "goal",
         label: goal.title,

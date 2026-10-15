@@ -24,6 +24,7 @@ import {
 import { getProviderOptionCurrentLabel, getProviderOptionDescriptors } from "@t3tools/shared/model";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import * as DateTime from "effect/DateTime";
+import { createUiTranslator, type UiLocale } from "../i18n.ts";
 
 import {
   threadRuntimeIsActive,
@@ -323,16 +324,21 @@ export interface PendingBackgroundWorkPresentation {
   readonly waiting: boolean;
 }
 
-function joinWithAnd(parts: ReadonlyArray<string>): string {
+function joinWithAnd(parts: ReadonlyArray<string>, locale: UiLocale): string {
   if (parts.length <= 1) return parts.join("");
-  return `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+  return createUiTranslator(locale)("{0} and {1}", {
+    "0": parts.slice(0, -1).join(", "),
+    "1": parts.at(-1),
+  });
 }
 
 /** Names what a settled thread still runs, grouped by kind, for the composer strip. */
 export function presentPendingBackgroundWork(
   tasks: ReadonlyArray<OrchestrationV2PendingBackgroundTask>,
+  locale: UiLocale = "en",
 ): PendingBackgroundWorkPresentation | null {
   if (tasks.length === 0) return null;
+  const t = createUiTranslator(locale);
   const waiting = backgroundWorkHoldsCompletion(tasks);
   const items = tasks
     .map((task): PendingBackgroundWorkItem => {
@@ -346,7 +352,7 @@ export function presentPendingBackgroundWork(
         kind: task.kind,
         label:
           label === undefined || label.length === 0
-            ? BACKGROUND_WORK_KINDS[task.kind].singular
+            ? t(BACKGROUND_WORK_KINDS[task.kind].singular)
             : label,
         childThreadId: task.kind === "subagent" ? task.childThreadId : undefined,
       };
@@ -358,24 +364,32 @@ export function presentPendingBackgroundWork(
     );
   const [only] = items;
   if (items.length === 1 && only !== undefined) {
-    const noun = BACKGROUND_WORK_KINDS[only.kind].singular;
+    const noun = t(BACKGROUND_WORK_KINDS[only.kind].singular);
     const named = only.label !== noun;
     const title = waiting
       ? named
-        ? `${only.kind === "monitor" ? "" : `Waiting on ${noun} `}${only.label}`
-        : `Waiting on a ${noun}`
+        ? only.kind === "monitor"
+          ? only.label
+          : t("Waiting on {0} {1}", { "0": noun, "1": only.label })
+        : t("Waiting on a {0}", { "0": noun })
       : named
-        ? `Running: ${only.label}`
-        : `Running a ${noun}`;
+        ? t("Running: {0}", { "0": only.label })
+        : t("Running a {0}", { "0": noun });
     return { title, items, waiting };
   }
   const counts = new Map<BackgroundWorkKind, number>();
   for (const item of items) counts.set(item.kind, (counts.get(item.kind) ?? 0) + 1);
   const groups = Array.from(counts, ([kind, count]) => {
     const { singular, plural } = BACKGROUND_WORK_KINDS[kind];
-    return `${count} ${count === 1 ? singular : plural}`;
+    return `${count} ${t(count === 1 ? singular : plural)}`;
   });
-  return { title: `${waiting ? "Waiting on" : "Running"} ${joinWithAnd(groups)}`, items, waiting };
+  return {
+    title: t(waiting ? "Waiting on {0}" : "Running {0}", {
+      "0": joinWithAnd(groups, locale),
+    }),
+    items,
+    waiting,
+  };
 }
 
 export interface ProviderGoalPresentation {
@@ -410,23 +424,28 @@ function formatGoalTokens(tokens: number): string {
 export function presentProviderGoal(
   goal: OrchestrationV2ProviderGoal,
   working: boolean,
+  locale: UiLocale = "en",
 ): ProviderGoalPresentation {
+  const t = createUiTranslator(locale);
   const usage: Array<string> = [];
   if (goal.tokensUsed !== undefined && goal.tokensUsed > 0) {
     usage.push(
       goal.tokenBudget == null
-        ? `${formatGoalTokens(goal.tokensUsed)} tokens`
-        : `${formatGoalTokens(goal.tokensUsed)} / ${formatGoalTokens(goal.tokenBudget)} tokens`,
+        ? t("{0} tokens", { "0": formatGoalTokens(goal.tokensUsed) })
+        : t("{0} / {1} tokens", {
+            "0": formatGoalTokens(goal.tokensUsed),
+            "1": formatGoalTokens(goal.tokenBudget),
+          }),
     );
   }
   if (goal.timeUsedSeconds !== undefined && goal.timeUsedSeconds >= 60) {
     usage.push(formatDuration(goal.timeUsedSeconds * 1_000));
   }
   if (goal.checks !== undefined && goal.checks > 0) {
-    usage.push(`${goal.checks} ${goal.checks === 1 ? "check" : "checks"}`);
+    usage.push(t(goal.checks === 1 ? "{0} check" : "{0} checks", { "0": goal.checks }));
   }
   return {
-    title: goal.status === "active" && !working ? "Goal set" : PROVIDER_GOAL_TITLES[goal.status],
+    title: t(goal.status === "active" && !working ? "Goal set" : PROVIDER_GOAL_TITLES[goal.status]),
     objective: goal.objective,
     usage: usage.length === 0 ? null : usage.join(" · "),
     canResume: goal.status !== "active" && goal.status !== "complete",

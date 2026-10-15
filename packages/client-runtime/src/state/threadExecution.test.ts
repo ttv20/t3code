@@ -496,6 +496,47 @@ describe("threadRuntimeCanArchive", () => {
 });
 
 describe("presentPendingBackgroundWork", () => {
+  it("translates running and waiting rosters while preserving task descriptions", () => {
+    const commands = [
+      { taskId: "dev", kind: "command" as const, description: "npm run dev" },
+      { taskId: "test", kind: "command" as const, description: "npm test" },
+    ];
+    expect(presentPendingBackgroundWork(commands, "he")?.title).toBe("מריץ 2 פקודות");
+    expect(presentPendingBackgroundWork(commands, "he")?.items.map((item) => item.label)).toEqual([
+      "npm run dev",
+      "npm test",
+    ]);
+    expect(presentPendingBackgroundWork([commands[0]!], "he")?.title).toBe("מריץ: npm run dev");
+    expect(
+      presentPendingBackgroundWork(
+        [{ taskId: "named", kind: "command", description: "Settings" }],
+        "he",
+      )?.title,
+    ).toBe("מריץ: Settings");
+    expect(presentPendingBackgroundWork([{ taskId: "a", kind: "command" }], "he")?.title).toBe(
+      "מריץ פקודה",
+    );
+    expect(
+      presentPendingBackgroundWork([...commands, { taskId: "review", kind: "subagent" }], "he")
+        ?.title,
+    ).toBe("ממתין ל־1 סוכן משנה ו־2 פקודות");
+    expect(
+      presentPendingBackgroundWork([{ taskId: "monitor", kind: "monitor" }], "he")?.title,
+    ).toBe("ממתין ל־ניטור");
+  });
+
+  it.each(["ar", "fa"] as const)("translates unnamed background work in %s", (locale) => {
+    const presentation = presentPendingBackgroundWork(
+      [
+        { taskId: "command", kind: "command" },
+        { taskId: "task", kind: "background_task" },
+      ],
+      locale,
+    );
+    expect(presentation?.title).not.toMatch(/[a-z]/i);
+    expect(presentation?.items[0]?.label).not.toBe("command");
+  });
+
   it.each(["Subagent:", "Subagent:   "])(
     "falls back to the subagent noun when %s has no display name",
     (description) => {
@@ -680,6 +721,27 @@ describe("provider-reported model selection", () => {
 });
 
 describe("presentProviderGoal", () => {
+  it("translates goals and usage without translating the objective", () => {
+    const presentation = presentProviderGoal(
+      {
+        objective: "Review README.md",
+        status: "active",
+        tokensUsed: 12_000,
+        tokenBudget: 50_000,
+        checks: 2,
+      },
+      true,
+      "he",
+    );
+    expect(presentation).toMatchObject({
+      title: "פועל להשגת המטרה",
+      objective: "Review README.md",
+      usage: "12k / 50k טוקנים · 2 בדיקות",
+    });
+    expect(
+      presentProviderGoal({ objective: "Review README.md", status: "paused" }, false, "he").title,
+    ).toBe("המטרה הושהתה");
+  });
   it("summarizes Codex accounting and offers resume once the goal stops short", () => {
     expect(
       presentProviderGoal(
