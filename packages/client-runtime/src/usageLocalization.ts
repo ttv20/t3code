@@ -16,13 +16,14 @@ export function formatUiUsageReset(
   window: Pick<ServerProviderUsageWindow, "resetsAt">,
   now: number,
   locale: UiLocale,
+  compact = false,
 ): string | null {
   const resetAt = window.resetsAt ? Date.parse(window.resetsAt) : NaN;
   if (!Number.isFinite(resetAt)) return null;
   const t = createUiTranslator(locale);
   if (resetAt <= now) return t("resets now");
   if (resetAt - now < 60_000) return t("Resets momentarily");
-  return t("resets in {0}", { "0": formatDuration(resetAt - now) });
+  return t(compact ? "in {0}" : "resets in {0}", { "0": formatDuration(resetAt - now) });
 }
 
 export function formatUiResetCredits(

@@ -58,4 +58,18 @@ describe("usage quota translations", () => {
       formatUiResetCredits({ availableCount: 2, nextExpiresAt: future }, now, "en", true),
     ).toBe("2 banked · expires in 4h 42m");
   });
+
+  it.each([
+    ["en", "in 4h 42m"],
+    ["he", "תוך 4h 42m"],
+    ["ar", "خلال 4h 42m"],
+    ["fa", "تا 4h 42m"],
+  ] as const)("uses a short composer countdown in %s", (locale, expected) => {
+    expect(formatUiUsageReset({ resetsAt: future }, now, locale, true)).toBe(expected);
+    expect(formatUiUsageReset({}, now, locale, true)).toBeNull();
+    expect(formatUiUsageReset({ resetsAt: "invalid" }, now, locale, true)).toBeNull();
+    expect(formatUiUsageReset({ resetsAt: new Date(now).toISOString() }, now, locale, true)).toBe(
+      formatUiUsageReset({ resetsAt: new Date(now).toISOString() }, now, locale),
+    );
+  });
 });

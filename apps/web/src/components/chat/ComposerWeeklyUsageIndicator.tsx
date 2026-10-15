@@ -30,10 +30,12 @@ function UsageMeter({
   window,
   driver,
   now,
+  compact = false,
 }: {
   readonly window: ServerProviderUsageWindow;
   readonly driver: ServerProvider["driver"];
   readonly now: number;
+  readonly compact?: boolean;
 }) {
   const { t: uiT, locale } = useUiLanguage();
   const label =
@@ -41,13 +43,29 @@ function UsageMeter({
       ? uiT("5-hour quota")
       : formatUiUsageWindowLabel(window.label, locale);
   const highUsage = window.usedPercent > 80;
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const resetsIn = formatUiUsageReset(window, now, locale, compact);
+  const compactLabel =
+    window.windowDurationMins === 300 ? "5h" : window.windowDurationMins === 10_080 ? "7d" : label;
   return (
-    <span className="flex min-w-0 flex-col gap-1">
-      <span className="flex items-center justify-between gap-2 text-xs">
-        <span className="truncate text-muted-foreground">{label}</span>
+    <span
+      className={
+        compact
+          ? "grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_7.5rem] items-center gap-2 text-2xs"
+          : "flex min-w-0 flex-col gap-1"
+      }
+    >
+      <span className={compact ? "contents" : "flex items-center justify-between gap-2 text-xs"}>
+        <span className="truncate text-muted-foreground" dir={compact ? "auto" : undefined}>
+          {compact ? compactLabel : label}
+        </span>
         <span
-          className={highUsage ? "shrink-0 text-destructive tabular-nums" : "shrink-0 tabular-nums"}
+          className={
+            compact
+              ? "sr-only"
+              : highUsage
+                ? "shrink-0 text-destructive tabular-nums"
+                : "shrink-0 tabular-nums"
+          }
         >
           {uiT("{0}% used", { "0": Math.round(window.usedPercent) })}
         </span>
@@ -58,7 +76,11 @@ function UsageMeter({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={window.usedPercent}
-        className="relative h-1.5 overflow-hidden rounded-full bg-muted"
+        className={
+          compact
+            ? "relative h-1 overflow-hidden rounded-full bg-muted"
+            : "relative h-1.5 overflow-hidden rounded-full bg-muted"
+        }
       >
         <span
           className="absolute inset-y-0 start-0 rounded-full"
@@ -128,18 +150,27 @@ function ComposerUsagePanel({
   };
 
   return (
-    <div data-chat-composer-usage className="px-3 pt-2 pb-1">
+    <div
+      data-chat-composer-usage
+      className="mx-auto w-full max-w-(--chat-content-max-width) px-4 pt-2"
+    >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <button
               type="button"
-              className="grid w-full cursor-pointer grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-x-6 gap-y-2 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className="flex w-full cursor-pointer flex-col gap-1 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             />
           }
         >
           {windows.map((window) => (
-            <UsageMeter key={window.id} window={window} driver={provider.driver} now={now} />
+            <UsageMeter
+              key={window.id}
+              window={window}
+              driver={provider.driver}
+              now={now}
+              compact
+            />
           ))}
         </PopoverTrigger>
         <PopoverPopup side="top" align="end" width="md" padding="compact">

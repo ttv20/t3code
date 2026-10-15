@@ -153,6 +153,7 @@ import {
 import type { ThreadSyncPhase } from "../../threadSync";
 import { ComposerBanner } from "./ComposerBanner";
 import { ComposerSurface } from "./ComposerSurface";
+import { ComposerUsageIndicator } from "./ComposerWeeklyUsageIndicator";
 import {
   ComposerBannerStack,
   type ComposerBannerStackContent,
@@ -305,7 +306,6 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter, ContextWindowMeterPlaceholder } from "./ContextWindowMeter";
-import { ComposerUsageIndicator } from "./ComposerWeeklyUsageIndicator";
 import {
   providerSupportsManualCompaction,
   resolveContextWindowModelDisplayName,
@@ -1642,6 +1642,8 @@ export interface ChatComposerProps {
   /** The thread's linked pull requests, offered in `#` suggestions from any repository. */
   threadPullRequests: ReadonlyArray<ThreadPullRequestLink> | undefined;
   restingControlsHost: HTMLDivElement | null;
+  /** Quota rows live below the outer composer frame, using this composer's selected provider. */
+  usageHost: HTMLDivElement | null;
   restingControlsHaveLeadingContext: boolean;
   onRestingControlsVisibilityChange: (visible: boolean) => void;
   getTimelineScrollableNode: () => HTMLElement | null;
@@ -1791,6 +1793,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     pullRequestRepository,
     threadPullRequests,
     restingControlsHost,
+    usageHost,
     restingControlsHaveLeadingContext,
     onRestingControlsVisibilityChange,
     getTimelineScrollableNode,
@@ -7882,7 +7885,15 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
             ) : null}
           </div>
         </ComposerSurface.Main>
-        <ComposerUsageIndicator environmentId={environmentId} provider={selectedProviderStatus} />
+        {usageHost
+          ? createPortal(
+              <ComposerUsageIndicator
+                environmentId={environmentId}
+                provider={selectedProviderStatus}
+              />,
+              usageHost,
+            )
+          : null}
       </div>
     </form>
   );
