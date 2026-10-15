@@ -4,19 +4,27 @@ export const SELECTION_MULTI_CLICK_INTERVAL_MS = 500;
 
 export function resolveSelectionActionPosition(options: {
   bounds: { left: number; top: number; width: number; height: number };
-  selectionRect: { right: number; bottom: number } | null;
+  selectionRect: { left?: number; right: number; bottom: number } | null;
   pointer: SelectionActionPoint | null;
   viewport: { width: number; height: number };
+  direction?: "ltr" | "rtl";
 }): SelectionActionPoint {
   const { bounds, selectionRect, pointer, viewport } = options;
   const preferred = pointer ?? {
     x: selectionRect?.right ?? bounds.left + bounds.width - 140,
     y: selectionRect ? selectionRect.bottom + 4 : bounds.top + 12,
   };
+  // A release inside a word must not put the action back over the selected text.
+  const x =
+    options.direction === "rtl"
+      ? Math.min(preferred.x, selectionRect?.left ?? preferred.x)
+      : options.direction === "ltr"
+        ? Math.max(preferred.x, selectionRect?.right ?? preferred.x)
+        : preferred.x;
   return {
     x: Math.max(
       8,
-      Math.min(Math.max(bounds.left, preferred.x), bounds.left + bounds.width, viewport.width - 8),
+      Math.min(Math.max(bounds.left, x), bounds.left + bounds.width, viewport.width - 8),
     ),
     y: Math.max(
       8,
@@ -39,8 +47,8 @@ export function resolveSelectionActionPlacement({
 }): SelectionActionPoint {
   const right = point.x + 8;
   const left = point.x - size.width - 8;
-  const preferred = direction === "rtl" ? right : left;
-  const alternate = direction === "rtl" ? left : right;
+  const preferred = direction === "rtl" ? left : right;
+  const alternate = direction === "rtl" ? right : left;
   const fits = preferred >= 8 && preferred + size.width <= viewport.width - 8;
   return {
     x: Math.max(8, Math.min(fits ? preferred : alternate, viewport.width - size.width - 8)),

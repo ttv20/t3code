@@ -109,7 +109,7 @@ export function AssistantCitationChip({
             rects.item(rects.length - 1) ?? activeSourceAnchor.range.getBoundingClientRect();
           const offset = activeSourceAnchor.placement?.offset;
           return new DOMRect(
-            offset ? line.left + offset.x : sourceDirection === "rtl" ? line.right : line.left,
+            offset ? line.left + offset.x : sourceDirection === "rtl" ? line.left : line.right,
             offset ? line.top + offset.y : line.bottom,
             0,
             0,
@@ -197,7 +197,7 @@ export function AssistantCitationChip({
           {commentEditor.open ? (
             <PopoverPopup
               {...composerFloatingLayerProps}
-              side={activeSourceAnchor ? (sourceDirection === "rtl" ? "right" : "left") : "top"}
+              side={activeSourceAnchor ? (sourceDirection === "rtl" ? "left" : "right") : "top"}
               align={activeSourceAnchor ? "start" : "end"}
               sideOffset={8}
               anchor={popupAnchor}

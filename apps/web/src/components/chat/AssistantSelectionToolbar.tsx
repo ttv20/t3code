@@ -93,13 +93,13 @@ export function AssistantSelectionToolbar({
         uiDirection,
       );
       const lastLine = rects.item(rects.length - 1) ?? rect;
-      const point =
-        pointerOnText && pointer
-          ? pointer
-          : {
-              x: direction === "rtl" ? lastLine.left : lastLine.right,
-              y: lastLine.bottom + 4,
-            };
+      const point = resolveSelectionActionPosition({
+        bounds: viewportRect,
+        selectionRect: lastLine,
+        pointer: pointerOnText ? pointer : null,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        direction,
+      });
       setSelection({
         direction,
         sourceAnchor: {
@@ -117,12 +117,7 @@ export function AssistantSelectionToolbar({
           messageId: MessageId.make(messageId),
           ...captured.selector,
         },
-        position: resolveSelectionActionPosition({
-          bounds: viewportRect,
-          selectionRect: rects.item(rects.length - 1) ?? rect,
-          pointer: point,
-          viewport: { width: window.innerWidth, height: window.innerHeight },
-        }),
+        position: point,
       });
     };
     const actions = observeSelectionActions({

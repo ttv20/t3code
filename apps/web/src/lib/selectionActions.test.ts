@@ -394,11 +394,47 @@ describe("interactive selection actions", () => {
 describe("selection action positioning", () => {
   const bounds = { left: 100, top: 50, width: 500, height: 220 };
   const viewport = { width: 1024, height: 768 };
-  const selectionRect = { right: 260, bottom: 140 };
+  const selectionRect = { left: 180, right: 260, bottom: 140 };
 
   it.each([
-    ["rtl", 308],
-    ["ltr", 212],
+    ["rtl", 220, 180],
+    ["rtl", 150, 150],
+    ["ltr", 220, 260],
+    ["ltr", 300, 300],
+  ] as const)(
+    "anchors %s word selections outside the highlight after release at %i",
+    (direction, pointerX, x) => {
+      const point = resolveSelectionActionPosition({
+        bounds,
+        selectionRect,
+        pointer: { x: pointerX, y: 120 },
+        viewport,
+        direction,
+      });
+      expect(point).toEqual({ x, y: 120 });
+      const action = resolveSelectionActionPlacement({
+        point,
+        size: { width: 60, height: 24 },
+        direction,
+        viewport,
+      });
+      if (direction === "rtl") expect(action.x + 60).toBeLessThan(selectionRect.left);
+      else expect(action.x).toBeGreaterThan(selectionRect.right);
+    },
+  );
+
+  it.each([
+    ["rtl", 180],
+    ["ltr", 260],
+  ] as const)("anchors %s keyboard selections outside the highlight", (direction, x) => {
+    expect(
+      resolveSelectionActionPosition({ bounds, selectionRect, pointer: null, viewport, direction }),
+    ).toEqual({ x, y: 144 });
+  });
+
+  it.each([
+    ["rtl", 212],
+    ["ltr", 308],
   ] as const)(
     "opens %s paragraph actions on the reading direction's trailing side",
     (direction, x) => {
@@ -414,8 +450,8 @@ describe("selection action positioning", () => {
   );
 
   it.each([
-    ["rtl", 1000, 912],
-    ["ltr", 12, 20],
+    ["rtl", 12, 20],
+    ["ltr", 1000, 912],
   ] as const)("flips %s actions at the browser edge", (direction, pointerX, x) => {
     expect(
       resolveSelectionActionPlacement({
