@@ -881,6 +881,16 @@ describe("buildThreadFeed", () => {
       createdAt: "2026-06-20T00:00:02.000Z",
       label: "Worked for 2.0s",
     });
+    const hebrewFeed = deriveThreadFeedPresentation(
+      feed,
+      latestRun,
+      new Set(),
+      new Set(),
+      null,
+      false,
+      "he",
+    );
+    expect(hebrewFeed.find((entry) => entry.type === "run-fold")?.label).toBe("עבד במשך שתי שניות");
 
     const expanded = deriveThreadFeedPresentation(feed, latestRun, new Set([runId]));
     expect(expanded.map((entry) => entry.type)).toEqual([

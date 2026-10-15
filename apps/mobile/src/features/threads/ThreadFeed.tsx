@@ -1709,7 +1709,7 @@ function ThreadFeedPlaceholder(props: {
 }
 
 export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const openPullRequest = useOpenPullRequest();
   const navigation = useNavigation();
@@ -2219,11 +2219,13 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
           ),
           props.activeWorkStartedAt,
           props.runlessWorkActive ?? false,
+          locale,
         ),
         props.feed,
         props.queuedMessages,
       ),
     [
+      locale,
       props.queuedMessages,
       expandedTurnIds,
       expandedWorkGroups,

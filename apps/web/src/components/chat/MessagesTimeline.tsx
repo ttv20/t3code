@@ -658,7 +658,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   historyControls,
   loadEarlier = null,
 }: MessagesTimelineProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const listIdentityKey = displayThreadKey ?? routeThreadKey;
   const rememberedPosition = useMemo(
     () => readTimelinePosition(listIdentityKey),
@@ -935,6 +935,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     const previous = rowsProjectionRef.current;
     const projection = deriveMessagesTimelineRowsWithState(
       {
+        locale,
         timelineEntries,
         latestRun,
         runningRunId,
@@ -956,6 +957,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     return projection.rows;
   }, [
     rowsProjectionRef,
+    locale,
     listIdentityKey,
     workspaceRoot,
     timelineEntries,

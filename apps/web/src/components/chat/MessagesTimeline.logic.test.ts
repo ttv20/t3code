@@ -1408,6 +1408,15 @@ describe("deriveMessagesTimelineRows", () => {
     expect(foldRow?.expanded).toBe(false);
     // User message boundary (00:00:00) → terminal message updatedAt (00:00:22).
     expect(foldRow?.label).toBe("Worked for 22s");
+    const hebrewRows = deriveMessagesTimelineRows({
+      locale: "he",
+      timelineEntries,
+      isWorking: false,
+      activeTurnStartedAt: null,
+      turnDiffSummaries: [],
+      supportsConversationRollback: false,
+    });
+    expect(hebrewRows.find((row) => row.kind === "turn-fold")?.label).toBe("עבד במשך 22 שניות");
     expect(collapsedRows.map((row) => row.id)).toEqual([
       "user-entry",
       "turn-fold:turn-1",

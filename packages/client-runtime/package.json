@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./turn-work-label": {
+      "types": "./src/turnWorkLabel.ts",
+      "default": "./src/turnWorkLabel.ts"
+    },
     "./markdown-direction": {
       "types": "./src/markdownDirection.ts",
       "default": "./src/markdownDirection.ts"
