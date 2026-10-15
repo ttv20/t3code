@@ -565,7 +565,7 @@ export function ThreadRelationshipsPanel(props: {
                           : `shrink-0 text-2xs ${failed ? "text-destructive" : "text-muted-foreground"} ${trailingVisibilityClass}`
                       }
                     >
-                      {threadRelationshipStatusLabel(rowStatus)}
+                      {uiT(threadRelationshipStatusLabel(rowStatus))}
                     </span>
                   ) : null}
                 </>
@@ -623,7 +623,7 @@ export function ThreadRelationshipsPanel(props: {
                               size="sm"
                               variant="ghost"
                               part="primary"
-                              aria-label={`${threadTitle} ${threadRelationshipStatusLabel(rowStatus)}`}
+                              aria-label={`${threadTitle} ${uiT(threadRelationshipStatusLabel(rowStatus))}`}
                               disabled={node?.missing === true}
                               onClick={() => openThread(threadId)}
                             />
@@ -669,7 +669,7 @@ export function ThreadRelationshipsPanel(props: {
                         </TooltipPopup>
                       </Tooltip>
                       <span className="shrink-0 border border-transparent ps-1 pe-2.5 text-2xs font-medium text-muted-foreground">
-                        {threadRelationshipStatusLabel(rowStatus)}
+                        {uiT(threadRelationshipStatusLabel(rowStatus))}
                       </span>
                     </div>
                   ) : (

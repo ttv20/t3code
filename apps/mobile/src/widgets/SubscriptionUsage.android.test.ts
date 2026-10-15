@@ -53,6 +53,19 @@ function render(props: SubscriptionUsageSnapshot, colorScheme: "light" | "dark" 
 }
 
 describe("SubscriptionUsage Android layout", () => {
+  it("uses snapshot translations without the app's React context", () => {
+    const tree = render({
+      ...snapshot,
+      messages: {
+        "{0} · {1}% left": "{0} · נותרו {1}%",
+        "As of {0}": "נכון ל־{0}",
+      },
+    });
+    expect(tree).toContain("5 hours · נותרו 60%");
+    expect(tree).toContain("נכון ל־");
+    expect(tree).not.toContain("{1}");
+  });
+
   it("renders each window with its remaining share, bar, and reset", () => {
     const tree = render(snapshot);
     expect(tree).toContain("5 hours · 60% left");

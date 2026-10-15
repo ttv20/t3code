@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import { HStack, ProgressView, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   accessibilityElement,
@@ -26,8 +25,12 @@ function SubscriptionUsage(
   props: SubscriptionUsageProps,
   environment: WidgetEnvironment<UsageConfiguration>,
 ) {
-  const { t: uiT } = useUiLanguage();
-  ("widget");
+  "widget";
+  // Layouts run outside React and the app bundle. Receive only the needed copy.
+  const uiT = (message: string, values?: Readonly<Record<string, string | number>>) =>
+    (props.messages?.[message] ?? message).replace(/\{(\w+)\}/g, (token, key: string) =>
+      values && Object.hasOwn(values, key) ? String(values[key]) : token,
+    );
   // The extension evaluates this function without the app's module scope.
   const family = environment.widgetFamily;
   // Gallery snapshots can render an old timeline entry after it has expired.
@@ -258,7 +261,7 @@ function SubscriptionUsage(
         >
           {props.checkedAt
             ? uiT("As of {0}", {
-                "0": new Date(props.checkedAt).toLocaleString(undefined, {
+                "0": new Date(props.checkedAt).toLocaleString(props.locale, {
                   hour: "numeric",
                   minute: "2-digit",
                   month: "short",

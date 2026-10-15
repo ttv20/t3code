@@ -731,7 +731,7 @@ it("shows the matching child agent details and refreshes them when the agent set
   await act(async () =>
     renderer.root
       .findAllByType("button")
-      .find((button) => button.children.includes("Show "))!
+      .find((button) => button.children.includes("Show"))!
       .props.onClick(),
   );
   expect(text()).toContain("Old agent 7");
@@ -1212,7 +1212,7 @@ it("shows the parent's own visible status as parent and child activity change", 
     { ...child, status: "running" },
   );
   await act(async () => renderer.update(cloneElement(panel)));
-  expect(visibleText()).toContain("Done");
+  expect(visibleText()).toContain("Completed");
   expect(visibleText()).not.toContain("Running");
 });
 

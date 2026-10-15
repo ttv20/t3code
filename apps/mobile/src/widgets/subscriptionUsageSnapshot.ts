@@ -6,6 +6,8 @@ import {
 } from "@t3tools/shared/usageLimits";
 
 export interface SubscriptionUsageSnapshot {
+  messages?: Readonly<Record<string, string>>;
+  locale?: string;
   url?: string;
   checkedAt: number;
   providers: Array<{

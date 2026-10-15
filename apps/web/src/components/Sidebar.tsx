@@ -1359,7 +1359,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
                     }
                   : isUnread
                     ? {
-                        label: uiT("Done"),
+                        label: uiT("Completed"),
                         icon: "done" as const,
                         className: "text-success",
                       }

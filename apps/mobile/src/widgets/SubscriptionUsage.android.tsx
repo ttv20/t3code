@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import {
   Button,
   Column,
@@ -18,8 +17,12 @@ import { createWidget, type WidgetEnvironment } from "expo-widgets";
 import type { SubscriptionUsageSnapshot as SubscriptionUsageProps } from "./subscriptionUsageSnapshot";
 
 export function SubscriptionUsage(props: SubscriptionUsageProps, environment: WidgetEnvironment) {
-  const { t: uiT } = useUiLanguage();
-  ("widget");
+  "widget";
+  // Layouts run outside React and the app bundle. Receive only the needed copy.
+  const uiT = (message: string, values?: Readonly<Record<string, string | number>>) =>
+    (props.messages?.[message] ?? message).replace(/\{(\w+)\}/g, (token, key: string) =>
+      values && Object.hasOwn(values, key) ? String(values[key]) : token,
+    );
   // The widget runtime evaluates this function without the app's module scope.
   // Android has no timeline, so freshness is decided on every render; the
   // expiry alarm and each tap trigger one while the app is closed.
@@ -118,7 +121,7 @@ export function SubscriptionUsage(props: SubscriptionUsageProps, environment: Wi
         >
           {props.checkedAt
             ? uiT("As of {0}", {
-                "0": new Date(props.checkedAt).toLocaleString(undefined, {
+                "0": new Date(props.checkedAt).toLocaleString(props.locale, {
                   hour: "numeric",
                   minute: "2-digit",
                   month: "short",
