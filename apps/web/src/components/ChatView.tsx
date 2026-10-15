@@ -12053,10 +12053,9 @@ export default function ChatView(props: ChatViewProps) {
                         </div>
                       </div>
                     </ComposerSurface.Shell>
-                    <div ref={setComposerUsageHost} />
                     <div
-                      aria-hidden
-                      className="h-[calc(env(safe-area-inset-bottom)+1rem)] sm:h-[calc(env(safe-area-inset-bottom)+1.25rem)]"
+                      ref={setComposerUsageHost}
+                      className="flex h-[calc(env(safe-area-inset-bottom)+1rem)] items-center justify-center pb-safe sm:h-[calc(env(safe-area-inset-bottom)+1.25rem)]"
                     />
                   </div>
                 </div>

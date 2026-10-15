@@ -50,7 +50,7 @@ function UsageMeter({
     <span
       className={
         compact
-          ? "grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_7.5rem] items-center gap-2 text-2xs"
+          ? "grid w-32 min-w-0 grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1 text-3xs leading-3"
           : "flex min-w-0 flex-col gap-1"
       }
     >
@@ -78,7 +78,7 @@ function UsageMeter({
         aria-valuenow={window.usedPercent}
         className={
           compact
-            ? "relative h-1 overflow-hidden rounded-full bg-muted"
+            ? "relative h-0.5 overflow-hidden rounded-full bg-muted"
             : "relative h-1.5 overflow-hidden rounded-full bg-muted"
         }
       >
@@ -91,7 +91,15 @@ function UsageMeter({
         />
       </span>
       {resetsIn ? (
-        <span className="text-2xs text-muted-foreground tabular-nums">{resetsIn}</span>
+        <span
+          className={
+            compact
+              ? "whitespace-nowrap text-muted-foreground tabular-nums"
+              : "text-2xs text-muted-foreground tabular-nums"
+          }
+        >
+          {resetsIn}
+        </span>
       ) : null}
     </span>
   );
@@ -150,16 +158,13 @@ function ComposerUsagePanel({
   };
 
   return (
-    <div
-      data-chat-composer-usage
-      className="mx-auto w-full max-w-(--chat-content-max-width) px-4 pt-2"
-    >
+    <div data-chat-composer-usage className="mx-auto min-w-0 max-w-full px-1">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <button
               type="button"
-              className="flex w-full cursor-pointer flex-col gap-1 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className="flex max-w-full cursor-pointer items-center justify-center gap-3 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             />
           }
         >
