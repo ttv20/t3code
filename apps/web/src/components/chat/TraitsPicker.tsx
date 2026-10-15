@@ -298,7 +298,7 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
   planModeEnabled,
   ...persistence
 }: TraitsMenuContentProps & TraitsPersistence) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const modelSelection =
     instanceId && model ? { instanceId, model, options: modelOptions ?? [] } : null;
   const setProviderModelOptions = useComposerDraftStore((store) => store.setProviderModelOptions);
@@ -401,6 +401,10 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
             ? "ultrathink"
             : (getDescriptorStringValue(descriptor, modelSelection, reportedModelSelection) ?? "");
 
+        const showOriginalLabel =
+          locale !== "en" &&
+          ["reasoningEffort", "reasoning", "effort", "variant", "thinking"].includes(descriptor.id);
+
         return (
           <div key={descriptor.id}>
             {index > 0 ? <MenuDivider /> : null}
@@ -430,7 +434,10 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                     disabled={ultrathinkInBodyText && descriptor.id === primarySelectDescriptor?.id}
                   >
                     <span className="flex w-full min-w-0 flex-col">
-                      <span className="flex w-full min-w-0 items-center justify-between gap-3">
+                      <span
+                        dir={showOriginalLabel ? "rtl" : undefined}
+                        className="flex w-full min-w-0 items-center justify-between gap-3"
+                      >
                         <span className="min-w-0 truncate">
                           {uiT(option.label)}
                           {option.isDefault ? (
@@ -440,6 +447,11 @@ export const TraitsMenuContent = memo(function TraitsMenuContentImpl({
                             </>
                           ) : null}
                         </span>
+                        {showOriginalLabel && uiT(option.label) !== option.label ? (
+                          <span dir="ltr" className="shrink-0 text-xs text-muted-foreground">
+                            {option.label}
+                          </span>
+                        ) : null}
                       </span>
                       {option.description ? (
                         <span className="max-w-56 text-pretty text-muted-foreground/80 text-xs">

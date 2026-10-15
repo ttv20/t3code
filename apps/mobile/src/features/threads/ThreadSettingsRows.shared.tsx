@@ -21,6 +21,7 @@ export type ModelRowProps = {
 
 export type ChoiceRowProps = {
   readonly label: string;
+  readonly showOriginalLabel?: boolean;
   readonly description?: string;
   readonly selected: boolean;
   readonly onPress: () => void;
@@ -148,6 +149,8 @@ export function ModelRowContent(
 /** Single option inside a submenu panel. */
 export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
   const { t: uiT } = useUiLanguage();
+  const translatedLabel = uiT(props.label);
+  const showOriginalLabel = props.showOriginalLabel && translatedLabel !== props.label;
   return (
     <Pressable
       accessibilityLabel={
@@ -164,7 +167,22 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
     >
       {props.leadingSelection}
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text className="text-base font-t3-medium text-foreground">{uiT(props.label)}</Text>
+        <View
+          className="flex-row items-center justify-between gap-3"
+          style={showOriginalLabel ? { direction: "rtl" } : undefined}
+        >
+          <Text className="min-w-0 shrink text-base font-t3-medium text-foreground">
+            {translatedLabel}
+          </Text>
+          {showOriginalLabel ? (
+            <Text
+              className="shrink-0 text-sm text-foreground-muted"
+              style={{ writingDirection: "ltr", textAlign: "left" }}
+            >
+              {props.label}
+            </Text>
+          ) : null}
+        </View>
         {props.description ? (
           <Text className="text-sm leading-5 text-foreground-muted">{uiT(props.description)}</Text>
         ) : null}

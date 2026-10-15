@@ -1247,6 +1247,12 @@ function ThreadSettingsChoiceContent(props: {
             description={row.description}
             isLast={index === submenuContent.rows.length - 1}
             label={row.label}
+            showOriginalLabel={
+              activeDescriptor !== undefined &&
+              ["reasoningEffort", "reasoning", "effort", "variant", "thinking"].includes(
+                activeDescriptor.id,
+              )
+            }
             selected={row.selected}
             onPress={row.onPress}
           />
