@@ -160,6 +160,17 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   );
 }
 
+/* RTLCSS mirrors the controls' CSS positions, while Electron's titlebar-area
+   rectangle stays in physical window coordinates. Map that rectangle to the
+   mirrored start/end insets so native buttons never overlap sidebar chrome. */
+.wco:dir(rtl) {
+  --workspace-controls-left: calc(
+    100vw - env(titlebar-area-width, 100vw) - env(titlebar-area-x, 0px) + 0.75rem
+  );
+  --workspace-controls-right: calc(env(titlebar-area-x, 0px) + 0.75rem);
+  --workspace-native-controls-inset: calc(env(titlebar-area-x, 0px) + 0.75rem);
+}
+
 /* The font tokens are declared outside the inline theme so utilities reference
    the variables and Settings -> Appearance can override them at runtime. The
    default stacks are mirrored in `appearanceFonts.ts`. */
