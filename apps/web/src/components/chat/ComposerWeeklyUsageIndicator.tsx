@@ -1,150 +1,219 @@
-import { formatUiUsageWindowLabel } from "@t3tools/client-runtime/usage-localization";
-import { useUiLanguage, UiText } from "../../i18n";
-import type { EnvironmentId, ServerProvider } from "@t3tools/contracts";
-import { remainingPercent } from "@t3tools/shared/usageLimits";
+import {
+  formatUiResetCredits,
+  formatUiUsageReset,
+  formatUiUsageWindowLabel,
+} from "@t3tools/client-runtime/usage-localization";
+import type {
+  EnvironmentId,
+  ServerProvider,
+  ServerProviderUsageLimits,
+  ServerProviderUsageWindow,
+} from "@t3tools/contracts";
 import { useState } from "react";
 
 import { useNowMinute } from "../../hooks/useNowMinute";
 import { usePrimarySettings } from "../../hooks/useSettings";
+import { useUiLanguage } from "../../i18n";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { formatDayAwareTimestamp, formatUpcomingTimestamp } from "../../timestampFormat";
+import { formatChatTimestampTooltip } from "../../timestampFormat";
 import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { RefreshIcon } from "../ui/refresh-icon";
-
+import { barColor, ResetCreditDialog, useResetCredit } from "../usage/UsageLimits";
 import {
-  formatCompactResetCountdown,
   resolveComposerUsageWindows,
+  type ComposerUsageWindows,
 } from "./composerUsageIndicator.logic";
 
-export function hasComposerUsage(provider: ServerProvider | null): boolean {
-  return resolveComposerUsageWindows(provider) !== null;
+function UsageMeter({
+  window,
+  driver,
+  now,
+}: {
+  readonly window: ServerProviderUsageWindow;
+  readonly driver: ServerProvider["driver"];
+  readonly now: number;
+}) {
+  const { t: uiT, locale } = useUiLanguage();
+  const label =
+    window.kind === "session" && window.windowDurationMins === 300
+      ? uiT("5-hour quota")
+      : formatUiUsageWindowLabel(window.label, locale);
+  const highUsage = window.usedPercent > 80;
+  const resetsIn = formatUiUsageReset(window, now, locale);
+  return (
+    <span className="flex min-w-0 flex-col gap-1">
+      <span className="flex items-center justify-between gap-2 text-xs">
+        <span className="truncate text-muted-foreground">{label}</span>
+        <span
+          className={highUsage ? "shrink-0 text-destructive tabular-nums" : "shrink-0 tabular-nums"}
+        >
+          {uiT("{0}% used", { "0": Math.round(window.usedPercent) })}
+        </span>
+      </span>
+      <span
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={window.usedPercent}
+        className="relative h-1.5 overflow-hidden rounded-full bg-muted"
+      >
+        <span
+          className="absolute inset-y-0 start-0 rounded-full"
+          style={{
+            width: `${window.usedPercent}%`,
+            backgroundColor: highUsage ? "var(--destructive)" : barColor(driver),
+          }}
+        />
+      </span>
+      {resetsIn ? (
+        <span className="text-2xs text-muted-foreground tabular-nums">{resetsIn}</span>
+      ) : null}
+    </span>
+  );
 }
 
-export function ComposerUsageIndicator(props: {
+export function ComposerUsageIndicator({
+  environmentId,
+  provider,
+}: {
   readonly environmentId: EnvironmentId;
   readonly provider: ServerProvider | null;
 }) {
+  const usage = resolveComposerUsageWindows(provider);
+  if (!provider?.usageLimits || !usage) return null;
+  return (
+    <ComposerUsagePanel
+      key={`${environmentId}:${provider.instanceId}`}
+      environmentId={environmentId}
+      provider={provider}
+      limits={provider.usageLimits}
+      usage={usage}
+    />
+  );
+}
+
+function ComposerUsagePanel({
+  environmentId,
+  provider,
+  limits,
+  usage,
+}: {
+  readonly environmentId: EnvironmentId;
+  readonly provider: ServerProvider;
+  readonly limits: ServerProviderUsageLimits;
+  readonly usage: ComposerUsageWindows;
+}) {
   const { t: uiT, locale } = useUiLanguage();
-  const { environmentId, provider } = props;
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
     reportFailure: false,
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const nowMinute = useNowMinute();
-  const now = Date.parse(`${nowMinute}:00.000Z`);
-  const usage = resolveComposerUsageWindows(provider);
-
-  if (!provider || !usage || !provider.usageLimits) return null;
-
-  const sessionRemaining = usage.session ? remainingPercent(usage.session) : null;
-  const weeklyRemaining = usage.weekly ? remainingPercent(usage.weekly) : null;
-  const sessionReset = usage.session
-    ? formatCompactResetCountdown(usage.session.resetsAt, now)
-    : null;
-  const ariaLabel = [
-    usage.session
-      ? `five-hour usage ${sessionRemaining}% remaining${sessionReset ? `, resets in ${sessionReset}` : ""}`
-      : null,
-    usage.weekly ? `weekly usage ${weeklyRemaining}% remaining` : null,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const [open, setOpen] = useState(false);
+  const reset = useResetCredit(environmentId, { instanceId: provider.instanceId });
+  const now = Date.parse(`${useNowMinute()}:00.000Z`);
+  const windows = [usage.session, usage.weekly].filter((window) => window !== null);
+  const credits = limits.resetCredits;
   const refresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
-      await refreshProviders({
-        environmentId,
-        input: { instanceId: provider.instanceId },
-      });
+      await refreshProviders({ environmentId, input: { instanceId: provider.instanceId } });
     } finally {
       setIsRefreshing(false);
     }
   };
 
   return (
-    <Popover>
-      <PopoverTrigger
-        openOnHover
-        delay={150}
-        closeDelay={150}
-        render={
-          <Button
-            size="compact-stacked"
-            variant="ghost-muted"
-            aria-label={`${usage.providerLabel} ${ariaLabel}`}
-          >
-            {usage.session ? (
-              <span className="flex items-center gap-1 tabular-nums">
-                <span>5h</span>
-                <span className="font-semibold text-foreground">{sessionRemaining}%</span>
-                {sessionReset ? <span>· {sessionReset}</span> : null}
+    <div data-chat-composer-usage className="px-3 pt-2 pb-1">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className="grid w-full cursor-pointer grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-x-6 gap-y-2 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            />
+          }
+        >
+          {windows.map((window) => (
+            <UsageMeter key={window.id} window={window} driver={provider.driver} now={now} />
+          ))}
+        </PopoverTrigger>
+        <PopoverPopup side="top" align="end" width="md" padding="compact">
+          <div className="flex flex-col gap-3 text-start">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-xs font-medium">
+                {uiT("{0} usage", { "0": usage.providerLabel })}
               </span>
-            ) : null}
-            {usage.weekly ? (
-              <span className="flex items-center gap-1 tabular-nums">
-                <span>7d</span>
-                <span className="font-semibold text-foreground">{weeklyRemaining}%</span>
-              </span>
-            ) : null}
-          </Button>
-        }
-      />
-      <PopoverPopup
-        tooltipStyle
-        side="top"
-        align="end"
-        className="w-64 max-w-none text-left whitespace-normal"
-      >
-        <div className="flex flex-col gap-2 py-1">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium text-xs text-foreground">
-              <UiText message={"{0} usage"} values={{ "0": usage.providerLabel }} />
-            </span>
-            {provider.auth.email ? (
-              <span className="truncate text-2xs text-muted-foreground">{provider.auth.email}</span>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-1.5 text-2xs">
+              {provider.auth.email ? (
+                <span className="truncate text-2xs text-muted-foreground" dir="auto">
+                  {provider.auth.email}
+                </span>
+              ) : null}
+            </div>
             {usage.details.map((window) => (
-              <div key={window.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3">
-                <span className="truncate text-muted-foreground">
-                  {formatUiUsageWindowLabel(window.label, locale)}
-                </span>
-                <span className="text-end font-medium tabular-nums">
-                  {remainingPercent(window)}%
-                </span>
+              <div key={window.id} className="flex flex-col gap-0.5">
+                <UsageMeter window={window} driver={provider.driver} now={now} />
                 {window.resetsAt ? (
-                  <span className="col-span-2 text-end text-muted-foreground tabular-nums">
+                  <span className="text-2xs text-muted-foreground tabular-nums">
                     {uiT("Quota resets")}{" "}
-                    {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)}
+                    {formatChatTimestampTooltip(window.resetsAt, timestampFormat, locale)}
                   </span>
                 ) : null}
               </div>
             ))}
+            {credits && credits.availableCount > 0 ? (
+              <div className="flex flex-col items-start gap-2">
+                <span className="text-2xs text-muted-foreground tabular-nums">
+                  {formatUiResetCredits(credits, now, locale)}
+                </span>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  disabled={reset.busy || !reset.canManageProviders}
+                  onClick={() => {
+                    setOpen(false);
+                    reset.setConfirming(true);
+                  }}
+                >
+                  {reset.busy ? uiT("Using…") : uiT("Use reset")}
+                </Button>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap justify-between gap-x-3 text-2xs text-muted-foreground">
+              <span>{uiT("Last checked")}</span>
+              <span className="tabular-nums">
+                {formatChatTimestampTooltip(limits.checkedAt, timestampFormat, locale)}
+              </span>
+            </div>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              disabled={isRefreshing}
+              onClick={() => void refresh()}
+            >
+              <RefreshIcon size="sm" refreshing={isRefreshing} />
+              {isRefreshing ? uiT("Refreshing…") : uiT("Refresh now")}
+            </Button>
           </div>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-2xs">
-            <span className="text-muted-foreground">{uiT("Last checked")}</span>
-            <span className="text-end tabular-nums">
-              {formatDayAwareTimestamp(provider.usageLimits.checkedAt, timestampFormat)}
-            </span>
-          </div>
-          <Button
-            type="button"
-            size="xs"
-            variant="outline"
-            className="w-full"
-            disabled={isRefreshing}
-            onClick={() => void refresh()}
-          >
-            <RefreshIcon size="sm" refreshing={isRefreshing} />
-            {isRefreshing ? uiT("Refreshing…") : uiT("Refresh now")}
-          </Button>
-        </div>
-      </PopoverPopup>
-    </Popover>
+        </PopoverPopup>
+      </Popover>
+      <ResetCreditDialog
+        open={reset.confirming}
+        onOpenChange={reset.setConfirming}
+        onConfirm={() => void reset.redeem()}
+        disabled={reset.busy || !reset.canManageProviders}
+      />
+      {reset.status ? (
+        <p role="status" className="mt-2 text-xs">
+          {uiT(reset.status)}
+        </p>
+      ) : null}
+    </div>
   );
 }

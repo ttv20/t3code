@@ -7802,10 +7802,6 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                       </Tooltip>
                     </>
                   ) : null}
-                  <ComposerUsageIndicator
-                    environmentId={environmentId}
-                    provider={selectedProviderStatus}
-                  />
                   <ComposerFooterPrimaryActions
                     compact={isComposerResting || isComposerPrimaryActionsCompact}
                     canOperateThread={canOperateThread}
@@ -7886,6 +7882,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
             ) : null}
           </div>
         </ComposerSurface.Main>
+        <ComposerUsageIndicator environmentId={environmentId} provider={selectedProviderStatus} />
       </div>
     </form>
   );
