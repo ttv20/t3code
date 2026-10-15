@@ -43,6 +43,8 @@ describe("timeline minimap previews", () => {
       ...items[0],
       userText: "Inspect this",
       assistantText: "Done now",
+      userDirection: "ltr",
+      assistantDirection: "ltr",
     });
     expect(source[items[0]!.rowIndex]!.id).toBe(items[0]!.id);
     expect(resolveTimelineMinimapPreview(items[1]!)?.assistantText).toBe("Second answer");
@@ -75,7 +77,46 @@ describe("timeline minimap previews", () => {
     expect(resolveTimelineMinimapPreview(next)).toEqual({
       ...first,
       assistantText: "First second",
+      userDirection: "ltr",
+      assistantDirection: "ltr",
     });
     expect(resolveTimelineMinimapPreview(first)?.assistantText).toBe("First");
+  });
+
+  it("uses each message's language majority even when Hebrew starts with English", () => {
+    const items = deriveTimelineMinimapItems(
+      rows([
+        ["user", "תרשום לי את הכלל המלא שהבנת"],
+        ["assistant", "RTL, כשמילה באנגלית או מספר מופיעים משני צדי מפריד מוסיפים סימן"],
+        ["user", "Explain the next part in English"],
+        ["assistant", "זאת תשובה בעברית עם דוגמה"],
+        ["user", "וזאת עוד בקשה בעברית"],
+        ["assistant", "This answer uses English with one Hebrew word שלום"],
+      ]),
+    );
+    expect(
+      items.map((item) => {
+        const preview = resolveTimelineMinimapPreview(item)!;
+        return [preview.userDirection, preview.assistantDirection];
+      }),
+    ).toEqual([
+      ["rtl", "rtl"],
+      ["ltr", "rtl"],
+      ["rtl", "ltr"],
+    ]);
+  });
+
+  it("ignores code and hidden link destinations when choosing preview direction", () => {
+    const [item] = deriveTimelineMinimapItems(
+      rows([
+        ["user", "בקשה קצרה `a very long English code example`"],
+        [
+          "assistant",
+          "ראיות: [סיום ההתקנה](/home/ttv20/Projects/wine/fixed-install-after-exit.png)",
+        ],
+      ]),
+    );
+    expect(resolveTimelineMinimapPreview(item!)?.userDirection).toBe("rtl");
+    expect(resolveTimelineMinimapPreview(item!)?.assistantDirection).toBe("rtl");
   });
 });

@@ -1,4 +1,8 @@
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "~/lib/markdownDirection";
 
 export interface TimelineMinimapItem {
   readonly id: string;
@@ -53,14 +57,18 @@ function compactMinimapPreview(text: string | null | undefined) {
   return compact.length > 0 ? compact : null;
 }
 
-export function resolveTimelineMinimapPreview(
-  item: TimelineMinimapItem | null,
-): TimelineMinimapItem | null {
+export function resolveTimelineMinimapPreview(item: TimelineMinimapItem | null) {
   return item === null
     ? null
     : {
         ...item,
         userText: compactMinimapPreview(item.userText),
         assistantText: compactMinimapPreview(item.assistantText),
+        userDirection: resolveMarkdownDirection(
+          countMarkdownDirectionCharacters(item.userText ?? ""),
+        ),
+        assistantDirection: resolveMarkdownDirection(
+          countMarkdownDirectionCharacters(item.assistantText ?? ""),
+        ),
       };
 }

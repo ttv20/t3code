@@ -2039,12 +2039,16 @@ function TimelineMinimap({
                   transform: `translateY(${activeTooltipTranslate})`,
                 }}
               >
-                <span className="dropdown-glass block rounded-xl p-3 text-left text-popover-foreground shadow-xl shadow-black/25">
-                  <span className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium leading-5">
+                <span className="dropdown-glass block rounded-xl p-3 text-start text-popover-foreground shadow-xl shadow-black/25">
+                  <span
+                    dir={activeItem.userDirection}
+                    className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium leading-5"
+                  >
                     {activeItem.userText ?? uiT("User message")}
                   </span>
                   {activeItem.assistantText ? (
                     <span
+                      dir={activeItem.assistantDirection}
                       className="mt-1 max-h-[3.75rem] overflow-hidden text-muted-foreground text-sm leading-5"
                       style={{
                         display: "-webkit-box",

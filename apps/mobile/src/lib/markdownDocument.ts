@@ -1,4 +1,5 @@
 import type { Root, RootContent } from "mdast";
+import { markdownWithRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
@@ -143,4 +144,11 @@ export function markdownWithHtml(markdown: string): string {
 
 export function parseMarkdownDocument(markdown: string): Root {
   return parser.parse(markdownWithHtml(markdown));
+}
+
+/** Prepare display text without changing the stored message or its code and destinations. */
+export function markdownForDisplay(markdown: string): string {
+  const source = markdownWithHtml(markdown);
+  if (!/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u.test(source)) return source;
+  return markdownWithRtlSentenceBoundaries(source, parser.parse(source));
 }
