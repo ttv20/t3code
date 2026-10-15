@@ -6,7 +6,7 @@ import {
   resolveMarkdownDirection,
   resolveStreamingMarkdownDirection,
   type MarkdownDirection,
-} from "~/lib/markdownDirection";
+} from "@t3tools/client-runtime/markdown-direction";
 import {
   buildFileLinkParentSuffixByPath,
   fileLinkLabel,

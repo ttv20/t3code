@@ -14,7 +14,7 @@ import ChatMarkdown from "../ChatMarkdown";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
-} from "~/lib/markdownDirection";
+} from "@t3tools/client-runtime/markdown-direction";
 
 interface PendingUserInputPanelProps {
   pendingUserInputs: PendingUserInput[];

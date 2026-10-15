@@ -1,5 +1,9 @@
 import { useUiLanguage } from "../../i18n";
 import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
+import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
 } from "@t3tools/client-runtime/providerSkills";
@@ -154,13 +158,34 @@ const CommandRow = memo(function CommandRow(props: {
 }) {
   const { t: uiT } = useUiLanguage();
   const iconName = itemIcon(props.item);
+  const label =
+    props.isSlashSkill && props.item.type === "skill"
+      ? `${uiT("skill:")}${props.item.skill.name}`
+      : uiT(props.item.label);
+  const description = uiT(props.item.description);
+  const followsContent =
+    props.item.type === "skill" ||
+    props.item.type === "slash-command" ||
+    props.item.type === "provider-slash-command";
+  const itemDirection = followsContent
+    ? resolveMarkdownDirection(countMarkdownDirectionCharacters(`${label} ${description}`))
+    : undefined;
+  const labelDirection = followsContent
+    ? resolveMarkdownDirection(countMarkdownDirectionCharacters(label))
+    : undefined;
+  const descriptionDirection = followsContent
+    ? resolveMarkdownDirection(countMarkdownDirectionCharacters(description), itemDirection)
+    : undefined;
 
   return (
     <Pressable
       accessibilityRole="button"
       onPress={props.onPress}
       className="flex-row items-center gap-2.5 border-border px-3.5 py-2.5 active:opacity-60"
-      style={{ borderBottomWidth: props.isLast ? 0 : StyleSheet.hairlineWidth }}
+      style={{
+        borderBottomWidth: props.isLast ? 0 : StyleSheet.hairlineWidth,
+        direction: itemDirection,
+      }}
     >
       {props.item.type === "path" ? (
         <PierreEntryIcon path={props.item.path} kind={props.item.kind} size={16} />
@@ -172,19 +197,41 @@ const CommandRow = memo(function CommandRow(props: {
           type="monochrome"
         />
       ) : null}
-      <Text className="shrink-0 text-base font-t3-medium text-foreground" numberOfLines={1}>
+      <Text
+        className="shrink-0 text-base font-t3-medium text-foreground"
+        numberOfLines={1}
+        style={
+          labelDirection
+            ? {
+                writingDirection: labelDirection,
+                textAlign: labelDirection === "rtl" ? "right" : "left",
+              }
+            : undefined
+        }
+      >
         {props.isSlashSkill && props.item.type === "skill" ? (
           <>
             <Text className="text-foreground-muted">{uiT("skill:")}</Text>
             {props.item.skill.name}
           </>
         ) : (
-          uiT(props.item.label)
+          label
         )}
       </Text>
       {props.item.description ? (
-        <Text className="min-w-0 flex-1 text-xs text-foreground-muted" numberOfLines={1}>
-          {uiT(props.item.description)}
+        <Text
+          className="min-w-0 flex-1 text-xs text-foreground-muted"
+          numberOfLines={1}
+          style={
+            descriptionDirection
+              ? {
+                  writingDirection: descriptionDirection,
+                  textAlign: descriptionDirection === "rtl" ? "right" : "left",
+                }
+              : undefined
+          }
+        >
+          {description}
         </Text>
       ) : null}
     </Pressable>

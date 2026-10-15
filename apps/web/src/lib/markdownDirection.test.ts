@@ -3,7 +3,7 @@ import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
   resolveStreamingMarkdownDirection,
-} from "./markdownDirection";
+} from "@t3tools/client-runtime/markdown-direction";
 
 describe("message direction", () => {
   it("keeps technical Hebrew questions and answer choices RTL even when they start with Latin text", () => {

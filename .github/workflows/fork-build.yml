@@ -50,6 +50,45 @@ jobs:
       - name: Stamp release version
         run: node scripts/update-release-package-versions.ts "${{ steps.release.outputs.version }}"
 
+      - name: Write changes since the previous published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const { GITHUB_REPOSITORY: repo, GITHUB_SHA: sha, RELEASE_VERSION: version, RUNNER_TEMP: temp } = process.env;
+          const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8' }).trim();
+          const previous = JSON.parse(gh('release', 'view', '--repo', repo, '--json', 'tagName')).tagName;
+          const commits = gh('api', '--paginate', `repos/${repo}/compare/${previous}...${sha}?per_page=100`, '--jq', '.commits[] | {sha, message: .commit.message} | @json').split('\n').filter(Boolean).map(line => JSON.parse(line));
+          const changes = commits.map(commit => {
+            const [title, ...body] = commit.message.trim().split('\n');
+            const detail = body.join('\n').trim();
+            return `- ${title} ([${commit.sha.slice(0, 7)}](https://github.com/${repo}/commit/${commit.sha}))${detail ? '\n\n  ' + detail.replaceAll('\n', '\n  ') : ''}`;
+          });
+          const notes = [
+            `# T3 Code RTL ${version}`,
+            '## Changes',
+            changes.join('\n\n') || `Rebuilt commit ${sha}; no source changes since ${previous}.`,
+            `[Full comparison](https://github.com/${repo}/compare/${previous}...${sha})`,
+            '## Downloads',
+            'Choose the installer or archive for your platform. npm packages are GitHub release assets: use npm install --global <matching-tarball-url>. Linux also supports Bun. Desktop and Android assets are attached as their builds finish; only attached files are available.',
+            'Windows EXEs are unsigned unless Azure signing credentials are configured. macOS builds are unsigned and not notarized. Android APKs use the fork signing key. Set T3CODE_TELEMETRY_ENABLED=false at runtime to disable configured analytics.',
+          ].join('\n\n') + '\n';
+          writeFileSync(join(temp, 'fork-release-notes.md'), notes);
+          NODE
+
+      - name: Save release notes for desktop publication
+        uses: actions/upload-artifact@v7
+        with:
+          name: fork-release-notes
+          path: ${{ runner.temp }}/fork-release-notes.md
+          if-no-files-found: error
+          retention-days: 1
+
       - uses: ./.github/actions/setup-apt-mirrors
 
       - name: Install desktop build libraries
@@ -149,12 +188,11 @@ jobs:
         run: |
           tag="${{ steps.release.outputs.tag }}"
           version="${{ steps.release.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Linux x64 self-contained CLI archive and npm/Bun-installable package with the web UI. Desktop installers are added after their builds finish. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" release-cli/* --clobber
-            gh release edit "$tag" --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
+            gh release edit "$tag" --target "$GITHUB_SHA" --title "T3 Code RTL $version" --notes-file "$RUNNER_TEMP/fork-release-notes.md" --prerelease
           else
-            gh release create "$tag" release-cli/* --target "$GITHUB_SHA" --title "Patched T3 $version" --notes "$notes" --prerelease
+            gh release create "$tag" release-cli/* --target "$GITHUB_SHA" --title "T3 Code RTL $version" --notes-file "$RUNNER_TEMP/fork-release-notes.md" --prerelease
           fi
 
   desktop_linux_x64:
@@ -284,6 +322,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Download release notes
+        uses: actions/download-artifact@v8
+        with:
+          name: fork-release-notes
+          path: release-metadata
+
       - name: Download Linux desktop client
         uses: actions/download-artifact@v8
         with:
@@ -323,6 +367,5 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Includes self-contained Linux x64 and Windows x64 CLI archives, platform-specific npm .tgz packages with the web UI, Linux x64 desktop packages, and a Windows x64 desktop installer. Windows signing is enabled when the repository's Azure signing credentials are configured. Unsigned macOS installers (Apple Silicon and Intel) and a signed Android arm64 APK are added separately when their builds succeed. Install the matching .tgz from this release with npm install --global <asset-url>; Linux also supports bun add --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
-          gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease=false --latest --repo "$GITHUB_REPOSITORY"
+          gh release edit "$tag" --title "T3 Code RTL $version" --notes-file release-metadata/fork-release-notes.md --prerelease=false --latest --repo "$GITHUB_REPOSITORY"

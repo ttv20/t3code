@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./markdown-direction": {
+      "types": "./src/markdownDirection.ts",
+      "default": "./src/markdownDirection.ts"
+    },
     "./markdown-rtl": {
       "types": "./src/markdownRtl.ts",
       "default": "./src/markdownRtl.ts"

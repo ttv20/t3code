@@ -122,7 +122,7 @@ describe("ComposerCommandMenu", () => {
     expect(markup).toContain('<span class="text-secondary-label">/skill:</span>Ask Matt');
     expect(markup).toContain('data-slot="badge"');
     expect(markup).toContain("lucide-folder");
-    expect(markup).toContain(">Repo</span>");
+    expect(markup).toContain(">Repo Skill</span>");
     expect(markup).toContain("Find the right skill or workflow");
   });
 });

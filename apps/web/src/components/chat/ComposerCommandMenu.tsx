@@ -1,4 +1,8 @@
 import { useUiLanguage } from "../../i18n";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import {
   resolveProviderSkillSourceKind,
@@ -175,10 +179,22 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
     props.triggerKind === "slash-command" && props.item.type === "skill" ? props.item.skill : null;
   const pullRequestPresentation =
     props.item.type === "pull-request" ? resolvePullRequestState(props.item.pullRequest) : null;
+  const label = isSlashSkill
+    ? `/skill:${formatProviderSkillDisplayName(isSlashSkill)}`
+    : uiT(props.item.label);
+  const description = uiT(props.item.description);
+  const followsContent =
+    props.item.type === "skill" ||
+    props.item.type === "slash-command" ||
+    props.item.type === "provider-slash-command";
+  const itemDirection = followsContent
+    ? resolveMarkdownDirection(countMarkdownDirectionCharacters(`${label} ${description}`))
+    : undefined;
 
   return (
     <CommandItem
       render={<div id={props.optionId} />}
+      dir={itemDirection}
       aria-selected={props.isActive}
       value={props.item.id}
       data-composer-item-id={props.item.id}
@@ -211,25 +227,37 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
         />
       ) : null}
       <span className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="min-w-0 max-w-[45%] shrink-0 truncate font-sans text-xs font-medium">
+        <span
+          dir={
+            followsContent
+              ? resolveMarkdownDirection(countMarkdownDirectionCharacters(label))
+              : undefined
+          }
+          className="min-w-0 max-w-[45%] shrink-0 truncate font-sans text-xs font-medium"
+        >
           {isSlashSkill ? (
             <>
               <span className="text-secondary-label">/skill:</span>
               {formatProviderSkillDisplayName(isSlashSkill)}
             </>
           ) : (
-            uiT(props.item.label)
+            label
           )}
         </span>
-        <span className="min-w-0 flex-1 truncate text-left text-secondary-label text-xs">
-          {uiT(props.item.description)}
+        <span
+          dir={
+            followsContent
+              ? resolveMarkdownDirection(
+                  countMarkdownDirectionCharacters(description),
+                  itemDirection,
+                )
+              : undefined
+          }
+          className="min-w-0 flex-1 truncate text-start text-secondary-label text-xs"
+        >
+          {description}
         </span>
-        {skillSourceKind ? (
-          <SkillSourceBadge
-            kind={skillSourceKind}
-            showSkillSuffix={props.triggerKind === "skill"}
-          />
-        ) : null}
+        {skillSourceKind ? <SkillSourceBadge kind={skillSourceKind} /> : null}
       </span>
     </CommandItem>
   );
@@ -257,22 +285,21 @@ const SKILL_SOURCE_ICON_BY_KIND: Record<ProviderSkillSourceKind, LucideIcon> = {
 };
 
 const SKILL_SOURCE_LABEL_BY_KIND: Record<ProviderSkillSourceKind, string> = {
-  app: "App",
-  repo: "Repo",
-  project: "Project",
-  personal: "Personal",
-  system: "System",
-  other: "Provider",
+  app: "App Skill",
+  repo: "Repo Skill",
+  project: "Project Skill",
+  personal: "Personal Skill",
+  system: "System Skill",
+  other: "Provider Skill",
 };
 
-function SkillSourceBadge(props: { kind: ProviderSkillSourceKind; showSkillSuffix: boolean }) {
-  const { t: uiT } = useUiLanguage();
+function SkillSourceBadge(props: { kind: ProviderSkillSourceKind }) {
+  const { t: uiT, direction } = useUiLanguage();
   const Icon = SKILL_SOURCE_ICON_BY_KIND[props.kind];
   return (
-    <Badge className="ms-auto" variant="secondary">
+    <Badge dir={direction} className="ms-auto" variant="secondary">
       <Icon aria-hidden="true" className="text-current" />
-      {SKILL_SOURCE_LABEL_BY_KIND[props.kind]}
-      {props.showSkillSuffix ? uiT(" Skill") : null}
+      {uiT(SKILL_SOURCE_LABEL_BY_KIND[props.kind])}
     </Badge>
   );
 }

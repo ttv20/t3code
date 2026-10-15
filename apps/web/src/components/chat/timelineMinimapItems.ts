@@ -2,7 +2,7 @@ import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
-} from "~/lib/markdownDirection";
+} from "@t3tools/client-runtime/markdown-direction";
 
 export interface TimelineMinimapItem {
   readonly id: string;
