@@ -7566,7 +7566,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 className={cn("relative", isComposerResting && "flex min-w-0 items-center gap-1")}
                 style={
                   isComposerResting && restingActionsWidth !== null
-                    ? { paddingRight: `calc(${restingActionsWidth}px + 1rem)` }
+                    ? { paddingInlineEnd: `calc(${restingActionsWidth}px + 1rem)` }
                     : undefined
                 }
               >
@@ -7738,7 +7738,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   isComposerFooterCompact ? "gap-1.5" : "gap-2 sm:gap-0",
                   showMobilePendingAnswerActions && "hidden sm:flex",
                   isComposerResting &&
-                    "absolute right-px z-10 h-12 w-auto gap-0 py-0 sm:gap-0 sm:py-0",
+                    "absolute end-px z-10 h-12 w-auto gap-0 py-0 sm:gap-0 sm:py-0",
                   isComposerResting &&
                     (showInlineRestingControls ? "bottom-[calc(2rem+1px)]" : "bottom-px"),
                 )}
