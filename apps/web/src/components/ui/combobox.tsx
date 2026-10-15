@@ -109,14 +109,14 @@ function ComboboxInput({
 function ComboboxSearchInput(props: React.ComponentProps<typeof ComboboxInput>) {
   return (
     <div className="min-w-0 shrink-0 px-3 pt-2.5">
-      <div className="relative -translate-y-px border-b border-border/70 pb-1.5 transition-colors focus-within:border-ring">
+      <div className="relative flex -translate-y-px items-start gap-1 border-b border-border/70 pb-1.5 transition-colors focus-within:border-ring">
         <SearchIcon
           aria-hidden="true"
-          className="pointer-events-none absolute top-1.5 left-0 size-4 shrink-0 text-muted-foreground/55"
+          className="pointer-events-none mt-1.5 size-4 shrink-0 text-muted-foreground/55"
         />
         <ComboboxInput
           {...props}
-          className="[&_input]:h-6.5 [&_input]:ps-5 [&_input]:font-sans [&_input]:leading-6.5"
+          className="[&_input]:h-6.5 [&_input]:px-0 [&_input]:font-sans [&_input]:leading-6.5"
           showTrigger={false}
           size="sm"
           unstyled

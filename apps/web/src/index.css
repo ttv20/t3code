@@ -662,6 +662,11 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
 }
 
 @layer base {
+  /* Empty auto-direction fields otherwise default to LTR, ignoring the UI language. */
+  :is(input, textarea)[dir="auto"]:placeholder-shown {
+    direction: inherit;
+  }
+
   /* Mixed-language copy keeps its own reading order in either UI direction. */
   p {
     unicode-bidi: plaintext;
@@ -1944,13 +1949,19 @@ code {
   text-decoration: none;
 }
 
-/* File links are Chips and own their color and focus ring. */
-.chat-markdown a:not(.chat-markdown-file-link) {
+/* File chips and quoted replies own their color and focus ring. */
+.chat-markdown a:not(.chat-markdown-file-link, .assistant-citation-excerpt) {
   color: var(--info-foreground);
 }
 
-.chat-markdown a:not(.chat-markdown-file-link, [data-markdown-image-link]):hover,
-.chat-markdown a:not(.chat-markdown-file-link, [data-markdown-image-link]):focus-visible {
+.chat-markdown
+  a:not(.chat-markdown-file-link, .assistant-citation-excerpt, [data-markdown-image-link]):hover,
+.chat-markdown
+  a:not(
+    .chat-markdown-file-link,
+    .assistant-citation-excerpt,
+    [data-markdown-image-link]
+  ):focus-visible {
   background-image: radial-gradient(circle, currentcolor 0.75px, transparent 1px);
   background-position: left bottom;
   background-repeat: repeat-x;
@@ -1968,6 +1979,104 @@ code {
 .composer-tiptap blockquote {
   margin: 0.65rem 0;
   color: var(--foreground);
+}
+
+/* Reply context stays readable in sent messages and compact in the draft. */
+.assistant-citation-reply {
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-block: 0.3rem;
+  vertical-align: top;
+}
+
+.assistant-citation-card {
+  position: relative;
+  display: inline-flex;
+  width: 11rem;
+  max-width: 100%;
+  min-height: 5rem;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--contrast-border);
+  border-radius: 0.6rem;
+  background: var(--background);
+  vertical-align: top;
+  font-size: 0.8em;
+  line-height: 1.4;
+}
+
+:is(.chat-markdown, .composer-tiptap, [data-citation-comment-editor]) .assistant-citation-excerpt {
+  display: block;
+  min-width: 0;
+  border-inline-start: 2px solid var(--contrast-border);
+  padding-inline-start: 0.6rem;
+  color: var(--contrast-muted-foreground);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: start;
+  text-decoration: none;
+  font-weight: inherit;
+  line-height: 1.45;
+  unicode-bidi: isolate;
+}
+
+.assistant-citation-card .assistant-citation-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-inline-end: 1rem;
+}
+
+[data-citation-comment-editor] .assistant-citation-excerpt {
+  max-height: 6rem;
+  margin-block-end: 0.4rem;
+  overflow-y: auto;
+}
+
+.assistant-citation-excerpt:is(a):hover {
+  color: var(--foreground);
+}
+
+.assistant-citation-excerpt:is(a):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.assistant-citation-response {
+  display: block;
+  color: var(--foreground);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+.assistant-citation-card .assistant-citation-response {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.assistant-citation-caption {
+  align-self: start;
+  margin-block-start: auto;
+  border-radius: 0.2rem;
+  padding-inline: 0.25rem;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+}
+
+.assistant-citation-edit {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
 }
 
 /* Preflight already draws the 1px rule, as it does in chat; only the block

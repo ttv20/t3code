@@ -179,12 +179,12 @@ export function renderAssistantCitationsAsText(prompt: string): string {
   let cursor = 0;
   for (const match of matches) {
     const quote = escapeMarkdownText(match.citation.text);
-    text += `${prompt.slice(cursor, match.start)}\n\n> Assistant quote:\n${quote
+    text += `${prompt.slice(cursor, match.start)}\n\n${quote
       .split("\n")
       .map((line) => `> ${line}`)
       .join("\n")}\n\n`;
     if (match.citation.comment !== undefined) {
-      text += `Comment: ${escapeMarkdownText(match.citation.comment)}\n\n`;
+      text += `${escapeMarkdownText(match.citation.comment)}\n\n`;
     }
     cursor = match.end;
   }

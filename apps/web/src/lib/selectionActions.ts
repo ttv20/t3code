@@ -25,6 +25,29 @@ export function resolveSelectionActionPosition(options: {
   };
 }
 
+/** Places a measured action beside the release point, flipping only at the viewport edge. */
+export function resolveSelectionActionPlacement({
+  point,
+  size,
+  direction,
+  viewport,
+}: {
+  point: SelectionActionPoint;
+  size: { width: number; height: number };
+  direction: "ltr" | "rtl";
+  viewport: { width: number; height: number };
+}): SelectionActionPoint {
+  const right = point.x + 8;
+  const left = point.x - size.width - 8;
+  const preferred = direction === "rtl" ? right : left;
+  const alternate = direction === "rtl" ? left : right;
+  const fits = preferred >= 8 && preferred + size.width <= viewport.width - 8;
+  return {
+    x: Math.max(8, Math.min(fits ? preferred : alternate, viewport.width - size.width - 8)),
+    y: Math.max(8, Math.min(point.y + 4, viewport.height - size.height - 8)),
+  };
+}
+
 /**
  * Opens selection actions after release, leaving multi-clicks time to finish.
  * DOM selections call selectionChanged; canvas selections can use their own

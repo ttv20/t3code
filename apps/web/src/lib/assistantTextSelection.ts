@@ -13,6 +13,11 @@ export type AssistantCitationSourceAnchor = {
   source: HTMLElement;
   range: Range;
   viewport: HTMLElement;
+  /** Release point relative to the last selected line, so the popup follows scrolling. */
+  placement?: {
+    direction: "ltr" | "rtl";
+    offset: { x: number; y: number };
+  };
 };
 
 export function findAssistantCitationSourceAnchor(

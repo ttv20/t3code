@@ -176,7 +176,7 @@ describe("assistant citation references", () => {
       `${largeCitation.text}\nComment: ${largeCitation.comment}`,
     );
     expect(renderAssistantCitationsAsText(marker)).toBe(
-      `\n\n> Assistant quote:\n> ${largeCitation.text}\n\nComment: ${largeCitation.comment}\n\n`,
+      `\n\n> ${largeCitation.text}\n\n${largeCitation.comment}\n\n`,
     );
   });
 
@@ -314,7 +314,8 @@ describe("assistant citation references", () => {
   it("shows the full quote in clients without source navigation and leaves regular messages alone", () => {
     expect(renderAssistantCitationsAsText("ordinary text")).toBe("ordinary text");
     const rendered = renderAssistantCitationsAsText(serializeAssistantCitation(citation));
-    expect(rendered).toContain("> Assistant quote:");
+    expect(rendered).toContain("> ");
+    expect(rendered).not.toContain("Assistant quote:");
     expect(rendered).toContain("日本語 🚀");
     expect(rendered).not.toContain("t3-citation:");
     expect(rendered).not.toContain("</assistant_citations>");
@@ -332,11 +333,10 @@ describe("assistant citation references", () => {
       [
         "",
         "",
-        "> Assistant quote:",
         "> Assistant answer\\.",
         "> Second line\\.",
         "",
-        "Comment: Please change \\[x\\]\\(url\\) &amp; &lt;tag&gt;\\.",
+        "Please change \\[x\\]\\(url\\) &amp; &lt;tag&gt;\\.",
         "&gt; \\*Not assistant speech\\*",
         "",
         "\\# Request",

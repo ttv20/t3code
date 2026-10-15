@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { observeSelectionActions, resolveSelectionActionPosition } from "./selectionActions";
+import {
+  observeSelectionActions,
+  resolveSelectionActionPosition,
+  resolveSelectionActionPlacement,
+} from "./selectionActions";
 
 function event(type: string, values: Record<string, unknown> = {}) {
   return Object.assign(new Event(type, { cancelable: true }), values);
@@ -391,6 +395,37 @@ describe("selection action positioning", () => {
   const bounds = { left: 100, top: 50, width: 500, height: 220 };
   const viewport = { width: 1024, height: 768 };
   const selectionRect = { right: 260, bottom: 140 };
+
+  it.each([
+    ["rtl", 308],
+    ["ltr", 212],
+  ] as const)(
+    "opens %s paragraph actions on the reading direction's trailing side",
+    (direction, x) => {
+      expect(
+        resolveSelectionActionPlacement({
+          point: { x: 300, y: 200 },
+          viewport,
+          size: { width: 80, height: 28 },
+          direction,
+        }),
+      ).toEqual({ x, y: 204 });
+    },
+  );
+
+  it.each([
+    ["rtl", 1000, 912],
+    ["ltr", 12, 20],
+  ] as const)("flips %s actions at the browser edge", (direction, pointerX, x) => {
+    expect(
+      resolveSelectionActionPlacement({
+        point: { x: pointerX, y: 755 },
+        viewport,
+        size: { width: 80, height: 28 },
+        direction,
+      }),
+    ).toEqual({ x, y: 732 });
+  });
 
   it("prefers the cursor release over the selection's bounding box", () => {
     expect(

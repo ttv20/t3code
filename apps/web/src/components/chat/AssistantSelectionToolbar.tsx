@@ -1,5 +1,9 @@
 import { useUiLanguage } from "../../i18n";
 import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
+import {
   ASSISTANT_CITATION_MAX_TEXT_LENGTH,
   MessageId,
   type AssistantCitation,
@@ -15,6 +19,7 @@ import {
 import {
   observeSelectionActions,
   resolveSelectionActionPosition,
+  resolveSelectionActionPlacement,
   type SelectionActionPoint,
 } from "~/lib/selectionActions";
 import { Button } from "../ui/button";
@@ -28,11 +33,12 @@ export function AssistantSelectionToolbar({
   threadRef: ScopedThreadRef;
   onCite: (citation: AssistantCitation, sourceAnchor: AssistantCitationSourceAnchor) => boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction: uiDirection } = useUiLanguage();
   const [selection, setSelection] = useState<{
     citation: AssistantCitation;
     position: SelectionActionPoint;
     sourceAnchor: AssistantCitationSourceAnchor;
+    direction: "ltr" | "rtl";
   } | null>(null);
   const toolbarRef = useRef<HTMLButtonElement>(null);
   const actionsRef = useRef<ReturnType<typeof observeSelectionActions> | null>(null);
@@ -41,8 +47,14 @@ export function AssistantSelectionToolbar({
     const toolbar = toolbarRef.current;
     if (!toolbar || !selection) return;
     const rect = toolbar.getBoundingClientRect();
-    toolbar.style.left = `${Math.max(8, Math.min(selection.position.x, window.innerWidth - rect.width - 8))}px`;
-    toolbar.style.top = `${Math.max(8, Math.min(selection.position.y, window.innerHeight - rect.height - 8))}px`;
+    const position = resolveSelectionActionPlacement({
+      point: selection.position,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      size: rect,
+      direction: selection.direction,
+    });
+    toolbar.style.left = `${position.x}px`;
+    toolbar.style.top = `${position.y}px`;
   }, [selection]);
 
   useEffect(() => {
@@ -72,8 +84,33 @@ export function AssistantSelectionToolbar({
             pointer.y >= line.top - 8 &&
             pointer.y <= line.bottom + 8,
         );
+      const focusNode = nativeSelection?.focusNode;
+      const focusElement =
+        focusNode?.nodeType === 1 ? (focusNode as Element) : focusNode?.parentElement;
+      const paragraph = focusElement?.closest("p, li, blockquote, pre, h1, h2, h3, h4, h5, h6");
+      const direction = resolveMarkdownDirection(
+        countMarkdownDirectionCharacters(paragraph?.textContent ?? captured.selector.text),
+        uiDirection,
+      );
+      const lastLine = rects.item(rects.length - 1) ?? rect;
+      const point =
+        pointerOnText && pointer
+          ? pointer
+          : {
+              x: direction === "rtl" ? lastLine.left : lastLine.right,
+              y: lastLine.bottom + 4,
+            };
       setSelection({
-        sourceAnchor: { source: captured.source, range: captured.range, viewport },
+        direction,
+        sourceAnchor: {
+          source: captured.source,
+          range: captured.range,
+          viewport,
+          placement: {
+            direction,
+            offset: { x: point.x - lastLine.left, y: point.y - lastLine.top },
+          },
+        },
         citation: {
           version: 1,
           ...threadRef,
@@ -83,7 +120,7 @@ export function AssistantSelectionToolbar({
         position: resolveSelectionActionPosition({
           bounds: viewportRect,
           selectionRect: rects.item(rects.length - 1) ?? rect,
-          pointer: pointerOnText ? pointer : null,
+          pointer: point,
           viewport: { width: window.innerWidth, height: window.innerHeight },
         }),
       });
@@ -123,7 +160,7 @@ export function AssistantSelectionToolbar({
       actions.dispose();
       actionsRef.current = null;
     };
-  }, [threadRef, viewport]);
+  }, [threadRef, viewport, uiDirection]);
 
   if (!selection) return null;
   const tooLong = selection.citation.text.length > ASSISTANT_CITATION_MAX_TEXT_LENGTH;

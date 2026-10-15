@@ -1,4 +1,8 @@
 import { useUiLanguage } from "../../i18n";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
 import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH, type AssistantCitation } from "@t3tools/contracts";
 import { useState, type Ref } from "react";
 
@@ -19,7 +23,7 @@ export function AssistantCitationCommentEditor({
   onCancel: () => void;
   onDraftChange?: (comment: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
   const [comment, setComment] = useState(citation.comment ?? "");
   const commentTooLong = comment.length > ASSISTANT_CITATION_MAX_COMMENT_LENGTH;
   const submit = () => {
@@ -46,10 +50,19 @@ export function AssistantCitationCommentEditor({
         }
       }}
     >
+      <div
+        className="assistant-citation-excerpt"
+        dir={resolveMarkdownDirection(countMarkdownDirectionCharacters(citation.text), direction)}
+      >
+        {citation.text}
+      </div>
       <textarea
+        dir={resolveMarkdownDirection(countMarkdownDirectionCharacters(comment), direction)}
         ref={inputRef}
         aria-label={uiT("Comment on selected text")}
-        aria-description="Enter to save the citation comment; Command/Ctrl+Enter to save and send; Shift+Enter for a new line."
+        aria-description={uiT(
+          "Enter to save the citation comment; Command/Ctrl+Enter to save and send; Shift+Enter for a new line.",
+        )}
         aria-invalid={commentTooLong || undefined}
         placeholder={uiT("Add an optional comment...")}
         rows={2}
