@@ -9,7 +9,7 @@ import type {
   ServerProviderUsageLimits,
   ServerProviderUsageWindow,
 } from "@t3tools/contracts";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { useNowMinute } from "../../hooks/useNowMinute";
 import { usePrimarySettings } from "../../hooks/useSettings";
@@ -50,7 +50,7 @@ function UsageMeter({
     <span
       className={
         compact
-          ? "grid w-32 min-w-0 grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1 text-3xs leading-3"
+          ? "grid w-36 min-w-0 grid-cols-[1rem_minmax(0,1fr)_auto_auto] items-center gap-1 text-3xs leading-3"
           : "flex min-w-0 flex-col gap-1"
       }
     >
@@ -61,13 +61,16 @@ function UsageMeter({
         <span
           className={
             compact
-              ? "sr-only"
+              ? `col-start-3 row-start-1 tabular-nums ${highUsage ? "text-destructive" : "text-muted-foreground"}`
               : highUsage
                 ? "shrink-0 text-destructive tabular-nums"
                 : "shrink-0 tabular-nums"
           }
+          dir={compact ? "ltr" : undefined}
         >
-          {uiT("{0}% used", { "0": Math.round(window.usedPercent) })}
+          {compact
+            ? `${Math.round(window.usedPercent)}%`
+            : uiT("{0}% used", { "0": Math.round(window.usedPercent) })}
         </span>
       </span>
       <span
@@ -164,18 +167,15 @@ function ComposerUsagePanel({
           render={
             <button
               type="button"
-              className="flex max-w-full cursor-pointer items-center justify-center gap-3 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              className="flex max-w-full cursor-pointer items-center justify-center gap-2 rounded-sm text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             />
           }
         >
-          {windows.map((window) => (
-            <UsageMeter
-              key={window.id}
-              window={window}
-              driver={provider.driver}
-              now={now}
-              compact
-            />
+          {windows.map((window, index) => (
+            <Fragment key={window.id}>
+              {index > 0 ? <span aria-hidden className="h-2.5 w-px shrink-0 bg-border" /> : null}
+              <UsageMeter window={window} driver={provider.driver} now={now} compact />
+            </Fragment>
           ))}
         </PopoverTrigger>
         <PopoverPopup side="top" align="end" width="md" padding="compact">
