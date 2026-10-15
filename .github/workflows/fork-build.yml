@@ -185,6 +185,7 @@ jobs:
     needs: [build_linux_x64]
     if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' }}
     uses: ./.github/workflows/release-desktop.yml
+    secrets: inherit
     with:
       version: ${{ needs.build_linux_x64.outputs.version }}
       ref: ${{ needs.build_linux_x64.outputs.ref }}
@@ -201,7 +202,8 @@ jobs:
       arch: x64
       rust_target: x86_64-pc-windows-msvc
       resource_key: win32-x64
-      cli_archive: false
+      cli_archive: true
+      standalone_npm: true
 
   desktop_macos:
     name: Desktop macOS ${{ matrix.arch }}
@@ -302,6 +304,18 @@ jobs:
             mv "$manifest" "${manifest%-win-x64.yml}.yml"
           done
 
+      - name: Download Windows CLI archive
+        uses: actions/download-artifact@v8
+        with:
+          name: cli-win-x64
+          path: release-desktop
+
+      - name: Download Windows npm package
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-win-x64
+          path: release-desktop
+
       - name: Add desktop clients to personal release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -309,6 +323,6 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Unsigned macOS installers (Apple Silicon and Intel) and a signed Android arm64 APK are added separately when their builds succeed. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
+          notes="Personal patched nightly based on upstream T3 Code. Includes self-contained Linux x64 and Windows x64 CLI archives, platform-specific npm .tgz packages with the web UI, Linux x64 desktop packages, and a Windows x64 desktop installer. Windows signing is enabled when the repository's Azure signing credentials are configured. Unsigned macOS installers (Apple Silicon and Intel) and a signed Android arm64 APK are added separately when their builds succeed. Install the matching .tgz from this release with npm install --global <asset-url>; Linux also supports bun add --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease=false --latest --repo "$GITHUB_REPOSITORY"

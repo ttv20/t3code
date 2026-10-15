@@ -555,6 +555,10 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
     background-clip: text;
     animation: live-tool-shine 2.2s steps(30) infinite;
     animation-play-state: var(--visible-animation-state, paused);
+
+    &:dir(rtl) {
+      animation-direction: reverse;
+    }
   }
 }
 
@@ -584,12 +588,13 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
 
 @utility live-activity-focus {
   --live-activity-focus-width: 4.5rem;
+  --live-activity-mask-direction: to right;
 
   right: auto;
   left: calc(-1 * var(--live-activity-focus-width));
   width: calc(100% + var(--live-activity-focus-width) + var(--live-activity-focus-width));
   -webkit-mask-image: linear-gradient(
-    to right,
+    var(--live-activity-mask-direction),
     transparent 0,
     rgb(0 0 0 / 12%) 0.675rem,
     rgb(0 0 0 / 55%) 1.575rem,
@@ -601,7 +606,7 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   );
   -webkit-mask-repeat: no-repeat;
   mask-image: linear-gradient(
-    to right,
+    var(--live-activity-mask-direction),
     transparent 0,
     rgb(0 0 0 / 12%) 0.675rem,
     rgb(0 0 0 / 55%) 1.575rem,
@@ -616,6 +621,12 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   animation-play-state: var(--visible-animation-state, paused);
   will-change: var(--visible-animation-will-change, auto);
 
+  /* RTLCSS mirrors the origin; masks and transforms need the matching sweep. */
+  &:dir(rtl) {
+    --live-activity-mask-direction: to left;
+    animation-name: live-activity-focus-counter;
+  }
+
   @media (prefers-reduced-motion: reduce), (forced-colors: active) {
     animation: none;
     opacity: 0;
@@ -628,6 +639,10 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   animation: live-activity-focus-counter 2.2s steps(30) infinite;
   animation-play-state: var(--visible-animation-state, paused);
   will-change: var(--visible-animation-will-change, auto);
+
+  &:dir(rtl) {
+    animation-name: live-activity-focus;
+  }
 
   @media (prefers-reduced-motion: reduce), (forced-colors: active) {
     animation: none;

@@ -9,6 +9,8 @@ name: Release desktop build
 on:
   workflow_call:
     secrets:
+      T3CODE_POSTHOG_KEY:
+        required: false
       CSC_LINK:
         required: false
       CSC_KEY_PASSWORD:
@@ -61,6 +63,11 @@ on:
       # platform/arch, on this runner, and smoke-tests it here. Every archive
       # is built on hardware of its own architecture.
       cli_archive:
+        required: false
+        default: false
+        type: boolean
+      standalone_npm:
+        description: Also package and smoke-test a standalone Windows npm tarball.
         required: false
         default: false
         type: boolean
@@ -588,6 +595,49 @@ jobs:
         with:
           name: cli-${{ inputs.platform }}-${{ inputs.arch }}
           path: release-cli/*
+          if-no-files-found: error
+
+      - name: Build standalone Windows npm package
+        if: inputs.cli_archive && inputs.standalone_npm && inputs.platform == 'win'
+        shell: bash
+        run: >-
+          node scripts/build-npm-platform-packages.ts
+          --archives-dir release-cli
+          --version "${{ inputs.version }}"
+          --output-dir release-npm
+          --allow-missing --standalone
+
+      - name: Smoke-test Windows npm package offline
+        if: inputs.cli_archive && inputs.standalone_npm && inputs.platform == 'win'
+        shell: pwsh
+        env:
+          T3CODE_TELEMETRY_ENABLED: "false"
+          EXPECT_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $prefix = Join-Path $env:RUNNER_TEMP 't3-npm-smoke'
+          $cache = Join-Path $env:RUNNER_TEMP 't3-npm-smoke-cache'
+          $tarball = Get-Item 'release-npm/t3-*-win32-x64.tgz'
+          npm.cmd install --global --prefix $prefix --cache $cache --offline --ignore-scripts --no-audit --no-fund $tarball.FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Offline npm installation failed' }
+          $version = & (Join-Path $prefix 't3.cmd') --version
+          if ($LASTEXITCODE -ne 0 -or $version.Trim() -ne "t3 v$($env:EXPECT_VERSION)") {
+            throw "Installed Windows CLI reported unexpected version: $version"
+          }
+          if (!(Test-Path (Join-Path $prefix 'node_modules/t3/runtime/client/index.html'))) {
+            throw 'Installed package is missing the web UI'
+          }
+          $hash = (Get-FileHash $tarball.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($tarball.Name)" | Set-Content 'release-npm/SHA256SUMS-windows-npm' -Encoding utf8NoBOM
+
+      - name: Upload Windows npm package
+        if: inputs.cli_archive && inputs.standalone_npm && inputs.platform == 'win'
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-win-${{ inputs.arch }}
+          path: |
+            release-npm/*.tgz
+            release-npm/SHA256SUMS-windows-npm
           if-no-files-found: error
 
       - name: Collect release assets

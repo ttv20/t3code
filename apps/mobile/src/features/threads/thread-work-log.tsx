@@ -99,6 +99,7 @@ import Animated, {
   LinearTransition,
   ReduceMotion,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -264,7 +265,7 @@ export function ShimmeringWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
   const [availableWidth, setAvailableWidth] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
   const [appIsActive, setAppIsActive] = useState(AppState.currentState === "active");
@@ -318,11 +319,16 @@ export function ShimmeringWorkContent(props: {
     return () => cancelAnimation(progress);
   }, [appIsActive, contentWidth, progress, reducedMotion, screenIsFocused]);
 
+  const sweepOffset = useDerivedValue(() =>
+    direction === "rtl"
+      ? availableWidth - progress.value * (contentWidth + SHIMMER_WIDTH)
+      : -SHIMMER_WIDTH + progress.value * (contentWidth + SHIMMER_WIDTH),
+  );
   const sweepStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -SHIMMER_WIDTH + progress.value * (contentWidth + SHIMMER_WIDTH) }],
+    transform: [{ translateX: sweepOffset.value }],
   }));
   const counterSweepStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: SHIMMER_WIDTH - progress.value * (contentWidth + SHIMMER_WIDTH) }],
+    transform: [{ translateX: -sweepOffset.value }],
   }));
 
   return (
@@ -350,7 +356,7 @@ export function ShimmeringWorkContent(props: {
           accessible={false}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={[{ width: SHIMMER_WIDTH }, sweepStyle]}
+          style={[{ width: SHIMMER_WIDTH, direction: "ltr" }, sweepStyle]}
         >
           <MaskedView
             style={StyleSheet.absoluteFill}
@@ -371,7 +377,12 @@ export function ShimmeringWorkContent(props: {
               </Svg>
             }
           >
-            <Animated.View style={[{ width: availableWidth }, counterSweepStyle]}>
+            <Animated.View
+              style={[
+                { width: availableWidth, direction, alignSelf: "flex-start" },
+                counterSweepStyle,
+              ]}
+            >
               <ShimmerWorkContent
                 textClassName={props.textClassName}
                 compact={props.compact}
