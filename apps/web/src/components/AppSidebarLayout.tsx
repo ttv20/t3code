@@ -233,7 +233,7 @@ function ProjectProjectionRetention() {
 }
 
 export function AppSidebarLayout({ children }: { children: ReactNode }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
   const navigate = useNavigate();
   const legacySidebarEnabled = useLegacySidebarEnabled();
   const { active: panelAnimationsActive, durationMs: panelAnimationDurationMs } =
@@ -271,7 +271,11 @@ export function AppSidebarLayout({ children }: { children: ReactNode }) {
   });
   const windowControlsInsetStyle = (
     isMacosDesktop && !isWindowFullscreen
-      ? { "--workspace-controls-left": MACOS_TRAFFIC_LIGHTS_LEFT_INSET }
+      ? {
+          // macOS traffic lights stay on the physical left when the UI mirrors.
+          [direction === "rtl" ? "--workspace-controls-right" : "--workspace-controls-left"]:
+            MACOS_TRAFFIC_LIGHTS_LEFT_INSET,
+        }
       : {}
   ) as CSSProperties;
   const sidebarProviderStyle = {

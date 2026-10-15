@@ -30,7 +30,9 @@ The workflow uses standard Ubuntu and Windows runners with dependency caching.
 It builds the web client, server single-executable, resource monitor, and Linux
 x64 self-contained archive, then packages Linux x64 and Windows x64 desktop
 clients. The release becomes the public latest release after both desktop
-builds are uploaded.
+builds are uploaded. macOS Apple Silicon/Intel installers and the Android ARM64
+APK build independently and attach their files to the same release. Their
+failures do not block the Windows/Linux release.
 No provider credentials or T3 database are required. The fork's inherited
 upstream workflows are disabled in GitHub.
 
@@ -57,3 +59,22 @@ At runtime, `T3CODE_POSTHOG_KEY` and `T3CODE_POSTHOG_HOST` can override the buil
 destination. `T3CODE_TELEMETRY_ENABLED=false` disables collection, including in
 builds that enable it by default. Source builds and releases without a configured
 project token send no product usage events.
+
+## Additional platforms
+
+macOS builds use GitHub-hosted Apple Silicon and Intel runners and the shared
+desktop packaging workflow. The fork does not provide Apple signing or
+notarization credentials; macOS may require **System Settings → Privacy &
+Security → Open Anyway** for the downloaded app.
+
+Android builds a standalone release APK with package ID `com.ttv20.t3code.rtl`,
+so it can coexist with the upstream app. It includes its JavaScript bundle and
+does not need Metro or an Expo account. Upstream Expo OTA updates are disabled;
+install a newer APK from the releases page to update it.
+
+The APK signing key is stored in the repository secrets
+`T3CODE_ANDROID_KEYSTORE_BASE64` (PKCS12, alias `T3CodeRTL`) and
+`T3CODE_ANDROID_KEYSTORE_PASSWORD` (store and key password). Retain this key for
+future builds so installed apps accept updates. The workflow uses its increasing
+run number as Android's version code and verifies the package ID, release mode,
+bundled JavaScript, and APK signature before publishing.

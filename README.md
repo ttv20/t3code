@@ -35,7 +35,9 @@ Screenshots from two 640 × 720 windows. The sample conversation includes Hebrew
 [GitHub Releases](https://github.com/ttv20/t3code/releases) includes:
 
 - **Windows x64:** desktop installer (`.exe`).
+- **macOS:** disk images (`.dmg`) for Apple Silicon and Intel, uploaded when their builds finish. These builds are unsigned and not notarized.
 - **Linux x64:** desktop packages (`.AppImage` and `.deb`) and a standalone CLI archive.
+- **Android ARM64:** a signed, standalone `.apk`, uploaded when its build finishes. It installs alongside upstream T3 Code and connects to your T3 server.
 - **npm / Bun:** a self-contained `.tgz` package with the server and web UI. Download the package from the release and pass its local path to `npm install --global` or `bun add --global`.
 
 Use the release notes to check which changes are included in each build.

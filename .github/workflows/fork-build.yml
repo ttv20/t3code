@@ -203,6 +203,78 @@ jobs:
       resource_key: win32-x64
       cli_archive: false
 
+  desktop_macos:
+    name: Desktop macOS ${{ matrix.arch }}
+    needs: [build_linux_x64]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            rust_target: aarch64-apple-darwin
+            resource_key: darwin-arm64
+          - arch: x64
+            runner: macos-15-intel
+            rust_target: x86_64-apple-darwin
+            resource_key: darwin-x64
+    uses: ./.github/workflows/release-desktop.yml
+    with:
+      version: ${{ needs.build_linux_x64.outputs.version }}
+      ref: ${{ needs.build_linux_x64.outputs.ref }}
+      release_channel: nightly
+      relay_client_tracing: false
+      clerk_publishable_key: ""
+      clerk_jwt_template: ""
+      clerk_cli_oauth_client_id: ""
+      relay_url: ""
+      label: macOS ${{ matrix.arch }}
+      runner: ${{ matrix.runner }}
+      platform: mac
+      target: dmg
+      arch: ${{ matrix.arch }}
+      rust_target: ${{ matrix.rust_target }}
+      resource_key: ${{ matrix.resource_key }}
+      cli_archive: false
+
+  android:
+    name: Android APK
+    needs: [build_linux_x64]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' }}
+    uses: ./.github/workflows/fork-android.yml
+    secrets: inherit
+    with:
+      ref: ${{ needs.build_linux_x64.outputs.ref }}
+      version: ${{ needs.build_linux_x64.outputs.version }}
+      version_code: "${{ github.run_number }}"
+      tag: ${{ needs.build_linux_x64.outputs.tag }}
+
+  publish_macos:
+    name: Publish macOS clients
+    needs: [build_linux_x64, desktop_macos]
+    if: ${{ !cancelled() && needs.build_linux_x64.result == 'success' && needs.desktop_macos.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download macOS clients
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-mac-*
+          path: release-macos
+          merge-multiple: true
+
+      - name: Add macOS clients to personal release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.build_linux_x64.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(release-macos/*.dmg release-macos/*.zip release-macos/*-mac*.yml release-macos/*.blockmap)
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+
   publish_desktop:
     name: Publish desktop clients
     needs: [build_linux_x64, desktop_linux_x64, desktop_windows_x64]
@@ -210,12 +282,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Download desktop clients
+      - name: Download Linux desktop client
         uses: actions/download-artifact@v8
         with:
-          pattern: desktop-*
+          name: desktop-linux-x64
           path: release-desktop
-          merge-multiple: true
+
+      - name: Download Windows desktop client
+        uses: actions/download-artifact@v8
+        with:
+          name: desktop-win-x64
+          path: release-desktop
 
       - name: Restore Windows updater manifest name
         shell: bash
@@ -232,6 +309,6 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
-          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
+          notes="Personal patched nightly based on upstream T3 Code. Includes a Linux x64 self-contained CLI, a directly installable npm/Bun .tgz with the web UI, Linux x64 desktop packages, and an unsigned Windows x64 desktop installer. Unsigned macOS installers (Apple Silicon and Intel) and a signed Android arm64 APK are added separately when their builds succeed. Install the .tgz from this release with bun add --global <asset-url> or npm install --global <asset-url>. No upstream T3 package is fetched. Product analytics follow the build configuration; set T3CODE_TELEMETRY_ENABLED=false at runtime to disable collection."
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$tag" --title "Patched T3 $version" --notes "$notes" --prerelease=false --latest --repo "$GITHUB_REPOSITORY"

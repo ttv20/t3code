@@ -1,0 +1,128 @@
+name: Build fork Android APK
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      version_code:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+    secrets:
+      T3CODE_ANDROID_KEYSTORE_BASE64:
+        required: true
+      T3CODE_ANDROID_KEYSTORE_PASSWORD:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Android arm64 APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      APP_VARIANT: production
+      T3CODE_ANDROID_FORK_BUILD: "1"
+      T3CODE_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      MOBILE_VERSION_POLICY: appVersion
+      EXPO_NO_DOTENV: "1"
+      EXPO_NO_TELEMETRY: "1"
+      CI: "1"
+      NODE_OPTIONS: --max-old-space-size=3072
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: |
+            args:
+              - --filter=@t3tools/mobile...
+              - --filter=@t3tools/scripts...
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Set Android release version
+        shell: bash
+        run: echo "T3CODE_MOBILE_VERSION=${RELEASE_VERSION%%-*}" >> "$GITHUB_ENV"
+
+      - name: Generate native Android project
+        working-directory: apps/mobile
+        run: vp exec expo prebuild --clean --platform android --no-install
+
+      - name: Build standalone release APK
+        working-directory: apps/mobile/android
+        run: >-
+          ./gradlew :app:assembleRelease
+          -PreactNativeArchitectures=arm64-v8a
+          --no-daemon --max-workers=2
+          "-Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g"
+
+      - name: Sign and verify APK
+        env:
+          T3CODE_ANDROID_KEYSTORE_BASE64: ${{ secrets.T3CODE_ANDROID_KEYSTORE_BASE64 }}
+          T3CODE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.T3CODE_ANDROID_KEYSTORE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$T3CODE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/t3-rtl.p12"
+          tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          mkdir -p release-android
+          apk="release-android/T3-Code-RTL-${RELEASE_VERSION}-android-arm64-v8a.apk"
+          "$tools/zipalign" -P 16 -f 4 apps/mobile/android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/aligned.apk"
+          "$tools/apksigner" sign --ks "$RUNNER_TEMP/t3-rtl.p12" --ks-type PKCS12 \
+            --ks-key-alias T3CodeRTL --ks-pass env:T3CODE_ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:T3CODE_ANDROID_KEYSTORE_PASSWORD --out "$apk" "$RUNNER_TEMP/aligned.apk"
+          "$tools/apksigner" verify --verbose --print-certs "$apk"
+          "$tools/aapt" dump badging "$apk" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -q "^package: name='com.ttv20.t3code.rtl' versionCode='${T3CODE_ANDROID_VERSION_CODE}' versionName='${T3CODE_MOBILE_VERSION}'" "$RUNNER_TEMP/apk-badging.txt"
+          if grep -q '^application-debuggable' "$RUNNER_TEMP/apk-badging.txt"; then
+            echo 'Release APK must not be debuggable.' >&2
+            exit 1
+          fi
+          unzip -l "$apk" | grep 'assets/index.android.bundle'
+          cd release-android
+          sha256sum *.apk > SHA256SUMS-android
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-arm64-apk
+          retention-days: 3
+          path: release-android/*
+          if-no-files-found: error
+
+      - name: Add Android APK to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" release-android/*.apk release-android/SHA256SUMS-android --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/t3-rtl.p12" "$RUNNER_TEMP/aligned.apk"
