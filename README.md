@@ -2,13 +2,20 @@
 
 A community fork of [T3 Code](https://github.com/pingdotgg/t3code) with Hebrew, Arabic, and Persian interface translations and right-to-left layouts. The original T3 Code README is preserved below.
 
+## RTL that follows your text
+
+Hebrew, Arabic, and Persian conversations keep their right-to-left reading direction even when a message starts with an English word. English messages, code, diffs, terminal output, and file paths retain their left-to-right order.
+
+Chat direction follows the dominant language in the message rather than its first word. Lists, quote bars, and punctuation follow that direction, while inline code stays isolated. Quoted replies show the excerpt above the reply, and quote controls open after the selected text in its reading direction: on the left for RTL and on the right for LTR.
+
 ## What's changed
 
-- **Interface languages:** English, Hebrew, Arabic, Persian, or the device's system language. Language and direction preferences are saved per device or browser.
 - **RTL layouts:** Automatic direction based on the selected language, with independent LTR and RTL overrides. Menus, settings, navigation, and controls follow the chosen direction.
+- **Interface languages:** English, Hebrew, Arabic, Persian, or the device's system language. Language and direction preferences are saved per device or browser.
 - **Readable code and terminals:** Code, diffs, terminal output, paths, and filenames keep their left-to-right reading order inside an RTL interface.
 - **Translations across the clients:** Shared translation catalogs for web, desktop, and mobile, including settings, command labels, shortcuts, model options, dialogs, and notifications. User messages and project names retain their original content.
 - **Display fixes:** Mixed-language text, inline file links, font previews, diff previews, and terminal previews work within RTL layouts. Dates and relative times use the interface language.
+- **Small usage meters:** The web and desktop composer shows the selected account's reported `5h` and `7d` limits in the existing space below the input, with progress bars, used percentages, and reset countdowns. Usage above 80% turns red. Click for all reported limits and to use a reset credit when available, after confirmation.
 - **Updates from upstream:** Web RTL styles are generated at build time with RTLCSS. The original visual identity is retained with a small RTL label.
 
 New installations follow the browser or device language by default. Choose a language on the welcome screen or under **Settings → Appearance → Interface language**. **Interface direction** can follow the language automatically or be set separately.
@@ -32,17 +39,39 @@ Screenshots from two 640 × 720 windows. The sample conversation includes Hebrew
 
 ## Downloads
 
-[GitHub Releases](https://github.com/ttv20/t3code/releases) includes:
+For most users, **install the desktop app** from [GitHub Releases](https://github.com/ttv20/t3code/releases/latest): use the **`.exe` installer on Windows**, **`.dmg` on macOS**, or **`.AppImage` on Linux**.
+
+The releases also include:
 
 - **Windows x64:** desktop installer (`.exe`), standalone CLI (`.zip`), and an npm-installable package.
 - **macOS:** disk images (`.dmg`) for Apple Silicon and Intel, uploaded when their builds finish. These builds are unsigned and not notarized.
 - **Linux x64:** desktop packages (`.AppImage` and `.deb`) and a standalone CLI archive.
 - **Android ARM64:** a signed, standalone `.apk`, uploaded when its build finishes. It installs alongside upstream T3 Code and connects to your T3 server.
-- **npm / Bun:** self-contained `.tgz` packages with the server and web UI. Choose `win32-x64` for Windows or `linux-x64` for Linux, then pass its local path to `npm install --global`. Linux also supports `bun add --global`.
+- **npm / Bun:** self-contained `.tgz` packages with the server and web UI for Windows x64 and Linux x64. Linux also supports `bun add --global`.
 
 Use the release notes to check which changes are included in each build.
 
-## Run this fork
+### Install with npm
+
+For the CLI and local web app, install this fork directly from its latest release.
+
+Windows x64, in PowerShell:
+
+```powershell
+npm install --global https://github.com/ttv20/t3code/releases/latest/download/t3-win32-x64.tgz
+t3
+```
+
+Linux x64:
+
+```bash
+npm install --global https://github.com/ttv20/t3code/releases/latest/download/t3-linux-x64.tgz
+t3
+```
+
+These commands use this fork's release assets. The upstream `npm install --global t3` command installs the original project.
+
+## Run from source
 
 From a clone of this repository, with [Vite+](https://vite.plus) installed:
 
@@ -51,9 +80,12 @@ vp i
 vp run dev
 ```
 
-The installation links and published packages in the original README below install upstream T3 Code. Use this checkout to run the RTL changes.
+The installation links and package names in the original README below refer to upstream T3 Code. Use the fork downloads, npm commands, or source checkout above for the RTL build.
 
 ---
+
+> [!NOTE]
+> Original project README
 
 # T3 Code
 

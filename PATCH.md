@@ -29,9 +29,9 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 
 ## Provider usage limits
 
-- The composer shows the selected Codex account's weekly percentage beside its primary actions. For Claude, it shows the five-hour and seven-day percentages in two compact rows, plus a minute-updated reset countdown for the five-hour window.
+- The web and desktop composer shows the selected account's reported five-hour and seven-day limits as two miniature meters in its original bottom spacing. Each meter includes a progress bar, used percentage, and minute-updated reset countdown. Usage above 80% is red.
 - The indicator reads upstream's provider usage-limit snapshot and adds no separate polling or persistence. Upstream refreshes provider status on its configured interval and from live turn events.
-- Its hover card shows the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Manual refresh uses upstream's targeted provider refresh.
+- Clicking the meters opens the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Available reset credits can be redeemed through the existing permission checks and confirmation dialog. Manual refresh uses upstream's targeted provider refresh.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
 
 ## Web chat bidirectional text

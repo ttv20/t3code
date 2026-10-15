@@ -174,6 +174,13 @@ jobs:
           "$BUN_INSTALL_BIN/t3" --version | grep -Fx "t3 v${{ steps.release.outputs.version }}"
           test -f "$BUN_INSTALL_GLOBAL_DIR/node_modules/t3/runtime/client/index.html"
 
+      - name: Add a stable npm download name
+        shell: bash
+        run: |
+          cp release-cli/t3-*-linux-x64.tgz release-cli/t3-linux-x64.tgz
+          cd release-cli
+          sha256sum t3-*.tar.gz t3-*.tgz > SHA256SUMS
+
       - name: Upload Linux CLI archive for Windows WSL support
         uses: actions/upload-artifact@v7
         with:

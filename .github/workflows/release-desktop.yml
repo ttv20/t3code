@@ -627,8 +627,11 @@ jobs:
           if (!(Test-Path (Join-Path $prefix 'node_modules/t3/runtime/client/index.html'))) {
             throw 'Installed package is missing the web UI'
           }
-          $hash = (Get-FileHash $tarball.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $($tarball.Name)" | Set-Content 'release-npm/SHA256SUMS-windows-npm' -Encoding utf8NoBOM
+          Copy-Item $tarball.FullName 'release-npm/t3-win32-x64.tgz'
+          Get-ChildItem 'release-npm/*.tgz' | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content 'release-npm/SHA256SUMS-windows-npm' -Encoding utf8NoBOM
 
       - name: Upload Windows npm package
         if: inputs.cli_archive && inputs.standalone_npm && inputs.platform == 'win'
