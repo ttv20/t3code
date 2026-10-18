@@ -2,17 +2,12 @@ import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, UsageLimitsReport } from "@t3tools/contracts";
 import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 
-import { SymbolView } from "../../components/AppSymbol";
-import { AppText as Text } from "../../components/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { AccountLimits, ResetCredits } from "../usage/UsageLimitsSection";
 
 const DRIVER_LABEL: Partial<Record<string, string>> = { codex: "Codex", claudeAgent: "Claude" };
 
-/**
- * The /usage-limits result, docked above the composer. It is the Usage → Limits
- * card one size down, so the two read as the same thing. The surface is opaque
- * because nothing blurs the feed behind it.
- */
 export function ComposerUsageLimits({
   report,
   environmentId,
@@ -55,8 +50,6 @@ export function ComposerUsageLimits({
               first={index === 0}
               driver={account.driver}
               label={driverLabel}
-              // Siblings need telling apart: a custom instance without a name shows its
-              // id, and a pooled account shows its hub and account id.
               instanceLabel={
                 account.instanceId
                   ? account.displayName?.trim() ||
@@ -84,7 +77,6 @@ export function ComposerUsageLimits({
           );
         })}
         {report.accounts.length === 0 ? (
-          // Nothing but notices, so the close control needs a row of its own.
           <View className="flex-row items-center gap-3 px-4 pt-3">
             <Text className="min-w-0 flex-1 text-base text-foreground">{uiT("Usage limits")}</Text>
             {close}

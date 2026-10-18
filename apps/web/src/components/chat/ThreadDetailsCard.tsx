@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useLayoutEffect, useState, type ReactNode, type RefObject } from "react";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { ScrollArea } from "../ui/scroll-area";
@@ -14,7 +13,6 @@ import {
 } from "./threadDetailsCardLayout";
 import { observeResize } from "../../lib/observeResize";
 
-/** One card owns its placement and folds content only when that content cannot fit. */
 export function ThreadDetailsCard({
   threadRef,
   anchor,
@@ -28,7 +26,6 @@ export function ThreadDetailsCard({
   onPresentationChange: (presentation: ThreadPanelPresentation) => void;
   children: (density: "full" | "compact" | "essential") => ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   const canvas = useChatCanvas();
   const preferredPlacement = canvas
     ? resolveThreadDetailsCardLayout({
@@ -91,13 +88,9 @@ export function ThreadDetailsCard({
   useLayoutEffect(() => {
     const element = contentElement;
     if (!element || density === "essential") return;
-    // Measure the single content tree before the scroll viewport clips it. Retain each
-    // observed height so increasing available space restores the detail it can hold.
     const measure = () => {
       const frame = element.closest<HTMLElement>("[data-thread-details-card]");
       const next = element.offsetHeight + (frame ? frame.offsetHeight - frame.clientHeight : 0);
-      // Lineage scrolls as it expands. Counting it toward density would hide
-      // the section and workspace controls when the user asks to see more rows.
       const lineage = element.querySelector<HTMLElement>("[data-thread-relationships-panel]");
       const fittingHeight = next - (lineage?.offsetHeight ?? 0);
       setMeasurements((current) => {
@@ -142,8 +135,6 @@ export function ThreadDetailsCard({
       handle={handle}
       open={mode === "popover" && popoverOpen}
       onOpenChange={(open, details) => {
-        // The find bar sits beside the card, so clicking or focusing it does not
-        // dismiss the card. Escape still does.
         const target =
           details.reason === "focus-out"
             ? (details.event as FocusEvent).relatedTarget
@@ -160,7 +151,7 @@ export function ThreadDetailsCard({
       {placement ? (
         inlineOpen ? (
           <aside
-            aria-label={uiT("Thread details")}
+            aria-label="Thread details"
             // Slides down to make room for the find bar, but returns in the same frame
             // the bar closes: a floating preview below moves up at once and would
             // otherwise overlap the card mid-slide.
@@ -170,9 +161,7 @@ export function ThreadDetailsCard({
                 "transition-[top] duration-150 ease-out motion-reduce:transition-none",
             )}
             style={{
-              // Anchored to the right edge like the find bar, so both follow a resizing
-              // canvas in the same frame instead of waiting for its next measurement.
-              insetInlineEnd: placement.right,
+              right: placement.right,
               top: placement.y,
               width: placement.width,
               maxHeight: height,

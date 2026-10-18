@@ -1,7 +1,7 @@
 import { useUiLanguage } from "../../i18n";
 import { Platform } from "react-native";
 
-import { AndroidHeaderIconButton } from "../../components/AndroidScreenHeader";
+import { AndroidHeaderIconButton } from "../../components/ui/AndroidScreenHeader";
 
 import { useAdaptiveWorkspaceLayout } from "./AdaptiveWorkspaceLayout";
 

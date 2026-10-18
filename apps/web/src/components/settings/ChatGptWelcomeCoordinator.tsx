@@ -27,23 +27,25 @@ function readAcknowledgedProfiles(): string[] {
   }
 }
 
-/** Read the verified environment snapshot, never the browser callback acknowledgment. */
 export function ChatGptWelcomeCoordinator() {
   const { t: uiT } = useUiLanguage();
   const presentations = useAtomValue(environmentPresentations.presentationsAtom);
+  const providersByEnvironment = useAtomValue(environmentPresentations.providersByEnvironmentAtom);
   const [acknowledged, setAcknowledged] = useState(readAcknowledgedProfiles);
   const profiles = [...presentations].flatMap(([environmentId, presentation]) =>
     presentation.connection.phase !== "connected"
       ? []
-      : (presentation.serverConfig?.providers ?? []).filter(usesChatGptSharing).map((provider) => ({
-          key: JSON.stringify([
-            environmentId,
-            provider.instanceId,
-            provider.auth.profileId ?? provider.auth.email ?? "default",
-          ]),
-          environmentLabel: presentation.entry.target.label,
-          providerName: provider.displayName ?? "Codex",
-        })),
+      : (providersByEnvironment.get(environmentId) ?? [])
+          .filter(usesChatGptSharing)
+          .map((provider) => ({
+            key: JSON.stringify([
+              environmentId,
+              provider.instanceId,
+              provider.auth.profileId ?? provider.auth.email ?? "default",
+            ]),
+            environmentLabel: presentation.entry.target.label,
+            providerName: provider.displayName ?? "Codex",
+          })),
   );
   const next = profiles.find((profile) => !acknowledged.includes(profile.key));
   const dismiss = () => {
@@ -52,9 +54,7 @@ export function ChatGptWelcomeCoordinator() {
     setAcknowledged(updated);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch {
-      /* Session dismissal still works. */
-    }
+    } catch {}
   };
   return (
     <Dialog

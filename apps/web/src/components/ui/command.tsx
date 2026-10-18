@@ -130,7 +130,6 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Autoco
   );
 }
 
-// Pair with a LegendList child; the list owns scrolling and spacing.
 function CommandListVirtualized({
   className,
   ...props

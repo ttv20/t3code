@@ -1,8 +1,8 @@
 import { useUiLanguage } from "../../i18n";
 import { Pressable, View } from "react-native";
 
-import { AppText } from "../../components/AppText";
-import { SymbolView } from "../../components/AppSymbol";
+import { AppText } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
 
 export function DevicePreviewButton(props: {
   readonly count: number;

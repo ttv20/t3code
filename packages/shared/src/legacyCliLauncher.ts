@@ -1,15 +1,4 @@
-/**
- * `dist/bin.mjs` of the `t3` npm package: the entry point boot-service
- * launchers installed before 0.0.41 run with Node to start a new version they
- * just npm-installed. It forwards everything (arguments, stdio, the IPC
- * channel the launcher talks over, signals, exit status) to the platform
- * executable in the sibling `@t3code/t3-<platform>-<arch>` package.
- *
- * The first server started this way rewrites the service unit to run the
- * executable directly, so nothing depends on this file after one update.
- * Remove it once no supported release predates the executable (after the
- * first stable release that ships it).
- */
+/** Fork npm launchers preserve the IPC channel used by server restarts. */
 export function legacyCliLauncherScript(): string {
   return `import { spawn } from "node:child_process";
 import { constants } from "node:os";

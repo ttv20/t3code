@@ -1,17 +1,18 @@
 import { useUiLanguage } from "../../i18n";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { PullRequestSectionHeading } from "./PullRequestSectionHeading";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import Animated from "react-native-reanimated";
 import { PR_ROW_LAYOUT, PR_ROW_ENTER, PR_ROW_EXIT } from "./pullRequestAnimations";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/AppText";
-import { EmptyState } from "../../components/EmptyState";
-import { ControlPillMenu } from "../../components/ControlPillMenu";
-import { MaterialButton } from "../../components/MaterialButton";
-import { MaterialIconButton } from "../../components/MaterialIconButton";
-import { SymbolView } from "../../components/AppSymbol";
+import { Pressable, View } from "react-native";
+import { AppText as Text } from "../../components/ui/AppText";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { Menu } from "../../components/ui/Menu";
+import { Button } from "../../components/ui/Button";
+import { IconButton } from "../../components/ui/IconButton";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
@@ -226,7 +227,7 @@ export function usePullRequestFilesContent(props: {
                 deletions={parsed.deletions}
                 compact
               />
-              <ControlPillMenu
+              <Menu
                 title={uiT("Review files")}
                 actions={[
                   {
@@ -239,13 +240,13 @@ export function usePullRequestFilesContent(props: {
                 onPressAction={filter.toggle}
               >
                 <View pointerEvents="none">
-                  <MaterialIconButton
+                  <IconButton
                     icon="line.3.horizontal.decrease"
                     accessibilityLabel={uiT("Filter review files")}
                     selected={filter.hideTestFiles}
                   />
                 </View>
-              </ControlPillMenu>
+              </Menu>
             </View>
             {parsed.files.length === 0 && filter.hiddenCount > 0 ? (
               <EmptyState
@@ -256,11 +257,7 @@ export function usePullRequestFilesContent(props: {
                 }
                 detail="Test files are hidden from this review."
                 action={
-                  <MaterialButton
-                    label={uiT("Show test files")}
-                    tone="contrast"
-                    onPress={filter.showAll}
-                  />
+                  <Button label={uiT("Show test files")} tone="contrast" onPress={filter.showAll} />
                 }
                 variant="plain"
               />
@@ -282,7 +279,7 @@ export function usePullRequestFilesContent(props: {
             className="min-h-11 items-center justify-center rounded-xl bg-grouped-card px-4 py-3"
           >
             {result.isPending ? (
-              <ActivityIndicator />
+              <AppActivityIndicator />
             ) : (
               <Text className="text-sm font-t3-medium">
                 {result.error ? uiT("Retry loading files") : uiT("Load more files")}

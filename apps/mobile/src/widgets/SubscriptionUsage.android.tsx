@@ -24,10 +24,7 @@ export function SubscriptionUsage(props: SubscriptionUsageProps, environment: Wi
       values && Object.hasOwn(values, key) ? String(values[key]) : token,
     );
   // The widget runtime evaluates this function without the app's module scope.
-  // Android has no timeline, so freshness is decided on every render; the
-  // expiry alarm and each tap trigger one while the app is closed.
   const now = Date.now();
-  // The 4x3 default cell fits two quotas per provider with their reset text.
   const limit = 2;
   const colors = getMaterialColors({
     scheme: environment.colorScheme === "dark" ? "dark" : "light",

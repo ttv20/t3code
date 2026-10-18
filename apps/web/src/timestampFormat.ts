@@ -1,4 +1,4 @@
-import { UI_DATE_LOCALES, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { formatUiRelativeTime, UI_DATE_LOCALES, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 
 function getTimestampFormatOptions(
@@ -21,14 +21,6 @@ function getTimestampFormatOptions(
   };
 }
 
-/**
- * Pick the locale to format wall-clock times in, given the locale the host
- * reports. Hosts that report nothing fall back to `undefined`, which is the
- * runtime default and the right answer in a browser.
- *
- * A host reports a locale only when it knows better than the runtime does —
- * see `getSystemLocale` on the desktop bridge for why desktop does.
- */
 export function resolveTimestampLocale(
   systemLocale: string | null | undefined,
 ): string | undefined {
@@ -65,7 +57,7 @@ type LocaleWithWeekInfo = Intl.Locale & {
 /**
  * First weekday of a locale as a `Date#getDay` index (0 is Sunday), or
  * `undefined` when the runtime has no week data, so callers keep their own
- * default. Without a locale it reads the runtime's.
+ * default.
  */
 export function resolveWeekStartsOn(locale: string | undefined): WeekdayIndex | undefined {
   try {
@@ -80,7 +72,6 @@ export function resolveWeekStartsOn(locale: string | undefined): WeekdayIndex | 
   }
 }
 
-/** Week start for calendars, from the same locale timestamps are shown in. */
 export const weekStartsOn = resolveWeekStartsOn(timestampLocale);
 
 const timestampFormatterCache = new Map<string, Intl.DateTimeFormat>();
@@ -146,10 +137,6 @@ function ordinalSuffix(day: number): string {
   }
 }
 
-/**
- * Long-form tooltip label, e.g. `12:04, 4th June`.
- * Renders the wall-clock time without seconds followed by the ordinal day and month name.
- */
 export function formatChatTimestampTooltip(
   isoDate: string,
   timestampFormat: TimestampFormat,
@@ -181,12 +168,6 @@ const numericDateWithYearFormatter = new Intl.DateTimeFormat(timestampLocale, {
   year: "numeric",
 });
 
-/**
- * Chat timestamp that adds the date once the message is no longer from today:
- * today `12:34 PM`, yesterday `yesterday at 12:34 PM`, older `8/13 12:34 PM`
- * (locale digit order), with the year included once the calendar year differs.
- * Boundaries are local calendar days, not 24-hour windows.
- */
 export function formatDayAwareTimestamp(
   isoDate: string,
   timestampFormat: TimestampFormat,
@@ -209,11 +190,6 @@ export function formatDayAwareTimestamp(
   return `${dateFormatter.format(date)} ${time}`;
 }
 
-/**
- * The forward-looking counterpart of {@link formatDayAwareTimestamp} for an
- * instant that has not happened yet (a usage-limit reset): today `12:34 PM`,
- * tomorrow `tomorrow at 12:34 PM`, later `8/13 12:34 PM`.
- */
 export function formatUpcomingTimestamp(
   isoDate: string,
   timestampFormat: TimestampFormat,
@@ -236,23 +212,51 @@ export function formatUpcomingTimestamp(
   return `${dateFormatter.format(date)} ${time}`;
 }
 
-/**
- * Format a relative time string from an ISO date.
- * Returns `{ value: "20s", suffix: "ago" }` or `{ value: "just now", suffix: null }`
- * so callers can style the numeric portion independently.
- */
 type RelativeTimeParts = { value: string; suffix: string | null };
 export type RelativeTimeState =
   | { status: "missing" }
   | { status: "invalid" }
   | { status: "relative"; value: string; suffix: string | null };
 
-export function formatRelativeTime(isoDate: string): RelativeTimeParts | null {
+const MINUTE_MS = 60_000;
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+
+function relativeTimeUnitMs(elapsedMs: number): number {
+  if (elapsedMs < HOUR_MS) return MINUTE_MS;
+  if (elapsedMs < DAY_MS) return HOUR_MS;
+  return DAY_MS;
+}
+
+/**
+ * Elapsed time floored to the precision `formatRelativeTime` shows, so two
+ * instants with the same label return the same number.
+ */
+export function relativeTimeElapsedMs(isoDate: string, nowMs: number = Date.now()): number | null {
   const date = parseTimestampDate(isoDate);
   if (!date) return null;
-  const diffMs = Date.now() - date.getTime();
-  if (diffMs < 0) return { value: "just now", suffix: null };
-  const seconds = Math.floor(diffMs / 1000);
+  const elapsedMs = Math.max(0, nowMs - date.getTime());
+  const unitMs = relativeTimeUnitMs(elapsedMs);
+  return Math.floor(elapsedMs / unitMs) * unitMs;
+}
+
+/** Milliseconds until the `formatRelativeTime` label for `isoDate` next changes. */
+export function msUntilRelativeTimeChange(
+  isoDate: string,
+  nowMs: number = Date.now(),
+): number | null {
+  const date = parseTimestampDate(isoDate);
+  if (!date) return null;
+  const elapsedMs = Math.max(0, nowMs - date.getTime());
+  const unitMs = relativeTimeUnitMs(elapsedMs);
+  const nextChangeMs = date.getTime() + (Math.floor(elapsedMs / unitMs) + 1) * unitMs;
+  // setTimeout fires at once past 2^31-1 ms, which would loop on a far-future
+  // timestamp. Waking early is harmless: the caller re-reads and re-schedules.
+  return Math.min(nextChangeMs - nowMs, DAY_MS);
+}
+
+export function formatRelativeElapsed(elapsedMs: number): RelativeTimeParts {
+  const seconds = Math.floor(elapsedMs / 1000);
   if (seconds < 60) return { value: "just now", suffix: null };
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return { value: `${minutes}m`, suffix: "ago" };
@@ -262,23 +266,25 @@ export function formatRelativeTime(isoDate: string): RelativeTimeParts | null {
   return { value: `${days}d`, suffix: "ago" };
 }
 
-export function formatRelativeTimeLabel(isoDate: string) {
-  const relative = formatRelativeTime(isoDate);
+export function formatRelativeTime(
+  isoDate: string,
+  nowMs: number = Date.now(),
+): RelativeTimeParts | null {
+  const elapsedMs = relativeTimeElapsedMs(isoDate, nowMs);
+  return elapsedMs === null ? null : formatRelativeElapsed(elapsedMs);
+}
+
+export function formatRelativeTimeLabel(
+  isoDate: string,
+  nowMs: number = Date.now(),
+  locale: UiLocale = "en",
+) {
+  if (locale !== "en") return formatUiRelativeTime(isoDate, locale, nowMs) ?? "";
+  const relative = formatRelativeTime(isoDate, nowMs);
   if (!relative) return "";
   return relative.suffix ? `${relative.value} ${relative.suffix}` : relative.value;
 }
 
-export function getRelativeTimeState(isoDate: string | null): RelativeTimeState {
-  if (!isoDate) return { status: "missing" };
-  const relative = formatRelativeTime(isoDate);
-  if (!relative) return { status: "invalid" };
-  return { status: "relative", ...relative };
-}
-
-/**
- * Relative elapsed duration since an ISO instant, without an "ago" suffix.
- * Useful for labels like "Connected for 3m".
- */
 export function formatElapsedDurationLabel(isoDate: string, nowMs: number = Date.now()): string {
   const date = parseTimestampDate(isoDate);
   if (!date) return "";
@@ -299,13 +305,13 @@ export function formatElapsedDurationLabel(isoDate: string, nowMs: number = Date
   return `${days}d`;
 }
 
-/**
- * Relative time until an ISO instant (e.g. expiry). Mirrors {@link formatRelativeTime} but for future times.
- */
-export function formatRelativeTimeUntil(isoDate: string): RelativeTimeParts | null {
+export function formatRelativeTimeUntil(
+  isoDate: string,
+  nowMs: number = Date.now(),
+): RelativeTimeParts | null {
   const date = parseTimestampDate(isoDate);
   if (!date) return null;
-  const diffMs = date.getTime() - Date.now();
+  const diffMs = date.getTime() - nowMs;
   if (diffMs <= 0) return { value: "Expired", suffix: null };
   const seconds = Math.floor(diffMs / 1000);
   if (seconds < 5) return { value: "Soon", suffix: null };
@@ -318,14 +324,18 @@ export function formatRelativeTimeUntil(isoDate: string): RelativeTimeParts | nu
   return { value: `${days}d`, suffix: "left" };
 }
 
-export function formatRelativeTimeUntilLabel(isoDate: string): string {
-  const relative = formatRelativeTimeUntil(isoDate);
+export function formatRelativeTimeUntilLabel(
+  isoDate: string,
+  nowMs: number = Date.now(),
+  locale: UiLocale = "en",
+): string {
+  if (locale !== "en") return formatUiRelativeTime(isoDate, locale, nowMs) ?? "";
+  const relative = formatRelativeTimeUntil(isoDate, nowMs);
   if (!relative) return "";
   return relative.suffix ? `${relative.value} ${relative.suffix}` : relative.value;
 }
 
 /**
- * Countdown for a future instant (e.g. link expiry): "Expires in 4m 12s", with second precision under one hour.
  * Pass `nowMs` when a parent tick drives re-renders so the diff matches that snapshot.
  */
 export function formatExpiresInLabel(isoDate: string, nowMs: number = Date.now()): string {

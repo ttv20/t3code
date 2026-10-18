@@ -1,7 +1,6 @@
 import { useUiLanguage, UiText } from "../../i18n";
 import { formatPercent, formatTokens, formatUsd } from "@t3tools/shared/usageFormat";
 import { isModelCostUnknown, type ModelTotals } from "@t3tools/shared/usageMerge";
-import { useMemo } from "react";
 
 import { mergeAnsweredUsage, type EnvironmentUsageStatus } from "../../state/usage";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
@@ -34,11 +33,6 @@ export interface UsageChartWindow {
   readonly referenceTime: string | undefined;
 }
 
-/**
- * One model's usage in the current window, opened from the Breakdown list.
- * The trend and mixes come from the same merge as the page, narrowed to this
- * model's buckets.
- */
 export function UsageModelDialog({
   model,
   environments,
@@ -55,15 +49,11 @@ export function UsageModelDialog({
   readonly onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
-  const usage = useMemo(
-    () =>
-      mergeAnsweredUsage(
-        environments,
-        (bucket) => bucket.provider === model.provider && bucket.model === model.model,
-      ),
-    [environments, model.provider, model.model],
+  const usage = mergeAnsweredUsage(
+    environments,
+    (bucket) => bucket.provider === model.provider && bucket.model === model.model,
   );
-  const providers = useMemo(() => [model.provider], [model.provider]);
+  const providers = [model.provider];
   const presentation = PROVIDER_PRESENTATION[model.provider];
   const costUnknown = isModelCostUnknown(model);
   const hitRate = cacheHitRate(model);
@@ -158,7 +148,6 @@ export function UsageModelDialog({
   );
 }
 
-/** What the faster speeds cost above standard rates, beside the speed bar. */
 export function SpeedPremium({ premiumUsd }: { readonly premiumUsd: number }) {
   return (
     <span className="text-xs text-muted-foreground">

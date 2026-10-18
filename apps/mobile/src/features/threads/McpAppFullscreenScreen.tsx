@@ -8,8 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AppText as Text } from "../../components/AppText";
-import { SymbolView } from "../../components/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { orchestrationEnvironment } from "../../state/orchestration";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { useThreadShell, useThreadShells } from "../../state/entities";
@@ -24,11 +24,6 @@ type McpAppFullscreenScreenProps = StaticScreenProps<{
   readonly revision?: string;
 }>;
 
-/**
- * The thread an app's messages go to. A link only names it, so it counts only
- * when it is the app's own thread or a fork of it; anything else falls back to
- * the app's thread.
- */
 function useConversationThreadId(
   environmentId: EnvironmentId,
   threadId: ThreadId,
@@ -44,7 +39,6 @@ function useConversationThreadId(
   );
 }
 
-/** True when `threadId` is `ancestorId` or one of its forks, at any depth. */
 function descendsFrom(
   shells: ReadonlyArray<EnvironmentThreadShell>,
   environmentId: EnvironmentId,
@@ -54,7 +48,6 @@ function descendsFrom(
   const parents = new Map(
     shells
       .filter((shell) => shell.environmentId === environmentId)
-      // Only forks continue a conversation; a subagent is its own.
       .filter((shell) => shell.lineage.relationshipToParent === "fork")
       .map((shell) => [shell.id as string, shell.lineage.parentThreadId]),
   );
@@ -67,10 +60,8 @@ function descendsFrom(
 }
 
 /**
- * An MCP App full screen (`ui/request-display-mode`), in a modal over the
- * thread. It is its own view of the app; closing it returns to the row. The
- * app is read from its stored tool call, never from the route, so a link can
- * only open an app that call really produced.
+ * The app is read from its stored tool call, never from the route, so a link
+ * can only open an app that call really produced.
  */
 export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
   const { t: uiT } = useUiLanguage();
@@ -112,8 +103,6 @@ export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
   const derived = item?.type === "dynamic_tool" ? mcpAppFromToolItem(item) : undefined;
   const [app, setApp] = useState(derived);
   if (derived?.attachmentId !== app?.attachmentId) setApp(derived);
-  // The approval or question the agent waits on renders on the thread this
-  // modal covers, so the app steps aside for it.
   const conversation = useThreadShell(scopeThreadRef(environmentId, conversationThreadId));
   const awaitingUser =
     conversation?.hasPendingApprovals === true || conversation?.hasPendingUserInput === true;

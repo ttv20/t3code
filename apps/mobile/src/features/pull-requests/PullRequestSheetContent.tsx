@@ -4,11 +4,11 @@ import type { ReactNode } from "react";
 import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppText as Text } from "../../components/AppText";
-import { AndroidSheetHeader } from "../../components/AndroidScreenHeader";
-import { MaterialIconButton } from "../../components/MaterialIconButton";
-import { MaterialScreenContent } from "../../components/MaterialScreenContent";
-import { ControlPill } from "../../components/ControlPill";
+import { AppText as Text } from "../../components/ui/AppText";
+import { AndroidSheetHeader } from "../../components/ui/AndroidScreenHeader";
+import { IconButton } from "../../components/ui/IconButton";
+import { ScreenContent } from "../../components/ui/ScreenContent";
+import { ControlPill } from "../../components/ui/ControlPill";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 
 export function PullRequestSheetContent(props: {
@@ -43,7 +43,7 @@ export function PullRequestSheetContent(props: {
           subtitle={props.subtitle}
           hideBottomBorder
           leading={
-            <MaterialIconButton
+            <IconButton
               icon="arrow.left"
               accessibilityLabel={uiT("Close")}
               disabled={props.busy}
@@ -69,7 +69,7 @@ export function PullRequestSheetContent(props: {
           <View className="w-11" />
         </View>
       )}
-      <MaterialScreenContent fitToContents={fitToContents}>
+      <ScreenContent fitToContents={fitToContents}>
         {props.scrollable === false ? (
           <View className="flex-1" pointerEvents={props.busy ? "none" : "auto"}>
             {props.children}
@@ -94,7 +94,7 @@ export function PullRequestSheetContent(props: {
         )}
 
         {!android || props.scrollable === false ? footer : null}
-      </MaterialScreenContent>
+      </ScreenContent>
     </>
   );
   return (

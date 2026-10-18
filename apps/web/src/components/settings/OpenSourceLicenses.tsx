@@ -1,6 +1,6 @@
 import { useUiLanguage } from "../../i18n";
 import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   decodeThirdPartyLicenseManifest,
@@ -63,6 +63,7 @@ function LicenseNoticeRow({
   readonly onOpenChange: (open: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
       <article>
@@ -93,7 +94,7 @@ function LicenseNoticeRow({
               className="me-3 shrink-0 sm:me-4"
               render={<a href={entry.sourceUrl} rel="noreferrer noopener" target="_blank" />}
               size="icon-micro"
-              title={uiT("Project source")}
+              title="Project source"
               variant="ghost-muted"
             >
               <ExternalLinkIcon aria-hidden className="size-3" />
@@ -122,6 +123,7 @@ function LicenseCount({
   totalCount: number;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <p className="whitespace-nowrap text-xs font-normal text-muted-foreground tabular-nums">
       {filteredCount === totalCount
@@ -147,6 +149,7 @@ function LicenseHeaderAction({
   totalCount: number;
 }) {
   const { t: uiT } = useUiLanguage();
+
   if (!searchOpen) {
     return (
       <div className="flex items-center gap-1.5">
@@ -155,7 +158,7 @@ function LicenseHeaderAction({
           <TooltipTrigger
             render={
               <Button
-                aria-label={uiT("Search open-source licenses")}
+                aria-label="Search open-source licenses"
                 onClick={() => onSearchOpenChange(true)}
                 size="icon-micro"
                 type="button"
@@ -181,7 +184,7 @@ function LicenseHeaderAction({
           <SearchIcon aria-hidden className="size-3" />
         </InputGroupAddon>
         <InputGroupInput
-          aria-label={uiT("Search open-source licenses")}
+          aria-label="Search open-source licenses"
           autoFocus
           onBlur={() => {
             if (query.length === 0) onSearchOpenChange(false);
@@ -193,7 +196,7 @@ function LicenseHeaderAction({
             onQueryChange("");
             onSearchOpenChange(false);
           }}
-          placeholder={uiT("Search licenses")}
+          placeholder="Search licenses"
           size="sm"
           type="search"
           value={query}
@@ -205,6 +208,7 @@ function LicenseHeaderAction({
 
 function LicenseManifestError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <div className="flex flex-col items-start gap-3 px-3 py-5 sm:px-4">
       <div className="flex flex-col gap-1">
@@ -224,15 +228,16 @@ function LicenseManifestError({ message, onRetry }: { message: string; onRetry: 
 
 export function OpenSourceLicensesPanel() {
   const { t: uiT } = useUiLanguage();
+
   const [state, setState] = useState<LicenseManifestState>({ status: "loading" });
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [openEntryKey, setOpenEntryKey] = useState<string | null>(null);
-  const [requestVersion, setRequestVersion] = useState(0);
+  const loading = state.status === "loading";
 
   useEffect(() => {
+    if (!loading) return;
     let cancelled = false;
-    setState({ status: "loading" });
     void loadLicenseManifest().then(
       (manifest) => {
         if (!cancelled) setState({ status: "ready", manifest });
@@ -249,19 +254,16 @@ export function OpenSourceLicensesPanel() {
     return () => {
       cancelled = true;
     };
-  }, [requestVersion, uiT]);
+  }, [loading, uiT]);
 
   const entries = state.status === "ready" ? state.manifest.entries : [];
-  const filteredEntries = useMemo(
-    () => filterThirdPartyLicenseEntries(entries, query),
-    [entries, query],
-  );
-  const retry = useCallback(() => setRequestVersion((value) => value + 1), []);
+  const filteredEntries = filterThirdPartyLicenseEntries(entries, query);
+  const retry = () => setState({ status: "loading" });
 
   return (
     <SettingsPageContainer>
       <SettingsSection
-        title={uiT("Third-party notices")}
+        title="Third-party notices"
         headerAction={
           state.status === "ready" ? (
             <LicenseHeaderAction

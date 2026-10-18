@@ -1,7 +1,7 @@
 import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
 
-import { AppText, AppTextInput, type AppTextInputProps } from "../../components/AppText";
+import { AppText, AppTextInput, type AppTextInputProps } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
 
 type ConnectionFormFieldProps = Omit<AppTextInputProps, "accessibilityLabel" | "className"> & {
@@ -9,7 +9,6 @@ type ConnectionFormFieldProps = Omit<AppTextInputProps, "accessibilityLabel" | "
   readonly className?: string;
 };
 
-/** Labeled connection input with a native wrapper retained inside form sheets. */
 export function ConnectionFormField({ label, className, ...inputProps }: ConnectionFormFieldProps) {
   const { t: uiT } = useUiLanguage();
   return (

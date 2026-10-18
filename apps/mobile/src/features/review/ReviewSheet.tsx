@@ -2,10 +2,10 @@ import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { AppActivityIndicator } from "../../components/AppActivityIndicator";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { nativeHeaderScrollEdgeEffects } from "../../native/StackHeader";
-import { ScreenHeader } from "../../components/ScreenHeader";
-import type { ScreenHeaderMenuItem } from "../../components/ScreenHeader.types";
+import { AppBar } from "../../components/ui/AppBar";
+import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
 import type { ReviewSectionItem } from "./reviewModel";
 import { useReviewHeaderPresentation } from "./useReviewHeaderPresentation";
 import { Screen, ScreenStack, ScreenStackHeaderConfig } from "react-native-screens";
@@ -33,10 +33,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 
-import { AppText as Text } from "../../components/AppText";
-import { SymbolView } from "../../components/AppSymbol";
-import { AndroidScreenHeader } from "../../components/AndroidScreenHeader";
-import { MaterialScreenContent } from "../../components/MaterialScreenContent";
+import { AppText as Text } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AndroidScreenHeader } from "../../components/ui/AndroidScreenHeader";
+import { ScreenContent } from "../../components/ui/ScreenContent";
 import { cn } from "../../lib/cn";
 import { environmentCatalog } from "../../connection/catalog";
 import { useEnvironmentPresentation } from "../../state/presentation";
@@ -84,10 +84,7 @@ function ReviewHeader(
   const { t: uiT } = useUiLanguage();
   const { panes, toggleAuxiliaryPane } = useAdaptiveWorkspaceLayout();
   const presentation = useReviewHeaderPresentation(props);
-  const sectionAction = (
-    section: ReviewSectionItem | null,
-    title: string,
-  ): ScreenHeaderMenuItem => ({
+  const sectionAction = (section: ReviewSectionItem | null, title: string): AppBarMenuItem => ({
     id: section ? `section:${section.id}` : `unavailable:${title}`,
     title,
     disabled: section === null,
@@ -97,7 +94,7 @@ function ReviewHeader(
     },
   });
   return (
-    <ScreenHeader
+    <AppBar
       title={presentation.title}
       subtitle={presentation.subtitle}
       onBack={props.onReturnToThread}
@@ -255,7 +252,6 @@ const ReviewFileNavigatorRow = memo(function ReviewFileNavigatorRow(props: {
   readonly onSelectFile: (fileId: string | null) => void;
 }) {
   const { file, selected, onSelectFile } = props;
-  // Tapping the selected file again returns to the all-files diff.
   const handlePress = useCallback(() => {
     onSelectFile(selected ? null : file.id);
   }, [file.id, onSelectFile, selected]);
@@ -379,9 +375,7 @@ function ReviewFileNavigator({
       contentContainerStyle={{
         paddingHorizontal: 8,
         paddingBottom: 8,
-        // The nested native header is translucent; start the list below it so
-        // the scroll-edge effect can sample the content (same treatment as
-        // FileTreeBrowser in the Files pane).
+
         paddingTop: Platform.OS === "ios" ? insets.top + IOS_NAV_BAR_HEIGHT + 8 : 8,
       }}
       scrollIndicatorInsets={
@@ -445,7 +439,7 @@ function ReviewFileNavigator({
           </View>
         </View>
       )}
-      <MaterialScreenContent insetHorizontal>{fileList}</MaterialScreenContent>
+      <ScreenContent insetHorizontal>{fileList}</ScreenContent>
     </View>
   );
 }
@@ -521,7 +515,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
   const NativeReviewDiffView = resolveNativeReviewDiffView();
   const nativeReviewDiffViewRef = useRef<NativeReviewDiffViewHandle>(null);
   const showcasedReviewDrawRef = useRef<string | null>(null);
-  // Native pull-to-refresh on the diff surface (replaces the old Refresh menu item).
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const handlePullToRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
@@ -610,8 +603,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
       <ReviewFileNavigator
         ref={reviewFileNavigatorRef}
         files={nativeReviewDiffData.files}
-        // The workspace inspector column spans the full window height, so the
-        // pane clears the status bar itself.
         headerInset={insets.top}
         sectionId={selectedSection?.id ?? null}
         onSelectFile={handleSelectFile}
@@ -673,18 +664,12 @@ export function ReviewSheet(props: ReviewSheetProps) {
     .filter((part): part is string => Boolean(part))
     .join(" · ");
 
-  // The changed-files navigator drives the native diff surface via
-  // scrollToFile, so it is only useful when that surface resolved. In raw
-  // fallback mode the ref is necessarily null and the raw patch neither
-  // scrolls nor filters — registering the navigator would present working
-  // controls that cannot navigate.
   const showChangedFilesPane =
     !showConnectionNotice &&
     selectedSection !== null &&
     parsedDiff.kind === "files" &&
     NativeReviewDiffView !== null;
   useRegisterWorkspaceInspector(showChangedFilesPane ? renderInspector : undefined);
-  // A toggle needs registered content; loading, errors and raw patches have no navigator pane.
   const showChangedFilesToggle = panes.supportsAuxiliaryPane && showChangedFilesPane;
 
   const listHeader = useMemo(() => {
@@ -745,7 +730,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
         onReturnToThread={handleReturnToThread}
       />
 
-      <MaterialScreenContent>
+      <ScreenContent>
         <View className="flex-1 bg-sheet android:bg-sheet-solid">
           {showConnectionNotice ? (
             <View className="flex-1" style={{ paddingTop: topContentInset }}>
@@ -902,8 +887,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
                   </ScrollView>
                 </View>
               ) : parsedDiff.kind === "files" ? (
-                // The native diff surface could not be resolved on this binary;
-                // degrade to the raw patch instead of crashing the app.
                 <View
                   className={cn(
                     "gap-3 bg-card px-4 py-4",
@@ -929,7 +912,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
             onClear={commentSelection.clearSelection}
           />
         </View>
-      </MaterialScreenContent>
+      </ScreenContent>
     </>
   );
 }

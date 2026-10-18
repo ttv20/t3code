@@ -2,7 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { readEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
 import { AutoSettleDaysField } from "./components/AutoSettleDaysField";
-import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
 import { supportsSharedSettingsSync } from "@t3tools/client-runtime/state/shared-settings";
-import { AppText as Text } from "../../components/AppText";
+import { AppText as Text } from "../../components/ui/AppText";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -62,9 +62,6 @@ export function SettingsThreadsRouteScreen() {
 
 const AUTO_SETTLE_DEFAULT_DAYS = DEFAULT_SERVER_SETTINGS.sidebarAutoSettleAfterDays ?? 3;
 
-/**
- * Mobile edits auto-settle defaults across selected capable targets.
- */
 function AutoSettleSettingsRows() {
   const { t: uiT } = useUiLanguage();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
@@ -268,10 +265,6 @@ function AutoSettleSettingsRows() {
   );
 }
 
-/**
- * Device-local beta toggles, the counterpart of web's Working section (beta)
- * in Settings → General.
- */
 function BetaSettingsSection() {
   const { t: uiT } = useUiLanguage();
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
@@ -298,11 +291,6 @@ function BetaSettingsSection() {
   );
 }
 
-/**
- * Device-local legacy toggles. Mobile has no client-settings sync, so this is
- * the counterpart of web's Settings → General → Legacy features backed by
- * mobile preferences.
- */
 function LegacySettingsSection() {
   const { t: uiT } = useUiLanguage();
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);

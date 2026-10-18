@@ -9,10 +9,6 @@ import { placeLinkedPrompt } from "./linkedPrompt";
 
 const handledLinkKeys = new Set<string>();
 
-/**
- * Moves a thread link's `?prompt=` into that thread's composer, then drops it from the URL so a
- * reload or a copied address does not bring it back. Rendered beside the thread view.
- */
 export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThreadRef }) {
   const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();

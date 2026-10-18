@@ -1,21 +1,15 @@
-import { useUiLanguage } from "../../i18n";
-/* oxlint-disable react/no-array-index-key -- Table rows and columns have stable positions and may contain identical values. */
+import { useUiLanguage } from "../../i18n"; /* oxlint-disable react/no-array-index-key -- Table rows and columns have stable positions and may contain identical values. */
 import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
-import { useMemo } from "react";
 
 import { FileSurfaceNotice } from "./fileSurfaceChrome";
 
-/** A bounded, readable table for CSV and TSV text; the source view keeps every byte. */
 export function DelimitedTablePreview(props: {
   readonly name: string;
   readonly text: string;
   readonly delimiter: "," | "\t";
 }) {
   const { t: uiT } = useUiLanguage();
-  const table = useMemo(
-    () => parseDelimitedPreview(props.text, props.delimiter),
-    [props.text, props.delimiter],
-  );
+  const table = parseDelimitedPreview(props.text, props.delimiter);
   const [header, ...body] = table.rows;
   return (
     <div className="flex min-h-0 flex-1 flex-col">

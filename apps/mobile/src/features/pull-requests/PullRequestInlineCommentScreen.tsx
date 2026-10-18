@@ -1,10 +1,11 @@
+import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useCallback, useRef, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import type { PullRequestReviewPosition } from "@t3tools/contracts";
-import { AppText as Text, AppTextInput as TextInput } from "../../components/AppText";
-import { MaterialButton } from "../../components/MaterialButton";
+import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
 import { uuidv4 } from "../../lib/uuid";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
@@ -79,7 +80,7 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
       title={saved ? uiT("Edit review comment") : uiT("Review comment")}
       subtitle={`#${params.number} · ${reviewPositionLabel(params.position)}`}
       footer={
-        <MaterialButton
+        <Button
           fullWidth
           tone="contrast"
           label={busy ? uiT("Saving…") : uiT("Save draft")}
@@ -127,10 +128,10 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
         <Text className="text-sm text-danger-foreground">{store.error ?? detail.error}</Text>
       ) : null}
       {saved ? (
-        <MaterialButton
+        <Button
           label={uiT("Delete draft")}
           onPress={() =>
-            Alert.alert("Delete this draft?", "Your other review comments will be kept.", [
+            Dialog.alert("Delete this draft?", "Your other review comments will be kept.", [
               { text: "Cancel", style: "cancel" },
               {
                 text: "Delete",

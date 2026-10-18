@@ -195,7 +195,6 @@ function resultForSelection(
   };
 }
 
-/** Read the canonical index once per scan, including inherited fork rows, without tool bodies. */
 export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
   readIndex: (threadId: ThreadId) => Effect.Effect<
     readonly (Omit<FindRow, "position"> & {
@@ -264,7 +263,6 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
           });
     });
   });
-  // Cache rendered segments, not queries; typing and navigation reuse Markdown parsing.
   const textCache = yield* Cache.make({
     capacity: 512,
     timeToLive: "1 minute",
@@ -276,8 +274,6 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
     timeToLive: "1 minute",
     lookup: (key: TextKey) => Effect.sync(() => parseText(key)),
   });
-  // Scans retain counts and item references, never message bodies. Navigation checks
-  // the current revision in its transaction without reloading message payloads.
   const scans = new Map<
     string,
     {
@@ -300,6 +296,9 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
         WHERE json_extract(t.payload_json, '$.forkedFrom.type') = 'run'
       )
       SELECT COALESCE(MAX(sequence), 0) AS sequence FROM orchestration_events
+      -- The planner otherwise walks every V2 event backwards from the newest,
+      -- which takes seconds for a thread that has been idle a long time.
+      INDEXED BY idx_orch_events_stream_sequence
       WHERE application_event_version = 2 AND aggregate_kind = 'thread'
         AND stream_id IN (SELECT thread_id FROM source_threads)
     `;
@@ -407,8 +406,6 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
           }
           return resultForSelection(selectMatch(ordered, input), ordered, sequence);
         });
-        // Relative navigation needs the final counts. Initial searches can reveal an
-        // identity immediately, scanning at/below the reading anchor before wrapping.
         if (input.index !== undefined || (input.offset ?? 0) !== 0)
           return Stream.fromEffect(finish);
         const anchor = Math.max(
@@ -432,7 +429,6 @@ export const makeThreadFind = Effect.fn("makeThreadFind")(function* (
             activeIndex: 0,
             match: { entryId: document.entryId, runId: document.runId, occurrence },
           };
-          // The remainder is pulled only after the first frame has been delivered.
           return Stream.concat(Stream.succeed(first), Stream.fromEffect(finish));
         }
         return Stream.fromEffect(finish);

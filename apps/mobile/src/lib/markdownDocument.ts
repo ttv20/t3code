@@ -124,7 +124,6 @@ export function markdownHtmlContent(content: string): string {
   });
 }
 
-/** Convert parsed HTML fragments only, preserving Markdown code and source around them. */
 export function markdownWithHtml(markdown: string): string {
   if (!/<(?:!--|\/?[a-z])/i.test(markdown)) return markdown;
   const edits: Array<{ start: number; end: number; content: string }> = [];
@@ -142,13 +141,75 @@ export function markdownWithHtml(markdown: string): string {
   return markdown;
 }
 
+// A delimiter row such as `|---|:--:|`, possibly inside a blockquote or list item.
+function isTableDelimiterRow(line: string): boolean {
+  if (!line.includes("-")) return false;
+  const row = line.replace(/^[ \t>]+/, "").trim();
+  return row
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .every((cell) => /^:?-+:?$/.test(cell.trim()));
+}
+
+// Cheap pre-check for a delimiter row two lines below text, so most messages skip the parse.
+function mayHaveTableUnderText(markdown: string): boolean {
+  if (!markdown.includes("|")) return false;
+  const lines = markdown.split(/\r\n|\r|\n/);
+  for (let index = 2; index < lines.length; index += 1) {
+    if (isTableDelimiterRow(lines[index]!) && /[^\s>]/.test(lines[index - 2]!)) return true;
+  }
+  return false;
+}
+
+/**
+ * GFM lets a table interrupt a paragraph, but the native parser (md4c) only starts a table
+ * on a paragraph's first line, so a table right under a line of text renders as one
+ * run-on paragraph. Insert the blank line md4c needs before each such table.
+ */
+export function markdownWithTableBreaks(markdown: string): string {
+  if (!mayHaveTableUnderText(markdown)) return markdown;
+  const lineStarts: number[] = [];
+  const visit = (node: MarkdownNode) => {
+    if (!("children" in node)) return;
+    node.children.forEach((child, index) => {
+      const previous = node.children[index - 1];
+      const start = child.position?.start;
+      if (
+        child.type === "table" &&
+        previous?.type === "paragraph" &&
+        start?.offset !== undefined &&
+        previous.position?.end.line === start.line - 1
+      )
+        lineStarts.push(
+          Math.max(
+            markdown.lastIndexOf("\n", start.offset - 1),
+            markdown.lastIndexOf("\r", start.offset - 1),
+          ) + 1,
+        );
+      visit(child);
+    });
+  };
+  visit(parser.parse(markdown));
+  for (const lineStart of lineStarts.reverse()) {
+    // The header row may be a lazy line without its container markers (`>` or list indent),
+    // so copy the delimiter row's markers onto the blank line and the header row.
+    const [, header = "", cells = "", ending = "\n", markers = ""] =
+      /^([ \t>]*)([^\r\n]*)(\r\n|\r|\n)([ \t>]*)/.exec(markdown.slice(lineStart)) ?? [];
+    markdown =
+      markdown.slice(0, lineStart) +
+      `${markers.trimEnd()}${ending}${markers}${cells}` +
+      markdown.slice(lineStart + header.length + cells.length);
+  }
+  return markdown;
+}
+
 export function parseMarkdownDocument(markdown: string): Root {
   return parser.parse(markdownWithHtml(markdown));
 }
 
 /** Prepare display text without changing the stored message or its code and destinations. */
 export function markdownForDisplay(markdown: string): string {
-  const source = markdownWithHtml(markdown);
+  const source = markdownWithTableBreaks(markdownWithHtml(markdown));
   if (!/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u.test(source)) return source;
   return markdownWithRtlSentenceBoundaries(source, parser.parse(source));
 }

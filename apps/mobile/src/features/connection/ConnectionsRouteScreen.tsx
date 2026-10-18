@@ -1,19 +1,18 @@
-import { useUiLanguage } from "../../i18n";
-import { ScreenScrollView as ScrollView } from "../../components/ScreenScrollView";
-import { NativeHeaderToolbar } from "../../native/StackHeader";
+import { Toolbar } from "../../components/ui/Toolbar";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+
 import { useNavigation } from "@react-navigation/native";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useCallback, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AndroidScreenHeader } from "../../components/AndroidScreenHeader";
+import { AndroidScreenHeader } from "../../components/ui/AndroidScreenHeader";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";
 import { LocalEnvironmentList } from "./LocalEnvironmentList";
 import { GitHubRoutingSettings } from "./GitHubRoutingSettings";
 
 export function ConnectionsRouteScreen() {
-  const { t: uiT } = useUiLanguage();
   const {
     connectedEnvironments,
     onReconnectEnvironment,
@@ -32,7 +31,7 @@ export function ConnectionsRouteScreen() {
     <View collapsable={false} className="flex-1 bg-sheet">
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
-          title={uiT("Environments")}
+          title="Environments"
           onBack={() => navigation.goBack()}
           actions={[
             {
@@ -43,13 +42,13 @@ export function ConnectionsRouteScreen() {
           ]}
         />
       ) : (
-        <NativeHeaderToolbar placement="right">
-          <NativeHeaderToolbar.Button
+        <Toolbar placement="right">
+          <Toolbar.Button
             icon="plus"
             onPress={() => navigation.navigate("ConnectionsNew")}
             separateBackground
           />
-        </NativeHeaderToolbar>
+        </Toolbar>
       )}
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"

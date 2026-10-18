@@ -7,7 +7,6 @@ import { AnimatedHeight } from "../AnimatedHeight";
 import { DialogPopup, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog";
 import { ScrollArea } from "./scroll-area";
 
-/** Compose a wizard from its header, panel, and footer; flow logic stays with the caller. */
 export function WizardPopup({
   children,
   size = "default",
@@ -32,7 +31,6 @@ export function WizardHeader({
 }: {
   readonly title: ReactNode;
   readonly description?: ReactNode;
-  /** Optional branding shown in place of the visible title. The title remains accessible. */
   readonly identity?: ReactNode;
   readonly children?: ReactNode;
 }) {

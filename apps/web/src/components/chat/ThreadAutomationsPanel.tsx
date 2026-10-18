@@ -17,7 +17,7 @@ import {
 
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { cn } from "../../lib/utils";
-import { relativeLabel, scheduleLabel } from "../settings/ScheduledTasksSettings";
+import { ScheduledRelativeLabel, scheduleLabel } from "../settings/ScheduledTasksSettings";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -38,17 +38,12 @@ const STATUS_DOT_CLASS: Record<ScheduledTask["lastRunStatus"], string> = {
   failed: "bg-destructive",
 };
 
-/**
- * Thread details panel section listing the automations (scheduled tasks) bound
- * to this thread. Fed by the live scheduled-task subscription, so run status
- * and next-run times update as the scheduler works — no manual refresh.
- * Renders nothing when the thread has no bound automations.
- */
 export function ThreadAutomationsPanel(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const canOperate = useAtomValue(
     serverEnvironment.runScheduledTaskNow.permissionAtom(props.environmentId),
   );
@@ -67,9 +62,7 @@ export function ThreadAutomationsPanel(props: {
   const boundTasks = (tasksQuery.data?.tasks ?? []).filter(
     (task) => task.threadId === props.threadId,
   );
-  // A load error must not look like "no automations" — this thread may have
-  // tasks whose controls would silently vanish. Only hide the section when we
-  // positively know there is nothing bound to it.
+
   if (tasksQuery.error === null && boundTasks.length === 0) return null;
 
   const reportFailure = (title: string, error: unknown) => {
@@ -121,7 +114,7 @@ export function ThreadAutomationsPanel(props: {
   return (
     <ThreadDetailsSection
       headingId="thread-details-automations-heading"
-      title={uiT("Automations")}
+      title="Automations"
       data-thread-automations-panel
       actions={
         <Tooltip>
@@ -131,7 +124,7 @@ export function ThreadAutomationsPanel(props: {
                 size="icon-xs"
                 variant="ghost"
                 part="icon"
-                aria-label={uiT("Manage scheduled tasks")}
+                aria-label="Manage scheduled tasks"
                 onClick={() =>
                   void navigate({
                     to: "/settings/scheduled-tasks",
@@ -178,11 +171,16 @@ export function ThreadAutomationsPanel(props: {
               </span>
               <p className="truncate text-2xs text-muted-foreground">
                 {scheduleLabel(task.schedule)}
-                {task.enabled && task.nextRunAt !== null
-                  ? uiT(" · next {0}", { "0": relativeLabel(task.nextRunAt) })
-                  : task.enabled
-                    ? ""
-                    : uiT(" · paused")}
+                {task.enabled && task.nextRunAt !== null ? (
+                  <>
+                    {" · next "}
+                    <ScheduledRelativeLabel value={task.nextRunAt} />
+                  </>
+                ) : task.enabled ? (
+                  ""
+                ) : (
+                  uiT(" · paused")
+                )}
               </p>
             </div>
             <Tooltip>

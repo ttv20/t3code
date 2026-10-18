@@ -1,11 +1,11 @@
 import { useUiLanguage } from "../../i18n";
-import { SymbolView } from "../../components/AppSymbol";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { Platform, Pressable, View } from "react-native";
 
-import { AppText as Text } from "../../components/AppText";
-import { MaterialNewThreadButton } from "../../components/MaterialNewThreadButton";
-import { MaterialFloatingActionButton } from "../../components/MaterialFloatingActionButton";
-import { EmptyState } from "../../components/EmptyState";
+import { AppText as Text } from "../../components/ui/AppText";
+import { NewThreadButton } from "../../components/NewThreadButton";
+import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 export function WorkspaceEmptyDetail(props: {
   readonly onStartNewTask?: () => void;
@@ -27,7 +27,7 @@ export function WorkspaceEmptyDetail(props: {
             detail="Add an environment to load projects and start coding sessions."
             variant="plain"
             action={
-              <MaterialFloatingActionButton
+              <FloatingActionButton
                 label={uiT("Add environment")}
                 icon="plus"
                 variant="extended"
@@ -53,7 +53,7 @@ export function WorkspaceEmptyDetail(props: {
           </Text>
           {props.onStartNewTask ? (
             Platform.OS === "android" ? (
-              <MaterialNewThreadButton extended className="mt-2" onPress={props.onStartNewTask} />
+              <NewThreadButton extended className="mt-2" onPress={props.onStartNewTask} />
             ) : (
               <Pressable
                 accessibilityRole="button"

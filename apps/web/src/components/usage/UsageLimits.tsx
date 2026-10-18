@@ -1,9 +1,4 @@
-import {
-  formatUiUsageReset,
-  formatUiUsageWindowLabel,
-  formatUiResetCredits,
-} from "@t3tools/client-runtime/usage-localization";
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import {
   AuthProvidersManageScope,
   type EnvironmentId,
@@ -17,6 +12,8 @@ import {
 import { useAtomValue } from "@effect/atom-react";
 import {
   elapsedShare,
+  formatDuration,
+  formatResetsIn,
   type LimitPace,
   paceOf,
   remainingPercent,
@@ -50,7 +47,6 @@ const PACE: Record<LimitPace, { readonly label: string; readonly icon: typeof Ga
   under: { label: "Under pace: headroom left for the rest of the window", icon: TrendingDownIcon },
 };
 
-/** The series colour the cost chart uses for this driver, so the two views read as one. */
 export function barColor(driver: ServerProvider["driver"]): string {
   const kind: UsageProviderKind | undefined =
     driver === "codex"
@@ -63,9 +59,9 @@ export function barColor(driver: ServerProvider["driver"]): string {
   return kind ? PROVIDER_PRESENTATION[kind].color : "var(--foreground)";
 }
 
-/** Pace as a glyph with the words on hover. */
 export function PaceIcon({ pace }: { readonly pace: LimitPace }) {
   const { t: uiT } = useUiLanguage();
+
   const Icon = PACE[pace].icon;
   return (
     <Tooltip>
@@ -85,12 +81,6 @@ export function PaceIcon({ pace }: { readonly pace: LimitPace }) {
   );
 }
 
-/**
- * One window as a full-width bar from the moment it opened to its reset.
- * The fill is the share of quota spent; the hairline is how far into the
- * window the clock is, which is also where even spending would have put the
- * fill. Hover for the exact figures and reset time.
- */
 function WindowBar({
   color,
   window,
@@ -100,13 +90,13 @@ function WindowBar({
   readonly window: ServerProviderUsageWindow;
   readonly now: number;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
+
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const remaining = remainingPercent(window);
   const elapsed = elapsedShare(window, now);
-  // The fill is quota left, so the even-spending mark is the time left.
   const timeLeft = elapsed === null ? null : Math.round((1 - elapsed) * 100);
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const resetsIn = formatResetsIn(window, now);
   const resetsAt = window.resetsAt
     ? formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)
     : null;
@@ -144,13 +134,9 @@ function WindowBar({
       <TooltipPopup side="top">
         <div className="flex flex-col gap-0.5">
           <span className="text-foreground">
-            <UiText
-              message={"{0}% left{1}"}
-              values={{
-                "0": remaining,
-                "1": timeLeft !== null ? uiT(" · {0}% of the window left", { "0": timeLeft }) : "",
-              }}
-            />
+            {remaining}
+            {uiT("% left")}
+            {timeLeft !== null ? ` · ${timeLeft}% of the window left` : ""}
           </span>
           {timeLeft !== null ? (
             <span className="text-muted-foreground">
@@ -159,7 +145,7 @@ function WindowBar({
           ) : null}
           {resetsAt ? (
             <span className="text-muted-foreground">
-              {uiT("Quota resets")} {resetsAt}
+              Resets {resetsAt}
               {resetsIn ? ` · ${resetsIn}` : ""}
             </span>
           ) : null}
@@ -169,10 +155,6 @@ function WindowBar({
   );
 }
 
-/**
- * One account's windows as rows: label and percent, bar, pace and countdown.
- * Compact rows fit the composer panel with narrower columns.
- */
 export function LimitWindows({
   driver,
   windows,
@@ -184,7 +166,8 @@ export function LimitWindows({
   readonly now: number;
   readonly compact?: boolean;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
+
   const color = barColor(driver);
   return (
     <div
@@ -196,13 +179,11 @@ export function LimitWindows({
     >
       {windows.map((window) => {
         const pace = paceOf(window, now);
-        const resetsIn = formatUiUsageReset(window, now, locale);
+        const resetsIn = formatResetsIn(window, now);
         return (
           <Fragment key={window.id}>
             <span className="flex min-w-0 items-center gap-2 text-xs">
-              <span className="truncate text-muted-foreground">
-                {formatUiUsageWindowLabel(window.label, locale)}
-              </span>
+              <span className="truncate text-muted-foreground">{window.label}</span>
               <span className="ms-auto shrink-0 font-medium text-foreground tabular-nums">
                 {remainingPercent(window)}
                 {uiT("% left")}
@@ -227,7 +208,6 @@ const OUTCOME_TEXT: Record<ProviderConsumeResetCreditOutcome, string> = {
   alreadyRedeemed: "That credit was already redeemed.",
 };
 
-/** Everything a redeem needs: where to send it and what to say afterwards. */
 export function useResetCredit(
   environmentId: EnvironmentId,
   input: ProviderConsumeResetCreditInput,
@@ -260,10 +240,9 @@ export function useResetCredit(
 }
 
 /**
- * The confirm for a redeem. Redeeming spends a credit the provider granted the
- * user, so it never fires on a bare click. Mount it outside any popover that
- * holds the button: dialogs stack under popovers, and closing the popover
- * would unmount a dialog rendered inside it.
+ * Redeeming spends a credit the provider granted the user, so it never fires on a bare click.
+ * Mount it outside any popover that holds the button: dialogs stack under popovers, and closing
+ * the popover would unmount a dialog rendered inside it.
  */
 export function ResetCreditDialog({
   open,
@@ -277,6 +256,7 @@ export function ResetCreditDialog({
   readonly disabled?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogPopup>
@@ -299,7 +279,22 @@ export function ResetCreditDialog({
   );
 }
 
-/** Banked reset credits with the redeem button and its confirm, self-contained. */
+export function resetCreditsSummary(
+  credits: ServerProviderResetCredits,
+  now: number,
+  compact = false,
+): string {
+  const expiresIn = credits.nextExpiresAt
+    ? formatDuration(Date.parse(credits.nextExpiresAt) - now)
+    : null;
+  if (credits.availableCount === 0) return "No reset credits banked";
+  if (compact)
+    return `${credits.availableCount} banked${expiresIn ? ` · expires in ${expiresIn}` : ""}`;
+  return `${credits.availableCount} ${credits.availableCount === 1 ? "reset credit" : "reset credits"} banked${
+    expiresIn ? ` · next expires in ${expiresIn}` : ""
+  }`;
+}
+
 export function ResetCredits({
   environmentId,
   input,
@@ -311,7 +306,8 @@ export function ResetCredits({
   readonly credits: ServerProviderResetCredits;
   readonly now: number;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
+
   const { canManageProviders, confirming, setConfirming, busy, status, redeem } = useResetCredit(
     environmentId,
     input,
@@ -319,7 +315,7 @@ export function ResetCredits({
   if (credits.availableCount === 0 && status === null) return null;
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-      <span className="tabular-nums">{formatUiResetCredits(credits, now, locale)}</span>
+      <span className="tabular-nums">{resetCreditsSummary(credits, now)}</span>
       {credits.availableCount > 0 ? (
         <Button
           size="xs"
@@ -344,9 +340,8 @@ export function ResetCredits({
 }
 
 /**
- * Subscription quota across every connected environment's providers and hubs,
- * pooled per provider. The page advances `now` on explicit refresh rather than
- * ticking: a live clock would repaint the page for no decision-changing gain.
+ * The page advances `now` on explicit refresh rather than ticking: a live clock would repaint the
+ * page for no decision-changing gain.
  */
 export function UsageLimitsSection({
   selectedEnvironmentIds,
@@ -359,13 +354,11 @@ export function UsageLimitsSection({
   readonly now: number;
   readonly cursorPrompt?: ReactNode;
 }) {
-  const presentations = useAtomValue(environmentPresentations.presentationsAtom);
+  const presentations = useAtomValue(environmentPresentations.presentationsWithProvidersAtom);
   const hiddenDrivers = new Set<ServerProvider["driver"]>(
     [...hiddenProviders].map((provider) => PROVIDER_PRESENTATION[provider].driverKind),
   );
   const isVisible = (driver: ServerProvider["driver"]) => !hiddenDrivers.has(driver);
-  // Hidden drivers leave both native accounts and hub accounts, so their
-  // bars, notices, and external links all drop out together.
   const selected = new Map(
     [...presentations].flatMap(([id, presentation]) => {
       if (selectedEnvironmentIds !== null && !selectedEnvironmentIds.has(id)) return [];
@@ -379,7 +372,6 @@ export function UsageLimitsSection({
             serverConfig: {
               ...config,
               providers: config.providers.filter((provider) => isVisible(provider.driver)),
-              // A hub left with no visible accounts is dropped, not reported as empty.
               usageLimitSources: config.usageLimitSources?.flatMap((source) => {
                 const accounts = source.accounts.filter((account) => isVisible(account.driver));
                 return accounts.length === 0 && source.accounts.length > 0

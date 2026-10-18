@@ -1,8 +1,8 @@
 import { useUiLanguage } from "../../i18n";
 import { Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/AppText";
-import { SymbolView } from "../../components/AppSymbol";
-import { ControlPillMenu } from "../../components/ControlPillMenu";
+import { AppText as Text } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { Menu } from "../../components/ui/Menu";
 import type { ActivityFilter } from "./pullRequestActivityFilter";
 
 export function PullRequestActivityFilters({
@@ -22,7 +22,7 @@ export function PullRequestActivityFilters({
   ] as const;
   return (
     <View className="mb-4 flex-row items-center justify-between gap-3">
-      <ControlPillMenu
+      <Menu
         title={uiT("Activity")}
         actions={kinds.map((kind) => ({ ...kind, state: value.kind === kind.id ? "on" : "off" }))}
         onPressAction={({ nativeEvent }) => {
@@ -42,9 +42,9 @@ export function PullRequestActivityFilters({
           </Text>
           <SymbolView name="chevron.down" size={11} tintColorClassName="accent-icon-muted" />
         </Pressable>
-      </ControlPillMenu>
+      </Menu>
       <View className="flex-row items-center gap-3">
-        <ControlPillMenu
+        <Menu
           title={uiT("Show in activity")}
           actions={[
             { id: "bots", title: uiT("Bot comments"), state: value.bots ? "on" : "off" },
@@ -75,7 +75,7 @@ export function PullRequestActivityFilters({
               tintColorClassName="accent-icon-muted"
             />
           </Pressable>
-        </ControlPillMenu>
+        </Menu>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={value.newestFirst ? uiT("Newest first") : uiT("Oldest first")}

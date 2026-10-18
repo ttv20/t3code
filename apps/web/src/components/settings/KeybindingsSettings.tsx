@@ -17,8 +17,6 @@ import {
   type KeyboardEvent,
   type ReactNode,
   type RefObject,
-  useCallback,
-  useMemo,
   useReducer,
   useRef,
   useState,
@@ -55,6 +53,7 @@ import { Toggle } from "../ui/toggle";
 import { toastManager } from "../ui/toast";
 import {
   buildKeybindingRows,
+  filterKeybindingRows,
   buildKeybindingCommandOptions,
   buildWhenVariableOptions,
   commandLabel,
@@ -111,7 +110,6 @@ function KeybindingPill({ value }: { value: string }) {
   );
 }
 
-/** Filter box in the page toolbar; Mod+F focuses it from anywhere on the page. */
 function KeybindingsSearchInput({
   query,
   onChange,
@@ -121,7 +119,6 @@ function KeybindingsSearchInput({
   onChange: (next: string) => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <InputGroup className="min-w-0 basis-full **:[input]:h-9 sm:basis-0 sm:flex-1 sm:**:[input]:h-8">
       <InputGroupAddon>
@@ -133,15 +130,13 @@ function KeybindingsSearchInput({
         value={query}
         onChange={(event) => onChange(event.currentTarget.value)}
         onKeyDown={(event) => {
-          // The settings route treats an unhandled Escape as "go back";
-          // inside the search box it clears, then leaves the field.
           if (event.key !== "Escape") return;
           event.preventDefault();
           if (query.length > 0) onChange("");
           else event.currentTarget.blur();
         }}
-        placeholder={uiT("Search keybindings")}
-        aria-label={uiT("Search keybindings")}
+        placeholder="Search keybindings"
+        aria-label="Search keybindings"
         size="sm"
       />
     </InputGroup>
@@ -211,7 +206,6 @@ function defaultWhenGroup(operator: BooleanOperator = "and"): KeybindingWhenNode
   };
 }
 
-/** Warning glyph whose explanation lives in a tooltip; the one owner of that affordance here. */
 function WarningTooltipIcon({
   label,
   focusable = true,
@@ -252,6 +246,7 @@ function UnknownWhenVariableWarning({
   focusable?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
+
   if (identifiers.length === 0) return null;
   const label =
     identifiers.length === 1
@@ -269,6 +264,7 @@ function UnknownWhenVariableWarning({
 
 function KeybindingConflictWarning({ labels }: { labels: ReadonlyArray<string> }) {
   const { t: uiT } = useUiLanguage();
+
   if (labels.length === 0) return null;
   const description =
     labels.length === 1
@@ -297,7 +293,6 @@ function WhenVariableSelect({
   unknownIdentifiers?: ReadonlyArray<string>;
   onChange: (value: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const selected = variables.find((option) => option === value);
   const options =
     selected || variables.some((option) => option === value) ? variables : [value, ...variables];
@@ -305,7 +300,7 @@ function WhenVariableSelect({
   return (
     <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
       <SelectTrigger size="compact" className="min-w-0 flex-1">
-        <SelectValue placeholder={uiT("Condition")} />
+        <SelectValue placeholder="Condition" />
         {unknownIdentifiers && unknownIdentifiers.length > 0 ? (
           <UnknownWhenVariableWarning identifiers={unknownIdentifiers} focusable={false} />
         ) : null}
@@ -331,6 +326,7 @@ function WhenExpressionRemoveButton({
   onRemove: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -367,6 +363,7 @@ function WhenExpressionNodeEditor({
   onRemove?: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const condition = conditionParts(node);
 
   if (condition) {
@@ -414,7 +411,7 @@ function WhenExpressionNodeEditor({
           <Toggle
             pressed
             onPressedChange={(pressed) => onChange(pressed ? node : node.node)}
-            aria-label={uiT("Negate group")}
+            aria-label="Negate group"
             variant="outline"
             size="compact"
             className="min-w-10"
@@ -581,9 +578,10 @@ function WhenExpressionBuilder({
   onValidityChange?: (valid: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const expression = whenAstToExpression(value);
   const [expressionDraft, setExpressionDraft] = useState(expression);
-  const parseResult = useMemo(() => parseWhenExpressionDraft(expressionDraft), [expressionDraft]);
+  const parseResult = parseWhenExpressionDraft(expressionDraft);
   const parseError = parseResult.ok ? null : parseResult.message;
   const unknownIdentifiers = parseResult.ok ? unknownWhenVariables(parseResult.value) : [];
 
@@ -642,9 +640,9 @@ function WhenExpressionBuilder({
           <InputGroupInput
             value={expressionDraft}
             onChange={(event) => updateExpressionDraft(event.currentTarget.value)}
-            placeholder={uiT("Always")}
+            placeholder="Always"
             aria-invalid={Boolean(parseError)}
-            aria-label={uiT("When expression")}
+            aria-label="When expression"
             size="compact"
             font="mono"
           />
@@ -725,7 +723,6 @@ function rowKeybindingTarget(row: KeybindingRow): ServerRemoveKeybindingInput {
   };
 }
 
-/** Draft state and actions for editing one existing binding; layouts decide how to render it. */
 function useKeybindingRowEditor({
   row,
   allRows,
@@ -755,7 +752,6 @@ function useKeybindingRowEditor({
   };
 
   const captureKeybinding = (event: KeyboardEvent<HTMLInputElement>) => {
-    // Tab is recorded like any key while recording; after that it moves focus on.
     if (event.key === "Tab" && !isRecording) return;
     event.preventDefault();
     if (event.key === "Escape") {
@@ -797,7 +793,6 @@ type KeybindingRowProps = KeybindingRowActions & {
   anchorId?: string | undefined;
 };
 
-/** Shortcut pill that turns into a capture input when clicked, plus Save once the draft changes. */
 function KeybindingKeyControl({
   row,
   editor,
@@ -810,6 +805,7 @@ function KeybindingKeyControl({
   pillClassName?: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { keyDraft, isRecording, isDirty, isWhenDraftValid, setDraft, save, captureKeybinding } =
     editor;
   const showPill = !isRecording && keyDraft === row.key && row.key.length > 0 && !isDirty;
@@ -829,10 +825,7 @@ function KeybindingKeyControl({
         <button
           type="button"
           onClick={() => setDraft({ isRecording: true })}
-          aria-label={uiT("Edit shortcut for {0}: {1}", {
-            "0": uiT(commandLabel(row.command)),
-            "1": formatShortcutLabel(row.binding.shortcut),
-          })}
+          aria-label={`Edit shortcut for ${commandLabel(row.command)}: ${formatShortcutLabel(row.binding.shortcut)}`}
           className={cn(
             "inline-flex h-8 cursor-pointer items-center rounded-md border border-transparent px-1.5 sm:h-7 outline-none transition-colors hover:border-border/70 hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/24",
             pillClassName,
@@ -844,7 +837,7 @@ function KeybindingKeyControl({
         <Input
           data-keybinding-capture=""
           autoFocus={isRecording}
-          aria-label={uiT("Keybinding for {0}", { "0": uiT(commandLabel(row.command)) })}
+          aria-label={`Keybinding for ${commandLabel(row.command)}`}
           value={isRecording ? "" : keyDraft}
           placeholder={isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
           size="sm"
@@ -860,7 +853,6 @@ function KeybindingKeyControl({
   );
 }
 
-/** Quiet inline trigger showing the when clause; opens the expression builder. */
 function WhenClauseControl({
   label,
   expression,
@@ -877,6 +869,7 @@ function WhenClauseControl({
   onValidityChange: (valid: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Popover>
       <PopoverTrigger
@@ -916,6 +909,7 @@ function KeybindingRowMenu({
   onRemove: (row: KeybindingRow) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const canReset = row.source === "Custom" && row.defaultKey !== null;
   const canRemove = row.source !== "Default";
   if (!canReset && !canRemove) return null;
@@ -929,7 +923,7 @@ function KeybindingRowMenu({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label={uiT("Actions for {0}", { "0": uiT(commandLabel(row.command)) })}
+            aria-label={`Actions for ${commandLabel(row.command)}`}
           />
         }
       >
@@ -953,6 +947,7 @@ function KeybindingRowMenu({
 
 function KeybindingSourceBadge({ source }: { source: KeybindingRow["source"] }) {
   const { t: uiT } = useUiLanguage();
+
   if (source === "Default") return null;
   return (
     <Badge variant="outline" size="sm">
@@ -962,11 +957,10 @@ function KeybindingSourceBadge({ source }: { source: KeybindingRow["source"] }) 
 }
 
 function KeybindingRowTitle({ row }: { row: KeybindingRow }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="flex items-center gap-2" />}>
-        {uiT(commandLabel(row.command))}
+        {commandLabel(row.command)}
         <KeybindingSourceBadge source={row.source} />
       </TooltipTrigger>
       <TooltipPopup side="top">{row.command}</TooltipPopup>
@@ -984,11 +978,12 @@ function KeybindingRowWhen({
   variables: ReadonlyArray<WhenVariableOption>;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <span className="flex h-6 items-center gap-1.5">
       <span className="text-xs leading-none text-muted-foreground/70">{uiT("When")}</span>
       <WhenClauseControl
-        label={uiT(commandLabel(row.command))}
+        label={commandLabel(row.command)}
         expression={editor.whenDraftExpression}
         value={editor.whenDraft}
         variables={variables}
@@ -999,7 +994,6 @@ function KeybindingRowWhen({
   );
 }
 
-/** Row actions that stay hidden until the row is hovered or holds focus. */
 function KeybindingHoverRowMenu(props: {
   row: KeybindingRow;
   isSaving: boolean;
@@ -1013,7 +1007,6 @@ function KeybindingHoverRowMenu(props: {
   );
 }
 
-/** One binding as a settings row: pills flush right, actions fading in beside them on hover. */
 function KeybindingSettingsRow(props: KeybindingRowProps) {
   const { row, isSaving, anchorId, allRows, variables, onSave, onReset, onRemove } = props;
   const editor = useKeybindingRowEditor({ row, allRows, onSave });
@@ -1045,7 +1038,6 @@ function KeybindingSettingsRow(props: KeybindingRowProps) {
   );
 }
 
-/** Draft state for a binding that does not exist yet. */
 function useNewKeybindingDraft({
   allRows,
   onSave,
@@ -1054,6 +1046,7 @@ function useNewKeybindingDraft({
   onSave: (input: ServerUpsertKeybindingInput) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const [commandDraft, setCommandDraft] = useState<KeybindingCommand | "">("");
   const [draft, setDraft] = useReducer(keybindingRowDraftReducer, {
     keyDraft: "",
@@ -1068,7 +1061,7 @@ function useNewKeybindingDraft({
     key: keyDraft,
     when: whenDraftExpression,
   });
-  const commandLabelText = commandDraft ? uiT(commandLabel(commandDraft)) : uiT("new keybinding");
+  const commandLabelText = commandDraft ? commandLabel(commandDraft) : uiT("new keybinding");
   const canSave = Boolean(commandDraft) && keyDraft.trim().length > 0 && isWhenDraftValid;
 
   const save = () => {
@@ -1081,7 +1074,6 @@ function useNewKeybindingDraft({
   };
 
   const captureKeybinding = (event: KeyboardEvent<HTMLInputElement>) => {
-    // Tab is recorded like any key while recording; after that it moves focus on.
     if (event.key === "Tab" && !isRecording) return;
     event.preventDefault();
     if (event.key === "Escape") {
@@ -1129,19 +1121,18 @@ function NewKeybindingCommandSelect({
   commandOptions: ReadonlyArray<KeybindingCommandOption>;
   className?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Select
       value={draft.commandDraft}
       onValueChange={(value) => draft.setCommandDraft(value as KeybindingCommand)}
     >
       <SelectTrigger size="sm" className={className}>
-        <SelectValue placeholder={uiT("Command")} />
+        <SelectValue placeholder="Command" />
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} matchTriggerWidth={false} className="max-h-72">
         {commandOptions.map((command) => (
           <SelectItem key={command} value={command} className="w-full">
-            <span className="truncate">{uiT(commandLabel(command))}</span>
+            <span className="truncate">{commandLabel(command)}</span>
           </SelectItem>
         ))}
       </SelectContent>
@@ -1159,6 +1150,7 @@ function NewKeybindingKeyInput({
   className?: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Input
       data-keybinding-capture=""
@@ -1204,6 +1196,7 @@ function NewKeybindingCancelIcon({
   onCancel: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -1213,7 +1206,7 @@ function NewKeybindingCancelIcon({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label={uiT("Cancel new keybinding")}
+            aria-label="Cancel new keybinding"
             onClick={onCancel}
           />
         }
@@ -1225,16 +1218,16 @@ function NewKeybindingCancelIcon({
   );
 }
 
-/** Add-binding form shaped like the binding rows below it. */
 function NewKeybindingSettingsRow(props: NewKeybindingProps) {
   const { t: uiT } = useUiLanguage();
+
   const { commandOptions, allRows, variables, isSaving, onSave, onCancel } = props;
   const draft = useNewKeybindingDraft({ allRows, onSave });
 
   return (
     <SettingsRow
       className="bg-muted/15"
-      title={uiT("New keybinding")}
+      title="New keybinding"
       description={
         <span className="flex h-6 items-center gap-1.5">
           <span className="text-xs leading-none text-muted-foreground/70">{uiT("When")}</span>
@@ -1266,7 +1259,6 @@ interface KeybindingsGroupsProps extends KeybindingRowActions {
   savingCommand: KeybindingCommand | null;
 }
 
-/** One titled section per command area, each holding its binding rows. */
 function KeybindingsGroups(props: KeybindingsGroupsProps) {
   const { groups, anchorIds, savingCommand, ...rowActions } = props;
   return groups.map((group) => (
@@ -1284,11 +1276,9 @@ function KeybindingsGroups(props: KeybindingsGroupsProps) {
   ));
 }
 
-/** Shown in the browser build only; the desktop app receives every shortcut. */
 function BrowserKeybindingNotice() {
   const { t: uiT } = useUiLanguage();
-  // The label carries the whole sentence so assistive tech reads it without
-  // opening the tooltip.
+
   const message = uiT(
     "The browser may claim some shortcuts first. The desktop app receives them all.",
   );
@@ -1309,11 +1299,32 @@ function BrowserKeybindingNotice() {
   );
 }
 
+function keybindingAnchorIds(rows: ReturnType<typeof buildKeybindingRows>) {
+  const ids = new Map<string, string>();
+  const seen = new Set<KeybindingCommand>();
+  for (const row of rows) {
+    if (seen.has(row.command)) continue;
+    seen.add(row.command);
+    ids.set(row.id, keybindingSearchAnchorId(row.command));
+  }
+  return ids;
+}
+
+// Rows come from a hook so they are cached on the server keybindings alone. Built
+// inline, the compiler joins them to the query's cache scope (filtering might
+// mutate them), and every keystroke rebuilds and re-renders every row.
+function useKeybindingCatalog() {
+  const serverKeybindings = useSettingsScope().environment?.serverConfig?.keybindings;
+  const merged = mergeWithDefaultKeybindings(serverKeybindings ?? []);
+  return {
+    commandOptions: buildKeybindingCommandOptions(merged),
+    allRows: buildKeybindingRows(merged),
+  };
+}
+
 export function KeybindingsSettingsPanel() {
   const { t: uiT } = useUiLanguage();
-  // The representative environment supplies the displayed bindings; edits
-  // fan out to every connected environment in the selection, so one
-  // shortcut change reaches each machine the user runs T3 Code on.
+
   const { environment: primaryEnvironment, connectedEnvironments } = useSettingsScope();
   const canOpenKeybindingsFile = useEnvironmentScope(
     primaryEnvironment?.environmentId ?? null,
@@ -1323,11 +1334,6 @@ export function KeybindingsSettingsPanel() {
   const canWriteSettings =
     connectedEnvironments.length > 0 &&
     connectedEnvironments.every((target) => writableIds.has(target.environmentId));
-  const serverKeybindings = primaryEnvironment?.serverConfig?.keybindings;
-  const keybindings = useMemo(
-    () => mergeWithDefaultKeybindings(serverKeybindings ?? []),
-    [serverKeybindings],
-  );
   const keybindingsConfigPath = primaryEnvironment?.serverConfig?.keybindingsConfigPath ?? null;
   const availableEditors = primaryEnvironment?.serverConfig?.availableEditors ?? [];
   const upsertKeybinding = useAtomCommand(serverEnvironment.upsertKeybinding, {
@@ -1344,36 +1350,20 @@ export function KeybindingsSettingsPanel() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [savingCommand, setSavingCommand] = useState<KeybindingCommand | null>(null);
   const [isAddingBinding, setIsAddingBinding] = useState(false);
-  const rows = useMemo(
-    () => buildKeybindingRows(keybindings, query, uiT),
-    [keybindings, query, uiT],
-  );
-  const groups = useMemo(() => groupKeybindingRows(rows), [rows]);
-  // Settings search jumps to a command, so only its first row anchors.
-  const anchorIds = useMemo(() => {
-    const ids = new Map<string, string>();
-    const seen = new Set<KeybindingCommand>();
-    for (const row of rows) {
-      if (seen.has(row.command)) continue;
-      seen.add(row.command);
-      ids.set(row.id, keybindingSearchAnchorId(row.command));
-    }
-    return ids;
-  }, [rows]);
-  // The search-target context is provided by this panel's own page container,
-  // so the jump target is read from the route hash here.
   const searchTargetId = useLocation({ select: (location) => location.hash.replace(/^#/, "") });
   const [handledSearchTargetId, setHandledSearchTargetId] = useState(searchTargetId);
 
-  // A settings-search jump must not be hidden by the page's own filter.
   if (searchTargetId !== handledSearchTargetId) {
     setHandledSearchTargetId(searchTargetId);
     if (searchTargetId.startsWith("keybinding-")) setQuery("");
   }
-  const commandOptions = useMemo(() => buildKeybindingCommandOptions(keybindings), [keybindings]);
-  const whenVariables = useMemo(() => buildWhenVariableOptions(), []);
+  const whenVariables = buildWhenVariableOptions();
+  const { commandOptions, allRows } = useKeybindingCatalog();
+  const rows = filterKeybindingRows(allRows, query, uiT);
+  const groups = groupKeybindingRows(rows);
+  const anchorIds = keybindingAnchorIds(rows);
 
-  const openKeybindingsFile = useCallback(() => {
+  const openKeybindingsFile = () => {
     if (
       !keybindingsConfigPath ||
       !primaryEnvironment ||
@@ -1393,106 +1383,97 @@ export function KeybindingsSettingsPanel() {
         type: "error",
       });
     })();
-  }, [keybindingsConfigPath, openInPreferredEditor, primaryEnvironment, uiT]);
+  };
 
-  const saveKeybinding = useCallback(
-    (input: ServerUpsertKeybindingInput) => {
-      if (
-        !primaryEnvironment ||
-        !connectedEnvironments.every((target) =>
-          readEnvironmentScope(target.environmentId, AuthSettingsWriteScope),
-        )
+  const saveKeybinding = (input: ServerUpsertKeybindingInput) => {
+    if (
+      !primaryEnvironment ||
+      !connectedEnvironments.every((target) =>
+        readEnvironmentScope(target.environmentId, AuthSettingsWriteScope),
       )
+    )
+      return;
+    setSavingCommand(input.command);
+    const payload: ServerUpsertKeybindingInput = {
+      command: input.command,
+      key: input.key.trim(),
+      ...(input.when?.trim() ? { when: input.when.trim() } : {}),
+      ...(input.replace ? { replace: input.replace } : {}),
+    };
+    void (async () => {
+      const results = await Promise.all(
+        connectedEnvironments.map((target) =>
+          upsertKeybinding({ environmentId: target.environmentId, input: payload }),
+        ),
+      );
+      setSavingCommand(null);
+      const failed = results.find((result) => result._tag === "Failure");
+      if (!failed) {
+        setIsAddingBinding(false);
         return;
-      setSavingCommand(input.command);
-      const payload: ServerUpsertKeybindingInput = {
-        command: input.command,
-        key: input.key.trim(),
-        ...(input.when?.trim() ? { when: input.when.trim() } : {}),
-        ...(input.replace ? { replace: input.replace } : {}),
-      };
-      void (async () => {
-        const results = await Promise.all(
-          connectedEnvironments.map((target) =>
-            upsertKeybinding({ environmentId: target.environmentId, input: payload }),
-          ),
-        );
-        setSavingCommand(null);
-        const failed = results.find((result) => result._tag === "Failure");
-        if (!failed) {
-          setIsAddingBinding(false);
-          return;
-        }
-        if (!isAtomCommandInterrupted(failed)) {
-          const error = squashAtomCommandFailure(failed);
-          toastManager.add({
-            title: uiT("Unable to save keybinding"),
-            description:
-              error instanceof Error ? error.message : uiT("The keybinding was not saved."),
-            type: "error",
-          });
-        }
-      })();
-    },
-    [connectedEnvironments, primaryEnvironment, upsertKeybinding, uiT],
-  );
+      }
+      if (!isAtomCommandInterrupted(failed)) {
+        const error = squashAtomCommandFailure(failed);
+        toastManager.add({
+          title: uiT("Unable to save keybinding"),
+          description:
+            error instanceof Error ? error.message : uiT("The keybinding was not saved."),
+          type: "error",
+        });
+      }
+    })();
+  };
 
-  const removeKeybinding = useCallback(
-    (row: KeybindingRow) => {
-      if (
-        !primaryEnvironment ||
-        !connectedEnvironments.every((target) =>
-          readEnvironmentScope(target.environmentId, AuthSettingsWriteScope),
-        )
+  const removeKeybinding = (row: KeybindingRow) => {
+    if (
+      !primaryEnvironment ||
+      !connectedEnvironments.every((target) =>
+        readEnvironmentScope(target.environmentId, AuthSettingsWriteScope),
       )
-        return;
-      setSavingCommand(row.command);
-      void (async () => {
-        const results = await Promise.all(
-          connectedEnvironments.map((target) =>
-            removeKeybindingMutation({
-              environmentId: target.environmentId,
-              input: rowKeybindingTarget(row),
-            }),
-          ),
-        );
-        setSavingCommand(null);
-        const result = results.find((entry) => entry._tag === "Failure") ?? results[0];
-        if (result?._tag === "Failure" && !isAtomCommandInterrupted(result)) {
-          const error = squashAtomCommandFailure(result);
-          toastManager.add({
-            title: uiT("Unable to remove keybinding"),
-            description:
-              error instanceof Error ? error.message : uiT("The keybinding was not removed."),
-            type: "error",
-          });
-        }
-      })();
-    },
-    [connectedEnvironments, primaryEnvironment, removeKeybindingMutation, uiT],
-  );
+    )
+      return;
+    setSavingCommand(row.command);
+    void (async () => {
+      const results = await Promise.all(
+        connectedEnvironments.map((target) =>
+          removeKeybindingMutation({
+            environmentId: target.environmentId,
+            input: rowKeybindingTarget(row),
+          }),
+        ),
+      );
+      setSavingCommand(null);
+      const result = results.find((entry) => entry._tag === "Failure") ?? results[0];
+      if (result?._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+        const error = squashAtomCommandFailure(result);
+        toastManager.add({
+          title: uiT("Unable to remove keybinding"),
+          description:
+            error instanceof Error ? error.message : uiT("The keybinding was not removed."),
+          type: "error",
+        });
+      }
+    })();
+  };
 
-  const resetKeybinding = useCallback(
-    (row: KeybindingRow) => {
-      if (!row.defaultKey) return;
-      saveKeybinding({
+  const resetKeybinding = (row: KeybindingRow) => {
+    if (!row.defaultKey) return;
+    saveKeybinding({
+      command: row.command,
+      key: row.defaultKey,
+      when: row.defaultWhen.trim().length > 0 ? row.defaultWhen : undefined,
+      replace: {
         command: row.command,
-        key: row.defaultKey,
-        when: row.defaultWhen.trim().length > 0 ? row.defaultWhen : undefined,
-        replace: {
-          command: row.command,
-          key: row.key,
-          ...(row.when.trim().length > 0 ? { when: row.when } : {}),
-        },
-      });
-    },
-    [saveKeybinding],
-  );
+        key: row.key,
+        ...(row.when.trim().length > 0 ? { when: row.when } : {}),
+      },
+    });
+  };
 
-  const cancelAdd = useCallback(() => setIsAddingBinding(false), []);
+  const cancelAdd = () => setIsAddingBinding(false);
 
   const rowActions: KeybindingRowActions = {
-    allRows: rows,
+    allRows,
     variables: whenVariables,
     onSave: saveKeybinding,
     onReset: resetKeybinding,
@@ -1525,7 +1506,7 @@ export function KeybindingsSettingsPanel() {
                   size="icon"
                   disabled={!keybindingsConfigPath || !canOpenKeybindingsFile}
                   onClick={openKeybindingsFile}
-                  aria-label={uiT("Open keybindings.json")}
+                  aria-label="Open keybindings.json"
                 >
                   <FileJsonIcon aria-hidden className="size-4" />
                 </Button>
@@ -1538,7 +1519,9 @@ export function KeybindingsSettingsPanel() {
 
       {!canWriteSettings ? (
         <p className="text-xs text-muted-foreground">
-          {uiT("This connection can view keybindings but cannot change them.")}
+          {connectedEnvironments.length === 0
+            ? "Connect an environment to change keybindings."
+            : "This connection can view keybindings but cannot change them."}
         </p>
       ) : null}
       <div inert={!canWriteSettings} className="flex flex-col gap-8">
@@ -1546,7 +1529,7 @@ export function KeybindingsSettingsPanel() {
           <SettingsGroup>
             <NewKeybindingSettingsRow
               commandOptions={commandOptions}
-              allRows={rows}
+              allRows={allRows}
               variables={whenVariables}
               isSaving={savingCommand !== null}
               onSave={saveKeybinding}

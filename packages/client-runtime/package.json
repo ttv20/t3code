@@ -3,22 +3,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./turn-work-label": {
-      "types": "./src/turnWorkLabel.ts",
-      "default": "./src/turnWorkLabel.ts"
-    },
-    "./markdown-direction": {
-      "types": "./src/markdownDirection.ts",
-      "default": "./src/markdownDirection.ts"
-    },
-    "./markdown-rtl": {
-      "types": "./src/markdownRtl.ts",
-      "default": "./src/markdownRtl.ts"
-    },
-    "./environment-updates": {
-      "types": "./src/environmentUpdates.ts",
-      "default": "./src/environmentUpdates.ts"
-    },
     "./composerThreadItems": {
       "types": "./src/composerThreadItems.ts",
       "default": "./src/composerThreadItems.ts"
@@ -178,6 +162,10 @@
     "./state/git": {
       "types": "./src/state/git.ts",
       "default": "./src/state/git.ts"
+    },
+    "./state/command-output": {
+      "types": "./src/state/commandOutput.ts",
+      "default": "./src/state/commandOutput.ts"
     },
     "./state/item-support": {
       "types": "./src/state/itemSupport.ts",
@@ -367,6 +355,10 @@
       "types": "./src/work-log/scrollAnchor.ts",
       "default": "./src/work-log/scrollAnchor.ts"
     },
+    "./pull-request-link-input": {
+      "types": "./src/pullRequestLinkInput.ts",
+      "default": "./src/pullRequestLinkInput.ts"
+    },
     "./thread-pull-request-compatibility": {
       "types": "./src/threadPullRequestCompatibility.ts",
       "default": "./src/threadPullRequestCompatibility.ts"
@@ -434,6 +426,26 @@
     "./pull-request-markdown": {
       "types": "./src/pullRequestMarkdown.ts",
       "default": "./src/pullRequestMarkdown.ts"
+    },
+    "./pull-request-query": {
+      "types": "./src/pullRequestQuery.ts",
+      "default": "./src/pullRequestQuery.ts"
+    },
+    "./turn-work-label": {
+      "types": "./src/turnWorkLabel.ts",
+      "default": "./src/turnWorkLabel.ts"
+    },
+    "./markdown-direction": {
+      "types": "./src/markdownDirection.ts",
+      "default": "./src/markdownDirection.ts"
+    },
+    "./markdown-rtl": {
+      "types": "./src/markdownRtl.ts",
+      "default": "./src/markdownRtl.ts"
+    },
+    "./environment-updates": {
+      "types": "./src/environmentUpdates.ts",
+      "default": "./src/environmentUpdates.ts"
     },
     "./i18n": {
       "types": "./src/i18n.ts",

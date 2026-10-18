@@ -2,8 +2,8 @@ import { useUiLanguage } from "../../i18n";
 import { Host, ModalBottomSheet, RNHostView } from "@expo/ui/jetpack-compose";
 import { Pressable, View, useWindowDimensions } from "react-native";
 import { withUniwind } from "uniwind";
-import { AndroidSheetHeader } from "../../components/AndroidScreenHeader";
-import { AppText as Text } from "../../components/AppText";
+import { AndroidSheetHeader } from "../../components/ui/AndroidScreenHeader";
+import { AppText as Text } from "../../components/ui/AppText";
 import type { WorktreeSetupSheetProps } from "./worktree-setup-sheet";
 
 const NativeBottomSheet = withUniwind(ModalBottomSheet, {

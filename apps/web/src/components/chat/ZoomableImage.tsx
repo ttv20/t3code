@@ -1,13 +1,5 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type Ref,
-} from "react";
+import { useUiLanguage } from "../../i18n";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from "react";
 
 const MAX_ZOOM = 8;
 
@@ -15,7 +7,6 @@ export interface ZoomableImageHandle {
   pan: (key: string) => boolean;
 }
 
-/** Zooms around the pointer and keeps the whole image accessible by dragging or scrolling. */
 export function ZoomableImage({
   src,
   name,
@@ -28,6 +19,7 @@ export function ZoomableImage({
   ref?: Ref<ZoomableImageHandle>;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const viewportRef = useRef<HTMLDivElement>(null);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
   const [windowSize, setWindowSize] = useState(() => ({
@@ -89,7 +81,7 @@ export function ZoomableImage({
     [],
   );
 
-  const changeZoom = useCallback((next: number, point?: { x: number; y: number }) => {
+  const changeZoom = (next: number, point?: { x: number; y: number }) => {
     const viewport = viewportRef.current;
     const previous = zoomRef.current;
     const clamped = Math.min(MAX_ZOOM, Math.max(1, next));
@@ -105,7 +97,7 @@ export function ZoomableImage({
     };
     zoomRef.current = clamped;
     setZoom(clamped);
-  }, []);
+  };
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -242,7 +234,7 @@ export function ZoomableImage({
         />
       </div>
       <span className="sr-only" aria-live="polite">
-        <UiText message={"{0}% zoom"} values={{ "0": Math.round(zoom * 100) }} />
+        {Math.round(zoom * 100)}% zoom
       </span>
     </div>
   );

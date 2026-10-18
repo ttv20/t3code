@@ -21,7 +21,7 @@ import {
   type NativeStackTypeBag,
 } from "@react-navigation/native-stack";
 import { use, useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { Split, type SplitHostCommands } from "react-native-screens";
 import { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { scopedThreadKey } from "../../lib/scopedEntities";
@@ -43,7 +43,6 @@ import {
 } from "../../native/NativeWorkspaceColumns";
 import { V5StackHeader } from "../../native/V5StackHeader.ios";
 import type { AppNativeStackNavigationOptions } from "../../native/StackHeader";
-import { dispatchHardwareKeyboardCommand } from "../keyboard/hardwareKeyboardCommands";
 import {
   nativeWorkspacePopAction,
   projectWorkspaceStack,
@@ -171,10 +170,6 @@ function WorkspaceColumns(
   );
 
   useEffect(() => {
-    // In compact size classes UIKit exposes one column. Selecting a thread
-    // changes the visible column without rebuilding either navigation stack.
-    // The initial column is a native prop, so it is applied before the host
-    // attaches. Commands only handle later navigation changes.
     if (layout.usesSplitView || shownCompactColumn.current === compactColumn) return;
     shownCompactColumn.current = compactColumn;
     hostRef.current?.show(compactColumn);
@@ -189,7 +184,9 @@ function WorkspaceColumns(
       preferredSplitBehavior="tile"
       topColumnForCollapsing={compactColumn}
       preferredDisplayMode={
-        panes.primarySidebarVisible || !activeDetailKey ? "oneBesideSecondary" : "secondaryOnly"
+        panes.primarySidebarVisible || (!layout.usesSplitView && !activeDetailKey)
+          ? "oneBesideSecondary"
+          : "secondaryOnly"
       }
       displayModeButtonVisibility="never"
       presentsWithGesture
@@ -226,24 +223,7 @@ function WorkspaceColumns(
               options={{
                 headerShown: true,
                 title: "",
-                unstable_headerRightItems: () =>
-                  Platform.OS === "ios" &&
-                  !Platform.isPad &&
-                  layout.usesSplitView &&
-                  !panes.primarySidebarVisible
-                    ? [
-                        {
-                          type: "button",
-                          axisBehavior: "verticalPreferred",
-                          accessibilityLabel: "Search threads",
-                          label: uiT("Search threads"),
-                          icon: { type: "sfSymbol", name: "magnifyingglass" },
-                          onPress: () => {
-                            dispatchHardwareKeyboardCommand("focusSearch");
-                          },
-                        },
-                      ]
-                    : [],
+
                 unstable_headerLeftItems: () => [
                   {
                     type: "button",
@@ -277,7 +257,6 @@ function WorkspaceColumns(
         </Split.Stack>
       </Split.Column>
       <Split.Inspector>
-        {/* Inspector content supplies its own navigation header. */}
         <Split.HeaderConfig hidden />
         <ColumnContent>
           <View className="flex-1 bg-screen">{inspector.render?.()}</View>

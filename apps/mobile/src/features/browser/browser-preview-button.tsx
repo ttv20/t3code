@@ -1,10 +1,9 @@
 import { useUiLanguage } from "../../i18n";
 import { Pressable, View } from "react-native";
 
-import { AppText } from "../../components/AppText";
-import { SymbolView } from "../../components/AppSymbol";
+import { AppText } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
 
-/** Opens the thread's server-hosted browser tabs. Sits beside the device preview button. */
 export function BrowserPreviewButton(props: {
   readonly count: number;
   readonly onPress: () => void;

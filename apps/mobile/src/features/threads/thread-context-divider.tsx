@@ -1,8 +1,8 @@
 import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 import { View, type ColorValue } from "react-native";
-import { AppText as Text } from "../../components/AppText";
-import { SymbolView, type AppSymbolName } from "../../components/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { ShimmeringWorkContent } from "./thread-work-log";
 
 export function ThreadContextDivider(props: {

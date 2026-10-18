@@ -3,11 +3,12 @@ import { StackActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { Platform, View } from "react-native";
 import { useAndroidWorkspaceSelection } from "../workspace/useAndroidWorkspaceSelection";
-import { AppText as Text } from "../../components/AppText";
+import { AppText as Text } from "../../components/ui/AppText";
 import { PullRequestCardGroup, PullRequestCardRow } from "./PullRequestControls";
 import { pullRequestStatus } from "./pullRequestStatus";
 import type { PullRequestParams } from "./usePullRequestDiff";
 import type { PullRequestStackState } from "./usePullRequestStack";
+import { PullRequestGlyph } from "./pullRequestGlyphs";
 
 export function PullRequestStackCard(props: {
   readonly params: PullRequestParams;
@@ -28,7 +29,7 @@ export function PullRequestStackCard(props: {
       <PullRequestCardGroup>
         <PullRequestCardRow
           title={uiT("Stack")}
-          icon="square.3.layers.3d"
+          icon={PullRequestGlyph.stack}
           value={`${summary.position} of ${summary.size}`}
           last
         />
@@ -40,7 +41,7 @@ export function PullRequestStackCard(props: {
     <PullRequestCardGroup>
       <PullRequestCardRow
         title={uiT("Stack")}
-        icon="square.3.layers.3d"
+        icon={PullRequestGlyph.stack}
         value={`${position} of ${stack.layers.length}`}
         accessibilityLabel={uiT("Stack, {0} of {1}{2}", {
           "0": position,

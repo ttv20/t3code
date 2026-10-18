@@ -5,11 +5,6 @@ import { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
 import { ProviderSettingsPanel } from "../components/settings/ProviderSettingsPanel";
 import { useSettingsScope } from "../components/settings/SettingsScopeContext";
 
-/**
- * Providers are machine state, so the page shows one environment at a time:
- * the chosen one from the settings scope selector.
- * A project crumb narrows candidates to where that project is registered.
- */
 function SettingsProvidersRoute() {
   const { t: uiT } = useUiLanguage();
   const target = Route.useSearch();

@@ -1,62 +1,8 @@
-import { useUiLanguage } from "../../../i18n";
 import type { ComponentProps } from "react";
-import { Platform, Pressable } from "react-native";
+import { useUiLanguage } from "../../../i18n";
+import { ListActionRow } from "../../../components/ui/ListActionRow";
 
-import { AppActivityIndicator } from "../../../components/AppActivityIndicator";
-import { SymbolView } from "../../../components/AppSymbol";
-import { AppText as Text } from "../../../components/AppText";
-import { MaterialListRow } from "../../../components/MaterialListRow";
-import { cn } from "../../../lib/cn";
-
-export function SettingsActionRow(props: {
-  readonly icon: ComponentProps<typeof SymbolView>["name"];
-  readonly label: string;
-  readonly tone?: "default" | "danger";
-  readonly disabled?: boolean;
-  readonly loading?: boolean;
-  readonly onPress: () => void;
-}) {
-  const { t: uiT } = useUiLanguage();
-  const danger = props.tone === "danger";
-  const textClassName = danger ? "tabular-nums text-danger-foreground" : "text-foreground";
-  const iconColorClassName = danger ? "accent-danger-foreground" : "accent-icon";
-  const icon = (
-    <SymbolView
-      name={props.icon}
-      size={Platform.OS === "android" ? 24 : 22}
-      tintColorClassName={iconColorClassName}
-      type="monochrome"
-      weight="regular"
-    />
-  );
-  const spinner = props.loading ? (
-    <AppActivityIndicator colorClassName={iconColorClassName} />
-  ) : null;
-
-  if (Platform.OS === "android") {
-    return (
-      <MaterialListRow
-        className="bg-grouped-card"
-        title={uiT(props.label)}
-        titleClassName={textClassName}
-        leading={icon}
-        trailing={spinner}
-        disabled={props.disabled}
-        onPress={props.onPress}
-      />
-    );
-  }
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={props.disabled}
-      onPress={props.onPress}
-      className="flex-row items-center gap-4 p-4 disabled:opacity-40"
-    >
-      {icon}
-      <Text className={cn("flex-1 text-lg", textClassName)}>{uiT(props.label)}</Text>
-      {spinner}
-    </Pressable>
-  );
+export function SettingsActionRow(props: ComponentProps<typeof ListActionRow>) {
+  const { t } = useUiLanguage();
+  return <ListActionRow {...props} label={t(props.label)} />;
 }

@@ -2,14 +2,13 @@ import { useUiLanguage, UiText } from "../../../i18n";
 import type { PullRequestReviewGuide } from "@t3tools/contracts";
 import { stopFilePaths } from "@t3tools/client-runtime/review-guide-tour";
 import { Pressable, View } from "react-native";
-import { AppText as Text } from "../../../components/AppText";
-import { SymbolView } from "../../../components/AppSymbol";
+import { AppText as Text } from "../../../components/ui/AppText";
+import { SymbolView } from "../../../components/ui/AppSymbol";
 import { PullRequestMarkdown } from "../PullRequestMarkdown";
-import { ControlPillMenu } from "../../../components/ControlPillMenu";
+import { Menu } from "../../../components/ui/Menu";
 
 import { useAppearancePreferences } from "../../settings/appearance/AppearancePreferencesProvider";
 
-/** The stops are a reading sequence, with file context kept beside each idea. */
 export function GuideOutline({
   guide,
   onOpen,
@@ -36,7 +35,7 @@ export function GuideOutline({
             />
           </Text>
         </View>
-        <ControlPillMenu
+        <Menu
           title={uiT("Guide options")}
           actions={[
             {
@@ -62,7 +61,7 @@ export function GuideOutline({
           >
             <SymbolView name="ellipsis" size={20} tintColorClassName="accent-icon-muted" />
           </Pressable>
-        </ControlPillMenu>
+        </Menu>
       </View>
       {guide.stops[0]?.summary ? (
         <View className="mb-6">

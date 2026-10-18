@@ -6,11 +6,9 @@ import { useSettingsScope } from "./SettingsScopeContext";
 import { SettingsScopeNotice } from "./SettingsScopeNotice";
 import { SettingsPageContainer } from "./settingsLayout";
 
-/** Project identity and checkout management for the selected project. */
 export function ProjectsSettings() {
   const { t: uiT } = useUiLanguage();
   const { search: value, scope } = useSettingsScope();
-  // The panel follows remembered members when grouping replaces a project key.
   const projectScope =
     scope.kind === "project" ||
     scope.kind === "checkout" ||

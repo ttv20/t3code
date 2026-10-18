@@ -10,7 +10,6 @@ function describeSlowRequests(
   t: ReturnType<typeof createUiTranslator>,
 ): string {
   const count = requests.length;
-  // Thresholds vary per method, so report the smallest one the batch has passed.
   const thresholdSeconds = Math.round(
     Math.min(...requests.map((request) => request.thresholdMs)) / 1000,
   );

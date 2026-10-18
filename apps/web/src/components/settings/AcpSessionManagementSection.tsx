@@ -45,6 +45,32 @@ function reportFailure(title: string, result: AtomCommandResult<unknown, unknown
   });
 }
 
+function parseProviderHeaders(
+  text: string,
+):
+  | { readonly ok: true; readonly headers: Record<string, string> | undefined }
+  | { readonly ok: false; readonly error: string } {
+  if (text.trim().length === 0) return { ok: true, headers: undefined };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Headers must be valid JSON.",
+    };
+  }
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    Array.isArray(parsed) ||
+    !Object.values(parsed).every((value) => typeof value === "string")
+  ) {
+    return { ok: false, error: "Headers must be a JSON object with string values." };
+  }
+  return { ok: true, headers: parsed as Record<string, string> };
+}
+
 export function AcpSessionManagementSection(props: {
   readonly environmentId: EnvironmentId;
   readonly instanceId: ProviderInstanceId;
@@ -53,6 +79,7 @@ export function AcpSessionManagementSection(props: {
   readonly readOnly: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const canOperate = useEnvironmentScope(props.environmentId, AuthOrchestrationOperateScope);
   const canRead = useEnvironmentScope(props.environmentId, AuthOrchestrationReadScope);
   const [projectId, setProjectId] = useState<ProjectId | null>(props.projects[0]?.id ?? null);
@@ -225,28 +252,16 @@ export function AcpSessionManagementSection(props: {
       return;
     const draft = providerDrafts[provider.providerId];
     if (draft === undefined || draft.apiType.length === 0 || draft.baseUrl.length === 0) return;
-    let headers: Record<string, string> | undefined;
-    if (draft.headers.trim().length > 0) {
-      try {
-        const parsed: unknown = JSON.parse(draft.headers);
-        if (
-          typeof parsed !== "object" ||
-          parsed === null ||
-          Array.isArray(parsed) ||
-          !Object.values(parsed).every((value) => typeof value === "string")
-        ) {
-          throw new Error("Headers must be a JSON object with string values.");
-        }
-        headers = parsed as Record<string, string>;
-      } catch (error) {
-        toastManager.add({
-          type: "error",
-          title: uiT("Invalid provider headers"),
-          description: error instanceof Error ? error.message : uiT("Headers must be valid JSON."),
-        });
-        return;
-      }
+    const parsedHeaders = parseProviderHeaders(draft.headers);
+    if (!parsedHeaders.ok) {
+      toastManager.add({
+        type: "error",
+        title: uiT("Invalid provider headers"),
+        description: parsedHeaders.error,
+      });
+      return;
     }
+    const headers = parsedHeaders.headers;
     setSavingProviderId(provider.providerId);
     const result = await setProvider({
       environmentId: props.environmentId,
@@ -309,8 +324,8 @@ export function AcpSessionManagementSection(props: {
   return (
     <div className="grid gap-3">
       <SettingsRow
-        title={uiT("Native sessions")}
-        description={uiT("Resume agent-owned conversations as T3 threads.")}
+        title="Native sessions"
+        description="Resume agent-owned conversations as T3 threads."
         status={
           canList && props.projects.length === 0
             ? "Add a project before importing sessions."
@@ -343,11 +358,7 @@ export function AcpSessionManagementSection(props: {
                     setProviderDrafts({});
                   }}
                 >
-                  <SelectTrigger
-                    aria-label={uiT("Project for ACP sessions")}
-                    className="w-40"
-                    size="sm"
-                  >
+                  <SelectTrigger aria-label="Project for ACP sessions" className="w-40" size="sm">
                     <SelectValue>
                       {props.projects.find((project) => project.id === projectId)?.title}
                     </SelectValue>
@@ -486,11 +497,7 @@ export function AcpSessionManagementSection(props: {
                 setProviderDrafts({});
               }}
             >
-              <SelectTrigger
-                aria-label={uiT("Project for ACP providers")}
-                className="min-w-48"
-                size="xs"
-              >
+              <SelectTrigger aria-label="Project for ACP providers" className="min-w-48" size="xs">
                 <SelectValue>
                   {props.projects.find((project) => project.id === projectId)?.title}
                 </SelectValue>
@@ -594,9 +601,7 @@ export function AcpSessionManagementSection(props: {
                       size="sm"
                       type="password"
                       aria-label={uiT("{0} write-only headers JSON", { "0": provider.providerId })}
-                      placeholder={uiT(
-                        'Write-only headers JSON, e.g. {"Authorization":"Bearer …"}',
-                      )}
+                      placeholder='Write-only headers JSON, e.g. {"Authorization":"Bearer …"}'
                       value={draft.headers}
                       disabled={props.readOnly || savingProviderId !== null}
                       onValueChange={(value) => updateDraft({ headers: value })}

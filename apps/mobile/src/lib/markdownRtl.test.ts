@@ -91,3 +91,10 @@ describe("RTL sentence boundaries", () => {
     expect(markdownForDisplay(source)).toContain("ending: \u200fand השני מתחיל");
   });
 });
+
+it("preserves an interrupting table while correcting RTL prose", () => {
+  const source = "משפט לדוגמה בעברית ארוכה ending. next\n| a | b |\n|---|---|\n| c | d |";
+  expect(markdownForDisplay(source)).toBe(
+    "משפט לדוגמה בעברית ארוכה ending. \u200fnext\n\n| a | b |\n|---|---|\n| c | d |",
+  );
+});

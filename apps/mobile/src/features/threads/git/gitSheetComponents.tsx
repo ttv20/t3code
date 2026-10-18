@@ -1,12 +1,10 @@
 import { useUiLanguage } from "../../../i18n";
-import { SymbolView } from "../../../components/AppSymbol";
+import { SymbolView } from "../../../components/ui/AppSymbol";
 import type { ComponentProps } from "react";
 import { Platform, Pressable, View } from "react-native";
-import { AppText as Text } from "../../../components/AppText";
-import { MaterialButton } from "../../../components/MaterialButton";
+import { AppText as Text } from "../../../components/ui/AppText";
+import { Button } from "../../../components/ui/Button";
 import { cn } from "../../../lib/cn";
-
-/* ─── Shared sheet components ──────────────────────────────────────── */
 
 export function SheetActionButton(props: {
   readonly icon: ComponentProps<typeof SymbolView>["name"];
@@ -19,8 +17,9 @@ export function SheetActionButton(props: {
   if (Platform.OS === "android")
     return (
       <View className="flex-1">
-        <MaterialButton
+        <Button
           label={uiT(props.label)}
+          icon={props.icon}
           tone={props.tone}
           disabled={props.disabled}
           onPress={props.onPress}
@@ -87,6 +86,7 @@ export function MetaCard(props: { readonly label: string; readonly value: string
 
 export function SheetListRow(props: {
   readonly icon: ComponentProps<typeof SymbolView>["name"];
+  readonly iconTintClassName?: string | undefined;
   readonly title: string;
   readonly subtitle?: string | null;
   readonly disabled?: boolean;
@@ -102,7 +102,7 @@ export function SheetListRow(props: {
         <SymbolView
           name={props.icon}
           size={Platform.OS === "android" ? 24 : 16}
-          tintColorClassName="accent-icon"
+          tintColorClassName={props.iconTintClassName ?? "accent-icon"}
           type="monochrome"
         />
       </View>
@@ -125,8 +125,6 @@ export function SheetListRow(props: {
     </Pressable>
   );
 }
-
-/* ─── Shared utilities ──────────────────────────────────────────────── */
 
 export function menuItemIconName(
   icon: "commit" | "push" | "pr",

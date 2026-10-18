@@ -1,24 +1,25 @@
 import { useUiLanguage } from "../../../i18n";
+import { Toolbar } from "../../../components/ui/Toolbar";
 import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import type { FileDiffMetadata } from "@pierre/diffs";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useEffect, useMemo } from "react";
 import { Platform, Pressable, View } from "react-native";
-import { AndroidScreenHeader } from "../../../components/AndroidScreenHeader";
+import { AndroidScreenHeader } from "../../../components/ui/AndroidScreenHeader";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   letterStopNotes,
   stepTourPosition,
   stopFilePaths,
 } from "@t3tools/client-runtime/review-guide-tour";
-import { SymbolView } from "../../../components/AppSymbol";
+import { SymbolView } from "../../../components/ui/AppSymbol";
 import { GuideOutline } from "./GuideOutline";
-import { AppText as Text } from "../../../components/AppText";
-import { ScreenScrollView } from "../../../components/ScreenScrollView";
-import { ControlPillMenu } from "../../../components/ControlPillMenu";
-import { MaterialIconButton } from "../../../components/MaterialIconButton";
+import { AppText as Text } from "../../../components/ui/AppText";
+import { ScreenScrollView } from "../../../components/ui/ScreenScrollView";
+import { Menu } from "../../../components/ui/Menu";
+import { IconButton } from "../../../components/ui/IconButton";
 import { useAppearancePreferences } from "../../settings/appearance/AppearancePreferencesProvider";
-import { NativeHeaderToolbar, NativeStackScreenOptions } from "../../../native/StackHeader";
+import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { PullRequestCardGroup, PullRequestCardRow } from "../PullRequestControls";
 import { PullRequestMarkdown, PullRequestMarkdownRepository } from "../PullRequestMarkdown";
 import { usePullRequestDiff, type PullRequestParams } from "../usePullRequestDiff";
@@ -113,9 +114,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
           if (file.prevName) files.set(file.prevName, file);
         }
       }
-    } catch {
-      // An omitted or unparseable patch is shown as unavailable by the excerpt.
-    }
+    } catch {}
     return files;
   }, [diff.patch]);
   const wanted = useMemo(() => (stop ? stopFilePaths(stop) : []), [stop]);
@@ -147,7 +146,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
           title={uiT("Stop {0}", { "0": route.params.position + 1 })}
           onBack={() => navigation.goBack()}
           trailing={
-            <ControlPillMenu
+            <Menu
               actions={[
                 {
                   id: "word-wrap",
@@ -159,27 +158,27 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
               onPressAction={() => setCodeWordBreak(!appearance.codeWordBreak)}
             >
               <View pointerEvents="none">
-                <MaterialIconButton icon="ellipsis" accessibilityLabel={uiT("Guide options")} />
+                <IconButton icon="ellipsis" accessibilityLabel={uiT("Guide options")} />
               </View>
-            </ControlPillMenu>
+            </Menu>
           }
         />
       ) : null}
-      <NativeHeaderToolbar placement="right">
-        <NativeHeaderToolbar.Menu
+      <Toolbar placement="right">
+        <Toolbar.Menu
           title={uiT("Guide options")}
           accessibilityLabel={uiT("Guide options")}
           icon="ellipsis"
         >
-          <NativeHeaderToolbar.MenuAction
+          <Toolbar.MenuAction
             icon="text.alignleft"
             isOn={appearance.codeWordBreak}
             onPress={() => setCodeWordBreak(!appearance.codeWordBreak)}
           >
-            <NativeHeaderToolbar.Label>{uiT("Word wrap")}</NativeHeaderToolbar.Label>
-          </NativeHeaderToolbar.MenuAction>
-        </NativeHeaderToolbar.Menu>
-      </NativeHeaderToolbar>
+            <Toolbar.Label>{uiT("Word wrap")}</Toolbar.Label>
+          </Toolbar.MenuAction>
+        </Toolbar.Menu>
+      </Toolbar>
       <PullRequestMarkdownRepository
         params={route.params}
         value={`https://${route.params.host ?? "github.com"}/${route.params.repository}`}

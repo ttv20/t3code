@@ -1,6 +1,7 @@
 import { useUiLanguage } from "../../i18n";
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, PullRequestRef, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { useState } from "react";
@@ -30,7 +31,6 @@ interface PullRequestThreadLinksProps {
   onPickerOpenChange?: (open: boolean) => void;
 }
 
-/** Thread relations belong to the detail environment, including when another environment is active. */
 export function PullRequestThreadLinks(props: PullRequestThreadLinksProps) {
   const configs = useServerConfigs();
   if (
@@ -78,9 +78,12 @@ function EnabledPullRequestThreadLinks({
   const changeLink = async (threadId: ThreadId, remove: boolean) => {
     if (parsed === null || pending) return;
     setPending(true);
-    try {
-      await linking.changeLink(scopeThreadRef(environmentId, threadId), url, !remove);
-    } catch (error) {
+    const result = await settlePromise(() =>
+      linking.changeLink(scopeThreadRef(environmentId, threadId), url, !remove),
+    );
+    setPending(false);
+    if (result._tag === "Failure") {
+      const error = squashAtomCommandFailure(result);
       toastManager.add({
         type: "error",
         title: remove
@@ -89,8 +92,6 @@ function EnabledPullRequestThreadLinks({
         description: error instanceof Error ? error.message : String(error),
       });
       return;
-    } finally {
-      setPending(false);
     }
     if (linking.mode === "multiple") {
       appAtomRegistry.refresh(
