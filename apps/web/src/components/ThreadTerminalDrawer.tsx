@@ -1437,13 +1437,13 @@ export default function ThreadTerminalDrawer({
     (terminalId: string) => {
       if (!canOperateTerminal) return;
       const label = terminalLabelById.get(terminalId) ?? getTerminalLabel(terminalId);
-      void confirmTerminalClose([label]).then((confirmed) => {
+      void confirmTerminalClose([label], uiT).then((confirmed) => {
         if (confirmed && readEnvironmentScope(threadRef.environmentId, AuthTerminalOperateScope)) {
           onCloseTerminal(terminalId);
         }
       });
     },
-    [canOperateTerminal, onCloseTerminal, terminalLabelById, threadRef.environmentId],
+    [canOperateTerminal, onCloseTerminal, terminalLabelById, threadRef.environmentId, uiT],
   );
 
   useEffect(() => {

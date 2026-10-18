@@ -94,7 +94,7 @@ export function PairingRouteSurface({
       <StandalonePageHeader
         eyebrow={APP_DISPLAY_NAME}
         title={uiT("Pair with this environment")}
-        description={describeAuthGate(auth.bootstrapMethods)}
+        description={uiT(describeAuthGate(auth.bootstrapMethods))}
       />
 
       <form className="mt-6 space-y-4" onSubmit={(event) => void handleSubmit(event)}>

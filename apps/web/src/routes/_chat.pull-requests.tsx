@@ -2055,7 +2055,7 @@ function PullRequestsRouteView() {
     <CompactFilterMenu
       label={uiT("Sort pull requests")}
       triggerIcon={<ArrowDownUpIcon aria-hidden className="size-4" />}
-      triggerLabel="Sort"
+      triggerLabel={uiT("Sort")}
       outlined
       value={sort}
       options={SORT_OPTIONS}
@@ -2747,7 +2747,7 @@ function PullRequestsColumn({
                 outlined
                 iconOnly={host !== undefined}
                 triggerIcon={<Plug2Icon aria-hidden className="size-4" />}
-                triggerLabel="All"
+                triggerLabel={uiT("All")}
                 value={host ?? ""}
                 options={hostMenuOptions}
                 onChange={(next) => onHost(next === "" ? undefined : next)}

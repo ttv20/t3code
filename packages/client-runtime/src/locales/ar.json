@@ -8621,5 +8621,21 @@
   "⌘/Ctrl Enter to send": "⌘/Ctrl Enter للإرسال",
   "△ 2 warnings": "△ 2 تحذيرات",
   "✓ 85 passed": "✓ نجح 85",
-  "✗ 0 failed": "✗ 0 فشل"
+  "✗ 0 failed": "✗ 0 فشل",
+  "Identity": "الهوية",
+  "Config": "الإعدادات",
+  "In 1 hour": "بعد ساعة",
+  "In 3 hours": "بعد 3 ساعات",
+  "Tomorrow": "غدًا",
+  "project": "مشروع",
+  "theme": "سمة",
+  "themes": "سمات",
+  "Start, update, and stop tasks.": "بدء المهام وتحديثها وإيقافها.",
+  "Configure, install, sign in to, and update providers and usage sources.": "تهيئة المزوّدين ومصادر الاستخدام وتثبيتها وتسجيل الدخول إليها وتحديثها.",
+  "Commit, push, manage branches and repositories, and change pull requests.": "إنشاء التثبيتات ودفعها وإدارة الفروع والمستودعات وتعديل طلبات السحب.",
+  "Archived {0} · Created {1}": "تمت الأرشفة {0} · تم الإنشاء {1}",
+  "Close {0} terminals?": "إغلاق {0} طرفيات؟",
+  "{0} can be updated from provider settings.": "يمكن تحديث {0} من إعدادات المزوّدين.",
+  "Regenerating…": "جارٍ إعادة الإنشاء…",
+  "Select": "اختيار"
 }

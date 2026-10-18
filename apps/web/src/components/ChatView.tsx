@@ -6070,25 +6070,25 @@ export default function ChatView(props: ChatViewProps) {
     (terminalId: string) => {
       if (!hasTerminalWriteAccess()) return;
       const label = activeTerminalLabelsById.get(terminalId) ?? getTerminalLabel(terminalId);
-      void confirmTerminalClose([label]).then((confirmed) => {
+      void confirmTerminalClose([label], uiT).then((confirmed) => {
         if (confirmed && readEnvironmentScope(environmentId, AuthTerminalOperateScope)) {
           closeTerminal(terminalId);
         }
       });
     },
-    [hasTerminalWriteAccess, activeTerminalLabelsById, closeTerminal, environmentId],
+    [hasTerminalWriteAccess, activeTerminalLabelsById, closeTerminal, environmentId, uiT],
   );
   const requestClosePanelTerminal = useCallback(
     (terminalId: string) => {
       if (!hasTerminalWriteAccess()) return;
       const label = activeTerminalLabelsById.get(terminalId) ?? getTerminalLabel(terminalId);
-      void confirmTerminalClose([label]).then((confirmed) => {
+      void confirmTerminalClose([label], uiT).then((confirmed) => {
         if (confirmed && readEnvironmentScope(environmentId, AuthTerminalOperateScope)) {
           closePanelTerminal(terminalId);
         }
       });
     },
-    [hasTerminalWriteAccess, activeTerminalLabelsById, closePanelTerminal, environmentId],
+    [hasTerminalWriteAccess, activeTerminalLabelsById, closePanelTerminal, environmentId, uiT],
   );
   const activateRightPanelSurface = useCallback(
     (surface: RightPanelSurface) => {
@@ -6240,7 +6240,7 @@ export default function ChatView(props: ChatViewProps) {
         .map(
           (terminalId) => activeTerminalLabelsById.get(terminalId) ?? getTerminalLabel(terminalId),
         );
-      void confirmTerminalClose([activeLabel, ...otherLabels]).then((confirmed) => {
+      void confirmTerminalClose([activeLabel, ...otherLabels], uiT).then((confirmed) => {
         if (confirmed) {
           finishClose();
         }
@@ -6251,6 +6251,7 @@ export default function ChatView(props: ChatViewProps) {
       activeTerminalLabelsById,
       closeAfterAgentBrowserConfirmation,
       finishRightPanelSurfaceClose,
+      uiT,
     ],
   );
   const closeOtherRightPanelSurfaces = useCallback(

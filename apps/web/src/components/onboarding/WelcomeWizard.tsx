@@ -1599,7 +1599,7 @@ function ImportStep({
             ? uiT("Importing…")
             : uiT("Import {0} {1}", {
                 "0": selected.length,
-                "1": selected.length === 1 ? "project" : "projects",
+                "1": selected.length === 1 ? uiT("project") : uiT("projects"),
               })}
         </Button>
       </div>

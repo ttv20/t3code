@@ -2417,7 +2417,7 @@ const SidebarProjectItem = memo(function SidebarProjectItem(props: SidebarProjec
       if (appSettingsConfirmThreadDelete) {
         const confirmed = await api.dialogs.confirm(
           [
-            `Delete thread "${thread.title}"?`,
+            uiT('Delete thread "{0}"?', { "0": thread.title }),
             "This permanently clears conversation history for this thread.",
           ].join("\n"),
           { variant: "destructive" },

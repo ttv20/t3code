@@ -67,32 +67,34 @@ export function CommandPaletteContent({
           {children}
         </CommandPanel>
         <CommandFooter className="max-sm:flex-col max-sm:items-start">
-          <div className="flex items-center gap-3">
-            <KbdGroup>
-              <Kbd>
-                <ArrowUpIcon />
-              </Kbd>
-              <Kbd>
-                <ArrowDownIcon />
-              </Kbd>
-              <span>{uiT("Navigate")}</span>
-            </KbdGroup>
-            {footerActionLabel !== undefined ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="inline-flex items-center gap-1">
               <KbdGroup>
-                <Kbd>Enter</Kbd>
-                <span>{footerActionLabel}</span>
+                <Kbd>
+                  <ArrowUpIcon />
+                </Kbd>
+                <Kbd>
+                  <ArrowDownIcon />
+                </Kbd>
               </KbdGroup>
+              <span>{uiT("Navigate")}</span>
+            </span>
+            {footerActionLabel !== undefined ? (
+              <span className="inline-flex items-center gap-1">
+                <Kbd>Enter</Kbd>
+                <span>{uiT(footerActionLabel)}</span>
+              </span>
             ) : null}
             {showBackHint ? (
-              <KbdGroup>
+              <span className="inline-flex items-center gap-1">
                 <Kbd>Backspace</Kbd>
                 <span>{uiT("Back")}</span>
-              </KbdGroup>
+              </span>
             ) : null}
-            <KbdGroup>
+            <span className="inline-flex items-center gap-1">
               <Kbd>Esc</Kbd>
-              <span>{escapeLabel}</span>
-            </KbdGroup>
+              <span>{uiT(escapeLabel)}</span>
+            </span>
           </div>
           {footerTrailing}
         </CommandFooter>

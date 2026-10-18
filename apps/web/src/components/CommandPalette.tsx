@@ -3557,11 +3557,12 @@ function OpenCommandPaletteDialog(props: {
       inputAccessory={inputAccessory}
       inputProps={{
         // The submit button is absolutely positioned over the field, so the
-        // inner input must reserve enough room for the full action label.
+        // input wrapper must reserve enough room for the full action label,
+        // independently of the native field's automatic text direction.
         className: hasHighlightedNewProjectItem
-          ? "*:data-[slot=autocomplete-input]:pe-38!"
+          ? "pe-38!"
           : addProjectCloneFlow?.step === "repository" || newProjectFlow !== null
-            ? "*:data-[slot=autocomplete-input]:pe-32!"
+            ? "pe-32!"
             : isBrowsing
               ? browseInputEndPaddingClass({
                   willCreateProjectPath,
@@ -3609,15 +3610,25 @@ function OpenCommandPaletteDialog(props: {
             <FolderGit2Icon className={ITEM_ICON_CLASS} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-foreground text-sm">
-                {newProjectName.length > 0 ? newProjectName : uiT("New project")}
+                <bdi>{newProjectName.length > 0 ? newProjectName : uiT("New project")}</bdi>
               </span>
               <span className="truncate text-muted-foreground/85 text-xs">
-                {newProjectName.length > 0
-                  ? uiT("Creates {0}", { "0": newProjectPathPreview })
-                  : uiT("Goes in {0}", { "0": newProjectsRoot })}
-                {newProjectEnvironmentLabel === null
-                  ? null
-                  : uiT(" on {0}", { "0": newProjectEnvironmentLabel })}
+                <UiText
+                  message={newProjectName.length > 0 ? "Creates {0}" : "Goes in {0}"}
+                  values={{
+                    "0": (
+                      <bdi dir="ltr">
+                        {newProjectName.length > 0 ? newProjectPathPreview : newProjectsRoot}
+                      </bdi>
+                    ),
+                  }}
+                />
+                {newProjectEnvironmentLabel === null ? null : (
+                  <UiText
+                    message=" on {0}"
+                    values={{ "0": <bdi>{newProjectEnvironmentLabel}</bdi> }}
+                  />
+                )}
               </span>
             </span>
           </div>

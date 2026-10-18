@@ -342,7 +342,7 @@ export function ThemeSearchSection({
           : results
             ? uiT("{0} supported {1} found.", {
                 "0": results.length,
-                "1": results.length === 1 ? "theme" : "themes",
+                "1": results.length === 1 ? uiT("theme") : uiT("themes"),
               })
             : ""}
       </div>

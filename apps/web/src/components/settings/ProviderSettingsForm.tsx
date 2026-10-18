@@ -407,6 +407,7 @@ function ProviderSettingsFieldRow({
         />
       ) : field.control === "textarea" ? (
         <Textarea
+          dir="ltr"
           id={inputId}
           aria-describedby={descriptionId}
           className="w-full max-w-full @min-[32rem]/settings-row:w-[min(24rem,50cqw)]"
@@ -429,6 +430,7 @@ function ProviderSettingsFieldRow({
         />
       ) : (
         <DraftInput
+          dir="ltr"
           id={inputId}
           aria-describedby={descriptionId}
           size="sm"
@@ -506,6 +508,7 @@ function ProviderSettingsFieldRow({
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
           {uiT(label)}
           <Textarea
+            dir="ltr"
             id={inputId}
             className={cn(variant === "card" && "mt-1.5")}
             value={readProviderConfigString(value, field.key)}
@@ -530,6 +533,7 @@ function ProviderSettingsFieldRow({
         {uiT(label)}
         {variant === "card" ? (
           <BufferedInput
+            dir="ltr"
             id={inputId}
             size="sm"
             className="mt-1.5"
@@ -542,6 +546,7 @@ function ProviderSettingsFieldRow({
           />
         ) : (
           <ControlledInput
+            dir="ltr"
             id={inputId}
             type={field.secret ? undefined : type}
             autoComplete={!field.secret && field.control === "password" ? "off" : undefined}

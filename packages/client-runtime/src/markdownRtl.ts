@@ -6,9 +6,11 @@ const RLM = "\u200f";
 
 type MarkdownNode = {
   type: string;
-  value?: string;
-  children?: MarkdownNode[];
-  position?: { start: { offset?: number }; end: { offset?: number } };
+  value?: string | undefined;
+  children?: MarkdownNode[] | undefined;
+  position?:
+    | { start: { offset?: number | undefined }; end: { offset?: number | undefined } }
+    | undefined;
 };
 
 /** Find boundaries where adjacent Latin/number runs would join across RTL sentences. */

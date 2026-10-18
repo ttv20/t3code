@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import {
   parseScopedThreadKey,
   scopeProjectRef,
@@ -269,6 +270,7 @@ function threadOperationFailure(target: ScopedThreadRef) {
 }
 
 export function useThreadActions() {
+  const { t: uiT } = useUiLanguage();
   const archiveThreadMutation = useOrchestrationCommand(threadEnvironment.archive, {
     reportFailure: false,
   });
@@ -988,7 +990,7 @@ export function useThreadActions() {
         const confirmationResult = await settlePromise(() =>
           localApi.dialogs.confirm(
             [
-              `Delete thread "${title}"?`,
+              uiT('Delete thread "{0}"?', { "0": title }),
               "This permanently clears conversation history for this thread.",
             ].join("\n"),
             { variant: "destructive" },
@@ -1004,7 +1006,7 @@ export function useThreadActions() {
 
       return deleteThread(target);
     },
-    [confirmThreadDelete, deleteThread, resolveThreadTarget],
+    [confirmThreadDelete, deleteThread, resolveThreadTarget, uiT],
   );
 
   return useMemo(

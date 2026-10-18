@@ -65,6 +65,7 @@ function ProviderUpdateToastIcon({ provider }: { provider: ServerProvider }) {
 
 function addProviderUpdateToast(input: {
   readonly view: ProviderUpdateToastView;
+  readonly t: ReturnType<typeof useUiLanguage>["t"];
   readonly openSettings: (toastId: ProviderUpdateToastId) => void;
 }) {
   if (input.view.type === "loading" || input.view.type === "success") {
@@ -91,7 +92,7 @@ function addProviderUpdateToast(input: {
       description: input.view.description,
       timeout: 0,
       actionProps: {
-        children: "Settings",
+        children: input.t("Settings"),
         onClick: () => input.openSettings(toastId),
       },
       actionVariant: "outline",
@@ -184,9 +185,9 @@ export function ProviderUpdatePrimaryNotification() {
       return;
     }
 
-    addProviderUpdateToast({ view, openSettings: openProviderSettings });
+    addProviderUpdateToast({ view, t: uiT, openSettings: openProviderSettings });
     activeToastRef.current = null;
-  }, [providers, openProviderSettings]);
+  }, [providers, openProviderSettings, uiT]);
 
   useEffect(() => {
     const activeToast = activeToastRef.current;
@@ -210,7 +211,10 @@ export function ProviderUpdatePrimaryNotification() {
 
     seenProviderUpdateNotificationKeys.add(notificationKey);
 
-    const initialView = getProviderUpdateInitialToastView({ updateProviders, oneClickProviders });
+    const initialView = getProviderUpdateInitialToastView(
+      { updateProviders, oneClickProviders },
+      uiT,
+    );
 
     let toastId!: ProviderUpdateToastId;
     let updateStarted = false;
@@ -252,6 +256,7 @@ export function ProviderUpdatePrimaryNotification() {
                   providerCount,
                   "This connection cannot manage provider accounts.",
                 ),
+                t: uiT,
                 openSettings: openProviderSettings,
               });
               activeToastRef.current = null;
@@ -278,6 +283,7 @@ export function ProviderUpdatePrimaryNotification() {
         if (failedMessage) {
           addProviderUpdateToast({
             view: getProviderUpdateRejectedToastView(providerCount, failedMessage),
+            t: uiT,
             openSettings: openProviderSettings,
           });
           activeToastRef.current = null;
@@ -293,7 +299,7 @@ export function ProviderUpdatePrimaryNotification() {
           providerCount,
         });
         if (shouldShowPrimaryProviderUpdateToast(view)) {
-          addProviderUpdateToast({ view, openSettings: openProviderSettings });
+          addProviderUpdateToast({ view, t: uiT, openSettings: openProviderSettings });
           activeToastRef.current = null;
         }
       })();
@@ -311,12 +317,12 @@ export function ProviderUpdatePrimaryNotification() {
       actionProps:
         oneClickProviders.length > 0
           ? {
-              children: "Update",
+              children: uiT("Update"),
               disabled: !canManageProviders,
               onClick: runUpdates,
             }
           : {
-              children: "Settings",
+              children: uiT("Settings"),
               onClick: openSettings,
             },
       actionVariant: "outline",
@@ -330,7 +336,7 @@ export function ProviderUpdatePrimaryNotification() {
         ...(oneClickProviders.length > 0
           ? {
               secondaryActionProps: {
-                children: "Settings",
+                children: uiT("Settings"),
                 onClick: openSettings,
               },
               secondaryActionVariant: "outline" as const,

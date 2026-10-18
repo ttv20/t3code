@@ -44,12 +44,12 @@ export function browseInputEndPaddingClass(input: {
   readonly hasHighlightedBrowseItem: boolean;
 }): string {
   if (input.willCreateProjectPath) {
-    return "*:data-[slot=autocomplete-input]:pe-38!";
+    return "pe-38!";
   }
   if (input.hasHighlightedBrowseItem) {
-    return "*:data-[slot=autocomplete-input]:pe-30!";
+    return "pe-30!";
   }
-  return "*:data-[slot=autocomplete-input]:pe-24!";
+  return "pe-24!";
 }
 
 /**

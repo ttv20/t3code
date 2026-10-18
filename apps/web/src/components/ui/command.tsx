@@ -106,7 +106,9 @@ function CommandInput({
       <AutocompleteInput
         autoFocus
         className={cn(
-          "border-transparent! bg-transparent! shadow-none before:hidden has-focus-visible:ring-0 placeholder:text-placeholder *:data-[slot=autocomplete-input]:ps-9! sm:*:data-[slot=autocomplete-input]:ps-[calc(var(--command-shell-inset)+1.5rem)]!",
+          // Adornments follow the interface direction; the native input can independently
+          // switch direction as the user types a path, a command, or a search query.
+          "border-transparent! bg-transparent! shadow-none before:hidden has-focus-visible:ring-0 placeholder:text-placeholder ps-9! pe-3! sm:ps-[calc(var(--command-shell-inset)+1.5rem)]! *:data-[slot=autocomplete-input]:px-0!",
           className,
         )}
         placeholder={uiT(placeholder)}

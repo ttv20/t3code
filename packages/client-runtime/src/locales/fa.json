@@ -8621,5 +8621,21 @@
   "⌘/Ctrl Enter to send": "⌘/Ctrl Enter برای ارسال",
   "△ 2 warnings": "△ 2 هشدار",
   "✓ 85 passed": "✓ 85 گذشت",
-  "✗ 0 failed": "✗ 0 شکست خورد"
+  "✗ 0 failed": "✗ 0 شکست خورد",
+  "Identity": "هویت",
+  "Config": "پیکربندی",
+  "In 1 hour": "یک ساعت دیگر",
+  "In 3 hours": "۳ ساعت دیگر",
+  "Tomorrow": "فردا",
+  "project": "پروژه",
+  "theme": "پوسته",
+  "themes": "پوسته‌ها",
+  "Start, update, and stop tasks.": "شروع، به‌روزرسانی و توقف وظیفه‌ها.",
+  "Configure, install, sign in to, and update providers and usage sources.": "پیکربندی، نصب، ورود و به‌روزرسانی ارائه‌دهندگان و منابع مصرف.",
+  "Commit, push, manage branches and repositories, and change pull requests.": "ثبت و ارسال تغییرات، مدیریت شاخه‌ها و مخزن‌ها و ویرایش درخواست‌های ادغام.",
+  "Archived {0} · Created {1}": "بایگانی‌شده {0} · ایجادشده {1}",
+  "Close {0} terminals?": "بستن {0} پایانه؟",
+  "{0} can be updated from provider settings.": "می‌توان {0} را از تنظیمات ارائه‌دهندگان به‌روزرسانی کرد.",
+  "Regenerating…": "در حال ایجاد دوباره…",
+  "Select": "انتخاب"
 }

@@ -1,8 +1,14 @@
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
+import { markdownWithRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
+
+const previewParser = unified().use(remarkParse).use(remarkGfm);
 
 export interface TimelineMinimapItem {
   readonly id: string;
@@ -53,7 +59,11 @@ function resolveFinalAssistantTextForTurn(
 }
 
 function compactMinimapPreview(text: string | null | undefined) {
-  const compact = text?.replace(/\s+/g, " ").trim() ?? "";
+  if (!text) return null;
+  const displayText = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u.test(text)
+    ? markdownWithRtlSentenceBoundaries(text, previewParser.parse(text))
+    : text;
+  const compact = displayText.replace(/\s+/g, " ").trim();
   return compact.length > 0 ? compact : null;
 }
 

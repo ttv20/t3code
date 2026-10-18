@@ -105,7 +105,7 @@ import { ensureLocalApi, readLocalApi } from "../../localApi";
 import { isMacPlatform } from "../../lib/utils";
 import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
 import { useArchivedThreadSnapshots } from "../../lib/archivedThreadsState";
-import { formatRelativeTimeLabel } from "../../timestampFormat";
+import { formatUiRelativeTime } from "@t3tools/client-runtime/i18n";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import {
@@ -3535,7 +3535,7 @@ export function GeneralSettingsPanel() {
 }
 
 export function ArchivedThreadsPanel() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const { t } = useUiLanguage();
   const { scope } = useSettingsScope();
   const { unarchiveThread, confirmAndDeleteThread } = useThreadActions();
@@ -3710,10 +3710,10 @@ export function ArchivedThreadsPanel() {
                 title={thread.title}
                 description={
                   <>
-                    {t("Archived")}
-                    {formatRelativeTimeLabel(thread.archivedAt ?? thread.createdAt)}
-                    {uiT(" · Created ")}
-                    {formatRelativeTimeLabel(thread.createdAt)}
+                    {uiT("Archived {0} · Created {1}", {
+                      "0": formatUiRelativeTime(thread.archivedAt ?? thread.createdAt, locale),
+                      "1": formatUiRelativeTime(thread.createdAt, locale),
+                    })}
                   </>
                 }
                 control={

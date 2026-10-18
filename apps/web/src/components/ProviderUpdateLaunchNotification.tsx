@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useNavigate } from "@tanstack/react-router";
 import { DownloadIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -56,6 +57,7 @@ type ProviderUpdateToastId = ReturnType<typeof toastManager.add>;
 const SETTLING_GRACE_MS = 30_000;
 
 function ProviderUpdateEnvironmentsNotification() {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const { groups, isAnySettling } = useLocalEnvironmentUpdateGroups();
   const { dismissedNotificationKeys, dismissNotificationKey } =
@@ -160,10 +162,13 @@ function ProviderUpdateEnvironmentsNotification() {
     const toastId = toastManager.add(
       stackedThreadToast({
         type: "warning",
-        title: getProviderUpdateInitialToastView({
-          updateProviders: candidateUnion,
-          oneClickProviders: candidateUnion,
-        }).title,
+        title: getProviderUpdateInitialToastView(
+          {
+            updateProviders: candidateUnion,
+            oneClickProviders: candidateUnion,
+          },
+          uiT,
+        ).title,
         description: (
           <ProviderUpdateEnvironmentRows
             onInteract={() => {
@@ -173,7 +178,7 @@ function ProviderUpdateEnvironmentsNotification() {
         ),
         timeout: 0,
         actionProps: {
-          children: "Settings",
+          children: uiT("Settings"),
           onClick: openProviderSettings,
         },
         actionVariant: "outline",
@@ -192,6 +197,7 @@ function ProviderUpdateEnvironmentsNotification() {
     dismissedNotificationKeys,
     dismissNotificationKey,
     openProviderSettings,
+    uiT,
   ]);
 
   return null;

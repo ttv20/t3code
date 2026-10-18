@@ -29,6 +29,34 @@ function rows(
 }
 
 describe("timeline minimap previews", () => {
+  it("separates Latin and numeric sentence boundaries without changing Markdown code or destinations", () => {
+    const text =
+      "זאת פסקה ארוכה בעברית עם סוף ending. and תחילת משפט חדש בעברית 123: 456 ועוד המשך. " +
+      '`keep. code` [קישור](https://example.test/keep "ending. and")';
+    const [item] = deriveTimelineMinimapItems(
+      rows([
+        ["user", text],
+        ["assistant", text],
+      ]),
+    );
+    const preview = resolveTimelineMinimapPreview(item!)!;
+    expect(preview.userText).toContain("ending. \u200fand");
+    expect(preview.assistantText).toContain("123: \u200f456");
+    expect(preview.assistantText).toContain("`keep. code`");
+    expect(preview.assistantText).toContain('https://example.test/keep "ending. and"');
+    expect(item!.userText).toBe(text);
+    expect(item!.assistantText).toBe(text);
+  });
+
+  it("keeps English paragraphs unchanged even beside a Hebrew paragraph", () => {
+    const english = "English ending. and another English sentence.";
+    const hebrew = "פסקה ארוכה בעברית עם מילה ending. and המשך בעברית";
+    const [item] = deriveTimelineMinimapItems(rows([["user", `${english}\n\n${hebrew}`]]));
+    expect(resolveTimelineMinimapPreview(item!)?.userText).toBe(
+      `${english} פסקה ארוכה בעברית עם מילה ending. \u200fand המשך בעברית`,
+    );
+  });
+
   it("previews the last assistant response before the next prompt and retains jump targets", () => {
     const source = rows([
       ["user", "  Inspect\n this  "],

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 const { confirmMock, readLocalApiMock } = vi.hoisted(() => {
   const confirmMock = vi.fn<(message: string, options?: unknown) => Promise<boolean>>();
@@ -19,6 +20,14 @@ vi.mock("~/localApi", () => ({
 import { confirmTerminalClose, isTerminalCloseConfirmPending } from "./terminalCloseConfirm";
 
 describe("terminal close confirmation", () => {
+  it("translates the question without translating the terminal name", async () => {
+    confirmMock.mockResolvedValue(false);
+    await confirmTerminalClose(["Settings עברית 123"], createUiTranslator("he"));
+    expect(confirmMock.mock.calls[0]?.[0].split("\n")[0]).toBe(
+      'לסגור את המסוף "Settings עברית 123"?',
+    );
+  });
+
   beforeEach(() => {
     confirmMock.mockReset();
     readLocalApiMock.mockReset();

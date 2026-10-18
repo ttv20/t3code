@@ -126,7 +126,9 @@ export function PullRequestListEmptyState({
     return (
       <PullRequestListGhost
         rows={5}
-        caption={`Searching every host for “${query.length > 48 ? `${query.slice(0, 48)}…` : query}”`}
+        caption={uiT("Searching every host for “{0}”", {
+          "0": query.length > 48 ? `${query.slice(0, 48)}…` : query,
+        })}
       />
     );
   }

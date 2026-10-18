@@ -1,3 +1,4 @@
+import { UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";
 import { useUiLanguage } from "../i18n";
 import { useEffect, useId, useState } from "react";
 import { create } from "zustand";
@@ -55,7 +56,7 @@ export function CustomSnoozeDialogHost() {
 }
 
 function CustomSnoozeDialog() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const id = useId();
   const [initial] = useState(() => new Date(Date.now() + 3_600_000));
   const [mode, setMode] = useState<CustomSnoozeInput["mode"]>("date");
@@ -127,7 +128,7 @@ function CustomSnoozeDialog() {
                             />
                           }
                         >
-                          {date.toLocaleDateString(undefined, {
+                          {date.toLocaleDateString(UI_DATE_LOCALES[locale], {
                             month: "short",
                             day: "numeric",
                             year: "numeric",

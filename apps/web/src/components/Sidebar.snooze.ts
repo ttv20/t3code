@@ -1,3 +1,4 @@
+import { UI_DATE_LOCALES, type UiLocale } from "@t3tools/client-runtime/i18n";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
 import {
   resolveSnoozePresets as resolveSharedSnoozePresets,
@@ -18,6 +19,7 @@ function timeOfDayLabel(date: Date, timestampFormat: TimestampFormat): string {
 export function resolveSnoozePresets(
   now: Date,
   timestampFormat: TimestampFormat,
+  locale?: UiLocale,
 ): ReadonlyArray<SnoozePreset> {
   return resolveSharedSnoozePresets(now).map((preset) => {
     const wake = parseTimestampDate(preset.snoozedUntil);
@@ -27,7 +29,7 @@ export function resolveSnoozePresets(
       ...preset,
       whenLabel:
         preset.id === "next-week"
-          ? `${wake.toLocaleDateString(undefined, { weekday: "short" })} ${time}`
+          ? `${wake.toLocaleDateString(locale ? UI_DATE_LOCALES[locale] : undefined, { weekday: "short" })} ${time}`
           : time,
     };
   });
