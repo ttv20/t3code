@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useLayoutEffect, useState, type ReactNode, type RefObject } from "react";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { ScrollArea } from "../ui/scroll-area";
@@ -26,6 +27,7 @@ export function ThreadDetailsCard({
   onPresentationChange: (presentation: ThreadPanelPresentation) => void;
   children: (density: "full" | "compact" | "essential") => ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   const canvas = useChatCanvas();
   const preferredPlacement = canvas
     ? resolveThreadDetailsCardLayout({
@@ -151,7 +153,7 @@ export function ThreadDetailsCard({
       {placement ? (
         inlineOpen ? (
           <aside
-            aria-label="Thread details"
+            aria-label={uiT("Thread details")}
             // Slides down to make room for the find bar, but returns in the same frame
             // the bar closes: a floating preview below moves up at once and would
             // otherwise overlap the card mid-slide.
@@ -161,7 +163,7 @@ export function ThreadDetailsCard({
                 "transition-[top] duration-150 ease-out motion-reduce:transition-none",
             )}
             style={{
-              right: placement.right,
+              insetInlineEnd: placement.right,
               top: placement.y,
               width: placement.width,
               maxHeight: height,
