@@ -161,7 +161,10 @@ function ComposerUsagePanel({
   };
 
   return (
-    <div data-chat-composer-usage className="mx-auto min-w-0 max-w-full px-1">
+    <div
+      data-chat-composer-usage
+      className="mx-auto min-w-0 max-w-full rounded-sm bg-background px-1 py-0.5"
+    >
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
