@@ -138,7 +138,7 @@ export function AssistantCitationChip({
       {...sourceLinkProps}
       dir={quoteDirection}
       className="inline-flex h-full min-w-0 items-center gap-[0.33em] rounded-sm text-inherit no-underline focus-visible:outline-2 focus-visible:outline-foreground"
-      aria-label={`View cited assistant text: ${label}`}
+      aria-label={uiT("View cited assistant text: {0}", { "0": label })}
     >
       <QuoteIcon aria-hidden="true" />
       <ContextChipLabel className="max-w-[16em]">{label}</ContextChipLabel>
@@ -148,9 +148,10 @@ export function AssistantCitationChip({
     return (
       <ContextChipPopover
         kind="citation"
+        dir={quoteDirection}
         icon={<QuoteIcon />}
         label={label}
-        accessibleLabel={`Quoted assistant text: ${label}`}
+        accessibleLabel={uiT("Quoted assistant text: {0}", { "0": label })}
         copyMarkdown={serializeAssistantCitation(citation)}
       >
         <div className="flex max-h-[calc(var(--available-height)_-_1rem_-_2px)] flex-col items-start gap-3 p-1 text-sm">
@@ -159,7 +160,7 @@ export function AssistantCitationChip({
             render={<Button variant="outline" size="sm" render={<Link {...sourceLinkProps} />} />}
           >
             <ArrowUpRightIcon aria-hidden="true" />
-            Go to source
+            {uiT("Go to source")}
           </PopoverClose>
         </div>
       </ContextChipPopover>
@@ -219,7 +220,7 @@ export function AssistantCitationChip({
                   : undefined
               }
               ref={commentPopupRef}
-              aria-label="Edit citation comment"
+              aria-label={uiT("Edit citation comment")}
               width="md"
               padding="compact"
               onPointerDown={(event) => event.stopPropagation()}

@@ -277,7 +277,7 @@ export const ChatHeader = memo(function ChatHeader({
       onContextMenu={handleHeaderContextMenu}
     >
       <WorkspaceBreadcrumb
-        ariaLabel="Thread breadcrumb"
+        ariaLabel={uiT("Thread breadcrumb")}
         className="flex-1 overflow-clip [overflow-clip-margin:2px]"
       >
         {activeProject ? (
@@ -348,7 +348,7 @@ export const ChatHeader = memo(function ChatHeader({
             <input
               dir="auto"
               autoFocus
-              aria-label="Thread title"
+              aria-label={uiT("Thread title")}
               className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-inset ring-ring/50 [unicode-bidi:plaintext] focus:ring-ring"
               defaultValue={renamingTitle}
               onBlur={(event) => {

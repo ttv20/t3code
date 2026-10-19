@@ -1,5 +1,5 @@
 "use client";
-import { useUiLanguage } from "../i18n";
+import { UiText, useUiLanguage } from "../i18n";
 
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
@@ -3324,13 +3324,25 @@ function OpenCommandPaletteDialog(props: {
             <FolderGit2Icon className={ITEM_ICON_CLASS} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-foreground text-sm">
-                {newProjectName.length > 0 ? newProjectName : uiT("New project")}
+                <bdi>{newProjectName.length > 0 ? newProjectName : uiT("New project")}</bdi>
               </span>
               <span className="truncate text-muted-foreground/85 text-xs">
-                {newProjectName.length > 0
-                  ? `Creates ${newProjectPathPreview}`
-                  : `Goes in ${newProjectsRoot}`}
-                {newProjectEnvironmentLabel === null ? null : ` on ${newProjectEnvironmentLabel}`}
+                <UiText
+                  message={newProjectName.length > 0 ? "Creates {0}" : "Goes in {0}"}
+                  values={{
+                    "0": (
+                      <bdi dir="ltr">
+                        {newProjectName.length > 0 ? newProjectPathPreview : newProjectsRoot}
+                      </bdi>
+                    ),
+                  }}
+                />
+                {newProjectEnvironmentLabel === null ? null : (
+                  <UiText
+                    message=" on {0}"
+                    values={{ "0": <bdi>{newProjectEnvironmentLabel}</bdi> }}
+                  />
+                )}
               </span>
             </span>
           </div>

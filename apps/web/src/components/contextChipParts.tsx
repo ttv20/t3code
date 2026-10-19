@@ -61,6 +61,7 @@ export function ContextChipShell({
 
 export function ContextChipPopover(props: {
   kind: ContextChipKind;
+  dir?: "ltr" | "rtl";
   icon: ReactNode;
   label: string;
   copyMarkdown?: string;
@@ -74,6 +75,7 @@ export function ContextChipPopover(props: {
         render={
           <ContextChip
             kind={props.kind}
+            dir={props.dir}
             render={<button type="button" />}
             aria-label={uiT("{0}. Show details", { "0": props.accessibleLabel })}
             data-markdown-copy={props.copyMarkdown}

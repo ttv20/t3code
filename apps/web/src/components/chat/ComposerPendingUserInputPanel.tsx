@@ -1,4 +1,8 @@
 import { useUiLanguage } from "../../i18n";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
 import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
 import { memo, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useStableCallback } from "~/hooks/useStableCallback";
@@ -82,7 +86,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
   onAdvance: () => void;
   onDismiss: (requestId: RuntimeRequestId) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction: uiDirection } = useUiLanguage();
 
   // Message-mode requests remain answerable after their provider turn ends.
   const canRespond = prompt.responseCapability !== "not_resumable";
@@ -180,6 +184,11 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
     return null;
   }
 
+  const questionDirection = resolveMarkdownDirection(
+    countMarkdownDirectionCharacters(activeQuestion.question),
+    uiDirection,
+  );
+
   return (
     <Collapsible
       open={!isCollapsed}
@@ -198,11 +207,17 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       >
         <ComposerBanner.Icon />
         <ComposerBanner.Content>
-          <span dir="auto" className="shrink-0 font-medium text-muted-foreground">
+          <span
+            dir="auto"
+            className="shrink-0 font-medium text-muted-foreground [unicode-bidi:isolate]"
+          >
             {activeQuestion.header}
           </span>
           {isCollapsed ? (
-            <span className="min-w-0 flex-1 truncate text-secondary-label">
+            <span
+              dir={questionDirection}
+              className="min-w-0 flex-1 truncate text-start text-secondary-label [unicode-bidi:isolate]"
+            >
               {activeQuestion.question}
             </span>
           ) : null}
@@ -217,8 +232,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
           {prompt.dismissible ? (
             <ComposerBanner.Dismiss
               render={<span role="button" tabIndex={0} />}
-              aria-label="Dismiss question without answering"
-              title="Dismiss question without answering"
+              aria-label={uiT("Dismiss question without answering")}
+              title={uiT("Dismiss question without answering")}
               disabled={isResponding}
               data-pending-user-input-dismiss
               onClick={(event) => {
@@ -238,7 +253,10 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       </CollapsibleTrigger>
       <CollapsiblePanel>
         <ComposerBanner.Scroll>
-          <ComposerBanner.Body className="pe-1 pb-1 wrap-anywhere">
+          <ComposerBanner.Body
+            dir={questionDirection}
+            className="pe-1 pb-1 text-start wrap-anywhere"
+          >
             <ChatMarkdown
               text={activeQuestion.question}
               cwd={cwd}
@@ -246,7 +264,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
               className="text-foreground/85"
             />
             {activeQuestion.multiSelect ? (
-              <p dir="ltr" className="mt-1 text-secondary-label text-xs">
+              <p dir={uiDirection} className="mt-1 text-secondary-label text-xs">
                 {uiT("Select one or more options.")}
               </p>
             ) : null}
@@ -260,7 +278,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                   isOptimisticallySelected || draftSelectedOptions?.[index] === true;
                 const shortcutKey = index < 9 ? index + 1 : null;
                 const className = cn(
-                  "group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/25",
+                  "group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-start outline-none transition-colors duration-150 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/25",
                   isSelected
                     ? "bg-muted/55 text-foreground"
                     : "bg-transparent text-foreground/85 hover:bg-muted/30",
@@ -293,6 +311,12 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                 return (
                   <button
                     key={`${activeQuestion.id}:${optionValue}`}
+                    dir={resolveMarkdownDirection(
+                      countMarkdownDirectionCharacters(
+                        `${option.label}\n${option.description ?? ""}`,
+                      ),
+                      questionDirection,
+                    )}
                     type="button"
                     disabled={disabled || isResponding}
                     onClick={() => {
