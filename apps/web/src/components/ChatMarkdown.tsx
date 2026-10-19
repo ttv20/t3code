@@ -1,6 +1,7 @@
 import { useUiLanguage } from "../i18n";
 import { MarkdownFindContext, findRevealRef } from "./chat/markdownFindContext";
 import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
+import { rehypeRtlLineDirection } from "../lib/markdownLineDirection";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
@@ -3415,8 +3416,8 @@ function ChatMarkdown({
             remarkPlugins={remarkPlugins}
             rehypePlugins={
               parseRawHtml
-                ? CHAT_MARKDOWN_RENDER_REHYPE_PLUGINS
-                : CHAT_MARKDOWN_LITERAL_HTML_REHYPE_PLUGINS
+                ? [...CHAT_MARKDOWN_RENDER_REHYPE_PLUGINS, rehypeRtlLineDirection]
+                : [...CHAT_MARKDOWN_LITERAL_HTML_REHYPE_PLUGINS, rehypeRtlLineDirection]
             }
             skipHtml={false}
             components={CHAT_MARKDOWN_COMPONENTS}

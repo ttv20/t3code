@@ -3,6 +3,7 @@ import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
   resolveStreamingMarkdownDirection,
+  startsWithRtlLetter,
 } from "@t3tools/client-runtime/markdown-direction";
 
 describe("message direction", () => {
@@ -20,16 +21,36 @@ describe("message direction", () => {
       resolveMarkdownDirection(countMarkdownDirectionCharacters("Use the public API"), "rtl"),
     ).toBe("ltr");
   });
-  it("uses the full message majority rather than its first paragraph", () => {
+  it("uses all visible letters rather than only the first paragraph", () => {
     const counts = countMarkdownDirectionCharacters("English\n\nשלום עולם ועוד מילים 123!?");
     expect(resolveMarkdownDirection(counts)).toBe("rtl");
     expect(countMarkdownDirectionCharacters("123!?\n ")).toEqual({ ltr: 0, rtl: 0 });
   });
 
-  it("keeps streaming direction through small leads and settles to the exact majority", () => {
-    expect(resolveStreamingMarkdownDirection({ ltr: 21, rtl: 20 }, "rtl")).toBe("rtl");
-    expect(resolveStreamingMarkdownDirection({ ltr: 32, rtl: 20 }, "rtl")).toBe("ltr");
-    expect(resolveMarkdownDirection({ ltr: 21, rtl: 20 })).toBe("ltr");
+  it("uses an inclusive 30 percent threshold independently of interface direction", () => {
+    for (const fallback of ["ltr", "rtl"] as const) {
+      expect(resolveMarkdownDirection({ ltr: 70, rtl: 30 }, fallback)).toBe("rtl");
+      expect(resolveMarkdownDirection({ ltr: 71, rtl: 29 }, fallback)).toBe("ltr");
+      expect(resolveMarkdownDirection({ ltr: 50, rtl: 50 }, fallback)).toBe("rtl");
+      expect(resolveMarkdownDirection({ ltr: 0, rtl: 0 }, fallback)).toBe(fallback);
+    }
+  });
+
+  it("keeps streaming direction near 30 percent and settles to the exact threshold", () => {
+    expect(resolveStreamingMarkdownDirection({ ltr: 71, rtl: 29 }, "rtl")).toBe("rtl");
+    expect(resolveStreamingMarkdownDirection({ ltr: 69, rtl: 31 }, "ltr")).toBe("ltr");
+    expect(resolveStreamingMarkdownDirection({ ltr: 80, rtl: 20 }, "rtl")).toBe("ltr");
+    expect(resolveStreamingMarkdownDirection({ ltr: 60, rtl: 40 }, "ltr")).toBe("rtl");
+    expect(resolveMarkdownDirection({ ltr: 71, rtl: 29 })).toBe("ltr");
+    expect(resolveMarkdownDirection({ ltr: 70, rtl: 30 })).toBe("rtl");
+  });
+
+  it("recognizes RTL line starts after punctuation, numbers and emoji", () => {
+    for (const text of ["שלום English English", "123. שלום", "✅ العربية", "(فارسی)"]) {
+      expect(startsWithRtlLetter(text)).toBe(true);
+    }
+    expect(startsWithRtlLetter("English שלום")).toBe(false);
+    expect(startsWithRtlLetter("123?!")).toBe(false);
   });
 
   it("does not let inline code choose the message direction", () => {

@@ -1,7 +1,8 @@
 const MARKDOWN_LETTER_REGEX = /\p{L}/u;
 const MARKDOWN_RTL_LETTER_REGEX = /[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u;
 const STREAMING_DIRECTION_MIN_LEAD = 8;
-const STREAMING_DIRECTION_LEAD_RATIO = 1.25;
+const RTL_DIRECTION_THRESHOLD = 0.3;
+const STREAMING_DIRECTION_MARGIN = 0.05;
 
 export type MarkdownDirection = "ltr" | "rtl";
 
@@ -89,21 +90,28 @@ export function resolveMarkdownDirection(
   counts: MarkdownDirectionCounts,
   fallback: MarkdownDirection = "ltr",
 ): MarkdownDirection {
-  if (counts.rtl === counts.ltr) return fallback;
-  return counts.rtl > counts.ltr ? "rtl" : "ltr";
+  const total = counts.rtl + counts.ltr;
+  if (total === 0) return fallback;
+  return counts.rtl >= total * RTL_DIRECTION_THRESHOLD ? "rtl" : "ltr";
+}
+
+export function startsWithRtlLetter(text: string): boolean {
+  for (const character of text) {
+    if (MARKDOWN_LETTER_REGEX.test(character)) return MARKDOWN_RTL_LETTER_REGEX.test(character);
+  }
+  return false;
 }
 
 export function resolveStreamingMarkdownDirection(
   counts: MarkdownDirectionCounts,
   current: MarkdownDirection,
 ): MarkdownDirection {
-  const currentCount = counts[current];
-  const other: MarkdownDirection = current === "ltr" ? "rtl" : "ltr";
-  const otherCount = counts[other];
-  if (otherCount === 0 || otherCount <= currentCount) return current;
-  if (currentCount === 0) return other;
-  const hasClearLead =
-    otherCount - currentCount >= STREAMING_DIRECTION_MIN_LEAD &&
-    otherCount >= currentCount * STREAMING_DIRECTION_LEAD_RATIO;
-  return hasClearLead ? other : current;
+  const target = resolveMarkdownDirection(counts, current);
+  if (target === current) return current;
+  if (counts[current] === 0) return target;
+  const total = counts.rtl + counts.ltr;
+  const distance = Math.abs(counts.rtl - total * RTL_DIRECTION_THRESHOLD);
+  return distance >= STREAMING_DIRECTION_MIN_LEAD && distance >= total * STREAMING_DIRECTION_MARGIN
+    ? target
+    : current;
 }

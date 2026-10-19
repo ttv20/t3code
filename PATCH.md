@@ -34,14 +34,26 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 - Clicking the meters opens the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Available reset credits can be redeemed through the existing permission checks and confirmation dialog. Manual refresh uses upstream's targeted provider refresh.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
 
-## Web chat bidirectional text
+## Interface translation and direction
 
-- Web chat messages use one direction for the whole Markdown message. T3 counts RTL and LTR letters across the full message and uses whichever type is more common; punctuation, digits, whitespace, backtick code spans, and hidden Markdown link destinations do not determine direction.
-- While an answer streams, its direction changes only when the other script gains a clear lead. Once streaming ends, the exact majority wins.
+- Web, desktop, and native mobile share English, Hebrew, Arabic, and Persian translation catalogs. New installations follow the browser or device language; language and direction preferences are saved per client. An explicit LTR or RTL preference overrides the language's automatic layout direction.
+- Interface actions use translated templates, including dynamic dialog titles, thread and draft menus, snooze choices, provider update notifications, pairing explanations and permission descriptions. Project names, branch names, terminal names, paths, and conversation content retain their original values.
+- Dates and relative times follow the interface language. Scheduling keeps the Gregorian calendar in every language so the displayed day agrees with the server's date.
+- Web and desktop use generated RTLCSS styles and direction-aware controls for menus, dialogs, and portals. Technical text, including code, diffs, terminals, paths, and filename segments, keeps its LTR order. Empty provider configuration path fields also display their placeholders LTR.
+- Command input adornments follow the interface direction independently of the text being entered. Project previews isolate names and paths, and keyboard hints wrap within narrow dialogs.
+
+Translation scope and the reasons behind these choices are recorded in [Translation decisions](TRANSLATION_DECISIONS.md).
+
+## Web and desktop chat bidirectional text
+
+- Web chat messages default to RTL when at least 30% of their visible letters are RTL. Punctuation, digits, whitespace, backtick code spans, and hidden Markdown link destinations do not determine direction.
+- A Markdown paragraph, heading, list item, quote, table cell, or source line beginning with an RTL letter aligns to the right even when the whole message is below 30%. Formatting and leading punctuation or digits do not hide its first letter; code stays LTR.
+- Streaming direction uses hysteresis around the 30% threshold to avoid flickering. Once streaming ends, the exact 30% threshold applies.
 - Markdown lists and quote bars inherit the message direction and use logical start-side gutters. Inline and fenced code remain explicitly left-to-right and isolated.
 - The prompt editor and thread-title fields use automatic plaintext bidi behavior. Thread titles also render with automatic direction in the chat header, sidebar, search results, and tooltips.
-- Pending question cards and answer choices use the same majority-character direction rules as messages. Choice rows mirror their text and shortcut/checkmark placement for RTL; collapsed previews preserve the question's direction.
-- This patch applies only to the web client; the native mobile app is unchanged.
+- Pending question cards and answer choices use the same 30% RTL-letter threshold as messages. Choice rows mirror their text and shortcut/checkmark placement for RTL; collapsed previews preserve the question's direction.
+- Timeline navigation previews resolve the user message and assistant answer directions separately and apply the same sentence-boundary correction as rendered Markdown.
+- In RTL prose, adjacent Latin words or numbers separated by sentence punctuation or a colon receive a display-only RLM before the next segment. This also works across emphasis and link labels; code and link destinations remain unchanged. The shared sentence-boundary helper also runs in native mobile Markdown. The web layout and preview fixes above do not imply identical native mobile layouts.
 
 ## Finished-thread entry position
 

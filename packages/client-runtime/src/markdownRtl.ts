@@ -23,7 +23,7 @@ function sentenceBoundaryOffsets(text: string): number[] {
     if (RTL_LETTER.test(character)) rtl += 1;
     else ltr += 1;
   }
-  if (rtl === 0 || ltr > rtl) return [];
+  if (resolveMarkdownDirection({ rtl, ltr }) !== "rtl" && !startsWithRtlLetter(text)) return [];
   return [...text.matchAll(SENTENCE_BOUNDARY)].map((match) => match.index + match[0].length);
 }
 
@@ -91,3 +91,4 @@ export function markdownWithRtlSentenceBoundaries(source: string, tree: Markdown
   }
   return source;
 }
+import { resolveMarkdownDirection, startsWithRtlLetter } from "./markdownDirection.ts";

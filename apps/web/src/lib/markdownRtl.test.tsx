@@ -10,6 +10,20 @@ import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rt
 import { createIncrementalMarkdownPlugin } from "../markdown-incremental";
 
 describe("rendered RTL sentence boundaries", () => {
+  it.each(["aaaaaaa. bbbbbb אבגדהו", "שלום aaaaaaaaaaaaaaaaaaaa. and"])(
+    "corrects boundaries for the 30 percent and RTL-start rules: %s",
+    (source) => {
+      const html = renderToStaticMarkup(
+        <ReactMarkdown
+          remarkPlugins={[...CHAT_MARKDOWN_REMARK_PLUGINS, remarkRtlSentenceBoundaries]}
+        >
+          {source}
+        </ReactMarkdown>,
+      );
+      expect(html).toContain(". \u200f");
+      expect(source).not.toContain("\u200f");
+    },
+  );
   it.each([
     { plugins: CHAT_MARKDOWN_REMARK_PLUGINS },
     { plugins: CHAT_MARKDOWN_REMARK_PLUGINS_WITH_BREAKS },

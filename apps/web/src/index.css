@@ -1974,6 +1974,18 @@ code {
   color: var(--contrast-muted-foreground);
 }
 
+.chat-markdown :is(p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th)[dir="rtl"],
+.chat-markdown .markdown-line[dir="rtl"] {
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+.chat-markdown .markdown-line {
+  display: inline-block;
+  width: 100%;
+  vertical-align: top;
+}
+
 /* A quote in the composer is text the user is still writing; muting it reads
    as disabled in an input, so the border alone carries the quote. */
 .composer-tiptap blockquote {
