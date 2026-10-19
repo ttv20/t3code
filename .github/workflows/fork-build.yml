@@ -65,11 +65,19 @@ jobs:
           const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8' }).trim();
           const previous = JSON.parse(gh('release', 'view', '--repo', repo, '--json', 'tagName')).tagName;
           const commits = gh('api', '--paginate', `repos/${repo}/compare/${previous}...${sha}?per_page=100`, '--jq', '.commits[] | {sha, message: .commit.message} | @json').split('\n').filter(Boolean).map(line => JSON.parse(line));
-          const changes = commits.map(commit => {
-            const [title, ...body] = commit.message.trim().split('\n');
-            const detail = body.join('\n').trim();
-            return `- ${title} ([${commit.sha.slice(0, 7)}](https://github.com/${repo}/commit/${commit.sha}))${detail ? '\n\n  ' + detail.replaceAll('\n', '\n  ') : ''}`;
-          });
+          const changes = [];
+          let changesLength = 0;
+          for (const commit of commits) {
+            const title = commit.message.trim().split('\n')[0].slice(0, 200);
+            const entry = `- ${title} ([${commit.sha.slice(0, 7)}](https://github.com/${repo}/commit/${commit.sha}))`;
+            // GitHub release bodies are limited to 125,000 characters.
+            if (changesLength + entry.length + 2 > 100_000) break;
+            changes.push(entry);
+            changesLength += entry.length + 2;
+          }
+          if (changes.length < commits.length) {
+            changes.push(`See the full comparison below for ${commits.length - changes.length} more commits.`);
+          }
           const notes = [
             `# T3 Code RTL ${version}`,
             '## Changes',
