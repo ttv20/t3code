@@ -1,4 +1,5 @@
 import { ComposerUsageIndicator } from "./ComposerWeeklyUsageIndicator";
+import { ComposerPromptRow } from "./ComposerPromptRow";
 import { useUiLanguage } from "../../i18n";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import { useComposerTypingGuard } from "./useComposerTypingGuard";
@@ -7069,14 +7070,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   </div>
                 )}
 
-              <div
-                className={cn("relative", isComposerResting && "flex min-w-0 items-center gap-1")}
-                style={
-                  isComposerResting && restingActionsWidth !== null
-                    ? { paddingRight: `calc(${restingActionsWidth}px + 1rem)` }
-                    : undefined
-                }
-              >
+              <ComposerPromptRow resting={isComposerResting} actionsWidth={restingActionsWidth}>
                 {previewFile ? (
                   <Dialog
                     open
@@ -7225,7 +7219,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     />
                   </div>
                 ) : null}
-              </div>
+              </ComposerPromptRow>
             </div>
 
             <ComposerPromptLengthValidation
