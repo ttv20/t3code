@@ -5,6 +5,8 @@ import * as NodeURL from "node:url";
 const DOM_TEST_ENVIRONMENT_ALLOWLIST: Array<string> = [];
 
 const TEST_EXCLUDE = [
+  // GitHub Actions exercises these with Node's built-in test runner.
+  "**/.github/scripts/*.test.cjs",
   "**/.repos/**",
   "**/.t3/**",
   "**/node_modules/**",

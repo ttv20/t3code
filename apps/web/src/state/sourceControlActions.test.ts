@@ -198,3 +198,8 @@ describe("pull request worktree attachment permission", () => {
     expect(state.requests).toEqual([]);
   });
 });
+
+vi.mock("../i18n", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { useUiLanguage: () => ({ locale: "en", direction: "ltr", t: createUiTranslator("en") }) };
+});

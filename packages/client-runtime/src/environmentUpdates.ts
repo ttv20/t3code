@@ -1,3 +1,4 @@
+// @effect-diagnostics globalFetch:off -- Release lookups run in browser and native clients without an Effect runtime.
 import {
   cliReleaseChannelOf,
   cliReleaseIndexPageUrl,

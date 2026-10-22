@@ -58,8 +58,9 @@ export const UI_DATE_LOCALES = {
 const relativeTimeFormatters = new Map<UiLocale, Intl.RelativeTimeFormat>();
 
 /** Format past and future instants in the interface language; reject invalid dates. */
+// @effect-diagnostics-next-line globalDate:off -- UI labels also run outside an Effect runtime.
 export function formatUiRelativeTime(value: string, locale: UiLocale, now = Date.now()) {
-  const elapsedSeconds = (new Date(value).getTime() - now) / 1000;
+  const elapsedSeconds = (Date.parse(value) - now) / 1000;
   if (!Number.isFinite(elapsedSeconds)) return null;
   let formatter = relativeTimeFormatters.get(locale);
   if (!formatter) {

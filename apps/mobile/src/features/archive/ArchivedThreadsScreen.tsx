@@ -418,7 +418,7 @@ export function ArchivedThreadsScreen(props: {
         title={isFiltered ? uiT("No matching threads") : uiT("No archived threads")}
       />
     );
-  }, [isFiltered, isInitialLoad]);
+  }, [isFiltered, isInitialLoad, uiT]);
 
   return (
     // Keep the list inside this native container. Form-sheet resizing otherwise

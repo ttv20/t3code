@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { type ReactNode } from "react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "~/lib/utils";

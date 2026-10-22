@@ -297,8 +297,7 @@ export function ThreadDetailsPrRow({
               <div className="flex min-w-0 items-start gap-2 text-destructive">
                 <TriangleAlertIcon aria-hidden className="mt-0.5 size-3 shrink-0 stroke-current" />
                 <div className="min-w-0 flex-1 wrap-break-word">
-                  {uiT("Merge conflicts with")}
-                  {detail.baseBranch}
+                  {uiT("Merge conflicts with {0}", { "0": detail.baseBranch })}
                 </div>
               </div>
             ) : null}
@@ -484,9 +483,7 @@ export function ThreadDetailsPrRow({
             <AlertDialogHeader>
               <AlertDialogTitle>{uiT("Merge pull request?")}</AlertDialogTitle>
               <AlertDialogDescription>
-                {uiT("This merges #")}
-                {number} {uiT("using")}
-                {selectedMergeMethod}.
+                {uiT("This merges #{0} using {1}.", { "0": number, "1": selectedMergeMethod })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

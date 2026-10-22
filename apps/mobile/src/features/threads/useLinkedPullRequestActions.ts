@@ -112,7 +112,7 @@ export function useLinkedPullRequestActions(input: {
         setLinked(resolved.link, true);
       },
     });
-  }, [project, setLinked]);
+  }, [project, setLinked, uiT]);
 
   const menuActions = useCallback(
     (link: ThreadPullRequestLink): MenuAction[] => {
@@ -142,7 +142,7 @@ export function useLinkedPullRequestActions(input: {
           : []),
       ];
     },
-    [canEdit, canStartWatch, canWatch],
+    [canEdit, canStartWatch, canWatch, uiT],
   );
 
   const onMenuAction = useCallback(

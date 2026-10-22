@@ -478,3 +478,8 @@ describe("thread archive guard", () => {
     expect(state.alerts.at(-1)?.title).toBe("Could not archive thread");
   });
 });
+
+vi.mock("../../i18n", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { useUiLanguage: () => ({ locale: "en", direction: "ltr", t: createUiTranslator("en") }) };
+});

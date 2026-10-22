@@ -83,7 +83,7 @@ export function ThreadFileNavigatorPane(props: {
           type: "button" as const,
         },
       ] as ComponentProps<typeof ScreenStackHeaderConfig>["headerRightBarButtonItems"],
-    [foregroundColor, toggleAuxiliaryPane],
+    [foregroundColor, toggleAuxiliaryPane, uiT],
   );
 
   const fileTree = (

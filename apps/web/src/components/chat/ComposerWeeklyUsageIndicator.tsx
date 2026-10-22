@@ -153,11 +153,9 @@ function ComposerUsagePanel({
   const refresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
-    try {
-      await refreshProviders({ environmentId, input: { instanceId: provider.instanceId } });
-    } finally {
-      setIsRefreshing(false);
-    }
+    await refreshProviders({ environmentId, input: { instanceId: provider.instanceId } }).finally(
+      () => setIsRefreshing(false),
+    );
   };
 
   return (

@@ -136,7 +136,7 @@ export function useRemoteConnections() {
       }
       return result;
     },
-    [connectionPairingUrl, controller],
+    [connectionPairingUrl, controller, uiT],
   );
 
   const onReconnectEnvironment = useCallback(

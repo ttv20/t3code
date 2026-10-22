@@ -28,7 +28,7 @@ export const CLI_ARCHIVE_PLATFORM_KEYS = [
 export type CliArchivePlatformKey = (typeof CLI_ARCHIVE_PLATFORM_KEYS)[number];
 
 export function cliArchivePlatformKey(
-  platform: NodeJS.Platform,
+  platform: string,
   arch: string,
 ): CliArchivePlatformKey | undefined {
   const key = `${platform}-${arch}`;
@@ -41,7 +41,7 @@ export function cliArchivePlatformKey(
  * absolute path.
  */
 export function cliArchiveTarCommand(
-  platform: NodeJS.Platform,
+  platform: string,
   env: Readonly<Record<string, string | undefined>>,
 ): string {
   if (platform !== "win32") return "tar";

@@ -87,6 +87,7 @@ export function useThreadHeaderOptions(props: {
       togglePrimarySidebar,
       usesDuoHeader,
       usesNativeWorkspaceColumns,
+      uiT,
     ],
   );
   const canGoBack = navigation.canGoBack();
@@ -100,7 +101,7 @@ export function useThreadHeaderOptions(props: {
         type: "button" as const,
       }),
     ],
-    [navigation],
+    [navigation, uiT],
   );
 
   const options: AppNativeStackNavigationOptions = {

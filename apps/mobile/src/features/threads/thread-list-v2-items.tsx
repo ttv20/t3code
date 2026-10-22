@@ -670,7 +670,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       ...(prBadgeLabel ? [{ name: "openPullRequests", label: prBadgeLabel }] : []),
       ...(showsWoke ? [{ name: "dismissWoke", label: uiT("Dismiss Woke notification") }] : []),
     ],
-    [prBadgeLabel, showsWoke],
+    [prBadgeLabel, showsWoke, uiT],
   );
 
   const handleDelete = useCallback(() => onDeleteThread(thread), [onDeleteThread, thread]);
@@ -746,7 +746,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       })),
       { id: "snooze:custom", title: uiT("Custom…") },
     ],
-    [snoozePresets],
+    [snoozePresets, uiT],
   );
   const arrangementMenuItems = useMemo<MenuAction[]>(
     () => [
@@ -782,6 +782,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       props.pinningSupported,
       thread.pinnedAt,
       variant,
+      uiT,
     ],
   );
   const autoSettleMenuItems = useMemo<MenuAction[]>(
@@ -807,7 +808,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             } satisfies MenuAction,
           ]
         : [],
-    [props.autoSettleOptOutSupported, thread.autoSettleDisabledAt],
+    [props.autoSettleOptOutSupported, thread.autoSettleDisabledAt, uiT],
   );
   const titleMenuItems = useMemo<MenuAction[]>(
     () => [
@@ -817,7 +818,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         isRegenerating: thread.titleRegeneration != null,
       }),
     ],
-    [props.titleRegenerationSupported, thread.titleRegeneration],
+    [props.titleRegenerationSupported, thread.titleRegeneration, uiT],
   );
   const snoozableCardMenuActions = useMemo<MenuAction[]>(
     () => [
@@ -834,7 +835,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       LEGACY_MENU_ACTIONS[0]!,
       { id: "delete", title: uiT("Delete"), image: "trash", attributes: { destructive: true } },
     ],
-    [arrangementMenuItems, autoSettleMenuItems, snoozePresetActions, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, snoozePresetActions, titleMenuItems, uiT],
   );
   const cardMenuActions = useMemo<MenuAction[]>(
     () => [
@@ -974,6 +975,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     handleUnsnooze,
     swipeActions.primary,
     thread.title,
+    uiT,
   ]);
   const secondaryAction = useMemo(
     () =>
@@ -990,7 +992,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             onPress: () => undefined,
           }
         : null,
-    [handleMenuAction, snoozePresetActions, swipeActions.secondary, thread.title],
+    [handleMenuAction, snoozePresetActions, swipeActions.secondary, thread.title, uiT],
   );
   const swipeAccessibilityHint = !canOperateThread
     ? uiT("Opens the thread")

@@ -184,3 +184,8 @@ it.each(["save", "copy-image", "open-file"])(
     expect(state.openFile).not.toHaveBeenCalled();
   },
 );
+
+vi.mock("../../i18n", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { useUiLanguage: () => ({ locale: "en", direction: "ltr", t: createUiTranslator("en") }) };
+});

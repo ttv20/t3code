@@ -103,6 +103,7 @@ export function useReviewCommentSelectionController(input: {
     openReviewCommentSheet,
     pendingNativeCommentSelection,
     selectedSection?.title,
+    uiT,
   ]);
 
   useEffect(() => {

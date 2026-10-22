@@ -119,3 +119,8 @@ it("does not let an older multi-environment batch clear a newer failure for the 
   await older;
   expect(read(selected).failedLabels).toEqual(["A"]);
 });
+
+vi.mock("../../i18n", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { useUiLanguage: () => ({ locale: "en", direction: "ltr", t: createUiTranslator("en") }) };
+});

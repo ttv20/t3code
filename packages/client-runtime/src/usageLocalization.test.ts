@@ -7,7 +7,7 @@ import {
 import { createUiTranslator } from "./i18n.ts";
 
 const now = Date.parse("2026-10-15T10:00:00Z");
-const future = new Date(now + (4 * 60 + 42) * 60_000).toISOString();
+const future = "2026-10-15T14:42:00.000Z";
 
 describe("usage quota translations", () => {
   it("translates quota periods without translating a model's name", () => {
@@ -38,7 +38,7 @@ describe("usage quota translations", () => {
       formatUiResetCredits(
         {
           availableCount: 1,
-          nextExpiresAt: new Date(now + (7 * 24 + 9) * 3_600_000).toISOString(),
+          nextExpiresAt: "2026-10-22T19:00:00.000Z",
         },
         now,
         locale,
@@ -48,9 +48,9 @@ describe("usage quota translations", () => {
     expect(formatUiUsageReset({ resetsAt: future }, now, locale)).not.toContain("resets in");
     expect(formatUiUsageReset({}, now, locale)).toBeNull();
     expect(formatUiUsageReset({ resetsAt: "invalid" }, now, locale)).toBeNull();
-    expect(
-      formatUiUsageReset({ resetsAt: new Date(now).toISOString() }, now, locale),
-    ).not.toContain("resets now");
+    expect(formatUiUsageReset({ resetsAt: "2026-10-15T10:00:00.000Z" }, now, locale)).not.toContain(
+      "resets now",
+    );
   });
   it("preserves English duration precision and reset-credit wording", () => {
     expect(formatUiUsageReset({ resetsAt: future }, now, "en")).toBe("resets in 4h 42m");
@@ -68,8 +68,8 @@ describe("usage quota translations", () => {
     expect(formatUiUsageReset({ resetsAt: future }, now, locale, true)).toBe(expected);
     expect(formatUiUsageReset({}, now, locale, true)).toBeNull();
     expect(formatUiUsageReset({ resetsAt: "invalid" }, now, locale, true)).toBeNull();
-    expect(formatUiUsageReset({ resetsAt: new Date(now).toISOString() }, now, locale, true)).toBe(
-      formatUiUsageReset({ resetsAt: new Date(now).toISOString() }, now, locale),
+    expect(formatUiUsageReset({ resetsAt: "2026-10-15T10:00:00.000Z" }, now, locale, true)).toBe(
+      formatUiUsageReset({ resetsAt: "2026-10-15T10:00:00.000Z" }, now, locale),
     );
   });
 });

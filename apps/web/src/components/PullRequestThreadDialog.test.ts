@@ -177,3 +177,18 @@ describe("pull request worktree permissions", () => {
     expect(state.setupScripts).toBe(0);
   });
 });
+
+vi.mock("../i18n", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  const t = createUiTranslator("en");
+  return {
+    useUiLanguage: () => ({ locale: "en", direction: "ltr", t }),
+    UiText: ({
+      message,
+      values,
+    }: {
+      message: string;
+      values?: Readonly<Record<string, unknown>>;
+    }) => t(message, values),
+  };
+});
