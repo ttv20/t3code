@@ -284,13 +284,23 @@ jobs:
       # Native builds embed that executable; cross-target builds download the
       # same version for their target.
       - name: Build CLI single-executable
-        if: inputs.cli_archive
+        if: inputs.cli_archive && runner.os != 'Windows'
         shell: bash
         env:
           # The executable bundles the server again, so it needs the same stamp
           # as release.yml's JS bundle.
           T3CODE_TELEMETRY_CHANNEL: ${{ github.repository == 'pingdotgg/t3code' && inputs.release_channel || 'dev' }}
         run: node apps/server/scripts/cli.ts build-exe --verbose ${{ inputs.platform == 'win' && format('--target win-{0}', inputs.arch) || '' }}
+
+      - name: Build native Windows CLI single-executable
+        if: inputs.cli_archive && runner.os == 'Windows'
+        shell: pwsh
+        env:
+          T3CODE_TELEMETRY_CHANNEL: ${{ github.repository == 'pingdotgg/t3code' && inputs.release_channel || 'dev' }}
+        run: |
+          # GNU tar from Git Bash treats C: paths as remote hosts. Use Windows' system tar.
+          $env:Path = "$env:SystemRoot\System32;$env:Path"
+          node apps/server/scripts/cli.ts build-exe --verbose --target win-${{ inputs.arch }}
 
       - name: Import macOS signing certificate for the CLI archive
         if: inputs.cli_archive && inputs.platform == 'mac'
