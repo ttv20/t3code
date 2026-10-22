@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { IconButtonProps } from "./IconButton.types";
 import { NativeThemeHost } from "./NativeThemeHost.android";
 import {
@@ -13,6 +14,8 @@ import { useAndroidControlSizing } from "./useAndroidControlSizing";
 import { SymbolView } from "./AppSymbol";
 
 export function IconButton(props: IconButtonProps) {
+  const { t: uiT } = useUiLanguage();
+
   const { colors } = useControlTheme();
   const { iconSize, buttonSize } = useAndroidControlSizing();
   const variant = props.variant ?? "standard";
@@ -40,7 +43,7 @@ export function IconButton(props: IconButtonProps) {
   return (
     <View
       accessible
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(props.disabled), selected: props.selected }}
       accessibilityActions={[{ name: "activate" }]}

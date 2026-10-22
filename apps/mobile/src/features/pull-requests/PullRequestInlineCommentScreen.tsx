@@ -1,7 +1,9 @@
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { AsyncResult } from "effect/reactivity";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { View } from "react-native";
 import type { PullRequestReviewPosition } from "@t3tools/contracts";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
@@ -33,7 +35,7 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
   const body = editedBody ?? saved?.body ?? "";
   const detail = useEnvironmentQuery(composerPullRequests.detail(pullRequestTarget(params)));
   const { refresh: refreshDetail } = detail;
-  useFocusEffect(useCallback(() => refreshDetail(), [refreshDetail]));
+  useFocusEffect(() => refreshDetail());
   const permissions = usePullRequestPermissions(params, detail.data);
   const stale = detail.data && detail.data.headSha !== params.headSha;
   const pending = useRef(false);
@@ -66,13 +68,11 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
         },
       ],
     }));
-    try {
-      await store.flush();
-      navigation.goBack();
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
+    // flush reports write failures through the draft store's error field.
+    const result = await settlePromise(() => store.flush());
+    pending.current = false;
+    setBusy(false);
+    if (AsyncResult.isSuccess(result)) navigation.goBack();
   };
   return (
     <PullRequestSheetContent

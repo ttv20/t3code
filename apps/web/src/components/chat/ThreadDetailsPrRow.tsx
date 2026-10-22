@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { selectEnvironmentQueryData } from "@t3tools/client-runtime/state/runtime";
@@ -21,6 +22,7 @@ import { usePullRequestChecksRefresh } from "~/hooks/usePullRequestChecksRefresh
 import { cn } from "~/lib/utils";
 import { useServerConfigs } from "~/state/entities";
 import { pullRequestEnvironment } from "~/state/pullRequests";
+import { useUiStateStore } from "~/uiStateStore";
 import {
   useEnvironmentQueryIsNewer,
   useEnvironmentQueryRefresh,
@@ -33,7 +35,7 @@ import {
   classifyPullRequestChecks,
   describePullRequestChecks,
   isPullRequestConflicting,
-  resolveSelectedMergeMethod,
+  resolvePullRequestMergeMethod,
   allowedPullRequestMergeMethods,
   resolveThreadPanelPullRequestAction,
 } from "../pullRequest/pullRequestDetail.logic";
@@ -46,6 +48,7 @@ import {
 } from "../pullRequest/pullRequestPresentation";
 import {
   usePullRequestActionRunner,
+  usePullRequestDefaultMergeMethodResolver,
   usePullRequestHandoffs,
 } from "../pullRequest/usePullRequestActions";
 import {
@@ -101,6 +104,7 @@ export function ThreadDetailsPrRow({
   onStopWatching?: (() => void) | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const serverConfigs = useServerConfigs();
   const supportsPullRequests =
     serverConfigs.get(environmentId)?.environment.capabilities.pullRequests === true;
@@ -167,6 +171,11 @@ export function ThreadDetailsPrRow({
     },
   });
   const { handoff, startHandoff } = usePullRequestHandoffs({ environmentId, detail });
+  const lastSelectedMergeMethod = useUiStateStore((state) => state.pullRequestMergeMethod);
+  const resolveProjectDefaultMergeMethod = usePullRequestDefaultMergeMethodResolver(
+    environmentId,
+    (project?.id as ProjectId | undefined) ?? null,
+  );
   const [confirmingMerge, setConfirmingMerge] = useState(false);
 
   const rowAction = resolveThreadPanelPullRequestAction(detail);
@@ -176,9 +185,11 @@ export function ThreadDetailsPrRow({
   const conflicting = isPullRequestConflicting(detail);
   const checksState = detail === null ? "none" : classifyPullRequestChecks(detail.checks);
   const checksRollup = detail === null ? null : pullRequestChecksState(detail.checks);
-  const selectedMergeMethod = resolveSelectedMergeMethod(
+  const selectedMergeMethod = resolvePullRequestMergeMethod(
     allowedPullRequestMergeMethods(detail),
-    "merge",
+    null,
+    resolveProjectDefaultMergeMethod(),
+    lastSelectedMergeMethod,
   );
 
   const startResolveConflicts = () => {
@@ -285,8 +296,9 @@ export function ThreadDetailsPrRow({
             {detail.isDraft && conflicting ? (
               <div className="flex min-w-0 items-start gap-2 text-destructive">
                 <TriangleAlertIcon aria-hidden className="mt-0.5 size-3 shrink-0 stroke-current" />
-                <div className="min-w-0 flex-1 wrap-break-word leading-5">
-                  {uiT("Merge conflicts with")} {detail.baseBranch}
+                <div className="min-w-0 flex-1 wrap-break-word">
+                  {uiT("Merge conflicts with")}
+                  {detail.baseBranch}
                 </div>
               </div>
             ) : null}
@@ -298,6 +310,13 @@ export function ThreadDetailsPrRow({
                 <PullRequestDiffStat additions={detail.additions} deletions={detail.deletions} />
               </div>
             </div>
+            {reference !== null && (detail.additions > 0 || detail.deletions > 0) ? (
+              <PullRequestChangeBreakdownRows
+                environmentId={environmentId}
+                reference={reference}
+                className="pl-5 text-foreground/75"
+              />
+            ) : null}
           </div>
         </div>
       </TooltipPopup>
@@ -466,7 +485,8 @@ export function ThreadDetailsPrRow({
               <AlertDialogTitle>{uiT("Merge pull request?")}</AlertDialogTitle>
               <AlertDialogDescription>
                 {uiT("This merges #")}
-                {number} {uiT("using")} {selectedMergeMethod}.
+                {number} {uiT("using")}
+                {selectedMergeMethod}.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

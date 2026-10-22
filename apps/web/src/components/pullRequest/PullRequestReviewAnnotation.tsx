@@ -95,7 +95,7 @@ export function PendingReviewCommentCard({
           size="icon-xs"
           variant="ghost"
           className="ml-auto"
-          aria-label="Discard this comment"
+          aria-label={uiT("Discard this comment")}
           onClick={onRemove}
         >
           <Trash2Icon className="size-3.5" />
@@ -236,7 +236,7 @@ export function ReviewThreadCard({
           onClick={() => setExpanded((current) => !current)}
         >
           {thread.isResolved ? uiT("Resolved") : uiT("Open")} · {commentCount}{" "}
-          {commentCount === 1 ? "comment" : "comments"}
+          {commentCount === 1 ? uiT("comment") : uiT("comments")}
         </button>
         {thread.isOutdated ? <span>{uiT("outdated")}</span> : null}
         {onFix ? (
@@ -290,7 +290,7 @@ export function ReviewThreadCard({
                     value={comment.body}
                     cwd={workspaceRoot}
                     environmentId={environmentId}
-                    label="Edit comment"
+                    label={uiT("Edit comment")}
                     saving={savingEdit}
                     onSave={(body) => void saveEdit(comment.id, body)}
                     onCancel={() => setEditingId(null)}
@@ -305,7 +305,7 @@ export function ReviewThreadCard({
                     />
                     {canEditComment(comment) ? (
                       <PullRequestEditButton
-                        aria-label="Edit comment"
+                        aria-label={uiT("Edit comment")}
                         onClick={() => setEditingId(comment.id)}
                       />
                     ) : null}
@@ -334,8 +334,8 @@ export function ReviewThreadCard({
                   autoFocus
                   size="sm"
                   value={reply}
-                  placeholder="Reply"
-                  aria-label="Reply to this conversation"
+                  placeholder={uiT("Reply")}
+                  aria-label={uiT("Reply to this conversation")}
                   onChange={(event) => setReply(event.target.value)}
                   onKeyDown={(event) =>
                     submitKeys({

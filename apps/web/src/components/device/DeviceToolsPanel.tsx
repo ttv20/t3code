@@ -429,7 +429,7 @@ function SubmitRow(props: {
       <Input
         size="compact"
         font="mono"
-        className="min-w-0 flex-1"
+        className="min-w-0 flex-1 [unicode-bidi:plaintext]"
         placeholder={uiT(props.placeholder)}
         value={value}
         disabled={props.disabled}
@@ -468,7 +468,7 @@ function LocationSection(props: {
         <Input
           size="compact"
           font="mono"
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 [unicode-bidi:plaintext]"
           placeholder={uiT("Latitude")}
           inputMode="decimal"
           value={latitude}
@@ -478,7 +478,7 @@ function LocationSection(props: {
         <Input
           size="compact"
           font="mono"
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 [unicode-bidi:plaintext]"
           placeholder={uiT("Longitude")}
           inputMode="decimal"
           value={longitude}
@@ -505,7 +505,7 @@ function LocationSection(props: {
           </SelectTrigger>
           <SelectPopup align="start" alignItemWithTrigger={false}>
             {LOCATION_PRESETS.map((preset) => (
-              <SelectItem key={preset.label} value={preset.label}>
+              <SelectItem key={uiT(preset.label)} value={uiT(preset.label)}>
                 {uiT(preset.label)}
               </SelectItem>
             ))}

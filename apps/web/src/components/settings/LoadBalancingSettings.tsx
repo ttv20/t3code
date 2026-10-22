@@ -4,7 +4,7 @@ import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import {
   useClientSettings,
   useClientSettingsHydrated,
-  useUpdateClientSettings,
+  updateClientSettings,
 } from "~/hooks/useSettings";
 import type { EnvironmentPresentation } from "~/state/environments";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
@@ -22,7 +22,7 @@ const preferences = [
 
 type LoadPreference = (typeof preferences)[number]["value"];
 
-export function loadPreferenceForWeight(weight: number | undefined): LoadPreference {
+function loadPreferenceForWeight(weight: number | undefined): LoadPreference {
   if (weight === undefined || weight === 50) return 50;
   if (weight === 0) return 0;
   return weight < 50 ? 25 : 100;
@@ -32,7 +32,7 @@ function preferenceLabel(preference: LoadPreference): string {
   return preferences.find((entry) => entry.value === preference)!.label;
 }
 
-export function summarizeLoadPreferences(
+function summarizeLoadPreferences(
   environments: ReadonlyArray<Pick<EnvironmentPresentation, "environmentId" | "label">>,
   weights: Readonly<Record<string, number>>,
 ): string | null {
@@ -56,7 +56,6 @@ export function LoadBalancingSettings({
     loadBalancingWeights: current.loadBalancingWeights,
   }));
   const settingsHydrated = useClientSettingsHydrated();
-  const updateSettings = useUpdateClientSettings();
 
   if (environments.length < 2) return null;
 
@@ -75,7 +74,7 @@ export function LoadBalancingSettings({
           aria-label={uiT("Automatically balance load")}
           checked={settings.loadBalancingEnabled}
           disabled={!settingsHydrated}
-          onCheckedChange={(loadBalancingEnabled) => updateSettings({ loadBalancingEnabled })}
+          onCheckedChange={(loadBalancingEnabled) => updateClientSettings({ loadBalancingEnabled })}
         />
       }
     >
@@ -99,7 +98,7 @@ export function LoadBalancingSettings({
             disabled={!settingsHydrated || !settings.loadBalancingEnabled}
             onValueChange={(value) => {
               if (value === null) return;
-              updateSettings({
+              updateClientSettings({
                 loadBalancingWeights: {
                   ...settings.loadBalancingWeights,
                   [environment.environmentId]: value,

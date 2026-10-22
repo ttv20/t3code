@@ -1,10 +1,11 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import {
   projectCloneDisplayName,
   projectCloneProgressSummary,
   type ProjectCloneSnapshot,
 } from "@t3tools/contracts";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { cn } from "../../lib/cn";
@@ -17,15 +18,17 @@ export function ProjectCloneBanner(props: {
   readonly onRemove: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { clone } = props;
   const name = projectCloneDisplayName(clone);
   if (clone.phase === "running") {
     return (
       <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-3.5 py-3">
         <AppActivityIndicator size="small" />
-        <View className="min-w-0 flex-1">
+        <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <Text className="font-t3-medium text-sm" numberOfLines={1}>
-            <UiText message={"Cloning {0}"} values={{ "0": name }} />
+            {uiT("Cloning")}
+            {name}
           </Text>
           <Text className="text-xs text-foreground-muted" numberOfLines={1}>
             {projectCloneProgressSummary(clone)}
@@ -69,14 +72,13 @@ export function ProjectCloneBanner(props: {
 
 function BannerAction(props: { readonly label: string; readonly onPress: () => void }) {
   const { t: uiT } = useUiLanguage();
+
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      label={uiT(props.label)}
+      tone="secondary"
       accessibilityLabel={uiT(props.label)}
-      className="rounded-full border border-border bg-card px-3 py-1.5"
       onPress={props.onPress}
-    >
-      <Text className="font-t3-medium text-xs">{uiT(props.label)}</Text>
-    </Pressable>
+    />
   );
 }

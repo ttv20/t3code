@@ -14,6 +14,7 @@ import Animated, {
   LinearTransition,
   ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
   type EntryExitAnimationFunction,
@@ -136,14 +137,19 @@ export function ComposerDictationToolbar(props: {
   readonly showsDictation: boolean;
   readonly visible?: boolean;
 }) {
+  // Android can drop the reduced-motion flip's final frame, leaving the toolbar invisible.
+  const reducedMotion = useReducedMotion();
+  const entering = props.showsDictation ? DICTATION_TOOLBAR_ENTERING : DRAFT_TOOLBAR_ENTERING;
+  const exiting = props.showsDictation ? DICTATION_TOOLBAR_EXITING : DRAFT_TOOLBAR_EXITING;
+
   return (
     <View className="relative h-[44px] overflow-hidden">
       {props.visible !== false ? (
         <Animated.View
           key={props.showsDictation ? "dictation" : "draft"}
           className="absolute inset-0"
-          entering={props.showsDictation ? DICTATION_TOOLBAR_ENTERING : DRAFT_TOOLBAR_ENTERING}
-          exiting={props.showsDictation ? DICTATION_TOOLBAR_EXITING : DRAFT_TOOLBAR_EXITING}
+          entering={reducedMotion ? undefined : entering}
+          exiting={reducedMotion ? undefined : exiting}
           style={{ backfaceVisibility: "hidden" }}
         >
           {props.children}
@@ -270,6 +276,8 @@ function VoiceActionButton(props: {
   readonly onPress: () => void;
   readonly variant?: "plain" | "primary";
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const variant = props.variant ?? "plain";
   const loadingVisibility = useSharedValue(props.loading ? 1 : 0);
   useLayoutEffect(() => {
@@ -279,7 +287,7 @@ function VoiceActionButton(props: {
 
   return (
     <Pressable
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityRole="button"
       accessibilityState={{ busy: props.loading, disabled: props.disabled }}
       className="size-[44px] shrink-0 items-center justify-center active:opacity-70"
@@ -365,7 +373,7 @@ export function ComposerDictationStatus(props: {
       ) : (
         <View
           accessible
-          accessibilityLabel={props.presentation.statusLabel}
+          accessibilityLabel={uiT(props.presentation.statusLabel)}
           accessibilityLiveRegion={props.phase === "recording" ? "none" : "polite"}
           className="h-11"
         >

@@ -1,4 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import {
   formatProviderSubagentStatus,
   type ProviderSubagentStatus,
@@ -8,7 +8,7 @@ import { View } from "react-native";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { ProviderIcon } from "../../components/ProviderIcon";
-import { RequestActionButton } from "./RequestActionButton";
+import { Button } from "../../components/ui/Button";
 import { useVisibleSecondClock } from "./use-visible-second-clock";
 
 export function ProviderSubagentBar(props: {
@@ -19,6 +19,7 @@ export function ProviderSubagentBar(props: {
   readonly onOpenParent: (() => void) | null;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const live = props.status !== null && isOrchestrationV2WorkActive(props.status.status);
   const nowMs = useVisibleSecondClock(live);
   const statusLabel = formatProviderSubagentStatus(props.status, nowMs);
@@ -61,15 +62,11 @@ export function ProviderSubagentBar(props: {
           className="font-sans text-xs text-foreground-secondary"
           style={{ fontVariant: ["tabular-nums"] }}
         >
-          <UiText message={"{0} · Runs on its own"} values={{ "0": uiT(statusLabel) }} />
+          {statusLabel} {uiT("· Runs on its own")}
         </Text>
       </View>
       {props.onOpenParent ? (
-        <RequestActionButton
-          label={uiT("Open parent")}
-          tone="secondary"
-          onPress={props.onOpenParent}
-        />
+        <Button label={uiT("Open parent")} tone="secondary" onPress={props.onOpenParent} />
       ) : null}
     </View>
   );

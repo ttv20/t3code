@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../../i18n";
-
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
@@ -110,6 +107,7 @@ export function AddProviderInstanceDialog({
   onCreated,
 }: AddProviderInstanceDialogProps) {
   const { t: uiT } = useUiLanguage();
+
   const settings = useEnvironmentSettings(environmentId);
   const persistProviderInstance = usePersistEnvironmentProviderInstanceMutation(environmentId);
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
@@ -332,7 +330,7 @@ export function AddProviderInstanceDialog({
       toastManager.add({
         type: "error",
         title: uiT("Could not add provider instance"),
-        description: error instanceof Error ? error.message : uiT("The settings update failed."),
+        description: error instanceof Error ? error.message : "The settings update failed.",
       });
       return;
     }
@@ -370,7 +368,8 @@ export function AddProviderInstanceDialog({
           title={uiT("Add provider")}
           description={
             <>
-              {uiT("Add an account or configure a provider on")} {environmentLabel}.
+              {uiT("Add an account or configure a provider on")}
+              {environmentLabel}.
             </>
           }
         >
@@ -435,7 +434,7 @@ export function AddProviderInstanceDialog({
                         >
                           <ProviderInstanceIcon
                             driverKind={option.driverKind}
-                            displayName={option.label}
+                            displayName={uiT(option.label)}
                             iconClassName="size-4"
                           />
                           <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
@@ -533,7 +532,7 @@ export function AddProviderInstanceDialog({
 
               {isAcpRegistry && wizardStep === 1 && selectedAcp ? (
                 <div className="mb-4 flex items-start justify-between gap-3 border-b border-border/70 pb-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 [unicode-bidi:plaintext]">
                     <p className="truncate text-sm font-medium text-foreground">
                       {selectedAcp.name}
                     </p>

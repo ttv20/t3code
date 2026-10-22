@@ -64,6 +64,7 @@ export function TerminalContextSheet(props: {
   return (
     <Sheet title={uiT("Terminal output")} onClose={props.onClose}>
       <ScrollView
+        nestedScrollEnabled
         className="flex-1"
         contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 }}

@@ -5,9 +5,12 @@ import {
   type LimitPresentations,
 } from "@t3tools/shared/usageLimits";
 
+import type { WidgetTheme } from "./widgetTheme";
+
 export interface SubscriptionUsageSnapshot {
   messages?: Readonly<Record<string, string>>;
   locale?: string;
+  theme?: WidgetTheme;
   url?: string;
   checkedAt: number;
   providers: Array<{

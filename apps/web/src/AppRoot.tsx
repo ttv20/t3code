@@ -1,10 +1,15 @@
 import { UiLanguageProvider } from "./UiLanguageProvider";
 import { RouterProvider } from "@tanstack/react-router";
+import { useEffect } from "react";
+
+import { subscribeComposerDraftModelReconciliation } from "./composerDraftStore";
+import { environmentThreadShells } from "./state/threads";
+import { environmentShell } from "./state/shell";
 
 import { BrowserProfileReporter } from "./browser/BrowserProfileReporter";
 import { ElectronBrowserHost } from "./browser/ElectronBrowserHost";
 import { QuitHoldOverlay } from "./components/QuitHoldOverlay";
-import { AppAtomRegistryProvider } from "./rpc/atomRegistry";
+import { appAtomRegistry, AppAtomRegistryProvider } from "./rpc/atomRegistry";
 import type { AppRouter } from "./router";
 
 /**
@@ -13,6 +18,16 @@ import type { AppRouter } from "./router";
  * as routed UI.
  */
 export function AppRoot({ router }: { readonly router: AppRouter }) {
+  useEffect(
+    () =>
+      subscribeComposerDraftModelReconciliation({
+        registry: appAtomRegistry,
+        threadShellAtom: environmentThreadShells.threadShellAtom,
+        threadRefsAtom: environmentThreadShells.threadRefsAtom,
+        shellStateAtom: environmentShell.stateAtom,
+      }),
+    [],
+  );
   return (
     <AppAtomRegistryProvider>
       <UiLanguageProvider>

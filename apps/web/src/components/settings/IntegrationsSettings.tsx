@@ -1,15 +1,18 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
 import { DeviceToolVersions } from "../device/DeviceToolVersions";
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 import { ScopedSwitch } from "./ScopedSwitch";
 import { DeviceHostsSettings } from "./DeviceHostsSettings";
+import { EasDeviceHostsSettings } from "./EasDeviceHostsSettings";
 import {
   AuthSettingsWriteScope,
   BrowserImportFailureReason,
   BROWSER_PROFILE_MAX_COUNT,
   type BrowserLinkTarget,
   type BrowserProfile,
+  BrowserSearchEngine,
+  BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH,
   type EnvironmentId,
   BROWSER_PROFILE_NAME_MAX_LENGTH,
   BROWSER_RECORDING_FRAME_RATES,
@@ -17,9 +20,11 @@ import {
   DEFAULT_BROWSER_PROFILE_ID,
   DEFAULT_BROWSER_LINK_TARGET,
   DEFAULT_BROWSER_RECORDING_FRAME_RATE,
+  DEFAULT_BROWSER_SEARCH_ENGINE,
   DEFAULT_BROWSER_VIEWPORT,
   DEFAULT_PREVIEW_APPEARANCE,
   DEFAULT_PREVIEW_ZOOM_FACTOR,
+  DEFAULT_SERVER_SETTINGS,
   FILL_PREVIEW_VIEWPORT,
   PREVIEW_VIEWPORT_MAX_AREA,
   PREVIEW_VIEWPORT_MAX_DIMENSION,
@@ -32,6 +37,7 @@ import {
   type PreviewAppearancePreference,
   type PreviewViewportSetting,
 } from "@t3tools/contracts";
+import { isValidSearchUrlTemplate } from "@t3tools/shared/preview";
 import { PREVIEW_VIEWPORT_PRESETS } from "@t3tools/shared/previewViewport";
 import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import { useRef, useState } from "react";
@@ -45,6 +51,7 @@ import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
 import { deviceEnvironment, useDeviceState } from "~/state/device";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { formatEnvironmentQueryError } from "~/state/query";
 import { previewEnvironment } from "~/state/preview";
 import { useServerConfigs } from "~/state/entities";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -56,6 +63,7 @@ import {
   platformSetupStatus,
   deviceHubDescription,
   agentDeviceDescription,
+  DeviceHostDiagnostics,
 } from "~/components/device/DeviceSetup";
 import { isElectron } from "../../env";
 
@@ -111,7 +119,6 @@ import {
   SettingsSection,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
-import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
 import type { ImportOutcome } from "./browserImportWizard.logic";
@@ -149,7 +156,7 @@ export async function clearBrowserProfileData(
   ]);
 }
 
-export function browserProfileRemovalAvailable(
+function browserProfileRemovalAvailable(
   bridgeAvailable: boolean,
   environmentsReady: boolean,
   environmentCount: number,
@@ -360,11 +367,13 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
   return (
     <SettingsRow
       {...searchableSetting("browser-default-viewport")}
-      description="Tab size for you and agents. Fill fits the panel; other sizes show the device toolbar."
+      description={uiT(
+        "Tab size for you and agents. Fill fits the panel; other sizes show the device toolbar.",
+      )}
       resetAction={
         !disabled && viewport._tag !== DEFAULT_BROWSER_VIEWPORT._tag ? (
           <SettingResetButton
-            label="default browser viewport"
+            label={uiT("default browser viewport")}
             onClick={() => updateSettings({ browserDefaultViewport: DEFAULT_BROWSER_VIEWPORT })}
           />
         ) : null
@@ -379,7 +388,7 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
             <SelectTrigger
               size="sm"
               className="w-full min-w-0 sm:w-44"
-              aria-label="Default browser viewport"
+              aria-label={uiT("Default browser viewport")}
             >
               <SelectValue>{viewportSelectLabel(viewport)}</SelectValue>
             </SelectTrigger>
@@ -415,7 +424,7 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
                 onValueCommitted={(value) => commitDimension("width", value)}
               >
                 <NumberFieldGroup>
-                  <NumberFieldInput aria-label="Default viewport width" />
+                  <NumberFieldInput aria-label={uiT("Default viewport width")} />
                 </NumberFieldGroup>
               </NumberField>
               <span className="text-xs text-muted-foreground">×</span>
@@ -430,7 +439,7 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
                 onValueCommitted={(value) => commitDimension("height", value)}
               >
                 <NumberFieldGroup>
-                  <NumberFieldInput aria-label="Default viewport height" />
+                  <NumberFieldInput aria-label={uiT("Default viewport height")} />
                 </NumberFieldGroup>
               </NumberField>
               <Tooltip>
@@ -462,17 +471,19 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
 }
 
 function BrowserZoomSetting({ disabled }: { readonly disabled: boolean }) {
+  const { t: uiT } = useUiLanguage();
+
   const zoomFactor = useClientSettings((settings) => settings.browserDefaultZoomFactor);
   const updateSettings = useUpdatePrimarySettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-default-zoom")}
-      description="Page zoom applied to new browser tabs."
+      description={uiT("Page zoom applied to new browser tabs.")}
       resetAction={
         !disabled && zoomFactor !== DEFAULT_PREVIEW_ZOOM_FACTOR ? (
           <SettingResetButton
-            label="default browser zoom"
+            label={uiT("default browser zoom")}
             onClick={() =>
               updateSettings({ browserDefaultZoomFactor: DEFAULT_PREVIEW_ZOOM_FACTOR })
             }
@@ -488,7 +499,11 @@ function BrowserZoomSetting({ disabled }: { readonly disabled: boolean }) {
             if (next !== undefined) updateSettings({ browserDefaultZoomFactor: next });
           }}
         >
-          <SelectTrigger size="sm" className="w-full sm:w-40" aria-label="Default browser zoom">
+          <SelectTrigger
+            size="sm"
+            className="w-full sm:w-40"
+            aria-label={uiT("Default browser zoom")}
+          >
             <SelectValue>{zoomLabel(zoomFactor)}</SelectValue>
           </SelectTrigger>
           <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -513,11 +528,13 @@ function BrowserAppearanceSetting({ disabled }: { readonly disabled: boolean }) 
   return (
     <SettingsRow
       {...searchableSetting("browser-default-appearance")}
-      description="The color scheme pages are told to prefer. System follows your OS setting."
+      description={uiT(
+        "The color scheme pages are told to prefer. System follows your OS setting.",
+      )}
       resetAction={
         !disabled && appearance !== DEFAULT_PREVIEW_APPEARANCE ? (
           <SettingResetButton
-            label="default browser appearance"
+            label={uiT("default browser appearance")}
             onClick={() => updateSettings({ browserDefaultAppearance: DEFAULT_PREVIEW_APPEARANCE })}
           />
         ) : null
@@ -535,14 +552,14 @@ function BrowserAppearanceSetting({ disabled }: { readonly disabled: boolean }) 
           <SelectTrigger
             size="sm"
             className="w-full sm:w-40"
-            aria-label="Default browser appearance"
+            aria-label={uiT("Default browser appearance")}
           >
             <SelectValue>{uiT(APPEARANCE_LABELS[appearance])}</SelectValue>
           </SelectTrigger>
           <SelectPopup align="end" alignItemWithTrigger={false}>
             {Object.entries(APPEARANCE_LABELS).map(([value, label]) => (
               <SelectItem hideIndicator key={value} value={value}>
-                {uiT(label)}
+                {label}
               </SelectItem>
             ))}
           </SelectPopup>
@@ -553,6 +570,8 @@ function BrowserAppearanceSetting({ disabled }: { readonly disabled: boolean }) 
 }
 
 function BrowserRecordingInputSettings({ disabled }: { readonly disabled: boolean }) {
+  const { t: uiT } = useUiLanguage();
+
   const showKeys = useClientSettings((settings) => settings.browserRecordingShowKeyPresses);
   const showMouse = useClientSettings((settings) => settings.browserRecordingShowMousePresses);
   const updateSettings = useUpdatePrimarySettings();
@@ -560,12 +579,14 @@ function BrowserRecordingInputSettings({ disabled }: { readonly disabled: boolea
     <>
       <SettingsRow
         {...searchableSetting("browser-recording-key-presses")}
-        description="Show pressed keys and shortcuts in new recordings. Password fields are excluded."
+        description={uiT(
+          "Show pressed keys and shortcuts in new recordings. Password fields are excluded.",
+        )}
         control={
           <Switch
             disabled={disabled}
             checked={showKeys}
-            aria-label="Show key presses in recordings"
+            aria-label={uiT("Show key presses in recordings")}
             onCheckedChange={(checked) =>
               updateSettings({ browserRecordingShowKeyPresses: Boolean(checked) })
             }
@@ -574,12 +595,12 @@ function BrowserRecordingInputSettings({ disabled }: { readonly disabled: boolea
       />
       <SettingsRow
         {...searchableSetting("browser-recording-mouse-presses")}
-        description="Highlight mouse presses and held buttons in new recordings."
+        description={uiT("Highlight mouse presses and held buttons in new recordings.")}
         control={
           <Switch
             disabled={disabled}
             checked={showMouse}
-            aria-label="Show mouse presses in recordings"
+            aria-label={uiT("Show mouse presses in recordings")}
             onCheckedChange={(checked) =>
               updateSettings({ browserRecordingShowMousePresses: Boolean(checked) })
             }
@@ -599,11 +620,11 @@ function BrowserRecordingFrameRateSetting({ disabled }: { readonly disabled: boo
   return (
     <SettingsRow
       {...searchableSetting("browser-recording-frame-rate")}
-      description="Maximum recording rate. 30 fps saves CPU and storage; 60 fps is smoother."
+      description={uiT("Maximum recording rate. 30 fps saves CPU and storage; 60 fps is smoother.")}
       resetAction={
         !disabled && frameRate !== DEFAULT_BROWSER_RECORDING_FRAME_RATE ? (
           <SettingResetButton
-            label="browser recording frame rate"
+            label={uiT("browser recording frame rate")}
             onClick={() =>
               updateSettings({ browserRecordingFrameRate: DEFAULT_BROWSER_RECORDING_FRAME_RATE })
             }
@@ -624,7 +645,7 @@ function BrowserRecordingFrameRateSetting({ disabled }: { readonly disabled: boo
           <SelectTrigger
             size="sm"
             className="w-full sm:w-40"
-            aria-label="Browser recording frame rate"
+            aria-label={uiT("Browser recording frame rate")}
           >
             <SelectValue>
               {frameRate} {uiT("fps")}
@@ -657,11 +678,13 @@ function BrowserLinkTargetSetting({ disabled }: { readonly disabled: boolean }) 
   return (
     <SettingsRow
       {...searchableSetting("browser-link-target")}
-      description="Where links in the chat and terminal open. Hold ⌘ or Ctrl while clicking a link to open it in your default browser either way."
+      description={uiT(
+        "Where links in the chat and terminal open. Hold ⌘ or Ctrl while clicking a link to open it in your default browser either way.",
+      )}
       resetAction={
         !disabled && linkTarget !== DEFAULT_BROWSER_LINK_TARGET ? (
           <SettingResetButton
-            label="link target"
+            label={uiT("link target")}
             onClick={() => updateSettings({ browserLinkTarget: DEFAULT_BROWSER_LINK_TARGET })}
           />
         ) : null
@@ -676,7 +699,7 @@ function BrowserLinkTargetSetting({ disabled }: { readonly disabled: boolean }) 
             }
           }}
         >
-          <SelectTrigger size="sm" className="w-full sm:w-40" aria-label="Open links in">
+          <SelectTrigger size="sm" className="w-full sm:w-40" aria-label={uiT("Open links in")}>
             <SelectValue>{uiT(LINK_TARGET_LABELS[linkTarget])}</SelectValue>
           </SelectTrigger>
           <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -692,18 +715,109 @@ function BrowserLinkTargetSetting({ disabled }: { readonly disabled: boolean }) 
   );
 }
 
+const SEARCH_ENGINE_LABELS: Readonly<Record<BrowserSearchEngine, string>> = {
+  duckduckgo: "DuckDuckGo",
+  google: "Google",
+  bing: "Bing",
+  brave: "Brave Search",
+  kagi: "Kagi",
+  ecosia: "Ecosia",
+  custom: "Custom",
+};
+
+function BrowserSearchEngineSetting() {
+  const { t: uiT } = useUiLanguage();
+
+  const engine = useClientSettings((settings) => settings.browserSearchEngine);
+  const customUrl = useClientSettings((settings) => settings.browserCustomSearchUrl);
+  const updateSettings = useUpdatePrimarySettings();
+
+  return (
+    <>
+      <SettingsRow
+        {...searchableSetting("browser-search-engine")}
+        description={uiT("What the address bar searches when you type something that isn't a URL.")}
+        resetAction={
+          engine !== DEFAULT_BROWSER_SEARCH_ENGINE || customUrl !== "" ? (
+            <SettingResetButton
+              label={uiT("search engine")}
+              onClick={() =>
+                updateSettings({
+                  browserSearchEngine: DEFAULT_BROWSER_SEARCH_ENGINE,
+                  browserCustomSearchUrl: "",
+                })
+              }
+            />
+          ) : null
+        }
+        control={
+          <Select
+            value={engine}
+            onValueChange={(value) => {
+              const next = BrowserSearchEngine.literals.find((literal) => literal === value);
+              if (next !== undefined) {
+                updateSettings({ browserSearchEngine: next });
+              }
+            }}
+          >
+            <SelectTrigger size="sm" className="w-full sm:w-40" aria-label={uiT("Search engine")}>
+              <SelectValue>{SEARCH_ENGINE_LABELS[engine]}</SelectValue>
+            </SelectTrigger>
+            <SelectPopup align="end" alignItemWithTrigger={false}>
+              {BrowserSearchEngine.literals.map((literal) => (
+                <SelectItem hideIndicator key={literal} value={literal}>
+                  {SEARCH_ENGINE_LABELS[literal]}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </Select>
+        }
+      />
+      {engine === "custom" ? (
+        <SettingsRow
+          title={uiT("Custom search URL")}
+          description={uiT("Use %s where the search terms go.")}
+          status={
+            isValidSearchUrlTemplate(customUrl)
+              ? undefined
+              : "Enter an http or https URL containing %s. Searches use DuckDuckGo until then."
+          }
+          control={
+            <DraftInput
+              nativeInput
+              size="sm"
+              className="w-full sm:w-64"
+              aria-label={uiT("Custom search URL")}
+              placeholder="https://example.com/search?q=%s"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH}
+              value={customUrl}
+              onCommit={(next) => updateSettings({ browserCustomSearchUrl: next.trim() })}
+            />
+          }
+        />
+      ) : null}
+    </>
+  );
+}
+
 function PullRequestLinksOpenInAppSetting() {
+  const { t: uiT } = useUiLanguage();
+
   const openInApp = useClientSettings((settings) => settings.pullRequestLinksOpenInApp);
   const updateSettings = useUpdatePrimarySettings();
 
   return (
     <SettingsRow
       {...searchableSetting("pull-request-links-open-in-app")}
-      description="Clicking a pull request link opens it in T3 Code. Turn off to open pull request links like any other link, on GitHub or your git host."
+      description={uiT(
+        "Clicking a pull request link opens it in T3 Code. Turn off to open pull request links like any other link, on GitHub or your git host.",
+      )}
       resetAction={
         openInApp ? null : (
           <SettingResetButton
-            label="open pull requests in T3 Code"
+            label={uiT("open pull requests in T3 Code")}
             onClick={() => updateSettings({ pullRequestLinksOpenInApp: true })}
           />
         )
@@ -714,7 +828,7 @@ function PullRequestLinksOpenInAppSetting() {
           onCheckedChange={(checked) =>
             updateSettings({ pullRequestLinksOpenInApp: Boolean(checked) })
           }
-          aria-label="Open pull requests in T3 Code"
+          aria-label={uiT("Open pull requests in T3 Code")}
         />
       }
     />
@@ -722,13 +836,15 @@ function PullRequestLinksOpenInAppSetting() {
 }
 
 function DeviceIntegrationSettings() {
+  const { t: uiT } = useUiLanguage();
+
   const { search, environment: selected } = useSettingsScope();
   const settings = useScopedSettings();
   const connected = selected?.connection.phase === "connected" && selected.serverConfig !== null;
   const environmentId = connected ? selected.environmentId : null;
 
   return (
-    <SettingsSection id="devices" title="Devices">
+    <SettingsSection id="devices" title={uiT("Devices")}>
       <DeviceIntegrationControls
         key={`${environmentId}:${JSON.stringify(search)}`}
         environmentId={environmentId}
@@ -835,12 +951,7 @@ function DeviceIntegrationControls({
                 void list({ environmentId, input: { updateTool: tool } })
                   .then((result) => {
                     if (result._tag === "Failure")
-                      setUpdateError({
-                        tool,
-                        message: uiT(
-                          "Update failed. Check this host's network connection and try again.",
-                        ),
-                      });
+                      setUpdateError({ tool, message: formatEnvironmentQueryError(result.cause) });
                   })
                   .finally(() => setPending(null));
               }}
@@ -902,7 +1013,7 @@ function DeviceIntegrationControls({
                 busy ||
                 pending !== null
               }
-              aria-label="Device hub"
+              aria-label={uiT("Device hub")}
               onCheckedChange={(checked) =>
                 void update("hub", {
                   enabled: Boolean(checked),
@@ -927,12 +1038,23 @@ function DeviceIntegrationControls({
                 : undefined
             }
             status={
-              <div className="flex flex-wrap gap-x-5 gap-y-2">
-                <PlatformStatus compact platform="iOS" status={platformSetupStatus(state, "ios")} />
-                <PlatformStatus
-                  compact
-                  platform="Android"
-                  status={platformSetupStatus(state, "android")}
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  <PlatformStatus
+                    compact
+                    platform="iOS"
+                    status={platformSetupStatus(state, "ios")}
+                  />
+                  <PlatformStatus
+                    compact
+                    platform="Android"
+                    status={platformSetupStatus(state, "android")}
+                  />
+                </div>
+                {/* Remote hosts report their own warnings in the device host list below. */}
+                <DeviceHostDiagnostics
+                  hosts={state.hosts.filter((host) => host.kind === "local")}
+                  hostStatuses={state.hostStatuses}
                 />
               </div>
             }
@@ -975,7 +1097,7 @@ function DeviceIntegrationControls({
                 (!projectScope && (!loaded || !anyHubEnabled || busy)) ||
                 pending !== null
               }
-              aria-label="Agent device access"
+              aria-label={uiT("Agent device access")}
               onCheckedChange={(checked) =>
                 projectScope
                   ? updateSettings({ enableAgentDeviceAccess: Boolean(checked) })
@@ -992,22 +1114,71 @@ function DeviceIntegrationControls({
         />
       ) : null}
       <DeviceHostsSettings environmentId={environmentId} />
+      {state.supportsEasHosts ? <EasDeviceHostsSettings environmentId={environmentId} /> : null}
     </>
   );
 }
 
+function AgentBrowserAccessSetting() {
+  const { t: uiT } = useUiLanguage();
+
+  const { scope } = useSettingsScope();
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  const isProjectScope = scope.kind === "project" || scope.kind === "checkout";
+
+  return (
+    <SettingsRow
+      serverScoped
+      settingKeys={["enableAgentBrowserAccess"]}
+      {...searchableSetting("agent-browser-access")}
+      description={
+        isProjectScope
+          ? uiT(
+              "Allow agents in this project to use the shared browser. Applies when the agent session next starts.",
+            )
+          : uiT("Allow agents to use the shared browser. Projects can override it.")
+      }
+      resetAction={
+        settings.enableAgentBrowserAccess !== DEFAULT_SERVER_SETTINGS.enableAgentBrowserAccess ? (
+          <SettingResetButton
+            label={uiT("default browser access")}
+            onClick={() =>
+              updateSettings({
+                enableAgentBrowserAccess: DEFAULT_SERVER_SETTINGS.enableAgentBrowserAccess,
+              })
+            }
+          />
+        ) : null
+      }
+      control={
+        <ScopedSwitch
+          settingKeys={["enableAgentBrowserAccess"]}
+          aria-label={uiT("Agent browser access")}
+          checked={settings.enableAgentBrowserAccess}
+          onCheckedChange={(enabled) => updateSettings({ enableAgentBrowserAccess: enabled })}
+        />
+      }
+    />
+  );
+}
+
 function BrowserAutoShowFloatingPreviewSetting({ disabled }: { readonly disabled: boolean }) {
+  const { t: uiT } = useUiLanguage();
+
   const autoShow = useClientSettings((settings) => settings.browserAutoShowFloatingPreview);
   const updateSettings = useUpdatePrimarySettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-auto-show-floating-preview")}
-      description="Show the floating preview when an agent opens a browser or device unless the agent says otherwise."
+      description={uiT(
+        "Show the floating preview when an agent opens a browser or device unless the agent says otherwise.",
+      )}
       resetAction={
         !disabled && autoShow !== DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW ? (
           <SettingResetButton
-            label="auto-show floating preview"
+            label={uiT("auto-show floating preview")}
             onClick={() =>
               updateSettings({
                 browserAutoShowFloatingPreview: DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW,
@@ -1023,7 +1194,7 @@ function BrowserAutoShowFloatingPreviewSetting({ disabled }: { readonly disabled
           onCheckedChange={(checked) =>
             updateSettings({ browserAutoShowFloatingPreview: Boolean(checked) })
           }
-          aria-label="Auto-show floating preview"
+          aria-label={uiT("Auto-show floating preview")}
         />
       }
     />
@@ -1225,7 +1396,9 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
   return (
     <SettingsRow
       {...searchableSetting("browser-profiles")}
-      description="Profiles separate cookies and logins. Incognito data is cleared when the app closes."
+      description={uiT(
+        "Profiles separate cookies and logins. Incognito data is cleared when the app closes.",
+      )}
       control={
         <Menu onOpenChange={(open) => open && loadSources()}>
           <MenuTrigger
@@ -1248,7 +1421,7 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
               {uiT("Blank profile")}
             </MenuItem>
             {atProfileLimit ? (
-              <MenuItem disabled>{uiT("You’ve reached the profile limit")}</MenuItem>
+              <MenuItem disabled>You&rsquo;ve reached the profile limit</MenuItem>
             ) : null}
             <MenuSeparator />
             <MenuGroup>
@@ -1404,7 +1577,8 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
         <AlertDialogPopup>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <UiText message={"Remove “{0}”?"} values={{ "0": profilePendingRemoval?.name }} />
+              {uiT("Remove “")}
+              {profilePendingRemoval?.name}”?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {uiT(
@@ -1452,10 +1626,9 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
         <AlertDialogPopup>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <UiText
-                message={"Clear “{0}”’s cookies and cache?"}
-                values={{ "0": profilePendingClear?.name }}
-              />
+              {uiT("Clear “")}
+              {profilePendingClear?.name}
+              {uiT("”’s cookies and cache?")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {uiT(
@@ -1514,6 +1687,8 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
 }
 
 export function IntegrationsSettingsPanel() {
+  const { t: uiT } = useUiLanguage();
+
   const previewDefaultsDisabled = !isElectron;
   const previewDefaults = (
     <>
@@ -1530,8 +1705,8 @@ export function IntegrationsSettingsPanel() {
 
   return (
     <SettingsPageContainer>
-      <ProjectDefaultsSettings category="integrations" />
-      <SettingsSection id="browser" title="Browser">
+      <SettingsSection id="browser" title={uiT("Browser")}>
+        <AgentBrowserAccessSetting />
         {previewDefaultsDisabled ? (
           <SettingsUnavailableGroup message="Only available in the desktop app.">
             {previewDefaults}
@@ -1539,6 +1714,8 @@ export function IntegrationsSettingsPanel() {
         ) : (
           previewDefaults
         )}
+        {/* Not desktop-only: web clients search from server-run browser tabs too. */}
+        <BrowserSearchEngineSetting />
         <PullRequestLinksOpenInAppSetting />
       </SettingsSection>
       <DeviceIntegrationSettings />

@@ -164,7 +164,7 @@ function SortableRouteRow({
         isDragging && "relative z-10 rounded-md bg-background shadow-md",
       )}
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
         <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
           {uiT(label)}
           {inUse ? (

@@ -400,7 +400,7 @@ export function ThemeSearchSection({
                 >
                   <div className="flex min-w-0 gap-3">
                     <ThemeExtensionIcon key={extension.iconUrl} extension={extension} />
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                       <h4 className="truncate text-sm font-medium">{extension.name}</h4>
                       <p className="truncate text-muted-foreground text-xs">
                         {extension.publisher} · {DOWNLOAD_FORMAT.format(extension.downloadCount)}{" "}

@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../../i18n";
-
 import { Spinner } from "~/components/ui/spinner";
 
 import { Toast } from "@base-ui/react/toast";
@@ -108,6 +105,7 @@ function handleToastDismissClick(
 
 function CopyErrorButton({ text }: { text: string }) {
   const { t: uiT } = useUiLanguage();
+
   const { copyToClipboard, isCopied } = useCopyToClipboard({ target: "error-message" });
   const label = isCopied ? uiT("Copied error") : uiT("Copy error");
 
@@ -129,7 +127,7 @@ function CopyErrorButton({ text }: { text: string }) {
           icon={isCopied ? Check : Copy}
         />
       </TooltipTrigger>
-      <TooltipPopup side="top">{uiT(label)}</TooltipPopup>
+      <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -145,12 +143,13 @@ function ToastExpandableSection({
   labels: { expand?: string; collapse?: string };
 }) {
   const { t: uiT } = useUiLanguage();
+
   const [open, setOpen] = useState(false);
-  const expandLabel = uiT(labels.expand ?? "Show details");
-  const collapseLabel = uiT(labels.collapse ?? "Hide details");
+  const expandLabel = labels.expand ?? uiT("Show details");
+  const collapseLabel = labels.collapse ?? uiT("Hide details");
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 [unicode-bidi:plaintext]">
       <button
         aria-expanded={open}
         className="inline-flex cursor-pointer items-center gap-1 rounded-md py-0.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -179,8 +178,7 @@ function ToastDescriptionAndExpandable({
   toastType: unknown;
 }) {
   const { t: uiT } = useUiLanguage();
-  const description =
-    typeof toastDescription === "string" ? uiT(toastDescription) : (toastDescription as ReactNode);
+
   const expandableContent = toastData?.expandableContent;
   const labels = toastData?.expandableLabels ?? {};
   const descriptionTrigger = toastData?.expandableDescriptionTrigger ?? false;
@@ -191,26 +189,20 @@ function ToastDescriptionAndExpandable({
   const [open, setOpen] = useState(false);
 
   if (!expandableContent) {
-    return (
-      <Toast.Description className={descriptionClassName} data-slot="toast-description">
-        {uiT(description)}
-      </Toast.Description>
-    );
+    return <Toast.Description className={descriptionClassName} data-slot="toast-description" />;
   }
 
   if (!descriptionTrigger) {
     return (
       <>
-        <Toast.Description className={descriptionClassName} data-slot="toast-description">
-          {uiT(description)}
-        </Toast.Description>
+        <Toast.Description className={descriptionClassName} data-slot="toast-description" />
         <ToastExpandableSection labels={labels}>{expandableContent}</ToastExpandableSection>
       </>
     );
   }
 
-  const expandLabel = uiT(labels.expand ?? "Show details");
-  const collapseLabel = uiT(labels.collapse ?? "Hide details");
+  const expandLabel = labels.expand ?? uiT("Show details");
+  const collapseLabel = labels.collapse ?? uiT("Hide details");
 
   const toggle = () => setOpen((v) => !v);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -240,7 +232,7 @@ function ToastDescriptionAndExpandable({
             />
           }
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <Toast.Description
               className={cn(
                 "min-w-0 select-none wrap-break-word text-muted-foreground",
@@ -248,13 +240,11 @@ function ToastDescriptionAndExpandable({
                 "underline-offset-2 decoration-muted-foreground/60 group-hover:underline",
               )}
               data-slot="toast-description"
-            >
-              {uiT(description)}
-            </Toast.Description>
+            />
           </div>
           <MorphIcon
             aria-hidden
-            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-80"
+            className="size-3.5 h-lh shrink-0 text-muted-foreground opacity-80"
             icon={open ? ChevronUp : ChevronDown}
             strokeWidth={2.25}
           />
@@ -317,7 +307,6 @@ function deriveToastBodyDescriptor(toast: {
 interface ToastBodyContentProps extends ToastBodyDescriptor {
   readonly actionProps: { readonly children?: ReactNode } | undefined;
   readonly toastData: ThreadToastData | undefined;
-  readonly toastTitle: ReactNode;
   readonly toastDescription: unknown;
   readonly toastType: unknown;
 }
@@ -331,11 +320,9 @@ function ToastBodyContent({
   secondaryActionVariant,
   hasTrailingControls,
   toastData,
-  toastTitle,
   toastDescription,
   toastType,
 }: ToastBodyContentProps) {
-  const { t: uiT } = useUiLanguage();
   const additionalActions = toastData?.additionalActions ?? [];
   const secondaryActionProps = toastData?.secondaryActionProps;
   const leadingIcon = toastData?.leadingIcon;
@@ -366,9 +353,7 @@ function ToastBodyContent({
               <Icon className="in-data-[type=error]:text-destructive in-data-[type=info]:text-info in-data-[type=success]:text-success in-data-[type=warning]:text-warning in-data-[type=loading]:opacity-80" />
             </div>
           ) : null}
-          <Toast.Title className="min-w-0 wrap-break-word font-medium" data-slot="toast-title">
-            {uiT(toastTitle)}
-          </Toast.Title>
+          <Toast.Title className="min-w-0 wrap-break-word font-medium" data-slot="toast-title" />
         </div>
         <ToastDescriptionAndExpandable
           toastData={toastData}
@@ -536,6 +521,7 @@ function ToastProvider({ children, position = "top-right", ...props }: ToastProv
 
 function Toasts({ position }: { position: ToastPosition }) {
   const { t: uiT } = useUiLanguage();
+
   const { toasts } = Toast.useToastManager<ThreadToastData>();
   const activeThreadRef = useActiveThreadRefFromRoute();
   const isTop = position.startsWith("top");
@@ -673,7 +659,6 @@ function Toasts({ position }: { position: ToastPosition }) {
                   {...bodyDescriptor}
                   actionProps={toast.actionProps}
                   toastData={toast.data}
-                  toastTitle={toast.title}
                   toastDescription={toast.description}
                   toastType={toast.type}
                 />
@@ -697,6 +682,7 @@ function AnchoredToastProvider({ children, ...props }: Toast.Provider.Props) {
 
 function AnchoredToasts() {
   const { t: uiT } = useUiLanguage();
+
   const { toasts } = Toast.useToastManager<ThreadToastData>();
   const activeThreadRef = useActiveThreadRefFromRoute();
 
@@ -733,7 +719,7 @@ function AnchoredToasts() {
                 >
                   {tooltipStyle ? (
                     <Toast.Content className="pointer-events-auto px-2 py-1">
-                      <Toast.Title data-slot="toast-title">{uiT(toast.title)}</Toast.Title>
+                      <Toast.Title data-slot="toast-title" />
                     </Toast.Content>
                   ) : (
                     <>
@@ -770,7 +756,6 @@ function AnchoredToasts() {
                           {...bodyDescriptor}
                           actionProps={toast.actionProps}
                           toastData={toast.data}
-                          toastTitle={toast.title}
                           toastDescription={toast.description}
                           toastType={toast.type}
                         />

@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { AuthProvidersManageScope } from "@t3tools/contracts";
+import { ACP_REGISTRY_MAX_AGENTS, AuthProvidersManageScope } from "@t3tools/contracts";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
@@ -64,6 +64,7 @@ export function AcpRegistrySearchStep({
   onPreparingChange,
 }: AcpRegistrySearchStepProps) {
   const { t: uiT } = useUiLanguage();
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
@@ -74,7 +75,9 @@ export function AcpRegistrySearchStep({
   const search = useEnvironmentQuery(
     serverEnvironment.searchAcpRegistry({
       environmentId,
-      input: { query: submittedQuery },
+      input: submittedQuery
+        ? { query: submittedQuery }
+        : { query: "", limit: ACP_REGISTRY_MAX_AGENTS },
     }),
   );
   const prepareAgent = useAtomCommand(serverEnvironment.prepareAcpRegistryAgent, {
@@ -254,7 +257,8 @@ function AcpRegistryAgentRow({
   readonly onAdd: (agent: AcpRegistrySearchAgent) => void;
 }) {
   const { t: uiT } = useUiLanguage();
-  const progressLabel = agent.distribution === "binary" ? "Downloading" : "Preparing";
+
+  const progressLabel = agent.distribution === "binary" ? "Downloading" : uiT("Preparing");
   const aboutUrl = agent.website || agent.repository;
   return (
     <article className="min-w-0 py-2.5">
@@ -267,7 +271,7 @@ function AcpRegistryAgentRow({
             acpRegistryIconUrl={agent.icon ?? undefined}
             iconClassName="size-6 rounded-md text-muted-foreground"
           />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <div className="flex min-w-0 items-baseline gap-2">
               <h4 className="min-w-0 truncate text-sm font-medium text-foreground">{agent.name}</h4>
             </div>
@@ -294,7 +298,8 @@ function AcpRegistryAgentRow({
                 }
               />
               <TooltipPopup>
-                {uiT("About")} {agent.name}
+                {uiT("About")}
+                {agent.name}
               </TooltipPopup>
             </Tooltip>
           ) : null}

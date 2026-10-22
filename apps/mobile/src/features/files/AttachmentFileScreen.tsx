@@ -7,7 +7,7 @@ import { useNavigation, type StaticScreenProps } from "@react-navigation/native"
 import type { MenuAction } from "@react-native-menu/menu";
 import { EnvironmentId } from "@t3tools/contracts";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
 
 import {
@@ -62,6 +62,7 @@ function AttachmentDocumentBody(props: {
   readonly onOpenNative: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { document } = props;
   if (document.error) {
     return (
@@ -76,10 +77,10 @@ function AttachmentDocumentBody(props: {
     );
   }
   if (props.nativeViewer !== null && props.nativeViewer !== "unavailable") {
-    return <FilePreviewLoading message={uiT("Opening in file viewer...")} />;
+    return <FilePreviewLoading message="Opening in file viewer..." />;
   }
   if (!document.uri || (document.needsText && !document.content)) {
-    return <FilePreviewLoading message={uiT("Loading file...")} />;
+    return <FilePreviewLoading message="Loading file..." />;
   }
   if (document.needsText && document.content) {
     const { content, table } = document;
@@ -168,6 +169,7 @@ function AttachmentDocumentBody(props: {
 
 export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
   const { appearance, setCodeWordBreak } = useAppearancePreferences();
   const iconColor = useUniwindTheme()["--color-icon"];
@@ -199,9 +201,9 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
   );
   const [nativeError, setNativeError] = useState<string | null>(null);
   const pendingNativeError = useRef<string | null>(null);
-  const handleBack = useCallback(() => {
+  const handleBack = () => {
     if (navigation.canGoBack()) navigation.goBack();
-  }, [navigation]);
+  };
   const { uri, resource } = document;
   useEffect(() => {
     if (nativeViewer !== "pending" || !uri) return;
@@ -211,17 +213,17 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
   }, [nativeViewer, uri]);
   // The viewer mints its own fresh URL from the resource, so a link that expired while this
   // screen sat in the background is never handed to Quick Look or ACTION_VIEW.
-  const nativeSource = useMemo<FilePreviewSource | null>(() => {
+  const nativeSource = ((): FilePreviewSource | null => {
     const kind = nativeKind ?? "document";
     const base = { kind, name: params.name, mimeType: params.mimeType };
     if (localAttachment) return { ...base, attachment: localAttachment };
     if (environmentId) return { ...base, environmentId, resource };
     return uri ? { ...base, uri } : null;
-  }, [environmentId, localAttachment, nativeKind, params.mimeType, params.name, resource, uri]);
-  const handleNativeOpenError = useCallback((error: unknown) => {
+  })();
+  const handleNativeOpenError = (error: unknown) => {
     pendingNativeError.current = nativeViewerErrorMessage(error);
-  }, []);
-  const handleNativeClose = useCallback(() => {
+  };
+  const handleNativeClose = () => {
     setNativeOpen(false);
     const message = pendingNativeError.current;
     pendingNativeError.current = null;
@@ -236,118 +238,94 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
       return;
     }
     handleBack();
-  }, [handleBack, nativeViewer]);
-  const removeFromDraft = useCallback(() => {
+  };
+  const removeFromDraft = () => {
     if (!draftKey) return;
     removeComposerDraftAttachment(draftKey, params.attachmentId);
     handleBack();
-  }, [draftKey, handleBack, params.attachmentId]);
+  };
 
   const { content, renderedMode, activeMode, setRendered, share, sharing } = document;
-  const menuActions = useMemo(
-    () =>
-      [
-        renderedMode
-          ? ({
-              id: "preview",
-              title: renderedMode === "table" ? uiT("Table") : uiT("Preview"),
-              icon: renderedMode === "table" ? "tablecells" : "eye",
-              inline: true,
-              onPress: () => setRendered(true),
-            } as const)
-          : null,
-        renderedMode
-          ? ({
-              id: "source",
-              title: uiT("Source"),
-              icon: "doc.text",
-              inline: true,
-              onPress: () => setRendered(false),
-            } as const)
-          : null,
-        content && activeMode === "source"
-          ? ({
-              id: "word-wrap",
-              title: appearance.codeWordBreak ? uiT("Disable word wrap") : uiT("Enable word wrap"),
-              icon: "text.alignleft",
-              inline: false,
-              onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
-            } as const)
-          : null,
-        content
-          ? ({
-              id: "copy",
-              title: content.truncated ? uiT("Copy preview") : uiT("Copy contents"),
-              icon: "doc.on.doc",
-              inline: false,
-              onPress: () => copyTextWithHaptic(content.text),
-            } as const)
-          : null,
-        uri
-          ? ({
-              id: "share",
-              title: sharing ? uiT("Opening share sheet…") : uiT("Save or share"),
-              icon: "square.and.arrow.up",
-              inline: false,
-              onPress: () => void share(),
-            } as const)
-          : null,
-        uri
-          ? ({
-              id: "open-viewer",
-              title: uiT("Open in file viewer"),
-              icon: "arrow.up.left.and.arrow.down.right",
-              inline: false,
-              onPress: () => {
-                setNativeViewer((current) => (current === null ? null : "open"));
-                setNativeOpen(true);
-              },
-            } as const)
-          : null,
-        draftKey
-          ? ({
-              id: "remove",
-              title: uiT("Remove from draft"),
-              icon: "trash",
-              inline: false,
-              destructive: true,
-              onPress: removeFromDraft,
-            } as const)
-          : null,
-      ].filter((action) => action !== null),
-    [
-      appearance.codeWordBreak,
-      setCodeWordBreak,
-      content,
-      draftKey,
-      removeFromDraft,
-      activeMode,
-      renderedMode,
-      setRendered,
-      share,
-      sharing,
-      uri,
-      uiT,
-    ],
-  );
+  const menuActions = [
+    renderedMode
+      ? ({
+          id: "preview",
+          title: renderedMode === "table" ? "Table" : "Preview",
+          icon: renderedMode === "table" ? "tablecells" : "eye",
+          inline: true,
+          onPress: () => setRendered(true),
+        } as const)
+      : null,
+    renderedMode
+      ? ({
+          id: "source",
+          title: uiT("Source"),
+          icon: "doc.text",
+          inline: true,
+          onPress: () => setRendered(false),
+        } as const)
+      : null,
+    content && activeMode === "source"
+      ? ({
+          id: "word-wrap",
+          title: appearance.codeWordBreak ? "Disable word wrap" : "Enable word wrap",
+          icon: "text.alignleft",
+          inline: false,
+          onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
+        } as const)
+      : null,
+    content
+      ? ({
+          id: "copy",
+          title: content.truncated ? "Copy preview" : "Copy contents",
+          icon: "doc.on.doc",
+          inline: false,
+          onPress: () => copyTextWithHaptic(content.text),
+        } as const)
+      : null,
+    uri
+      ? ({
+          id: "share",
+          title: sharing ? "Opening share sheet…" : "Save or share",
+          icon: "square.and.arrow.up",
+          inline: false,
+          onPress: () => void share(),
+        } as const)
+      : null,
+    uri
+      ? ({
+          id: "open-viewer",
+          title: uiT("Open in file viewer"),
+          icon: "arrow.up.left.and.arrow.down.right",
+          inline: false,
+          onPress: () => {
+            setNativeViewer((current) => (current === null ? null : "open"));
+            setNativeOpen(true);
+          },
+        } as const)
+      : null,
+    draftKey
+      ? ({
+          id: "remove",
+          title: uiT("Remove from draft"),
+          icon: "trash",
+          inline: false,
+          destructive: true,
+          onPress: removeFromDraft,
+        } as const)
+      : null,
+  ].filter((action) => action !== null);
   const selectedAction = activeMode === "source" ? "source" : "preview";
-  const androidMenuActions = useMemo<MenuAction[]>(
-    () =>
-      menuActions.map((action) => ({
-        id: action.id,
-        title: action.title,
-        image: action.icon,
-        state: action.inline ? (action.id === selectedAction ? "on" : "off") : undefined,
-        ...("destructive" in action ? { attributes: { destructive: true } } : {}),
-      })),
-    [selectedAction, menuActions],
-  );
-  const handleAndroidMenuAction = useCallback(
-    (event: { nativeEvent: { event: string } }) => {
-      menuActions.find(({ id }) => id === event.nativeEvent.event)?.onPress();
-    },
-    [menuActions],
-  );
+  const androidMenuActions = menuActions.map((action) => ({
+    id: action.id,
+    title: action.title,
+    image: action.icon,
+    state: action.inline ? (action.id === selectedAction ? "on" : "off") : undefined,
+    ...("destructive" in action ? { attributes: { destructive: true } } : {}),
+  })) satisfies MenuAction[];
+  const handleAndroidMenuAction = (event: { nativeEvent: { event: string } }) => {
+    menuActions.find(({ id }) => id === event.nativeEvent.event)?.onPress();
+  };
   const subtitle = `${draftKey ? "Draft attachment" : "Attachment"}${sizeBytes > 0 ? ` · ${formatAttachmentSize(sizeBytes)}` : ""}`;
 
   return (

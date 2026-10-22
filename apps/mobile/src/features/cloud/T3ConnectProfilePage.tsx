@@ -83,7 +83,8 @@ export function T3ConnectProfilePage() {
     if (isAtomCommandInterrupted(result)) return;
 
     const cause = squashAtomCommandFailure(result);
-    const message = cause instanceof Error ? cause.message : "Could not deregister the server.";
+    const message =
+      cause instanceof Error ? cause.message : uiT("Could not deregister the server.");
     const traceId = findErrorTraceId(cause);
     console.error("[t3-connect] Could not deregister environment", {
       environmentId: environment.environmentId,

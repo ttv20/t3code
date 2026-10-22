@@ -66,7 +66,7 @@ export class ElectronProtocol extends Context.Service<
   }
 >()("@t3tools/desktop/electron/ElectronProtocol") {}
 
-export function makeDesktopContentSecurityPolicy(input: DesktopProtocolRegistrationInput): string {
+function makeDesktopContentSecurityPolicy(input: DesktopProtocolRegistrationInput): string {
   const clerkOrigin = input.clerkFrontendApiHostname
     ? `https://${input.clerkFrontendApiHostname}`
     : undefined;
@@ -95,6 +95,7 @@ export function makeDesktopContentSecurityPolicy(input: DesktopProtocolRegistrat
     `font-src 'self' ${input.scheme}: data:`,
     "worker-src 'self' blob:",
     "frame-src 'self' blob: http: https:",
+    "object-src 'self' blob: http: https:",
     "form-action 'self'",
   ].join("; ");
 }

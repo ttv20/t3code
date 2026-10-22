@@ -1,7 +1,4 @@
-"use client";
-
-import { useUiLanguage, UiText } from "../../i18n";
-
+import { useUiLanguage } from "../../i18n";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import type { ProviderDriverKind, ServerProviderModel } from "@t3tools/contracts";
@@ -48,6 +45,7 @@ export function CustomModelEditor({
   onCancel,
 }: CustomModelEditorProps) {
   const { t: uiT } = useUiLanguage();
+
   const [draft, setDraft] = useState<CustomModelDraft>(() => draftFromDefinition(entry));
   const [error, setError] = useState<string | null>(null);
   const presets = driverKind ? (DESCRIPTOR_PRESETS_BY_KIND[driverKind] ?? []) : [];
@@ -151,12 +149,12 @@ export function CustomModelEditor({
       />
       <Input
         size="compact"
-        value={choice.label}
+        value={uiT(choice.label)}
         onChange={(event) =>
           updateChoice(descriptor.key, choice.key, { label: event.target.value })
         }
         placeholder={uiT("Label")}
-        className="min-w-0 flex-1"
+        className="min-w-0 flex-1 [unicode-bidi:plaintext]"
         aria-label={uiT("Choice label")}
       />
       <label className="flex shrink-0 items-center gap-1.5 text-2xs text-muted-foreground">
@@ -192,7 +190,8 @@ export function CustomModelEditor({
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="w-14 shrink-0 text-2xs text-muted-foreground">
-          <UiText message={"Option {0}"} values={{ "0": index + 1 }} />
+          {uiT("Option")}
+          {index + 1}
         </span>
         {presets.length > 0 ? (
           <Select
@@ -231,10 +230,10 @@ export function CustomModelEditor({
         ) : null}
         <Input
           size="compact"
-          value={descriptor.label}
+          value={uiT(descriptor.label)}
           onChange={(event) => updateDescriptor(descriptor.key, { label: event.target.value })}
           placeholder={uiT("Label")}
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 [unicode-bidi:plaintext]"
           aria-label={uiT("Option label")}
         />
         <Select

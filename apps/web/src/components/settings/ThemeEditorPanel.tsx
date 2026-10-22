@@ -506,9 +506,10 @@ export function ThemeEditorPanel({
     if (!reveal) return;
 
     requestAnimationFrame(() => {
-      panelRef.current
-        ?.querySelector(`[data-theme-color-role="${visibleRole}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      panelRef.current?.querySelector(`[data-theme-color-role="${visibleRole}"]`)?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "nearest",
+      });
     });
   };
 
@@ -943,7 +944,7 @@ export function ThemeEditorPanel({
         {isAdvanced ? (
           <Input
             aria-label={uiT("Filter colors")}
-            className="min-w-0 flex-1"
+            className="min-w-0 flex-1 [unicode-bidi:plaintext]"
             onChange={(event) => setRoleQuery(event.currentTarget.value)}
             placeholder={uiT("Filter colors")}
             size="sm"

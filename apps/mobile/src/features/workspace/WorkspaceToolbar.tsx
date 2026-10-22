@@ -6,19 +6,18 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  TextInput,
   View,
   useWindowDimensions,
   type TextInputInstance,
 } from "react-native";
 import { KeyboardStickyView, useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useResolveClassNames } from "uniwind";
 
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { useHardwareKeyboardCommand } from "../keyboard/hardwareKeyboardCommands";
 import { WorkspaceDock } from "./WorkspaceDock";
+import { WorkspaceSearchField } from "./WorkspaceSearchField";
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 import { WORKSPACE_TOOLBAR, type WorkspaceTab } from "./workspace-tabs-state";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
@@ -35,6 +34,7 @@ function ToolbarButton(props: {
   size?: number;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const size = props.size ?? WORKSPACE_TOOLBAR.height;
   return (
     <GlassSurface style={{ width: size, height: size, borderRadius: size / 2 }}>
@@ -55,6 +55,7 @@ export function WorkspaceToolbar(props: {
   readonly onNewTask: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const workspace = useWorkspaceTabs();
   const input = useRef<TextInputInstance>(null);
   const [focusRequest, setFocusRequest] = useState(0);
@@ -63,8 +64,6 @@ export function WorkspaceToolbar(props: {
   const edge = width < 360 ? 12 : WORKSPACE_TOOLBAR.edge;
   const gap = width < 360 ? 6 : WORKSPACE_TOOLBAR.gap;
   const keyboardVisible = useKeyboardState((state) => state.isVisible);
-  const inputStyle = useResolveClassNames("text-foreground font-sans text-base");
-  const placeholderStyle = useResolveClassNames("text-foreground-muted");
   const focusSearch = useCallback(() => {
     if (!workspace) return false;
     const tab = workspace.state.selectedTab;
@@ -129,52 +128,17 @@ export function WorkspaceToolbar(props: {
                 onPress={() => dispatch({ type: "expand" })}
               />
             ) : null}
-            <GlassSurface className="min-w-0 flex-1" style={{ height: 48, borderRadius: 24 }}>
-              <View className="flex-1 flex-row items-center pl-4">
-                <SymbolView
-                  name="magnifyingglass"
-                  size={20}
-                  tintColorClassName="accent-icon-muted"
-                />
-                <TextInput
-                  ref={input}
-                  accessibilityLabel={uiT("Search {0}", { "0": activeTab.label })}
-                  placeholder={uiT("Search {0}", {
-                    "0": activeTab.label === "PRs" ? "pull requests" : "threads",
-                  })}
-                  placeholderTextColor={placeholderStyle.color}
-                  value={tab.query}
-                  onChangeText={(query) => dispatch({ type: "query", query })}
-                  onFocus={() => dispatch({ type: "search" })}
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="search"
-                  maxLength={state.selectedTab === "pullRequests" ? 200 : undefined}
-                  style={[
-                    inputStyle,
-                    { flex: 1, minWidth: 0, paddingHorizontal: 8, paddingVertical: 0 },
-                  ]}
-                />
-                {tab.query ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={uiT("Clear search")}
-                    onPress={() => {
-                      dispatch({ type: "query", query: "" });
-                      focusSearch();
-                    }}
-                    className="h-11 w-11 items-center justify-center"
-                  >
-                    <SymbolView
-                      name="xmark.circle.fill"
-                      size={18}
-                      tintColorClassName="accent-icon-muted"
-                    />
-                  </Pressable>
-                ) : null}
-              </View>
-            </GlassSurface>
+            <WorkspaceSearchField
+              ref={input}
+              tab={state.selectedTab}
+              query={tab.query}
+              onChangeQuery={(query) => dispatch({ type: "query", query })}
+              onFocus={() => dispatch({ type: "search" })}
+              onClear={() => {
+                dispatch({ type: "query", query: "" });
+                focusSearch();
+              }}
+            />
             <ToolbarButton
               label={uiT("Cancel search")}
               icon="xmark"

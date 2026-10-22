@@ -128,7 +128,7 @@ export function PullRequestDetailGhost({
   return (
     <div
       role="status"
-      aria-label="Loading pull request"
+      aria-label={uiT("Loading pull request")}
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden bg-background",
         !seed && "motion-safe:animate-skeleton",
@@ -143,7 +143,7 @@ export function PullRequestDetailGhost({
                 variant="ghost-muted"
                 className="-ml-1.5"
                 onClick={onBack}
-                aria-label="Back to this thread's pull requests"
+                aria-label={uiT("Back to this thread's pull requests")}
               >
                 <ArrowLeftIcon aria-hidden className="size-3.5" />
               </Button>
@@ -169,14 +169,19 @@ export function PullRequestDetailGhost({
         </div>
         <div className="mr-4 flex h-7 shrink-0 items-center justify-end gap-1">
           {actions ?? <GhostBar className="h-6 w-16 rounded-md" />}
-          <Button size="icon-xs" variant="ghost" disabled aria-label="Pull request actions loading">
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            disabled
+            aria-label={uiT("Pull request actions loading")}
+          >
             <EllipsisIcon aria-hidden className="size-4" />
           </Button>
           {onClose ? (
             <Button
               size="icon-xs"
               variant="ghost"
-              aria-label="Collapse pull request panel"
+              aria-label={uiT("Collapse pull request panel")}
               onClick={onClose}
             >
               <PanelRightIcon aria-hidden className="size-3.5" />
@@ -302,7 +307,12 @@ export function PullRequestDetailGhost({
               </span>
               <span className="flex min-w-0 items-center gap-1.5 text-foreground">
                 <GhostBar className="h-3 w-10" />
-                <Button size="icon-xs" variant="ghost" disabled aria-label="Reviewers loading">
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  disabled
+                  aria-label={uiT("Reviewers loading")}
+                >
                   <UserPlusIcon aria-hidden className="size-3.5" />
                 </Button>
               </span>
@@ -332,7 +342,7 @@ export function PullRequestDetailGhost({
                     <GhostBar className="h-4.5 w-20" />
                   </>
                 )}
-                <Button size="icon-xs" variant="ghost" disabled aria-label="Labels loading">
+                <Button size="icon-xs" variant="ghost" disabled aria-label={uiT("Labels loading")}>
                   <TagIcon aria-hidden className="size-3.5" />
                 </Button>
               </span>
@@ -366,10 +376,12 @@ export function PullRequestDetailGhost({
 }
 
 export function PullRequestPeopleGhost({ rows = 4 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <div
       role="status"
-      aria-label="Loading people"
+      aria-label={uiT("Loading people")}
       className="motion-safe:animate-skeleton space-y-1 p-1"
     >
       {Array.from({ length: rows }, (_, index) => (
@@ -383,10 +395,12 @@ export function PullRequestPeopleGhost({ rows = 4 }: { rows?: number }) {
 }
 
 export function PullRequestTimelineGhost({ rows = 6 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <div
       role="status"
-      aria-label="Loading timeline"
+      aria-label={uiT("Loading timeline")}
       className="motion-safe:animate-skeleton px-4 py-5"
     >
       <div className="relative ml-2 border-l border-border/70 pl-5">
@@ -403,10 +417,12 @@ export function PullRequestTimelineGhost({ rows = 6 }: { rows?: number }) {
 }
 
 export function PullRequestConversationGhost({ rows = 3 }: { rows?: number }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <div
       role="status"
-      aria-label="Loading pull request conversation"
+      aria-label={uiT("Loading pull request conversation")}
       className="motion-safe:animate-skeleton space-y-4 py-2"
     >
       {Array.from({ length: rows }, (_, index) => (

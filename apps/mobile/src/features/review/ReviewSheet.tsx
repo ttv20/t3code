@@ -1,4 +1,6 @@
 import { useUiLanguage } from "../../i18n";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { AsyncResult } from "effect/reactivity";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -10,13 +12,10 @@ import type { ReviewSectionItem } from "./reviewModel";
 import { useReviewHeaderPresentation } from "./useReviewHeaderPresentation";
 import { Screen, ScreenStack, ScreenStackHeaderConfig } from "react-native-screens";
 import {
-  memo,
   type Ref,
   type ReactElement,
-  useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -32,6 +31,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
+import { NativeInspectorContent } from "../../native/NativeInspectorContent";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -42,7 +42,6 @@ import { environmentCatalog } from "../../connection/catalog";
 import { useEnvironmentPresentation } from "../../state/presentation";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
-import { IOS_NAV_BAR_HEIGHT } from "../../lib/layoutMetrics";
 import { useThreadDraftForThread } from "../../state/use-thread-composer-state";
 import { EnvironmentConnectionNotice } from "../connection/EnvironmentConnectionNotice";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
@@ -82,6 +81,7 @@ function ReviewHeader(
   },
 ) {
   const { t: uiT } = useUiLanguage();
+
   const { panes, toggleAuxiliaryPane } = useAdaptiveWorkspaceLayout();
   const presentation = useReviewHeaderPresentation(props);
   const sectionAction = (section: ReviewSectionItem | null, title: string): AppBarMenuItem => ({
@@ -100,7 +100,7 @@ function ReviewHeader(
       onBack={props.onReturnToThread}
       hideBottomBorder
       options={{ headerTintColor: props.iconColor, headerTitle: props.title }}
-      backInSplitView={{ accessibilityLabel: "Back to chat", icon: "chevron.left" }}
+      backInSplitView={{ accessibilityLabel: uiT("Back to chat"), icon: "chevron.left" }}
       actions={
         props.showChangedFilesToggle
           ? [
@@ -159,8 +159,9 @@ function ReviewHeader(
 
 const SHOWCASE_ENABLED = process.env.EXPO_PUBLIC_SHOWCASE === "1";
 
-const ReviewNotice = memo(function ReviewNotice(props: { readonly notice: string }) {
+const ReviewNotice = function ReviewNotice(props: { readonly notice: string }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View
       className={cn(
@@ -174,7 +175,7 @@ const ReviewNotice = memo(function ReviewNotice(props: { readonly notice: string
       <Text className="text-xs leading-normal text-warning-foreground">{props.notice}</Text>
     </View>
   );
-});
+};
 
 function ReviewSelectionActionBar(props: {
   readonly bottomInset: number;
@@ -246,15 +247,15 @@ interface ReviewNavigatorFile {
   readonly deletions: number;
 }
 
-const ReviewFileNavigatorRow = memo(function ReviewFileNavigatorRow(props: {
+const ReviewFileNavigatorRow = function ReviewFileNavigatorRow(props: {
   readonly file: ReviewNavigatorFile;
   readonly selected: boolean;
   readonly onSelectFile: (fileId: string | null) => void;
 }) {
   const { file, selected, onSelectFile } = props;
-  const handlePress = useCallback(() => {
+  const handlePress = () => {
     onSelectFile(selected ? null : file.id);
-  }, [file.id, onSelectFile, selected]);
+  };
 
   return (
     <Pressable
@@ -292,7 +293,7 @@ const ReviewFileNavigatorRow = memo(function ReviewFileNavigatorRow(props: {
       </View>
     </Pressable>
   );
-});
+};
 
 interface ReviewFileNavigatorHandle {
   readonly setVisibleFile: (fileId: string | null) => void;
@@ -314,7 +315,7 @@ function ReviewFileNavigator({
   ref,
 }: ReviewFileNavigatorProps) {
   const { t: uiT } = useUiLanguage();
-  const insets = useSafeAreaInsets();
+
   const theme = useUniwindTheme();
   const sheetColor = theme["--color-sheet"];
   const foregroundColor = theme["--color-foreground"];
@@ -323,7 +324,7 @@ function ReviewFileNavigator({
     readonly sectionId: string | null;
     readonly fileId: string | null;
   }>({ sectionId: null, fileId: null });
-  const availableFileIds = useMemo(() => files.map((file) => file.id), [files]);
+  const availableFileIds = files.map((file) => file.id);
   const selectedFileId = resolveSelectedReviewFileId({
     selection: fileSelection,
     sectionId,
@@ -348,23 +349,17 @@ function ReviewFileNavigator({
     [availableFileIds, sectionId],
   );
 
-  const handleSelectFile = useCallback(
-    (fileId: string | null) => {
-      setFileSelection({ sectionId, fileId });
-      onSelectFile(fileId);
-    },
-    [onSelectFile, sectionId],
-  );
+  const handleSelectFile = (fileId: string | null) => {
+    setFileSelection({ sectionId, fileId });
+    onSelectFile(fileId);
+  };
 
-  const renderFile = useCallback(
-    ({ item }: { readonly item: ReviewNavigatorFile }) => (
-      <ReviewFileNavigatorRow
-        file={item}
-        selected={selectedFileId === item.id}
-        onSelectFile={handleSelectFile}
-      />
-    ),
-    [handleSelectFile, selectedFileId],
+  const renderFile = ({ item }: { readonly item: ReviewNavigatorFile }) => (
+    <ReviewFileNavigatorRow
+      file={item}
+      selected={selectedFileId === item.id}
+      onSelectFile={handleSelectFile}
+    />
   );
 
   const fileList = (
@@ -372,15 +367,8 @@ function ReviewFileNavigator({
       data={files}
       extraData={selectedFileId}
       keyExtractor={(file) => file.id}
-      contentContainerStyle={{
-        paddingHorizontal: 8,
-        paddingBottom: 8,
-
-        paddingTop: Platform.OS === "ios" ? insets.top + IOS_NAV_BAR_HEIGHT + 8 : 8,
-      }}
-      scrollIndicatorInsets={
-        Platform.OS === "ios" ? { top: insets.top + IOS_NAV_BAR_HEIGHT } : undefined
-      }
+      contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
+      contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8 }}
       renderItem={renderFile}
     />
   );
@@ -397,7 +385,7 @@ function ReviewFileNavigator({
             scrollEdgeEffects={headerScrollEdgeEffects}
             style={{ backgroundColor: sheetColor, flex: 1 }}
           >
-            {fileList}
+            <NativeInspectorContent>{fileList}</NativeInspectorContent>
             <ScreenStackHeaderConfig
               backgroundColor="rgba(0,0,0,0)"
               color={foregroundColor}
@@ -451,6 +439,7 @@ type ReviewSheetProps = StaticScreenProps<{
 
 export function ReviewSheet(props: ReviewSheetProps) {
   const { t: uiT } = useUiLanguage();
+
   const { nativeReviewDiffStyle } = useAppearanceCodeSurface();
   useAdaptiveWorkspacePaneRole("inspector");
   const { panes, showAuxiliaryPane } = useAdaptiveWorkspaceLayout();
@@ -516,14 +505,11 @@ export function ReviewSheet(props: ReviewSheetProps) {
   const nativeReviewDiffViewRef = useRef<NativeReviewDiffViewHandle>(null);
   const showcasedReviewDrawRef = useRef<string | null>(null);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
-  const handlePullToRefresh = useCallback(async () => {
+  const handlePullToRefresh = async () => {
     setIsPullRefreshing(true);
-    try {
-      await refreshSelectedSection();
-    } finally {
-      setIsPullRefreshing(false);
-    }
-  }, [refreshSelectedSection]);
+    await refreshSelectedSection();
+    setIsPullRefreshing(false);
+  };
   const reviewFileNavigatorRef = useRef<ReviewFileNavigatorHandle>(null);
   const reviewFiles = parsedDiff.kind === "files" ? parsedDiff.files : [];
   const fileVisibility = useReviewFileVisibility({
@@ -558,95 +544,82 @@ export function ReviewSheet(props: ReviewSheetProps) {
     SHOWCASE_ENABLED && parsedDiff.kind === "files" && selectedSection
       ? `${reviewCache.threadKey}:${selectedSection.id}:${nativeBridge.tokensResetKey}:${nativeBridge.themeId}`
       : null;
-  const handleNativeDebug = useCallback(
-    (event: NativeSyntheticEvent<Record<string, unknown>>) => {
-      nativeBridge.onDebug(event);
-      if (
-        showcaseReviewKey === null ||
-        showcasedReviewDrawRef.current === showcaseReviewKey ||
-        !isNativeReviewDiffDrawEvent(event.nativeEvent)
-      ) {
-        return;
-      }
-      showcasedReviewDrawRef.current = showcaseReviewKey;
-      reportShowcaseSceneRendered({ scene: "review", themeId: nativeBridge.themeId });
-    },
-    [nativeBridge.onDebug, nativeBridge.themeId, showcaseReviewKey],
+  const handleNativeDebug = (event: NativeSyntheticEvent<Record<string, unknown>>) => {
+    nativeBridge.onDebug(event);
+    if (
+      showcaseReviewKey === null ||
+      showcasedReviewDrawRef.current === showcaseReviewKey ||
+      !isNativeReviewDiffDrawEvent(event.nativeEvent)
+    ) {
+      return;
+    }
+    showcasedReviewDrawRef.current = showcaseReviewKey;
+    reportShowcaseSceneRendered({ scene: "review", themeId: nativeBridge.themeId });
+  };
+
+  const handleSelectFile = async (fileId: string | null) => {
+    loadVisibleFile(fileId, true);
+    commentSelection.clearSelection();
+    if (fileId !== null && collapsedFileIds.includes(fileId)) {
+      toggleExpandedFile(fileId);
+    }
+    const nativeView = nativeReviewDiffViewRef.current;
+    if (!nativeView) return;
+    const result = await settlePromise(() =>
+      fileId === null ? nativeView.scrollToTop(true) : nativeView.scrollToFile(fileId, true),
+    );
+    if (AsyncResult.isFailure(result)) {
+      console.error("[review] Failed to navigate to diff file", squashAtomCommandFailure(result));
+    }
+  };
+  const handleVisibleFileChange = (
+    event: NativeSyntheticEvent<{ readonly fileId?: string | null }>,
+  ) => {
+    loadVisibleFile(event.nativeEvent.fileId ?? null);
+    reviewFileNavigatorRef.current?.setVisibleFile(event.nativeEvent.fileId ?? null);
+  };
+  const renderInspector = () => (
+    <ReviewFileNavigator
+      ref={reviewFileNavigatorRef}
+      files={nativeReviewDiffData.files}
+      headerInset={insets.top}
+      sectionId={selectedSection?.id ?? null}
+      onSelectFile={(fileId) => void handleSelectFile(fileId)}
+    />
   );
 
-  const handleSelectFile = useCallback(
-    (fileId: string | null) => {
+  const handleNativeToggleFile = (event: NativeSyntheticEvent<{ readonly fileId?: string }>) => {
+    const { fileId } = event.nativeEvent;
+    if (fileId) {
       loadVisibleFile(fileId, true);
-      commentSelection.clearSelection();
-      if (fileId !== null && collapsedFileIds.includes(fileId)) {
-        toggleExpandedFile(fileId);
-      }
-      const navigation =
-        fileId === null
-          ? nativeReviewDiffViewRef.current?.scrollToTop(true)
-          : nativeReviewDiffViewRef.current?.scrollToFile(fileId, true);
-      void navigation?.catch((error: unknown) => {
-        console.error("[review] Failed to navigate to diff file", error);
-      });
-    },
-    [collapsedFileIds, commentSelection, toggleExpandedFile, loadVisibleFile],
-  );
-  const handleVisibleFileChange = useCallback(
-    (event: NativeSyntheticEvent<{ readonly fileId?: string | null }>) => {
-      loadVisibleFile(event.nativeEvent.fileId ?? null);
-      reviewFileNavigatorRef.current?.setVisibleFile(event.nativeEvent.fileId ?? null);
-    },
-    [loadVisibleFile],
-  );
-  const renderInspector = useCallback(
-    () => (
-      <ReviewFileNavigator
-        ref={reviewFileNavigatorRef}
-        files={nativeReviewDiffData.files}
-        headerInset={insets.top}
-        sectionId={selectedSection?.id ?? null}
-        onSelectFile={handleSelectFile}
-      />
-    ),
-    [handleSelectFile, insets.top, nativeReviewDiffData.files, selectedSection?.id],
-  );
+      toggleExpandedFile(fileId);
+    }
+  };
 
-  const handleNativeToggleFile = useCallback(
-    (event: NativeSyntheticEvent<{ readonly fileId?: string }>) => {
-      const { fileId } = event.nativeEvent;
-      if (fileId) {
-        loadVisibleFile(fileId, true);
-        toggleExpandedFile(fileId);
-      }
-    },
-    [toggleExpandedFile, loadVisibleFile],
-  );
-
-  const handleNativeToggleViewedFile = useCallback(
-    (event: NativeSyntheticEvent<{ readonly fileId?: string }>) => {
-      const { fileId } = event.nativeEvent;
-      if (fileId) {
-        toggleViewedFile(fileId);
-      }
-    },
-    [toggleViewedFile],
-  );
+  const handleNativeToggleViewedFile = (
+    event: NativeSyntheticEvent<{ readonly fileId?: string }>,
+  ) => {
+    const { fileId } = event.nativeEvent;
+    if (fileId) {
+      toggleViewedFile(fileId);
+    }
+  };
 
   const parsedDiffNotice =
     parsedDiff.kind === "files" || parsedDiff.kind === "raw" ? parsedDiff.notice : null;
   const hasCachedSelectedDiff = selectedSection?.diff != null;
   const hasAnyCachedDiff = reviewSections.some((section) => section.diff != null);
-  const sectionMenu = useMemo(() => buildReviewSectionMenu(reviewSections), [reviewSections]);
+  const sectionMenu = buildReviewSectionMenu(reviewSections);
   const { showConnectionNotice, showSectionToolbar } = resolveReviewAvailability({
     hasEnvironmentPresentation: environment.isReady,
     isEnvironmentConnected: isEnvironmentReady,
     hasCachedSelectedDiff,
     hasAnyCachedDiff,
   });
-  const handleRetryEnvironment = useCallback(() => {
+  const handleRetryEnvironment = () => {
     void retryEnvironment(environmentId);
-  }, [environmentId, retryEnvironment]);
-  const handleReturnToThread = useCallback(() => {
+  };
+  const handleReturnToThread = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
@@ -655,7 +628,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
       environmentId: String(environmentId),
       threadId: String(threadId),
     });
-  }, [environmentId, navigation, threadId]);
+  };
   const androidHeaderSubtitle = [
     selectedSection?.title,
     headerDiffSummary.additions,
@@ -672,7 +645,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
   useRegisterWorkspaceInspector(showChangedFilesPane ? renderInspector : undefined);
   const showChangedFilesToggle = panes.supportsAuxiliaryPane && showChangedFilesPane;
 
-  const listHeader = useMemo(() => {
+  const listHeader = (() => {
     const children: ReactElement[] = [];
 
     if (error) {
@@ -699,7 +672,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
     }
 
     return <>{children}</>;
-  }, [error, parsedDiffNotice, uiT]);
+  })();
   const headerSubtitle = [
     headerDiffSummary.additions,
     headerDiffSummary.deletions,
@@ -755,11 +728,11 @@ export function ReviewSheet(props: ReviewSheetProps) {
               }}
             >
               <View
-                className="min-w-0 flex-1"
+                className="min-w-0 flex-1 [unicode-bidi:plaintext]"
                 style={listHeader ? { paddingTop: topContentInset } : undefined}
               >
                 {listHeader}
-                <View className="min-w-0 flex-1" collapsable={false}>
+                <View className="min-w-0 flex-1 [unicode-bidi:plaintext]" collapsable={false}>
                   <NativeReviewDiffView
                     collapsable={false}
                     testID="review-native-diff-view"

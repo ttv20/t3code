@@ -133,7 +133,7 @@ export function SettingsScopeNotice({
         }}
       >
         {choice.icon}
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <span className="block truncate text-sm font-medium">{uiT(choice.label)}</span>
           {choice.secondary ? (
             <Tooltip>

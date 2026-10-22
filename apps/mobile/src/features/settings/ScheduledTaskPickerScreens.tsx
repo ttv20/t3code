@@ -57,6 +57,12 @@ export function ScheduledTaskModelPickerRouteScreen() {
       projectId={projectId}
       providerGroups={providerGroups}
       selectedModel={selectedModel}
+      prompt={editor.draft.prompt}
+      onPromptChange={(prompt) =>
+        setEditor((current) =>
+          current ? { ...current, draft: { ...current.draft, prompt } } : current,
+        )
+      }
       onSelectModel={(option) =>
         setEditor((current) =>
           current

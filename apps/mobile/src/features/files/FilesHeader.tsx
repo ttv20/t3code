@@ -57,7 +57,7 @@ export function FilesHeader(props: {
           leading={props.leading}
           actions={[
             {
-              accessibilityLabel: "Search files",
+              accessibilityLabel: uiT("Search files"),
               icon: "magnifyingglass",
               onPress: () => setSearchOpen(true),
             },

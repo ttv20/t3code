@@ -35,10 +35,15 @@ Save language and direction per client. Automatic layout direction is RTL for He
 and Persian, and LTR for English. An explicit direction preference changes layout independently
 of translation. Message direction follows the message's text independently of interface language.
 
-Use RTL for a message when at least 30% of its visible letters are RTL, ignoring code and
-hidden link destinations. During streaming, keep the current direction near the threshold;
-use the exact threshold when complete. In web and desktop Markdown, a paragraph or source
-line starting with an RTL letter also aligns right even below the message threshold.
+Web and desktop chat Markdown and the prompt editor follow upstream's per-block word rule,
+with an inclusive 30% RTL threshold. Each word votes by its first letter; words without letters
+and inline code do not vote. Each top-level paragraph, heading, list, quote, or table chooses
+its own direction. Code blocks stay LTR. Empty editor blocks inherit the previous block's
+direction, and the editor root follows the caret's block for arrow-key navigation.
+
+Pending questions and choices retain the shared 30% visible-letter rule. Sentence-boundary
+correction remains a display-only change, and navigation previews preserve separate directions
+for the user prompt and assistant reply.
 
 Mirror surrounding controls and spacing while preserving the LTR order of technical content.
 Isolate filename segments and paths, including empty-field path placeholders. Use bidi isolation

@@ -8,7 +8,7 @@ import {
   type EnvironmentId,
   type ServerProvider,
 } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
@@ -18,12 +18,14 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { ScreenScrollView } from "../../components/ui/ScreenScrollView";
 import { appAtomRegistry } from "../../state/atom-registry";
+import { environmentPresentations } from "../../state/presentation";
 import { serverEnvironment } from "../../state/server";
 import { environmentSession, useEnvironmentScope, readEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";
 import { ConnectionEnvironmentRow } from "../connection/ConnectionEnvironmentRow";
 import { EnvironmentRoutesSection } from "./EnvironmentRoutesSection";
+import { OutdatedServerUpdateSection } from "./OutdatedServerUpdateSection";
 import { SettingsActionRow } from "./components/SettingsActionRow";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
@@ -60,6 +62,9 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
   const session = useAtomValue(environmentSession.sessionStateValueAtom(environmentId));
   const sessionResult = useAtomValue(environmentSession.sessionStateAtom(environmentId));
   const updateState = useAtomValue(serverEnvironment.updateStateAtom(environmentId));
+  const outdated =
+    useAtomValue(environmentPresentations.presentationAtom(environmentId))?.entry
+      .serverUpdateRequired === true;
   const updateServer = useAtomCommand(serverEnvironment.updateServer);
   const updateProvider = useAtomCommand(serverEnvironment.updateProvider);
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders);
@@ -98,15 +103,14 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
     setPending(label);
     setError(null);
     setNotice(null);
-    try {
-      await action();
-    } catch (cause) {
+    const result = await settlePromise(action);
+    pendingRef.current = false;
+    setPending(null);
+    if (AsyncResult.isFailure(result)) {
+      const cause = squashAtomCommandFailure(result);
       setError(
         cause instanceof Error ? cause.message : "The action could not be completed. Try again.",
       );
-    } finally {
-      pendingRef.current = false;
-      setPending(null);
     }
   }
 
@@ -209,7 +213,12 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                 })
               }
             />
-            {!connected ? (
+            {outdated ? (
+              <OutdatedServerUpdateSection
+                environmentId={environmentId}
+                label={environment.environmentLabel}
+              />
+            ) : !connected ? (
               <Text className="px-2 text-sm text-foreground-muted">
                 {uiT("Connect this environment to manage it.")}
               </Text>
@@ -228,9 +237,9 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
               </Text>
             ) : null}
             {notice ? <Text className="px-2 text-sm text-foreground-muted">{notice}</Text> : null}
-            {config ? (
+            {config && !outdated ? (
               <>
-                <SettingsSection title="T3 Code">
+                <SettingsSection title={uiT("T3 Code")}>
                   <View className="gap-1 p-4">
                     <Text className="text-base text-foreground">
                       {uiT("Version")} {version}
@@ -253,7 +262,8 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                           : uiT("You are up to date.")}
                       </Text>
                     ) : null}
-                    {!supportsEnvironmentUpdate(config.environment.capabilities) ? (
+                    {checkedRelease?.targetVersion &&
+                    !supportsEnvironmentUpdate(config.environment.capabilities) ? (
                       <Text className="text-sm text-foreground-muted">
                         {capabilities?.serverSelfUpdate === "desktop-managed"
                           ? uiT("Update the desktop app on this machine.")
@@ -272,19 +282,15 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                         const controller = new AbortController();
                         checkController.current = controller;
                         const timeout = setTimeout(() => controller.abort(), 20_000);
-                        try {
-                          const targetVersion = await findEnvironmentUpdate(
-                            config.environment.serverVersion,
-                            controller.signal,
-                          );
-                          setRelease({
-                            fromVersion: config.environment.serverVersion,
-                            targetVersion,
-                          });
-                        } finally {
-                          clearTimeout(timeout);
-                          checkController.current = null;
-                        }
+                        const fromVersion = config.environment.serverVersion;
+                        const result = await settlePromise(() =>
+                          findEnvironmentUpdate(fromVersion, controller.signal),
+                        );
+                        clearTimeout(timeout);
+                        checkController.current = null;
+                        // `run` owns the error message, so a failed lookup rethrows to it.
+                        if (AsyncResult.isFailure(result)) throw squashAtomCommandFailure(result);
+                        setRelease({ fromVersion, targetVersion: result.value });
                       });
                     }}
                   />

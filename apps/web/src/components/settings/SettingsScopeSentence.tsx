@@ -34,6 +34,7 @@ import {
   ALL_PROJECTS_VALUE,
   environmentAxisValue,
   projectAxisValue,
+  projectScopeMenuGroups,
   selectEnvironmentAxis,
   selectProjectAxis,
   settingsScopeEnvironmentAddress,
@@ -78,7 +79,7 @@ export function SettingsScopeSentence() {
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="shrink-0">
-          {scope.search.machine || scope.scope.kind === "checkout" ? "on" : "across"}
+          {scope.search.machine || scope.scope.kind === "checkout" ? uiT("on") : uiT("across")}
         </span>
         <EnvironmentScopeMenu {...props} />
       </span>
@@ -100,8 +101,8 @@ function ScopeOptionLabel({ option }: { option: ScopeOption }) {
   return (
     <>
       {option.icon}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate">{option.label}</span>
+      <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
+        <span className="block truncate">{uiT(option.label)}</span>
         {option.secondary ? (
           <span className="block truncate text-xs text-muted-foreground">{option.secondary}</span>
         ) : null}
@@ -132,6 +133,8 @@ function ScopeMenu({
   searchLabel: string;
   onChange: (next: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const [query, setQuery] = useState("");
   const Trigger = options.length > 6 ? ComboboxTrigger : MenuTrigger;
   const trigger = (
@@ -175,7 +178,7 @@ function ScopeMenu({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          <ComboboxEmpty>No matches found.</ComboboxEmpty>
+          <ComboboxEmpty>{uiT("No matches found.")}</ComboboxEmpty>
           <ComboboxList>
             {(option: ScopeOption) => (
               <ComboboxItem key={option.value} value={option}>
@@ -236,6 +239,13 @@ function EnvironmentScopeMenu({
   const selected = environments.find(
     (environment) => environment.environmentId === environmentValue,
   );
+  const project = groups.find((group) => group.projectKey === value.project);
+  const memberEnvironmentIds = project
+    ? new Set(project.memberProjects.map((member) => member.environmentId))
+    : null;
+  const options = memberEnvironmentIds
+    ? environments.filter((environment) => memberEnvironmentIds.has(environment.environmentId))
+    : environments;
   return (
     <ScopeMenu
       ariaLabel="Environment scope"
@@ -265,11 +275,11 @@ function EnvironmentScopeMenu({
           ? null
           : {
               value: ALL_ENVIRONMENTS_VALUE,
-              label: "All environments",
+              label: uiT("All environments"),
               icon: <LayersIcon aria-hidden className="size-3.5 shrink-0" />,
             }
       }
-      options={environments.map((environment) => {
+      options={options.map((environment) => {
         const { primary, secondary } = settingsScopeEnvironmentLabels(environment, environments);
         return {
           value: environment.environmentId,
@@ -296,7 +306,7 @@ function ProjectScopeMenu({ value, groups, environments, onChange }: SettingsSco
   const { t: uiT } = useUiLanguage();
 
   const selected = groups.find((group) => group.projectKey === value.project);
-  const projects = groups.map((group) => ({
+  const projects = projectScopeMenuGroups(groups, value).map((group) => ({
     group,
     machines: settingsScopeProjectMachines(group, environments, true).join(", "),
   }));
@@ -310,7 +320,7 @@ function ProjectScopeMenu({ value, groups, environments, onChange }: SettingsSco
       value={projectAxisValue(value)}
       onChange={(next) => onChange(selectProjectAxis(value, next))}
       searchLabel="Search projects"
-      allOption={{ value: ALL_PROJECTS_VALUE, label: "All projects" }}
+      allOption={{ value: ALL_PROJECTS_VALUE, label: uiT("All projects") }}
       options={projects.map(({ group, machines }) => {
         const sameName = projects.filter(
           (other) =>

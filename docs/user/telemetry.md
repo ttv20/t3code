@@ -12,7 +12,12 @@ PostHog project and enable collection by default. Set `T3CODE_TELEMETRY_ENABLED=
 in the server's environment to disable it, or `true` to enable it when a project
 token is configured.
 
-The desktop app reads the variable from your shell profile (for example `~/.zshrc`) on macOS and
+To disable product events and relay tracing, set `T3CODE_TELEMETRY_ENABLED=false` in the server's
+environment before starting it. Relay tracing also stops when `T3CODE_OTEL_SDK_DISABLED` or
+`OTEL_SDK_DISABLED` turns OpenTelemetry export off. The web app in a browser, including one the
+`t3` CLI opens, does not read these variables.
+
+The desktop app reads `T3CODE_TELEMETRY_ENABLED` from your shell profile (for example `~/.zshrc`) on macOS and
 Linux, so export it there and restart the app. On Windows, set it as a user environment variable.
 
 To send these events to your own PostHog project, also set `T3CODE_POSTHOG_KEY` to that

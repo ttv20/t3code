@@ -65,7 +65,9 @@ function formatBytes(value: number): string {
 }
 
 function RelativeTimeNoWrap(props: { value: DateTime.Utc }) {
-  const relative = useRelativeTimeState(DateTime.formatIso(props.value));
+  const { locale } = useUiLanguage();
+
+  const relative = useRelativeTimeState(DateTime.formatIso(props.value), locale);
   if (relative.status !== "relative") return null;
   return relative.suffix ? `${relative.value}\u00a0${relative.suffix}` : relative.value;
 }
@@ -381,7 +383,7 @@ function ProcessDiagnosticsTable({
           <thead className="sticky top-0 z-10 border-b border-border/60 bg-card text-2xs uppercase tracking-widest text-muted-foreground/70">
             <tr>
               <th className="px-4 py-2 font-semibold sm:pl-5">{uiT("Name")}</th>
-              <th className="px-3 py-2 text-right font-semibold">CPU</th>
+              <th className="px-3 py-2 text-right font-semibold">{uiT("CPU")}</th>
               <th className="px-3 py-2 text-right font-semibold">{uiT("Memory")}</th>
               <th className="px-3 py-2 font-semibold">{uiT("Command")}</th>
               <th className="px-3 py-2 text-right font-semibold">{uiT("PID")}</th>
@@ -567,7 +569,7 @@ function ResourceHistoryWindowSelector({
 
   return (
     <ToggleGroup
-      aria-label="Process history period"
+      aria-label={uiT("Process history period")}
       variant="segmented"
       value={[String(selectedWindowMs)]}
       onValueChange={(next) => {
@@ -689,9 +691,9 @@ function ProcessResourceHistoryTable({
 }
 
 function DiagnosticsLastChecked({ checkedAt }: { checkedAt: DateTime.Utc | null }) {
-  const { t: uiT } = useUiLanguage();
+  const { locale, t: uiT } = useUiLanguage();
 
-  const relative = useRelativeTimeState(checkedAt ? DateTime.formatIso(checkedAt) : null);
+  const relative = useRelativeTimeState(checkedAt ? DateTime.formatIso(checkedAt) : null, locale);
 
   if (relative.status === "missing") {
     return <span className="text-2xs text-muted-foreground/50">{uiT("Checking")}</span>;
@@ -984,13 +986,13 @@ export function DiagnosticsSettingsPanel() {
       <ResourceTelemetryDiagnostics environmentId={environmentId} />
 
       <SettingsSection
-        title="Live Processes"
+        title={uiT("Live Processes")}
         headerAction={
           <div className="flex items-center gap-1.5">
             <DiagnosticsLastChecked checkedAt={processData?.readAt ?? null} />
             <DiagnosticsRefreshButton
               isPending={isProcessPending}
-              label="Refresh process diagnostics"
+              label={uiT("Refresh process diagnostics")}
               onClick={refreshProcesses}
             />
           </div>
@@ -998,21 +1000,25 @@ export function DiagnosticsSettingsPanel() {
       >
         <StatsGrid>
           <StatBlock
-            label="Child Processes"
+            label={uiT("Child Processes")}
             value={processData ? formatCount(processData.processCount) : "..."}
           />
           <StatBlock
-            label="CPU"
+            label={uiT("CPU")}
             value={processData ? `${processData.totalCpuPercent.toFixed(1)}%` : "..."}
-            tooltip="Total CPU across live child processes of the current server process. The desktop shell and other parent processes are not included."
+            tooltip={uiT(
+              "Total CPU across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+            )}
           />
           <StatBlock
-            label="Memory"
+            label={uiT("Memory")}
             value={processData ? formatBytes(processData.totalRssBytes) : "..."}
-            tooltip="Total resident memory across live child processes of the current server process. The desktop shell and other parent processes are not included."
+            tooltip={uiT(
+              "Total resident memory across live child processes of the current server process. The desktop shell and other parent processes are not included.",
+            )}
           />
           <StatBlock
-            label="Server PID"
+            label={uiT("Server PID")}
             value={processData ? String(processData.serverPid) : "..."}
           />
         </StatsGrid>
@@ -1020,13 +1026,13 @@ export function DiagnosticsSettingsPanel() {
           <div className="space-y-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground sm:px-5">
             {processDiagnosticsError ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{processDiagnosticsError.message}</span>
               </div>
             ) : null}
             {processError ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{processError}</span>
               </div>
             ) : null}
@@ -1046,7 +1052,7 @@ export function DiagnosticsSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection
-        title="Resource History"
+        title={uiT("Resource History")}
         headerAction={
           <div className="flex items-center gap-1.5">
             <ResourceHistoryWindowSelector
@@ -1056,7 +1062,7 @@ export function DiagnosticsSettingsPanel() {
             <DiagnosticsLastChecked checkedAt={resourceData?.readAt ?? null} />
             <DiagnosticsRefreshButton
               isPending={isResourcePending}
-              label="Refresh resource history"
+              label={uiT("Refresh resource history")}
               onClick={refreshResources}
             />
           </div>
@@ -1064,17 +1070,21 @@ export function DiagnosticsSettingsPanel() {
       >
         <StatsGrid>
           <StatBlock
-            label="CPU Time"
+            label={uiT("CPU Time")}
             value={resourceData ? formatCpuTime(resourceData.totalCpuSecondsApprox) : "..."}
-            tooltip="Approximate active CPU time for the T3 server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves."
+            tooltip={uiT(
+              "Approximate active CPU time for the T3 server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves.",
+            )}
           />
           <StatBlock
-            label="Samples"
+            label={uiT("Samples")}
             value={resourceData ? formatCount(resourceData.retainedSampleCount) : "..."}
-            tooltip="In-memory process samples retained by the server. The server samples only while diagnostics is open, and this resets when the server restarts."
+            tooltip={uiT(
+              "In-memory process samples retained by the server. The server samples only while diagnostics is open, and this resets when the server restarts.",
+            )}
           />
           <StatBlock
-            label="Interval"
+            label={uiT("Interval")}
             value={
               resourceData
                 ? resourceData.sampleIntervalMs === 0
@@ -1084,7 +1094,7 @@ export function DiagnosticsSettingsPanel() {
             }
           />
           <StatBlock
-            label="Processes"
+            label={uiT("Processes")}
             value={resourceData ? formatCount(resourceData.topProcesses.length) : "..."}
           />
         </StatsGrid>
@@ -1092,13 +1102,13 @@ export function DiagnosticsSettingsPanel() {
           <div className="space-y-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground sm:px-5">
             {processResourceError ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{processResourceError.message}</span>
               </div>
             ) : null}
             {resourceError ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{resourceError}</span>
               </div>
             ) : null}
@@ -1116,7 +1126,7 @@ export function DiagnosticsSettingsPanel() {
       </SettingsSection>
 
       <SettingsSection
-        title="Trace Diagnostics"
+        title={uiT("Trace Diagnostics")}
         headerAction={
           <div className="flex items-center gap-1.5">
             <DiagnosticsLastChecked checkedAt={data?.readAt ?? null} />
@@ -1132,7 +1142,7 @@ export function DiagnosticsSettingsPanel() {
                       isOpeningLogsDirectory
                     }
                     onClick={openLogsDirectory}
-                    aria-label="Open logs folder"
+                    aria-label={uiT("Open logs folder")}
                   >
                     <FolderOpenIcon />
                   </Button>
@@ -1142,21 +1152,21 @@ export function DiagnosticsSettingsPanel() {
             </Tooltip>
             <DiagnosticsRefreshButton
               isPending={isPending}
-              label="Refresh trace diagnostics"
+              label={uiT("Refresh trace diagnostics")}
               onClick={refresh}
             />
           </div>
         }
       >
         <StatsGrid>
-          <StatBlock label="Spans" value={data ? formatCount(data.recordCount) : "..."} />
+          <StatBlock label={uiT("Spans")} value={data ? formatCount(data.recordCount) : "..."} />
           <StatBlock
-            label="Failures"
+            label={uiT("Failures")}
             value={data ? formatCount(data.failureCount) : "..."}
             tone={data && data.failureCount > 0 ? "danger" : "default"}
           />
           <StatBlock
-            label="Slow Spans"
+            label={uiT("Slow Spans")}
             value={data ? formatCount(data.slowSpanCount) : "..."}
             tooltip={
               data
@@ -1168,7 +1178,7 @@ export function DiagnosticsSettingsPanel() {
             tone={data && data.slowSpanCount > 0 ? "warning" : "default"}
           />
           <StatBlock
-            label="Parse Errors"
+            label={uiT("Parse Errors")}
             value={data ? formatCount(data.parseErrorCount) : "..."}
             tone={data && data.parseErrorCount > 0 ? "warning" : "default"}
           />
@@ -1177,7 +1187,7 @@ export function DiagnosticsSettingsPanel() {
           <div className="space-y-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground sm:px-5">
             {openLogsDirectoryError ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{openLogsDirectoryError}</span>
               </div>
             ) : null}
@@ -1188,7 +1198,7 @@ export function DiagnosticsSettingsPanel() {
                   traceDiagnosticsPartialFailure ? "text-warning-foreground" : "text-destructive",
                 )}
               >
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>
                   {traceDiagnosticsPartialFailure
                     ? uiT(
@@ -1201,7 +1211,7 @@ export function DiagnosticsSettingsPanel() {
             ) : null}
             {error ? (
               <div className="flex items-start gap-2 text-destructive">
-                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                <AlertTriangleIcon className="size-3.5 h-lh shrink-0" />
                 <span>{error}</span>
               </div>
             ) : null}
@@ -1209,7 +1219,7 @@ export function DiagnosticsSettingsPanel() {
         ) : null}
       </SettingsSection>
 
-      <SettingsSection title="Latest Failures">
+      <SettingsSection title={uiT("Latest Failures")}>
         {data && data.latestFailures.length > 0 ? (
           <DiagnosticsTable headers={["Span", "Cause", "Duration", "Ended"]}>
             {data.latestFailures.map((failure) => (
@@ -1236,7 +1246,7 @@ export function DiagnosticsSettingsPanel() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Most Common Failures">
+      <SettingsSection title={uiT("Most Common Failures")}>
         {data && data.commonFailures.length > 0 ? (
           <DiagnosticsTable
             headers={["Span", "Count", "Cause", "Last Seen"]}
@@ -1270,7 +1280,7 @@ export function DiagnosticsSettingsPanel() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Slowest Spans">
+      <SettingsSection title={uiT("Slowest Spans")}>
         {data && data.slowestSpans.length > 0 ? (
           <DiagnosticsTable
             headers={["Span", "Duration", "Ended", "Trace"]}
@@ -1301,7 +1311,7 @@ export function DiagnosticsSettingsPanel() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Span Logs">
+      <SettingsSection title={uiT("Span Logs")}>
         {data && data.latestWarningAndErrorLogs.length > 0 ? (
           <ScrollArea
             radius="none"
@@ -1372,7 +1382,7 @@ export function DiagnosticsSettingsPanel() {
         )}
       </SettingsSection>
 
-      <SettingsSection title="Top Span Names">
+      <SettingsSection title={uiT("Top Span Names")}>
         {data && data.topSpansByCount.length > 0 ? (
           <DiagnosticsTable
             headers={["Span", "Count", "Failures", "Average", "Max"]}

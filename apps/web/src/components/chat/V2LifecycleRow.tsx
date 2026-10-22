@@ -43,12 +43,18 @@ import {
 } from "lucide-react";
 
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
-import { getProviderInstanceEntry } from "../../providerInstances";
+import {
+  applyProviderInstanceSettings,
+  deriveProviderInstanceEntries,
+  shouldShowInstanceBadge,
+  type ProviderInstanceEntry,
+} from "../../providerInstances";
 import { formatShortTimestamp } from "../../timestampFormat";
 import { getTriggerDisplayModelName } from "./providerIconUtils";
 import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon";
 import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
+import { subagentResumedSince } from "./V2LifecycleRow.logic";
 import { Button, InlineButton } from "../ui/button";
 import { T3Wordmark } from "../T3Wordmark";
 
@@ -78,6 +84,7 @@ export function V2LifecycleRow(props: {
   readonly onOpenThread: (threadId: ThreadId) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { item } = props;
   if (item.type === "run_interrupt_request") {
     return (
@@ -122,11 +129,7 @@ export function V2LifecycleRow(props: {
             ? uiT("Compacting context")
             : uiT("Context compacted");
     return (
-      <TimelineSystemDivider
-        label={uiT(label)}
-        detail={item.summary ?? tokenDetail}
-        icon={MinusIcon}
-      />
+      <TimelineSystemDivider label={label} detail={item.summary ?? tokenDetail} icon={MinusIcon} />
     );
   }
   if (item.type === "handoff") {
@@ -370,6 +373,10 @@ export function SubagentNotificationLink(props: {
       null,
   );
   if (agent === null) return props.fallback;
+  // A subagent resumed since this notification shows its live status, not the outcome reported then.
+  const resumed =
+    NOTIFICATION_OUTCOME_STATUS[props.outcome] !== null &&
+    subagentResumedSince(agent, props.createdAt);
   return (
     <SubagentTimelineLink
       parentRef={props.parentRef}
@@ -385,11 +392,15 @@ export function SubagentNotificationLink(props: {
       completedAt={agent.completedAt}
       threadId={props.childThreadId}
       onOpenThread={props.onOpenThread}
-      event={{
-        status: NOTIFICATION_OUTCOME_STATUS[props.outcome],
-        label: NOTIFICATION_OUTCOME_LABEL[props.outcome],
-        timestamp: formatShortTimestamp(props.createdAt, props.timestampFormat),
-      }}
+      {...(resumed
+        ? {}
+        : {
+            event: {
+              status: NOTIFICATION_OUTCOME_STATUS[props.outcome],
+              label: NOTIFICATION_OUTCOME_LABEL[props.outcome],
+              timestamp: formatShortTimestamp(props.createdAt, props.timestampFormat),
+            },
+          })}
     />
   );
 }
@@ -415,6 +426,7 @@ function SubagentTimelineLink(props: {
   };
 }) {
   const { t: uiT } = useUiLanguage();
+
   const agent = useAtomValue(
     environmentThreadDetails.threadAtom(props.parentRef),
     (thread) => thread?.projection.subagents.find((agent) => agent.id === props.subagentId) ?? null,
@@ -443,7 +455,7 @@ function SubagentTimelineLink(props: {
         driver={props.driver}
         status={status ?? undefined}
       />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
         <span className="flex items-baseline gap-2">
           <span className="min-w-0 truncate text-xs font-medium text-foreground">
             {props.title}
@@ -455,7 +467,7 @@ function SubagentTimelineLink(props: {
                 failed ? "text-destructive" : "text-muted-foreground",
               )}
             >
-              {uiT(statusLabel)}
+              {statusLabel}
             </span>
           ) : null}
         </span>
@@ -466,7 +478,7 @@ function SubagentTimelineLink(props: {
           )}
         >
           {detail === null ? (
-            uiT(statusLabel)
+            statusLabel
           ) : detail.includes("/") && !detail.includes(" ") ? (
             <MiddleTruncate value={detail} showTitle={false} className="flex" />
           ) : (
@@ -580,17 +592,22 @@ function EnvironmentHandoffRow({
 }) {
   const providers =
     useAtomValue(serverEnvironment.providersValueAtom(environmentId)) ?? EMPTY_SERVER_PROVIDERS;
-  return <HandoffRow {...props} providers={providers} />;
+  return <HandoffRow {...props} environmentId={environmentId} providers={providers} />;
 }
 
 export function HandoffRow(props: {
+  readonly environmentId: EnvironmentId;
   readonly endpoints: HandoffEndpoints;
   readonly providers: ReadonlyArray<ServerProvider>;
   readonly pending?: boolean;
   readonly failed?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { from: fromEndpoints, to } = props.endpoints;
+  const settings = useAtomValue(serverEnvironment.settingsValueAtom(props.environmentId));
+  const derived = deriveProviderInstanceEntries(props.providers);
+  const entries = settings ? applyProviderInstanceSettings(derived, settings, null) : derived;
   return (
     <TimelineSystemDivider
       label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
@@ -605,7 +622,7 @@ export function HandoffRow(props: {
               className="inline-flex min-w-0 items-center"
             >
               <HandoffEndpoint
-                providers={props.providers}
+                entries={entries}
                 instanceId={endpoint.instanceId}
                 model={endpoint.model}
               />
@@ -619,11 +636,7 @@ export function HandoffRow(props: {
           {fromEndpoints.length > 0 ? (
             <ArrowRightIcon aria-hidden="true" className="size-3 shrink-0" />
           ) : null}
-          <HandoffEndpoint
-            providers={props.providers}
-            instanceId={to.instanceId}
-            model={to.model}
-          />
+          <HandoffEndpoint entries={entries} instanceId={to.instanceId} model={to.model} />
         </span>
       }
     />
@@ -631,12 +644,12 @@ export function HandoffRow(props: {
 }
 
 function HandoffEndpoint(props: {
-  readonly providers: ReadonlyArray<ServerProvider>;
+  readonly entries: ReadonlyArray<ProviderInstanceEntry>;
   readonly instanceId: ProviderInstanceId;
   readonly model?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-  const entry = getProviderInstanceEntry(props.providers, props.instanceId);
+  const entry = props.entries.find((candidate) => candidate.instanceId === props.instanceId);
+  const showBadge = entry !== undefined && shouldShowInstanceBadge(entry, props.entries);
   const model = props.model?.trim();
   const providerModel =
     model === undefined || model.length === 0
@@ -657,26 +670,30 @@ function HandoffEndpoint(props: {
         render={
           <span
             tabIndex={0}
-            className="inline-flex min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            className="inline-flex min-w-0 items-center gap-1.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
           >
             <ProviderInstanceIcon
               driverKind={entry?.driverKind ?? ProviderDriverKind.make(props.instanceId)}
               displayName={entry?.displayName ?? props.instanceId}
+              accentColor={entry?.accentColor}
               acpRegistryAgentId={entry?.acpRegistryAgentId}
               acpRegistryIconUrl={entry?.acpRegistryIconUrl}
-              iconClassName="size-3"
+              showBadge={showBadge}
+              size="compact"
+              iconClassName={cn(showBadge && "opacity-60")}
+              indicatorBackground="var(--background)"
             />
             <span
               className={cn("truncate font-medium", labelColor.className)}
               style={labelColor.style}
             >
-              {uiT(label)}
+              {label}
             </span>
           </span>
         }
       />
       <TooltipPopup>
-        {entry?.displayName ?? props.instanceId} · {uiT(label)}
+        {entry?.displayName ?? props.instanceId} · {label}
       </TooltipPopup>
     </Tooltip>
   );

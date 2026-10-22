@@ -28,7 +28,7 @@ export function DeviceHostUpdates({
             role={failed ? "alert" : "status"}
             className="flex items-start gap-3 rounded-md border border-border/60 px-3 py-2 text-xs"
           >
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
               <p className="font-medium">{uiT(host.label)}</p>
               <p className="whitespace-pre-wrap break-words text-muted-foreground">
                 {status.detail ??

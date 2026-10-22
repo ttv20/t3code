@@ -145,12 +145,14 @@ function ContextChip(props: {
   detailsMode: ContextPresentationCapability["details"];
   kind: ContextChipKind;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   if (props.detailsMode === "popover") {
     return (
       <ContextChipPopover
         kind={props.kind}
         icon={props.icon}
-        label={props.label}
+        label={uiT(props.label)}
         accessibleLabel={props.kindLabel + ", " + props.label}
       >
         {props.details}
@@ -161,7 +163,7 @@ function ContextChip(props: {
     <ContextChipShell
       kind={props.kind}
       icon={props.icon}
-      label={props.label}
+      label={uiT(props.label)}
       aria-label={
         props.detailsMode === "tooltip" ? `${props.kindLabel}, ${props.label}` : undefined
       }
@@ -332,11 +334,21 @@ function ComposerPreviewAnnotationDetails({
   );
 }
 
+function ComposerThreadContextChip(props: { record: ThreadContextRecord }) {
+  const { environmentId } = use(ComposerContextActionsContext);
+  return (
+    <ThreadContextChip
+      record={props.record}
+      unreadable={environmentId !== null && props.record.environmentId !== environmentId}
+    />
+  );
+}
+
 function UnresolvedContextChip(props: { label: string }) {
   const { t: uiT } = useUiLanguage();
   return (
     <UnresolvedChip
-      label={props.label}
+      label={uiT(props.label)}
       tooltip={uiT("This context is no longer available. Remove it or attach it again.")}
     />
   );
@@ -442,7 +454,7 @@ const composerContextPresentationRegistry = createContextPresentationRegistry<
       canRender: (entry) => entry.kind === "thread",
       render: (entry, context) =>
         entry.kind === "thread" ? (
-          <ThreadContextChip record={entry.record} />
+          <ComposerThreadContextChip record={entry.record} />
         ) : (
           <UnresolvedContextChip label={context.label} />
         ),

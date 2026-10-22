@@ -119,6 +119,8 @@ function KeybindingsSearchInput({
   onChange: (next: string) => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <InputGroup className="min-w-0 basis-full **:[input]:h-9 sm:basis-0 sm:flex-1 sm:**:[input]:h-8">
       <InputGroupAddon>
@@ -135,8 +137,8 @@ function KeybindingsSearchInput({
           if (query.length > 0) onChange("");
           else event.currentTarget.blur();
         }}
-        placeholder="Search keybindings"
-        aria-label="Search keybindings"
+        placeholder={uiT("Search keybindings")}
+        aria-label={uiT("Search keybindings")}
         size="sm"
       />
     </InputGroup>
@@ -293,14 +295,16 @@ function WhenVariableSelect({
   unknownIdentifiers?: ReadonlyArray<string>;
   onChange: (value: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const selected = variables.find((option) => option === value);
   const options =
     selected || variables.some((option) => option === value) ? variables : [value, ...variables];
 
   return (
     <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
-      <SelectTrigger size="compact" className="min-w-0 flex-1">
-        <SelectValue placeholder="Condition" />
+      <SelectTrigger size="compact" className="min-w-0 flex-1 [unicode-bidi:plaintext]">
+        <SelectValue placeholder={uiT("Condition")} />
         {unknownIdentifiers && unknownIdentifiers.length > 0 ? (
           <UnknownWhenVariableWarning identifiers={unknownIdentifiers} focusable={false} />
         ) : null}
@@ -411,7 +415,7 @@ function WhenExpressionNodeEditor({
           <Toggle
             pressed
             onPressedChange={(pressed) => onChange(pressed ? node : node.node)}
-            aria-label="Negate group"
+            aria-label={uiT("Negate group")}
             variant="outline"
             size="compact"
             className="min-w-10"
@@ -620,7 +624,7 @@ function WhenExpressionBuilder({
   return (
     <div className="w-[min(34rem,calc(100vw-2rem))] space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 [unicode-bidi:plaintext]">
           <div className="text-sm font-medium text-foreground">{uiT("When")}</div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -640,9 +644,9 @@ function WhenExpressionBuilder({
           <InputGroupInput
             value={expressionDraft}
             onChange={(event) => updateExpressionDraft(event.currentTarget.value)}
-            placeholder="Always"
+            placeholder={uiT("Always")}
             aria-invalid={Boolean(parseError)}
-            aria-label="When expression"
+            aria-label={uiT("When expression")}
             size="compact"
             font="mono"
           />
@@ -758,7 +762,9 @@ function useKeybindingRowEditor({
       setDraft({ keyDraft: row.key, isRecording: false });
       return;
     }
-    const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform);
+    const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform, {
+      layoutCharacter: true,
+    });
     if (!next) return;
     setDraft({ keyDraft: next, isRecording: false });
   };
@@ -1080,7 +1086,9 @@ function useNewKeybindingDraft({
       setDraft({ keyDraft: "", isRecording: false });
       return;
     }
-    const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform);
+    const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform, {
+      layoutCharacter: true,
+    });
     if (!next) return;
     setDraft({ keyDraft: next, isRecording: false });
   };
@@ -1121,13 +1129,15 @@ function NewKeybindingCommandSelect({
   commandOptions: ReadonlyArray<KeybindingCommandOption>;
   className?: string | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <Select
       value={draft.commandDraft}
       onValueChange={(value) => draft.setCommandDraft(value as KeybindingCommand)}
     >
       <SelectTrigger size="sm" className={className}>
-        <SelectValue placeholder="Command" />
+        <SelectValue placeholder={uiT("Command")} />
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false} matchTriggerWidth={false} className="max-h-72">
         {commandOptions.map((command) => (
@@ -1206,7 +1216,7 @@ function NewKeybindingCancelIcon({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label="Cancel new keybinding"
+            aria-label={uiT("Cancel new keybinding")}
             onClick={onCancel}
           />
         }
@@ -1227,7 +1237,7 @@ function NewKeybindingSettingsRow(props: NewKeybindingProps) {
   return (
     <SettingsRow
       className="bg-muted/15"
-      title="New keybinding"
+      title={uiT("New keybinding")}
       description={
         <span className="flex h-6 items-center gap-1.5">
           <span className="text-xs leading-none text-muted-foreground/70">{uiT("When")}</span>
@@ -1506,7 +1516,7 @@ export function KeybindingsSettingsPanel() {
                   size="icon"
                   disabled={!keybindingsConfigPath || !canOpenKeybindingsFile}
                   onClick={openKeybindingsFile}
-                  aria-label="Open keybindings.json"
+                  aria-label={uiT("Open keybindings.json")}
                 >
                   <FileJsonIcon aria-hidden className="size-4" />
                 </Button>
@@ -1521,7 +1531,7 @@ export function KeybindingsSettingsPanel() {
         <p className="text-xs text-muted-foreground">
           {connectedEnvironments.length === 0
             ? "Connect an environment to change keybindings."
-            : "This connection can view keybindings but cannot change them."}
+            : uiT("This connection can view keybindings but cannot change them.")}
         </p>
       ) : null}
       <div inert={!canWriteSettings} className="flex flex-col gap-8">

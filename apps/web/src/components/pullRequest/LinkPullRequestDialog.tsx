@@ -145,7 +145,7 @@ function LinkPullRequestDialog({
         <DialogPanel>
           <Input
             ref={inputRef}
-            placeholder="Pull request URL or #42"
+            placeholder={uiT("Pull request URL or #42")}
             value={reference}
             onChange={(event) => {
               setDirty(true);

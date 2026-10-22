@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import type { ChatAttachment, EnvironmentId } from "@t3tools/contracts";
 import { Image } from "expo-image";
 import { Pressable, ScrollView, View } from "react-native";
@@ -13,22 +14,20 @@ export function ComposerQueuedEditBanner(props: {
   readonly onCancel: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View className="flex-row items-center gap-2 px-4 pb-2">
       <SymbolView name="pencil" size={12} tintColorClassName="accent-foreground-muted" />
       <Text className="min-w-0 flex-1 text-xs text-foreground-muted" numberOfLines={1}>
         {uiT("Editing queued message")}
       </Text>
-      <Pressable
-        accessibilityRole="button"
+      <Button
+        label={uiT("Cancel")}
+        tone="text"
         accessibilityLabel={uiT("Cancel editing queued message")}
         disabled={props.saving}
         onPress={props.onCancel}
-        hitSlop={8}
-        className="min-h-8 justify-center px-1 active:opacity-70 disabled:opacity-40"
-      >
-        <Text className="font-t3-medium text-xs text-primary">{uiT("Cancel")}</Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -68,6 +67,7 @@ function QueuedEditAttachmentChip(props: {
   readonly onRemove: (attachmentId: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { attachment } = props;
   const isImage = attachment.mimeType.startsWith("image/");
   const resource = {

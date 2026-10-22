@@ -1,7 +1,3 @@
-import {
-  countMarkdownDirectionCharacters,
-  resolveMarkdownDirection,
-} from "@t3tools/client-runtime/markdown-direction";
 import { useUiLanguage } from "../../i18n";
 import type { AssistantCitation } from "@t3tools/contracts";
 import {
@@ -55,7 +51,7 @@ export function AssistantCitationChip({
     onRestoreFocus?: () => void;
   };
 }) {
-  const { t: uiT, direction: uiDirection } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
 
   const navigate = useNavigate();
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -96,25 +92,20 @@ export function AssistantCitationChip({
       onUnavailable: onSourceUnavailable,
     });
   }, [citation, commentOpen, sourceAnchor, unavailableSourceAnchor]);
-  const quoteDirection = resolveMarkdownDirection(
-    countMarkdownDirectionCharacters(citation.text),
-    uiDirection,
-  );
-  const sourceDirection = activeSourceAnchor?.placement?.direction ?? quoteDirection;
   const popupAnchor = activeSourceAnchor
     ? {
         contextElement: activeSourceAnchor.source,
         getBoundingClientRect: () => {
           const rects = activeSourceAnchor.range.getClientRects();
-          const line =
+          const rect =
             rects.item(rects.length - 1) ?? activeSourceAnchor.range.getBoundingClientRect();
-          const offset = activeSourceAnchor.placement?.offset;
-          return new DOMRect(
-            offset ? line.left + offset.x : sourceDirection === "rtl" ? line.left : line.right,
-            offset ? line.top + offset.y : line.bottom,
-            0,
-            0,
-          );
+          // Code blocks and tables scroll sideways inside the message, so the cited
+          // text can end in their hidden overflow. Base UI only shifts the popup while
+          // it still touches the anchor, so clamp the anchor to the message's width.
+          const bounds = activeSourceAnchor.source.getBoundingClientRect();
+          const left = Math.min(Math.max(rect.left, bounds.left), bounds.right);
+          const right = Math.max(Math.min(rect.right, bounds.right), left);
+          return new DOMRect(left, rect.top, right - left, rect.height);
         },
       }
     : undefined;
@@ -136,7 +127,6 @@ export function AssistantCitationChip({
   const composerSourceLink = (
     <Link
       {...sourceLinkProps}
-      dir={quoteDirection}
       className="inline-flex h-full min-w-0 items-center gap-[0.33em] rounded-sm text-inherit no-underline focus-visible:outline-2 focus-visible:outline-foreground"
       aria-label={uiT("View cited assistant text: {0}", { "0": label })}
     >
@@ -148,7 +138,6 @@ export function AssistantCitationChip({
     return (
       <ContextChipPopover
         kind="citation"
-        dir={quoteDirection}
         icon={<QuoteIcon />}
         label={label}
         accessibleLabel={uiT("Quoted assistant text: {0}", { "0": label })}
@@ -169,7 +158,6 @@ export function AssistantCitationChip({
   return (
     <ContextChip
       kind="citation"
-      dir={quoteDirection}
       contentEditable={false}
       data-assistant-citation-chip="true"
       data-markdown-copy={serializeAssistantCitation(citation)}
@@ -199,7 +187,7 @@ export function AssistantCitationChip({
             <PopoverPopup
               {...composerFloatingLayerProps}
               side={activeSourceAnchor ? "bottom" : "top"}
-              align={sourceDirection === "rtl" ? "start" : "end"}
+              align="end"
               anchor={popupAnchor}
               initialFocus={() => {
                 commentInputRef.current?.focus({ preventScroll: true });
@@ -264,15 +252,6 @@ export function AssistantCitationChip({
 }
 
 function AssistantCitationQuote({ citation }: { citation: AssistantCitation }) {
-  const { direction } = useUiLanguage();
-  const quoteDirection = resolveMarkdownDirection(
-    countMarkdownDirectionCharacters(citation.text),
-    direction,
-  );
-  const commentDirection = resolveMarkdownDirection(
-    countMarkdownDirectionCharacters(citation.comment ?? ""),
-    direction,
-  );
   const [fade, setFade] = useState({ top: false, bottom: false });
   const updateFade = (element: HTMLElement) => {
     const top = element.scrollTop > 1;
@@ -292,13 +271,10 @@ function AssistantCitationQuote({ citation }: { citation: AssistantCitation }) {
         getVirtualizedScrollFadeClassName(fade),
       )}
     >
-      <blockquote
-        dir={quoteDirection}
-        className="border-s-2 border-border ps-3 text-muted-foreground"
-      >
+      <blockquote className="border-s-2 border-border ps-3 text-muted-foreground">
         {citation.text}
       </blockquote>
-      {citation.comment ? <p dir={commentDirection}>{citation.comment}</p> : null}
+      {citation.comment ? <p>{citation.comment}</p> : null}
     </div>
   );
 }

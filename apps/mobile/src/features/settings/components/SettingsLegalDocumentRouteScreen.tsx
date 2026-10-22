@@ -1,9 +1,12 @@
-import { useUiLanguage, UiText } from "../../../i18n";
+import { useUiLanguage } from "../../../i18n";
+import { SheetCloseButton } from "../../../components/ui/SheetHeader";
 import { type NavigationProp, type ParamListBase, useNavigation } from "@react-navigation/native";
 import { useCallback, useLayoutEffect, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import { WebView } from "react-native-webview";
 
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/IconButton";
 import { AppActivityIndicator } from "../../../components/ui/AppActivityIndicator";
 import { AppText as Text } from "../../../components/ui/AppText";
 import { LoadingStrip } from "../../../components/ui/LoadingStrip";
@@ -12,24 +15,14 @@ import { isLegalDocumentUrl, LEGAL_URL } from "../lib/legal-document-url";
 
 export function SettingsLegalDocumentCloseHeaderButton() {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
 
   return (
-    <Pressable
+    <SheetCloseButton
       accessibilityLabel={uiT("Close legal document")}
-      accessibilityRole="button"
-      hitSlop={12}
-      onPress={() => navigation.goBack()}
-      className="p-2 active:opacity-60"
-    >
-      <SymbolView
-        name="xmark"
-        size={18}
-        tintColorClassName={"accent-icon"}
-        type="monochrome"
-        weight="semibold"
-      />
-    </Pressable>
+      onClose={() => navigation.goBack()}
+    />
   );
 }
 
@@ -39,24 +32,15 @@ export function SettingsLegalDocumentExternalHeaderButton({
   readonly externalUrl?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const safeExternalUrl = isLegalDocumentUrl(externalUrl) ? externalUrl : LEGAL_URL;
 
   return (
-    <Pressable
+    <IconButton
       accessibilityLabel={uiT("Open legal documents in external browser")}
-      accessibilityRole="button"
-      hitSlop={12}
+      icon="safari"
       onPress={() => void Linking.openURL(safeExternalUrl).catch(() => undefined)}
-      className="p-2 active:opacity-60"
-    >
-      <SymbolView
-        name="safari"
-        size={19}
-        tintColorClassName={"accent-icon"}
-        type="monochrome"
-        weight="regular"
-      />
-    </Pressable>
+    />
   );
 }
 
@@ -70,6 +54,7 @@ export function SettingsLegalDocumentRouteScreen({
   documentUrl,
 }: SettingsLegalDocumentRouteScreenProps) {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [reloadKey, setReloadKey] = useState(0);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -101,26 +86,22 @@ export function SettingsLegalDocumentRouteScreen({
         />
         <View className="items-center gap-2">
           <Text className="text-center font-t3-bold text-lg text-foreground">
-            <UiText
-              message={"Couldn't load the {0}"}
-              values={{ "0": documentName.toLowerCase() }}
-            />
+            Couldn&apos;t load the {documentName.toLowerCase()}
           </Text>
           <Text selectable className="text-center text-sm leading-normal text-foreground-muted">
             {loadError}
           </Text>
         </View>
         <View className="w-full max-w-[320px] gap-2">
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={uiT("Try Again")}
+            tone="contrast"
+            fullWidth
             onPress={() => {
               setLoadError(null);
               setReloadKey((value) => value + 1);
             }}
-            className="items-center rounded-xl bg-foreground px-4 py-3 active:opacity-80"
-          >
-            <Text className="font-t3-bold text-base text-sheet">{uiT("Try Again")}</Text>
-          </Pressable>
+          />
           <Pressable
             accessibilityRole="link"
             onPress={() => openExternalUrl(documentUrl)}

@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../../i18n";
-
 import {
   AuthPreviewOperateScope,
   type PreviewAnnotationPayload,
@@ -36,6 +33,7 @@ export function PreviewPanel({
   onSendAnnotation,
 }: Props) {
   const { t: uiT } = useUiLanguage();
+
   const available = usePreviewAvailable(threadRef.environmentId);
   const canOperatePreview = useEnvironmentScope(threadRef.environmentId, AuthPreviewOperateScope);
   if (!canOperatePreview || !available) {

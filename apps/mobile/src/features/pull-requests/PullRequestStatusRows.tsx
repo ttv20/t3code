@@ -151,7 +151,7 @@ export function PullRequestChecksRow(props: RowProps) {
                   title={check.name}
                   icon={status.icon}
                   tint={status.tint}
-                  value={status.label}
+                  value={uiT(status.label)}
                   detail={check.description ?? undefined}
                   onPress={url ? () => void Linking.openURL(url) : undefined}
                 />

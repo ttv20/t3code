@@ -5,7 +5,7 @@ import { AuthFilesystemReadScope, type ProjectContentMatch } from "@t3tools/cont
 import { useEffect, useState, type ReactNode } from "react";
 
 import { useActiveProjectTarget, type ActiveProjectTarget } from "~/hooks/useActiveProjectTarget";
-import { useTheme } from "~/hooks/useTheme";
+import { useRenderedAppearance, useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { useProjectContentSearch } from "~/state/queries";
@@ -67,7 +67,7 @@ function SearchOptionButton(props: {
       <TooltipTrigger
         render={
           <Toggle
-            aria-label={props.label}
+            aria-label={uiT(props.label)}
             disabled={props.disabled}
             pressed={props.active}
             size="segmented"
@@ -110,6 +110,7 @@ function OpenContentSearchDialog(props: {
   const { t: uiT } = useUiLanguage();
   const { target } = props;
   const { resolvedTheme } = useTheme();
+  const renderedAppearance = useRenderedAppearance();
   const [query, setQuery] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
@@ -308,7 +309,7 @@ function OpenContentSearchDialog(props: {
                         <HighlightedSearchLine
                           match={match}
                           path={group.path}
-                          theme={resolvedTheme}
+                          theme={renderedAppearance}
                         />
                       </span>
                     </button>

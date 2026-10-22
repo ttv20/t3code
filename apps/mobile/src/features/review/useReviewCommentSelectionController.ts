@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { NativeSyntheticEvent } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -32,6 +33,8 @@ export function useReviewCommentSelectionController(input: {
   readonly selectedSection: ReviewSectionItem | null;
   readonly nativeReviewDiffData: NativeReviewDiffData;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { environmentId, nativeReviewDiffData, selectedSection, threadId } = input;
   const navigation = useNavigation();
   const activeCommentTarget = useReviewCommentTarget();
@@ -89,7 +92,7 @@ export function useReviewCommentSelectionController(input: {
       pendingNativeCommentSelection.sectionTitle === selectedSection?.title
     ) {
       return {
-        title: "Select range end",
+        title: uiT("Select range end"),
         onOpenComment: null,
       };
     }

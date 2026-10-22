@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import IconGitBranch from "@tabler/icons-react-native/IconGitBranch";
 import IconGitMerge from "@tabler/icons-react-native/IconGitMerge";
 import IconGitCommit from "@tabler/icons-react-native/IconGitCommit";
@@ -25,12 +26,14 @@ const CUSTOM_ICONS = {
 };
 
 function AppSymbolView(props: AppSymbolViewProps) {
+  const { t: uiT } = useUiLanguage();
+
   const name = typeof props.name === "string" ? props.name : props.name.ios;
   const CustomIcon = CUSTOM_ICONS[name as keyof typeof CUSTOM_ICONS];
   if (CustomIcon) {
     return (
       <CustomIcon
-        accessibilityLabel={props.accessibilityLabel}
+        accessibilityLabel={uiT(props.accessibilityLabel)}
         color={props.tintColor}
         size={props.size}
         strokeWidth={2}

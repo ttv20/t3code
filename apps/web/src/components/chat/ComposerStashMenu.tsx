@@ -1,7 +1,7 @@
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useUiLanguage } from "../../i18n";
 import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState, type RefObject } from "react";
 import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 
 import { RelativeTime } from "../RelativeTime";
@@ -51,12 +51,14 @@ function stashEntrySnippet(
 export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
   entries: ReadonlyArray<PromptStashEntry>;
   stashShortcutLabel: string | null;
+  composerFormRef: RefObject<HTMLFormElement | null>;
   onRestore: (entry: PromptStashEntry) => void;
   onDelete: (entry: PromptStashEntry) => void;
   onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
-  const { entries, stashShortcutLabel, onRestore, onDelete, onClose } = props;
+
+  const { entries, stashShortcutLabel, composerFormRef, onRestore, onDelete, onClose } = props;
   const drawerRef = useRef<HTMLDivElement>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(entries[0]?.id ?? null);
 
@@ -80,6 +82,16 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        !(target instanceof Node) ||
+        (target !== document.body &&
+          !(target instanceof Element && target.closest('[data-prompt-stash-badge="true"]')) &&
+          !drawerRef.current?.contains(target) &&
+          !composerFormRef.current?.querySelector('textarea, [role="textbox"]')?.contains(target))
+      ) {
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
@@ -124,7 +136,7 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
     };
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
-  }, [entries, highlightedEntry, onClose, onDelete, onRestore]);
+  }, [composerFormRef, entries, highlightedEntry, onClose, onDelete, onRestore]);
 
   return (
     <ComposerBanner.Root ref={drawerRef} data-composer-stash-drawer="true">
@@ -184,9 +196,7 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
                     type="button"
                     className="min-w-0 flex-1 cursor-pointer truncate text-left text-foreground/80 outline-none before:absolute before:inset-0 before:rounded-sm focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-ring"
                     data-stash-restore={entry.id}
-                    aria-label={uiT("Restore stashed prompt: {0}", {
-                      "0": stashEntrySnippet(entry, uiT),
-                    })}
+                    aria-label={`Restore stashed prompt: ${stashEntrySnippet(entry, uiT)}`}
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={() => onRestore(entry)}
                   >
@@ -196,17 +206,14 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
                 <ComposerBanner.Actions>
                   {entry.pendingImageCount ? (
                     <span className="shrink-0 text-muted-foreground">
-                      {uiT(
-                        entry.pendingImageCount === 1 ? "Saving {0} image…" : "Saving {0} images…",
-                        { "0": entry.pendingImageCount },
-                      )}
+                      {uiT("saving")}
+                      {entry.pendingImageCount} {uiT("image")}
+                      {entry.pendingImageCount === 1 ? "" : "s"}…
                     </span>
                   ) : missingImageCount(entry) > 0 ? (
                     <span className="shrink-0 text-warning-foreground">
-                      {uiT(
-                        missingImageCount(entry) === 1 ? "{0} image dropped" : "{0} images dropped",
-                        { "0": missingImageCount(entry) },
-                      )}
+                      {missingImageCount(entry)} {uiT("image")}
+                      {missingImageCount(entry) === 1 ? "" : "s"} {uiT("dropped")}
                     </span>
                   ) : null}
                   {entry.attachments.length > 0 ? (

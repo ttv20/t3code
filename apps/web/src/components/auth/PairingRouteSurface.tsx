@@ -18,12 +18,14 @@ import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 import { useAtomCommand } from "../../state/use-atom-command";
 
 export function PairingPendingSurface() {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <StandalonePage tone="pairing">
       <StandalonePageHeader
         eyebrow={APP_DISPLAY_NAME}
-        title="Pairing with this environment"
-        description="Validating the pairing link and preparing your session."
+        title={uiT("Pairing with this environment")}
+        description={uiT("Validating the pairing link and preparing your session.")}
       />
     </StandalonePage>
   );
@@ -90,7 +92,7 @@ export function PairingRouteSurface({
     <StandalonePage tone="pairing">
       <StandalonePageHeader
         eyebrow={APP_DISPLAY_NAME}
-        title="Pair with this environment"
+        title={uiT("Pair with this environment")}
         description={describeAuthGate(auth.bootstrapMethods)}
       />
 
@@ -107,7 +109,7 @@ export function PairingRouteSurface({
             disabled={isSubmitting}
             nativeInput
             onChange={(event) => setCredential(event.currentTarget.value)}
-            placeholder="Paste a one-time token or pairing secret"
+            placeholder={uiT("Paste a one-time token or pairing secret")}
             spellCheck={false}
             value={credential}
           />

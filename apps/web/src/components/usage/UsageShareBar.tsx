@@ -38,7 +38,7 @@ export function UsageShareBar({
         className="flex h-2 gap-0.5"
       >
         {visible.map((segment) => (
-          <Tooltip key={segment.label}>
+          <Tooltip key={uiT(segment.label)}>
             <TooltipTrigger
               render={
                 <div
@@ -56,7 +56,7 @@ export function UsageShareBar({
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
         {visible.map((segment) => (
-          <span key={segment.label} className="flex items-center gap-1.5">
+          <span key={uiT(segment.label)} className="flex items-center gap-1.5">
             <span
               aria-hidden
               className="size-2 rounded-xs"

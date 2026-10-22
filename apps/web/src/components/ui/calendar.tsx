@@ -1,5 +1,3 @@
-"use client";
-
 import { DayPicker } from "@daypicker/react";
 import { ar, faIR, he } from "@daypicker/react/locale";
 import { UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";

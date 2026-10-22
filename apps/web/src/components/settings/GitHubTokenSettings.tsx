@@ -67,8 +67,8 @@ export function GitHubTokenSettings({
       <fieldset disabled={saving} className="contents">
         <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
           {uiT("A token saved here is used before")}{" "}
-          <code className="rounded bg-muted px-1 py-px text-2xs">GH_TOKEN</code> {uiT("and the")}{" "}
-          <code className="rounded bg-muted px-1 py-px text-2xs">gh</code>{" "}
+          <code className="rounded bg-muted px-1 py-px text-2xs">{uiT("GH_TOKEN")}</code>{" "}
+          {uiT("and the")} <code className="rounded bg-muted px-1 py-px text-2xs">{uiT("gh")}</code>{" "}
           {uiT(
             "login, so GitHub works without the GitHub CLI. Give it read and write access to pull requests and contents.",
           )}{" "}

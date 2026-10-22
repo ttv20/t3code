@@ -76,7 +76,7 @@ export function CodexSetupSection(props: CodexSetupSectionProps) {
   const content =
     props.mode === "existing" && props.presentation === "onboarding" ? (
       <CodexWelcomeCard
-        title={props.displayName || props.provider?.displayName || "Codex"}
+        title={props.displayName || props.provider?.displayName || uiT("Codex")}
         description={
           existingReady ? (
             props.provider?.auth.email?.trim() ? (
@@ -133,10 +133,10 @@ export function CodexSetupSection(props: CodexSetupSectionProps) {
           ) : null
         }
       />
-    ) : props.mode === "existing" ? null : props.provider?.setup === undefined ? (
+    ) : props.mode === "existing" ? null : !props.provider?.setup?.canAuthenticate ? (
       props.presentation === "onboarding" ? (
         <CodexWelcomeCard
-          title={props.displayName || props.provider?.displayName || "Codex"}
+          title={props.displayName || props.provider?.displayName || uiT("Codex")}
           description={<CodexSignInDescription />}
           control={
             <Button size="sm" variant="outline" className="min-w-44" disabled>
@@ -548,21 +548,21 @@ function ManagedCodexSetup({
     installation?.phase === "downloading"
       ? `Downloading ${(installation.downloadedBytes / 1_000_000).toFixed(1)}${installation.totalBytes === null ? "" : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)}`} MB.`
       : installation?.phase === "extracting"
-        ? "Installing Codex."
+        ? uiT("Installing Codex.")
         : installation?.phase === "verifying"
-          ? "Checking Codex."
+          ? uiT("Checking Codex.")
           : installed
             ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by T3 Code"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
-            : (installation?.message ?? "T3 Code downloads and manages Codex for you.");
+            : (installation?.message ?? uiT("T3 Code downloads and manages Codex for you."));
   const accountDescription = finishingSignIn ? (
-    "Finishing sign-in..."
+    uiT("Finishing sign-in...")
   ) : installActive ? (
     runtimeDescription
   ) : authActive || auth?.phase === "failed" || auth?.phase === "cancelled" ? (
     auth?.phase === "waiting" && requestedAccountEmail ? (
       `Continue as ${requestedAccountEmail} on OpenAI.`
     ) : (
-      (auth?.message ?? "Finish signing in in your browser.")
+      (auth?.message ?? uiT("Finish signing in in your browser."))
     )
   ) : authenticated ? (
     provider?.auth.email?.trim() ? (
@@ -577,10 +577,10 @@ function ManagedCodexSetup({
         .
       </>
     ) : (
-      "Signed in with ChatGPT."
+      uiT("Signed in with ChatGPT.")
     )
   ) : (
-    (reconnectEmail ?? "Use your ChatGPT subscription.")
+    (reconnectEmail ?? uiT("Use your ChatGPT subscription."))
   );
 
   const handoffUrl =
@@ -652,7 +652,7 @@ function ManagedCodexSetup({
             });
           }}
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <Input
               aria-label={uiT("ChatGPT sign-in redirect URL")}
               type="password"
@@ -748,7 +748,7 @@ function ManagedCodexSetup({
       <>
         {accountPicker}
         <CodexWelcomeCard
-          title={displayName || provider?.displayName || "Codex"}
+          title={displayName || provider?.displayName || uiT("Codex")}
           description={
             installActive ? (
               runtimeDescription
@@ -1111,7 +1111,7 @@ function CodexWelcomeCard({
     <div className="rounded-lg border border-border bg-background px-4 py-4">
       <div className="flex flex-wrap items-center gap-3">
         <OpenAI className="size-5 shrink-0 fill-foreground" />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <h3 className="text-sm font-medium">{uiT(title)}</h3>
           <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
             {uiT(description)}

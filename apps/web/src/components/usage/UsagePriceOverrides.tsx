@@ -27,7 +27,7 @@ import { Label } from "../ui/label";
 import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
-import { USAGE_PRICE_FIELDS } from "./usagePriceForm";
+import { isUsagePriceEdit, USAGE_PRICE_FIELDS } from "./usagePriceForm";
 import {
   isEmptyUsagePriceDraft,
   usageAliasCell,
@@ -106,6 +106,7 @@ export function UsagePriceOverrides({
   readonly onOpenChange: (open: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const environments = useAtomValue(priceTargetsAtom);
   const [selectedIds, setSelectedIds] = useState(initialSelectedEnvironmentIds);
   const selected = environments.filter(
@@ -181,7 +182,7 @@ export function UsagePriceOverrides({
   const hasChanges = stagedDrafts.length > 0;
   const destinationLabel =
     selected.length === 1 ? selected[0]!.label : `${selected.length} environments`;
-  const selectionLabel = selectedIds === null ? "All environments" : destinationLabel;
+  const selectionLabel = selectedIds === null ? uiT("All environments") : destinationLabel;
   const discard = () => {
     setDrafts([]);
     setAttempt(null);
@@ -295,7 +296,13 @@ export function UsagePriceOverrides({
               </Label>
               <Menu>
                 <MenuTrigger
-                  render={<Button variant="outline" size="sm" className="min-w-0" />}
+                  render={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-w-0 [unicode-bidi:plaintext]"
+                    />
+                  }
                   aria-labelledby="usage-prices-apply-label usage-prices-selection"
                   disabled={pending || hasChanges}
                 >
@@ -467,12 +474,15 @@ export function UsagePriceOverrides({
                             {row.removed ? null : alias !== "" ? (
                               <TableCell colSpan={4} className="whitespace-normal">
                                 <span className="break-all text-muted-foreground">
-                                  {uiT("Counted as")} {alias}
+                                  {uiT("Counted as")}
+                                  {alias}
                                 </span>
                               </TableCell>
                             ) : (
                               USAGE_PRICE_FIELDS.map((field) => {
                                 const cell = usagePriceCell(selected, row.model, field.key);
+                                const value =
+                                  row.values[field.key] ?? (row.isNew ? "" : cell.value);
                                 return (
                                   <TableCell key={field.key}>
                                     <Input
@@ -482,7 +492,7 @@ export function UsagePriceOverrides({
                                         "0": field.label,
                                         "1": row.model || "new model",
                                       })}
-                                      value={row.values[field.key] ?? (row.isNew ? "" : cell.value)}
+                                      value={value}
                                       placeholder={
                                         row.isNew
                                           ? field.optional
@@ -493,9 +503,10 @@ export function UsagePriceOverrides({
                                       autoComplete="off"
                                       disabled={locked}
                                       font="mono"
-                                      onChange={(event) =>
-                                        editCell(row, field.key, event.target.value)
-                                      }
+                                      onChange={(event) => {
+                                        if (isUsagePriceEdit(value, event.target.value))
+                                          editCell(row, field.key, event.target.value);
+                                      }}
                                     />
                                   </TableCell>
                                 );

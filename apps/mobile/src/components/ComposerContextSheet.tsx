@@ -1,5 +1,6 @@
-import * as Dialog from "./ui/Dialog";
 import { useUiLanguage } from "../i18n";
+import { Button } from "./ui/Button";
+import * as Dialog from "./ui/Dialog";
 import { useOpenPullRequest } from "../native/useOpenPullRequest";
 import { SourceFileSurface } from "../features/files/SourceFileSurface";
 import { filePreviewKind } from "@t3tools/shared/filePreview";
@@ -32,6 +33,7 @@ import { getMobileTerminalTheme } from "../features/terminal/terminalTheme";
 
 function ContextField(props: { label: string; value: string | null | undefined; code?: boolean }) {
   const { t: uiT } = useUiLanguage();
+
   if (!props.value) return null;
   return (
     <View className="gap-1">
@@ -62,6 +64,7 @@ function ContextField(props: { label: string; value: string | null | undefined; 
 
 function ContextSource(props: { source: ElementContextSource | null }) {
   const { t: uiT } = useUiLanguage();
+
   const source = props.source;
   if (!source) return null;
   const location = source.fileName
@@ -92,6 +95,7 @@ export function ComposerContextSheet(props: {
   readonly attachments?: ReadonlyArray<DraftComposerAttachment>;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const openPullRequest = useOpenPullRequest({
     context:
       props.environmentId && props.projectId
@@ -187,8 +191,9 @@ export function ComposerContextSheet(props: {
       : undefined;
   const terminal = record?.kind === "terminal" && !("payload" in record) ? record : null;
   return (
-    <Sheet title={terminal?.terminalLabel ?? uiT(props.label)} onClose={props.onClose}>
+    <Sheet title={terminal?.terminalLabel ?? props.label} onClose={props.onClose}>
       <ScrollView
+        nestedScrollEnabled
         className="flex-1"
         contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
         contentContainerStyle={{
@@ -200,7 +205,8 @@ export function ComposerContextSheet(props: {
       >
         {terminal ? (
           <Text className="text-sm text-foreground-muted">
-            {uiT("Lines")} {terminal.lineStart}–{terminal.lineEnd}
+            {uiT("Lines")}
+            {terminal.lineStart}–{terminal.lineEnd}
           </Text>
         ) : null}
         {!record ? (
@@ -310,18 +316,17 @@ export function ComposerContextSheet(props: {
               <View className="gap-3">
                 <ContextField label={uiT("Thread")} value={record.title} />
                 {props.onOpenThread ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <Button
+                    label={uiT("Open thread")}
+                    tone="secondary"
                     onPress={() =>
                       props.onOpenThread?.({
                         environmentId: record.environmentId,
                         threadId: record.threadId,
                       })
                     }
-                    className="rounded-xl bg-subtle p-4"
-                  >
-                    <Text className="text-foreground">{uiT("Open thread")}</Text>
-                  </Pressable>
+                    fullWidth
+                  />
                 ) : null}
               </View>
             ) : null}
@@ -333,13 +338,12 @@ export function ComposerContextSheet(props: {
                   value={props.skillDescription ?? "No description is available for this skill."}
                 />
                 {props.onOpenSkill ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <Button
+                    label={uiT("View instructions")}
+                    tone="secondary"
                     onPress={props.onOpenSkill}
-                    className="rounded-xl bg-subtle p-4"
-                  >
-                    <Text className="text-foreground">{uiT("View instructions")}</Text>
-                  </Pressable>
+                    fullWidth
+                  />
                 ) : null}
               </View>
             ) : null}
@@ -375,31 +379,28 @@ export function ComposerContextSheet(props: {
           </Pressable>
         ) : null}
         {props.onOpenAttachment ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={uiT("Open attachment")}
+            tone="secondary"
             onPress={props.onOpenAttachment}
-            className="rounded-xl bg-subtle p-4"
-          >
-            <Text className="text-foreground">{uiT("Open attachment")}</Text>
-          </Pressable>
+            fullWidth
+          />
         ) : null}
         {props.onOpenPullRequest && !pullRequestUrl ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={uiT("Open pull request")}
+            tone="secondary"
             onPress={props.onOpenPullRequest}
-            className="rounded-xl bg-subtle p-4"
-          >
-            <Text className="text-foreground">{uiT("Open pull request")}</Text>
-          </Pressable>
+            fullWidth
+          />
         ) : null}
         {props.onRemove ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={uiT("Remove from draft")}
+            tone="secondary"
             onPress={props.onRemove}
-            className="rounded-xl bg-subtle p-4"
-          >
-            <Text className="text-foreground">{uiT("Remove from draft")}</Text>
-          </Pressable>
+            fullWidth
+          />
         ) : null}
       </ScrollView>
     </Sheet>

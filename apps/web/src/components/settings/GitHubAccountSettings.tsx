@@ -76,7 +76,9 @@ export function GitHubAccountSettings({
         <UiText
           message={"Sign in with {0} on the server host, then rescan to choose accounts here."}
           values={{
-            "0": <code className="rounded bg-muted px-1 py-px text-2xs">gh auth login</code>,
+            "0": (
+              <code className="rounded bg-muted px-1 py-px text-2xs">{uiT("gh auth login")}</code>
+            ),
           }}
         />
       </p>
@@ -89,7 +91,9 @@ export function GitHubAccountSettings({
         <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
           <UiText
             message={"Choose which {0} login each GitHub host uses, or turn a host off."}
-            values={{ "0": <code className="rounded bg-muted px-1 py-px text-2xs">gh</code> }}
+            values={{
+              "0": <code className="rounded bg-muted px-1 py-px text-2xs">{uiT("gh")}</code>,
+            }}
           />
         </p>
         <Button

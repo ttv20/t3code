@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type {
   EditorId,
   EnvironmentId,
@@ -78,6 +79,8 @@ export function RightPanelSurfaceContent(props: {
   readonly pullRequest: RightPanelPullRequestProps;
   readonly files: RightPanelFileProps;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { surface, threadRef, visible } = props;
   if (surface === null) return null;
   switch (surface.kind) {
@@ -111,6 +114,7 @@ export function RightPanelSurfaceContent(props: {
             mode="embedded"
             composerDraftTarget={props.composerDraftTarget}
             workspaceMutationId={props.workspaceMutationId}
+            visible={visible}
           />
         </Suspense>
       );
@@ -120,7 +124,7 @@ export function RightPanelSurfaceContent(props: {
       if (!pullRequest.supported) {
         return (
           <PullRequestsUnavailableState
-            title="Pull requests unavailable"
+            title={uiT("Pull requests unavailable")}
             error="Update this environment's T3 Code server to browse pull requests."
           />
         );
@@ -129,7 +133,7 @@ export function RightPanelSurfaceContent(props: {
         <PullRequestDetailPanel
           getShortcutContext={props.getShortcutContext}
           shortcutsEnabled={visible && props.activeSurfaceId === surface.id}
-          key={`${surface.host ?? ""}:${surface.repository}#${surface.number}`}
+          key={`${scopedThreadKey(threadRef)}:${surface.id}`}
           environmentId={props.environmentId}
           onSelectPullRequest={(reference) => {
             useRightPanelStore.getState().openPullRequest(threadRef, {
@@ -145,6 +149,10 @@ export function RightPanelSurfaceContent(props: {
             ...(surface.host ? { host: surface.host } : {}),
             repository: surface.repository,
             number: surface.number,
+          }}
+          initialTab={surface.detailTab ?? "summary"}
+          onTabChange={(tab) => {
+            useRightPanelStore.getState().setPullRequestDetailTab(threadRef, surface.id, tab);
           }}
           context={pullRequestPanelContext(
             {
@@ -196,6 +204,7 @@ export function RightPanelSurfaceContent(props: {
             composerDraftTarget={props.composerDraftTarget}
             keybindings={props.keybindings}
             availableEditors={files.availableEditors}
+            openInShortcutEnabled={visible}
             relativePath={surface.kind === "file" ? surface.relativePath : null}
             {...(attachment ? { attachment } : {})}
             revealLine={surface.kind === "file" ? (surface.revealLine ?? null) : null}

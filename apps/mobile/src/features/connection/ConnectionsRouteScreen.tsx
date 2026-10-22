@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Toolbar } from "../../components/ui/Toolbar";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 
@@ -13,6 +14,8 @@ import { LocalEnvironmentList } from "./LocalEnvironmentList";
 import { GitHubRoutingSettings } from "./GitHubRoutingSettings";
 
 export function ConnectionsRouteScreen() {
+  const { t: uiT } = useUiLanguage();
+
   const {
     connectedEnvironments,
     onReconnectEnvironment,
@@ -31,11 +34,11 @@ export function ConnectionsRouteScreen() {
     <View collapsable={false} className="flex-1 bg-sheet">
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
-          title="Environments"
+          title={uiT("Environments")}
           onBack={() => navigation.goBack()}
           actions={[
             {
-              accessibilityLabel: "Add environment",
+              accessibilityLabel: uiT("Add environment"),
               icon: "plus",
               onPress: () => navigation.navigate("ConnectionsNew"),
             },

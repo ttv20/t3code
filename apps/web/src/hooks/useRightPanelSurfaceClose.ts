@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import {
   AuthPreviewOperateScope,
   AuthTerminalOperateScope,
@@ -31,6 +32,8 @@ export function useRightPanelSurfaceClose(input: {
   readonly threadRef: ScopedThreadRef | null;
   readonly terminalLabelsById: ReadonlyMap<string, string>;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { threadRef, terminalLabelsById } = input;
   const closePreview = useAtomCommand(previewEnvironment.close, "preview close");
   const canOperatePreview = useEnvironmentScope(
@@ -127,7 +130,7 @@ export function useRightPanelSurfaceClose(input: {
     const otherLabels = surface.terminalIds
       .filter((terminalId) => terminalId !== surface.activeTerminalId)
       .map(labelFor);
-    void confirmTerminalClose([labelFor(surface.activeTerminalId), ...otherLabels]).then(
+    void confirmTerminalClose([labelFor(surface.activeTerminalId), ...otherLabels], uiT).then(
       (confirmed) => {
         if (confirmed) finishClose([surface]);
       },

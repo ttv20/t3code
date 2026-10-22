@@ -94,7 +94,7 @@ import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import { observeResize } from "~/lib/observeResize";
 
-interface RightPanelTabsProps {
+export interface RightPanelTabsProps {
   mode: PreviewPanelMode;
   maximized?: boolean;
   open?: boolean;
@@ -159,9 +159,7 @@ export interface PullRequestTabStatus {
 
 export type PullRequestTabStatusSeed = Pick<PullRequestTabStatus, "state" | "isDraft">;
 
-export function shouldOpenDefaultBrowserProfileFromMenuClick(
-  pointerType: string | undefined,
-): boolean {
+function shouldOpenDefaultBrowserProfileFromMenuClick(pointerType: string | undefined): boolean {
   return pointerType !== "touch";
 }
 
@@ -175,16 +173,19 @@ const SURFACE_DISABLED_REASONS = {
   device: "Devices are only available from a thread.",
 } as const;
 
+// Closed keepMounted popups must stop blocking shortcuts once their exit transition ends.
 const LAUNCHER_SHORTCUT_BLOCKING_LAYERS = [
-  '[data-slot="dialog-popup"]',
-  '[data-slot="alert-dialog-popup"]',
-  '[data-slot="command-dialog-popup"]',
-  '[data-slot="menu-popup"]',
-  '[data-slot="select-popup"]',
-  '[data-slot="popover-popup"]',
-  '[data-slot="combobox-popup"]',
-  '[data-slot="autocomplete-popup"]',
-].join(",");
+  "dialog-popup",
+  "alert-dialog-popup",
+  "command-dialog-popup",
+  "menu-popup",
+  "select-popup",
+  "popover-popup",
+  "combobox-popup",
+  "autocomplete-popup",
+]
+  .map((slot) => `[data-slot="${slot}"]:is([data-open],[data-ending-style])`)
+  .join(",");
 
 const SURFACE_UNAVAILABLE_HINTS = {
   browser: "Only available in the desktop app.",
@@ -225,7 +226,7 @@ function previewTabIdOf(
  * resolve while the preview manager's createTab is still in flight, and muting
  * then fails with a PreviewTabNotFoundError nothing surfaces to the user.
  */
-export function tabMuteMenuItem(input: {
+function tabMuteMenuItem(input: {
   overlay: DesktopPreviewOverlay | null;
   canResolveRuntimeTabId: boolean;
 }): { label: string; disabled: boolean } {
@@ -452,7 +453,7 @@ function RightPanelEmptyState(props: {
       ref={focusOnMount}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      aria-label="Open a surface"
+      aria-label={uiT("Open a surface")}
       data-surface-launcher-keys={availableActions.map((action) => action.shortcut).join("")}
       className={cn(
         "scrollbar-gutter-both flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-6 outline-none",
@@ -467,7 +468,7 @@ function RightPanelEmptyState(props: {
           {actions.map((action) =>
             action.available ? (
               <div
-                key={action.label}
+                key={uiT(action.label)}
                 className="group relative"
                 onMouseEnter={() => setHighlight(availableActions.indexOf(action))}
                 onMouseLeave={() =>
@@ -500,7 +501,7 @@ function RightPanelEmptyState(props: {
                     <MenuTrigger
                       render={
                         <Button
-                          aria-label="Open browser in a profile"
+                          aria-label={uiT("Open browser in a profile")}
                           className="absolute top-1/2 right-8 -translate-y-1/2"
                           size="icon-xs"
                           variant="ghost-muted"
@@ -524,7 +525,7 @@ function RightPanelEmptyState(props: {
               </div>
             ) : (
               <DisabledReasonTooltip
-                key={action.label}
+                key={uiT(action.label)}
                 reason={action.disabledReason}
                 trigger={
                   <div
@@ -804,7 +805,8 @@ interface RightPanelTabHandlers {
   onFinishRename: (surfaceId: string, title: string) => void;
 }
 
-function handleTabMouseDown(event: ReactMouseEvent) {
+// Chromium on Linux only suppresses primary-selection paste when mouseup is cancelled.
+function preventTabMiddleButtonDefault(event: ReactMouseEvent) {
   if (event.button !== 1) return;
   event.preventDefault();
 }
@@ -898,7 +900,7 @@ function RightPanelTab(
       )}
       {props.renaming ? (
         <input
-          aria-label="Device tab name"
+          aria-label={uiT("Device tab name")}
           className="w-24 min-w-0 rounded-sm bg-background px-1 outline-none ring-1 ring-inset ring-ring"
           defaultValue={title}
           ref={(element) => {
@@ -949,7 +951,8 @@ function RightPanelTab(
   return (
     <div
       data-active-tab={props.active}
-      onMouseDown={handleTabMouseDown}
+      onMouseDown={preventTabMiddleButtonDefault}
+      onMouseUp={preventTabMiddleButtonDefault}
       onAuxClick={(event) => onAuxClick(event, surface)}
       onContextMenu={(event) => onContextMenu(event, surface)}
       {...listeners}
@@ -1283,7 +1286,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           ref={tabListRef}
           hideScrollbars
           scrollFade
-          className="min-w-0 flex-1"
+          className="min-w-0 flex-1 [unicode-bidi:plaintext]"
           data-right-panel-tab-list
         >
           <div className="flex h-full w-max min-w-full items-center gap-1">
@@ -1333,7 +1336,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                   ref={addSurfaceTriggerRef}
                   render={
                     <Button
-                      aria-label="Add panel surface"
+                      aria-label={uiT("Add panel surface")}
                       className="shrink-0"
                       size="icon-xs"
                       variant="ghost-muted"
@@ -1352,7 +1355,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     const Icon = action.icon;
                     if (action.label === "Browser" && action.available) {
                       return (
-                        <MenuSub key={action.label}>
+                        <MenuSub key={uiT(action.label)}>
                           <MenuSubTrigger
                             className="[&>svg:last-child]:ms-0"
                             aria-keyshortcuts={action.shortcut}
@@ -1387,7 +1390,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     }
                     return (
                       <SurfaceMenuItem
-                        key={action.label}
+                        key={uiT(action.label)}
                         available={action.available}
                         disabledReason={action.disabledReason}
                         shortcut={action.shortcut}
@@ -1407,14 +1410,14 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           <div
             className="flex shrink-0 items-center gap-0.5 [-webkit-app-region:no-drag]"
             role="group"
-            aria-label="Scroll panel tabs"
+            aria-label={uiT("Scroll panel tabs")}
           >
             <Tooltip>
               <TooltipTrigger
                 render={
                   <span className="inline-flex">
                     <Button
-                      aria-label="Scroll tabs left"
+                      aria-label={uiT("Scroll tabs left")}
                       disabled={!tabScrollState.canScrollLeft}
                       onClick={() => scrollTabs(-1)}
                       size="icon-xs"
@@ -1432,7 +1435,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                 render={
                   <span className="inline-flex">
                     <Button
-                      aria-label="Scroll tabs right"
+                      aria-label={uiT("Scroll tabs right")}
                       disabled={!tabScrollState.canScrollRight}
                       onClick={() => scrollTabs(1)}
                       size="icon-xs"

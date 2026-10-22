@@ -1,3 +1,4 @@
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
@@ -38,11 +39,30 @@ const STATUS_DOT_CLASS: Record<ScheduledTask["lastRunStatus"], string> = {
   failed: "bg-destructive",
 };
 
+function taskScheduleLine(task: ScheduledTask, locale: UiLocale) {
+  const t = createUiTranslator(locale);
+  return (
+    <>
+      {scheduleLabel(task.schedule, locale)}
+      {task.enabled && task.nextRunAt !== null ? (
+        <>
+          {" · "}
+          {t("next")} <ScheduledRelativeLabel value={task.nextRunAt} />
+        </>
+      ) : task.enabled ? (
+        ""
+      ) : (
+        ` · ${t("paused")}`
+      )}
+    </>
+  );
+}
+
 export function ThreadAutomationsPanel(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { locale, t: uiT } = useUiLanguage();
 
   const canOperate = useAtomValue(
     serverEnvironment.runScheduledTaskNow.permissionAtom(props.environmentId),
@@ -114,7 +134,7 @@ export function ThreadAutomationsPanel(props: {
   return (
     <ThreadDetailsSection
       headingId="thread-details-automations-heading"
-      title="Automations"
+      title={uiT("Automations")}
       data-thread-automations-panel
       actions={
         <Tooltip>
@@ -124,7 +144,7 @@ export function ThreadAutomationsPanel(props: {
                 size="icon-xs"
                 variant="ghost"
                 part="icon"
-                aria-label="Manage scheduled tasks"
+                aria-label={uiT("Manage scheduled tasks")}
                 onClick={() =>
                   void navigate({
                     to: "/settings/scheduled-tasks",
@@ -142,7 +162,8 @@ export function ThreadAutomationsPanel(props: {
     >
       {tasksQuery.error !== null ? (
         <p className="px-2.5 py-1.5 text-2xs text-destructive">
-          {uiT("Could not load automations:")} {tasksQuery.error}
+          {uiT("Could not load automations:")}
+          {tasksQuery.error}
         </p>
       ) : null}
 
@@ -165,24 +186,20 @@ export function ThreadAutomationsPanel(props: {
                 aria-hidden
               />
             </span>
-            <div className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-foreground/80">
-                {task.title}
-              </span>
-              <p className="truncate text-2xs text-muted-foreground">
-                {scheduleLabel(task.schedule)}
-                {task.enabled && task.nextRunAt !== null ? (
-                  <>
-                    {" · next "}
-                    <ScheduledRelativeLabel value={task.nextRunAt} />
-                  </>
-                ) : task.enabled ? (
-                  ""
-                ) : (
-                  uiT(" · paused")
-                )}
-              </p>
-            </div>
+            <Tooltip>
+              <TooltipTrigger render={<div className="min-w-0 flex-1 [unicode-bidi:plaintext]" />}>
+                <span className="block truncate text-sm font-medium text-foreground/80">
+                  {task.title}
+                </span>
+                <p className="truncate text-2xs text-muted-foreground">
+                  {taskScheduleLine(task, locale)}
+                </p>
+              </TooltipTrigger>
+              <TooltipPopup side="left">
+                <p className="font-medium">{task.title}</p>
+                <p className="text-muted-foreground">{taskScheduleLine(task, locale)}</p>
+              </TooltipPopup>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger
                 render={

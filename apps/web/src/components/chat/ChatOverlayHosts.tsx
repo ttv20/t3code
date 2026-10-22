@@ -1,4 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import type {
   DeviceServiceState,
   EnvironmentId,
@@ -158,10 +158,8 @@ export function BranchRestoreConfirmHost(props: {
       <AlertDialogPopup>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            <UiText
-              message="Switch to {0}?"
-              values={{ "0": <code className="font-medium">{props.threadBranch}</code> }}
-            />
+            {uiT("Switch to")}
+            <code className="font-medium">{props.threadBranch}</code>?
           </AlertDialogTitle>
           <AlertDialogDescription>
             {uiT(
@@ -222,13 +220,13 @@ export function RevertConfirmHost(props: {
           <AlertDialogTitle>{uiT("Edit from here?")}</AlertDialogTitle>
           <AlertDialogDescription>
             {uiT(
-              "Rewind chat to before this message. Your prompt and attachments return to the composer.",
+              "Rewind chat to before this message. Your prompt and attachments return to the composer. “Revert files too” also undoes your own edits.",
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogClose render={<Button variant="outline" />}>{uiT("Cancel")}</AlertDialogClose>
-          <Button variant="destructive" onClick={() => confirm(true)}>
+          <Button variant="destructive-outline" onClick={() => confirm(true)}>
             {uiT("Revert files too")}
           </Button>
           <Button onClick={() => confirm(false)}>{uiT("Revert and keep changes")}</Button>

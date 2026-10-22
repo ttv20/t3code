@@ -105,7 +105,7 @@ const SETTINGS_NAV_ITEMS: ReadonlyArray<{
 
 function SettingsSectionIcon({ to }: { to: SettingsPath }) {
   const Icon = SETTINGS_SECTION_ICONS[to];
-  return <Icon className="mt-0.5 size-3.5 shrink-0 text-sidebar-muted-foreground/60" />;
+  return <Icon className="size-3.5 h-5 shrink-0 text-sidebar-muted-foreground/60" />;
 }
 
 export function SettingsSidebarNav({ pathname }: { pathname: string }) {
@@ -269,7 +269,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                     ? `settings-search-result-${results[activeResultIndex].id}`
                     : undefined
                 }
-                className="min-w-0 flex-1"
+                className="min-w-0 flex-1 [unicode-bidi:plaintext]"
               />
               {isSearching ? (
                 <Button
@@ -317,7 +317,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
                       onClick={() => handleSearchResultClick(item)}
                     >
                       <SettingsSectionIcon to={item.to} />
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                         <span className="block truncate text-sm font-medium text-sidebar-foreground">
                           {t(item.title)}
                         </span>
@@ -362,7 +362,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
           <T3ConnectSidebarSignIn />
         </Suspense>
         <div className="flex items-center gap-1">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <SidebarUtilityMenu />
           </div>
           <Suspense fallback={null}>

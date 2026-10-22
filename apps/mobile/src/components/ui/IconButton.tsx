@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { IconButtonProps } from "./IconButton.types";
 import { cn } from "../../lib/cn";
 import { Pressable } from "react-native";
@@ -12,13 +13,15 @@ const VARIANT_CLASS_NAMES = {
 } as const;
 
 export function IconButton(props: IconButtonProps) {
+  const { t: uiT } = useUiLanguage();
+
   const variant = props.variant ?? "standard";
   const [containerClassName, iconTintClassName] = VARIANT_CLASS_NAMES[variant];
   return (
     <Pressable
       onPress={props.onPress}
       disabled={props.disabled}
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(props.disabled), selected: props.selected }}
       className={cn(

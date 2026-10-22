@@ -242,7 +242,7 @@ export function ConnectAgentSurface() {
             />
             <p className="text-xs text-muted-foreground">
               {uiT("Create one in Settings → Connections, or run")}{" "}
-              <code>t3 auth pairing create</code> {uiT("on this machine.")}
+              <code>{uiT("t3 auth pairing create")}</code> {uiT("on this machine.")}
             </p>
           </div>
         )}
@@ -317,7 +317,7 @@ function AccessOption({
           selected ? "text-primary" : "text-muted-foreground",
         )}
       />
-      <span className="min-w-0">
+      <span className="min-w-0 [unicode-bidi:plaintext]">
         <span className="block text-sm font-medium text-foreground">{uiT(label)}</span>
         <span className="block text-xs text-muted-foreground">{uiT(description)}</span>
       </span>

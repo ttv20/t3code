@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
 import {
   localSnoozeDate,
@@ -24,6 +25,7 @@ export function CustomSnoozeSheet(props: {
   readonly onSnooze: (snoozedUntil: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const [mode, setMode] = useState<CustomSnoozeInput["mode"]>("date");
   const [date, setDate] = useState(() => new Date(Date.now() + 3_600_000));
   const [picker, setPicker] = useState<"date" | "time" | null>(null);
@@ -149,16 +151,10 @@ export function CustomSnoozeSheet(props: {
             </AppText>
           )}
           <View className="flex-row justify-end gap-3">
-            <Pressable
-              accessibilityRole="button"
-              className="min-h-12 justify-center px-3"
-              onPress={props.onClose}
-            >
-              <AppText>{uiT("Cancel")}</AppText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              className="min-h-12 justify-center rounded-xl bg-subtle px-3"
+            <Button label={uiT("Cancel")} tone="text" onPress={props.onClose} />
+            <Button
+              label={uiT("Snooze")}
+              tone="secondary"
               onPress={() => {
                 const input: CustomSnoozeInput =
                   mode === "date"
@@ -176,9 +172,7 @@ export function CustomSnoozeSheet(props: {
                 props.onSnooze(snoozedUntil);
                 props.onClose();
               }}
-            >
-              <AppText className="text-foreground">{uiT("Snooze")}</AppText>
-            </Pressable>
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -11,10 +11,12 @@ function FallbackHeaderButton(props: {
   readonly icon: "gearshape" | "square.and.pencil";
   readonly onPress: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <Pressable
       className="size-11 items-center justify-center rounded-full bg-subtle active:opacity-70"
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityRole="button"
       hitSlop={4}
       onPress={props.onPress}

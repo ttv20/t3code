@@ -5,7 +5,11 @@ import {
   formatComposerContextHref,
   formatComposerContextReference,
 } from "@t3tools/shared/composerContextReferences";
-import { markdownForDisplay } from "../lib/markdownDocument";
+import {
+  markdownWithHtml,
+  markdownWithInlineFileLinks,
+  markdownWithTableBreaks,
+} from "../lib/markdownDocument";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Platform, Share, StyleSheet, View } from "react-native";
 import {
@@ -60,6 +64,15 @@ function enrichedStyle(
   };
   return {
     paragraph: body,
+    math: {
+      fontSize: style.fontSize,
+      color: style.color,
+      backgroundColor: "transparent",
+      padding: 8,
+      marginTop: 4,
+      marginBottom: 12,
+    },
+    inlineMath: { color: style.color },
     h1: heading(1),
     h2: heading(2),
     h3: heading(3),
@@ -141,9 +154,19 @@ function enrichedStyle(
 
 export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
   const { t: uiT } = useUiLanguage();
+
   const { renderImage, resolveImageSource } = props;
-  const markdown = useMemo(() => markdownForDisplay(props.markdown), [props.markdown]);
-  const { themeAppearance } = useAppearancePreferences();
+  const { themeAppearance, mathRenderingEnabled } = useAppearancePreferences();
+  const markdown = useMemo(
+    () =>
+      markdownWithTableBreaks(
+        markdownWithInlineFileLinks(
+          markdownWithHtml(props.markdown),
+          ENRICHED_INLINE_FILE_LINK_REGEX,
+        ),
+      ),
+    [props.markdown],
+  );
   const [documentAssets, setDocumentAssets] = useState<DocumentAssetsEvent["assets"]>([]);
   const onDocumentAssets = useCallback(({ assets }: DocumentAssetsEvent) => {
     setDocumentAssets((previous) =>
@@ -168,7 +191,6 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
   const linkRecognition = useMemo(
     () => ({
       text: enrichedSkillLinkRegex(props.skills) ?? undefined,
-      inlineCode: ENRICHED_INLINE_FILE_LINK_REGEX,
     }),
     [props.skills],
   );
@@ -214,7 +236,7 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
             }),
           )
         : undefined,
-    [documentAssets, fileContextMenu, onLinkPress, performMenuAction, uiT],
+    [documentAssets, fileContextMenu, onLinkPress, performMenuAction],
   );
   const selectionClipboard = useMemo(() => {
     const fragment = decodeComposerContextFragment(props.contextClipboardFragment);
@@ -307,7 +329,7 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
           selectionColor={props.textStyle.selectionColor}
           selectionHandleColor={props.textStyle.selectionHandleColor}
           md4cFlags={{
-            latexMath: false,
+            latexMath: mathRenderingEnabled,
             hardSoftBreaks: props.preserveSoftBreaks ?? false,
             admonitions: true,
           }}

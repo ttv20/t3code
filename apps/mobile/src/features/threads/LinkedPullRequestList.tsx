@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   pullRequestListLines,
@@ -59,6 +60,8 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
   readonly openPullRequest: (url: string) => Promise<boolean>;
   readonly actions: LinkedPullRequestActions | null;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { link, depth, stack } = props.line;
   const snapshot = link.snapshot;
   const status = snapshot === null ? null : pullRequestStatus(snapshot);
@@ -154,7 +157,7 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
           numberOfLines={2}
           ellipsizeMode="tail"
         >
-          {snapshot?.title ?? "Waiting for host state"}
+          {snapshot?.title ?? uiT("Waiting for host state")}
         </Text>
       </View>
     </Pressable>

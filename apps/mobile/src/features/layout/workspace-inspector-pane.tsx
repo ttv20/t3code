@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -27,6 +27,7 @@ export function WorkspaceInspectorPane(props: {
   readonly setAuxiliaryPaneWidth: (width: number) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { panes, setAuxiliaryPaneWidth } = props;
   const inspectorWidth = panes.auxiliaryPaneWidth;
   const inspectorSupported = props.renderInspector !== undefined && inspectorWidth !== null;
@@ -51,9 +52,9 @@ export function WorkspaceInspectorPane(props: {
       },
     );
     const targetWidth = inspectorVisible ? (inspectorWidth ?? 0) : 0;
-    renderedInspectorWidth.value = resizing
-      ? targetWidth
-      : withTiming(targetWidth, WORKSPACE_PANE_TIMING);
+    renderedInspectorWidth.set(
+      resizing ? targetWidth : withTiming(targetWidth, WORKSPACE_PANE_TIMING),
+    );
   }, [
     inspectorProgress,
     inspectorVisible,
@@ -81,24 +82,21 @@ export function WorkspaceInspectorPane(props: {
     [],
   );
   const inspectorContentStyle = useAnimatedStyle(() => ({ width: renderedContentWidth.value }), []);
-  const beginResize = useCallback(() => {
+  const beginResize = () => {
     resizeStartWidth.current = inspectorWidth ?? 0;
     setResizing(true);
-  }, [inspectorWidth]);
-  const resizeBy = useCallback(
-    (delta: number) => {
-      setAuxiliaryPaneWidth(
-        constrainAuxiliaryPaneWidth({
-          preferredWidth: resizeStartWidth.current + delta,
-          availableWidth: panes.contentPaneWidth,
-        }),
-      );
-    },
-    [panes.contentPaneWidth, setAuxiliaryPaneWidth],
-  );
-  const endResize = useCallback(() => {
+  };
+  const resizeBy = (delta: number) => {
+    setAuxiliaryPaneWidth(
+      constrainAuxiliaryPaneWidth({
+        preferredWidth: resizeStartWidth.current + delta,
+        availableWidth: panes.contentPaneWidth,
+      }),
+    );
+  };
+  const endResize = () => {
     setResizing(false);
-  }, []);
+  };
 
   return (
     <>

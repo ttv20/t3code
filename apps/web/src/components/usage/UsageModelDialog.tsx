@@ -31,6 +31,7 @@ export interface UsageChartWindow {
   readonly resolution: "day" | "hour";
   readonly timeZone: string;
   readonly referenceTime: string | undefined;
+  readonly hour12: boolean;
 }
 
 export function UsageModelDialog({
@@ -77,7 +78,7 @@ export function UsageModelDialog({
           <div className="flex items-center gap-2">
             <ProviderInstanceIcon
               driverKind={presentation.driverKind}
-              displayName={presentation.label}
+              displayName={uiT(presentation.label)}
               iconClassName="size-5"
             />
             <DialogTitle>{model.model}</DialogTitle>
@@ -91,7 +92,7 @@ export function UsageModelDialog({
           <div className="flex flex-col gap-8">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               {stats.map((stat) => (
-                <div key={stat.label} className="flex min-w-0 flex-col gap-0.5">
+                <div key={uiT(stat.label)} className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">{uiT(stat.label)}</span>
                   <span className="text-2xl font-semibold text-foreground">{stat.value}</span>
                 </div>
@@ -109,6 +110,7 @@ export function UsageModelDialog({
               referenceTime={chartWindow.referenceTime}
               resolution={chartWindow.resolution}
               timeZone={chartWindow.timeZone}
+              hour12={chartWindow.hour12}
             />
 
             <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2">

@@ -1,4 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
 import type {
@@ -40,7 +40,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { PRIVACY_POLICY_URL } from "../../legalLinks";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
-import { useCompleteOnboarding } from "../../onboarding/firstRun";
+import { completeOnboarding } from "../../onboarding/firstRun";
 import {
   groupOnboardingProjects,
   partitionOnboardingProjects,
@@ -78,7 +78,6 @@ import { connectPairing } from "../../connection/onboarding";
 import { getProviderSummary } from "../settings/providerStatus";
 import { providerClients } from "../settings/providerDriverMeta";
 import { ChatGptWelcomeCoordinator } from "../settings/ChatGptWelcomeCoordinator";
-import { Badge } from "../ui/badge";
 import { AddManagedCodexAccountDialog, CodexSetupSection } from "../settings/CodexSetupSection";
 import { readCodexSetupMode } from "../settings/CodexSetupSection.logic";
 import { buildProviderInstanceUpdatePatch } from "../settings/SettingsPanels.logic";
@@ -87,7 +86,6 @@ import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectLis
 import { presentSavedCloudEnvironmentConnection } from "../cloud/cloudEnvironmentConnectionPresentation";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { T3Wordmark } from "../T3Wordmark";
-import { InterfaceLanguageSelect } from "../InterfaceLanguageSelect";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { CommandBlock } from "../CommandBlock";
@@ -120,7 +118,7 @@ export function WelcomeWizard({
   readonly onDone: (projectRef?: ScopedProjectRef) => void | Promise<void>;
 }) {
   const { t: uiT } = useUiLanguage();
-  const completeOnboarding = useCompleteOnboarding();
+
   const [step, setStep] = useState<WizardStep>(resumeEnvironmentId ? "agents" : "connection");
   const { environments } = useEnvironments();
   const [selection, setSelection] = useState<ReadonlySet<EnvironmentId> | null>(null);
@@ -225,40 +223,30 @@ export function WelcomeWizard({
   };
 
   return (
-    <Dialog open disablePointerDismissal onOpenChange={(_, event) => event.cancel()}>
+    <Dialog
+      open
+      disablePointerDismissal
+      onOpenChange={(_, event) => {
+        event.cancel();
+        if (event.reason === "close-press" && !isImporting) void finish();
+      }}
+    >
       <WizardPopup
         size="wide"
         bottomStickOnMobile={false}
-        showCloseButton={false}
         initialFocus={() => document.getElementById("onboarding-pairing-url") ?? true}
       >
         <WizardHeader
           title={uiT("Set up T3 Code")}
           identity={
-            <div
-              dir="ltr"
-              className="flex items-baseline gap-1.5"
-              role="img"
-              aria-label="T3 Code RTL"
-            >
+            <div className="flex items-baseline gap-1.5" role="img" aria-label={uiT("T3 Code")}>
               <T3Wordmark className="h-4 w-auto shrink-0" aria-hidden />
               <span className="text-2xl font-medium tracking-tight text-muted-foreground">
-                Code
-              </span>
-              <span className="self-center">
-                <Badge size="sm" variant="secondary">
-                  RTL
-                </Badge>
+                {uiT("Code")}
               </span>
             </div>
           }
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm text-muted-foreground">{uiT("Interface language")}</span>
-            <div className="w-44">
-              <InterfaceLanguageSelect />
-            </div>
-          </div>
           <WizardSteps
             steps={ONBOARDING_STAGES}
             currentStep={stageIndex}
@@ -327,6 +315,7 @@ function ConnectionStep({
   readonly onPaired: (environmentId: EnvironmentId) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { environments } = useEnvironments();
   const cloudEnabled = hasCloudPublicConfig();
   const directEnvironments = environments.filter(
@@ -374,7 +363,7 @@ function ConnectionStep({
                 }}
               />
               <MonitorIcon className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1">
+              <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 text-sm font-medium break-words">
                     {environment.label}
@@ -382,15 +371,17 @@ function ConnectionStep({
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {!environment.entry.enabled && environment.connection.phase !== "unsupported"
                       ? uiT("Off")
-                      : uiT(
-                          presentSavedCloudEnvironmentConnection(environment.connection)
-                            .buttonLabel,
-                        )}
+                      : presentSavedCloudEnvironmentConnection(environment.connection).buttonLabel}
                   </span>
                 </span>
                 {environment.displayUrl ? (
-                  <span dir="ltr" className="mt-0.5 block text-xs break-all text-muted-foreground">
+                  <span className="mt-0.5 block text-xs break-all text-muted-foreground">
                     {environment.displayUrl}
+                  </span>
+                ) : null}
+                {environment.connection.phase === "unsupported" && environment.connection.error ? (
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {environment.connection.error}
                   </span>
                 ) : null}
               </span>
@@ -443,21 +434,26 @@ function ConnectionStep({
       </div>
       {skippedLabels.length > 0 ? (
         <p className="mt-4 text-xs text-muted-foreground">
-          {uiT("Not connected, so setup skips")} {skippedLabels.join(", ")}
+          {uiT("Not connected, so setup skips")}
+          {skippedLabels.join(", ")}
           {uiT(". You can set")} {skippedLabels.length === 1 ? uiT("it") : uiT("them")}{" "}
           {uiT("up later from Settings.")}
         </p>
       ) : null}
       <div className="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <p className="min-w-0 text-xs leading-relaxed text-muted-foreground">
+          {uiT(
+            "T3 Code collects anonymous usage data to help us improve it. To read more about how your data is used and how to opt out, see our",
+          )}{" "}
           <a
             className="underline underline-offset-2 hover:text-foreground"
             href={PRIVACY_POLICY_URL}
             target="_blank"
             rel="noreferrer noopener"
           >
-            {uiT("Privacy policy")}
+            {uiT("privacy policy")}
           </a>
+          .
         </p>
         <Button
           className="shrink-0 self-end"
@@ -486,6 +482,7 @@ function ConnectAccountOption({
   readonly onToggleEnvironment: (environmentId: EnvironmentId, checked: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { environments } = useEnvironments();
   const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
   const { openAuthPrompt } = useT3ConnectAuthPrompt();
@@ -510,7 +507,7 @@ function ConnectAccountOption({
           }
         >
           <CloudIcon className="size-4 text-muted-foreground" />
-          <span className="flex-1 text-left">T3 Connect</span>
+          <span className="flex-1 text-left">{uiT("T3 Connect")}</span>
           <span className="text-xs text-muted-foreground">
             {!isLoaded
               ? uiT("Loading sign-in…")
@@ -567,6 +564,7 @@ function PairingForm({
   readonly onPaired: (environmentId: EnvironmentId) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const connectPairingEnvironment = useAtomCommand(connectPairing, { reportFailure: false });
   const [pairingUrl, setPairingUrl] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -636,7 +634,7 @@ function PairingForm({
         </div>
         {errorMessage ? (
           <Alert id="onboarding-pairing-error" variant="error">
-            <AlertDescription>{uiT(errorMessage)}</AlertDescription>
+            <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         ) : null}
         <Collapsible>
@@ -658,13 +656,10 @@ function PairingForm({
             </p>
             <CommandBlock command="npx t3 pair" className="mt-2" />
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              <UiText
-                message={"Start T3 Code first, or run {0}. Add {1} to use your tailnet."}
-                values={{
-                  "0": <code className="font-mono">npx t3 serve</code>,
-                  "1": <code className="font-mono">--tailscale</code>,
-                }}
-              />
+              {uiT("Start T3 Code first, or run")}
+              <code className="font-mono">{uiT("npx t3 serve")}</code>
+              {uiT(". Add")} <code className="font-mono">{uiT("--tailscale")}</code>{" "}
+              {uiT("to use your tailnet.")}
             </p>
           </CollapsiblePanel>
         </Collapsible>
@@ -693,6 +688,7 @@ function AgentsStep({
   readonly onContinue: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { environments } = useEnvironments();
   return (
     <StepShell
@@ -731,6 +727,7 @@ function ConnectedAgentsStep({
   readonly machineLabel: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const providers = useAtomValue(serverEnvironment.providersValueAtom(environmentId));
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
     reportFailure: false,
@@ -985,6 +982,7 @@ function AgentCard({
   readonly onOpenTerminal: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const meta = providerClients.get(ProviderDriverKind.make(driver));
   const displayName =
     provider?.displayName || (driver === "claudeAgent" ? "Claude Code" : (meta?.label ?? driver));
@@ -998,7 +996,7 @@ function AgentCard({
         displayName={displayName}
         iconClassName="size-5"
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
         <span className="block text-sm font-medium text-foreground">{displayName}</span>
         <p className="mt-0.5 text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
           {providerState === "ready" ? uiT("Ready to code.") : summary.headline}
@@ -1041,6 +1039,7 @@ function AgentInstallTerminal({
   readonly onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { command, cwd, driver, environmentId, keybindings, providerInstanceId } = session;
   const canOperateTerminal = useEnvironmentScope(environmentId, AuthTerminalOperateScope);
   const [advancedTypography] = useLocalStorage(
@@ -1144,7 +1143,8 @@ function AgentInstallTerminal({
             uiT("This connection cannot control terminals.")
           ) : setupState === "writeFailed" ? (
             <>
-              {uiT("Run")} <code className="rounded bg-muted px-1 font-mono">{command}</code>{" "}
+              {uiT("Run")}
+              <code className="rounded bg-muted px-1 font-mono">{command}</code>{" "}
               {uiT("in this terminal.")}
             </>
           ) : setupState === "ready" ? (
@@ -1217,6 +1217,7 @@ function ImportStep({
   ) => Promise<boolean>;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { environments } = useEnvironments();
   const writableEnvironments = useEnvironmentsWithScope(scans, AuthOrchestrationOperateScope);
   const createProject = useAtomCommand(projectEnvironment.create, { reportFailure: false });
@@ -1461,7 +1462,8 @@ function ImportStep({
       {candidates.length > 0 ? (
         <div className="mt-5 flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <span role="status">
-            {selected.length} {uiT("of")} {candidates.length} {uiT("selected")}
+            {selected.length} {uiT("of")}
+            {candidates.length} {uiT("selected")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -1499,7 +1501,7 @@ function ImportStep({
                 disabled={isImporting}
               >
                 {scans.length > 1 ? (
-                  <legend className="mb-2 text-sm font-medium">{uiT(label)}</legend>
+                  <legend className="mb-2 text-sm font-medium">{label}</legend>
                 ) : null}
                 {scan.isPending && scan.data === null ? (
                   <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
@@ -1512,7 +1514,8 @@ function ImportStep({
                     className="flex items-center justify-between gap-3 text-sm text-muted-foreground"
                   >
                     <span>
-                      {uiT("Could not check projects.")} {scan.error}
+                      {uiT("Could not check projects.")}
+                      {scan.error}
                     </span>
                     <Button variant="ghost" size="sm" onClick={scan.refresh}>
                       {uiT("Retry")}
@@ -1552,10 +1555,7 @@ function ImportStep({
         >
           {isImporting
             ? uiT("Importing…")
-            : uiT("Import {0} {1}", {
-                "0": selected.length,
-                "1": selected.length === 1 ? uiT("project") : uiT("projects"),
-              })}
+            : `Import ${selected.length} ${selected.length === 1 ? "project" : "projects"}`}
         </Button>
       </div>
     </StepShell>
@@ -1577,6 +1577,7 @@ function ImportCandidateList({
   readonly onSelectionChange: (next: ReadonlySet<string>) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { repositories, other } = groupOnboardingProjects(candidates);
   const setKeys = (keys: ReadonlyArray<string>, checked: boolean) => {
     const next = new Set(selectedKeys);
@@ -1647,6 +1648,7 @@ function ImportRepositoryGroup({
   readonly onToggle: (keys: ReadonlyArray<string>, checked: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const keys = group.candidates.map((candidate) => candidate.key);
   const selectedCount = keys.filter((key) => selectedKeys.has(key)).length;
   const single = group.candidates.length === 1;
@@ -1727,7 +1729,6 @@ function ImportCandidateRow({
   readonly checked: boolean;
   readonly onCheckedChange: (checked: boolean) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <label
       className={cn(
@@ -1741,7 +1742,7 @@ function ImportCandidateRow({
           render={<span className="flex min-w-0 flex-1 items-baseline gap-2 truncate" />}
         >
           {label !== undefined ? (
-            <span className="truncate text-sm font-medium">{uiT(label)}</span>
+            <span className="truncate text-sm font-medium">{label}</span>
           ) : null}
           {path !== undefined ? (
             <ProjectPathText
@@ -1771,6 +1772,7 @@ function ImportRowMeta({
   readonly lastActiveAt: string | null;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const relative = lastActiveAt === null ? null : formatRelativeTime(lastActiveAt);
   const age = relative === null ? "" : relative.suffix === null ? "now" : relative.value;
   return (
@@ -1788,7 +1790,7 @@ function ImportRowMeta({
       </span>
       <span className="flex size-4 items-center justify-center">
         {sources?.includes("codex") ? (
-          <span role="img" aria-label="Codex">
+          <span role="img" aria-label={uiT("Codex")}>
             <ProviderInstanceIcon
               driverKind={ProviderDriverKind.make("codex")}
               displayName="Codex"
@@ -1812,12 +1814,11 @@ function StepShell({
   readonly description?: string;
   readonly children?: React.ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{uiT(title)}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
       {description ? (
-        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{uiT(description)}</p>
+        <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{description}</p>
       ) : null}
       {children}
     </>

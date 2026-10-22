@@ -317,7 +317,7 @@ export function SettingInheritance({
                       kind={machine}
                       className="size-3.5 shrink-0"
                     />
-                    <span className="min-w-0 truncate">{target.label}</span>
+                    <span className="min-w-0 truncate">{uiT(target.label)}</span>
                   </h4>
                 ) : null}
                 {hasMultipleEnvironments && groups.length > 1 ? (
@@ -398,7 +398,7 @@ export function SettingInheritance({
                       )}
                       {onClearOverrides ? (
                         <InlineButton onClick={() => onClearOverrides(overriding)}>
-                          {uiT("Reset")} {overriding.length === 1 ? "it" : "all"}
+                          {uiT("Reset")} {overriding.length === 1 ? uiT("it") : uiT("all")}
                         </InlineButton>
                       ) : null}
                     </div>

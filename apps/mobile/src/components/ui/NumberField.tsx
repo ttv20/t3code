@@ -1,15 +1,19 @@
-import { Button, HStack, Picker, Popover, Text, VStack } from "@expo/ui/swift-ui";
+import { useUiLanguage } from "../../i18n";
+import { Button, HStack, Picker, Popover, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
+  buttonBorderShape,
   buttonStyle,
   disabled,
   font,
   foregroundStyle,
   frame,
+  labelStyle,
   padding,
   pickerStyle,
   presentationBackground,
   tag,
+  tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { useState } from "react";
 
@@ -18,6 +22,8 @@ import { useControlTheme } from "./useControlTheme";
 import type { NumberFieldProps } from "./NumberField.types";
 
 export function NumberField(props: NumberFieldProps) {
+  const { t: uiT } = useUiLanguage();
+
   const { colors, fontSize } = useControlTheme();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(props.value);
@@ -57,7 +63,7 @@ export function NumberField(props: NumberFieldProps) {
             ]}
           >
             <Picker
-              label={props.label}
+              label={uiT(props.label)}
               selection={draft}
               onSelectionChange={setDraft}
               modifiers={[pickerStyle("wheel"), frame({ height: 180 })]}
@@ -71,19 +77,33 @@ export function NumberField(props: NumberFieldProps) {
                 </Text>
               ))}
             </Picker>
-            <HStack spacing={24}>
+            <HStack>
               <Button
-                label="Cancel"
+                label={uiT("Cancel")}
+                systemImage="xmark"
                 onPress={() => setOpen(false)}
-                modifiers={[foregroundStyle(colors["--color-primary-text"])]}
+                modifiers={[
+                  labelStyle("iconOnly"),
+                  buttonStyle("bordered"),
+                  buttonBorderShape("circle"),
+                  tint(colors["--color-foreground"]),
+                ]}
               />
+              <Spacer />
               <Button
-                label="Done"
+                label={uiT("Done")}
+                systemImage="checkmark"
                 onPress={() => {
                   setOpen(false);
                   if (!props.disabled && draft !== props.value) props.onValueChange(draft);
                 }}
-                modifiers={[foregroundStyle(colors["--color-primary-text"])]}
+                modifiers={[
+                  labelStyle("iconOnly"),
+                  buttonStyle("borderedProminent"),
+                  buttonBorderShape("circle"),
+                  tint(colors["--color-prominent-action"]),
+                  foregroundStyle(colors["--color-prominent-action-foreground"]),
+                ]}
               />
             </HStack>
           </VStack>

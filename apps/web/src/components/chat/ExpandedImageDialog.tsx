@@ -151,7 +151,7 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
   }, [onClose]);
 
   if (!item) return null;
-  const mediaLabel = item.type === "video" ? "video" : "image";
+  const mediaLabel = item.type === "video" ? "video" : uiT("image");
   const openOriginalLink =
     item.originalUrl && resolveExternalWebLinkHost(item.originalUrl) !== null ? (
       <OpenMediaLink originalUrl={item.originalUrl} />
@@ -160,10 +160,10 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
   const showingAccessibilityDetails =
     Boolean(accessibilityDetails) && accessibilityDetailsSrc === item.src;
   const contentsLabel = showingAccessibilityDetails
-    ? "Show screenshot"
+    ? uiT("Show screenshot")
     : accessibilityDetails?.format === "json"
-      ? "Show accessibility JSON"
-      : "Show extracted text";
+      ? uiT("Show accessibility JSON")
+      : uiT("Show extracted text");
 
   return (
     <Dialog
@@ -177,7 +177,7 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
         variant="media"
         showCloseButton={false}
         bottomStickOnMobile={false}
-        className="row-start-1 h-full max-h-[92vh] w-[92vw] max-w-[92vw] items-center justify-center overflow-visible [--media-width:92vw] [--media-height:min(86vh,calc(100vh-160px))] sm:[--media-width:calc(92vw-96px)]"
+        className="row-start-1 h-full max-h-[92vh] w-[92vw] max-w-[92vw] items-center justify-center overflow-visible [--media-width:92vw] [--media-height:min(calc((100vh-var(--native-titlebar-height,0px))*0.86),calc(100vh-var(--native-titlebar-height,0px)-160px))] sm:[--media-width:calc(92vw-96px)]"
         onKeyDown={onKeyDown}
         initialFocus={closeButtonRef}
         finalFocus={() => returnFocusTarget}
@@ -237,6 +237,7 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
                 key={`${index}:${item.src}`}
                 src={item.src}
                 name={item.name}
+                mimeType={item.mimeType}
                 onError={() => setFailedImageSrc(item.src)}
               />
             )}

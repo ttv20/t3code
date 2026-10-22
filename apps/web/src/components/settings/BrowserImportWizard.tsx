@@ -460,7 +460,7 @@ function SelectableTile({
           : "border-border/60 hover:border-border hover:bg-muted/40",
       )}
     >
-      <span className="min-w-0">
+      <span className="min-w-0 [unicode-bidi:plaintext]">
         <span className="block truncate text-sm font-medium text-foreground">{uiT(title)}</span>
         {subtitle ? (
           <span className="block truncate text-xs tabular-nums text-muted-foreground">

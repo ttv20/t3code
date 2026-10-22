@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
@@ -5,6 +6,8 @@ import type { WorkspaceTab } from "./workspace-tabs-state";
 import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 
 export function WorkspaceSidebarTabs() {
+  const { t: uiT } = useUiLanguage();
+
   const workspace = useWorkspaceTabs()!;
   const selectTab = useSelectWorkspaceTab();
   return (
@@ -12,8 +15,8 @@ export function WorkspaceSidebarTabs() {
       <SegmentedControl
         role="tab"
         options={[
-          { value: "threads", label: "Threads" },
-          { value: "pullRequests", label: "Pull requests" },
+          { value: "threads", label: uiT("Threads") },
+          { value: "pullRequests", label: uiT("Pull requests") },
         ]}
         selected={workspace.state.selectedTab}
         onSelect={(tab: WorkspaceTab) => selectTab(tab)}

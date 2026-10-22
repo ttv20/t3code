@@ -1,14 +1,16 @@
+import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 import * as Linking from "expo-linking";
 import { useEffect } from "react";
 import { Platform } from "react-native";
+import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { environmentCatalog } from "../connection/catalog";
 import { environmentPresentations } from "../state/presentation";
 import { publishSubscriptionUsage } from "./publishSubscriptionUsage";
 import { useSubscriptionUsage } from "./useSubscriptionUsage";
 import { buildSubscriptionUsageSnapshot } from "./subscriptionUsageSnapshot";
-import { useUiLanguage } from "../i18n";
+import { createWidgetTheme } from "./widgetTheme";
 
 // Isolate quota changes from the much busier thread/config presentation stream.
 const snapshotAtom = Atom.make((get) =>
@@ -21,15 +23,23 @@ const snapshotAtom = Atom.make((get) =>
 
 export function SubscriptionUsageCoordinator() {
   const { t, locale } = useUiLanguage();
+  const {
+    themeMode,
+    themeAppearance,
+    themeVariablesByAppearance,
+    isReady: appearanceReady,
+  } = useAppearancePreferences();
   const catalog = useAtomValue(environmentCatalog.catalogValueAtom);
   const snapshot = useAtomValue(snapshotAtom);
   useSubscriptionUsage(catalog.isReady);
+  const androidAppearance = Platform.OS === "android" ? themeAppearance : null;
   useEffect(() => {
-    if (!catalog.isReady) return;
+    if (!catalog.isReady || !appearanceReady) return;
     void Promise.resolve()
       .then(() =>
         publishSubscriptionUsage({
           ...snapshot,
+          theme: createWidgetTheme(themeMode, themeVariablesByAppearance),
           locale,
           messages: Object.fromEntries(
             [
@@ -56,6 +66,16 @@ export function SubscriptionUsageCoordinator() {
       .catch((error: unknown) => {
         console.warn("Could not update subscription usage widget", error);
       });
-  }, [catalog.isReady, locale, snapshot, t]);
+  }, [
+    catalog.isReady,
+    appearanceReady,
+    snapshot,
+    locale,
+    t,
+    themeMode,
+    themeVariablesByAppearance,
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Android stores resolved colors; System appearance changes must republish them.
+    androidAppearance,
+  ]);
   return null;
 }

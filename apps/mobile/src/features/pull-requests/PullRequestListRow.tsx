@@ -74,7 +74,7 @@ export const PullRequestListRow = memo(
             accessibilityRole="button"
             accessibilityState={{ selected: props.selected, busy: props.busy }}
             accessibilityLabel={`Pull request ${item.number}, ${item.title}, ${status.label}${conflict ? `, ${conflict.label.toLowerCase()}` : ""}, by ${item.author?.login ?? "unknown author"}${review ? `, ${review.accessibleLabel}` : ""}${item.checksState ? `, checks ${item.checksState}` : ""}${item.stack ? `, stack ${item.stack.position} of ${item.stack.size}` : ""}${item.labels.length ? `, ${item.labels.map((label) => label.name).join(", ")}` : ""}, ${item.additions} additions, ${item.deletions} deletions`}
-            accessibilityHint="Double tap to open. Touch and hold for quick actions."
+            accessibilityHint={uiT("Double tap to open. Touch and hold for quick actions.")}
             onPress={() => props.onSelect(item)}
             disabled={props.busy}
             style={props.sidebar ? THREAD_LIST_V2_SIDEBAR_ROW_STYLE : undefined}
@@ -139,7 +139,7 @@ export const PullRequestListRow = memo(
                 numberOfLines={2}
                 ellipsizeMode="tail"
               >
-                {item.title}
+                {uiT(item.title)}
               </Text>
               <View className="flex-row items-center gap-1.5">
                 <View className="min-w-0 flex-1 flex-row items-center gap-1">

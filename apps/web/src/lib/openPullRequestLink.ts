@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { EnvironmentId, PullRequestRef, ScopedThreadRef } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -14,7 +15,7 @@ import { useRightPanelStore } from "../rightPanelStore";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 
 import { appAtomRegistry } from "../rpc/atomRegistry";
-import { useProjects } from "../state/entities";
+import { readProjects, useProjects } from "../state/entities";
 import { environmentServerConfigsAtom, serverEnvironment } from "../state/server";
 import { usePrimaryEnvironmentId } from "../state/environments";
 
@@ -116,14 +117,15 @@ export function useOpenChangeRequestLink(
   targetEnvironmentId?: EnvironmentId,
 ) => boolean {
   const navigate = useNavigate();
-  const allProjects = useProjects();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const openInApp = useClientSettings((settings) => settings.pullRequestLinksOpenInApp);
   return (event, targetUrl, targetThreadRef, targetEnvironmentId) => {
     if (!openInApp || shouldOpenPullRequestExternally(event)) return false;
     // Read at click time: every provider status push replaces the config map, and
-    // subscribing would hand every rendered link a new handler.
+    // subscribing would hand every rendered link a new handler. Projects likewise, so a
+    // link can resolve against a snapshot that arrived after this handler was built.
     const serverConfigs = appAtomRegistry.get(environmentServerConfigsAtom);
+    const allProjects = readProjects();
     const resolvedThreadRef = targetThreadRef ?? threadRef;
     const resolvedPanelRef = panelRef ?? resolvedThreadRef;
     const parsed = parseChangeRequestUrl(targetUrl);
@@ -215,6 +217,8 @@ export function useOpenChangeRequestLink(
 }
 
 export function useOpenPrLink(threadRef?: ScopedThreadRef) {
+  const { t: uiT } = useUiLanguage();
+
   const openChangeRequest = useOpenChangeRequestLink(threadRef);
   const openLink = useOpenLink(threadRef);
   return (event: MouseEvent<HTMLElement>, prUrl: string, targetThreadRef?: ScopedThreadRef) => {
@@ -236,7 +240,7 @@ export function useOpenPrLink(threadRef?: ScopedThreadRef) {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Unable to open pull request link",
+          title: uiT("Unable to open pull request link"),
           description: error instanceof Error ? error.message : "An error occurred.",
         }),
       );

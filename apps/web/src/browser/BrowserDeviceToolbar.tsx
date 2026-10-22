@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../i18n";
-
 import {
   PREVIEW_VIEWPORT_MAX_AREA,
   PREVIEW_VIEWPORT_MAX_DIMENSION,
@@ -52,6 +49,7 @@ export function BrowserDeviceToolbar({
   onChange,
 }: Props) {
   const { t: uiT } = useUiLanguage();
+
   const [pending, setPending] = useState(false);
   const [customSize, setCustomSize] = useState<{
     readonly width: string;

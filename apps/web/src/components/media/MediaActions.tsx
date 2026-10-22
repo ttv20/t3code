@@ -1,5 +1,8 @@
 import { useUiLanguage } from "../../i18n";
-import type { MediaActionId } from "@t3tools/client-runtime/media-actions";
+import {
+  formatFilePathForClipboard,
+  type MediaActionId,
+} from "@t3tools/client-runtime/media-actions";
 import {
   mediaReferenceFileName,
   type MediaReference,
@@ -117,6 +120,7 @@ export function MediaActions({
   children: ReactElement;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { save, copyImage, canReadMedia, assertCanReadMedia } = useMediaActions(source);
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const menuOpen = useRef(false);
@@ -128,7 +132,7 @@ export function MediaActions({
     if (!api || menuOpen.current) return;
     menuOpen.current = true;
     setTooltipOpen(false);
-    let failureTitle = "Could not open media menu";
+    let failureTitle = uiT("Could not open media menu");
     let progressToast: ReturnType<typeof toastManager.add> | undefined;
     const result = await settlePromise(async () => {
       const noun = source.kind === "image" ? "image" : "video";
@@ -168,10 +172,12 @@ export function MediaActions({
               ? reference.url
               : undefined;
       if (text !== undefined) {
-        await writeTextToClipboard(text, reference?.kind === "file" ? "file path" : "URL");
+        const clipboardText =
+          reference?.kind === "file" ? formatFilePathForClipboard(text, reference.path) : text;
+        await writeTextToClipboard(clipboardText, reference?.kind === "file" ? "file path" : "URL");
         toastManager.add({
           type: "success",
-          title: action === "copy-url" ? uiT("URL copied") : uiT("Path copied"),
+          title: action === "copy-url" ? "URL copied" : "Path copied",
         });
       } else if (action === "open-file") {
         assertCanReadMedia();
@@ -180,14 +186,12 @@ export function MediaActions({
         progressToast = toastManager.add({
           type: "loading",
           title:
-            action === "save"
-              ? uiT("Preparing {0} download…", { "0": noun })
-              : uiT("Copying image…"),
+            action === "save" ? uiT("Preparing {0} download…", { "0": noun }) : "Copying image…",
         });
         await (action === "save" ? save() : copyImage());
         toastManager.update(progressToast, {
           type: "success",
-          title: action === "save" ? uiT("Download started") : uiT("Image copied"),
+          title: action === "save" ? "Download started" : "Image copied",
         });
       }
     });
@@ -196,7 +200,7 @@ export function MediaActions({
       const toast = stackedThreadToast({
         type: "error",
         title: failureTitle,
-        description: error instanceof Error ? error.message : uiT("The media action failed."),
+        description: error instanceof Error ? error.message : "The media action failed.",
       });
       if (progressToast) toastManager.update(progressToast, toast);
       else toastManager.add(toast);

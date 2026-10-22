@@ -324,8 +324,8 @@ export function AcpSessionManagementSection(props: {
   return (
     <div className="grid gap-3">
       <SettingsRow
-        title="Native sessions"
-        description="Resume agent-owned conversations as T3 threads."
+        title={uiT("Native sessions")}
+        description={uiT("Resume agent-owned conversations as T3 threads.")}
         status={
           canList && props.projects.length === 0
             ? "Add a project before importing sessions."
@@ -358,7 +358,11 @@ export function AcpSessionManagementSection(props: {
                     setProviderDrafts({});
                   }}
                 >
-                  <SelectTrigger aria-label="Project for ACP sessions" className="w-40" size="sm">
+                  <SelectTrigger
+                    aria-label={uiT("Project for ACP sessions")}
+                    className="w-40"
+                    size="sm"
+                  >
                     <SelectValue>
                       {props.projects.find((project) => project.id === projectId)?.title}
                     </SelectValue>
@@ -398,7 +402,7 @@ export function AcpSessionManagementSection(props: {
                     key={session.sessionId}
                     className="flex min-w-0 items-center justify-between gap-3 py-2"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 [unicode-bidi:plaintext]">
                       <p className="truncate text-xs text-foreground">
                         {session.title ?? session.sessionId}
                       </p>
@@ -437,7 +441,9 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void deleteNativeSession(session)}
                         >
-                          {deletingSessionId === session.sessionId ? uiT("Deleting") : "Delete"}
+                          {deletingSessionId === session.sessionId
+                            ? uiT("Deleting")
+                            : uiT("Delete")}
                         </Button>
                       ) : null}
                     </div>
@@ -497,7 +503,11 @@ export function AcpSessionManagementSection(props: {
                 setProviderDrafts({});
               }}
             >
-              <SelectTrigger aria-label="Project for ACP providers" className="min-w-48" size="xs">
+              <SelectTrigger
+                aria-label={uiT("Project for ACP providers")}
+                className="min-w-48"
+                size="xs"
+              >
                 <SelectValue>
                   {props.projects.find((project) => project.id === projectId)?.title}
                 </SelectValue>
@@ -528,7 +538,7 @@ export function AcpSessionManagementSection(props: {
                 return (
                   <div key={provider.providerId} className="grid gap-2 py-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 [unicode-bidi:plaintext]">
                         <p className="truncate text-xs font-medium text-foreground">
                           {provider.providerId}
                         </p>
@@ -601,7 +611,9 @@ export function AcpSessionManagementSection(props: {
                       size="sm"
                       type="password"
                       aria-label={uiT("{0} write-only headers JSON", { "0": provider.providerId })}
-                      placeholder='Write-only headers JSON, e.g. {"Authorization":"Bearer …"}'
+                      placeholder={uiT(
+                        'Write-only headers JSON, e.g. {"Authorization":"Bearer …"}',
+                      )}
                       value={draft.headers}
                       disabled={props.readOnly || savingProviderId !== null}
                       onValueChange={(value) => updateDraft({ headers: value })}

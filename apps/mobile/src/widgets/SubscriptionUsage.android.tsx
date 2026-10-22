@@ -26,9 +26,24 @@ export function SubscriptionUsage(props: SubscriptionUsageProps, environment: Wi
   // The widget runtime evaluates this function without the app's module scope.
   const now = Date.now();
   const limit = 2;
-  const colors = getMaterialColors({
-    scheme: environment.colorScheme === "dark" ? "dark" : "light",
-  });
+  const mode = props.theme?.mode;
+  const appearance =
+    mode === "light" || mode === "dark"
+      ? mode
+      : environment.colorScheme === "dark"
+        ? "dark"
+        : "light";
+  const palette = props.theme?.[appearance];
+  const colors = palette
+    ? {
+        surface: palette.background,
+        onSurface: palette.foreground,
+        onSurfaceVariant: palette.secondary,
+        surfaceVariant: palette.track,
+        primary: palette.accent,
+        error: palette.danger,
+      }
+    : getMaterialColors({ scheme: appearance });
   const muted = colors.onSurfaceVariant;
   const providers = props.providers ?? [
     {
@@ -80,7 +95,7 @@ export function SubscriptionUsage(props: SubscriptionUsageProps, environment: Wi
               {shown.map((window) => {
                 const low = window.remaining <= 10;
                 return (
-                  <Column key={window.label} modifiers={[fillMaxWidth(), padding(0, 4, 0, 0)]}>
+                  <Column key={uiT(window.label)} modifiers={[fillMaxWidth(), padding(0, 4, 0, 0)]}>
                     <Text
                       color={low ? colors.error : colors.onSurface}
                       maxLines={1}

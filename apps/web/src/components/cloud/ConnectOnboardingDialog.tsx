@@ -13,6 +13,7 @@ import {
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { useCloudLinkController } from "~/cloud/useCloudLinkController";
 import { useLocalStorage } from "~/hooks/useLocalStorage";
+import { isHostedStaticApp } from "~/hostedPairing";
 import {
   useEnvironments,
   usePrimaryEnvironment,
@@ -48,7 +49,10 @@ function ConfiguredConnectOnboardingDialog() {
     ConnectOnboardingOptOutSchema,
   );
 
-  const { isReady: environmentsReady } = useEnvironments();
+  const { environments, isReady: environmentsReady } = useEnvironments();
+  // The empty hosted home already adds account computers after sign-in.
+  const homeScreenAddsComputers =
+    isHostedStaticApp() && environmentsReady && environments.length === 0;
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const primarySessionState = useAtomValue(
     primaryEnvironmentId === null
@@ -112,7 +116,7 @@ function ConfiguredConnectOnboardingDialog() {
   const publishStepDecided = !canManageRelay || controller.linkState.target !== null;
 
   if (requestedAccount !== null && openForAccount === null) {
-    if (optOutAccounts.includes(requestedAccount)) {
+    if (homeScreenAddsComputers || optOutAccounts.includes(requestedAccount)) {
       setRequestedAccount(null);
     } else if (sessionScopesKnown && publishStepDecided) {
       setRequestedAccount(null);
@@ -348,7 +352,7 @@ function OnboardingToggleRow({
   const { t: uiT } = useUiLanguage();
   return (
     <div className="flex items-start justify-between gap-4 border-t border-border/60 px-4 py-3 first:border-t-0">
-      <div className="min-w-0">
+      <div className="min-w-0 [unicode-bidi:plaintext]">
         <p className="text-sm font-medium">{uiT(title)}</p>
         <p className="mt-1 text-xs text-muted-foreground">{uiT(description)}</p>
       </div>

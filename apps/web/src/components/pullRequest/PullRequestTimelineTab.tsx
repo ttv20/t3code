@@ -10,6 +10,7 @@ import type {
 } from "@t3tools/contracts";
 import {
   ChevronDownIcon,
+  CircleCheckIcon,
   ExternalLinkIcon,
   FileCode2Icon,
   GitCommitHorizontalIcon,
@@ -35,9 +36,11 @@ import {
   pullRequestReviewOutcome,
   type PullRequestReviewOutcome,
   type PullRequestTimelineEvent,
+  type PullRequestTimelineThread,
 } from "./pullRequestDetail.logic";
 import { canEditPullRequestComment } from "./pullRequestEditing.logic";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
+import { PullRequestMoreReplies } from "./PullRequestMoreReplies";
 import { PullRequestMarkdownEditor } from "./PullRequestMarkdownEditor";
 import { PullRequestReactionBar } from "./PullRequestReactions";
 import {
@@ -181,12 +184,14 @@ function ConversationCard({
   cwd,
   onOpen,
   reactions,
+  showPath = true,
 }: {
   event: PullRequestTimelineEvent;
   editable: PullRequestComment | null;
   cwd: string;
   onOpen: (url: string) => void;
   reactions: ReactionSurface;
+  showPath?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
   const [editing, setEditing] = useState(false);
@@ -217,7 +222,7 @@ function ConversationCard({
     <article className="group py-2">
       <div className="px-2">
         <div className="flex min-w-0 flex-wrap items-start gap-2">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
               <ActorName actor={event.actor} />
               <span className="text-muted-foreground">{event.title}</span>
@@ -227,7 +232,7 @@ function ConversationCard({
               <span>
                 <RelativeTime timestamp={event.at} />
               </span>
-              {event.path ? (
+              {showPath && event.path ? (
                 <span className="inline-flex min-w-0 items-center gap-1">
                   <FileCode2Icon aria-hidden className="size-3 shrink-0" />
                   <span className="truncate">{event.path}</span>
@@ -328,7 +333,7 @@ function ConversationGroup({
               open ? "text-foreground opacity-100" : "text-muted-foreground opacity-55",
             )}
           >
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
               <span className="block text-xs font-semibold">
                 {events.length.toLocaleString()}{" "}
                 {events.length === 1 ? uiT("comment") : uiT("comments")}
@@ -372,6 +377,105 @@ function ConversationGroup({
   );
 }
 
+function ReviewThreadEvent({
+  event,
+  thread,
+  editable,
+  cwd,
+  onOpen,
+  reactions,
+}: {
+  event: PullRequestTimelineEvent;
+  thread: PullRequestTimelineThread;
+  editable: ReadonlyMap<string, PullRequestComment>;
+  cwd: string;
+  onOpen: (url: string) => void;
+  reactions: ReactionSurface;
+}) {
+  const { t: uiT } = useUiLanguage();
+
+  const dismissed = pullRequestReviewOutcome(event.reviewState) === "dismissed";
+  const [expanded, setExpanded] = useState(!thread.isResolved && !dismissed);
+  const replyCount = thread.replies.length + thread.moreReplies;
+
+  return (
+    <div className="group relative mb-5 pl-12 [contain-intrinsic-block-size:48px] [content-visibility:auto]">
+      <ActorTimelineMarker
+        actors={event.actor ? [event.actor] : []}
+        className="top-6"
+        fallback={<MessageSquareIcon className="size-3.5" />}
+        muted={!expanded}
+      />
+      <button
+        type="button"
+        className="flex w-full min-w-0 items-center gap-2 px-2 py-2 text-left text-2xs text-muted-foreground hover:text-foreground"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <FileCode2Icon aria-hidden className="size-3 shrink-0" />
+        <span className="min-w-0 truncate font-mono">
+          {thread.line === null ? thread.path : `${thread.path}:${thread.line}`}
+        </span>
+        {thread.isResolved ? (
+          <span className="inline-flex shrink-0 items-center gap-1 font-medium text-success-foreground">
+            <CircleCheckIcon aria-hidden className="size-3" />
+            {uiT("Resolved")}
+          </span>
+        ) : null}
+        {dismissed ? <span className="shrink-0 font-medium">{uiT("Review dismissed")}</span> : null}
+        {thread.isOutdated ? <span className="shrink-0 font-medium">{uiT("Outdated")}</span> : null}
+        {expanded ? null : (
+          <span className="shrink-0">
+            · {event.actor?.login ?? uiT("ghost")}
+            {replyCount > 0 ? (
+              <>
+                {" "}
+                · {replyCount.toLocaleString()} {replyCount === 1 ? "reply" : "replies"}
+              </>
+            ) : null}
+          </span>
+        )}
+        <ChevronDownIcon
+          aria-hidden
+          className={cn("ml-auto size-3.5 shrink-0 transition-transform", expanded && "rotate-180")}
+        />
+      </button>
+      {expanded ? (
+        <>
+          <ConversationCard
+            event={event}
+            editable={editable.get(event.id) ?? null}
+            cwd={cwd}
+            onOpen={onOpen}
+            reactions={reactions}
+            showPath={false}
+          />
+          {thread.replies.length > 0 ? (
+            <div className="ml-2 space-y-1 border-l border-border/60 pl-3">
+              {thread.replies.map((reply) => (
+                <ConversationCard
+                  key={reply.id}
+                  event={reply}
+                  editable={editable.get(reply.id) ?? null}
+                  cwd={cwd}
+                  onOpen={onOpen}
+                  reactions={reactions}
+                  showPath={false}
+                />
+              ))}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+      {thread.hasMoreReplies ? (
+        <div className="px-2">
+          <PullRequestMoreReplies {...thread} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function CommitEvent({
   event,
   onOpen,
@@ -392,7 +496,7 @@ function CommitEvent({
         fallback={<GitCommitHorizontalIcon className="size-3.5" />}
       />
       <div className="flex min-w-0 items-center gap-2.5 py-1.5">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <div className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
             {event.body ?? uiT("Untitled commit")}
           </div>
@@ -473,7 +577,7 @@ function ReviewVerdictEvent({
         fallback={<PullRequestReviewOutcomeIcon outcome={outcome} />}
       />
       <div className="flex min-w-0 flex-wrap items-start gap-2 py-1.5">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
             <ActorName actor={event.actor} />
             <Tooltip disabled={!stale}>
@@ -567,7 +671,9 @@ export function PullRequestTimelineTab({
     onRefresh,
   };
   const editable = new Map(
-    detail.comments
+    events
+      .flatMap((event) => [event, ...(event.thread?.replies ?? [])])
+      .flatMap((event) => (event.comment ? [event.comment] : []))
       .filter((comment) => canEditPullRequestComment(detail, comment))
       .map((comment) => [comment.id, comment] as const),
   );
@@ -596,6 +702,19 @@ export function PullRequestTimelineTab({
               );
             }
             const event = row.event;
+            if (event.thread !== undefined) {
+              return (
+                <ReviewThreadEvent
+                  key={`${reactions.reference.projectId}#${reactions.reference.number}:thread:${event.id}:${event.thread.isResolved}:${pullRequestReviewOutcome(event.reviewState) === "dismissed"}`}
+                  event={event}
+                  thread={event.thread}
+                  editable={editable}
+                  cwd={detail.workspaceRoot}
+                  onOpen={openOnHost}
+                  reactions={reactions}
+                />
+              );
+            }
             if (event.kind === "commit") {
               return <CommitEvent key={event.id} event={event} onOpen={onOpenCommit} />;
             }

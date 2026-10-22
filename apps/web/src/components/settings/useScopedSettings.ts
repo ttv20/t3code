@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { useEnvironmentsWithScope } from "../../state/session";
 import {
@@ -53,12 +54,14 @@ export function useScopedSettingSource(keys: readonly (keyof ServerSettings)[]) 
 }
 
 function useRunScopedPlan() {
+  const { t: uiT } = useUiLanguage();
+
   const persistServer = useAtomCommand(serverEnvironment.updateSettings, { reportFailure: false });
   return (plan: ReturnType<typeof planScopedSettingsPatch>) => {
     if (plan.unavailableReason) {
       toastManager.add({
         type: "warning",
-        title: "Setting not saved",
+        title: uiT("Setting not saved"),
         description: plan.unavailableReason,
       });
       return;

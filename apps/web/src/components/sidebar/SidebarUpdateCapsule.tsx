@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 
@@ -66,6 +67,8 @@ export function SidebarUpdateCapsule({
   readonly icon: ReactNode;
   readonly onRestart?: () => Promise<void>;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const machines = useUpdateRunMachineViews(run);
   const hasActiveMachine = machines.some(
     ({ status }) => status !== "done" && status !== "failed" && status !== "waiting",
@@ -77,7 +80,7 @@ export function SidebarUpdateCapsule({
   const settled = !hasActiveMachine && run.localVersion === null;
 
   const actionLabel =
-    view.action === "later" ? "Later" : view.action === "retry" ? "Retry" : "Dismiss";
+    view.action === "later" ? "Later" : view.action === "retry" ? uiT("Retry") : uiT("Dismiss");
   const runAction = () => {
     if (view.action === "later") postponeUpdateRestart();
     else if (view.action === "retry") retryFailedUpdateRunServers(updateServer);
@@ -144,7 +147,7 @@ export function SidebarUpdateCapsule({
           {machines.map(({ machine, status }) => (
             <div key={machine.environmentId} className="flex min-w-0 flex-col">
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate">{machine.label}</span>
+                <span className="truncate">{uiT(machine.label)}</span>
                 <span
                   className={cn(
                     "shrink-0 tabular-nums",
@@ -166,11 +169,11 @@ export function SidebarUpdateCapsule({
             <div className="mt-1 flex justify-end gap-1">
               {view.action === "retry" ? (
                 <Button size="xs" variant="outline" onClick={runAction}>
-                  Retry
+                  {uiT("Retry")}
                 </Button>
               ) : null}
               <Button size="xs" variant="ghost" onClick={dismissSettledUpdateRunMachines}>
-                Dismiss
+                {uiT("Dismiss")}
               </Button>
             </div>
           ) : null}

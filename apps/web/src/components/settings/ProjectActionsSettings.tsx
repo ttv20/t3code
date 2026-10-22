@@ -160,7 +160,7 @@ export function ProjectActionsSettings() {
                       onClick={() => void importFileScript(fileScript)}
                     >
                       <ScriptIcon icon={fileScript.icon ?? "play"} className="size-4 shrink-0" />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                         <div className="truncate font-medium">{fileScript.name}</div>
                         <div className="truncate font-mono text-muted-foreground">
                           {fileScript.command}

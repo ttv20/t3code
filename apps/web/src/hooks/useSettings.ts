@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useEffect, useRef, useSyncExternalStore, use } from "react";
 import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
@@ -47,6 +48,7 @@ import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { toastManager } from "~/components/ui/toast";
 import { isHostedStaticApp } from "~/hostedPairing";
+import { environmentCatalog } from "~/connection/catalog";
 import { primaryServerSettingsAtom, serverEnvironment } from "~/state/server";
 import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
 import { useAtomCommand } from "~/state/use-atom-command";
@@ -324,7 +326,18 @@ export function mergeEnvironmentSettings(
   };
 }
 
-const pendingModelPreferencesMigrations = new Set<EnvironmentId>();
+// Servers that predate `migrateModelPreferences` drop it and keep reporting null favorites.
+const attemptedMigrationGenerations = new Map<EnvironmentId, number>();
+const connectionGenerationAtom = Atom.family((environmentId: EnvironmentId | null) =>
+  Atom.make((get) =>
+    environmentId === null
+      ? null
+      : Option.match(AsyncResult.value(get(environmentCatalog.stateAtom(environmentId))), {
+          onNone: () => null,
+          onSome: (connection) => (connection.phase === "connected" ? connection.generation : null),
+        }),
+  ),
+);
 
 const selectLegacyModelPreferences = (settings: ClientSettings) => ({
   favorites: settings.favorites,
@@ -337,22 +350,22 @@ export function useMigrateModelPreferences(
 ) {
   const clientSettings = useClientSettings(selectLegacyModelPreferences);
   const hydrated = useClientSettingsHydrated();
+  const connectionGeneration = useAtomValue(connectionGenerationAtom(environmentId));
   const migrate = useAtomCommand(serverEnvironment.updateSettings, { reportFailure: false });
   useEffect(() => {
     if (
       !environmentId ||
       !settings ||
       !hydrated ||
-      pendingModelPreferencesMigrations.has(environmentId)
+      connectionGeneration === null ||
+      attemptedMigrationGenerations.get(environmentId) === connectionGeneration
     )
       return;
     const patch = modelPreferencesMigrationPatch(settings, clientSettings);
     if (!patch) return;
-    pendingModelPreferencesMigrations.add(environmentId);
-    void migrate({ environmentId, input: { patch } }).finally(() =>
-      pendingModelPreferencesMigrations.delete(environmentId),
-    );
-  }, [clientSettings, environmentId, hydrated, migrate, settings]);
+    attemptedMigrationGenerations.set(environmentId, connectionGeneration);
+    void migrate({ environmentId, input: { patch } });
+  }, [clientSettings, connectionGeneration, environmentId, hydrated, migrate, settings]);
 }
 
 /** Selecting inside the client store keeps a client write from re-rendering unaffected readers. */
@@ -420,6 +433,8 @@ export async function prepareModelPreferencesPatch(
 }
 
 export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentId | null) {
+  const { t: uiT } = useUiLanguage();
+
   const settings = useAtomValue(
     environmentId ? serverEnvironment.settingsValueAtom(environmentId) : noEnvironmentSettingsAtom,
   );
@@ -432,8 +447,8 @@ export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentI
     } catch {
       toastManager.add({
         type: "error",
-        title: "Model preferences not saved",
-        description: "Could not load saved model preferences. Try again.",
+        title: uiT("Model preferences not saved"),
+        description: uiT("Could not load saved model preferences. Try again."),
       });
       return;
     }
@@ -443,6 +458,8 @@ export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentI
 
 /** Send the desired state so two clients adding a favorite do not cancel each other. */
 export function useToggleEnvironmentModelFavorite(environmentId: EnvironmentId | null) {
+  const { t: uiT } = useUiLanguage();
+
   const registry = use(RegistryContext);
   const pendingFavorites = useRef(
     new Map<string, { favorite: boolean; settings: ServerSettings; pending: boolean }>(),
@@ -459,8 +476,8 @@ export function useToggleEnvironmentModelFavorite(environmentId: EnvironmentId |
       } catch {
         toastManager.add({
           type: "error",
-          title: "Favorites not saved",
-          description: "Could not load saved model preferences. Try again.",
+          title: uiT("Favorites not saved"),
+          description: uiT("Could not load saved model preferences. Try again."),
         });
         return;
       }
@@ -582,9 +599,11 @@ function useSharedSettingsSyncTargetIds(includePending = false): ReadonlyArray<E
 }
 
 function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
+  const { t: uiT } = useUiLanguage();
+
   useEnvironmentScope(environmentId, AuthSettingsWriteScope);
   const persist = useAtomCommand(serverEnvironment.updateSettings, {
-    label: "server settings update",
+    label: uiT("server settings update"),
     reportFailure: false,
   });
   const { environments } = useEnvironments();
@@ -597,7 +616,7 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       const error = squashAtomCommandFailure(result);
       toastManager.add({
         type: "error",
-        title: "Setting not saved",
+        title: uiT("Setting not saved"),
         description: `Could not save on ${label}: ${error instanceof Error ? error.message : "The save failed. Try reconnecting and saving again."}`,
       });
     }
@@ -615,7 +634,7 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
     if (Object.keys(serverPatch).length > 0 && !canWriteServerPatch) {
       toastManager.add({
         type: "warning",
-        title: "Setting not saved",
+        title: uiT("Setting not saved"),
         description: `This connection lacks permission to change settings on ${environments.find((target) => target.environmentId === environmentId)?.label ?? "the selected environment"}.`,
       });
     }
@@ -625,7 +644,7 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       const warnUnsaved = (description = PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE) =>
         toastManager.add({
           type: "warning",
-          title: "Setting not saved",
+          title: uiT("Setting not saved"),
           description,
         });
       if (Object.keys(localPatch).length > 0) {
@@ -728,8 +747,8 @@ export function useUpdatePrimarySettings() {
   return useUpdateSettingsTarget(usePrimaryEnvironment()?.environmentId ?? null);
 }
 
-export function useUpdateClientSettings() {
-  return (patch: ClientSettingsPatch) => persistClientSettingsPatch(patch);
+export function updateClientSettings(patch: ClientSettingsPatch): Promise<void> {
+  return persistClientSettingsPatch(patch);
 }
 
 export function __resetClientSettingsPersistenceForTests(): void {

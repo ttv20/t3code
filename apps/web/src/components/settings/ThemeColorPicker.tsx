@@ -162,7 +162,7 @@ function ThemeColorPickerPanel({
   return (
     <div className="w-72 bg-popover">
       <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
-        <div className="min-w-0">
+        <div className="min-w-0 [unicode-bidi:plaintext]">
           <p className="truncate text-xs font-semibold text-foreground">{uiT(label)}</p>
           <p className="text-2xs text-muted-foreground">{uiT("Choose a color")}</p>
         </div>

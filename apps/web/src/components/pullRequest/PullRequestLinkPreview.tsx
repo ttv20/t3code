@@ -96,7 +96,7 @@ export function PullRequestLinkPreview({
       : resolvePullRequestState({ state: detail.state, isDraft: detail.isDraft });
   const authorLabel =
     detail?.author === null
-      ? "ghost"
+      ? uiT("ghost")
       : detail?.author.name && detail.author.name !== detail.author.login
         ? `${detail.author.name} (@${detail.author.login})`
         : (detail?.author.login ?? null);
@@ -122,7 +122,7 @@ export function PullRequestLinkPreview({
             {detail === null ? (
               fallback
             ) : (
-              <div className="min-w-0">
+              <div className="min-w-0 [unicode-bidi:plaintext]">
                 <div className="flex min-w-0 items-center gap-1.5 text-2xs text-muted-foreground">
                   <span className="min-w-0 truncate">{detail.repository}</span>
                   <span className="shrink-0">#{detail.number}</span>

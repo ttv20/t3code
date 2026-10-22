@@ -63,7 +63,7 @@ export function DeviceControlsRail(props: {
       <div className="pointer-events-auto flex shrink-0 flex-col items-center gap-1 overflow-y-auto rounded-full border border-border/50 bg-background/80 p-2 shadow-sm [scrollbar-width:none]">
         <RailButton
           tooltipSide={popupSide}
-          label="Home"
+          label={uiT("Home")}
           disabled={inputDisabled}
           onClick={() => handle?.pressButton("home")}
         >
@@ -303,7 +303,7 @@ function RailButton(props: {
       {props.disabled && props.description ? (
         <TooltipTrigger
           render={
-            <span className="inline-flex" tabIndex={0} role="group" aria-label={props.label} />
+            <span className="inline-flex" tabIndex={0} role="group" aria-label={uiT(props.label)} />
           }
         >
           {button}

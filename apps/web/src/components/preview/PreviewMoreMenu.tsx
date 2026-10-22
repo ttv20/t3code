@@ -1,7 +1,4 @@
-"use client";
-
-import { useUiLanguage } from "../../i18n";
-
+import { useUiLanguage, UiText } from "../../i18n";
 import type { DesktopPreviewColorScheme } from "@t3tools/contracts";
 import { Minus, MoreVertical, Plus as PlusIcon, RotateCcw } from "lucide-react";
 
@@ -55,30 +52,22 @@ interface Props {
   move?: { readonly label: string; readonly onMove: () => void };
 }
 
-const MenuTriggerButton = () => {
-  const { t: uiT } = useUiLanguage();
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <MenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                type="button"
-                aria-label={uiT("Preview menu")}
-              />
-            }
-          />
-        }
-      >
-        <MoreVertical />
-      </TooltipTrigger>
-      <TooltipPopup>{uiT("More")}</TooltipPopup>
-    </Tooltip>
-  );
-};
+const MenuTriggerButton = () => (
+  <Tooltip>
+    <TooltipTrigger
+      render={
+        <MenuTrigger
+          render={<Button variant="ghost" size="icon-xs" type="button" aria-label="Preview menu" />}
+        />
+      }
+    >
+      <MoreVertical />
+    </TooltipTrigger>
+    <TooltipPopup>
+      <UiText message="More" />
+    </TooltipPopup>
+  </Tooltip>
+);
 
 export function PreviewMoreMenu({
   enabled,
@@ -92,6 +81,7 @@ export function PreviewMoreMenu({
   move,
 }: Props) {
   const { t: uiT } = useUiLanguage();
+
   const zoomLabel = `${Math.round(zoomFactor * 100)}%`;
   const disabled = !enabled;
   return (
@@ -185,7 +175,8 @@ export function PreviewMoreMenu({
           {profileName ? (
             <MenuGroupLabel className="max-w-64">
               <span className="block truncate">
-                {uiT("Profile:")} {profileName}
+                {uiT("Profile:")}
+                {profileName}
               </span>
             </MenuGroupLabel>
           ) : null}

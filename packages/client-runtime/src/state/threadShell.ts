@@ -1,3 +1,4 @@
+import { createUiTranslator, type UiLocale } from "../i18n.ts";
 import type {
   EnvironmentId,
   OrchestrationV2ShellSnapshot,
@@ -85,12 +86,18 @@ export function pendingSubagentRequestsByThread(
 
 export function childThreadInputsTitle(
   children: ReadonlyArray<Pick<EnvironmentThreadShell, "hasPendingApprovals">>,
+  locale: UiLocale = "en",
 ): string {
   const approvals = children.filter((child) => child.hasPendingApprovals).length;
   const need = approvals === 0 ? "input" : approvals === children.length ? "approval" : "you";
-  return children.length === 1
-    ? `Subagent needs ${need}`
-    : `${children.length} subagents need ${need}`;
+  const messages = {
+    input: ["Subagent needs input", "{0} subagents need input"],
+    approval: ["Subagent needs approval", "{0} subagents need approval"],
+    you: ["Subagent needs you", "{0} subagents need you"],
+  } as const;
+  return createUiTranslator(locale)(messages[need][children.length === 1 ? 0 : 1], {
+    "0": children.length,
+  });
 }
 
 const sameWireThreadShell = Schema.toEquivalence(OrchestrationV2ThreadShell);
@@ -388,6 +395,20 @@ export function createEnvironmentThreadShellAtoms(input: {
     return previousThreadShells;
   }).pipe(Atom.withLabel("environment-thread-shell-list"));
 
+  // Lists that arrange threads read this, so a running thread's streaming
+  // ticks reach only what reads its live shell.
+  let previousQuietThreadShells: ReadonlyArray<EnvironmentThreadShell> = [];
+  const quietThreadShellsAtom = Atom.make((get) => {
+    const next: EnvironmentThreadShell[] = [];
+    for (const ref of get(threadRefsAtom)) {
+      const shell = get(quietThreadShellAtomFamily(threadKey(ref)));
+      if (shell !== null) next.push(shell);
+    }
+    if (arrayElementsEqual(previousQuietThreadShells, next)) return previousQuietThreadShells;
+    previousQuietThreadShells = next;
+    return next;
+  }).pipe(Atom.withLabel("environment-quiet-thread-shell-list"));
+
   let previousNavigationShells: ReadonlyArray<EnvironmentThreadShell> = [];
   const navigationThreadShellsAtom = Atom.make((get) => {
     const next: EnvironmentThreadShell[] = [];
@@ -411,6 +432,7 @@ export function createEnvironmentThreadShellAtoms(input: {
     environmentThreadRefsByProjectAtom,
     threadRefsAtom,
     threadShellsAtom,
+    quietThreadShellsAtom,
     navigationThreadShellsAtom,
     threadShellsForProjectRefsAtom: (refs: ReadonlyArray<ScopedProjectRef>) =>
       threadShellsForProjectRefsAtomFamily(projectRefCollectionKey(refs)),

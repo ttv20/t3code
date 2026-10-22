@@ -11,10 +11,13 @@ import {
   TextAppearancePreview,
 } from "../components/AppearancePreviews";
 import { FontSizeSliderRow } from "../components/FontSizeSliderRow";
+import { SettingsSwitchRow } from "../../components/SettingsSwitchRow";
 
 export function TextAppearanceSection() {
   const { t: uiT } = useUiLanguage();
-  const { isReady, appearance, setBaseFontSize } = useAppearancePreferences();
+
+  const { isReady, appearance, setBaseFontSize, mathRenderingEnabled, setMathRenderingEnabled } =
+    useAppearancePreferences();
 
   return (
     <SettingsSection title={uiT("Text")}>
@@ -30,6 +33,13 @@ export function TextAppearanceSection() {
         step={BASE_FONT_SIZE_STEP}
         value={appearance.baseFontSize}
         valueLabel={`${appearance.baseFontSize} pt`}
+      />
+      <SettingsSwitchRow
+        disabled={!isReady}
+        icon="plusminus"
+        label={uiT("Render math")}
+        value={mathRenderingEnabled}
+        onValueChange={setMathRenderingEnabled}
       />
     </SettingsSection>
   );

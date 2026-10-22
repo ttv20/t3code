@@ -77,7 +77,7 @@ function TimelineComment({ comment }: { comment: PullRequestComment }) {
     >
       <View className="flex-row items-center gap-2">
         <PullRequestAvatar actor={comment.author} size={22} />
-        <View className="min-w-0 flex-1">
+        <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <Text className="text-sm">
             <Text className="font-t3-medium">{comment.author?.login ?? uiT("Unknown author")}</Text>
             <Text className="text-foreground-muted">

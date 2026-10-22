@@ -10,6 +10,7 @@ export interface ComposerTasksProgress {
   readonly step: string;
   readonly completedSteps: number;
   readonly totalSteps: number;
+  readonly live: boolean;
 }
 
 export interface ComposerTaskStep {
@@ -73,6 +74,7 @@ function TaskSummary({
   readonly steps: readonly ComposerTaskStep[];
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <>
       <ComposerBanner.Icon>
@@ -115,6 +117,7 @@ export const ComposerTasksBadge = memo(function ComposerTasksBadge({
   readonly steps: readonly ComposerTaskStep[];
 }) {
   const { t: uiT } = useUiLanguage();
+
   if (progress.totalSteps <= 0) return null;
 
   const row = (
@@ -155,6 +158,7 @@ export const ComposerTasksContent = memo(function ComposerTasksContent({
   readonly steps: readonly ComposerTaskStep[];
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <div
       data-chat-composer-collapsed-controls="true"
@@ -217,7 +221,7 @@ export const ComposerTasksContent = memo(function ComposerTasksContent({
                   >
                     {step.durationMs !== undefined
                       ? formatDuration(step.durationMs)
-                      : step.status === "inProgress"
+                      : step.status === "inProgress" && progress.live
                         ? uiT("now")
                         : null}
                   </span>

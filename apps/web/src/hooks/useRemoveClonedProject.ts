@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useRouter } from "@tanstack/react-router";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { ScopedProjectRef } from "@t3tools/contracts";
@@ -11,6 +12,8 @@ import { useAtomCommand } from "../state/use-atom-command";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
 
 export function useRemoveClonedProject() {
+  const { t: uiT } = useUiLanguage();
+
   const router = useRouter();
   const deleteProject = useAtomCommand(projectEnvironment.delete, { reportFailure: false });
 
@@ -28,7 +31,7 @@ export function useRemoveClonedProject() {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: "Failed to remove project",
+          title: uiT("Failed to remove project"),
           description: error instanceof Error ? error.message : "An error occurred.",
         }),
       );

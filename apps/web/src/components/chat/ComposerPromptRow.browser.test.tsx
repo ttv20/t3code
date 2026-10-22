@@ -1,26 +1,10 @@
-import { act, createRef, useLayoutEffect, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
+import { render } from "../../../test/render";
+import { createRef, useLayoutEffect, useState } from "react";
+import { expect, it, vi } from "vite-plus/test";
 import { ComposerPromptEditor, type ComposerPromptEditorHandle } from "../ComposerPromptEditor";
 import { observeResize } from "../../lib/observeResize";
 import { ComposerPromptRow } from "./ComposerPromptRow";
 import "~/index.css";
-
-let root: Root;
-let container: HTMLDivElement;
-
-beforeEach(() => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
-  vi.unstubAllGlobals();
-});
 
 function Composer({
   direction,
@@ -71,10 +55,7 @@ function Composer({
   );
 }
 
-const nextFrame = () =>
-  act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
-
-function expectClearance(direction: "ltr" | "rtl", selector: string) {
+function expectClearance(container: HTMLElement, direction: "ltr" | "rtl", selector: string) {
   const prompt = container.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
   const actions = container
     .querySelector<HTMLElement>('[data-testid="actions"]')!
@@ -88,22 +69,23 @@ it.each(["ltr", "rtl"] as const)(
   "keeps the collapsed placeholder clear of growing actions in %s",
   async (direction) => {
     for (const width of [360, 700]) {
-      await act(async () => root.render(<Composer direction={direction} width={width} />));
-      await nextFrame();
-      expectClearance(direction, ".pointer-events-none");
-      await act(async () => root.render(<Composer direction={direction} width={width} compact />));
-      await nextFrame();
-      await nextFrame();
-      expectClearance(direction, ".pointer-events-none");
+      // The geometry fixture has no navigation.
+      await using screen = await render(<Composer direction={direction} width={width} />, {
+        router: false,
+      });
+      await vi.waitFor(() => expectClearance(screen.container, direction, ".pointer-events-none"));
+      await screen.rerender(<Composer direction={direction} width={width} compact />);
+      await vi.waitFor(() => expectClearance(screen.container, direction, ".pointer-events-none"));
     }
   },
 );
 
 it("reserves the RTL interface's action side even when the typed text is LTR", async () => {
-  await act(async () =>
-    root.render(<Composer direction="rtl" width={360} value="English prompt" compact />),
+  // The geometry fixture has no navigation.
+  await using screen = await render(
+    <Composer direction="rtl" width={360} value="English prompt" compact />,
+    { router: false },
   );
-  await nextFrame();
-  expectClearance("rtl", ".tiptap");
-  expect(getComputedStyle(container.querySelector(".tiptap")!).direction).toBe("ltr");
+  await vi.waitFor(() => expectClearance(screen.container, "rtl", ".tiptap"));
+  expect(getComputedStyle(screen.container.querySelector(".tiptap")!).direction).toBe("ltr");
 });

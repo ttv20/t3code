@@ -10,7 +10,7 @@ import { useLocation } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-import { APP_DISPLAY_NAME } from "~/branding";
+import { APP_DISPLAY_NAME, DESKTOP_DOWNLOAD_URL } from "~/branding";
 import { useLocalStorage } from "~/hooks/useLocalStorage";
 import { isHostedStaticApp } from "~/hostedPairing";
 import { useEnvironments } from "~/state/environments";
@@ -22,7 +22,6 @@ import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 
 const OPENER_STORAGE_KEY = "t3code:prompt-link-opener";
 const Opener = Schema.NullOr(Schema.Literals(["app", "browser"]));
-const DOWNLOAD_URL = "https://t3.codes/download";
 
 interface LinkSummary {
   readonly prompt: LinkedPrompt | null;
@@ -101,6 +100,7 @@ function HostedPromptLinkLanding({
   readonly onChoose: (choice: "app" | "browser", remember: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const summary = summarize(appPath);
   const [remember, setRemember] = useState(false);
   const deepLink = promptLinkDeepLink(appPath);
@@ -137,12 +137,10 @@ function HostedPromptLinkLanding({
         <Alert className="mt-5" variant="error">
           <AlertTitle>{uiT("This prompt had hidden characters, it may be malicious")}</AlertTitle>
           <AlertDescription>
-            {uiT(
-              prompt.hiddenCharacters === 1
-                ? "T3 Code removed {0} hidden character. Read the prompt before you send it."
-                : "T3 Code removed {0} hidden characters. Read the prompt before you send it.",
-              { "0": prompt.hiddenCharacters },
-            )}
+            {uiT("T3 Code removed")}
+            {prompt.hiddenCharacters} {uiT("hidden character")}
+            {prompt.hiddenCharacters === 1 ? "" : "s"}
+            {uiT(". Read the prompt before you send it.")}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -161,7 +159,7 @@ function HostedPromptLinkLanding({
             {uiT("Continue here")}
           </Button>
         ) : null}
-        <Button variant="ghost" render={<a href={DOWNLOAD_URL} />}>
+        <Button variant="ghost" render={<a href={DESKTOP_DOWNLOAD_URL} />}>
           {uiT("Get T3 Code")}
         </Button>
       </div>

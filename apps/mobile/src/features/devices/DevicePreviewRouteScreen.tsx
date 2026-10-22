@@ -1,5 +1,7 @@
-import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
+import { SheetCloseButton } from "../../components/ui/SheetHeader";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
 import {
   deviceToolVersionLabels,
   deviceToolUpdateOwnership,
@@ -26,6 +28,8 @@ import {
   findHeaderMenuAction,
 } from "../../components/ui/headerMenu.android";
 import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
+import { deriveBottomControlInsets } from "../../lib/reserved-regions";
+import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { deviceEnvironment, refreshDeviceHubAccess, useDeviceHubAccess } from "../../state/device";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -74,7 +78,10 @@ function DevicePreviewScreen({
   readonly onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const insets = useSafeAreaInsets();
+  // NativeColumnContent already insets the sides, so only a book fold moves the reveal handle.
+  const handleBounds = deriveBottomControlInsets(useNativeColumnLayoutMetrics());
   const { themeVariables } = useAppearancePreferences();
   const focused = useIsFocused();
   const [foreground, setForeground] = useState(AppState.currentState !== "background");
@@ -228,7 +235,7 @@ function DevicePreviewScreen({
       : []),
     {
       id: "shutdown",
-      title: shuttingDown ? uiT("Shutting down…") : uiT("Shut down device"),
+      title: shuttingDown ? "Shutting down…" : "Shut down device",
       icon: "power",
       disabled: !preview || shuttingDown,
       onPress: () => void shutDownDevice(),
@@ -272,13 +279,9 @@ function DevicePreviewScreen({
               <AppText selectable className="text-center text-sm text-foreground-muted">
                 {state.error}
               </AppText>
-              <Pressable
-                accessibilityRole="button"
-                className="rounded-full border border-secondary-border bg-secondary px-6 py-3"
-                onPress={state.refresh}
-              >
-                <AppText className="text-secondary-foreground">{uiT("Retry")}</AppText>
-              </Pressable>
+              <View className="items-center">
+                <Button label={uiT("Retry")} tone="secondary" onPress={state.refresh} />
+              </View>
             </>
           ) : focused && foreground ? (
             <AppActivityIndicator color={themeVariables["--color-icon"]} />
@@ -301,16 +304,15 @@ function DevicePreviewScreen({
           ) : null}
           <View className="px-3" style={{ paddingTop: Math.max(insets.top, 12) }}>
             <GlassSurface className="flex-row items-center gap-1 p-1">
-              <ControlPill
+              <SheetCloseButton
                 accessibilityLabel={uiT("Close device preview")}
-                icon="xmark"
-                onPress={onClose}
+                onClose={onClose}
               />
               <AppText numberOfLines={1} className="flex-1 text-center font-t3-medium text-base">
                 {preview?.name ?? uiT("Devices")}
               </AppText>
               <ControlPill
-                accessibilityLabel="Home"
+                accessibilityLabel={uiT("Home")}
                 icon="house"
                 disabled={!inputConnected}
                 onPress={pressHome}
@@ -326,7 +328,10 @@ function DevicePreviewScreen({
           accessibilityHint={uiT("Shaking the phone also shows them")}
           hitSlop={12}
           className="absolute h-6 w-16 items-center justify-center self-center"
-          style={{ top: Math.max(insets.top - 18, 4) }}
+          style={{
+            top: Math.max(insets.top - 18, 4),
+            transform: [{ translateX: (handleBounds.left - handleBounds.right) / 2 }],
+          }}
           onPress={() => setControlsVisible(true)}
         >
           <View className="h-1.5 w-10 rounded-full bg-white/40" />
@@ -338,6 +343,7 @@ function DevicePreviewScreen({
 
 function DeviceOptionsMenu({ items }: { readonly items: ReadonlyArray<AppBarMenuItem> }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Menu
       actions={androidHeaderMenuActions(items)}
@@ -371,6 +377,7 @@ function OpenDevicePreview({
   readonly onInputConnected: (connected: boolean) => Promise<void>;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { session } = preview;
   const { themeVariables } = useAppearancePreferences();
   const { access, error, refresh } = useDeviceHubAccess(environmentId, session.hostId);
@@ -403,13 +410,9 @@ function OpenDevicePreview({
           <AppText selectable className="text-center text-sm text-foreground-muted">
             {error}
           </AppText>
-          <Pressable
-            accessibilityRole="button"
-            className="rounded-full border border-secondary-border bg-secondary px-6 py-3"
-            onPress={refresh}
-          >
-            <AppText className="text-secondary-foreground">{uiT("Retry")}</AppText>
-          </Pressable>
+          <View className="items-center">
+            <Button label={uiT("Retry")} tone="secondary" onPress={refresh} />
+          </View>
         </>
       ) : (
         <>

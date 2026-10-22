@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Platform } from "react-native";
 import { useResolveClassNames } from "uniwind";
 
@@ -12,13 +13,15 @@ export function ListActionRow(
     readonly onPress: () => void;
   },
 ) {
+  const { t: uiT } = useUiLanguage();
+
   const rippleStyle = useResolveClassNames("bg-subtle-strong");
   const disabled = Boolean(props.disabled || props.loading);
   return (
     <RowPressable
       accessibilityRole="button"
-      accessibilityLabel={props.label}
-      accessibilityHint={props.description}
+      accessibilityLabel={uiT(props.label)}
+      accessibilityHint={uiT(props.description)}
       accessibilityState={{ disabled, busy: Boolean(props.loading) }}
       disabled={disabled}
       onPress={props.onPress}

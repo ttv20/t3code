@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { Pressable } from "react-native";
 
@@ -9,10 +10,12 @@ export function SidebarFilterButton(props: {
   readonly accessibilityLabel: string;
   readonly icon: SidebarFilterButtonIcon;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <Pressable
       className="size-11 cursor-pointer items-center justify-center rounded-full bg-subtle active:opacity-70"
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityRole="button"
       hitSlop={4}
     >

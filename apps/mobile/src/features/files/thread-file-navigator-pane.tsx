@@ -22,6 +22,7 @@ import { useEnvironmentQuery } from "../../state/query";
 import { useEnvironmentPresentation } from "../../state/presentation";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { FileTreeBrowser } from "./FileTreeBrowser";
+import { NativeInspectorContent } from "../../native/NativeInspectorContent";
 import { useFileTreeEntries } from "./useFileTreeEntries";
 import { preloadWorkspaceFileContents } from "./preload-workspace-file";
 import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
@@ -73,7 +74,7 @@ export function ThreadFileNavigatorPane(props: {
     () =>
       [
         {
-          accessibilityLabel: "Close files",
+          accessibilityLabel: uiT("Close files"),
           icon: { name: "xmark", type: "sfSymbol" as const },
           identifier: "thread-file-navigator-close",
           onPress: toggleAuxiliaryPane,
@@ -101,6 +102,7 @@ export function ThreadFileNavigatorPane(props: {
       isPending={fileAccess.isPending || entriesQuery.isPending}
       isRefreshing={entriesQuery.isRefreshing}
       searchQuery={searchQuery}
+      searchResultPaths={entriesQuery.searchResultPaths}
       searchTruncated={entriesQuery.searchTruncated}
       selectedPath={props.selectedPath}
       onPreviewFile={handlePreviewFile}
@@ -121,7 +123,7 @@ export function ThreadFileNavigatorPane(props: {
             scrollEdgeEffects={headerScrollEdgeEffects}
             style={{ backgroundColor: sheetColor, flex: 1 }}
           >
-            {fileTree}
+            <NativeInspectorContent>{fileTree}</NativeInspectorContent>
             <ScreenStackHeaderConfig
               backgroundColor="rgba(0,0,0,0)"
               color={foregroundColor}
@@ -182,7 +184,7 @@ export function ThreadFileNavigatorPane(props: {
           />
         ) : (
           <View className="h-12 flex-row items-center gap-2 px-3">
-            <View className="min-w-0 flex-1">
+            <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
               <Text className="text-sm font-t3-bold text-foreground">{uiT("Files")}</Text>
               <Text className="text-xs text-foreground-muted" numberOfLines={1}>
                 {props.projectName}

@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { ThreadUndoNotice } from "./ThreadUndoNotice";
 import { Toolbar } from "../../components/ui/Toolbar";
 import { use } from "react";
 import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
@@ -36,6 +37,7 @@ import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
 
 export function HomeRouteScreen() {
   const { t: uiT } = useUiLanguage();
+
   const { width: windowWidth } = useWindowDimensions();
   const nativePrimaryColumn = use(NativePrimaryColumnContext);
   const columnMetrics = useNativeColumnLayoutMetrics();
@@ -229,7 +231,6 @@ export function HomeRouteScreen() {
           />
         )}
         <HomeHeader
-          usesWorkspaceToolbar={workspace !== null}
           environments={environments}
           projects={projectFilterOptions}
           searchQuery={searchQuery}
@@ -308,6 +309,7 @@ export function HomeRouteScreen() {
           selectedProjectKey={selectedProjectKey}
           threads={threads}
         />
+        <ThreadUndoNotice visible={visible} />
       </>
     </AndroidHomeFabLayout>
   );

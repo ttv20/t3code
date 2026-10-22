@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type {
   PullRequestActor,
   PullRequestMergeability,
@@ -77,7 +76,7 @@ export function PullRequestRowLines({
   updatedAt?: string | null | undefined;
 }) {
   return (
-    <span className="min-w-0 flex-1">
+    <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
       <span className="flex min-w-0 items-center gap-1.5">
         {number}
         <span dir="auto" className="min-w-0 truncate text-sm">

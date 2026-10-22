@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffectEvent, useState } from "react";
 import { Platform, Pressable, StyleSheet, View, type AccessibilityActionEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -18,35 +18,34 @@ interface WorkspacePaneDividerProps {
 
 export function WorkspacePaneDivider(props: WorkspacePaneDividerProps) {
   const { t: uiT } = useUiLanguage();
-  const latestProps = useRef(props);
-  latestProps.current = props;
+
   const [dragging, setDragging] = useState(false);
-  const handleResizeStart = useCallback(() => {
+  // The pan callbacks fire after render, so effect events read the latest props
+  // while the gesture object stays stable across renders.
+  const handleResizeStart = useEffectEvent(() => {
     setDragging(true);
-    latestProps.current.onResizeStart?.();
-  }, []);
-  const handleResize = useCallback((translationX: number) => {
-    latestProps.current.onResizeBy(translationX * latestProps.current.resizeDirection);
-  }, []);
-  const handleResizeEnd = useCallback(() => {
+    props.onResizeStart?.();
+  });
+  const handleResize = useEffectEvent((translationX: number) => {
+    props.onResizeBy(translationX * props.resizeDirection);
+  });
+  const handleResizeEnd = useEffectEvent(() => {
     setDragging(false);
-    latestProps.current.onResizeEnd?.();
-  }, []);
-  const resizeGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-4, 4])
-        .failOffsetY([-24, 24])
-        .onStart(() => {
-          runOnJS(handleResizeStart)();
-        })
-        .onUpdate((event) => {
-          runOnJS(handleResize)(event.translationX);
-        })
-        .onFinalize(() => {
-          runOnJS(handleResizeEnd)();
-        }),
-    [handleResize, handleResizeEnd, handleResizeStart],
+    props.onResizeEnd?.();
+  });
+  const [resizeGesture] = useState(() =>
+    Gesture.Pan()
+      .activeOffsetX([-4, 4])
+      .failOffsetY([-24, 24])
+      .onStart(() => {
+        runOnJS(handleResizeStart)();
+      })
+      .onUpdate((event) => {
+        runOnJS(handleResize)(event.translationX);
+      })
+      .onFinalize(() => {
+        runOnJS(handleResizeEnd)();
+      }),
   );
 
   const handleAccessibilityAction = (event: AccessibilityActionEvent) => {
@@ -67,7 +66,7 @@ export function WorkspacePaneDivider(props: WorkspacePaneDividerProps) {
           { name: "increment", label: uiT("Make pane wider") },
           { name: "decrement", label: uiT("Make pane narrower") },
         ]}
-        accessibilityLabel={props.accessibilityLabel}
+        accessibilityLabel={uiT(props.accessibilityLabel)}
         accessibilityRole="adjustable"
         accessibilityValue={{
           now: Math.round(props.currentWidth),

@@ -10,7 +10,7 @@ import type { PullRequestReviewGuideExcerpt, PullRequestReviewPosition } from "@
 import { ArrowUpRightIcon } from "lucide-react";
 import { useState } from "react";
 
-import { useTheme } from "~/hooks/useTheme";
+import { useRenderedAppearance } from "~/hooks/useTheme";
 import {
   getRenderablePatch,
   resolveDiffThemeName,
@@ -166,12 +166,13 @@ export function GuideExcerpt({
         />
       ) : loading ? (
         <p className="rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
-          {uiT("Loading")} {excerpt.path}...
+          {uiT("Loading")}
+          {excerpt.path}...
         </p>
       ) : (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-xs text-muted-foreground">
           <span className="min-w-0 truncate">
-            <span className="font-mono text-foreground">{excerpt.path}</span> {uiT("lines")}{" "}
+            <span className="font-mono text-foreground">{excerpt.path}</span> {uiT("lines")}
             {excerpt.start}-{excerpt.end} {uiT("are not in the loaded diff.")}
           </span>
           <Button size="xs" variant="outline" onClick={() => onOpenFile(excerpt.path)}>
@@ -207,7 +208,7 @@ function ExcerptDiff({
 }) {
   const { t: uiT } = useUiLanguage();
 
-  const { resolvedTheme } = useTheme();
+  const resolvedTheme = useRenderedAppearance();
   const loadExcerptFiles = excerptLoader(excerpt, slice.rows, loadDiffFiles);
 
   const annotations = (() => {
@@ -363,7 +364,9 @@ function ExcerptDiff({
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="tabular-nums">
               {excerpt.side === "old" ? uiT("removed code, ") : ""}
-              {uiT("showing")} {slice.shown} {uiT("of")} {slice.total} {uiT("diff lines")}
+              {uiT("showing")}
+              {slice.shown} {uiT("of")}
+              {slice.total} {uiT("diff lines")}
             </span>
             <Button
               size="icon-xs"

@@ -1,9 +1,10 @@
 import { useUiLanguage } from "../../i18n";
 import { sortProjectsByGroupOrder } from "@t3tools/client-runtime/state/project-grouping";
 import { useMemo } from "react";
-import { ScrollView } from "react-native";
+import { Platform, ScrollView } from "react-native";
 import type { MenuProps } from "../../components/ui/Menu.types";
 import { ListFilterMenu } from "../workspace/ListFilterMenu";
+import { usePublishPullRequestFilterMenu } from "./PullRequestFilterMenuContext";
 import { useProjects, useThreadShells } from "../../state/entities";
 import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import { buildHomeProjectScopes, sortHomeProjectScopes } from "../home/homeThreadList";
@@ -25,6 +26,12 @@ const SORTS = {
   created: "Newest created",
   oldest: "Oldest updated",
 } as const;
+// On Android the row sits under ScreenContent's 28dp corner. A 12dp inset keeps the
+// 16dp chip radius concentric with it (28 - 12 = 16).
+const ROW_STYLE =
+  Platform.OS === "android"
+    ? { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8 }
+    : { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10, gap: 8 };
 const id = (field: string, value: string) => JSON.stringify([field, value]);
 function choices(field: string, options: Readonly<Record<string, string>>, selected: string) {
   return Object.entries(options).map(([value, title]) => ({
@@ -58,6 +65,8 @@ function useProjectsInSidebarOrder<Project extends { id: string; environmentId: 
 }
 
 export function PullRequestListFilters(props: {
+  /** Android sidebar rows sit further in than full-width rows; the pills follow them. */
+  readonly sidebar?: boolean;
   readonly environments: readonly { id: string; label: string }[];
   readonly environmentId: string | null;
   readonly onEnvironmentChange: (id: string | null) => void;
@@ -68,6 +77,7 @@ export function PullRequestListFilters(props: {
   readonly projects: readonly { id: string; title: string; environmentId: string }[];
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { value } = props;
   const projects = useProjectsInSidebarOrder(props.projects);
   const selectedLabels = value.filters.labels?.flat() ?? [];
@@ -96,6 +106,8 @@ export function PullRequestListFilters(props: {
         break;
       case "reset":
         props.onChange(DEFAULT_PR_LIST_CONTROLS);
+        // The Android header menu also holds the environment, so its reset clears that too.
+        if (next === "environment") props.onEnvironmentChange(null);
         break;
       case "state":
         props.onChange({ ...value, state: next as PullRequestListControls["state"] });
@@ -180,19 +192,19 @@ export function PullRequestListFilters(props: {
   const more: MenuProps["actions"] = [
     {
       id: "drafts",
-      title: value.filters.draft ? DRAFTS[value.filters.draft] : uiT("Drafts"),
+      title: value.filters.draft ? DRAFTS[value.filters.draft] : "Drafts",
       subactions: choices("draft", DRAFTS, value.filters.draft ?? "all"),
     },
     {
       id: "reviews",
-      title: value.filters.review ? REVIEWS[value.filters.review] : uiT("Reviews"),
+      title: value.filters.review ? REVIEWS[value.filters.review] : "Reviews",
       subactions: choices("review", REVIEWS, value.filters.review ?? "all"),
     },
     {
       id: "checks",
       title: value.filters.checks
         ? uiT("{0} checks", { "0": CHECKS[value.filters.checks] })
-        : uiT("Checks"),
+        : "Checks",
       subactions: choices("checks", CHECKS, value.filters.checks ?? "all"),
     },
     {
@@ -201,7 +213,7 @@ export function PullRequestListFilters(props: {
         projects.find(
           (project) =>
             project.id === value.projectId && project.environmentId === value.projectEnvironmentId,
-        )?.title ?? uiT("Project"),
+        )?.title ?? "Project",
       subactions: choices(
         "project",
         Object.fromEntries([
@@ -215,32 +227,91 @@ export function PullRequestListFilters(props: {
       ),
     },
     { id: "sort", title: SORTS[value.sort], subactions: choices("sort", SORTS, value.sort) },
-    {
-      id: id("reset", ""),
-      title: uiT("Reset filters"),
-      attributes: { disabled: count === 0 && value.sort === "updated" },
-    },
   ];
+  const reset = (withEnvironment: boolean): MenuProps["actions"][number] => ({
+    id: id("reset", withEnvironment ? "environment" : ""),
+    title: uiT("Reset filters"),
+    attributes: {
+      disabled:
+        count === 0 &&
+        value.sort === "updated" &&
+        (!withEnvironment || props.environmentId === null),
+    },
+  });
   const labels = [...new Set([...selectedLabels, ...props.labels])].slice(0, 60);
   const authors = [
     ...new Set([...(author && author !== "me" ? [author] : []), ...props.authors]),
   ].slice(0, 60);
+  const environmentActions = choices(
+    "environment",
+    Object.fromEntries([
+      ["", "All environments"],
+      ...props.environments.map((environment) => [environment.id, environment.label]),
+    ]),
+    props.environmentId ?? "",
+  );
+  const stateActions = choices("state", STATES, value.state);
+  const involvementActions = choices("involvement", INVOLVEMENT, value.involvement);
+  const labelActions: MenuProps["actions"] = [
+    { id: id("labels", ""), title: uiT("All labels"), state: selectedLabels.length ? "off" : "on" },
+    ...labels.map((label) => ({
+      id: id("label", label),
+      title: label,
+      state: selectedLabelSet.has(label) ? ("on" as const) : ("off" as const),
+    })),
+  ];
+  const authorActions = choices(
+    "author",
+    Object.fromEntries([
+      ["", "All authors"],
+      ["me", "Me"],
+      ...authors.map((login) => [login, login]),
+    ]),
+    author ?? "",
+  );
+  const customized = count > 0 || value.sort !== "updated" || props.environmentId !== null;
+  // The Android header's filter button opens every filter.
+  const headerMenu =
+    Platform.OS === "android"
+      ? {
+          actions: [
+            { id: "environment", title: uiT("Environment"), subactions: environmentActions },
+            { id: "state", title: uiT("State"), subactions: stateActions },
+            { id: "involvement", title: uiT("Involvement"), subactions: involvementActions },
+            { id: "labels", title: uiT("Labels"), subactions: labelActions },
+            { id: "author", title: uiT("Author"), subactions: authorActions },
+            ...more,
+            reset(true),
+          ],
+          onSelect: select,
+          customized,
+        }
+      : null;
+  usePublishPullRequestFilterMenu(headerMenu);
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10, gap: 8 }}
+      // In the Android sidebar the first pill lines up with the rows' content instead
+      // (8dp row margin + 12dp padding).
+      contentContainerStyle={
+        props.sidebar && Platform.OS === "android"
+          ? { ...ROW_STYLE, paddingHorizontal: 20 }
+          : ROW_STYLE
+      }
     >
-      <ListFilterMenu
-        label={count ? String(count) : uiT("Filters")}
-        icon
-        active={count > 0}
-        accessibilityLabel={
-          count ? uiT("Filters, {0} active", { "0": count }) : uiT("More filters")
-        }
-        actions={more}
-        onSelect={select}
-      />
+      {Platform.OS === "android" ? null : (
+        <ListFilterMenu
+          label={count ? String(count) : uiT("Filters")}
+          icon
+          active={count > 0}
+          accessibilityLabel={
+            count ? uiT("Filters, {0} active", { "0": count }) : uiT("More filters")
+          }
+          actions={[...more, reset(false)]}
+          onSelect={select}
+        />
+      )}
       {props.environments.length > 1 ? (
         <ListFilterMenu
           label={
@@ -248,14 +319,7 @@ export function PullRequestListFilters(props: {
               ?.label ?? uiT("All environments")
           }
           accessibilityLabel={uiT("Choose pull request environment")}
-          actions={choices(
-            "environment",
-            Object.fromEntries([
-              ["", "All environments"],
-              ...props.environments.map((environment) => [environment.id, environment.label]),
-            ]),
-            props.environmentId ?? "",
-          )}
+          actions={environmentActions}
           onSelect={select}
         />
       ) : null}
@@ -263,14 +327,14 @@ export function PullRequestListFilters(props: {
         label={STATES[value.state]}
         active={value.state !== "open"}
         accessibilityLabel={uiT("Filter by state")}
-        actions={choices("state", STATES, value.state)}
+        actions={stateActions}
         onSelect={select}
       />
       <ListFilterMenu
         label={INVOLVEMENT[value.involvement]}
         active={value.involvement !== "all"}
         accessibilityLabel={uiT("Filter by involvement")}
-        actions={choices("involvement", INVOLVEMENT, value.involvement)}
+        actions={involvementActions}
         onSelect={select}
       />
       <ListFilterMenu
@@ -279,33 +343,14 @@ export function PullRequestListFilters(props: {
         }
         active={selectedLabels.length > 0}
         accessibilityLabel={uiT("Filter by label")}
-        actions={[
-          {
-            id: id("labels", ""),
-            title: uiT("All labels"),
-            state: selectedLabels.length ? "off" : "on",
-          },
-          ...labels.map((label) => ({
-            id: id("label", label),
-            title: label,
-            state: selectedLabelSet.has(label) ? ("on" as const) : ("off" as const),
-          })),
-        ]}
+        actions={labelActions}
         onSelect={select}
       />
       <ListFilterMenu
         label={author === "me" ? uiT("By you") : (author ?? uiT("Author"))}
         active={Boolean(author)}
         accessibilityLabel={uiT("Filter by author")}
-        actions={choices(
-          "author",
-          Object.fromEntries([
-            ["", "All authors"],
-            ["me", "Me"],
-            ...authors.map((login) => [login, login]),
-          ]),
-          author ?? "",
-        )}
+        actions={authorActions}
         onSelect={select}
       />
     </ScrollView>

@@ -378,3 +378,7 @@ export function formatExpiresInLabel(isoDate: string, nowMs: number = Date.now()
   if (seconds > 0) tail.push(`${seconds}s`);
   return tail.length > 0 ? `Expires in ${days}d ${tail.join(" ")}` : `Expires in ${days}d`;
 }
+
+export function resolveHour12(timestampFormat: TimestampFormat): boolean {
+  return getTimestampFormatter(timestampFormat, false).resolvedOptions().hour12 ?? false;
+}

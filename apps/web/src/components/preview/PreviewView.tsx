@@ -1,6 +1,4 @@
-"use client";
 import { useUiLanguage } from "../../i18n";
-
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { previewStreamDownloadUrl } from "@t3tools/client-runtime/preview/server-browser-stream";
@@ -19,7 +17,12 @@ import {
   PREVIEW_ZOOM_LEVELS,
   type PreviewAdjustInput,
 } from "@t3tools/contracts";
-import { normalizePreviewUrl, resolveAddressBarInput } from "@t3tools/shared/preview";
+import {
+  normalizePreviewUrl,
+  resolveAddressBarInput,
+  previewPdfAssetUrl,
+  resolveSearchUrlTemplate,
+} from "@t3tools/shared/preview";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import {
@@ -32,6 +35,7 @@ import {
 import { type ComposerImageAttachment, useComposerDraftStore } from "~/composerDraftStore";
 import { capturePreviewAnnotationScreenshot } from "~/lib/previewAnnotation";
 import { ensureLocalApi } from "~/localApi";
+import { getClientSettings } from "~/hooks/useSettings";
 import {
   rememberPreviewUrl,
   updatePreviewServerSnapshot,
@@ -70,6 +74,7 @@ import {
 import { browserResponsiveViewportForToggle, useBrowserDefaults } from "~/browser/browserDefaults";
 import { BrowserDeviceToolbar } from "~/browser/BrowserDeviceToolbar";
 import { BROWSER_DEVICE_TOOLBAR_HEIGHT } from "~/browser/browserViewportLayout";
+import { useBrowserLayoutZoomFactor } from "~/browser/useBrowserLayoutZoomFactor";
 import { previewRuntimeTabId } from "~/browser/previewRuntimeTabId";
 import { BrowserSettingsReadError } from "~/browser/openFileInPreview";
 import { PreviewFileNotShown, PreviewUnreachable } from "./PreviewUnreachable";
@@ -218,6 +223,7 @@ export function PreviewView({
   const serverInputDisabled = isServerTab && serverControlledTabId !== runtimeTabId;
   const [serverFrameTabId, setServerFrameTabId] = useState<string | null>(null);
   const desktopOverlay = tabId ? (previewState.desktopByTabId[tabId] ?? null) : null;
+  const layoutZoomFactor = useBrowserLayoutZoomFactor(desktopOverlay?.zoomFactor ?? 1);
   const navStatus = snapshot?.navStatus ?? { _tag: "Idle" as const };
   const url = navStatus._tag === "Idle" ? "" : navStatus.url;
   const loading = desktopOverlay?.loading ?? navStatus._tag === "Loading";
@@ -282,7 +288,7 @@ export function PreviewView({
 
   const handleSubmitUrl = async (next: string) => {
     try {
-      const resolved = resolveAddressBarInput(next);
+      const resolved = resolveAddressBarInput(next, resolveSearchUrlTemplate(getClientSettings()));
       if (await navigateToResolvedUrl(resolved)) {
         recordVisitForThread(threadRef, resolved);
       }
@@ -317,7 +323,7 @@ export function PreviewView({
       toastManager.add({
         type: "error",
         title: uiT("Unable to change the browser tab"),
-        description: error instanceof Error ? error.message : uiT("An error occurred."),
+        description: error instanceof Error ? error.message : "An error occurred.",
       });
       return;
     }
@@ -369,7 +375,7 @@ export function PreviewView({
       toastManager.add({
         type: "error",
         title: uiT("Unable to resize browser viewport"),
-        description: error instanceof Error ? error.message : uiT("An error occurred."),
+        description: error instanceof Error ? error.message : "An error occurred.",
       });
       throw error;
     }
@@ -388,7 +394,7 @@ export function PreviewView({
       browserResponsiveViewportForToggle({
         defaults: browserDefaults,
         panelRect,
-        zoomFactor: serverOwnsRendering ? serverZoomFactor : desktopOverlay?.zoomFactor,
+        zoomFactor: isServerTab ? serverZoomFactor : layoutZoomFactor,
       }),
     ).catch(() => undefined);
   };
@@ -423,7 +429,9 @@ export function PreviewView({
     snapshot,
   );
   const moveLabel =
-    moveTarget === "server" ? `Open in ${environmentLabel}'s browser` : "Open on this computer";
+    moveTarget === "server"
+      ? `Open in ${environmentLabel}'s browser`
+      : uiT("Open on this computer");
   const handleMoveTab = async () => {
     if (!moveTarget || !tabId || !snapshot) return;
     const result = await openPreviewSession({
@@ -447,7 +455,7 @@ export function PreviewView({
       toastManager.add({
         type: "error",
         title: uiT("Unable to move the browser tab"),
-        description: error instanceof Error ? error.message : uiT("An error occurred."),
+        description: error instanceof Error ? error.message : "An error occurred.",
       });
       return;
     }
@@ -516,7 +524,7 @@ export function PreviewView({
       toastManager.add({
         type: "error",
         title: uiT("Unable to update popped-out preview"),
-        description: error instanceof Error ? error.message : uiT("An error occurred."),
+        description: error instanceof Error ? error.message : "An error occurred.",
       });
     });
   };
@@ -560,7 +568,7 @@ export function PreviewView({
                   stackedThreadToast({
                     type: "error",
                     title: uiT("Unable to copy recording path"),
-                    description: error instanceof Error ? error.message : uiT("An error occurred."),
+                    description: error instanceof Error ? error.message : "An error occurred.",
                     actionProps: revealAction,
                   }),
                 );
@@ -610,7 +618,7 @@ export function PreviewView({
           toastManager.add({
             type: "error",
             title: uiT("Unable to stop recording"),
-            description: error instanceof Error ? error.message : uiT("An error occurred."),
+            description: error instanceof Error ? error.message : "An error occurred.",
           });
         },
       );
@@ -697,7 +705,7 @@ export function PreviewView({
               updateScreenshotToast(
                 "error",
                 "Unable to copy screenshot path",
-                error instanceof Error ? error.message : uiT("An error occurred."),
+                error instanceof Error ? error.message : "An error occurred.",
               );
             },
           );
@@ -717,7 +725,7 @@ export function PreviewView({
               updateScreenshotToast(
                 "error",
                 "Unable to copy screenshot",
-                error instanceof Error ? error.message : uiT("An error occurred."),
+                error instanceof Error ? error.message : "An error occurred.",
               );
             },
           );
@@ -753,7 +761,7 @@ export function PreviewView({
         toastManager.add({
           type: "error",
           title: uiT("Unable to capture screenshot"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: error instanceof Error ? error.message : "An error occurred.",
         });
       },
     );
@@ -1000,6 +1008,11 @@ export function PreviewView({
                 environmentId={threadRef.environmentId}
                 threadId={threadRef.threadId}
                 tabId={snapshot.tabId}
+                pdfUrl={
+                  navStatus._tag === "Success"
+                    ? previewPdfAssetUrl(url, environmentHttpBaseUrl)
+                    : null
+                }
                 visible={visible}
                 onFirstFrame={() => setServerFrameTabId(runtimeTabId)}
                 onControl={(control) =>
@@ -1050,7 +1063,7 @@ export function PreviewView({
         !activeRecordingTabIds.has(runtimeTabId) ? (
           <AgentBrowserCursor
             tabId={runtimeTabId}
-            zoomFactor={desktopOverlay.zoomFactor}
+            zoomFactor={layoutZoomFactor}
             controller={controller}
           />
         ) : null}

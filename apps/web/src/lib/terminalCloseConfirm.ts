@@ -19,7 +19,7 @@ export async function confirmTerminalClose(
       labels.length === 1
         ? [
             t('Close terminal "{0}"?', { "0": labels[0] }),
-            "This stops the running process and clears its history.",
+            t("This stops the running process and clears its history."),
           ].join("\n")
         : [
             t("Close {0} terminals?", { "0": labels.length }),

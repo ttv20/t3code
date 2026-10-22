@@ -6,6 +6,7 @@ import { Platform, Pressable, ScrollView, useWindowDimensions, View } from "reac
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AndroidSheetHeader } from "../../../components/ui/AndroidScreenHeader";
+import { SheetHeader } from "../../../components/ui/SheetHeader";
 import { ScreenContent } from "../../../components/ui/ScreenContent";
 import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { AppText as Text, AppTextInput as TextInput } from "../../../components/ui/AppText";
@@ -43,7 +44,8 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
       : null,
   );
 
-  const currentBranchLabel = gitStatus.data?.refName ?? selectedThread?.branch ?? "Detached HEAD";
+  const currentBranchLabel =
+    gitStatus.data?.refName ?? selectedThread?.branch ?? uiT("Detached HEAD");
   const currentWorktreePath = selectedThreadWorktreePath;
   const availableBranches = gitState.selectedThreadBranches;
   const branchesLoading = gitState.selectedThreadBranchesLoading;
@@ -83,11 +85,18 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
           onBack={() => navigation.goBack()}
           hideBottomBorder
         />
-      ) : null}
+      ) : (
+        <SheetHeader
+          presentation="native"
+          title={uiT("Branches & worktrees")}
+          onClose={() => navigation.goBack()}
+        />
+      )}
       <ScreenContent fitToContents>
         <ScrollView
           nestedScrollEnabled
           className="android:shrink android:grow-0 ios:flex-1"
+          contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentInset={{ bottom: Math.max(insets.bottom, 18) + 18 }}
@@ -193,11 +202,11 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
               const disabled = disabledExistingBranches.has(branch.name);
               const subtitle = branch.worktreePath
                 ? branch.worktreePath === currentWorktreePath
-                  ? "Checked out in this thread"
-                  : "Checked out in another worktree"
+                  ? uiT("Checked out in this thread")
+                  : uiT("Checked out in another worktree")
                 : branch.isDefault
-                  ? "Default branch"
-                  : "Local branch";
+                  ? uiT("Default branch")
+                  : uiT("Local branch");
 
               return (
                 <Pressable

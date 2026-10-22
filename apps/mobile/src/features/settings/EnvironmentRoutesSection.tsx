@@ -1,5 +1,6 @@
-import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type ConnectionRoute,
@@ -54,6 +55,7 @@ export function EnvironmentRoutesSection({
   readonly onAddRoute: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const entry = useAtomValue(environmentCatalog.catalogValueAtom).entries.get(environmentId);
   const prepared = useAtomValue(environmentSession.preparedConnectionValueAtom(environmentId));
   const sessionResult = useAtomValue(environmentSession.sessionStateAtom(environmentId));
@@ -134,15 +136,11 @@ export function EnvironmentRoutesSection({
       title={uiT("Routes")}
       trailing={
         routes.length > 1 ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={editing ? uiT("Done") : uiT("Edit")}
+            tone="text"
             onPress={() => setEditing((value) => !value)}
-            className="px-2 py-1 active:opacity-70"
-          >
-            <Text className="text-sm font-t3-medium text-foreground android:text-primary-text">
-              {editing ? uiT("Done") : uiT("Edit")}
-            </Text>
-          </Pressable>
+          />
         ) : undefined
       }
     >
@@ -165,7 +163,7 @@ export function EnvironmentRoutesSection({
               </Text>
               {AUTH_SCOPE_OPTIONS.map(({ scope, title }) => (
                 <Text key={scope} className="text-sm text-foreground">
-                  {uiT(title)}:{" "}
+                  {title}:{" "}
                   {sessionGrantsScope(session, scope) ? uiT("Allowed") : uiT("Not granted")}
                 </Text>
               ))}
@@ -241,6 +239,7 @@ function RouteRow(props: {
   readonly onRemove: (() => void) | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { route, lifted, offset } = props;
   const label = connectionRouteLabel(route);
   const address = connectionRouteAddress(route);
@@ -305,7 +304,7 @@ function RouteRow(props: {
         <View className="min-w-0 flex-1 gap-0.5 android:gap-1">
           <View className="flex-row items-center gap-2">
             <Text numberOfLines={1} className="shrink text-lg text-foreground android:text-base">
-              {uiT(label)}
+              {label}
             </Text>
             {props.inUse ? (
               <StatusPill {...connectionTone("connected")} label={uiT("In use")} size="compact" />

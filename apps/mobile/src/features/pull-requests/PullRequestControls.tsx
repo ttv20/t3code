@@ -46,10 +46,12 @@ export function PullRequestCardRow(props: {
   readonly expanded?: boolean;
   readonly children?: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <Pressable
       accessibilityRole={props.onPress || props.menu ? "button" : undefined}
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityState={props.expanded === undefined ? undefined : { expanded: props.expanded }}
       onPress={props.onPress}
       disabled={!props.onPress && !props.menu}
@@ -124,7 +126,7 @@ export function PullRequestActionToolbar(props: {
   const pendingReview = canReview && draft.comments.length > 0;
   const showAgentControls = agent.canAsk || !permissions.connected;
   const canOpenThread = agent.threads.length > 0 || showAgentControls;
-  const threadLabel = agent.threads.length ? "Continue thread" : "Work on PR";
+  const threadLabel = agent.threads.length ? uiT("Continue thread") : uiT("Work on PR");
   const primaryLabel = pendingReview ? `Submit review · ${draft.comments.length}` : threadLabel;
   const chooseThread = agent.threads.length > 1;
   const agentActions = agent.actions.filter((action) => action.task !== "ask");
@@ -203,7 +205,7 @@ export function PullRequestActionToolbar(props: {
       disabled={"attributes" in item && item.attributes.disabled}
       onPress={() => agent.select(item.id)}
     >
-      <Toolbar.Label>{item.title}</Toolbar.Label>
+      <Toolbar.Label>{uiT(item.title)}</Toolbar.Label>
     </Toolbar.MenuAction>
   ));
   const primaryControl = showPrimary ? (
@@ -266,7 +268,7 @@ export function PullRequestActionToolbar(props: {
                 disabled={"attributes" in item && item.attributes.disabled}
                 onPress={() => agent.select(item.id)}
               >
-                <Toolbar.Label>{item.title}</Toolbar.Label>
+                <Toolbar.Label>{uiT(item.title)}</Toolbar.Label>
               </Toolbar.MenuAction>
             ))}
           </Toolbar.Menu>

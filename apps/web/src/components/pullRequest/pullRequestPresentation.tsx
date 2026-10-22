@@ -15,6 +15,7 @@ import {
   CircleCheckIcon,
   CircleDashedIcon,
   CircleDotIcon,
+  CircleSlashIcon,
   CircleXIcon,
   UserCheckIcon,
   UserRoundIcon,
@@ -90,6 +91,7 @@ export function PullRequestReviewDecisionGlyph({
   decision: PullRequestReviewDecision;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const presentation = reviewDecisionPresentation(decision);
   return (
     <Tooltip>
@@ -116,7 +118,7 @@ export interface PullRequestConflictPresentation {
   readonly Icon: PullRequestGlyphIcon;
 }
 
-export function resolvePullRequestConflict(input: {
+function resolvePullRequestConflict(input: {
   readonly state: PullRequestState;
   readonly isDraft: boolean;
   readonly mergeability?: PullRequestMergeability;
@@ -142,6 +144,7 @@ export function PullRequestStateGlyph({
   className?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const presentation = resolvePullRequestState({ state, isDraft });
   return (
     <Tooltip>
@@ -173,6 +176,7 @@ export function PullRequestConflictGlyph({
   className?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const presentation = resolvePullRequestConflict({
     state,
     isDraft,
@@ -208,7 +212,7 @@ const CHECK_STATUS_PRESENTATION = {
   },
   failure: { label: "Failed", Icon: CircleXIcon, toneClassName: "text-destructive" },
   cancelled: { label: "Cancelled", Icon: CircleXIcon, toneClassName: "text-destructive" },
-  skipped: { label: "Skipped", Icon: CircleDashedIcon, toneClassName: "text-muted-foreground/70" },
+  skipped: { label: "Skipped", Icon: CircleSlashIcon, toneClassName: "text-muted-foreground/70" },
   neutral: { label: "Neutral", Icon: CircleDashedIcon, toneClassName: "text-muted-foreground/70" },
 } as const satisfies Record<
   PullRequestCheckStatus,
@@ -365,11 +369,15 @@ export function PullRequestReviewOutcomeBadge({
   className?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const presentation = REVIEW_OUTCOME_PRESENTATION[outcome];
   return (
     <Badge size="sm" variant={presentation.badgeVariant} className={className}>
-      <presentation.Icon aria-hidden className="size-3" />
-      {uiT(presentation.label)}
+      {/* Align with surrounding text using the label, rather than the icon's bottom edge. */}
+      <span className="inline-flex items-baseline gap-1">
+        <presentation.Icon aria-hidden className="size-3 self-center" />
+        <span>{uiT(presentation.label)}</span>
+      </span>
     </Badge>
   );
 }
@@ -420,17 +428,19 @@ export function PullRequestActorLabel({
   profileUrl?: string | null;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const login = actor?.login ?? "ghost";
+  // Let the name supply the group's baseline while the avatar stays vertically centered.
   const label = (
-    <span className={cn("flex min-w-0 items-center", variant === "label" && "gap-1.5")}>
-      <PullRequestActorAvatar actor={actor} />
+    <span className={cn("flex min-w-0 items-baseline", variant === "label" && "gap-1.5")}>
+      <PullRequestActorAvatar actor={actor} className="self-center" />
       <span className={variant === "label" ? "truncate font-medium text-foreground" : "sr-only"}>
         {login}
       </span>
     </span>
   );
   const placement = cn("flex min-w-0 shrink", className);
-  if (!tooltip) return <span className={placement}>{uiT(label)}</span>;
+  if (!tooltip) return <span className={placement}>{label}</span>;
   return (
     <Tooltip>
       <TooltipTrigger
@@ -452,7 +462,7 @@ export function PullRequestActorLabel({
           )
         }
       >
-        {uiT(label)}
+        {label}
       </TooltipTrigger>
       <TooltipPopup side="top">
         {actor?.name && actor.name !== login ? `${actor.name} (@${login})` : login}
@@ -475,7 +485,7 @@ export function PullRequestDiffStat({
     return null;
   }
   return (
-    <span dir="ltr" className={cn("inline-flex items-baseline gap-1 tabular-nums", className)}>
+    <span className={cn("inline-flex items-baseline gap-1 tabular-nums", className)}>
       <span className="text-diff-addition-foreground">+{formatDiffCount(additions)}</span>
       <span className="text-diff-deletion">-{formatDiffCount(deletions)}</span>
     </span>

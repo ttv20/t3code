@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
@@ -17,6 +18,7 @@ export function ComposerFeedback({
   readonly onDismiss: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const notice = codexFeedbackNotice(submission);
   if (!notice) return null;
   return (
@@ -49,15 +51,13 @@ export function ComposerFeedback({
           </Text>
         ) : null}
         {submission.status === "sent" ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            label={uiT("Copy ID")}
+            tone="text"
             onPress={() =>
               copyTextWithHaptic(submission.feedbackId, { target: "Codex feedback thread ID" })
             }
-            className="self-start py-1 active:opacity-60"
-          >
-            <Text className="text-sm text-foreground">{uiT("Copy ID")}</Text>
-          </Pressable>
+          />
         ) : null}
       </View>
     </View>

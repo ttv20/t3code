@@ -352,7 +352,12 @@ export function getUpdateEverythingToastView(
     result.restarting.length === 0
       ? []
       : [
-          `${joinList(result.restarting)} ${result.restarting.length === 1 ? "is" : "are"} still restarting.`,
+          t(
+            result.restarting.length === 1
+              ? "{0} is still restarting."
+              : "{0} are still restarting.",
+            { "0": joinList(result.restarting, locale) },
+          ),
         ];
   if (result.failures.length === 0) {
     if (parts.length === 0) return null;

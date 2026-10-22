@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { TERMINAL_PALETTES, terminalOutputSpans } from "@t3tools/shared/terminalOutput";
 import type React from "react";
@@ -30,6 +31,8 @@ export function ThreadCommandOutput(props: {
   readonly itemId: TurnItemId;
   readonly themeAppearance: "light" | "dark";
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { data, error } = useEnvironmentQuery(
     orchestrationEnvironment.v2.commandOutput({
       environmentId: props.environmentId,
@@ -48,10 +51,10 @@ export function ThreadCommandOutput(props: {
     const message = error
       ? `Couldn't load output: ${error}`
       : data === null
-        ? "Loading output…"
+        ? uiT("Loading output…")
         : data.running
           ? null
-          : "No output.";
+          : uiT("No output.");
     return message === null ? null : (
       <Text className="pt-1.5 font-mono text-2xs leading-normal text-foreground-muted">
         {message}

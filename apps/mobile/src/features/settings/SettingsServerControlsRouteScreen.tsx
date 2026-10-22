@@ -19,8 +19,6 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { RUNTIME_MODE_CHOICES } from "../threads/thread-settings-options";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
 import { SettingsScreen } from "./components/SettingsScreen";
 import {
   AndroidSettingsEnvironmentFilter,
@@ -33,6 +31,7 @@ import { SettingsSection } from "./components/SettingsSection";
 import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
 import { SettingsProjectOverridesSection } from "./components/SettingsProjectOverridesSection";
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
+import { useSettingsWriter } from "./useSettingsWriter";
 import {
   planMobileScopedSettingsClear,
   planMobileScopedSettingsPatch,
@@ -141,6 +140,7 @@ export function SettingsEnvironmentMaintenanceRouteScreen() {
 
 function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
   const { t: uiT } = useUiLanguage();
+
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
@@ -153,6 +153,12 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
   );
   const [pendingWrites, setPendingWrites] = useState(0);
   const writeInFlight = useRef(false);
+  // A closing view can still save its drafts while a write is pending, after
+  // the controls disabled. Those patches run once the current write settles.
+  const queuedPatch = useRef<{ key: string; patch: ServerSettingsPatch } | null>(null);
+  const targetsKey = targets
+    .map((target) => `${target.environment.environmentId}:${target.projectId}`)
+    .join(",");
   const [pendingTargets, setPendingTargets] = useState<
     readonly ScopedMobileSettingsTarget[] | null
   >(null);
@@ -168,13 +174,17 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
   const isMixed = (key: keyof ServerSettings) =>
     reference === null ||
     displayTargets.some((entry) => entry.settings[key] !== reference.settings[key]);
-  const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: uiT("environment settings update"),
-    reportFailure: true,
-  });
+  const writeSettings = useSettingsWriter();
   const write = (patch: ServerSettingsPatch) => {
+    if (writeInFlight.current) {
+      const queued = queuedPatch.current;
+      queuedPatch.current = {
+        key: targetsKey,
+        patch: queued?.key === targetsKey ? { ...queued.patch, ...patch } : patch,
+      };
+      return;
+    }
     if (
-      writeInFlight.current ||
       !hasConnectedSelection ||
       !targets.every((target) =>
         readEnvironmentScope(target.environment.environmentId, AuthSettingsWriteScope),
@@ -186,14 +196,15 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     writeInFlight.current = true;
     setPendingTargets(targets);
     setPendingWrites((count) => count + 1);
-    void Promise.allSettled(
-      writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
-      ),
-    ).finally(() => {
+    void writeSettings(targets, writes).finally(() => {
       writeInFlight.current = false;
       setPendingTargets(null);
       setPendingWrites((count) => count - 1);
+      const queued = queuedPatch.current;
+      queuedPatch.current = null;
+      // These targets may not show this write yet, so send it again with the
+      // queued patch; project overrides are replaced whole.
+      if (queued?.key === targetsKey) write({ ...patch, ...queued.patch });
     });
   };
   const clearProjectOverrides = () => {
@@ -209,12 +220,10 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
     writeInFlight.current = true;
     setPendingTargets(targets);
     setPendingWrites((count) => count + 1);
-    void Promise.allSettled(
-      writes.map((entry) =>
-        updateSettings({ environmentId: entry.environmentId, input: { patch: entry.patch } }),
-      ),
-    ).finally(() => {
+    void writeSettings(targets, writes).finally(() => {
       writeInFlight.current = false;
+      // Resending a draft over these pre-clear targets would undo the clear.
+      queuedPatch.current = null;
       setPendingTargets(null);
       setPendingWrites((count) => count - 1);
     });
@@ -288,7 +297,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ).map((choice, index) => (
                       <SettingsChoiceRow
                         key={choice.mode ?? "inherit"}
-                        label={choice.label}
+                        label={uiT(choice.label)}
                         description={choice.description}
                         selected={
                           !isMixed("defaultThreadEnvMode") &&
@@ -313,7 +322,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     ).map((choice, index) => (
                       <SettingsChoiceRow
                         key={choice.mode ?? "inherit"}
-                        label={choice.label}
+                        label={uiT(choice.label)}
                         description={choice.description}
                         selected={
                           !isMixed("worktreeSubmodules") &&
@@ -336,7 +345,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     {RUNTIME_MODE_CHOICES.map((choice, index) => (
                       <SettingsChoiceRow
                         key={choice.mode}
-                        label={choice.label}
+                        label={uiT(choice.label)}
                         description={choice.description}
                         selected={uniform("defaultRuntimeMode") === choice.mode}
                         separated={index > 0}
@@ -351,9 +360,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
               {props.page === "source-control" ? (
                 <>
                   <BranchNamingSettings
-                    key={targets
-                      .map((target) => `${target.environment.environmentId}:${target.projectId}`)
-                      .join(",")}
+                    key={targetsKey}
                     mode={uniform("branchNamingMode")}
                     prefix={uniform("branchNamePrefix")}
                     instructions={uniform("branchNameInstructions")}
@@ -387,8 +394,10 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                   <SettingsSection title={uiT("Worktrees")}>
                     <SettingsSwitchRow
                       icon="arrow.triangle.branch"
-                      label={uiT("Start from origin")}
-                      subtitle={uiT("Base new worktrees on the remote branch.")}
+                      label={uiT("Start from remote")}
+                      subtitle={uiT(
+                        "Uses the latest commit of the base branch’s tracked remote branch, even if its name differs. Otherwise uses the same-named branch on origin. Uses your local branch if that remote branch is missing.",
+                      )}
                       value={uniform("newWorktreesStartFromOrigin")}
                       disabled={disabledFor("newWorktreesStartFromOrigin")}
                       onValueChange={(value) => write({ newWorktreesStartFromOrigin: value })}
@@ -410,7 +419,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     {STREAMING_CHOICES.map((choice, index) => (
                       <SettingsChoiceRow
                         key={choice.mode}
-                        label={choice.label}
+                        label={uiT(choice.label)}
                         description={choice.description}
                         selected={uniform("responseStreamingMode") === choice.mode}
                         separated={index > 0}
@@ -434,22 +443,21 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
 
               {props.page === "maintenance" ? (
                 <>
-                  {!projectSelected &&
-                    selectedTargets
-                      .filter(
+                  {!projectSelected ? (
+                    <DatabaseStorageNotice
+                      targets={selectedTargets.filter(
                         (target) =>
                           target.serverConfig.environment.capabilities.databaseStorage === true,
-                      )
-                      .map((target) => (
-                        <DatabaseStorageNotice key={target.environmentId} target={target} />
-                      ))}
+                      )}
+                    />
+                  ) : null}
                   {!projectSelected ? (
                     <SettingsSection title={uiT("Manage environments")}>
                       {selectedTargets.map((target) => (
                         <SettingsRow
                           key={target.environmentId}
                           icon="server.rack"
-                          label={target.label}
+                          label={uiT(target.label)}
                           value="Server and provider updates"
                           onPress={() =>
                             navigation.navigate("SettingsSheet", {
@@ -510,6 +518,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
 
 function MixedValuesLabel(props: { readonly projectSelected: boolean }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <Text
       accessibilityLabel={

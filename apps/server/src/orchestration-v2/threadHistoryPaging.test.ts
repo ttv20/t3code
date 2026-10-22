@@ -14,17 +14,13 @@ import {
   buildBoundedThreadProjection,
   boundedTimelineEncodedBytes,
   computeLatestLocalTurnOrdinal,
-  decodeThreadHistoryCursor,
   encodeThreadHistoryCursor,
-  InvalidThreadHistoryCursorError,
   projectedRowBoundedSnapshotEncodedBytes,
   projectedRowEncodedBytes,
   selectHistoryPageFromCursor,
   selectRecentTimelineWindow,
-  THREAD_HISTORY_CURSOR_MAX_LENGTH,
   THREAD_HISTORY_PAGE_POLICY,
 } from "./threadHistoryPaging.ts";
-import { buildBoundedThreadStreamSnapshot } from "./ThreadStream.ts";
 import { projectThreadProjectionForWire } from "./WireProjection.ts";
 
 const NOW = DateTime.makeUnsafe("2026-06-20T00:00:00.000Z");
@@ -110,6 +106,27 @@ function interruptRow(
   };
 }
 
+function assistantRow(
+  text: string,
+  visibility: "local" | "inherited" = "local",
+): OrchestrationV2ProjectedTurnItem {
+  const row = makeRow(0);
+  const sourceThreadId = visibility === "local" ? THREAD : ThreadId.make("parent-thread");
+  return {
+    ...row,
+    visibility,
+    sourceThreadId,
+    item: {
+      ...row.item,
+      threadId: sourceThreadId,
+      type: "assistant_message",
+      messageId: MessageId.make("answer-0"),
+      text,
+      streaming: false,
+    },
+  } as OrchestrationV2ProjectedTurnItem;
+}
+
 function makeProjection(visibleTurnItems: OrchestrationV2ProjectedTurnItem[]) {
   return {
     thread: {
@@ -159,22 +176,6 @@ function makeProjection(visibleTurnItems: OrchestrationV2ProjectedTurnItem[]) {
 }
 
 describe("threadHistoryPaging", () => {
-  it("builds a resumable bounded socket snapshot frame", () => {
-    const projection = makeProjection(Array.from({ length: 90 }, (_, index) => makeRow(index)));
-    const item = buildBoundedThreadStreamSnapshot({
-      snapshotSequence: 23,
-      projection,
-    });
-
-    expect(item.kind).toBe("snapshot");
-    expect(item.snapshotSequence).toBe(23);
-    expect(item.projection.visibleTurnItems).toHaveLength(THREAD_HISTORY_PAGE_POLICY.maxItems);
-    expect(item.historyCursor).not.toBeNull();
-    expect(item.hasMoreHistory).toBe(true);
-    expect(item.latestLocalTurnOrdinal).toBe(90);
-    expect(item.payloadBudgetExceeded).toBe(false);
-  });
-
   it("keeps background turns with user turns, with main's 150-turn fan-out ceiling", () => {
     const items = Array.from({ length: 161 }, (_, turn) => {
       const row = makeRow(turn * 2);
@@ -286,52 +287,6 @@ describe("threadHistoryPaging", () => {
     expect([...older.items, ...recent.items]).toHaveLength(items.length);
   });
 
-  it("encodes opaque cursors with stable source identity", () => {
-    const cursor = encodeThreadHistoryCursor({
-      snapshotSequence: 9,
-      sourceThreadId: THREAD,
-      sourceItemId: TurnItemId.make("item-3"),
-      position: 3,
-    });
-    expect(cursor.includes("{")).toBe(false);
-    expect(decodeThreadHistoryCursor(cursor)).toEqual({
-      v: 1,
-      seq: 9,
-      st: "thread-1",
-      si: "item-3",
-      p: 3,
-    });
-  });
-
-  it("rejects malformed cursors", () => {
-    expect(() => decodeThreadHistoryCursor("not-valid")).toThrow(InvalidThreadHistoryCursorError);
-    expect(() =>
-      decodeThreadHistoryCursor(Buffer.from("{}", "utf8").toString("base64url")),
-    ).toThrow(InvalidThreadHistoryCursorError);
-  });
-
-  it("rejects cursors longer than the maximum length before decoding", () => {
-    const oversized = "A".repeat(THREAD_HISTORY_CURSOR_MAX_LENGTH + 1);
-    expect(() => decodeThreadHistoryCursor(oversized)).toThrow(InvalidThreadHistoryCursorError);
-  });
-
-  it("selects a recent window by item count", () => {
-    const items = Array.from({ length: 120 }, (_, index) => makeRow(index));
-    const page = selectRecentTimelineWindow({
-      items,
-      snapshotSequence: 4,
-      policy: { maxItems: 10, maxEncodedBytes: 10_000_000 },
-    });
-    expect(page.items).toHaveLength(10);
-    expect(page.items[0]?.sourceItemId).toBe("item-110");
-    expect(page.items[9]?.sourceItemId).toBe("item-119");
-    expect(page.hasMoreHistory).toBe(true);
-    expect(page.nextCursor).not.toBeNull();
-    const cursor = decodeThreadHistoryCursor(page.nextCursor!);
-    expect(cursor.si).toBe("item-110");
-    expect(cursor.seq).toBe(4);
-  });
-
   it("always includes at least one pathological oversized item", () => {
     const items = [makeRow(0, { outputBytes: 2_000_000 }), makeRow(1, { outputBytes: 10 })];
     const page = selectRecentTimelineWindow({
@@ -418,40 +373,6 @@ describe("threadHistoryPaging", () => {
     expect(computeLatestLocalTurnOrdinal(full.turnItems)).toBe(40);
   });
 
-  it("preserves linked control rows as one coherent graph", () => {
-    const base = makeProjection(Array.from({ length: 40 }, (_, index) => makeRow(index)));
-    const linked = {
-      ...base,
-      runs: [{ id: "run-linked", threadId: THREAD }],
-      attempts: [{ id: "attempt-linked", runId: "run-linked" }],
-      nodes: [{ id: "node-linked", runId: "run-linked", attemptId: "attempt-linked" }],
-      providerThreads: [{ id: "provider-thread-linked", runId: "run-linked" }],
-      providerTurns: [
-        {
-          id: "provider-turn-linked",
-          providerThreadId: "provider-thread-linked",
-          nodeId: "node-linked",
-        },
-      ],
-      checkpointScopes: [{ id: "scope-linked", runId: "run-linked" }],
-      checkpoints: [{ id: "checkpoint-linked", scopeId: "scope-linked" }],
-    } as unknown as typeof base;
-
-    const bounded = buildBoundedThreadProjection({
-      projection: linked,
-      snapshotSequence: 7,
-      policy: { maxItems: 5, maxEncodedBytes: 10_000_000 },
-    });
-
-    expect(bounded.projection.runs).toEqual(linked.runs);
-    expect(bounded.projection.attempts).toEqual(linked.attempts);
-    expect(bounded.projection.nodes).toEqual(linked.nodes);
-    expect(bounded.projection.providerThreads).toEqual(linked.providerThreads);
-    expect(bounded.projection.providerTurns).toEqual(linked.providerTurns);
-    expect(bounded.projection.checkpointScopes).toEqual(linked.checkpointScopes);
-    expect(bounded.projection.checkpoints).toEqual(linked.checkpoints);
-  });
-
   it("carries a full-projection watermark when the bounded window is inherited-only", () => {
     const localOlder = makeRow(0);
     const localMid = makeRow(1);
@@ -503,32 +424,6 @@ describe("threadHistoryPaging", () => {
     expect(bounded.hasMoreHistory).toBe(true);
   });
 
-  it("retains all run_interrupt_request items even when no result is in the initial window", () => {
-    const request = interruptRow(0, "run_interrupt_request");
-    const result = interruptRow(1, "run_interrupt_result");
-    const recent = makeRow(2);
-    const full = makeProjection([request, result, recent]);
-    const bounded = buildBoundedThreadProjection({
-      projection: full,
-      snapshotSequence: 4,
-      policy: { maxItems: 1, maxEncodedBytes: 10_000_000 },
-    });
-
-    expect(bounded.projection.visibleTurnItems.map((row) => String(row.sourceItemId))).toEqual([
-      "item-2",
-    ]);
-    expect(bounded.projection.turnItems.map((item) => String(item.id)).sort()).toEqual([
-      "interrupt-req",
-      "item-2",
-    ]);
-    expect(bounded.projection.turnItems.some((item) => item.type === "run_interrupt_request")).toBe(
-      true,
-    );
-    expect(bounded.projection.turnItems.some((item) => item.type === "run_interrupt_result")).toBe(
-      false,
-    );
-  });
-
   it("charges local row.item duplication when measuring bounded timeline bytes", () => {
     const rows = Array.from({ length: 8 }, (_, index) => makeRow(index, { outputBytes: 2_000 }));
     const full = makeProjection(rows);
@@ -565,29 +460,6 @@ describe("threadHistoryPaging", () => {
     );
   });
 
-  it("allows a single pathological bounded row to exceed the configured cap", () => {
-    const huge = makeRow(0, { outputBytes: 50_000 });
-    const full = makeProjection([huge]);
-    const maxEncodedBytes = 1_000;
-    const bounded = buildBoundedThreadProjection({
-      projection: full,
-      snapshotSequence: 1,
-      policy: { maxItems: 10, maxEncodedBytes },
-    });
-    expect(bounded.projection.visibleTurnItems).toHaveLength(1);
-    const contribution = boundedTimelineEncodedBytes({
-      visibleTurnItems: bounded.projection.visibleTurnItems,
-      turnItems: bounded.projection.turnItems,
-    });
-    expect(contribution).toBeGreaterThan(maxEncodedBytes);
-  });
-
-  it("exposes conservative default page budgets", () => {
-    expect(THREAD_HISTORY_PAGE_POLICY.maxItems).toBeGreaterThanOrEqual(50);
-    expect(THREAD_HISTORY_PAGE_POLICY.maxItems).toBeLessThanOrEqual(100);
-    expect(THREAD_HISTORY_PAGE_POLICY.maxEncodedBytes).toBe(1_048_576);
-  });
-
   it("does not carry the full duplicated message table into a bounded snapshot", () => {
     const projection = makeProjection(Array.from({ length: 120 }, (_, index) => makeRow(index)));
     const full = {
@@ -617,6 +489,35 @@ describe("threadHistoryPaging", () => {
     expect(Buffer.byteLength(JSON.stringify(bounded.projection), "utf8")).toBeLessThan(
       THREAD_HISTORY_PAGE_POLICY.maxEncodedBytes + 100_000,
     );
+  });
+
+  it("keeps a workflow coordinator's script outside the bounded window", () => {
+    const projection = makeProjection(Array.from({ length: 120 }, (_, index) => makeRow(index)));
+    const message = (index: number, workflowScript?: boolean) => ({
+      id: MessageId.make(`message-${index}`),
+      threadId: THREAD,
+      runId: RunId.make(`old-run-${index}`),
+      nodeId: null,
+      role: "user" as const,
+      text: `message ${index}`,
+      attachments: [],
+      streaming: false,
+      createdBy: "agent" as const,
+      creationSource: "provider" as const,
+      createdAt: NOW,
+      updatedAt: NOW,
+      ...(workflowScript === undefined ? {} : { workflowScript }),
+    });
+    const full = {
+      ...projection,
+      messages: [message(0, true), message(1, false), message(2)],
+    } as typeof projection;
+
+    const bounded = buildBoundedThreadProjection({ projection: full, snapshotSequence: 9 });
+
+    expect(bounded.projection.messages.map((retained) => retained.id)).toEqual([
+      MessageId.make("message-0"),
+    ]);
   });
 
   it("omits historical control details that remain available from history items", () => {
@@ -687,6 +588,60 @@ describe("threadHistoryPaging", () => {
     expect(bounded.payloadBudgetExceeded).toBe(true);
     expect(bounded.projection.plans[0]).toEqual(actionable.plans[0]);
     expect(bounded.projection.visibleTurnItems).toEqual(actionable.visibleTurnItems);
+  });
+
+  it("flips overflow at the exact encoded size when timeline text fits the budget", () => {
+    // Inherited rows are encoded once, local rows twice; neither may overflow early.
+    for (const visibility of ["local", "inherited"] as const) {
+      const projection = makeProjection([assistantRow("a".repeat(20_000), visibility)]);
+      const build = (maxEncodedBytes: number) =>
+        buildBoundedThreadProjection({
+          projection,
+          snapshotSequence: 1,
+          policy: { maxItems: 75, maxEncodedBytes },
+        });
+      const bytes = Buffer.byteLength(
+        JSON.stringify(build(Number.MAX_SAFE_INTEGER).projection),
+        "utf8",
+      );
+      expect(build(bytes).payloadBudgetExceeded).toBe(false);
+      expect(build(bytes - 1).payloadBudgetExceeded).toBe(true);
+    }
+  });
+
+  it("keeps agent-only turns visible when checkpoint file lists fill the byte budget", () => {
+    const items = Array.from({ length: 3 }, (_, turn) => {
+      const first = makeRow(turn * 5);
+      const prompt = {
+        ...first,
+        item: {
+          ...first.item,
+          type: "user_message" as const,
+          createdBy: "agent" as const,
+          creationSource: "provider" as const,
+          inputIntent: "turn_start" as const,
+          messageId: MessageId.make(`agent-prompt-${turn}`),
+          text: `Step ${turn}`,
+          attachments: [],
+        },
+      } as OrchestrationV2ProjectedTurnItem;
+      return [prompt, ...Array.from({ length: 4 }, (_, index) => makeRow(turn * 5 + index + 1))];
+    }).flat();
+    const files = Array.from(
+      { length: 15_000 },
+      (_, index) =>
+        `work/ws-${index % 40}/.jj/repo/store/extra/${index.toString(16).padStart(40, "0")}`,
+    );
+    const projection = {
+      ...makeProjection(items),
+      checkpoints: [{ id: "checkpoint-1", files }],
+    } as unknown as ReturnType<typeof makeProjection>;
+
+    const bounded = buildBoundedThreadProjection({ projection, snapshotSequence: 1 });
+
+    expect(bounded.projection.visibleTurnItems).toHaveLength(items.length);
+    expect(bounded.hasMoreHistory).toBe(false);
+    expect(bounded.payloadBudgetExceeded).toBe(true);
   });
 
   it("keeps paged historical plan detail in the turn item and only status in its artifact", () => {

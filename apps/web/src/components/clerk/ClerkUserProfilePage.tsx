@@ -23,7 +23,7 @@ export function ClerkUserProfilePage({
   return (
     <div className={cn("w-full min-w-0 text-foreground", className)}>
       <header className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-8">
-        <div className="min-w-0">
+        <div className="min-w-0 [unicode-bidi:plaintext]">
           <h2 className="text-base leading-6 font-semibold">{uiT(title)}</h2>
           {description ? (
             <p className="mt-1 max-w-[34rem] text-xs leading-4.5 text-muted-foreground sm:min-h-9">
@@ -83,7 +83,7 @@ export function ClerkUserProfileRow({
         >
           {icon}
         </div>
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">{children}</div>
       </div>
     </li>
   );

@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { Slider } from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
@@ -18,6 +19,8 @@ import { useControlTheme } from "./useControlTheme";
 export type { SliderRowProps } from "./SliderRow.types";
 
 export function SliderRow(props: SliderRowProps) {
+  const { t: uiT } = useUiLanguage();
+
   const { colors } = useControlTheme();
   const draft = useRef(props.value);
   const editing = useRef(false);
@@ -38,7 +41,7 @@ export function SliderRow(props: SliderRowProps) {
     <View className={props.disabled ? "gap-1 p-4 opacity-[0.45]" : "gap-1 p-4"}>
       <View className="flex-row items-center gap-4">
         <SymbolView name={props.icon} size={22} tintColorClassName="accent-icon" />
-        <AppText className="flex-1 text-lg text-foreground">{props.label}</AppText>
+        <AppText className="flex-1 text-lg text-foreground">{uiT(props.label)}</AppText>
         <AppText className="text-base font-t3-medium text-foreground-muted">
           {props.valueLabel}
         </AppText>

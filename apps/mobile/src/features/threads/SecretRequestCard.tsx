@@ -13,13 +13,13 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@t3tools/contracts";
 import { useRef, useState } from "react";
-import { Pressable, View, type ColorValue } from "react-native";
+import { View, type ColorValue } from "react-native";
 
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { RequestActionButton } from "./RequestActionButton";
+import { Button } from "../../components/ui/Button";
 
 const LOCK_SYMBOL: AppSymbolName = { ios: "lock", android: "lock" };
 const PRIVATE_SYMBOL: AppSymbolName = { ios: "checkmark.shield", android: "lock" };
@@ -30,6 +30,7 @@ export function SecretRequestCard(props: {
   readonly iconColor: ColorValue;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { item, visibility } = props.projectedItem;
   if (item.type !== "secret_request") return null;
   const display = secretRequestDisplay(item, visibility);
@@ -64,6 +65,7 @@ function PendingSecretRequestForm(props: {
   readonly iconColor: ColorValue;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { item } = props;
   const answer = useAtomCommand(serverEnvironment.answerSecretRequest, {
     label: uiT("answer secret request"),
@@ -131,8 +133,10 @@ function PendingSecretRequestForm(props: {
           {error}
         </Text>
       ) : null}
-      <RequestActionButton
+      <Button
         label={uiT("Save securely")}
+        tone="primary"
+        fullWidth
         disabled={submitting || secret.trim().length === 0}
         onPress={() => void send({ type: "save", secret })}
       />
@@ -148,16 +152,12 @@ function PendingSecretRequestForm(props: {
             {SECRET_REQUEST_PRIVACY_NOTE}
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: submitting }}
+        <Button
+          label={uiT("Decline")}
+          tone="text"
           disabled={submitting}
-          hitSlop={8}
-          className="px-1 py-1 active:opacity-60 disabled:opacity-50"
           onPress={() => void send({ type: "decline" })}
-        >
-          <Text className="font-sans text-xs text-foreground-muted">{uiT("Decline")}</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );

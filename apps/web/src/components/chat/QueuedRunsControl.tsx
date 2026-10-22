@@ -1,6 +1,7 @@
 import { useUiLanguage } from "../../i18n";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { deriveThreadQueueWorkflowState } from "@t3tools/client-runtime/state/thread-workflows";
+import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
 import type {
   ChatAttachment as ContractChatAttachment,
@@ -78,11 +79,13 @@ export function QueuedRunsControl({
   readonly onCancelEdit: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const projection = useThreadProjection(
     scopeThreadRef(props.environmentId, props.threadId),
   )?.projection;
   const reorder = useAtomCommand(threadEnvironment.reorderQueuedRun);
   const promote = useAtomCommand(threadEnvironment.promoteQueuedRun);
+  const resume = useAtomCommand(threadEnvironment.resumeThreadQueue);
   const cancel = useAtomCommand(threadEnvironment.cancelQueuedRun);
   const [expanded, setExpanded] = useState(true);
   const queueListId = useId();
@@ -108,6 +111,7 @@ export function QueuedRunsControl({
   const queued = workflow?.queuedRuns ?? [];
   const activeRun = workflow?.activeRun ?? null;
   const canReorder = workflow?.canReorder === true;
+  const canSend = workflow?.canSendNow === true || workflow?.canPromoteToSteer === true;
   const queuedImageUrlById = new Map(
     queuedImageAttachmentUrls.flatMap((url, index) => {
       const resource = queuedImageAttachmentResources[index];
@@ -171,14 +175,21 @@ export function QueuedRunsControl({
     void move(runId, queued[insertIndex]?.run.id ?? null);
   };
 
-  const steer = async (queuedRunId: RunId) => {
-    if (activeRun === null || !workflow?.canPromoteToSteer || steerInFlightRef.current) return;
+  const sendQueuedMessage = async (queuedRunId: RunId) => {
+    if (!canSend || steerInFlightRef.current) return;
     steerInFlightRef.current = true;
     setBusyRunId(queuedRunId);
-    await promote({
-      environmentId: props.environmentId,
-      input: { threadId: props.threadId, queuedRunId, targetRunId: activeRun.id },
-    });
+    if (workflow?.canSendNow) {
+      await resume({
+        environmentId: props.environmentId,
+        input: { threadId: props.threadId, runId: queuedRunId },
+      });
+    } else if (activeRun !== null) {
+      await promote({
+        environmentId: props.environmentId,
+        input: { threadId: props.threadId, queuedRunId, targetRunId: activeRun.id },
+      });
+    }
     steerInFlightRef.current = false;
     setBusyRunId(null);
   };
@@ -186,8 +197,8 @@ export function QueuedRunsControl({
   useImperativeHandle(ref, () => ({
     steerNext(repeat) {
       const next = queued[0];
-      if (!next || !workflow?.canPromoteToSteer) return false;
-      if (!repeat && busyRunId === null) void steer(next.run.id);
+      if (!next || !canSend) return false;
+      if (!repeat && busyRunId === null) void sendQueuedMessage(next.run.id);
       return true;
     },
     // Declines while a queued message is already being edited so the key keeps
@@ -223,10 +234,7 @@ export function QueuedRunsControl({
     <ComposerBanner.Attachment>
       <ComposerBanner.Root
         role="region"
-        aria-label={uiT(items.length === 1 ? "{0} queued message" : "{0} queued messages", {
-          "0": items.length,
-          "1": items.length === 1 ? "" : "s",
-        })}
+        aria-label={`${items.length} queued message${items.length === 1 ? "" : "s"}`}
         aria-live="polite"
         data-chat-composer-collapsed-controls="true"
         className="relative z-0"
@@ -253,8 +261,10 @@ export function QueuedRunsControl({
         <ComposerBanner.Scroll className={cn("max-h-32", !expanded && "hidden")}>
           <ComposerBanner.Children render={<ol />} id={queueListId}>
             {items.map((item) => {
-              const previewText = replaceComposerContextReferences(item.text, (reference) =>
-                reference.kind === "image" && item.thumbnails.length > 0 ? "" : reference.label,
+              const previewText = assistantCitationsToPlainText(
+                replaceComposerContextReferences(item.text, (reference) =>
+                  reference.kind === "image" && item.thumbnails.length > 0 ? "" : reference.label,
+                ),
               ).trim();
               const rowRunId = item.runId;
               const rowServerIndex = item.serverIndex;
@@ -346,7 +356,7 @@ export function QueuedRunsControl({
                   </ComposerBanner.Icon>
                   <ComposerBanner.Content className="text-foreground/80">
                     {isEditing ? (
-                      <span className="sr-only">{uiT("Editing queued message:")} </span>
+                      <span className="sr-only">{uiT("Editing queued message:")}</span>
                     ) : null}
                     {item.pending ? (
                       <Clock3Icon
@@ -435,30 +445,19 @@ export function QueuedRunsControl({
                             <Button
                               size="xs"
                               variant="ghost-muted"
-                              disabled={
-                                item.runId === null ||
-                                busyRunId !== null ||
-                                !workflow?.canPromoteToSteer
-                              }
+                              disabled={item.runId === null || busyRunId !== null || !canSend}
                               onClick={() => {
                                 if (item.runId !== null) {
-                                  void steer(item.runId);
+                                  void sendQueuedMessage(item.runId);
                                 }
                               }}
                             >
                               <CornerUpRightIcon />
-                              {uiT("Steer")}
+                              {workflow?.canSendNow ? "Send now" : uiT("Steer")}
                             </Button>
                           </TooltipTrigger>
                           <TooltipPopup>
-                            {activeRun === null
-                              ? uiT("There is no active run to steer")
-                              : uiT("Send as a steer instead{0}", {
-                                  "0":
-                                    item.serverIndex === 0 && props.steerShortcutLabel
-                                      ? ` (${props.steerShortcutLabel})`
-                                      : "",
-                                })}
+                            {`${workflow?.canSendNow ? "Start a turn with this message" : "Send as a steer instead"}${item.serverIndex === 0 && props.steerShortcutLabel ? ` (${props.steerShortcutLabel})` : ""}`}
                           </TooltipPopup>
                         </Tooltip>
                         <Tooltip>

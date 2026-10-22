@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { AuthSettingsWriteScope, EnvironmentAuthorizationError } from "@t3tools/contracts";
 import { readEnvironmentScope } from "../../state/session";
 import {
@@ -55,6 +56,8 @@ export function useProjectScriptSettings(
     project?: { id: ProjectId; scripts: readonly ProjectScript[] };
   }[],
 ) {
+  const { t: uiT } = useUiLanguage();
+
   const projects = useProjects();
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
@@ -74,8 +77,8 @@ export function useProjectScriptSettings(
     keybinding?: string | null,
   ): Promise<AtomCommandResult<void, unknown>> {
     if (savingRef.current || targets.length === 0) {
-      const message = "No available machine, or another action change is saving.";
-      toastManager.add({ type: "error", title: "Actions not saved", description: message });
+      const message = uiT("No available machine, or another action change is saving.");
+      toastManager.add({ type: "error", title: uiT("Actions not saved"), description: message });
       return AsyncResult.failure(Cause.fail(new Error(message)));
     }
     if (
@@ -140,6 +143,9 @@ export function useProjectScriptSettings(
             .filter((script) => !effectiveScripts.some((next) => next.id === script.id))
             .map((script) => script.id);
       for (const id of changedIds) {
+        if (keybinding === undefined && effectiveScripts.some((script) => script.id === id)) {
+          continue;
+        }
         const command = commandForProjectScript(id);
         const previousValue = keybindingValueForCommand(keybindings, command);
         const previous = previousValue

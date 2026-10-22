@@ -253,7 +253,7 @@ export function showUpdateEverythingResult(
   );
 }
 
-function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>): void {
+function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale: UiLocale): void {
   if (servers.length === 0) return;
   setUpdateEverythingRun(() => ({
     localVersion: null,
@@ -286,13 +286,16 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>): void {
       else failures.push(`${server.label}: ${failure}`);
       remaining -= 1;
       if (remaining === 0) {
-        showUpdateEverythingResult({
-          localVersion: null,
-          updatedServers,
-          updatedProviders: 0,
-          failures,
-          restarting: [],
-        });
+        showUpdateEverythingResult(
+          {
+            localVersion: null,
+            updatedServers,
+            updatedProviders: 0,
+            failures,
+            restarting: [],
+          },
+          locale,
+        );
       }
     };
     const timer = setTimeout(
@@ -328,7 +331,7 @@ export function DesktopUpdateLaunchNotice() {
       { ...saved, restarting: handedOff.map((server) => server.label) },
       locale,
     );
-    followHandedOffServers(handedOff);
+    followHandedOffServers(handedOff, locale);
   }, [locale]);
 
   useEffect(() => {

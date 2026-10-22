@@ -1,5 +1,6 @@
 import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
+import { useAtomValue } from "@effect/atom-react";
 import type { MenuAction } from "@react-native-menu/menu";
 import {
   DEFAULT_PREVIEW_ZOOM_FACTOR,
@@ -41,15 +42,20 @@ const VIEWPORTS = [
 export function BrowserTabMenu({
   environmentId,
   tab,
-  disabled,
+  streaming,
+  onPaste,
 }: {
   readonly environmentId: EnvironmentId;
   readonly tab: PreviewSessionSnapshot;
-  readonly disabled: boolean;
+  readonly streaming: boolean;
+  readonly onPaste?: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const adjust = useAtomCommand(previewEnvironment.adjust, "browser tab change");
   const resize = useAtomCommand(previewEnvironment.resize, "browser viewport change");
+  const close = useAtomCommand(previewEnvironment.close, "browser tab close");
+  const canClose = useAtomValue(previewEnvironment.close.permissionAtom(environmentId));
   const target = { threadId: tab.threadId as PreviewAdjustInput["threadId"], tabId: tab.tabId };
   const colorScheme = tab.colorScheme ?? "system";
   const zoomFactor = tab.zoomFactor ?? DEFAULT_PREVIEW_ZOOM_FACTOR;
@@ -65,7 +71,14 @@ export function BrowserTabMenu({
         ? `preset:${tab.viewport.presetId}`
         : "custom";
 
+  const closeAction: MenuAction = {
+    id: "close",
+    title: uiT("Close tab"),
+    image: "xmark",
+    attributes: { destructive: true, disabled: !canClose },
+  };
   const actions: MenuAction[] = [
+    ...(onPaste ? [{ id: "paste", title: uiT("Paste"), image: "doc.on.clipboard" }] : []),
     { id: "hard-reload", title: uiT("Hard reload"), image: "arrow.clockwise.circle" },
     {
       id: "appearance",
@@ -106,6 +119,7 @@ export function BrowserTabMenu({
         { id: "clear:cache", title: uiT("Clear cache"), attributes: { destructive: true } },
       ],
     },
+    closeAction,
   ];
 
   const run = async (change: Omit<PreviewAdjustInput, "threadId" | "tabId">) => {
@@ -114,6 +128,13 @@ export function BrowserTabMenu({
   };
 
   const onAction = (id: string) => {
+    if (id === "close") {
+      void close({ environmentId, input: target }).then((result) => {
+        if (result._tag === "Failure") Dialog.alert("Could not close this browser tab");
+      });
+      return;
+    }
+    if (id === "paste") return onPaste?.();
     if (id === "hard-reload") return void run({ hardReload: true });
     if (id === "zoom:in") return void run({ zoomFactor: zoomTo(1) });
     if (id === "zoom:out") return void run({ zoomFactor: zoomTo(-1) });
@@ -136,23 +157,18 @@ export function BrowserTabMenu({
     }
   };
 
-  const pill = (
-    <ControlPill
-      icon="ellipsis"
-      accessibilityLabel={uiT("Browser tab options")}
-      disabled={disabled}
-    />
-  );
-  if (disabled) return pill;
   return (
     <Menu
+      // Remount when streaming changes, so an open menu never keeps offering
+      // the other state's actions.
+      key={streaming ? "streaming" : "idle"}
       accessible
       accessibilityLabel={uiT("Browser tab options")}
       accessibilityRole="button"
-      actions={actions}
+      actions={streaming ? actions : [closeAction]}
       onPressAction={({ nativeEvent }) => onAction(nativeEvent.event)}
     >
-      {pill}
+      <ControlPill icon="ellipsis" accessibilityLabel={uiT("Browser tab options")} />
     </Menu>
   );
 }

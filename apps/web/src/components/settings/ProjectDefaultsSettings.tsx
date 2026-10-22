@@ -10,7 +10,10 @@ import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { useNavigate } from "@tanstack/react-router";
 
 import { mergeEnvironmentSettings } from "../../hooks/useSettings";
-import { getCustomModelOptionsByInstance } from "../../modelSelection";
+import {
+  getCustomModelOptionsByInstance,
+  resolveEffectiveDefaultModelSelection,
+} from "../../modelSelection";
 import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
@@ -50,6 +53,7 @@ function isWorktreeSubmodules(value: string | null): value is WorktreeSubmodules
 
 export function ProjectDefaultsSettings({ category }: { category: ProjectSettingsCategory }) {
   const { t: uiT } = useUiLanguage();
+
   const { scope, target, targets, connectedEnvironments } = useSettingsScope();
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
@@ -63,7 +67,13 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
     (representative?.serverConfig
       ? providersByEnvironment.get(representative.environmentId)
       : undefined) ?? EMPTY_SERVER_PROVIDERS;
-  const selection = resolveDefaultProviderModelSelection(providers, settings.defaultModelSelection);
+  const storedSelection = resolveDefaultProviderModelSelection(
+    providers,
+    settings.defaultModelSelection,
+  );
+  const selection = storedSelection
+    ? resolveEffectiveDefaultModelSelection(settings, providers, storedSelection)
+    : null;
   const entries = sortProviderInstanceEntries(
     applyProviderInstanceSettings(
       deriveProviderInstanceEntries(providers),
@@ -83,7 +93,6 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
   const PermissionIcon = runtimeModeConfig[settings.defaultRuntimeMode].icon;
   const mixedWorkspace = useScopedSettingsMixed(["defaultThreadEnvMode"]);
   const mixedSubmodules = useScopedSettingsMixed(["worktreeSubmodules"]);
-  const mixedBrowser = useScopedSettingsMixed(["enableAgentBrowserAccess"]);
   const mixedAutoPull = useScopedSettingsMixed(["defaultAutoPull"]);
   const mixedAgentCredits = useScopedSettingsMixed(["removeAgentCreditsOnMerge"]);
   const mixedMergeMethod = useScopedSettingsMixed(["pullRequestMergeMethod"]);
@@ -189,8 +198,6 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                 provider={activeEntry.driverKind}
                 models={activeEntry.models}
                 model={selection.model}
-                prompt=""
-                onPromptChange={() => {}}
                 modelOptions={selection.options ?? []}
                 allowPromptInjectedEffort={false}
                 planModeEnabled={settings.planModeEnabled}
@@ -239,10 +246,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             <SelectValue>
               {(value: string | null) =>
                 value === "local" || value === "worktree"
-                  ? uiT(resolveEnvModeLabel(value))
+                  ? resolveEnvModeLabel(value)
                   : unavailable
-                    ? uiT("Unavailable")
-                    : uiT("Mixed")
+                    ? "Unavailable"
+                    : "Mixed"
               }
             </SelectValue>
           </SelectTrigger>
@@ -257,20 +264,8 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
 
   return (
     <SettingsSection
-      id={
-        category === "general" || category === "project"
-          ? "project-defaults"
-          : category === "integrations"
-            ? "browser-access"
-            : "source-control-defaults"
-      }
-      title={
-        category === "general" || category === "project"
-          ? uiT("New threads")
-          : category === "integrations"
-            ? uiT("Browser")
-            : uiT("Repositories")
-      }
+      id={category === "source-control" ? "source-control-defaults" : "project-defaults"}
+      title={category === "source-control" ? uiT("Repositories") : uiT("New threads")}
     >
       {category === "project" ? (
         <>
@@ -316,7 +311,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {mixedPermissions
                       ? uiT("Mixed")
-                      : uiT(runtimeModeConfig[settings.defaultRuntimeMode].label)}
+                      : runtimeModeConfig[settings.defaultRuntimeMode].label}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -373,10 +368,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {(value: string | null) =>
                       isWorktreeSubmodules(value)
-                        ? uiT(WORKTREE_SUBMODULES_LABELS[value])
+                        ? WORKTREE_SUBMODULES_LABELS[value]
                         : unavailable
-                          ? uiT("Unavailable")
-                          : uiT("Mixed")
+                          ? "Unavailable"
+                          : "Mixed"
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -391,7 +386,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             }
           />
         </>
-      ) : category === "source-control" ? (
+      ) : (
         <>
           <SettingsRow
             serverScoped
@@ -488,10 +483,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {(value: string | null) =>
                       value === "merge" || value === "squash" || value === "rebase"
-                        ? uiT(PULL_REQUEST_MERGE_METHOD_LABELS[value])
+                        ? PULL_REQUEST_MERGE_METHOD_LABELS[value]
                         : value === "last"
-                          ? uiT("Last selected")
-                          : uiT("Mixed")
+                          ? "Last selected"
+                          : "Mixed"
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -508,44 +503,6 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   </SelectItem>
                 </SelectPopup>
               </Select>
-            }
-          />
-        </>
-      ) : (
-        <>
-          <SettingsRow
-            serverScoped
-            settingKeys={["enableAgentBrowserAccess"]}
-            mixed={mixedBrowser}
-            id={searchableSetting("agent-browser-access").id}
-            title={uiT("Agent browser access")}
-            description={
-              isProjectScope
-                ? uiT(
-                    "Allow agents in this project to use the shared browser. Applies when the agent session next starts.",
-                  )
-                : uiT("Allow agents to use the shared browser. Projects can override it.")
-            }
-            resetAction={
-              settings.enableAgentBrowserAccess !==
-              DEFAULT_SERVER_SETTINGS.enableAgentBrowserAccess ? (
-                <SettingResetButton
-                  label={uiT("default browser access")}
-                  onClick={() =>
-                    updateSettings({
-                      enableAgentBrowserAccess: DEFAULT_SERVER_SETTINGS.enableAgentBrowserAccess,
-                    })
-                  }
-                />
-              ) : null
-            }
-            control={
-              <Switch
-                aria-label={uiT("Agent browser access")}
-                mixed={mixedBrowser}
-                checked={mixedBrowser ? false : settings.enableAgentBrowserAccess}
-                onCheckedChange={(enabled) => updateSettings({ enableAgentBrowserAccess: enabled })}
-              />
             }
           />
         </>

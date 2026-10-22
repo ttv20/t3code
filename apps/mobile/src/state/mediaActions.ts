@@ -1,7 +1,12 @@
+import { useUiLanguage } from "../i18n";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import * as Dialog from "../components/ui/Dialog";
 import type { MediaActionsSource } from "../lib/mediaActionsSource";
 import { useNavigation } from "@react-navigation/native";
-import type { MediaActionId } from "@t3tools/client-runtime/media-actions";
+import {
+  formatFilePathForClipboard,
+  type MediaActionId,
+} from "@t3tools/client-runtime/media-actions";
 import {
   AuthFilesystemReadScope,
   type EnvironmentId,
@@ -32,6 +37,8 @@ function canReadHostMedia(environmentId: EnvironmentId | null): boolean {
 }
 
 export function useMediaActions(source: MediaActionsSource | undefined, onOpenFile?: () => void) {
+  const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
   const hostEnvironmentId =
     source &&
@@ -62,11 +69,11 @@ export function useMediaActions(source: MediaActionsSource | undefined, onOpenFi
       if ("attachment" in source) {
         const preview = await loadLocalAttachmentPreview(source.attachment, request.signal);
         if (!preview) return;
-        try {
-          await preview.share(request.signal, source.sourceIdentifier);
-        } finally {
-          preview.dispose();
-        }
+        const shared = await settlePromise(() =>
+          preview.share(request.signal, source.sourceIdentifier),
+        );
+        preview.dispose();
+        if (AsyncResult.isFailure(shared)) throw squashAtomCommandFailure(shared);
         return;
       }
       const uri = "uri" in source ? normalizeNativeMarkdownUrl(source.uri) : await refresh();
@@ -106,17 +113,18 @@ export function useMediaActions(source: MediaActionsSource | undefined, onOpenFi
             ? [
                 {
                   id: "copy-full-path" as const,
-                  title: "Copy full path",
-                  run: () => copyTextWithHaptic(reference.path),
+                  title: uiT("Copy full path"),
+                  run: () => copyTextWithHaptic(formatFilePathForClipboard(reference.path)),
                 },
               ]
             : []),
-          ...(relativePath
+          ...(relativePath && reference?.kind === "file"
             ? [
                 {
                   id: "copy-relative-path" as const,
-                  title: "Copy relative path",
-                  run: () => copyTextWithHaptic(relativePath),
+                  title: uiT("Copy relative path"),
+                  run: () =>
+                    copyTextWithHaptic(formatFilePathForClipboard(relativePath, reference.path)),
                 },
               ]
             : []),
@@ -124,7 +132,7 @@ export function useMediaActions(source: MediaActionsSource | undefined, onOpenFi
             ? [
                 {
                   id: "copy-url" as const,
-                  title: "Copy URL",
+                  title: uiT("Copy URL"),
                   run: () => copyTextWithHaptic(reference.url),
                 },
               ]
@@ -133,7 +141,7 @@ export function useMediaActions(source: MediaActionsSource | undefined, onOpenFi
             ? [
                 {
                   id: "open-file" as const,
-                  title: "Open in file viewer",
+                  title: uiT("Open in file viewer"),
                   disabled: !canReadMedia,
                   run: () => {
                     if (!canReadHostMedia(hostEnvironmentId)) return;

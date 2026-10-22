@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
@@ -89,6 +90,7 @@ const KINDS: Record<
 
 export function SettingsMicrophoneRouteScreen() {
   const { t: uiT } = useUiLanguage();
+
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
@@ -172,15 +174,11 @@ export function SettingsMicrophoneRouteScreen() {
           title={uiT("Preferred order")}
           trailing={
             hasDevices ? (
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                label={editing ? uiT("Done") : uiT("Edit")}
+                tone="text"
                 onPress={() => setEditing((value) => !value)}
-                className="px-2 py-1 active:opacity-70"
-              >
-                <Text className="text-sm font-t3-medium text-foreground">
-                  {editing ? uiT("Done") : uiT("Edit")}
-                </Text>
-              </Pressable>
+              />
             ) : undefined
           }
         >
@@ -244,6 +242,7 @@ function MicrophoneRow(props: {
   readonly onForget: (() => void) | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { lifted, offset, entry } = props;
   const kind = KINDS[entry.kind];
   const title = isMicrophoneDevice(entry) ? entry.name : kind.row;
@@ -305,10 +304,10 @@ function MicrophoneRow(props: {
         />
         <View className="min-w-0 flex-1 gap-0.5">
           <Text numberOfLines={1} className="text-lg text-foreground">
-            {uiT(title)}
+            {title}
           </Text>
           <Text numberOfLines={1} className="text-sm text-foreground-muted">
-            {isMicrophoneDevice(entry) ? uiT(kind.label) : kind.rowDescription}
+            {isMicrophoneDevice(entry) ? kind.label : kind.rowDescription}
           </Text>
         </View>
       </View>

@@ -52,7 +52,7 @@ export function Button(props: ButtonProps) {
     <View
       accessible
       accessibilityRole="button"
-      accessibilityLabel={uiT(props.label)}
+      accessibilityLabel={props.accessibilityLabel ?? props.label}
       accessibilityHint={props.accessibilityHint}
       accessibilityState={{
         disabled: Boolean(props.disabled || props.loading),

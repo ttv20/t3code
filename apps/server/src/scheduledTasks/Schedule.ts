@@ -3,7 +3,7 @@ import * as DateTime from "effect/DateTime";
 
 const MINUTE_MS = 60_000;
 
-export function parseTimeOfDay(value: string): { hour: number; minute: number } | null {
+function parseTimeOfDay(value: string): { hour: number; minute: number } | null {
   const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
   if (!match) return null;
   return { hour: Number(match[1]), minute: Number(match[2]) };
@@ -17,9 +17,8 @@ export function nextScheduledRunAt(
   if (schedule.type === "interval") {
     // Persisted rows created before the one-minute floor remain readable, but
     // they must not retain their old high-frequency execution rate.
-    return DateTime.add(from, {
-      milliseconds: Math.max(schedule.everyMs, MIN_SCHEDULED_TASK_INTERVAL_MS),
-    });
+    // Intervals advance elapsed time, including across daylight-saving changes.
+    return DateTime.addDuration(from, Math.max(schedule.everyMs, MIN_SCHEDULED_TASK_INTERVAL_MS));
   }
 
   const time = parseTimeOfDay(schedule.timeOfDay);

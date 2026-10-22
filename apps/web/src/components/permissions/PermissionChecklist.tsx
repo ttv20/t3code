@@ -25,7 +25,7 @@ export function PermissionChecklist({
       {permissions.map((permission) => (
         <div key={permission.id} className="flex items-center gap-3 rounded-lg border px-3 py-2">
           {permission.icon}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <p className="font-medium">{permission.title}</p>
             <p className="text-xs text-muted-foreground">{uiT(permission.description)}</p>
           </div>

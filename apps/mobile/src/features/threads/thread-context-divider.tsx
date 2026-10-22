@@ -26,7 +26,7 @@ export function ThreadContextDivider(props: {
             compact
             icon="brain"
             iconSubtleColor={props.iconColor}
-            label={props.label}
+            label={uiT(props.label)}
             showIcon={false}
           />
         ) : (

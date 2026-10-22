@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../../i18n";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import type { FileDiffMetadata } from "@pierre/diffs";
 import type { PullRequestReviewGuideExcerpt } from "@t3tools/contracts";
@@ -28,21 +28,11 @@ export function ReviewGuideExcerpt({
   readonly onOpen: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { nativeReviewDiffStyle, codeWordBreak } = useAppearanceCodeSurface();
   const { themeAppearance } = useAppearancePreferences();
-  const slice = useMemo(() => {
-    try {
-      if (!file) return "";
-      return rowsToPatch(
-        excerpt.path,
-        file.prevName ?? excerpt.path,
-        excerptRows(fileDiffRows(file), excerpt),
-      );
-    } catch {
-      return "";
-    }
-  }, [file, excerpt]);
-  const data = useMemo(() => {
+  const slice = excerptPatch(file, excerpt);
+  const data = (() => {
     const parsed = buildNativeReviewDiffData(
       buildReviewParsedDiff(slice, `guide:${excerpt.path}:${excerpt.start}`),
     );
@@ -50,7 +40,7 @@ export function ReviewGuideExcerpt({
       ...parsed,
       rows: parsed.rows.filter((row) => row.kind !== "file" && row.kind !== "hunk"),
     };
-  }, [slice, excerpt.path, excerpt.start]);
+  })();
   const bridge = useNativeReviewDiffBridge({
     threadKey: null,
     sectionId: `guide:${excerpt.path}:${excerpt.start}`,
@@ -140,4 +130,20 @@ export function ReviewGuideExcerpt({
       </View>
     </View>
   );
+}
+
+function excerptPatch(
+  file: FileDiffMetadata | undefined,
+  excerpt: PullRequestReviewGuideExcerpt,
+): string {
+  if (!file) return "";
+  try {
+    return rowsToPatch(
+      excerpt.path,
+      file.prevName ?? excerpt.path,
+      excerptRows(fileDiffRows(file), excerpt),
+    );
+  } catch {
+    return "";
+  }
 }

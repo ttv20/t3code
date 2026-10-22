@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { MOBILE_SHAPE } from "../../lib/designTokens";
 import { useEffect } from "react";
 import { AccessibilityInfo, Platform, View } from "react-native";
@@ -20,6 +21,8 @@ export interface ToastProps {
 
 /** The owning screen places and dismisses feedback; actions are never implicit. */
 export function Toast(props: ToastProps) {
+  const { t: uiT } = useUiLanguage();
+
   useEffect(() => {
     if (Platform.OS === "ios") AccessibilityInfo.announceForAccessibility(props.message);
   }, [props.message]);
@@ -37,13 +40,13 @@ export function Toast(props: ToastProps) {
             }
           />
         )}
-        <View className="min-w-0 flex-1" accessibilityLiveRegion="polite">
+        <View className="min-w-0 flex-1 [unicode-bidi:plaintext]" accessibilityLiveRegion="polite">
           <AppText textRole="footnote" className="font-t3-semibold">
             {props.message}
           </AppText>
           {props.description ? (
             <AppText textRole="label" className="text-foreground-muted">
-              {props.description}
+              {uiT(props.description)}
             </AppText>
           ) : null}
         </View>

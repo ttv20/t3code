@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { TERMINAL_PALETTES, terminalOutputSpans } from "@t3tools/shared/terminalOutput";
 import { useLayoutEffect, useRef } from "react";
@@ -27,6 +28,8 @@ export function CommandOutputPanel(props: {
   readonly threadId: ThreadId;
   readonly itemId: TurnItemId;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { data, error } = useEnvironmentQuery(
     orchestrationEnvironment.v2.commandOutput({
       environmentId: props.environmentId,
@@ -47,8 +50,11 @@ export function CommandOutputPanel(props: {
 
   if (text.length === 0) {
     if (error) return <div className="text-destructive">Couldn&apos;t load output: {error}</div>;
-    if (data === null) return <div className="text-muted-foreground italic">Loading output…</div>;
-    return data.running ? null : <div className="text-muted-foreground italic">No output.</div>;
+    if (data === null)
+      return <div className="text-muted-foreground italic">{uiT("Loading output…")}</div>;
+    return data.running ? null : (
+      <div className="text-muted-foreground italic">{uiT("No output.")}</div>
+    );
   }
   // Parsed after the layout effect, the last hook, so the compiler caches it on text and theme.
   const spans = terminalOutputSpans(text, TERMINAL_PALETTES[resolvedTheme]);

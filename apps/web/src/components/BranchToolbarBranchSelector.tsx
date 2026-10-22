@@ -525,13 +525,16 @@ export function BranchToolbarBranchSelector({
     [handleOpenChange, isBranchActionPending, isInitialBranchesLoadPending],
   );
 
-  const triggerLabel = resolveBranchTriggerLabel({
-    activeWorktreePath,
-    effectiveEnvMode,
-    resolvedActiveBranch,
-    resolvedActiveBranchIsRemote,
-    startFromOrigin,
-  });
+  const triggerLabel = resolveBranchTriggerLabel(
+    {
+      activeWorktreePath,
+      effectiveEnvMode,
+      resolvedActiveBranch,
+      resolvedActiveBranchIsRemote,
+      startFromOrigin,
+    },
+    uiT,
+  );
 
   const branchPrBranch = resolveBranchToolbarPrBranch({
     activeThreadBranch,

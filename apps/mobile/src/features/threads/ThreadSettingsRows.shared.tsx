@@ -64,7 +64,7 @@ export function ModelRowContent(
         onPress={props.onPress}
       >
         {props.leadingSelection}
-        <View className="min-w-0 flex-1">
+        <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <View className="flex-row items-center gap-2">
             <Text
               className="min-w-0 shrink text-base font-t3-medium text-foreground"
@@ -178,7 +178,7 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
               className="shrink-0 text-sm text-foreground-muted"
               style={{ writingDirection: "ltr", textAlign: "left" }}
             >
-              {props.label}
+              {uiT(props.label)}
             </Text>
           ) : null}
         </View>

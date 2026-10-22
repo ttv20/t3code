@@ -42,6 +42,7 @@ import { DeviceHostEditor } from "./DeviceHostEditor";
 import { useHostConnectionChecks } from "./useHostConnectionChecks";
 import { deviceHostConnectionKey } from "./deviceHostConnectionChecks";
 import { settingsScopeEnvironmentLabel, settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+import { DeviceHostDiagnostics } from "../device/DeviceSetup";
 
 export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null }) {
   const { t: uiT } = useUiLanguage();
@@ -142,10 +143,12 @@ export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null
   return (
     <SettingsRow
       id="device-hosts"
-      title="Device hosts"
+      title={uiT("Device hosts")}
       serverScoped
       settingKeys={["deviceHosts"]}
-      description="Add remote machines with simulator or emulator runtimes installed, and the selected environments will connect over SSH and set up device tools automatically."
+      description={uiT(
+        "Add remote machines with simulator or emulator runtimes installed, and the selected environments will connect over SSH and set up device tools automatically.",
+      )}
       control={
         <Button
           size="sm"
@@ -155,7 +158,7 @@ export function DeviceHostsSettings(props: { environmentId: EnvironmentId | null
           }
           onClick={() => {
             setOriginalHost(null);
-            setEditing({ id: randomUUID(), label: "", target: "" });
+            setEditing({ kind: "ssh", id: randomUUID(), label: "", target: "" });
           }}
         >
           <PlusIcon className="size-3.5" /> {uiT("Add host")}
@@ -387,7 +390,7 @@ function DeviceHostList({
                   <div className="space-y-1">
                     {failed.map((result) => (
                       <p key={result.environmentId}>
-                        {result.name}: {result.error || "Connection failed"}
+                        {result.name}: {result.error || uiT("Connection failed")}
                       </p>
                     ))}
                   </div>
@@ -416,7 +419,7 @@ function DeviceHostList({
               }));
         return (
           <div key={host.id} className="flex items-center gap-2 border-t border-border/50 py-2.5">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
               <div className="flex min-w-0 items-center gap-2">
                 <p className="truncate text-sm font-medium">{uiT(host.label)}</p>
                 {indicators.map((indicator) => (
@@ -444,6 +447,18 @@ function DeviceHostList({
                 ))}
               </div>
               <p className="truncate text-xs text-muted-foreground">{host.target}</p>
+              {results
+                .filter(
+                  (result) =>
+                    result.status?.status === "ready" && result.status.androidDiscoveryIncomplete,
+                )
+                .map((result) => (
+                  <p key={result.environmentId} role="status" className="mt-1 text-xs text-warning">
+                    {compact ? `${result.label}: ` : ""}
+                    {result.status?.detail ??
+                      "The Android device list may be incomplete. Refresh devices to try again."}
+                  </p>
+                ))}
               {compact ? (
                 <Collapsible>
                   <div className="min-w-0 text-xs [--inline-button-white-space:normal]">
@@ -471,6 +486,12 @@ function DeviceHostList({
                             <p role="status" className="text-xs text-destructive">
                               {result.error}
                             </p>
+                          ) : null}
+                          {result.state ? (
+                            <DeviceHostDiagnostics
+                              hosts={[result.host]}
+                              hostStatuses={result.state.hostStatuses}
+                            />
                           ) : null}
                           {result.versions}
                           {result.check?.status === "local" ? (
@@ -507,6 +528,18 @@ function DeviceHostList({
                   </details>
                 </div>
               ) : null}
+              {!compact
+                ? results.map((result) =>
+                    result.state ? (
+                      <DeviceHostDiagnostics
+                        key={result.environmentId}
+                        className="mt-1"
+                        hosts={[result.host]}
+                        hostStatuses={result.state.hostStatuses}
+                      />
+                    ) : null,
+                  )
+                : null}
             </div>
             {!compact && progress ? (
               <span
@@ -524,7 +557,7 @@ function DeviceHostList({
                     size="icon-sm"
                     variant="ghost-muted"
                     disabled={busy}
-                    aria-label={host.label + " options"}
+                    aria-label={host.label + uiT(" options")}
                   />
                 }
               >
@@ -544,8 +577,8 @@ function DeviceHostList({
                           retryHost(result.environmentId, result.host.id, result.environmentId)
                         }
                       >
-                        {retrying === result.environmentId ? "Retrying" : uiT("Retry")} from{" "}
-                        {result.label}
+                        {retrying === result.environmentId ? "Retrying" : uiT("Retry")}{" "}
+                        {uiT("from")} {result.label}
                         {result.address ? ` (${result.address})` : null}
                       </MenuItem>
                     ))
@@ -567,7 +600,7 @@ function DeviceHostList({
                 ? retrying === host.id
                   ? uiT("Retrying…")
                   : uiT("Retry")
-                : "Test connection"}
+                : uiT("Test connection")}
             </Button>
           </div>
         );

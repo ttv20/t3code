@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   pullRequestLinkProject,
   resolveLinkPullRequestInput,
@@ -31,6 +32,8 @@ export function useLinkedPullRequestActions(input: {
   readonly project: EnvironmentProject | null;
   readonly runtime: EnvironmentRuntimeState | null;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { thread, project, runtime } = input;
   const capabilities = runtime?.serverConfig?.environment.capabilities;
   const canOperate = useEnvironmentScope(
@@ -87,9 +90,9 @@ export function useLinkedPullRequestActions(input: {
 
   const promptLink = useCallback(() => {
     Dialog.prompt({
-      title: "Link pull request",
+      title: uiT("Link pull request"),
       message: "Paste a pull request URL, or enter 123 / #123 for this thread's repository.",
-      placeholder: "Pull request URL or #42",
+      placeholder: uiT("Pull request URL or #42"),
       initialValue: "",
       confirmText: "Link",
       onConfirm: (reference) => {
@@ -116,8 +119,8 @@ export function useLinkedPullRequestActions(input: {
       const open = link.snapshot === null || link.snapshot.state === "open";
       const watching = link.watch !== undefined;
       return [
-        { id: "copy", title: "Copy link", image: "link" },
-        { id: "browser", title: "Open in browser", image: "safari" },
+        { id: "copy", title: uiT("Copy link"), image: "link" },
+        { id: "browser", title: uiT("Open in browser"), image: "safari" },
         ...((watching ? canWatch : canStartWatch) && open
           ? [
               {

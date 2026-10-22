@@ -235,6 +235,41 @@ function formatProviderList(providers: ReadonlyArray<Pick<ServerProvider, "drive
   return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
+/**
+ * Install and provider settings reach only installs the server can update.
+ * The rest are updated by the app or tool that installed them, so they get
+ * their own sentence whatever else the notice offers.
+ */
+function describeInitialUpdates(
+  input: {
+    readonly updateProviders: ReadonlyArray<ProviderUpdateCandidate>;
+    readonly oneClickProviders: ReadonlyArray<ProviderUpdateCandidate>;
+  },
+  t = createUiTranslator("en"),
+): string {
+  const fromSettings = input.updateProviders.filter(
+    (provider) => provider.versionAdvisory.canUpdate,
+  );
+  const manual = input.updateProviders.filter((provider) => !provider.versionAdvisory.canUpdate);
+  return [
+    input.oneClickProviders.length > 0
+      ? t("Install the update now or review provider settings.")
+      : fromSettings.length > 0
+        ? t("{0} can be updated from provider settings.", { "0": formatProviderList(fromSettings) })
+        : null,
+    manual.length > 0
+      ? t(
+          manual.length === 1
+            ? "Update {0} with the app or tool that installed it."
+            : "Update {0} with the app or tool that installed them.",
+          { "0": formatProviderList(manual) },
+        )
+      : null,
+  ]
+    .filter((sentence) => sentence !== null)
+    .join(" ");
+}
+
 export function getProviderUpdateInitialToastView(
   input: {
     readonly updateProviders: ReadonlyArray<ProviderUpdateCandidate>;
@@ -246,12 +281,7 @@ export function getProviderUpdateInitialToastView(
     phase: "initial",
     type: "warning",
     title: getProviderUpdateInitialToastTitle(input.updateProviders, t),
-    description:
-      input.oneClickProviders.length > 0
-        ? t("Install the update now or review provider settings.")
-        : t("{0} can be updated from provider settings.", {
-            "0": formatProviderList(input.updateProviders),
-          }),
+    description: describeInitialUpdates(input, t),
   };
 }
 
@@ -465,12 +495,31 @@ function latestFinishedAtForProviders(providers: ReadonlyArray<ServerProvider>):
   }, null);
 }
 
+/**
+ * Collapses terminal update states to the most recently finished instance per
+ * driver, so an update on a non-default instance is not hidden behind an
+ * older outcome on the driver's default instance.
+ */
+function latestTerminalProvidersByDriver(providers: ReadonlyArray<ServerProvider>) {
+  const latestProviderByDriver = new Map<ProviderDriverKind, ServerProvider>();
+
+  for (const provider of providers) {
+    const current = latestProviderByDriver.get(provider.driver);
+    if (!current || (getUpdateFinishedAt(provider) ?? "") >= (getUpdateFinishedAt(current) ?? "")) {
+      latestProviderByDriver.set(provider.driver, provider);
+    }
+  }
+
+  return [...latestProviderByDriver.values()];
+}
+
 export function getProviderUpdateSidebarPillView(
   providers: ReadonlyArray<ServerProvider>,
   options?: ProviderUpdateSidebarPillOptions,
 ): ProviderUpdateSidebarPillView | null {
-  const dedupedProviders = dedupeProvidersByDriver(providers);
-  const activeProviders = dedupedProviders.filter(isProviderUpdateActive);
+  // Update state is recorded per instance, so pick the instances with an
+  // update before collapsing to one entry per driver.
+  const activeProviders = dedupeProvidersByDriver(providers.filter(isProviderUpdateActive));
   if (activeProviders.length > 0) {
     const activeProvider = activeProviders[0]!;
     const activeProviderName =
@@ -492,8 +541,8 @@ export function getProviderUpdateSidebarPillView(
     };
   }
 
-  const recentTerminalProviders = dedupedProviders.filter((provider) =>
-    isRecentTerminalProvider(provider, options?.visibleAfterIso),
+  const recentTerminalProviders = latestTerminalProvidersByDriver(
+    providers.filter((provider) => isRecentTerminalProvider(provider, options?.visibleAfterIso)),
   );
   const terminalCandidates: ProviderUpdateSidebarPillView[] = [];
 

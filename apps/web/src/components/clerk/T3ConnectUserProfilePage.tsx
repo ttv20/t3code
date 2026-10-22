@@ -52,7 +52,7 @@ function T3ConnectEnvironmentRow(props: {
     <ClerkUserProfileRow icon={<ServerIcon className="size-4" />}>
       <Collapsible open={props.confirmationOpen} onOpenChange={props.onConfirmationChange}>
         <div className="flex items-start gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <h3 className="truncate text-sm leading-4.5 font-medium text-foreground">
               {environment.label}
             </h3>
@@ -164,7 +164,8 @@ export function T3ConnectUserProfilePage() {
     if (isAtomCommandInterrupted(result)) return;
 
     const cause = squashAtomCommandFailure(result);
-    const message = cause instanceof Error ? cause.message : "Could not deregister the server.";
+    const message =
+      cause instanceof Error ? cause.message : uiT("Could not deregister the server.");
     const traceId = findErrorTraceId(cause);
     console.error("[t3-connect] Could not deregister environment", {
       environmentId: environment.environmentId,
@@ -200,7 +201,7 @@ export function T3ConnectUserProfilePage() {
 
   return (
     <ClerkUserProfilePage
-      title="T3 Connect"
+      title={uiT("T3 Connect")}
       description={uiT(
         "Environments registered to your account. Connections on this device are managed in Settings.",
       )}

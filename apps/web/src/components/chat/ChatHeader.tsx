@@ -36,6 +36,7 @@ import {
 } from "../WorkspaceBreadcrumb";
 import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
+import { textDirection } from "~/textDirection";
 import { useClientSettings } from "../../hooks/useSettings";
 
 interface ChatHeaderProps {
@@ -51,7 +52,7 @@ interface ChatHeaderProps {
   onOpenProjectSettings?: (() => void) | undefined;
 }
 
-export function resolveRenameCommit(input: {
+function resolveRenameCommit(input: {
   readonly title: string;
   readonly originalTitle: string;
 }): { action: "commit"; title: string } | { action: "reject-empty" } | { action: "noop" } {
@@ -80,7 +81,7 @@ export const ChatHeader = memo(function ChatHeader({
 }: ChatHeaderProps) {
   const { t: uiT } = useUiLanguage();
 
-  const activeProjectName = activeProject?.title;
+  const activeProjectName = activeProject?.isScratch ? "No project" : activeProject?.title;
   const activeProjectCwd = activeProject?.workspaceRoot ?? null;
   const interfaceFont = useClientSettings((settings) => settings.fontFamilySans);
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
@@ -184,7 +185,7 @@ export const ChatHeader = memo(function ChatHeader({
         toastManager.add({
           type: "error",
           title: uiT("Failed to rename thread"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: error instanceof Error ? error.message : "An error occurred.",
         });
       }
     });
@@ -277,7 +278,7 @@ export const ChatHeader = memo(function ChatHeader({
       onContextMenu={handleHeaderContextMenu}
     >
       <WorkspaceBreadcrumb
-        ariaLabel={uiT("Thread breadcrumb")}
+        ariaLabel="Thread breadcrumb"
         className="flex-1 overflow-clip [overflow-clip-margin:2px]"
       >
         {activeProject ? (
@@ -300,7 +301,8 @@ export const ChatHeader = memo(function ChatHeader({
                   </WorkspaceBreadcrumbText>
                 </TooltipTrigger>
                 <TooltipPopup side="top">
-                  {uiT("New thread in")} {activeProjectName}
+                  {uiT("New thread in")}
+                  {activeProjectName}
                 </TooltipPopup>
               </Tooltip>
             </WorkspaceBreadcrumbItem>
@@ -346,8 +348,8 @@ export const ChatHeader = memo(function ChatHeader({
         <WorkspaceBreadcrumbItem current className="min-w-10 flex-1">
           {renamingTitle !== null ? (
             <input
-              dir="auto"
               autoFocus
+              dir="auto"
               aria-label={uiT("Thread title")}
               className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-inset ring-ring/50 [unicode-bidi:plaintext] focus:ring-ring"
               defaultValue={renamingTitle}
@@ -381,7 +383,10 @@ export const ChatHeader = memo(function ChatHeader({
                   />
                 }
               >
-                <h2 dir="auto" className="min-w-0 [unicode-bidi:plaintext]">
+                <h2
+                  className="min-w-0 [unicode-bidi:plaintext]"
+                  dir={textDirection(activeThreadTitle)}
+                >
                   <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
                 </h2>
                 <ChevronDownIcon
@@ -390,26 +395,22 @@ export const ChatHeader = memo(function ChatHeader({
                   className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/thread-title:opacity-100 group-focus-visible/thread-title:opacity-100"
                 />
               </TooltipTrigger>
-              <TooltipPopup dir="auto" side="top">
-                {activeThreadTitle}
-              </TooltipPopup>
+              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
             </Tooltip>
           ) : (
             <Tooltip>
               <TooltipTrigger
                 render={
                   <h2
-                    dir="auto"
                     aria-label={activeThreadTitle}
                     className="min-w-0 flex-1 [unicode-bidi:plaintext]"
+                    dir={textDirection(activeThreadTitle)}
                   />
                 }
               >
                 <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
               </TooltipTrigger>
-              <TooltipPopup dir="auto" side="top">
-                {activeThreadTitle}
-              </TooltipPopup>
+              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
             </Tooltip>
           )}
         </WorkspaceBreadcrumbItem>

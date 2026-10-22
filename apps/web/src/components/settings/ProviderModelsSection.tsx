@@ -1,6 +1,4 @@
-"use client";
 import { useUiLanguage } from "../../i18n";
-
 import { ArrowDownIcon, ArrowUpIcon, PencilIcon, PlusIcon, StarIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -57,9 +55,7 @@ function describeModelCapabilities(model: ServerProviderModel): string[] {
   return labels;
 }
 
-export function groupModelsForDisplay<
-  T extends { readonly slug: string; readonly isCustom: boolean },
->(
+function groupModelsForDisplay<T extends { readonly slug: string; readonly isCustom: boolean }>(
   models: ReadonlyArray<T>,
   options: {
     readonly favoriteModels: ReadonlySet<string>;
@@ -80,7 +76,7 @@ export function groupModelsForDisplay<
   ];
 }
 
-export function nextHiddenModelsForBulkToggle(
+function nextHiddenModelsForBulkToggle(
   models: ReadonlyArray<Pick<ServerProviderModel, "slug" | "isCustom">>,
   hiddenModels: ReadonlyArray<string>,
 ): string[] {
@@ -294,7 +290,7 @@ export function ProviderModelsSection({
 
   const groupLabel = (label: string, isFirst: boolean) => (
     <div className={cn("px-2 pb-1.5 text-2xs text-muted-foreground", isFirst ? "pt-1" : "pt-5")}>
-      {uiT(label)}
+      {label}
     </div>
   );
 
@@ -305,11 +301,11 @@ export function ProviderModelsSection({
           <Input
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            placeholder="Filter models"
+            placeholder={uiT("Filter models")}
             size="sm"
             className="w-56 max-w-full"
             spellCheck={false}
-            aria-label="Filter models"
+            aria-label={uiT("Filter models")}
           />
         ) : null}
         <div className="flex items-center gap-2">
@@ -329,7 +325,8 @@ export function ProviderModelsSection({
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground">
-            {models.length} model{models.length === 1 ? "" : "s"}
+            {models.length} {uiT("model")}
+            {models.length === 1 ? "" : "s"}
             {favoriteCount > 0
               ? ` · ${favoriteCount} favorite${favoriteCount === 1 ? "" : "s"}`
               : ""}
@@ -476,10 +473,10 @@ function ProviderModelRow({
   const capLabels = describeModelCapabilities(model);
   const nameClassName = cn("text-xs", isHidden ? "text-muted-foreground" : "text-foreground/90");
   const pickerTooltip = model.isCustom
-    ? "Custom models are always shown in the picker"
+    ? uiT("Custom models are always shown in the picker")
     : isHidden
-      ? "Hidden from picker"
-      : "Shown in picker";
+      ? uiT("Hidden from picker")
+      : uiT("Shown in picker");
 
   return (
     <div
@@ -512,12 +509,28 @@ function ProviderModelRow({
         </TooltipPopup>
       </Tooltip>
       <span className="flex min-w-0 items-baseline gap-2">
-        <span className={cn(nameClassName, "truncate")}>{model.name}</span>
-        {model.name !== model.slug ? (
-          <code className="truncate font-mono text-2xs text-muted-foreground/70">{model.slug}</code>
-        ) : null}
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span tabIndex={0} className="flex min-w-0 items-baseline gap-2 overflow-hidden" />
+            }
+          >
+            <span className={cn(nameClassName, "max-w-full shrink-0 truncate")}>{model.name}</span>
+            {model.name !== model.slug ? (
+              <code className="truncate font-mono text-2xs text-muted-foreground/70">
+                {model.slug}
+              </code>
+            ) : null}
+          </TooltipTrigger>
+          <TooltipPopup side="top" align="start">
+            <div>{model.name}</div>
+            {model.name !== model.slug ? (
+              <code className="font-mono text-2xs text-muted-foreground">{model.slug}</code>
+            ) : null}
+          </TooltipPopup>
+        </Tooltip>
         {model.isCustom ? (
-          <span className="text-2xs text-muted-foreground/70">{uiT("custom")}</span>
+          <span className="shrink-0 text-2xs text-muted-foreground/70">{uiT("custom")}</span>
         ) : null}
       </span>
       <span className="text-2xs text-muted-foreground/70">

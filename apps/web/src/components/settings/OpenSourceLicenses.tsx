@@ -94,7 +94,7 @@ function LicenseNoticeRow({
               className="me-3 shrink-0 sm:me-4"
               render={<a href={entry.sourceUrl} rel="noreferrer noopener" target="_blank" />}
               size="icon-micro"
-              title="Project source"
+              title={uiT("Project source")}
               variant="ghost-muted"
             >
               <ExternalLinkIcon aria-hidden className="size-3" />
@@ -158,7 +158,7 @@ function LicenseHeaderAction({
           <TooltipTrigger
             render={
               <Button
-                aria-label="Search open-source licenses"
+                aria-label={uiT("Search open-source licenses")}
                 onClick={() => onSearchOpenChange(true)}
                 size="icon-micro"
                 type="button"
@@ -184,7 +184,7 @@ function LicenseHeaderAction({
           <SearchIcon aria-hidden className="size-3" />
         </InputGroupAddon>
         <InputGroupInput
-          aria-label="Search open-source licenses"
+          aria-label={uiT("Search open-source licenses")}
           autoFocus
           onBlur={() => {
             if (query.length === 0) onSearchOpenChange(false);
@@ -196,7 +196,7 @@ function LicenseHeaderAction({
             onQueryChange("");
             onSearchOpenChange(false);
           }}
-          placeholder="Search licenses"
+          placeholder={uiT("Search licenses")}
           size="sm"
           type="search"
           value={query}
@@ -263,7 +263,7 @@ export function OpenSourceLicensesPanel() {
   return (
     <SettingsPageContainer>
       <SettingsSection
-        title="Third-party notices"
+        title={uiT("Third-party notices")}
         headerAction={
           state.status === "ready" ? (
             <LicenseHeaderAction

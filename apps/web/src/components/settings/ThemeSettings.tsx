@@ -185,7 +185,7 @@ function ThemeLibraryCard({
                     const rootOffsetX = mode === "light" ? -52 : 52;
                     const isOpen = radialModeOpen === mode;
                     const isActive = selected.option.activeModes.includes(mode);
-                    const modeLabel = mode === "light" ? "Light" : "Dark";
+                    const modeLabel = mode === "light" ? uiT("Light") : uiT("Dark");
                     return (
                       <div className="contents" key={mode}>
                         <ThemeVariantTooltip label={`${modeLabel}: ${selected.option.label}`}>
@@ -255,7 +255,7 @@ function ThemeLibraryCard({
                               const optionIsActive = option.activeModes.includes(mode);
                               return (
                                 <ThemeVariantTooltip
-                                  key={option.label}
+                                  key={uiT(option.label)}
                                   label={uiT("Use {0} for {1} mode", {
                                     "0": option.label,
                                     "1": uiT(mode),
@@ -313,7 +313,7 @@ function ThemeLibraryCard({
               )}
             </div>
             <div className="flex items-center gap-2 px-3 pb-3 pt-2">
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                 <div className="flex items-center gap-1.5">
                   <button
                     aria-label={uiT("Use {0}{1}", {

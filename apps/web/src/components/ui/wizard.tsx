@@ -88,7 +88,7 @@ export function WizardSteps({
       aria-label={uiT("Setup progress")}
     >
       {steps.map((step, index) => (
-        <li key={step} className="min-w-0">
+        <li key={step} className="min-w-0 [unicode-bidi:plaintext]">
           <Step
             {...(onStepChange
               ? { type: "button" as const, disabled: isStepDisabled?.(index) }

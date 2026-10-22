@@ -1,6 +1,6 @@
 import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, UsageLimitsReport } from "@t3tools/contracts";
-import { Pressable, ScrollView, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -11,15 +11,16 @@ const DRIVER_LABEL: Partial<Record<string, string>> = { codex: "Codex", claudeAg
 export function ComposerUsageLimits({
   report,
   environmentId,
+  maxHeight,
   onClose,
 }: {
   readonly report: UsageLimitsReport;
   readonly environmentId: EnvironmentId;
+  readonly maxHeight: number;
   readonly onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
   const now = Date.parse(report.createdAt);
-  const { height } = useWindowDimensions();
   const close = (
     <Pressable
       accessibilityLabel={uiT("Dismiss usage limits")}
@@ -33,11 +34,7 @@ export function ComposerUsageLimits({
   );
   return (
     <View className="overflow-hidden rounded-[20px] border-continuous bg-card">
-      <ScrollView
-        bounces={false}
-        showsVerticalScrollIndicator={false}
-        style={{ maxHeight: Math.round(height * 0.4) }}
-      >
+      <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={{ maxHeight }}>
         {report.accounts.map((account, index) => {
           const resetCreditInput =
             account.resetCreditInput ??
@@ -58,7 +55,7 @@ export function ComposerUsageLimits({
                       : driverLabel)
                   : account.label
               }
-              detail={account.plan}
+              detail={uiT(account.plan)}
               limits={account.limits}
               now={now}
               trailing={index === 0 ? close : undefined}

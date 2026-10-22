@@ -198,7 +198,10 @@ function CustomSnoozeDialog() {
                           setError(null);
                         }}
                       >
-                        <SelectTrigger id={`${id}-unit`} className="min-w-0">
+                        <SelectTrigger
+                          id={`${id}-unit`}
+                          className="min-w-0 [unicode-bidi:plaintext]"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectPopup>

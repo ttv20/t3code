@@ -69,10 +69,10 @@ function ConfiguredSettingsRouteScreen() {
   const { user } = useUser();
   const { savedConnectionsById } = useSavedRemoteConnections();
   const accountLabel = !isLoaded
-    ? "Checking"
+    ? uiT("Checking")
     : !isSignedIn
-      ? "Sign in"
-      : (user?.primaryEmailAddress?.emailAddress ?? "Signed in");
+      ? uiT("Sign in")
+      : (user?.primaryEmailAddress?.emailAddress ?? uiT("Signed in"));
 
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
@@ -161,7 +161,7 @@ function SettingsIndexSections() {
           representative: scopedProjectMembers[0]!,
           members: scopedProjectMembers,
         })
-      : (selectedProject?.label ?? "Unavailable project");
+      : (selectedProject?.label ?? uiT("Unavailable project"));
   return (
     <>
       <SettingsSection title={uiT("Interface")}>

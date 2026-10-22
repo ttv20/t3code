@@ -170,7 +170,7 @@ export function CloudEnvironmentConnectRows({
     }
     const cause = squashAtomCommandFailure(result);
     const message =
-      cause instanceof Error ? cause.message : "Could not connect the T3 Connect environment.";
+      cause instanceof Error ? cause.message : uiT("Could not connect the T3 Connect environment.");
     const traceId = findErrorTraceId(cause);
     console.error("[t3-connect] Could not connect environment", { message, traceId, cause });
     toastManager.add({
@@ -391,7 +391,14 @@ export function CloudEnvironmentConnectRows({
             kind={machineKind}
             className="size-4 shrink-0 text-muted-foreground"
           />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">{environment.label}</span>
+          <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
+            <span className="block truncate text-sm font-medium">{environment.label}</span>
+            {unsupportedDetail !== null ? (
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {unsupportedDetail}
+              </span>
+            ) : null}
+          </span>
           <Tooltip>
             <TooltipTrigger
               render={<span tabIndex={0} />}
@@ -419,7 +426,7 @@ export function CloudEnvironmentConnectRows({
     return (
       <div key={environment.environmentId} className={ITEM_ROW_CLASSNAME}>
         <div className={ITEM_ROW_INNER_CLASSNAME}>
-          <div className="min-w-0">
+          <div className="min-w-0 [unicode-bidi:plaintext]">
             <div className="flex items-center gap-2">
               <ConnectionStatusDot
                 dotClassName={dotClassName}

@@ -110,7 +110,7 @@ function EnabledPullRequestThreadLinks({
   const linkedThreadsLabel =
     linkedThreads.length > 0
       ? `Linked from ${linkedThreads.length} ${linkedThreads.length === 1 ? "thread" : "threads"}`
-      : "Linked threads";
+      : uiT("Linked threads");
   return (
     <>
       {display === "count" && (linkedThreads.length > 0 || relations.error !== null) ? (

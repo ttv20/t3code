@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { NativeThemeHost } from "./NativeThemeHost.android";
 import { Switch as ComposeSwitch } from "@expo/ui/jetpack-compose";
 import { Pressable, View } from "react-native";
@@ -11,13 +12,15 @@ import { useControlTheme } from "./useControlTheme";
  * with Compose handling touches, a tap on the switch ran the row's onPress instead.
  */
 export function NativeSwitch(props: ThemedSwitchProps) {
+  const { t: uiT } = useUiLanguage();
+
   const { colors } = useControlTheme();
 
   return (
     <Pressable
       disabled={props.disabled}
       onPress={() => props.onValueChange?.(!props.value)}
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       accessibilityHint={props.accessibilityHint}
       accessibilityRole="switch"
       accessibilityState={{ checked: Boolean(props.value), disabled: Boolean(props.disabled) }}

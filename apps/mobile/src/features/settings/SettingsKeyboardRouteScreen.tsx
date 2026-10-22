@@ -64,8 +64,8 @@ export function SettingsKeyboardRouteScreen() {
           {ENTER_BEHAVIOR_OPTIONS.map((option, index) => (
             <SettingsChoiceRow
               key={option.behavior}
-              label={option.label}
-              description={option.description}
+              label={uiT(option.label)}
+              description={uiT(option.description)}
               selected={selectedBehavior === option.behavior}
               separated={index > 0}
               disabled={!preferencesReady}

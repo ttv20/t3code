@@ -46,12 +46,10 @@ Translation scope and the reasons behind these choices are recorded in [Translat
 
 ## Web and desktop chat bidirectional text
 
-- Web chat messages default to RTL when at least 30% of their visible letters are RTL. Punctuation, digits, whitespace, backtick code spans, and hidden Markdown link destinations do not determine direction.
-- A Markdown paragraph, heading, list item, quote, table cell, or source line beginning with an RTL letter aligns to the right even when the whole message is below 30%. Formatting and leading punctuation or digits do not hide its first letter; code stays LTR.
-- Streaming direction uses hysteresis around the 30% threshold to avoid flickering. Once streaming ends, the exact 30% threshold applies.
-- Markdown lists and quote bars inherit the message direction and use logical start-side gutters. Inline and fenced code remain explicitly left-to-right and isolated.
-- The prompt editor and thread-title fields use automatic plaintext bidi behavior. Thread titles also render with automatic direction in the chat header, sidebar, search results, and tooltips.
-- Pending question cards and answer choices use the same 30% RTL-letter threshold as messages. Choice rows mirror their text and shortcut/checkmark placement for RTL; collapsed previews preserve the question's direction.
+- Web and desktop use upstream's per-block word-based direction detection for chat Markdown and the prompt editor. A paragraph, heading, list, quote, or table is RTL when at least 30% of its words start with an RTL letter. Words without letters and inline code do not vote; code blocks stay LTR. Blocks choose direction independently of the interface language and other blocks.
+- Lists and quotes share their block's direction, including markers, checkboxes, and quote bars. Empty editor paragraphs continue the preceding paragraph's direction, and keyboard navigation follows the caret's block, including navigation across inline code.
+- Thread titles retain automatic direction in the header, sidebar, command palette, search results, rename fields, and tooltips.
+- Pending question cards and answer choices retain the shared 30% RTL-letter threshold. Choice rows mirror their text and shortcut/checkmark placement for RTL; collapsed previews preserve the question's direction.
 - Timeline navigation previews resolve the user message and assistant answer directions separately and apply the same sentence-boundary correction as rendered Markdown.
 - In RTL prose, adjacent Latin words or numbers separated by sentence punctuation or a colon receive a display-only RLM before the next segment. This also works across emphasis and link labels; code and link destinations remain unchanged. The shared sentence-boundary helper also runs in native mobile Markdown. The web layout and preview fixes above do not imply identical native mobile layouts.
 

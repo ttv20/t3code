@@ -34,6 +34,7 @@ export function PullRequestMergeControls(props: {
   readonly stack: PullRequestStackState;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { pr, stack } = props;
   const target = pullRequestTarget(props.params);
   const permissions = usePullRequestPermissions(props.params, pr);
@@ -65,18 +66,18 @@ export function PullRequestMergeControls(props: {
     permissions.connected && stack.supportsStackActions && !stack.isFresh && !stack.error;
   const reason =
     (!permissions.connected
-      ? "Reconnect to merge."
+      ? uiT("Reconnect to merge.")
       : mergeUnavailableReason(pr, permissions.canWrite)) ??
     (stack.stack
       ? !stack.supportsStackActions
-        ? "This environment can display stacks but cannot merge them."
+        ? uiT("This environment can display stacks but cannot merge them.")
         : !stack.isFresh
-          ? "Refresh the stack before merging."
+          ? uiT("Refresh the stack before merging.")
           : scope?.reason
       : !canMergeSingle
         ? stack.error
           ? "Couldn't check stack membership. Refresh before merging."
-          : "Checking stack membership…"
+          : uiT("Checking stack membership…")
         : null);
   const canMerge = !busy && method !== undefined && !reason;
   const label = method
@@ -100,47 +101,45 @@ export function PullRequestMergeControls(props: {
       return;
     pending.current = true;
     setBusy(true);
-    try {
-      const response = await runAction({
-        ...target,
-        input: {
-          ...target.input,
-          action,
-          ...(action === "merge" && method && stack.stack && scope
+    const response = await runAction({
+      ...target,
+      input: {
+        ...target.input,
+        action,
+        ...(action === "merge" && method && stack.stack && scope
+          ? {
+              stackNumber: stack.stack.number,
+              expectedStackHeads: scope.heads,
+              mergeMethod: method,
+            }
+          : action === "merge" && method
             ? {
-                stackNumber: stack.stack.number,
-                expectedStackHeads: scope.heads,
-                mergeMethod: method,
+                resolveMergeMethod: (fresh) => {
+                  if (
+                    !canPerformPullRequestAction(fresh, "merge") ||
+                    !allowedMergeMethods(fresh).includes(method)
+                  )
+                    throw new Error("The pull request changed. Refresh before merging.");
+                  return method;
+                },
               }
-            : action === "merge" && method
-              ? {
-                  resolveMergeMethod: (fresh) => {
-                    if (
-                      !canPerformPullRequestAction(fresh, "merge") ||
-                      !allowedMergeMethods(fresh).includes(method)
-                    )
-                      throw new Error("The pull request changed. Refresh before merging.");
-                    return method;
-                  },
-                }
-              : action === "enable-auto-merge" && method
-                ? { mergeMethod: method }
-                : {}),
-        },
-      });
-      if (response._tag === "Failure") throw squashAtomCommandFailure(response);
-    } catch (cause) {
+            : action === "enable-auto-merge" && method
+              ? { mergeMethod: method }
+              : {}),
+      },
+    });
+    // A stack can partly merge before the provider reports a failure.
+    refreshDetail();
+    refreshActivity();
+    stack.refresh();
+    pending.current = false;
+    setBusy(false);
+    if (AsyncResult.isFailure(response)) {
+      const cause = squashAtomCommandFailure(response);
       Dialog.alert(
         "Couldn't complete the merge action",
         cause instanceof Error ? cause.message : "Try again.",
       );
-    } finally {
-      // A stack can partly merge before the provider reports a failure.
-      refreshDetail();
-      refreshActivity();
-      stack.refresh();
-      pending.current = false;
-      setBusy(false);
     }
   };
   const confirm = (action: "merge" | "enable-auto-merge" | "disable-auto-merge") => {
@@ -158,7 +157,7 @@ export function PullRequestMergeControls(props: {
         : action === "enable-auto-merge"
           ? `Merge #${pr.number} using ${method} when its requirements are met. This may happen immediately.`
           : action === "disable-auto-merge"
-            ? "Stop the provider from automatically merging this pull request."
+            ? uiT("Stop the provider from automatically merging this pull request.")
             : `Merge #${pr.number} into ${pr.baseBranch} using ${method}.`;
     Dialog.alert(title, message, [
       { text: "Cancel", style: "cancel" },
@@ -178,7 +177,7 @@ export function PullRequestMergeControls(props: {
         }
       >
         {Platform.OS === "android" ? (
-          <View className="min-w-0 flex-1">
+          <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <Button
               label={
                 busy ? uiT("Working…") : !permissions.connected ? uiT("Reconnect to merge") : label
@@ -239,9 +238,7 @@ export function PullRequestMergeControls(props: {
                 ? [
                     {
                       id: autoAction,
-                      title: pr.autoMergeEnabled
-                        ? uiT("Disable auto-merge")
-                        : uiT("Enable auto-merge"),
+                      title: pr.autoMergeEnabled ? "Disable auto-merge" : "Enable auto-merge",
                       image: "clock",
                     },
                   ]
@@ -295,13 +292,7 @@ export function PullRequestMergeControls(props: {
         </Text>
       ) : null}
       {stack.error && stack.supportsStackActions ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={stack.refresh}
-          className="min-h-11 justify-center px-1"
-        >
-          <Text className="text-sm text-primary-text">{uiT("Retry stack lookup")}</Text>
-        </Pressable>
+        <Button label={uiT("Retry stack lookup")} tone="text" onPress={stack.refresh} />
       ) : null}
     </View>
   );

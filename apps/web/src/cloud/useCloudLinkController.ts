@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useAuth } from "@clerk/react";
 import { findErrorTraceId } from "@t3tools/client-runtime/errors";
@@ -51,6 +52,8 @@ function isManagedTunnelActive(
 }
 
 export function useCloudLinkController() {
+  const { t: uiT } = useUiLanguage();
+
   const { getToken, isSignedIn } = useAuth();
   const refreshRelayEnvironments = useAtomCommand(relayEnvironmentDiscovery.refresh, {
     reportFailure: false,
@@ -74,13 +77,14 @@ export function useCloudLinkController() {
   const [operationError, setOperationError] = useState<string | null>(null);
 
   const reportUpdateFailure = (cause: unknown) => {
-    const message = cause instanceof Error ? cause.message : "Could not update T3 Connect access.";
+    const message =
+      cause instanceof Error ? cause.message : uiT("Could not update T3 Connect access.");
     const traceId = findErrorTraceId(cause);
     console.error("[t3-connect] Could not update T3 Connect", { message, traceId, cause });
     setOperationError(traceId ? `${message} Trace ID: ${traceId}` : message);
     toastManager.add({
       type: "error",
-      title: "Could not update T3 Connect",
+      title: uiT("Could not update T3 Connect"),
       description: message,
       data: traceId
         ? {

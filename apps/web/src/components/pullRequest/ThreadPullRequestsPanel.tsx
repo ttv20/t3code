@@ -30,6 +30,7 @@ import { findProjectForChangeRequest, useOpenPrLink } from "~/lib/openPullReques
 import { cn } from "~/lib/utils";
 import { useShortcutModifierState } from "~/shortcutModifierState";
 import { useProjects, useServerConfigs, useThreadShell } from "~/state/entities";
+import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
 import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
 import { threadEnvironment } from "~/state/threads";
 import { useAtomCommand } from "~/state/use-atom-command";
@@ -54,7 +55,7 @@ import {
 } from "./pullRequestPresentation";
 import { PullRequestGlyph } from "./pullRequestIcons";
 import { pullRequestQuickActions } from "./pullRequestList.logic";
-import { PullRequestSpeedActions } from "./PullRequestSpeedActions";
+import { PullRequestSpeedActions, PullRequestSpeedModeContext } from "./PullRequestSpeedActions";
 
 const SOURCE_LABELS: Record<ThreadPullRequestLink["source"], string> = {
   manual: "Linked by you",
@@ -145,7 +146,7 @@ function LinkRowImpl({
       {depth > 0 ? <span aria-hidden className="-ml-2 h-6 w-px shrink-0 bg-border/70" /> : null}
       {snapshot === null ? (
         <PullRequestGlyph.pullRequest
-          aria-label="Waiting for host state"
+          aria-label={uiT("Waiting for host state")}
           className="size-4 shrink-0 text-muted-foreground"
         />
       ) : (
@@ -198,7 +199,7 @@ function LinkRowImpl({
                 {watching ? (
                   <Tooltip>
                     <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
-                      <EyeIcon role="img" aria-label="Watching" className="size-3.5" />
+                      <EyeIcon role="img" aria-label={uiT("Watching")} className="size-3.5" />
                     </TooltipTrigger>
                     <TooltipPopup>
                       {uiT(
@@ -215,11 +216,26 @@ function LinkRowImpl({
             ) : null
           }
           status={
-            <PullRequestDiffStat
-              additions={snapshot?.additions ?? 0}
-              deletions={snapshot?.deletions ?? 0}
-              className="font-mono"
-            />
+            projectId === null ? (
+              <PullRequestDiffStat
+                additions={snapshot?.additions ?? 0}
+                deletions={snapshot?.deletions ?? 0}
+                className="font-mono"
+              />
+            ) : (
+              <PullRequestChangeBreakdownStat
+                environmentId={threadRef.environmentId}
+                reference={{
+                  projectId,
+                  host: link.host,
+                  repository: link.repository,
+                  number: link.number,
+                }}
+                additions={snapshot?.additions ?? 0}
+                deletions={snapshot?.deletions ?? 0}
+                className="font-mono"
+              />
+            )
           }
           meta={
             <>
@@ -271,11 +287,7 @@ function LinkRowImpl({
         />
       </a>
       {actionEntry !== null ? (
-        <PullRequestSpeedActions
-          entry={actionEntry}
-          hostActions={linkHostActions}
-          visible={speedMode}
-        />
+        <PullRequestSpeedActions entry={actionEntry} hostActions={linkHostActions} />
       ) : null}
       <span
         className={cn(
@@ -357,11 +369,13 @@ const lineKey = (line: PullRequestListLine) =>
   `${line.link.host}/${line.link.repository}#${line.link.number}`;
 
 export function ThreadPullRequestsPanel({ threadRef }: { threadRef: ScopedThreadRef }) {
+  const { t: uiT } = useUiLanguage();
+
   const configs = useServerConfigs();
   if (configs.get(threadRef.environmentId)?.environment.capabilities.threadPullRequests !== true) {
     return (
       <PullRequestsUnavailableState
-        title="Linked pull requests unavailable"
+        title={uiT("Linked pull requests unavailable")}
         error="This environment does not support multiple linked pull requests."
       />
     );
@@ -444,48 +458,51 @@ function EnabledThreadPullRequestsPanel({ threadRef }: { threadRef: ScopedThread
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* Threads that run a stack or a sweep link hundreds of pull requests; only the rows in
+    <PullRequestSpeedModeContext value={speedMode}>
+      <div className="flex h-full min-h-0 flex-col">
+        {/* Threads that run a stack or a sweep link hundreds of pull requests; only the rows in
           view are mounted. */}
-      <LegendList<PullRequestListLine>
-        data={lines}
-        keyExtractor={lineKey}
-        extraData={rowInputs}
-        renderItem={({ item: line }) => (
-          <LinkRow
-            line={line}
-            threadRef={threadRef}
-            projectId={
-              capabilities?.pullRequests === true
-                ? (findProjectForChangeRequest(environmentProjects, line.link)?.id ??
-                  thread?.projectId ??
-                  null)
-                : null
-            }
-            speedMode={speedMode}
-            onUnlink={handleUnlink}
-            onSetWatching={supportsWatch ? handleSetWatching : null}
-          />
-        )}
-        estimatedItemSize={44}
-        drawDistance={440}
-        className="min-h-0 flex-1 overscroll-contain p-1.5"
-      />
-      <footer className="flex items-center justify-between border-t border-border/60 px-2 py-1.5 text-2xs text-muted-foreground">
-        <span>
-          {openCount} open · {linkCount} linked
-          {lastSynced ? (
-            <>
-              {" · synced "}
-              <RelativeTime timestamp={lastSynced} />
-            </>
-          ) : null}
-        </span>
-        <Button size="xs" variant="ghost" onClick={openLinkDialog}>
-          <PlusIcon className="size-3.5" />
-          {uiT("Link")}
-        </Button>
-      </footer>
-    </div>
+        <LegendList<PullRequestListLine>
+          data={lines}
+          keyExtractor={lineKey}
+          extraData={rowInputs}
+          renderItem={({ item: line }) => (
+            <LinkRow
+              line={line}
+              threadRef={threadRef}
+              projectId={
+                capabilities?.pullRequests === true
+                  ? (findProjectForChangeRequest(environmentProjects, line.link)?.id ??
+                    thread?.projectId ??
+                    null)
+                  : null
+              }
+              speedMode={speedMode}
+              onUnlink={handleUnlink}
+              onSetWatching={supportsWatch ? handleSetWatching : null}
+            />
+          )}
+          estimatedItemSize={44}
+          drawDistance={440}
+          className="min-h-0 flex-1 overscroll-contain p-1.5"
+        />
+        <footer className="flex items-center justify-between border-t border-border/60 px-2 py-1.5 text-2xs text-muted-foreground">
+          <span>
+            {openCount} {uiT("open ·")}
+            {linkCount} {uiT("linked")}
+            {lastSynced ? (
+              <>
+                {" · synced "}
+                <RelativeTime timestamp={lastSynced} />
+              </>
+            ) : null}
+          </span>
+          <Button size="xs" variant="ghost" onClick={openLinkDialog}>
+            <PlusIcon className="size-3.5" />
+            {uiT("Link")}
+          </Button>
+        </footer>
+      </div>
+    </PullRequestSpeedModeContext>
   );
 }

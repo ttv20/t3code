@@ -111,7 +111,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   onToggleKeepFullHistory,
 }: ComposerPrimaryActionsProps) {
   const { t: uiT } = useUiLanguage();
-  const { t } = useUiLanguage();
+
   const pointerFocusProps = preserveComposerFocusOnPointerDown
     ? { onPointerDown: preventPointerFocus }
     : undefined;
@@ -146,7 +146,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
             onClick={() => {
               if (canOperateThread) onInterrupt();
             }}
-            aria-label={t("Stop generation")}
+            aria-label={uiT("Stop generation")}
           />
         }
       >
@@ -154,7 +154,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           <rect x="2" y="2" width="8" height="8" rx="1.5" />
         </svg>
       </TooltipTrigger>
-      <TooltipPopup>{t("Interrupt")}</TooltipPopup>
+      <TooltipPopup>{uiT("Interrupt")}</TooltipPopup>
     </Tooltip>
   );
 
@@ -170,7 +170,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               {...pointerFocusProps}
               onClick={onPreviousPendingQuestion}
               disabled={pendingAction.isResponding}
-              aria-label={t("Previous question")}
+              aria-label={uiT("Previous question")}
             >
               <ChevronLeftIcon className="size-3.5" />
             </Button>
@@ -182,7 +182,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               onClick={onPreviousPendingQuestion}
               disabled={pendingAction.isResponding}
             >
-              {t("Previous")}
+              {uiT("Previous")}
             </Button>
           )
         ) : null}
@@ -197,14 +197,12 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
             (pendingAction.isLastQuestion ? !pendingAction.isComplete : !pendingAction.canAdvance)
           }
         >
-          {t(
-            formatPendingPrimaryActionLabel({
-              compact,
-              isLastQuestion: pendingAction.isLastQuestion,
-              isResponding: pendingAction.isResponding,
-              questionIndex: pendingAction.questionIndex,
-            }),
-          )}
+          {formatPendingPrimaryActionLabel({
+            compact,
+            isLastQuestion: pendingAction.isLastQuestion,
+            isResponding: pendingAction.isResponding,
+            questionIndex: pendingAction.questionIndex,
+          })}
         </button>
       </div>
     );
@@ -219,7 +217,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           {...pointerFocusProps}
           disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
         >
-          {t(isConnecting || isSendBusy ? "Sending..." : "Refine")}
+          {isConnecting || isSendBusy ? uiT("Sending...") : uiT("Refine")}
         </button>
       );
     }
@@ -244,7 +242,9 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
                   "h-9 rounded-l-none border-l border-message-action-foreground/20 px-2 sm:h-8",
                 )}
                 aria-label={uiT("Implementation actions")}
-                {...pointerFocusProps}
+                onMouseDown={
+                  preserveComposerFocusOnPointerDown ? (event) => event.preventDefault() : undefined
+                }
                 disabled={isSendBusy || isSendDisabled || isConnecting || isEnvironmentUnavailable}
               />
             }
@@ -258,7 +258,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
                 if (canOperateThread) onImplementPlanInNewThread();
               }}
             >
-              {t("Implement in a new thread")}
+              {uiT("Implement in a new thread")}
             </MenuItem>
           </MenuPopup>
         </Menu>
@@ -279,16 +279,16 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   const compactsBeforeSend = compactTokens !== null && !keepFullHistory;
 
   const submitLabel = showResume
-    ? "Resume thread"
+    ? uiT("Resume thread")
     : isEditingQueuedMessage
-      ? "Update queued message"
+      ? uiT("Update queued message")
       : compactsBeforeSend
-        ? "Compact and send"
+        ? uiT("Compact and send")
         : isQueuing
-          ? "Queue message"
+          ? uiT("Queue message")
           : isRunning
-            ? "Steer message"
-            : "Submit message";
+            ? uiT("Steer message")
+            : uiT("Submit message");
   const submitStatus = isEnvironmentUnavailable
     ? "Environment disconnected"
     : (sendDisabledReason ??
@@ -327,7 +327,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
         isEnvironmentUnavailable ||
         (!hasSendableContent && !showResume)
       }
-      aria-label={t(submitStatus ?? submitLabel)}
+      aria-label={submitStatus ?? submitLabel}
     >
       {stageBackdropVariant ? (
         <span className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
@@ -359,7 +359,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   const submit = (
     <Tooltip key="submit">
       <TooltipTrigger render={<span className="inline-flex" />}>{sendButton}</TooltipTrigger>
-      <TooltipPopup>{t(submitTooltip)}</TooltipPopup>
+      <TooltipPopup>{submitTooltip}</TooltipPopup>
     </Tooltip>
   );
   if (compactTokens === null) return submit;
@@ -392,11 +392,12 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           <span>{compactTokens}</span>
         </TooltipTrigger>
         <TooltipPopup>
-          {keepFullHistory
-            ? uiT("Next send keeps all {0} tokens. Click to compact first", { "0": compactTokens })
-            : uiT("Next send compacts {0} tokens first. Click to keep full history", {
-                "0": compactTokens,
-              })}
+          <div>
+            {keepFullHistory
+              ? `Next send keeps all ${compactTokens} tokens.`
+              : `Next send compacts ${compactTokens} tokens first.`}
+          </div>
+          <div>{keepFullHistory ? "Click to compact first" : "Click to keep full history"}</div>
         </TooltipPopup>
       </Tooltip>
       {submit}

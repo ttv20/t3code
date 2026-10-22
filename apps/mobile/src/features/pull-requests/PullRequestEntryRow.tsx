@@ -11,7 +11,7 @@ export function PullRequestEntryRow({
   return (
     <View className="flex-row gap-3">
       <View className="relative w-8 items-center">{leading}</View>
-      <View className="min-w-0 flex-1">{children}</View>
+      <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">{children}</View>
     </View>
   );
 }

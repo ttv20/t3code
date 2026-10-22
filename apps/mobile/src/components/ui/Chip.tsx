@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { GlassView } from "expo-glass-effect";
 import { Pressable, View } from "react-native";
 import { withUniwind } from "uniwind";
@@ -25,6 +26,8 @@ export function Chip(props: {
   readonly accessibilityLabel?: string;
   readonly disabled?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const small = props.size === "small";
   const layout = cn(
     "flex-row items-center gap-1.5 rounded-2xl px-3",
@@ -46,7 +49,7 @@ export function Chip(props: {
           props.selected ? "text-primary-foreground" : "text-foreground-muted",
         )}
       >
-        {props.label}
+        {uiT(props.label)}
       </AppText>
       {props.trailingIcon ? (
         <SymbolView name={props.trailingIcon} size={11} tintColorClassName={iconColor} />

@@ -40,7 +40,7 @@ function MobileClientRow({ device }: { readonly device: RelayClientDeviceRecord 
   return (
     <ClerkUserProfileRow icon={<SmartphoneIcon className="size-4" />}>
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 [unicode-bidi:plaintext]">
           <h3 className="truncate text-sm leading-4.5 font-medium text-foreground">
             {uiT(device.label)}
           </h3>

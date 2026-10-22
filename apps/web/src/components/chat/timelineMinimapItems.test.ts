@@ -42,8 +42,10 @@ describe("timeline minimap previews", () => {
     const preview = resolveTimelineMinimapPreview(item!)!;
     expect(preview.userText).toContain("ending. \u200fand");
     expect(preview.assistantText).toContain("123: \u200f456");
-    expect(preview.assistantText).toContain("`keep. code`");
-    expect(preview.assistantText).toContain('https://example.test/keep "ending. and"');
+    expect(preview.assistantText).toContain("keep. code");
+    expect(preview.assistantText).not.toContain("keep. \u200fcode");
+    expect(preview.assistantText).not.toContain("https://example.test/");
+    expect(preview.assistantText).toContain("קישור");
     expect(item!.userText).toBe(text);
     expect(item!.assistantText).toBe(text);
   });

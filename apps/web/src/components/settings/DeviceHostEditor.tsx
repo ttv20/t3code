@@ -111,7 +111,7 @@ function DeviceHostEditorForm({
           {targets.length === 1
             ? `Connect from ${targets[0]?.label}.`
             : `Connect from ${targets.length} selected environments.`}{" "}
-          Hosts on the same machine are skipped.
+          {uiT("Hosts on the same machine are skipped.")}
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>
@@ -126,7 +126,7 @@ function DeviceHostEditorForm({
               const label = event.target.value;
               setDraft((current) => ({ ...current, label }));
             }}
-            placeholder="Mac mini"
+            placeholder={uiT("Mac mini")}
           />
         </label>
         <label className="block space-y-1.5 text-sm">
@@ -139,7 +139,7 @@ function DeviceHostEditorForm({
               const target = event.target.value;
               setDraft((current) => ({ ...current, target }));
             }}
-            placeholder="user@host or SSH alias"
+            placeholder={uiT("user@host or SSH alias")}
           />
         </label>
         <details
@@ -160,7 +160,7 @@ function DeviceHostEditorForm({
                     return identityFile ? { ...rest, identityFile } : rest;
                   });
                 }}
-                placeholder="SSH config default"
+                placeholder={uiT("SSH config default")}
               />
             </label>
             <label className="block space-y-1.5">
@@ -178,7 +178,7 @@ function DeviceHostEditorForm({
                     return port ? { ...rest, port: Number(port) } : rest;
                   });
                 }}
-                placeholder="Default"
+                placeholder={uiT("Default")}
               />
             </label>
           </div>
@@ -223,7 +223,7 @@ function DeviceHostEditorForm({
                 if (Option.isSome(input)) void testConnection(input.value);
               }}
             >
-              {checking ? <Spinner size="xs" /> : null} Test connection
+              {checking ? <Spinner size="xs" /> : null} {uiT("Test connection")}
             </Button>
           </div>
           {results ? (
@@ -284,7 +284,7 @@ function DeviceHostEditorForm({
           {uiT("Cancel")}
         </Button>
         <Button type="submit" disabled={busy || checking || !valid || !draft.label.trim()}>
-          {busy ? <Spinner size="xs" /> : null} Save host
+          {busy ? <Spinner size="xs" /> : null} {uiT("Save host")}
         </Button>
       </DialogFooter>
     </form>

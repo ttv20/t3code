@@ -1,7 +1,7 @@
 import { useUiLanguage } from "../../i18n";
 import { INTERFACE_DIRECTIONS } from "@t3tools/client-runtime/i18n";
 
-import { useClientSettings, useUpdateClientSettings } from "../../hooks/useSettings";
+import { useClientSettings, updateClientSettings } from "../../hooks/useSettings";
 
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { InterfaceLanguageSelect } from "../InterfaceLanguageSelect";
@@ -9,7 +9,7 @@ import { SettingsRow, SettingsSection } from "./settingsLayout";
 
 export function LanguageSettings() {
   const direction = useClientSettings((settings) => settings.interfaceDirection);
-  const updateSettings = useUpdateClientSettings();
+  const updateSettings = updateClientSettings;
   const { t: uiT } = useUiLanguage();
   const directions = INTERFACE_DIRECTIONS.map((option) => ({
     ...option,

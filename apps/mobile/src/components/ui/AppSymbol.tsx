@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { Icon } from "@tabler/icons-react-native/types";
 /*
  * Keep these as per-icon exports. Importing the package root eagerly registers
@@ -9,6 +10,7 @@ import IconAlertCircle from "@tabler/icons-react-native/IconAlertCircle";
 import IconAlertTriangle from "@tabler/icons-react-native/IconAlertTriangle";
 import IconApps from "@tabler/icons-react-native/IconApps";
 import IconArchive from "@tabler/icons-react-native/IconArchive";
+import IconCalendarClock from "@tabler/icons-react-native/IconCalendarClock";
 import IconArrowBackUp from "@tabler/icons-react-native/IconArrowBackUp";
 import IconArrowDown from "@tabler/icons-react-native/IconArrowDown";
 import IconArrowForwardUp from "@tabler/icons-react-native/IconArrowForwardUp";
@@ -23,6 +25,7 @@ import IconArrowUpRightCircle from "@tabler/icons-react-native/IconArrowUpRightC
 import IconArrowsLeftRight from "@tabler/icons-react-native/IconArrowsLeftRight";
 import IconArrowsDiagonal2 from "@tabler/icons-react-native/IconArrowsDiagonal2";
 import IconArrowsMinimize from "@tabler/icons-react-native/IconArrowsMinimize";
+import IconBan from "@tabler/icons-react-native/IconBan";
 import IconBellRinging from "@tabler/icons-react-native/IconBellRinging";
 import IconBolt from "@tabler/icons-react-native/IconBolt";
 import IconBox from "@tabler/icons-react-native/IconBox";
@@ -103,6 +106,7 @@ import IconPlus from "@tabler/icons-react-native/IconPlus";
 import IconQrcode from "@tabler/icons-react-native/IconQrcode";
 import IconRefresh from "@tabler/icons-react-native/IconRefresh";
 import IconSearch from "@tabler/icons-react-native/IconSearch";
+import IconShare from "@tabler/icons-react-native/IconShare";
 import IconServer from "@tabler/icons-react-native/IconServer";
 import IconSettings from "@tabler/icons-react-native/IconSettings";
 import IconSparkles from "@tabler/icons-react-native/IconSparkles";
@@ -176,6 +180,7 @@ const ANDROID_ICON_BY_SF_SYMBOL = {
   "circle.dashed": IconCircleDashed,
   "circle.inset.filled": IconCircleDot,
   "circle.dashed.inset.filled": IconCircleDot,
+  "calendar.badge.clock": IconCalendarClock,
   clock: IconClock,
   timer: IconClock,
   ticket: IconTicket,
@@ -235,6 +240,7 @@ const ANDROID_ICON_BY_SF_SYMBOL = {
   play: IconPlayerPlay,
   plus: IconPlus,
   minus: IconMinus,
+  "slash.circle": IconBan,
   "qrcode.viewfinder": IconQrcode,
   "point.3.connected.trianglepath.dotted": IconNetwork,
   "point.topleft.down.curvedto.point.bottomright.up": IconGitMerge,
@@ -244,6 +250,7 @@ const ANDROID_ICON_BY_SF_SYMBOL = {
   "sidebar.left": IconLayoutSidebar,
   "sidebar.right": IconLayoutSidebarRight,
   "slider.horizontal.3": IconAdjustmentsHorizontal,
+  "square.and.arrow.up": IconShare,
   "square.and.pencil": IconEdit,
   "square.on.square": IconCopy,
   "square.grid.2x2": IconApps,
@@ -330,6 +337,8 @@ export function isAppSymbolName(name: string): name is Extract<AppSymbolName, st
 }
 
 function AppSymbolView(props: AppSymbolViewProps) {
+  const { t: uiT } = useUiLanguage();
+
   const materialName = typeof props.name === "string" ? undefined : props.name.android;
   const sfSymbol = typeof props.name === "string" ? props.name : props.name.ios;
   const AndroidIcon =
@@ -342,7 +351,7 @@ function AppSymbolView(props: AppSymbolViewProps) {
 
   return (
     <AndroidIcon
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       color={props.tintColor}
       size={props.size}
       strokeWidth={2}

@@ -53,6 +53,7 @@ import {
   type DefaultBranchConfirmableAction,
   requiresDefaultBranchConfirmation,
   resolveDefaultBranchActionDialogCopy,
+  resolveFeatureBranchUnavailableReason,
   resolveGitActionProgressPresentation,
   resolveGitActionResultToastTiming,
   resolveLiveThreadBranchUpdate,
@@ -414,6 +415,7 @@ function GitActionProgressButtonContent({
 
 function GitActionSuccessButtonContent({ success }: { success: InlineGitActionSuccess }) {
   const { t: uiT } = useUiLanguage();
+
   const hasDescription = success.description !== null;
 
   return (
@@ -461,6 +463,7 @@ interface PublishRepositoryDialogProps {
 
 function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
   const { t: uiT } = useUiLanguage();
+
   const openLink = useOpenLink(props.threadRef);
   const navigate = useNavigate();
   const sourceControlDiscovery = useEnvironmentQuery(
@@ -780,7 +783,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                       )}
                     >
                       <option.Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
                         <span className="block text-sm font-medium text-foreground">
                           {uiT(option.label)}
                         </span>
@@ -839,7 +842,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                       aria-labelledby="publish-protocol-label"
                       disabled={publishRepositoryAction.isPending}
                     >
-                      <Toggle value="ssh">SSH</Toggle>
+                      <Toggle value="ssh">{uiT("SSH")}</Toggle>
                       <Toggle value="https">{uiT("HTTPS")}</Toggle>
                     </ToggleGroup>
                   </div>
@@ -854,7 +857,8 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                 className="flex items-center gap-2 rounded-md border border-input bg-muted/40 px-3 py-2 text-xs text-muted-foreground dark:border-transparent dark:bg-white/[0.035]"
               >
                 <Spinner size="sm" aria-hidden />
-                {uiT("Publishing repository to")} {publishProviderLabel}...
+                {uiT("Publishing repository to")}
+                {publishProviderLabel}...
               </div>
             ) : null}
             {publishError && !publishRepositoryAction.isPending ? (
@@ -906,7 +910,8 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                     void openLink(publishResult.repository.url).catch(() => undefined);
                   }}
                 >
-                  {uiT("Open on")} {publishProviderLabel}
+                  {uiT("Open on")}
+                  {publishProviderLabel}
                 </Button>
               </>
             ) : (
@@ -972,6 +977,7 @@ export default function GitActionsControl({
   onOpenChanges,
 }: GitActionsControlProps) {
   const { t: uiT } = useUiLanguage();
+
   const isPanel = displayMode === "panel";
   const ActionGroup = isPanel ? "div" : Group;
   const panelAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -1100,6 +1106,9 @@ export default function GitActionsControl({
   const changesTotals = gitStatusForActions?.branchChanges ?? gitStatusForActions?.workingTree;
 
   const allFiles = gitStatusForActions?.workingTree.files ?? [];
+  // Changed-file paths are repository-relative, so they must resolve against
+  // the worktree root from the same status snapshot, not the project cwd.
+  const workingTreeRoot = gitStatusForActions?.workingTree.rootPath ?? null;
   const selectedFiles = allFiles.filter((f) => !excludedFiles.has(f.path));
   const allSelected = excludedFiles.size === 0;
   const noneSelected = selectedFiles.length === 0;
@@ -1152,9 +1161,9 @@ export default function GitActionsControl({
     hasPrimaryRemote,
   );
   const quickActionDisabledReason = !canWriteSourceControl
-    ? "This connection cannot change source control."
+    ? uiT("This connection cannot change source control.")
     : quickAction.disabled
-      ? (quickAction.hint ?? "This action is currently unavailable.")
+      ? (quickAction.hint ?? uiT("This action is currently unavailable."))
       : null;
   const gitActionProgress = resolveGitActionProgressPresentation(vcsActionState);
   const pendingDefaultBranchActionCopy = pendingDefaultBranchAction
@@ -1163,6 +1172,15 @@ export default function GitActionsControl({
         branchName: pendingDefaultBranchAction.branchName,
         includesCommit: pendingDefaultBranchAction.includesCommit,
         terminology: changeRequestTerminology,
+      })
+    : null;
+  // Follows the live status so the button tracks the tree while the dialog is open. Until the
+  // status loads, keep the option enabled: the server stays the authority and rejects a stale
+  // request with its own error.
+  const featureBranchUnavailableReason = pendingDefaultBranchAction
+    ? resolveFeatureBranchUnavailableReason({
+        branchName: pendingDefaultBranchAction.branchName,
+        hasWorkingTreeChanges: gitStatus?.hasWorkingTreeChanges ?? true,
       })
     : null;
 
@@ -1199,8 +1217,8 @@ export default function GitActionsControl({
     };
   }, [activeEnvironmentId, gitCwd, refreshVcsStatus]);
 
-  // React 19.2 leaves useEffectEvent stale inside the memoized details panel.
-  // Bind each render's actions to its checkout and thread, including retained toast actions.
+  // Not an effect event: retained toast actions must stay bound to the checkout and
+  // thread of the render that created them, not follow later selections.
   async function runGitActionWithToast({
     action,
     commitMessage,
@@ -1276,7 +1294,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Action failed"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: error instanceof Error ? error.message : "An error occurred.",
           timeout: errorToastTiming.timeout,
           ...(scopedToastData !== undefined ? { data: scopedToastData } : {}),
         }),
@@ -1356,8 +1374,10 @@ export default function GitActionsControl({
     }
   }
 
-  const continuePendingDefaultBranchAction = () => {
-    if (!pendingDefaultBranchAction) return;
+  const continuePendingDefaultBranchAction = (featureBranch: boolean) => {
+    if (!pendingDefaultBranchAction || !canWriteSourceControl) return;
+    if (featureBranch && (!canChangeThreadBranch || featureBranchUnavailableReason !== null))
+      return;
     const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
     void runGitActionWithToast({
@@ -1365,20 +1385,7 @@ export default function GitActionsControl({
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
-      skipDefaultBranchPrompt: true,
-    });
-  };
-
-  const checkoutFeatureBranchAndContinuePendingAction = () => {
-    if (!pendingDefaultBranchAction) return;
-    const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
-    setPendingDefaultBranchAction(null);
-    void runGitActionWithToast({
-      action,
-      ...(commitMessage ? { commitMessage } : {}),
-      ...(onConfirmed ? { onConfirmed } : {}),
-      ...(filePaths ? { filePaths } : {}),
-      featureBranch: true,
+      featureBranch,
       skipDefaultBranchPrompt: true,
     });
   };
@@ -1420,7 +1427,7 @@ export default function GitActionsControl({
             stackedThreadToast({
               type: "error",
               title: uiT("Pull failed"),
-              description: error instanceof Error ? error.message : uiT("An error occurred."),
+              description: error instanceof Error ? error.message : "An error occurred.",
               timeout: errorToastTiming.timeout,
               ...(threadToastData !== undefined ? { data: threadToastData } : {}),
             }),
@@ -1501,7 +1508,7 @@ export default function GitActionsControl({
   };
 
   const openChangedFileInEditor = (filePath: string) => {
-    if (!gitCwd) {
+    if (workingTreeRoot === null) {
       toastManager.add({
         type: "error",
         title: uiT("Editor opening is unavailable."),
@@ -1509,7 +1516,7 @@ export default function GitActionsControl({
       });
       return;
     }
-    const target = resolvePathLinkTarget(filePath, gitCwd);
+    const target = resolvePathLinkTarget(filePath, workingTreeRoot);
     void (async () => {
       const result = await openInPreferredEditor(target);
       if (result._tag === "Success" || isAtomCommandInterrupted(result)) {
@@ -1520,7 +1527,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Unable to open file"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: error instanceof Error ? error.message : "An error occurred.",
           ...(threadToastData !== undefined ? { data: threadToastData } : {}),
         }),
       );
@@ -1541,7 +1548,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Git initialization failed"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: error instanceof Error ? error.message : "An error occurred.",
           ...(threadToastData !== undefined ? { data: threadToastData } : {}),
         }),
       );
@@ -1852,8 +1859,10 @@ export default function GitActionsControl({
             {uiT("Changes")}
           </span>
           <span className="flex items-center gap-1 font-mono text-2xs tabular-nums">
-            <span className="text-success">+{formatDiffCount(changesTotals?.insertions ?? 0)}</span>
-            <span className="text-destructive">
+            <span className="text-diff-addition">
+              +{formatDiffCount(changesTotals?.insertions ?? 0)}
+            </span>
+            <span className="text-diff-deletion">
               -{formatDiffCount(changesTotals?.deletions ?? 0)}
             </span>
           </span>
@@ -1873,8 +1882,8 @@ export default function GitActionsControl({
       >
         <DialogPopup>
           <DialogHeader>
-            <DialogTitle>{uiT(COMMIT_DIALOG_TITLE)}</DialogTitle>
-            <DialogDescription>{uiT(COMMIT_DIALOG_DESCRIPTION)}</DialogDescription>
+            <DialogTitle>{COMMIT_DIALOG_TITLE}</DialogTitle>
+            <DialogDescription>{COMMIT_DIALOG_DESCRIPTION}</DialogDescription>
           </DialogHeader>
           <DialogPanel>
             <div className="space-y-3 rounded-xl bg-zinc-25 p-3 text-sm ring-1 ring-black/5 dark:bg-white/[0.035] dark:ring-white/5">
@@ -1906,7 +1915,8 @@ export default function GitActionsControl({
                     <span className="text-muted-foreground">{uiT("Files")}</span>
                     {!allSelected && !isEditingFiles && (
                       <span className="text-muted-foreground">
-                        ({selectedFiles.length} {uiT("of")} {allFiles.length})
+                        ({selectedFiles.length} {uiT("of")}
+                        {allFiles.length})
                       </span>
                     )}
                   </div>
@@ -1952,8 +1962,8 @@ export default function GitActionsControl({
                                 )}
                                 <button
                                   type="button"
-                                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
-                                  disabled={!canOperateThread}
+                                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left enabled:cursor-pointer"
+                                  disabled={!canOperateThread || workingTreeRoot === null}
                                   aria-label={uiT("Open {0} in editor", { "0": file.path })}
                                   onClick={() => openChangedFileInEditor(file.path)}
                                 >
@@ -2051,9 +2061,7 @@ export default function GitActionsControl({
       <Dialog
         open={pendingDefaultBranchAction !== null}
         onOpenChange={(open) => {
-          if (!open) {
-            setPendingDefaultBranchAction(null);
-          }
+          if (!open) setPendingDefaultBranchAction(null);
         }}
       >
         <DialogPopup className="max-w-xl">
@@ -2062,6 +2070,9 @@ export default function GitActionsControl({
               {pendingDefaultBranchActionCopy?.title ?? uiT("Run action on default branch?")}
             </DialogTitle>
             <DialogDescription>{pendingDefaultBranchActionCopy?.description}</DialogDescription>
+            {featureBranchUnavailableReason && (
+              <p className="text-xs text-muted-foreground">{featureBranchUnavailableReason}</p>
+            )}
           </DialogHeader>
           <DialogFooter variant="bare" className="sm:flex-wrap sm:items-center">
             <Button
@@ -2076,7 +2087,7 @@ export default function GitActionsControl({
               className="w-full max-w-full sm:w-auto"
               variant="outline"
               size="sm-multiline"
-              onClick={continuePendingDefaultBranchAction}
+              onClick={() => continuePendingDefaultBranchAction(false)}
               disabled={!canWriteSourceControl}
             >
               {pendingDefaultBranchActionCopy?.continueLabel ?? uiT("Continue")}
@@ -2084,8 +2095,8 @@ export default function GitActionsControl({
             <Button
               className="w-full max-w-full sm:w-auto"
               size="sm-multiline"
-              onClick={checkoutFeatureBranchAndContinuePendingAction}
-              disabled={!canChangeThreadBranch}
+              onClick={() => continuePendingDefaultBranchAction(true)}
+              disabled={!canChangeThreadBranch || featureBranchUnavailableReason !== null}
             >
               {uiT("Check out feature branch & continue")}
             </Button>

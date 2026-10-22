@@ -159,7 +159,7 @@ function configuredBinaryPath(config: unknown): string {
 // Subscribes on its own: a status push restamps `checkedAt` on every provider,
 // and this label is the only part of the panel that shows it.
 function ProviderLastChecked({ environmentId }: { environmentId: EnvironmentId }) {
-  const { t: uiT } = useUiLanguage();
+  const { locale, t: uiT } = useUiLanguage();
 
   const serverProviders =
     useAtomValue(serverEnvironment.providersValueAtom(environmentId)) ?? EMPTY_SERVER_PROVIDERS;
@@ -170,7 +170,7 @@ function ProviderLastChecked({ environmentId }: { environmentId: EnvironmentId }
           serverProviders[0]!.checkedAt,
         )
       : null;
-  const lastCheckedRelative = useRelativeTimeState(lastCheckedAt);
+  const lastCheckedRelative = useRelativeTimeState(lastCheckedAt, locale);
 
   if (lastCheckedRelative.status === "missing") {
     return null;
@@ -184,11 +184,15 @@ function ProviderLastChecked({ environmentId }: { environmentId: EnvironmentId }
     <span>
       {lastCheckedRelative.suffix ? (
         <>
-          Checked <span className="font-mono tabular-nums">{lastCheckedRelative.value}</span>{" "}
+          {uiT("Checked")}
+          <span className="font-mono tabular-nums">{lastCheckedRelative.value}</span>{" "}
           {lastCheckedRelative.suffix}
         </>
       ) : (
-        <>Checked {lastCheckedRelative.value}</>
+        <>
+          {uiT("Checked")}
+          {lastCheckedRelative.value}
+        </>
       )}
     </span>
   );
@@ -386,7 +390,7 @@ function ProviderSettingsPanelContent(target: ProviderSettingsTarget) {
     !target.scoped && !onlyPrimaryDevice && options.length > 0 ? (
       <ScrollArea radius="none" hideScrollbars scrollFade className="h-11 min-w-0 flex-1">
         <ToggleGroup
-          aria-label="Devices"
+          aria-label={uiT("Devices")}
           variant="segmented"
           className="my-2"
           value={effectiveEnvironmentId ? [effectiveEnvironmentId] : []}
@@ -438,8 +442,10 @@ function ProviderSettingsPanelContent(target: ProviderSettingsTarget) {
         <ProviderSettingsPlaceholder
           deviceTabs={deviceTabs}
           icon={<EnvironmentMachineIcon kind={resolveEnvironmentMachineKind(null)} />}
-          title="Device unavailable"
-          description="Reconnect this device to set up its provider, or select another device."
+          title={uiT("Device unavailable")}
+          description={uiT(
+            "Reconnect this device to set up its provider, or select another device.",
+          )}
         />
       ) : null}
       {options.length === 0 && !targetEnvironmentMissing ? (
@@ -1013,7 +1019,7 @@ export function EnvironmentProviderSettings({
                     size="icon-xs"
                     variant="ghost-muted"
                     onClick={() => setIsAddInstanceDialogOpen(true)}
-                    aria-label="Add provider"
+                    aria-label={uiT("Add provider")}
                   >
                     <PlusIcon />
                   </Button>
@@ -1059,7 +1065,7 @@ export function EnvironmentProviderSettings({
         {readOnly ? (
           <SettingsGroup divided={false} className="overflow-hidden">
             <SettingsRow
-              title="Limited permissions"
+              title={uiT("Limited permissions")}
               description={uiT(
                 "This session can view {0}'s providers but can't change their settings.",
                 { "0": environmentLabel },
@@ -1121,7 +1127,7 @@ export function EnvironmentProviderSettings({
         readOnly={readOnly}
       />
 
-      <SettingsSection title="Advanced">
+      <SettingsSection title={uiT("Advanced")}>
         <SettingsRow
           id={searchableSetting("provider-health-check-interval").id}
           title={
@@ -1134,7 +1140,9 @@ export function EnvironmentProviderSettings({
               </PolicyTooltip>
             </span>
           }
-          description="Refresh provider status, versions, and models in the background. Set to 0 to disable."
+          description={uiT(
+            "Refresh provider status, versions, and models in the background. Set to 0 to disable.",
+          )}
           resetAction={
             providerHealthRefreshIntervalSeconds !== defaultProviderHealthRefreshIntervalSeconds ? (
               <span
@@ -1142,7 +1150,7 @@ export function EnvironmentProviderSettings({
                 className={!canWriteSettings ? "opacity-50" : undefined}
               >
                 <SettingResetButton
-                  label="provider health check interval"
+                  label={uiT("provider health check interval")}
                   onClick={() =>
                     updateSettings(
                       backgroundActivityOverrideSettings(
@@ -1186,9 +1194,13 @@ export function EnvironmentProviderSettings({
                 }
               >
                 <NumberFieldGroup>
-                  <NumberFieldDecrement aria-label="Decrease provider health check interval" />
-                  <NumberFieldInput aria-label="Provider health check interval in seconds" />
-                  <NumberFieldIncrement aria-label="Increase provider health check interval" />
+                  <NumberFieldDecrement
+                    aria-label={uiT("Decrease provider health check interval")}
+                  />
+                  <NumberFieldInput aria-label={uiT("Provider health check interval in seconds")} />
+                  <NumberFieldIncrement
+                    aria-label={uiT("Increase provider health check interval")}
+                  />
                 </NumberFieldGroup>
               </NumberField>
               <span className="text-xs text-muted-foreground">{uiT("seconds")}</span>
@@ -1410,8 +1422,10 @@ function ProviderInstanceRow({
           driver === "cursor" &&
           liveProvider?.setup?.canAuthenticate === false ? (
           <SettingsRow
-            title="Cursor account"
-            description="Using CURSOR_API_KEY. Remove it from this provider's environment to use browser sign-in."
+            title={uiT("Cursor account")}
+            description={uiT(
+              "Using CURSOR_API_KEY. Remove it from this provider's environment to use browser sign-in.",
+            )}
           />
         ) : null
       }

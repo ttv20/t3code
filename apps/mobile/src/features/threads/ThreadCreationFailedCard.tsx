@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { RequestActionButton } from "./RequestActionButton";
+import { Button } from "../../components/ui/Button";
 import { View } from "react-native";
 
 import { AppText as Text } from "../../components/ui/AppText";
@@ -9,6 +9,7 @@ export function ThreadCreationFailedCard(props: {
   readonly onEditTask: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View className="gap-2.5 rounded-[20px] border border-border-subtle bg-card-alt p-4">
       <Text className="font-t3-bold text-2xs uppercase tracking-[1.1px] text-danger-foreground">
@@ -21,7 +22,7 @@ export function ThreadCreationFailedCard(props: {
         {uiT("Your prompt was kept in the project draft.")}
       </Text>
       <View className="flex-row">
-        <RequestActionButton label={uiT("Edit task")} onPress={props.onEditTask} />
+        <Button label={uiT("Edit task")} tone="primary" onPress={props.onEditTask} />
       </View>
     </View>
   );

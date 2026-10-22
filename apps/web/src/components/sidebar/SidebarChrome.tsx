@@ -119,6 +119,8 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
 }
 
 function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <span
       dir="ltr"
@@ -131,7 +133,7 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
           onBackdrop ? "text-white/70" : "text-muted-foreground",
         )}
       >
-        Code
+        {uiT("Code")}
       </span>
       <span className="flex items-center pl-1">
         <Badge size="sm" variant="secondary">
@@ -209,7 +211,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   return (
     <SidebarMenu className="flex-row items-center">
       {isOnUtilityPage ? (
-        <SidebarMenuItem className="min-w-0 flex-1">
+        <SidebarMenuItem className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <SidebarMenuButton onClick={handleBackClick}>
             <ArrowLeftIcon />
             <span>{uiT("Back")}</span>

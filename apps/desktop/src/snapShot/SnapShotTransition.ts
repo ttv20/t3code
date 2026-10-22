@@ -26,7 +26,7 @@ export type SnapShotAnimationDestination = {
   readonly details?: SnapShotAnimationDetails | undefined;
 };
 
-export function snapShotAnimationDurationMs(
+function snapShotAnimationDurationMs(
   source: Electron.Rectangle,
   target: Electron.Rectangle,
 ): number {
@@ -52,6 +52,7 @@ type ActiveTransition = {
   details?: SnapShotAnimationDetails | undefined;
   timer?: Fiber.Fiber<void> | undefined;
   flight?: Promise<void> | undefined;
+  landed?: boolean | undefined;
 };
 
 type SnapShotTransitionOptions = {
@@ -63,7 +64,7 @@ type SnapShotTransitionOptions = {
     | undefined;
 };
 
-export function snapShotAnimationOverlayBounds(
+function snapShotAnimationOverlayBounds(
   displays: ReadonlyArray<Pick<Electron.Display, "bounds">>,
 ): Electron.Rectangle {
   const firstDisplay = displays[0];
@@ -205,6 +206,10 @@ export class SnapShotTransition {
   private readonly waitForCompositorFrame: boolean;
   private readonly alwaysOnTopLevel: SnapShotTransitionOptions["alwaysOnTopLevel"];
   private readonly showWindow: (window: Electron.BaseWindow) => void;
+
+  get isAnimating(): boolean {
+    return this.active?.flight !== undefined && !this.active.landed;
+  }
 
   constructor(options: SnapShotTransitionOptions = {}) {
     this.boundOverlayToCaptureDisplays = options.boundOverlayToCaptureDisplays ?? false;
@@ -350,7 +355,9 @@ export class SnapShotTransition {
       }
       return;
     }
-    active.flight = this.runFlight(active, destination);
+    active.flight = this.runFlight(active, destination).finally(() => {
+      active.landed = true;
+    });
   }
 
   private async runFlight(

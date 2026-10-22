@@ -1,9 +1,8 @@
 import { useUiLanguage } from "../../i18n";
 import { Host, ModalBottomSheet, RNHostView } from "@expo/ui/jetpack-compose";
-import { Pressable, View, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import { withUniwind } from "uniwind";
 import { AndroidSheetHeader } from "../../components/ui/AndroidScreenHeader";
-import { AppText as Text } from "../../components/ui/AppText";
 import type { WorktreeSetupSheetProps } from "./worktree-setup-sheet";
 
 const NativeBottomSheet = withUniwind(ModalBottomSheet, {
@@ -12,6 +11,7 @@ const NativeBottomSheet = withUniwind(ModalBottomSheet, {
 
 export function WorktreeSetupSheet({ children, height, onClose }: WorktreeSetupSheetProps) {
   const { t: uiT } = useUiLanguage();
+
   const window = useWindowDimensions();
   return (
     <Host style={{ position: "absolute", width: 0, height: 0 }}>
@@ -29,16 +29,9 @@ export function WorktreeSetupSheet({ children, height, onClose }: WorktreeSetupS
           >
             <AndroidSheetHeader
               title={uiT("Worktree setup")}
-              trailing={
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={uiT("Close setup details")}
-                  onPress={onClose}
-                  className="min-h-11 justify-center px-2"
-                >
-                  <Text className="font-t3-medium text-sm text-foreground">{uiT("Done")}</Text>
-                </Pressable>
-              }
+              actions={[
+                { accessibilityLabel: uiT("Close setup details"), icon: "xmark", onPress: onClose },
+              ]}
             />
             {children}
           </View>

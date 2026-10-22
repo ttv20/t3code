@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { ChatGptUsageSummary } from "./ChatGptUsageSummary";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
@@ -82,6 +83,7 @@ const CURSOR_KEYCHAIN_COPY = "Requires access to your Cursor login in macOS Keyc
 
 export function UsageRouteScreen() {
   const { t: uiT } = useUiLanguage();
+
   const route = useRoute<RouteProp<{ Usage: { tab?: string } | undefined }, "Usage">>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -373,7 +375,6 @@ function UsageUpdating({
   readonly label: string | null;
   readonly children: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   const opacity = useSharedValue(1);
   useLayoutEffect(() => {
     opacity.set(
@@ -398,7 +399,7 @@ function UsageUpdating({
         >
           <AppActivityIndicator size="small" colorClassName="accent-adaptive-sky-600-400" />
           <Text className="shrink text-sm text-adaptive-sky-600-400" numberOfLines={1}>
-            {uiT(label)}
+            {label}
           </Text>
         </Animated.View>
       ) : null}
@@ -418,6 +419,7 @@ function CursorEnableAction({
   readonly buttonText?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
     label: uiT("enable Cursor account usage"),
   });
@@ -431,16 +433,15 @@ function CursorEnableAction({
     if (result._tag === "Success") onEnabled();
   };
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      label={buttonText}
+      tone="primary"
       accessibilityLabel={uiT("Enable Cursor usage from {0}", { "0": label })}
       accessibilityHint={CURSOR_KEYCHAIN_COPY}
       disabled={pending}
       onPress={() => void enable()}
-      className="rounded-full bg-primary px-4 py-2"
-    >
-      <Text className="text-sm font-medium text-primary-foreground">{uiT(buttonText)}</Text>
-    </Pressable>
+      loading={pending}
+    />
   );
 }
 
@@ -457,6 +458,8 @@ function CursorEnableRow({
   readonly bordered: boolean;
   readonly onEnabled: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const colors = useProviderColors();
   return (
     <View
@@ -468,7 +471,8 @@ function CursorEnableRow({
       <View className="min-w-0 flex-1 flex-row items-center gap-2">
         <View className="size-2.5 rounded-full" style={{ backgroundColor: colors.cursor }} />
         <Text className="shrink text-lg text-foreground">
-          Cursor{showEnvironment ? ` · ${label}` : ""}
+          {uiT("Cursor")}
+          {showEnvironment ? ` · ${label}` : ""}
         </Text>
       </View>
       <CursorEnableAction environmentId={environmentId} label={label} onEnabled={onEnabled} />
@@ -484,11 +488,12 @@ function CursorEnableLimits({
   readonly onEnabled: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View className="gap-3">
       <View className="flex-row items-center gap-2 px-1">
         <ProviderIcon provider="cursor" size={18} />
-        <Text className="text-base font-t3-medium text-foreground">Cursor</Text>
+        <Text className="text-base font-t3-medium text-foreground">{uiT("Cursor")}</Text>
       </View>
       <View className="items-start gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
         <Text className="text-xs text-foreground-muted">{CURSOR_KEYCHAIN_COPY}</Text>
@@ -501,7 +506,7 @@ function CursorEnableLimits({
               buttonText={
                 environments.length > 1
                   ? uiT("Enable on {0}", { "0": environment.label })
-                  : uiT("Enable")
+                  : "Enable"
               }
               onEnabled={onEnabled}
             />
@@ -523,6 +528,7 @@ function ChartCard(props: {
   readonly timeZone: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { merged, metric } = props;
   const colors = useProviderColors();
   const hasActivity = props.daily.some((period) => period.totalTokens > 0);
@@ -558,13 +564,20 @@ function ChartCard(props: {
         </View>
       )}
 
-      <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-foreground-tertiary">
-          {props.isPast24Hours
-            ? formatHourShort(props.days[0] ?? "", props.timeZone)
-            : formatDayShort(props.sinceDay)}
-        </Text>
-        <View className="flex-row items-center gap-4">
+      <View className="gap-2">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs text-foreground-tertiary">
+            {props.isPast24Hours
+              ? formatHourShort(props.days[0] ?? "", props.timeZone)
+              : formatDayShort(props.sinceDay)}
+          </Text>
+          <Text className="text-xs text-foreground-tertiary">
+            {props.isPast24Hours
+              ? formatHourShort(props.days[props.days.length - 1] ?? "", props.timeZone)
+              : formatDayShort(props.untilDay)}
+          </Text>
+        </View>
+        <View className="flex-row flex-wrap items-center gap-x-4 gap-y-1">
           {merged.providers.map((provider) => (
             <View key={provider.provider} className="flex-row items-center gap-1.5">
               <View
@@ -577,11 +590,6 @@ function ChartCard(props: {
             </View>
           ))}
         </View>
-        <Text className="text-xs text-foreground-tertiary">
-          {props.isPast24Hours
-            ? formatHourShort(props.days[props.days.length - 1] ?? "", props.timeZone)
-            : formatDayShort(props.untilDay)}
-        </Text>
       </View>
     </View>
   );
@@ -595,6 +603,7 @@ function ProviderSection(props: {
   readonly onCursorEnabled: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { merged, metric } = props;
   const colors = useProviderColors();
   if (merged.providers.length === 0 && props.cursorAccessEnvironments.length === 0) return null;
@@ -684,6 +693,7 @@ function ProviderSection(props: {
 
 function TotalsSection(props: { readonly merged: MergedUsage; readonly isPast24Hours: boolean }) {
   const { t: uiT } = useUiLanguage();
+
   const { merged } = props;
   const activePeriods = (props.isPast24Hours ? merged.hourly : merged.daily).filter(
     (period) => period.totalTokens > 0,
@@ -736,6 +746,7 @@ function TotalsSection(props: { readonly merged: MergedUsage; readonly isPast24H
 
 function CostSection(props: { readonly merged: MergedUsage }) {
   const { t: uiT } = useUiLanguage();
+
   const { categoryCost, speedCost } = props.merged;
   const colors = useUsageMixColors();
   const byType = [
@@ -780,6 +791,7 @@ function ShareBar(props: {
   readonly aside?: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const visible = props.segments.filter((segment) => segment.value > 0);
   if (visible.length === 0) return null;
 
@@ -794,7 +806,7 @@ function ShareBar(props: {
       <View className="h-2 flex-row gap-0.5">
         {visible.map((segment) => (
           <View
-            key={segment.label}
+            key={uiT(segment.label)}
             className="h-full rounded-sm"
             style={{ flex: segment.value, backgroundColor: segment.color }}
           />
@@ -802,7 +814,7 @@ function ShareBar(props: {
       </View>
       <View className="flex-row flex-wrap gap-x-4 gap-y-1.5">
         {visible.map((segment) => (
-          <View key={segment.label} className="flex-row items-center gap-1.5">
+          <View key={uiT(segment.label)} className="flex-row items-center gap-1.5">
             <View className="size-2 rounded-sm" style={{ backgroundColor: segment.color }} />
             <Text className="text-sm text-foreground-muted">{uiT(segment.label)}</Text>
             <Text className="text-sm tabular-nums text-foreground">{formatUsd(segment.value)}</Text>
@@ -819,6 +831,7 @@ function MetricCell(props: {
   readonly detail: string;
 }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View className="w-1/2 gap-0.5 p-4">
       <Text className="text-sm text-foreground-muted">{uiT(props.label)}</Text>
@@ -830,6 +843,7 @@ function MetricCell(props: {
 
 function ModelsSection(props: { readonly merged: MergedUsage; readonly metric: UsageChartMetric }) {
   const { t: uiT } = useUiLanguage();
+
   const { merged, metric } = props;
   const colors = useProviderColors();
   if (merged.models.length === 0) return null;

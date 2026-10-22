@@ -87,7 +87,7 @@ export function WorkspaceFileImagePreview(props: {
 
   return (
     <ResolvedWorkspaceFileImagePreview
-      accessibilityLabel={props.accessibilityLabel}
+      accessibilityLabel={uiT(props.accessibilityLabel)}
       uri={props.uri}
       actionsSource={props.actionsSource}
     />

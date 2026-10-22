@@ -1,4 +1,3 @@
-import { useLayoutEffect } from "react";
 import { useUiLanguage } from "./i18n";
 import { ComponentCatalogScreen } from "./features/development/ComponentCatalogScreen";
 import { PullRequestGuideStopScreen } from "./features/pull-requests/guide/PullRequestGuideScreen";
@@ -34,13 +33,15 @@ import { useResolveClassNames } from "uniwind";
 import { AppText as Text } from "./components/ui/AppText";
 import { androidWorkspaceDestinationAnimation } from "./lib/android-workspace-navigation";
 import { getCompactBrandHeaderOptions } from "./components/CompactBrandTitle";
+import { WorkspaceConnectionStatusProvider } from "./features/home/WorkspaceConnectionTitle";
 import { WorkspaceRootScreen } from "./features/workspace/WorkspaceRootScreen";
+import { AndroidWorkspaceSettings } from "./features/workspace/AndroidWorkspaceSettings";
 import { AndroidWorkspaceTabsProvider } from "./features/workspace/AndroidWorkspaceTabsProvider";
 import {
   PullRequestRouteScreen,
   PullRequestFileRouteScreen,
-  PullRequestFilesRouteScreen,
 } from "./features/pull-requests/PullRequestRouteScreen";
+import { PullRequestFilesSheet } from "./features/pull-requests/PullRequestFiles";
 import { PullRequestReviewSheet } from "./features/pull-requests/PullRequestReviewSheet";
 import { PullRequestReviewersScreen } from "./features/pull-requests/PullRequestReviewersScreen";
 import {
@@ -71,6 +72,7 @@ import { GitConfirmSheet } from "./features/threads/git/GitConfirmSheet";
 import { GitOverviewSheet } from "./features/threads/git/GitOverviewSheet";
 import { ThreadPullRequestsSheet } from "./features/threads/ThreadPullRequestsSheet";
 import { ThreadAgentsSheet } from "./features/threads/ThreadAgentsSheet";
+import { ThreadBackgroundWorkSheet } from "./features/threads/ThreadBackgroundWorkSheet";
 import { ThreadQueueSheet } from "./features/threads/ThreadQueueControl";
 import { ThreadRouteScreen } from "./features/threads/ThreadRouteScreen";
 import { McpAppFullscreenScreen } from "./features/threads/McpAppFullscreenScreen";
@@ -148,7 +150,7 @@ import { NATIVE_LIQUID_GLASS_SUPPORTED } from "./native/native-glass";
 import { deriveLayout } from "./lib/layout";
 import { useNativeLayoutMetrics } from "./native/native-layout-metrics";
 import { nativeHeaderScrollEdgeEffects } from "./native/StackHeader";
-import { FORM_SHEET_PRESENTATION_OPTIONS } from "./native/sheet-surface";
+import { HORIZONTAL_FORM_SHEET_OPTIONS, formSheetDetents } from "./native/sheet-surface";
 import { useThreadOutboxDrain } from "./state/use-thread-outbox-drain";
 import { useComposerAttachmentUploadWorker } from "./state/composer-attachment-uploads";
 
@@ -171,7 +173,9 @@ const GLASS_HEADER_OPTIONS: AppScreenOptions = {
   unstable_navigationItemStyle: NATIVE_LIQUID_GLASS_SUPPORTED ? "editor" : undefined,
 };
 
-const PULL_REQUEST_HEADER_OPTIONS: AppScreenOptions = {
+// Hiding Android's native header after mount can leave detail panes measured short.
+// These screens render their own Material toolbar, so hide it from the first layout.
+const DETAIL_HEADER_OPTIONS: AppScreenOptions = {
   ...GLASS_HEADER_OPTIONS,
   headerShown: Platform.OS !== "android",
 };
@@ -207,63 +211,14 @@ const LEGAL_DOCUMENT_HEADER_OPTIONS: AppScreenOptions = {
 
 const NESTED_NAVIGATOR_OPTIONS = { nativeContentInsetHorizontally: false, headerShown: false };
 
-const SCREEN_TITLES: Readonly<Record<string, string>> = {
-  Settings: "Settings",
-  SettingsEnvironments: "Environments",
-  SettingsEnvironmentDetail: "Environment",
-  SettingsEnvironmentNewThreads: "New threads",
-  SettingsEnvironmentSourceControl: "Source control",
-  SettingsEnvironmentAgentBehavior: "Agent behavior",
-  SettingsProviderAccounts: "Provider accounts",
-  SettingsEnvironmentMaintenance: "Maintenance",
-  SettingsNotifications: "Notifications",
-  SettingsThreads: "Thread behavior",
-  SettingsAbout: "About T3 Code",
-  SettingsEnvironmentNew: "Add Environment",
-  SettingsArchive: "Archived Threads",
-  SettingsAppearance: "Appearance",
-  SettingsProjectGrouping: "Organization",
-  SettingsOrganization: "Organization",
-  SettingsProjectOverview: "Project overview",
-  SettingsKeyboard: "Keyboard",
-  SettingsMicrophone: "Microphone",
-  SettingsFollowUp: "Follow-ups",
-  SettingsScheduledTasks: "Scheduled Tasks",
-  SettingsScheduledTaskNew: "New scheduled task",
-  SettingsScheduledTaskEdit: "Edit scheduled task",
-  SettingsScheduledTaskBranch: "Base branch",
-  SettingsClientStorage: "Client Storage",
-  SettingsDiagnostics: "Diagnostics",
-  SettingsUsageAccount: "Account",
-  SettingsOpenSourceLicenses: "Open source licenses",
-  SettingsOpenSourceLicense: "License notice",
-  SettingsUsage: "Usage",
-  NewTask: "Choose project",
-  NewTaskEnvironment: "Environment",
-  NewTaskBranch: "Branch",
-  AddProject: "Add Project",
-  ThreadFiles: "Files",
-  SettingsLegal: "Legal",
-  ConnectOnboarding: "Set up T3 Connect",
-  Connections: "Environments",
-  ConnectionsNew: "Add Environment",
+// Thread settings keep the Duo's vertical bar so cancel, search, filter and confirm sit in the
+// rail. The picker stack spans the sheet so its header reaches the rail, and insets its content.
+const THREAD_SETTINGS_SHEET_OPTIONS = {
+  presentation: "formSheet" as const,
+  sheetAllowedDetents: [1],
+  sheetGrabberVisible: true,
+  nativeContentInsetHorizontally: false,
 };
-
-function LocalizedScreenLayout({
-  children,
-  route,
-}: {
-  children: ReactNode;
-  route: { name: string };
-}) {
-  const { t } = useUiLanguage();
-  const navigation = useNavigation();
-  const title = SCREEN_TITLES[route.name];
-  useLayoutEffect(() => {
-    if (title) navigation.setOptions({ title: t(title) });
-  }, [navigation, t, title]);
-  return <>{children}</>;
-}
 
 const SettingsContentStack = createV5SheetStackNavigator({
   initialRouteName: "Settings",
@@ -277,6 +232,9 @@ const SettingsContentStack = createV5SheetStackNavigator({
       linking: "",
       options: {
         title: "Settings",
+        // Android draws its own app bar here. Hidden only from inside the screen, the native one
+        // showed for the first frame of the Settings tab and pushed the page down.
+        headerShown: Platform.OS !== "android",
       },
     }),
     SettingsEnvironments: createNativeStackScreen({
@@ -420,9 +378,7 @@ const SettingsContentStack = createV5SheetStackNavigator({
         ...(Platform.OS === "android"
           ? { presentation: "card" as const }
           : {
-              ...FORM_SHEET_PRESENTATION_OPTIONS,
-              sheetAllowedDetents: [1],
-              sheetGrabberVisible: true,
+              ...THREAD_SETTINGS_SHEET_OPTIONS,
             }),
       },
     }),
@@ -471,8 +427,6 @@ const SettingsContentStack = createV5SheetStackNavigator({
       },
     }),
   },
-}).with(function LocalizedNavigator({ Navigator }) {
-  return <Navigator screenLayout={LocalizedScreenLayout} />;
 });
 
 // Keeping bar visibility invariant avoids iOS 26's headerless-to-headered jump.
@@ -567,9 +521,7 @@ const NewTaskSheetStack = createNativeStackNavigator({
         ...(Platform.OS === "android"
           ? { presentation: "card" as const }
           : {
-              ...FORM_SHEET_PRESENTATION_OPTIONS,
-              sheetAllowedDetents: [1],
-              sheetGrabberVisible: true,
+              ...THREAD_SETTINGS_SHEET_OPTIONS,
             }),
       },
     }),
@@ -597,8 +549,6 @@ const NewTaskSheetStack = createNativeStackNavigator({
       linking: "add-project/new",
     }),
   },
-}).with(function LocalizedNavigator({ Navigator }) {
-  return <Navigator screenLayout={LocalizedScreenLayout} />;
 });
 
 const WORKSPACE_OVERLAY_ROUTES = new Set([
@@ -615,6 +565,7 @@ const WORKSPACE_OVERLAY_ROUTES = new Set([
   "SettingsLegal",
   "SettingsSheet",
   "ThreadAgents",
+  "ThreadBackgroundWork",
   "ThreadPullRequests",
   "ThreadQueue",
   "ThreadReviewComment",
@@ -624,7 +575,12 @@ const WORKSPACE_OVERLAY_ROUTES = new Set([
 ]);
 
 function workspaceLocationFromState(state: NavigationState) {
-  const routes = state.routes.filter((route) => !WORKSPACE_OVERLAY_ROUTES.has(route.name));
+  // Android opens Settings as a workspace page rather than an overlay, so the layout sees it.
+  const routes = state.routes.filter(
+    (route) =>
+      !WORKSPACE_OVERLAY_ROUTES.has(route.name) ||
+      (Platform.OS === "android" && route.name === "SettingsSheet"),
+  );
   const effectiveState =
     routes.length > 0 && routes.length !== state.routes.length
       ? ({ ...state, routes, index: routes.length - 1 } as NavigationState)
@@ -680,16 +636,18 @@ function RootStackLayout(props: {
       <ThreadOutboxDrainWorker />
       <ShowcaseCaptureCoordinator pathname={pathname} />
       <ExistingThreadSettingsRouteProvider>
-        <AndroidWorkspaceTabsProvider>
-          <AdaptiveWorkspaceLayout
-            pathname={workspaceLocation.pathname}
-            workspaceRouteKey={workspaceLocation.routeKey}
-            selectedPullRequestKey={selectedPullRequestKey(props.state)}
-          >
-            {props.children}
-            <HardwareKeyboardCommandOverlay />
-          </AdaptiveWorkspaceLayout>
-        </AndroidWorkspaceTabsProvider>
+        <WorkspaceConnectionStatusProvider>
+          <AndroidWorkspaceTabsProvider state={props.state}>
+            <AdaptiveWorkspaceLayout
+              pathname={workspaceLocation.pathname}
+              workspaceRouteKey={workspaceLocation.routeKey}
+              selectedPullRequestKey={selectedPullRequestKey(props.state)}
+            >
+              {props.children}
+              <HardwareKeyboardCommandOverlay />
+            </AdaptiveWorkspaceLayout>
+          </AndroidWorkspaceTabsProvider>
+        </WorkspaceConnectionStatusProvider>
       </ExistingThreadSettingsRouteProvider>
     </HardwareKeyboardCommandProvider>
   );
@@ -697,6 +655,7 @@ function RootStackLayout(props: {
 
 function NotFoundScreen() {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
   const screenBgStyle = StyleSheet.flatten(useResolveClassNames("bg-screen"));
   const primaryBgStyle = StyleSheet.flatten(useResolveClassNames("bg-primary"));
@@ -769,63 +728,63 @@ const RootStackConfig = createWorkspaceStackNavigator({
         path: "pull-requests/:environmentId/:projectId/:repository/:number",
         parse: { number: Number },
       },
-      options: PULL_REQUEST_HEADER_OPTIONS,
+      options: DETAIL_HEADER_OPTIONS,
     }),
     PullRequestGuideStop: createNativeStackScreen({
       screen: PullRequestGuideStopScreen,
-      options: PULL_REQUEST_HEADER_OPTIONS,
+      options: DETAIL_HEADER_OPTIONS,
     }),
     PullRequestFile: createNativeStackScreen({
       screen: PullRequestFileRouteScreen,
-      options: PULL_REQUEST_HEADER_OPTIONS,
+      options: DETAIL_HEADER_OPTIONS,
     }),
     PullRequestFiles: createNativeStackScreen({
-      screen: PullRequestFilesRouteScreen,
+      screen: PullRequestFilesSheet,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.6, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.6),
         sheetGrabberVisible: true,
-        headerShown: false,
+        sheetCornerRadius: Platform.OS === "android" ? 28 : undefined,
       },
     }),
     PullRequestReviewers: createNativeStackScreen({
       screen: PullRequestReviewersScreen,
       options: {
-        ...PULL_REQUEST_HEADER_OPTIONS,
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.75, 0.92],
+        ...DETAIL_HEADER_OPTIONS,
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.75),
         sheetGrabberVisible: true,
         headerBackVisible: false,
       },
     }),
     PullRequestDiscussion: createNativeStackScreen({
       screen: PullRequestDiscussionScreen,
-      options: PULL_REQUEST_HEADER_OPTIONS,
+      options: DETAIL_HEADER_OPTIONS,
     }),
     PullRequestInlineComment: createNativeStackScreen({
       screen: PullRequestInlineCommentScreen,
       options: {
         ...(Platform.OS === "android"
           ? { presentation: "fullScreenModal" as const }
-          : FORM_SHEET_PRESENTATION_OPTIONS),
-        sheetAllowedDetents: Platform.OS === "android" ? undefined : [0.75, 0.92],
+          : { ...SHEET_GLASS_HEADER_OPTIONS, ...HORIZONTAL_FORM_SHEET_OPTIONS }),
+        sheetAllowedDetents: Platform.OS === "android" ? undefined : formSheetDetents(0.75),
         sheetGrabberVisible: Platform.OS !== "android",
-        headerShown: false,
       },
     }),
     PullRequestReview: createNativeStackScreen({
       screen: PullRequestReviewSheet,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.75, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.75),
         sheetGrabberVisible: true,
-        headerShown: false,
       },
     }),
     Thread: createNativeStackScreen({
       screen: ThreadRouteScreen,
       linking: THREAD_LINKING_PREFIX,
-      options: GLASS_HEADER_OPTIONS,
+      options: DETAIL_HEADER_OPTIONS,
     }),
     ThreadTerminal: createNativeStackScreen({
       screen: ThreadTerminalRouteScreen,
@@ -865,8 +824,8 @@ const RootStackConfig = createWorkspaceStackNavigator({
         // formSheet; use a full-screen modal there instead.
         ...(Platform.OS === "android"
           ? { presentation: "fullScreenModal" as const }
-          : FORM_SHEET_PRESENTATION_OPTIONS),
-        sheetAllowedDetents: Platform.OS === "android" ? undefined : [0.55, 0.92],
+          : HORIZONTAL_FORM_SHEET_OPTIONS),
+        sheetAllowedDetents: Platform.OS === "android" ? undefined : formSheetDetents(0.55),
         sheetGrabberVisible: Platform.OS !== "android",
       },
     }),
@@ -905,27 +864,34 @@ const RootStackConfig = createWorkspaceStackNavigator({
         ...(Platform.OS === "android"
           ? { presentation: "card" as const }
           : {
-              ...FORM_SHEET_PRESENTATION_OPTIONS,
-              sheetAllowedDetents: [1],
-              sheetGrabberVisible: true,
+              ...THREAD_SETTINGS_SHEET_OPTIONS,
             }),
       },
     }),
     ThreadQueue: createNativeStackScreen({
       screen: ThreadQueueSheet,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
         headerShown: false,
-        sheetAllowedDetents: [0.65, 0.95],
+        sheetAllowedDetents: formSheetDetents(0.65, 0.95),
+        sheetGrabberVisible: true,
+      },
+    }),
+    ThreadBackgroundWork: createNativeStackScreen({
+      screen: ThreadBackgroundWorkSheet,
+      options: {
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        headerShown: false,
+        sheetAllowedDetents: formSheetDetents(0.5, 0.9),
         sheetGrabberVisible: true,
       },
     }),
     ThreadAgents: createNativeStackScreen({
       screen: ThreadAgentsSheet,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
         headerShown: false,
-        sheetAllowedDetents: [0.5, 0.9],
+        sheetAllowedDetents: formSheetDetents(0.5, 0.9),
         sheetGrabberVisible: true,
       },
     }),
@@ -933,8 +899,9 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: GitOverviewSheet,
       linking: `${THREAD_LINKING_PREFIX}/git`,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.55, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.55),
         sheetGrabberVisible: true,
       },
     }),
@@ -942,8 +909,9 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: ThreadPullRequestsSheet,
       linking: `${THREAD_LINKING_PREFIX}/pull-requests`,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.55, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.55),
         sheetGrabberVisible: true,
       },
     }),
@@ -951,8 +919,9 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: GitCommitSheet,
       linking: `${THREAD_LINKING_PREFIX}/git/commit`,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.55, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.8),
         sheetGrabberVisible: true,
       },
     }),
@@ -960,8 +929,9 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: GitBranchesSheet,
       linking: `${THREAD_LINKING_PREFIX}/git/branches`,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.55, 0.92],
+        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.55),
         sheetGrabberVisible: true,
       },
     }),
@@ -969,18 +939,21 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: GitConfirmSheet,
       linking: `${THREAD_LINKING_PREFIX}/git-confirm`,
       options: {
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.45, 0.7],
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: [0.55, 0.7],
         sheetGrabberVisible: true,
       },
     }),
     SettingsSheet: createNativeStackScreen({
       screen: SettingsSheetStack,
+      layout: ({ children }) => <AndroidWorkspaceSettings>{children}</AndroidWorkspaceSettings>,
       linking: "settings",
       options: {
         ...NESTED_NAVIGATOR_OPTIONS,
         gestureEnabled: true,
         headerShown: false,
+        // Android opens Settings as a top-level tab, so it swaps like the other tabs.
+        ...(Platform.OS === "android" ? { animation: "none" as const } : null),
       },
     }),
     SettingsLegal: createNativeStackScreen({
@@ -1000,8 +973,8 @@ const RootStackConfig = createWorkspaceStackNavigator({
         ...(Platform.OS === "android" ? { headerShown: false } : SHEET_SOLID_HEADER_OPTIONS),
         title: "Set up T3 Connect",
         gestureEnabled: true,
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
-        sheetAllowedDetents: [0.6, 0.95],
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
+        sheetAllowedDetents: formSheetDetents(0.6, 0.95),
         sheetGrabberVisible: true,
       },
     }),
@@ -1013,7 +986,7 @@ const RootStackConfig = createWorkspaceStackNavigator({
         ...(Platform.OS === "android"
           ? { presentation: "card" as const, headerShown: false }
           : {
-              ...FORM_SHEET_PRESENTATION_OPTIONS,
+              ...HORIZONTAL_FORM_SHEET_OPTIONS,
               sheetAllowedDetents: [0.55, 0.7],
               sheetGrabberVisible: true,
             }),
@@ -1027,7 +1000,7 @@ const RootStackConfig = createWorkspaceStackNavigator({
         // native header stack mounts without remounting the pairing form.
         ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
         title: "Add Environment",
-        ...FORM_SHEET_PRESENTATION_OPTIONS,
+        ...HORIZONTAL_FORM_SHEET_OPTIONS,
         sheetAllowedDetents: [0.55, 0.7],
         sheetGrabberVisible: true,
       },
@@ -1045,6 +1018,7 @@ const RootStackConfig = createWorkspaceStackNavigator({
       ),
       options: {
         ...NESTED_NAVIGATOR_OPTIONS,
+        sheetPrefersHorizontalBars: true,
         gestureEnabled: true,
         headerShown: false,
       },
@@ -1074,6 +1048,7 @@ function GuardedScreenLayout(props: {
 
 function ScreenRenderFallback(props: RenderFailureProps & { readonly routeName: string }) {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
   const exit = navigation.canGoBack()
     ? { label: uiT("Go back"), onPress: () => navigation.goBack() }
@@ -1092,10 +1067,19 @@ export const RootStack = RootStackConfig.with(function AdaptiveRootStack({ Navig
   const nativeMetrics = useNativeLayoutMetrics();
   const usesSplitView = deriveLayout({ width, height, nativeMetrics }).usesSplitView;
   const usesWorkspaceFlowScreens = Platform.OS === "android" || usesSplitView;
+  const flowPresentations = useRef(new Map<string, boolean>());
 
   return (
     <Navigator
       screenLayout={(props) => <GuardedScreenLayout {...props} />}
+      screenListeners={{
+        state: ({ data }) => {
+          const keys = new Set(data.state.routes.map((route) => route.key));
+          for (const key of flowPresentations.current.keys()) {
+            if (!keys.has(key)) flowPresentations.current.delete(key);
+          }
+        },
+      }}
       screenOptions={({ route }) => {
         if (route.name !== "SettingsSheet" && route.name !== "NewTaskSheet") {
           return Platform.OS === "android"
@@ -1103,11 +1087,18 @@ export const RootStack = RootStackConfig.with(function AdaptiveRootStack({ Navig
             : {};
         }
 
-        return usesWorkspaceFlowScreens
+        // Moving an open flow between a sheet and a split column remounts its nested
+        // navigator. Keep its presentation until dismissal so folding preserves the draft.
+        let usesCard = flowPresentations.current.get(route.key);
+        if (usesCard === undefined) {
+          usesCard = usesWorkspaceFlowScreens;
+          flowPresentations.current.set(route.key, usesCard);
+        }
+        return usesCard
           ? { presentation: "card" }
           : {
-              ...FORM_SHEET_PRESENTATION_OPTIONS,
-              sheetAllowedDetents: [0.92],
+              presentation: "formSheet",
+              sheetAllowedDetents: [1],
               sheetGrabberVisible: true,
             };
       }}

@@ -1,4 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { useUiLanguage } from "../../i18n";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import type { DesktopSshPasswordPromptRequest } from "@t3tools/contracts";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
@@ -26,9 +26,9 @@ function formatRemainingSeconds(seconds: number): string {
 }
 
 function getPromptErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "SSH password prompt failed.";
+  const message = error instanceof Error ? error.message : "SSH verification prompt failed.";
   return message.includes("expired") || message.includes("no longer pending")
-    ? "This SSH password prompt expired. Try connecting again."
+    ? "This SSH verification prompt expired. Try connecting again."
     : message;
 }
 
@@ -72,6 +72,7 @@ function ActiveSshPasswordPrompt({
   readonly onRemove: (requestId: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const [password, setPassword] = useState("");
   const [isResponding, setIsResponding] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -106,7 +107,7 @@ function ActiveSshPasswordPrompt({
   const remainingLabel =
     remainingSeconds === null ? null : formatRemainingSeconds(remainingSeconds);
   const visibleResponseError = isExpired
-    ? "This SSH password prompt expired. Try connecting again."
+    ? "This SSH verification prompt expired. Try connecting again."
     : responseError;
 
   const respond = async (nextPassword: string | null) => {
@@ -116,7 +117,7 @@ function ActiveSshPasswordPrompt({
 
     const requestId = request.requestId;
     if (nextPassword !== null && isExpired) {
-      setResponseError("This SSH password prompt expired. Try connecting again.");
+      setResponseError("This SSH verification prompt expired. Try connecting again.");
       return;
     }
 
@@ -160,14 +161,13 @@ function ActiveSshPasswordPrompt({
     >
       <DialogPopup className="max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>{uiT("SSH Password Required")}</DialogTitle>
+          <DialogTitle>{uiT("SSH verification required")}</DialogTitle>
           <DialogDescription>
-            <UiText
-              message={
-                "T3 needs your SSH password to connect to {0}. The password is passed to the local SSH process for this connection attempt and is not saved by T3 Code."
-              }
-              values={{ "0": <code>{target}</code> }}
-            />
+            {uiT("Enter the password or verification code required by")}
+            <code>{target}</code>
+            {uiT(
+              ". T3 Code passes your response to the local SSH process and keeps it in memory to reuse for this host. T3 Code does not write it to disk.",
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogPanel scrollFade={false}>
@@ -208,7 +208,9 @@ function ActiveSshPasswordPrompt({
               <p className="text-sm text-destructive">{visibleResponseError}</p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                {uiT("Use SSH keys to avoid repeated password prompts on new SSH sessions.")}
+                {uiT(
+                  "SSH keys may replace a password, but your server can still require a verification code.",
+                )}
               </p>
             )}
           </form>

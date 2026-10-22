@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../../i18n";
-
 import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,6 +16,7 @@ function ProviderCustomColorPanel(props: {
   readonly onCommit: (value: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { onCommit } = props;
   const [hsv, setHsv] = useState(() => hexToHsv(props.value));
   const currentColor = hsvToHex(hsv.h, hsv.s, hsv.v);
@@ -71,6 +69,7 @@ function ProviderCustomColorPicker(props: {
   readonly onClear: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const normalized = normalizeProviderAccentColor(props.value);
 
   return (
@@ -132,6 +131,7 @@ export function ProviderAccentColorPicker(props: {
   readonly layout?: "stacked" | "inline";
 }) {
   const { t: uiT } = useUiLanguage();
+
   const {
     commitDelayMs = 0,
     description,
@@ -212,9 +212,7 @@ export function ProviderAccentColorPicker(props: {
     <div className="grid gap-2">
       <span className="text-xs font-medium text-foreground">{uiT("Accent color")}</span>
       {picker}
-      {description ? (
-        <span className="text-xs text-muted-foreground">{uiT(description)}</span>
-      ) : null}
+      {description ? <span className="text-xs text-muted-foreground">{description}</span> : null}
     </div>
   );
 }

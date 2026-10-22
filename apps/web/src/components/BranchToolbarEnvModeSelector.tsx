@@ -21,6 +21,9 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { useAtomValue } from "@effect/atom-react";
+import { shortcutLabelForCommand } from "../keybindings";
+import { primaryServerKeybindingsAtom } from "../state/server";
 
 const PREVIOUS_WORKTREE_SELECT_VALUE = "previous-worktree";
 
@@ -47,6 +50,10 @@ export const BranchToolbarEnvModeSelector = memo(function BranchToolbarEnvModeSe
 }: BranchToolbarEnvModeSelectorProps) {
   const { t: uiT } = useUiLanguage();
   const composerFloatingLayerProps = useComposerMenuProps();
+  const shortcutLabel = shortcutLabelForCommand(
+    useAtomValue(primaryServerKeybindingsAtom),
+    "composer.workspace",
+  );
   const showPreviousWorktree = Boolean(previousWorktreeLabel && onUsePreviousWorktree);
   const envModeItems = [
     {
@@ -139,6 +146,7 @@ export const BranchToolbarEnvModeSelector = memo(function BranchToolbarEnvModeSe
           {effectiveEnvMode === "worktree"
             ? resolveEnvModeLabel("worktree")
             : resolveCurrentWorkspaceLabel(activeWorktreePath)}
+          {shortcutLabel ? ` · ${shortcutLabel}` : null}
         </TooltipPopup>
       </Tooltip>
       <SelectPopup
@@ -161,7 +169,7 @@ export const BranchToolbarEnvModeSelector = memo(function BranchToolbarEnvModeSe
           <SelectItem value="worktree">
             <span className="inline-flex items-center gap-1.5">
               <FolderGit2Icon className="size-3" />
-              {resolveEnvModeLabel("worktree")}
+              {uiT(resolveEnvModeLabel("worktree"))}
             </span>
           </SelectItem>
           {showPreviousWorktree && previousWorktreeLabel ? (

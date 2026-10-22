@@ -1,5 +1,5 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { RequestActionButton } from "./RequestActionButton";
+import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import { QuestionAttachments } from "./QuestionAttachments";
 import type { RuntimeRequestId } from "@t3tools/contracts";
 import type { ThreadUserInputQuestion } from "@t3tools/client-runtime/state/thread-requests";
@@ -81,6 +81,7 @@ function QuestionText(props: { readonly markdown: string }) {
 
 export function PendingUserInputCard(props: PendingUserInputCardProps) {
   const { t: uiT } = useUiLanguage();
+
   const questionCount = props.pendingUserInput.questions.length;
   const canRespond = props.pendingUserInput.responseCapability !== "not_resumable";
   const isResponding = props.respondingUserInputId === props.pendingUserInput.requestId;
@@ -146,12 +147,9 @@ export function PendingUserInputCard(props: PendingUserInputCardProps) {
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={uiT(
-          questionCount === 1
-            ? "Expand user input, {0} question"
-            : "Expand user input, {0} questions",
-          { "0": questionCount, "1": questionCount === 1 ? "" : "s" },
-        )}
+        accessibilityLabel={`Expand user input, ${questionCount} question${
+          questionCount === 1 ? "" : "s"
+        }`}
         onPress={props.onToggleCollapsed}
         className="min-h-10 flex-1 flex-row items-center gap-2 active:opacity-70"
       >
@@ -159,10 +157,8 @@ export function PendingUserInputCard(props: PendingUserInputCardProps) {
           {uiT("User input needed")}
         </Text>
         <Text className="font-sans text-xs text-foreground-muted">
-          <UiText
-            message={questionCount === 1 ? "{0} question" : "{0} questions"}
-            values={{ "0": questionCount, "1": questionCount === 1 ? "" : "s" }}
-          />
+          {questionCount} {uiT("question")}
+          {questionCount === 1 ? "" : "s"}
         </Text>
         <View className="flex-1" />
         <SymbolView
@@ -290,7 +286,7 @@ export function PendingUserInputCard(props: PendingUserInputCardProps) {
                         </Text>
                         {description ? (
                           <Text className="font-sans text-sm leading-5 text-foreground-muted">
-                            {uiT(description)}
+                            {description}
                           </Text>
                         ) : null}
                       </View>
@@ -315,24 +311,20 @@ export function PendingUserInputCard(props: PendingUserInputCardProps) {
           );
         })}
       </ScrollView>
-      <RequestActionButton
+      <Button
         label={uiT("Submit answers")}
-        size="large"
+        fullWidth
         tone={props.answers ? "primary" : "secondary"}
         disabled={!props.canOperateThread || responseDisabled || props.answers === null}
         onPress={() => void props.onSubmit()}
       />
       {props.pendingUserInput.dismissible ? (
-        <Pressable
-          accessibilityRole="button"
-          className="items-center justify-center rounded-2xl px-4 py-2.5 active:opacity-70"
+        <Button
+          label={uiT("Dismiss without answering")}
+          tone="text"
           disabled={isResponding}
           onPress={() => void props.onDismiss()}
-        >
-          <Text className="font-t3-bold text-sm text-foreground-muted">
-            {uiT("Dismiss without answering")}
-          </Text>
-        </Pressable>
+        />
       ) : null}
       {!props.canOperateThread ? (
         <Text className="font-sans text-xs text-foreground-tertiary">

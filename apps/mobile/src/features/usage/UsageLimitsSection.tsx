@@ -1,10 +1,5 @@
+import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
-import {
-  formatUiUsageReset,
-  formatUiUsageWindowLabel,
-  formatUiResetCredits,
-} from "@t3tools/client-runtime/usage-localization";
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AuthProvidersManageScope,
@@ -14,9 +9,15 @@ import {
   type ServerProvider,
   type ServerProviderResetCredits,
   type ServerProviderUsageWindow,
-  type UsageProviderKind,
 } from "@t3tools/contracts";
-import { elapsedShare, limitsNotice, paceOf, remainingPercent } from "@t3tools/shared/usageLimits";
+import {
+  formatDuration,
+  formatResetsIn,
+  limitsNotice,
+  paceOf,
+  paceRemainingPercent,
+  remainingPercent,
+} from "@t3tools/shared/usageLimits";
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from "react";
 import { refreshUsageLimits } from "@t3tools/client-runtime/state/usage";
 import { Linking, Pressable, View } from "react-native";
@@ -27,7 +28,7 @@ import { environmentPresentations } from "../../state/presentation";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { useProviderColors } from "./usageProviders";
+import { usageProviderKind, useProviderColors } from "./usageProviders";
 
 const PACE_LABEL = { ahead: "ahead of pace", on: "on pace", under: "under pace" } as const;
 
@@ -35,8 +36,7 @@ type Driver = ServerProvider["driver"];
 
 function useBarColor(driver: Driver): string | null {
   const colors = useProviderColors();
-  const kind: UsageProviderKind | null =
-    driver === "codex" ? "codex" : driver === "claudeAgent" ? "claude" : null;
+  const kind = usageProviderKind(driver);
   return kind ? colors[kind] : null;
 }
 
@@ -45,44 +45,77 @@ function WindowRow(props: {
   readonly color: string | null;
   readonly now: number;
 }) {
-  const { locale } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
+
   const { window, now } = props;
   const remaining = remainingPercent(window);
-  const elapsed = elapsedShare(window, now);
-  const timeLeft = elapsed === null ? null : Math.round((1 - elapsed) * 100);
+  const timeLeft = paceRemainingPercent(window, now);
   const pace = paceOf(window, now);
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const resetsIn = formatResetsIn(window, now);
+  const [barWidth, setBarWidth] = useState(0);
+  const tickX =
+    timeLeft === null || barWidth < 6
+      ? null
+      : Math.min(Math.max((barWidth * timeLeft) / 100, 3), barWidth - 3);
+  const bar = (
+    <View
+      className="h-1.5 flex-row overflow-hidden rounded-full bg-subtle"
+      style={barWidth > 0 ? { width: barWidth } : undefined}
+    >
+      <View
+        className={
+          remaining <= 10
+            ? "h-full rounded-full bg-red-500"
+            : remaining <= 30
+              ? "h-full rounded-full bg-amber-500"
+              : "h-full rounded-full bg-foreground"
+        }
+        style={[
+          { flex: remaining },
+          remaining > 30 && props.color ? { backgroundColor: props.color } : null,
+        ]}
+      />
+      <View style={{ flex: 100 - remaining }} />
+    </View>
+  );
   return (
     <View className="gap-1">
       <View className="flex-row items-baseline justify-between gap-3">
-        <Text className="text-sm text-foreground">
-          {formatUiUsageWindowLabel(window.label, locale)}
-        </Text>
+        <Text className="text-sm text-foreground">{uiT(window.label)}</Text>
         <Text className="text-sm font-t3-medium tabular-nums text-foreground">
-          <UiText message={"{0}% left"} values={{ "0": remaining }} />
+          {remaining}
+          {uiT("% left")}
         </Text>
       </View>
-      <View className="h-3 justify-center">
-        <View className="h-1.5 flex-row overflow-hidden rounded-full bg-subtle">
+      <View
+        className="h-3 justify-center"
+        onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
+      >
+        {tickX === null ? (
+          bar
+        ) : (
+          <View className="h-1.5">
+            {/* Clip the same full-width bar so neither fill proportions nor corner radii change. */}
+            {(
+              [
+                [0, tickX - 3],
+                [tickX + 3, barWidth],
+              ] as const
+            ).map(([start, end]) => (
+              <View
+                key={start}
+                className="absolute top-0 bottom-0 overflow-hidden"
+                style={{ left: start, width: end - start }}
+              >
+                <View style={{ marginLeft: -start }}>{bar}</View>
+              </View>
+            ))}
+          </View>
+        )}
+        {tickX !== null ? (
           <View
-            className={
-              remaining <= 10
-                ? "h-full rounded-full bg-red-500"
-                : remaining <= 30
-                  ? "h-full rounded-full bg-amber-500"
-                  : "h-full rounded-full bg-foreground"
-            }
-            style={[
-              { flex: remaining },
-              remaining > 30 && props.color ? { backgroundColor: props.color } : null,
-            ]}
-          />
-          <View style={{ flex: 100 - remaining }} />
-        </View>
-        {timeLeft !== null ? (
-          <View
-            className="absolute top-0 bottom-0 w-px bg-foreground"
-            style={{ left: `${timeLeft}%`, opacity: 0.6 }}
+            className="absolute top-px bottom-px w-0.5 rounded-full bg-foreground"
+            style={{ left: tickX - 1 }}
           />
         ) : null}
       </View>
@@ -98,6 +131,7 @@ function WindowRow(props: {
 
 function AccountInstanceLabel({ value }: { readonly value: string }) {
   const { t: uiT } = useUiLanguage();
+
   const [revealed, setRevealed] = useState(false);
   if (!value.includes("@")) {
     return (
@@ -133,6 +167,7 @@ export function AccountLimits(props: {
   readonly footer?: ReactNode;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { limits, now, dense = false } = props;
   const color = useBarColor(props.driver);
   if (!limits) return null;
@@ -197,7 +232,8 @@ export function ResetCredits(props: {
   readonly now: number;
   readonly dense?: boolean;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
+  const { t: uiT } = useUiLanguage();
+
   const { environmentId, input, credits, now, dense = false } = props;
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
   const consume = useAtomCommand(serverEnvironment.consumeResetCredit, {
@@ -207,7 +243,15 @@ export function ResetCredits(props: {
   const [status, setStatus] = useState<string | null>(null);
   if (dense && credits.availableCount === 0 && status === null) return null;
 
-  const summary = formatUiResetCredits(credits, now, locale);
+  const expiresIn = credits.nextExpiresAt
+    ? formatDuration(Date.parse(credits.nextExpiresAt) - now)
+    : null;
+  const summary =
+    credits.availableCount === 0
+      ? "No reset credits banked"
+      : `${credits.availableCount} ${credits.availableCount === 1 ? "reset credit" : "reset credits"} banked${
+          expiresIn ? ` · next expires in ${expiresIn}` : ""
+        }`;
 
   const redeem = async () => {
     if (!readEnvironmentScope(environmentId, AuthProvidersManageScope)) return;

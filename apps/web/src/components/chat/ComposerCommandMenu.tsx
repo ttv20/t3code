@@ -4,6 +4,7 @@ import {
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
@@ -41,6 +42,7 @@ export type ComposerCommandItem =
       type: "path";
       path: string;
       pathKind: ProjectEntry["kind"];
+      searchTarget: ComposerPathSearchTarget;
       label: string;
       description: string;
     }

@@ -318,8 +318,8 @@ export function ServerUpdateAction({
   const actionLabel =
     manualCommand !== null
       ? installation?.kind === "npm-global"
-        ? "Copy update command"
-        : "Copy relaunch command"
+        ? uiT("Copy update command")
+        : uiT("Copy relaunch command")
       : label;
   const onClick =
     manualCommand !== null
@@ -392,7 +392,7 @@ export function OutdatedServerUpdateAction({
       if (isAtomCommandInterrupted(result)) return;
       toastManager.add({
         type: "error",
-        title: `${serverLabel} update failed`,
+        title: uiT("{0} update failed", { "0": serverLabel }),
         description: updateFailureMessage(squashAtomCommandFailure(result)),
       });
       return;

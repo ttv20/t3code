@@ -1,5 +1,6 @@
-import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
+import { ListChoiceRow } from "../../components/ui/ListChoiceRow";
+import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
   connectionCatalogDisplayUrl,
@@ -36,6 +37,7 @@ const options: ReadonlyArray<{
 
 export function GitHubRoutingSettings() {
   const { t: uiT } = useUiLanguage();
+
   const catalog = useAtomValue(environmentCatalog.catalogValueAtom);
   const permissions = useAtomValue(environmentCatalog.githubRoutingPermissionsValueAtom);
   const update = useAtomCommand(environmentCatalog.setGitHubRoutingPermission);
@@ -64,7 +66,7 @@ export function GitHubRoutingSettings() {
                     {uiT(entry.target.label)}
                   </Text>
                   <Text className="text-xs text-foreground-muted" numberOfLines={1}>
-                    {connectionCatalogDisplayUrl(entry) ?? "T3 Connect"}
+                    {connectionCatalogDisplayUrl(entry) ?? uiT("T3 Connect")}
                   </Text>
                 </View>
                 <Text className="text-sm text-foreground-muted">
@@ -78,12 +80,12 @@ export function GitHubRoutingSettings() {
               </Pressable>
               {expanded === environmentId
                 ? options.map((option) => (
-                    <Pressable
+                    <ListChoiceRow
                       key={option.value}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: selected === option.value, disabled }}
+                      label={uiT(option.label)}
+                      description={uiT(option.description)}
+                      selected={selected === option.value}
                       disabled={disabled}
-                      className="flex-row items-center gap-4 p-4 disabled:opacity-50"
                       onPress={() => {
                         setSaving(true);
                         void update({ environmentId, permission: option.value }).then((result) => {
@@ -95,22 +97,7 @@ export function GitHubRoutingSettings() {
                             );
                         });
                       }}
-                    >
-                      <View className="min-w-0 flex-1 gap-1">
-                        <Text className="text-base text-foreground">{uiT(option.label)}</Text>
-                        <Text className="text-sm leading-normal text-foreground-muted">
-                          {uiT(option.description)}
-                        </Text>
-                      </View>
-                      {selected === option.value ? (
-                        <SymbolView
-                          name="checkmark"
-                          size={18}
-                          tintColorClassName="accent-icon"
-                          weight="semibold"
-                        />
-                      ) : null}
-                    </Pressable>
+                    />
                   ))
                 : null}
             </View>

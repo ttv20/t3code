@@ -1,6 +1,4 @@
-"use client";
 import { useUiLanguage } from "../../i18n";
-
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -204,8 +202,8 @@ function ProviderCommandArguments({
 
   return (
     <SettingsRow
-      title="Arguments"
-      description="One literal argument per row, in launch order."
+      title={uiT("Arguments")}
+      description={uiT("One literal argument per row, in launch order.")}
       control={
         <Button
           type="button"
@@ -223,7 +221,6 @@ function ProviderCommandArguments({
           {rows.map((argument, index) => (
             <div key={argument.id} className="flex min-w-0 items-center gap-1.5">
               <DraftInput
-                dir="ltr"
                 size="sm"
                 font="mono"
                 value={argument.value}
@@ -408,7 +405,6 @@ function ProviderSettingsFieldRow({
         />
       ) : field.control === "textarea" ? (
         <Textarea
-          dir="ltr"
           id={inputId}
           aria-describedby={descriptionId}
           className="w-full max-w-full @min-[32rem]/settings-row:w-[min(24rem,50cqw)]"
@@ -425,7 +421,7 @@ function ProviderSettingsFieldRow({
             id={inputId}
             aria-describedby={descriptionId}
             size="sm"
-            className="min-w-0 flex-1"
+            className="min-w-0 flex-1 [unicode-bidi:plaintext]"
             configured={secretConfigured}
             value=""
             onCommit={(next) => onChange(nextProviderConfigWithFieldValue(value, field, next))}
@@ -444,7 +440,6 @@ function ProviderSettingsFieldRow({
         </div>
       ) : (
         <DraftInput
-          dir="ltr"
           id={inputId}
           aria-describedby={descriptionId}
           size="sm"
@@ -464,7 +459,7 @@ function ProviderSettingsFieldRow({
       <SettingsRow
         title={
           field.control === "switch" ? (
-            uiT(field.label)
+            field.label
           ) : (
             <label htmlFor={inputId}>{uiT(field.label)}</label>
           )
@@ -481,9 +476,9 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {uiT(label)}
-            {uiT(description)}
+          <div className="min-w-0 [unicode-bidi:plaintext]">
+            {label}
+            {description}
           </div>
           <Switch
             checked={readProviderConfigBoolean(value, field.key, field.defaultBooleanValue)}
@@ -501,7 +496,7 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {uiT(label)}
+          {label}
           <ProviderSettingsSelect
             field={field}
             value={value}
@@ -510,7 +505,7 @@ function ProviderSettingsFieldRow({
             className={cn("w-full", variant === "card" && "mt-1.5")}
             onChange={onChange}
           />
-          {uiT(description)}
+          {description}
         </label>
       </FieldFrame>
     );
@@ -520,9 +515,8 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {uiT(label)}
+          {label}
           <Textarea
-            dir="ltr"
             id={inputId}
             className={cn(variant === "card" && "mt-1.5")}
             value={readProviderConfigString(value, field.key)}
@@ -532,7 +526,7 @@ function ProviderSettingsFieldRow({
             placeholder={uiT(field.placeholder)}
             spellCheck={false}
           />
-          {uiT(description)}
+          {description}
         </label>
       </FieldFrame>
     );
@@ -544,10 +538,9 @@ function ProviderSettingsFieldRow({
   return (
     <FieldFrame variant={variant}>
       <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-        {uiT(label)}
+        {label}
         {variant === "card" ? (
           <BufferedInput
-            dir="ltr"
             id={inputId}
             size="sm"
             className="mt-1.5"
@@ -560,7 +553,6 @@ function ProviderSettingsFieldRow({
           />
         ) : (
           <ControlledInput
-            dir="ltr"
             id={inputId}
             type={field.secret ? undefined : type}
             autoComplete={!field.secret && field.control === "password" ? "off" : undefined}
@@ -572,7 +564,7 @@ function ProviderSettingsFieldRow({
             spellCheck={false}
           />
         )}
-        {uiT(description)}
+        {description}
       </label>
     </FieldFrame>
   );

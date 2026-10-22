@@ -34,6 +34,7 @@ interface UsageProviderChartProps {
   readonly referenceTime: string | undefined;
   readonly resolution: "day" | "hour";
   readonly timeZone: string;
+  readonly hour12: boolean;
 }
 
 export interface DayColumn {
@@ -155,7 +156,7 @@ function areaPath(line: string) {
   return line === "" ? "" : `${line} L${VIEW_WIDTH},${VIEW_HEIGHT} L0,${VIEW_HEIGHT} Z`;
 }
 
-export function niceScale(peak: number, count: number): { max: number; ticks: readonly number[] } {
+function niceScale(peak: number, count: number): { max: number; ticks: readonly number[] } {
   if (peak <= 0) return { max: 0, ticks: [0] };
 
   const rawStep = peak / count;
@@ -171,7 +172,7 @@ export function niceScale(peak: number, count: number): { max: number; ticks: re
 
 const PLACEHOLDER_TICKS = Array.from({ length: TICK_COUNT + 1 }, (_, index) => index);
 
-export function chartScale(
+function chartScale(
   columns: readonly DayColumn[],
   loadingProviders: ReadonlySet<UsageProviderKind>,
 ) {
@@ -420,6 +421,7 @@ export function UsageProviderChart({
   referenceTime,
   resolution,
   timeZone,
+  hour12,
 }: UsageProviderChartProps) {
   const periods = resolution === "hour" ? hours : days;
   const totals: readonly (DailyTotals | HourlyTotals)[] = resolution === "hour" ? hourly : daily;
@@ -439,10 +441,10 @@ export function UsageProviderChart({
     cn("transition-opacity", loading && "opacity-40 delay-150");
   const format = metric === "tokens" ? formatTokens : formatUsd;
   const formatPeriod = (period: string) =>
-    resolution === "hour" ? formatHourShort(period, timeZone) : formatDayShort(period);
+    resolution === "hour" ? formatHourShort(period, timeZone, hour12) : formatDayShort(period);
   const formatTooltipPeriod = (period: string) =>
     resolution === "hour" && referenceTime !== undefined
-      ? formatRelativeHourShort(period, referenceTime, timeZone)
+      ? formatRelativeHourShort(period, referenceTime, timeZone, hour12)
       : formatPeriod(period);
 
   return (

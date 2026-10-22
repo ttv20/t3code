@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../../i18n";
-
 import { Spinner } from "~/components/ui/spinner";
 
 import {
@@ -68,9 +65,9 @@ import { readCodexSetupMode } from "./CodexSetupSection.logic";
 import {
   getProviderVersionAdvisoryPresentation,
   PROVIDER_STATUS_STYLES,
+  getProviderStatusKey,
   getProviderSummary,
   getProviderVersionLabel,
-  type ProviderStatusKey,
 } from "./providerStatus";
 
 const ENVIRONMENT_VARIABLE_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
@@ -185,14 +182,13 @@ export function deriveProviderModelsForDisplay(input: {
 }
 
 function ProviderAuthEmail(props: { readonly email: string | undefined }) {
-  const { t: uiT } = useUiLanguage();
   const email = props.email?.trim();
   if (!email) return null;
 
   return (
     <RedactedSensitiveText
       value={email}
-      ariaLabel={uiT("Toggle account email visibility")}
+      ariaLabel="Toggle account email visibility"
       revealTooltip="Click to reveal email"
       hideTooltip="Click to hide email"
       className="max-w-full truncate"
@@ -200,14 +196,14 @@ function ProviderAuthEmail(props: { readonly email: string | undefined }) {
   );
 }
 
-export function readProviderEnvironmentVariable(
+function readProviderEnvironmentVariable(
   environment: ReadonlyArray<ProviderInstanceEnvironmentVariable> | undefined,
   name: string,
 ): ProviderInstanceEnvironmentVariable | undefined {
   return environment?.find((variable) => variable.name === name);
 }
 
-export function providerEnvironmentWithoutNames(
+function providerEnvironmentWithoutNames(
   environment: ReadonlyArray<ProviderInstanceEnvironmentVariable> | undefined,
   names: ReadonlySet<string>,
 ): ReadonlyArray<ProviderInstanceEnvironmentVariable> {
@@ -257,6 +253,7 @@ function ProviderEnvironmentFieldRow(props: {
   readonly onRemove: (field: ProviderEnvironmentField) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const inputId = `${props.idPrefix}-environment-${props.field.name}`;
   const value = props.variable?.valueRedacted ? "" : (props.variable?.value ?? "");
 
@@ -270,7 +267,7 @@ function ProviderEnvironmentFieldRow(props: {
             <DraftInput
               id={inputId}
               size="sm"
-              className="min-w-0 flex-1"
+              className="min-w-0 flex-1 [unicode-bidi:plaintext]"
               autoComplete="off"
               value={value}
               onCommit={(next) => props.onCommit(props.field, next)}
@@ -281,7 +278,7 @@ function ProviderEnvironmentFieldRow(props: {
             <SecretInput
               id={inputId}
               size="sm"
-              className="min-w-0 flex-1"
+              className="min-w-0 flex-1 [unicode-bidi:plaintext]"
               value={value}
               onCommit={(next) => props.onCommit(props.field, next)}
               placeholder={props.field.placeholder}
@@ -311,6 +308,7 @@ export function ProviderEnvironmentSection(props: {
   readonly onChange: (environment: ReadonlyArray<ProviderInstanceEnvironmentVariable>) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const [rows, setRows] = useState<ReadonlyArray<EnvironmentDraftRow>>(() =>
     props.environment.map(makeEnvironmentDraftRow),
   );
@@ -420,7 +418,7 @@ export function ProviderEnvironmentSection(props: {
                 <SecretInput
                   size="sm"
                   font="mono"
-                  className="min-w-0 flex-1"
+                  className="min-w-0 flex-1 [unicode-bidi:plaintext]"
                   value={variable.valueRedacted ? "" : variable.value}
                   onCommit={(value) => updateVariable(variable.id, { value })}
                   placeholder={uiT("value")}
@@ -432,7 +430,7 @@ export function ProviderEnvironmentSection(props: {
                 <DraftInput
                   size="sm"
                   font="mono"
-                  className="min-w-0 flex-1"
+                  className="min-w-0 flex-1 [unicode-bidi:plaintext]"
                   value={variable.valueRedacted ? "" : variable.value}
                   onCommit={(value) => updateVariable(variable.id, { value })}
                   autoComplete="off"
@@ -503,6 +501,7 @@ function ProjectOverrideInheritance({
   readonly deviceEnabled: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const layers = [
     { key: "project", label: uiT("Project"), enabled: projectEnabled, effective: true },
     { key: "device", label: uiT("Device"), enabled: deviceEnabled, effective: false },
@@ -655,15 +654,15 @@ export function ProviderInstanceCard({
   projectOverride,
 }: ProviderInstanceCardProps) {
   const { t: uiT } = useUiLanguage();
+
   const enabled = projectOverride?.effectiveEnabled ?? resolveProviderInstanceEnabled(instance);
+  const effectiveProvider = liveProvider && { ...liveProvider, enabled };
   const compatibility = enabled ? liveProvider?.compatibilityAdvisory : undefined;
-  const statusKey: ProviderStatusKey = enabled
-    ? ((liveProvider?.status as ProviderStatusKey | undefined) ?? "warning")
-    : "disabled";
+  const statusKey = enabled ? getProviderStatusKey(effectiveProvider) : "disabled";
   const statusStyle = PROVIDER_STATUS_STYLES[statusKey];
   const summary = enabled
-    ? getProviderSummary(liveProvider && { ...liveProvider, enabled: true }, uiT)
-    : { headline: uiT("Disabled"), detail: null };
+    ? getProviderSummary(effectiveProvider, uiT)
+    : { headline: "Disabled", detail: null };
   const authEmail = liveProvider?.auth.email?.trim();
   const isAuthenticated = enabled && liveProvider?.auth.status === "authenticated";
   const authLabel =
@@ -920,7 +919,7 @@ export function ProviderInstanceCard({
             </p>
             <p
               className={cn(
-                "text-xs leading-snug",
+                "text-xs leading-snug [overflow-wrap:anywhere]",
                 versionAdvisory.emphasis === "strong" ? "text-warning" : "text-muted-foreground",
               )}
             >
@@ -1016,7 +1015,7 @@ export function ProviderInstanceCard({
             aria-pressed={selected}
           />
           {titleIconNode}
-          <span className="min-w-0 flex-1">
+          <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
             <span className="flex min-w-0 items-center gap-2">
               <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
               {versionLabel ? (
@@ -1119,7 +1118,7 @@ export function ProviderInstanceCard({
       title={uiT("Driver")}
       description={
         <span>
-          {uiT("This instance uses")}{" "}
+          {uiT("This instance uses")}
           <code className="text-foreground">{String(instance.driver)}</code>
           {uiT(", which is not available in this build. Its configuration is preserved.")}
         </span>
@@ -1200,26 +1199,24 @@ export function ProviderInstanceCard({
       {setup || environmentFields.length > 0 ? (
         <SettingsSection title={uiT("Setup")}>
           {setup}
-          <div
-            inert={readOnly}
-            aria-disabled={readOnly || undefined}
-            className={readOnly ? "opacity-50 select-none" : undefined}
-          >
-            {environmentFields.length > 0 ? (
-              <>
-                {environmentFields.map((field) => (
-                  <ProviderEnvironmentFieldRow
-                    key={field.name}
-                    field={field}
-                    variable={readProviderEnvironmentVariable(instance.environment, field.name)}
-                    idPrefix={`provider-instance-${instanceId}`}
-                    onCommit={updateEnvironmentField}
-                    onRemove={removeEnvironmentField}
-                  />
-                ))}
-              </>
-            ) : null}
-          </div>
+          {environmentFields.length > 0 ? (
+            <div
+              inert={readOnly}
+              aria-disabled={readOnly || undefined}
+              className={readOnly ? "opacity-50 select-none" : undefined}
+            >
+              {environmentFields.map((field) => (
+                <ProviderEnvironmentFieldRow
+                  key={field.name}
+                  field={field}
+                  variable={readProviderEnvironmentVariable(instance.environment, field.name)}
+                  idPrefix={`provider-instance-${instanceId}`}
+                  onCommit={updateEnvironmentField}
+                  onRemove={removeEnvironmentField}
+                />
+              ))}
+            </div>
+          ) : null}
         </SettingsSection>
       ) : null}
 

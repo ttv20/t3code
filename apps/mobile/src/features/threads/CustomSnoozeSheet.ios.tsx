@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { Toolbar } from "../../components/ui/Toolbar";
+import { SheetHeader } from "../../components/ui/SheetHeader";
 import {
   DatePicker,
   Host,
@@ -55,6 +55,7 @@ export function CustomSnoozeSheet(props: {
   readonly onSnooze: (snoozedUntil: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { width, height } = useWindowDimensions();
   const [mode, setMode] = useState<CustomSnoozeInput["mode"]>("date");
   const [date, setDate] = useState(() => new Date(Date.now() + 3_600_000));
@@ -225,6 +226,7 @@ function SnoozePopoverNavigation(props: {
   readonly children: ReactNode;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const navigationTheme = useMobileNavigationTheme();
   const { themeVariables: colors } = useAppearancePreferences();
 
@@ -252,16 +254,12 @@ function SnoozePopoverNavigation(props: {
                 <SnoozeStack.Screen name="CustomSnooze">
                   {() => (
                     <>
-                      <Toolbar placement="left">
-                        <Toolbar.Button
-                          accessibilityLabel={uiT("Cancel custom snooze")}
-                          icon="xmark"
-                          onPress={props.onClose}
-                        />
-                      </Toolbar>
-                      <Toolbar placement="right">
-                        <Toolbar.Button label={uiT("Snooze")} onPress={props.onSubmit} />
-                      </Toolbar>
+                      <SheetHeader
+                        title={uiT("Custom snooze")}
+                        onCancel={props.onClose}
+                        accessibilityLabel={uiT("Cancel custom snooze")}
+                        confirm={{ label: uiT("Snooze"), onPress: props.onSubmit }}
+                      />
                       <ScrollView
                         contentInsetAdjustmentBehavior="automatic"
                         showsVerticalScrollIndicator={false}

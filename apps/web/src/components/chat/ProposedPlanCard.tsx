@@ -176,7 +176,7 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
         </div>
         <Menu>
           <MenuTrigger
-            render={<Button aria-label="Plan actions" size="icon-xs" variant="outline" />}
+            render={<Button aria-label={uiT("Plan actions")} size="icon-xs" variant="outline" />}
           >
             <EllipsisIcon aria-hidden="true" className="size-4" />
           </MenuTrigger>
@@ -289,7 +289,8 @@ function SavePlanToWorkspaceForm({
       <DialogHeader>
         <DialogTitle>{uiT("Save plan to workspace")}</DialogTitle>
         <DialogDescription>
-          Enter a path relative to <code>{workspaceRoot ?? "the workspace"}</code>.
+          {uiT("Enter a path relative to")}
+          <code>{workspaceRoot ?? "the workspace"}</code>.
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>

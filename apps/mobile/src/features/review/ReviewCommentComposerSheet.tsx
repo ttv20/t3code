@@ -71,7 +71,7 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
     selectedLines.length === 1
       ? firstNumber !== null
         ? `Line ${firstNumber}`
-        : "File comment"
+        : uiT("File comment")
       : firstNumber !== null && lastNumber !== null
         ? `Lines ${firstNumber}-${lastNumber}`
         : `${selectedLines.length} lines selected`;

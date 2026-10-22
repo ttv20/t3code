@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import * as Dialog from "../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation } from "@react-navigation/native";
@@ -99,6 +100,8 @@ export function useRemoteConnectionStatus() {
 }
 
 export function useRemoteConnections() {
+  const { t: uiT } = useUiLanguage();
+
   const controller = useConnectionController();
   const navigation = useNavigation();
   const connectionPairingUrl = useAtomValue(connectionPairingUrlAtom);
@@ -117,7 +120,7 @@ export function useRemoteConnections() {
       if (AsyncResult.isFailure(result)) {
         const error = Cause.squash(result.cause);
         const message =
-          error instanceof Error ? error.message : "Failed to pair with the environment.";
+          error instanceof Error ? error.message : uiT("Failed to pair with the environment.");
         if (
           error !== null &&
           typeof error === "object" &&

@@ -117,7 +117,7 @@ function PendingSecretRequestForm(props: {
         {item.reason.trim() ? <p className="text-sm text-muted-foreground">{item.reason}</p> : null}
       </div>
       <div className="flex min-w-0 items-center gap-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
           <Input
             id={inputId}
             // Masked text rather than a password field: browsers offer to

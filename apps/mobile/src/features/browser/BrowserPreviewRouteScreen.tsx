@@ -1,16 +1,12 @@
 import { useUiLanguage } from "../../i18n";
-import { Toolbar } from "../../components/ui/Toolbar";
+import { SheetHeader } from "../../components/ui/SheetHeader";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import * as Dialog from "../../components/ui/Dialog";
 import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import {
-  EnvironmentId,
-  FILL_PREVIEW_VIEWPORT,
-  ThreadId,
-  type PreviewSessionSnapshot,
-} from "@t3tools/contracts";
-import { normalizePreviewUrl } from "@t3tools/shared/preview";
+import { EnvironmentId, ThreadId, type PreviewSessionSnapshot } from "@t3tools/contracts";
+import { normalizePreviewUrl, previewPdfAssetUrl } from "@t3tools/shared/preview";
+import * as Option from "effect/Option";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, Platform, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +15,7 @@ import { ControlPill } from "../../components/ui/ControlPill";
 import { AppBar } from "../../components/ui/AppBar";
 
 import { useThreadServerBrowserTabs } from "../../state/preview";
+import { usePreparedConnection } from "../../state/session";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { BrowserTabMenu } from "./BrowserTabMenu";
 import { browserTabTitle, browserTabUrl, latestBrowserTab } from "./browserTabs";
@@ -79,8 +76,11 @@ function BrowserPreviewScreen({
   readonly onClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const insets = useSafeAreaInsets();
   const { themeVariables } = useAppearancePreferences();
+  const prepared = usePreparedConnection(environmentId);
+  const httpBaseUrl = Option.isSome(prepared) ? prepared.value.httpBaseUrl : null;
   const focused = useIsFocused();
   const [foreground, setForeground] = useState(AppState.currentState !== "background");
   const [selectedTabId, setSelectedTabId] = useState(initialTabId);
@@ -90,6 +90,8 @@ function BrowserPreviewScreen({
   const streamRef = useRef<PreviewStreamRef>(null);
   const { tabs, loaded } = useThreadServerBrowserTabs({ environmentId, threadId, enabled: true });
   const tab = tabs.find((entry) => entry.tabId === selectedTabId) ?? latestBrowserTab(tabs);
+  const pdfUri =
+    tab?.navStatus._tag === "Success" ? previewPdfAssetUrl(tab.navStatus.url, httpBaseUrl) : null;
   const tabId = tab?.tabId ?? null;
   if (tabId !== null && tabId !== selectedTabId) {
     setPictureInPicture(NO_PICTURE_IN_PICTURE);
@@ -123,7 +125,9 @@ function BrowserPreviewScreen({
         options={{ headerBackVisible: false }}
         actions={
           // Android WebView cannot play video in picture in picture.
-          Platform.OS === "ios" && pictureInPicture.supported
+          Platform.OS === "ios" &&
+          pictureInPicture.supported &&
+          (pictureInPicture.active || pdfUri === null)
             ? [
                 {
                   accessibilityLabel: pictureInPicture.active
@@ -158,14 +162,11 @@ function BrowserPreviewScreen({
         }
       />
       {Platform.OS === "ios" ? (
-        <Toolbar placement="left">
-          <Toolbar.Button
-            icon="xmark"
-            accessibilityLabel={uiT("Close browser")}
-            onPress={onClose}
-            separateBackground
-          />
-        </Toolbar>
+        <SheetHeader
+          title={tab ? browserTabTitle(tab) : uiT("Browser")}
+          onClose={onClose}
+          accessibilityLabel={uiT("Close browser")}
+        />
       ) : null}
       {tab ? (
         <>
@@ -176,6 +177,7 @@ function BrowserPreviewScreen({
             streaming={streaming}
             ready={streaming && canControl}
             onCommand={(input) => streamRef.current?.command(input)}
+            onPaste={() => streamRef.current?.paste()}
           />
           {live ? (
             <PreviewStreamWebView
@@ -183,6 +185,7 @@ function BrowserPreviewScreen({
               environmentId={environmentId}
               threadId={threadId}
               tabId={tab.tabId}
+              pdfUri={pdfUri}
               ref={streamRef}
               interactive
               background={themeVariables["--color-sheet-solid"]}
@@ -211,14 +214,17 @@ function BrowserAddressBar({
   ready,
   streaming,
   onCommand,
+  onPaste,
 }: {
   readonly environmentId: EnvironmentId;
   readonly tab: PreviewSessionSnapshot;
   readonly ready: boolean;
   readonly streaming: boolean;
   readonly onCommand: PreviewStreamRef["command"];
+  readonly onPaste: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const url = browserTabUrl(tab);
   const [draft, setDraft] = useState<string | null>(null);
   const submit = () => {
@@ -258,6 +264,7 @@ function BrowserAddressBar({
         keyboardType="url"
         returnKeyType="go"
         selectTextOnFocus
+        lineBreakModeIOS="tail"
         className="h-10 min-w-0 flex-1 rounded-full border border-input-border bg-input px-4 font-sans text-sm text-foreground"
       />
       <ControlPill
@@ -266,7 +273,12 @@ function BrowserAddressBar({
         disabled={!ready}
         onPress={() => onCommand({ type: "reload" })}
       />
-      <BrowserTabMenu environmentId={environmentId} tab={tab} disabled={!streaming} />
+      <BrowserTabMenu
+        environmentId={environmentId}
+        tab={tab}
+        streaming={streaming}
+        onPaste={ready ? onPaste : undefined}
+      />
     </View>
   );
 }

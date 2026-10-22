@@ -38,8 +38,8 @@ import {
 } from "react";
 
 import { useLocalStorage } from "~/hooks/useLocalStorage";
-import { useClientSettings, useUpdateClientSettings } from "~/hooks/useSettings";
-import { useTheme } from "~/hooks/useTheme";
+import { useClientSettings, updateClientSettings } from "~/hooks/useSettings";
+import { useRenderedAppearance } from "~/hooks/useTheme";
 import { areAllDiffFilesCollapsed } from "~/lib/diffCollapse";
 import { pullRequestFindingKey, type PullRequestFinding } from "./pullRequestDetail.logic";
 import { canEditPullRequestComment, canResolvePullRequestThread } from "./pullRequestEditing.logic";
@@ -103,6 +103,7 @@ import {
   type DiffFoldOverride,
 } from "./pullRequestDiff.logic";
 import { PullRequestDiffStat, PullRequestMetaLine } from "./pullRequestPresentation";
+import { PullRequestDiffUnavailableState } from "./PullRequestDiffUnavailableState";
 import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
 import {
   nextPendingReviewCommentId,
@@ -254,6 +255,7 @@ function PullRequestCodeTab({
   onAddToAgentSelection,
   onRefresh,
   refreshToken = 0,
+  backgroundRefreshToken = 0,
   revealRequest = null,
 }: {
   scrollerRef: (node: HTMLDivElement | null) => void;
@@ -268,11 +270,12 @@ function PullRequestCodeTab({
   onAddToAgentSelection?: (input: PullRequestAgentSelectionInput) => void;
   onRefresh: () => void;
   refreshToken?: number;
+  backgroundRefreshToken?: number;
   revealRequest?: { readonly path: string; readonly nonce: number } | null;
 }) {
   const { t: uiT } = useUiLanguage();
 
-  const { resolvedTheme } = useTheme();
+  const resolvedTheme = useRenderedAppearance();
   const settings = useClientSettings((settings) => ({
     diffFilesCollapsed: settings.diffFilesCollapsed,
     diffIgnoreWhitespace: settings.diffIgnoreWhitespace,
@@ -285,7 +288,6 @@ function PullRequestCodeTab({
   const effectiveFoldOverride =
     foldOverride ?? (settings.diffFilesCollapsed ? "folded" : "expanded");
   const diffLayout = settings.diffLayout;
-  const updateClientSettings = useUpdateClientSettings();
   const [wordWrap, setWordWrap] = useState(settings.wordWrap);
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(settings.diffIgnoreWhitespace);
   const [fileTreeOpen, setFileTreeOpen] = useLocalStorage(
@@ -313,7 +315,7 @@ function PullRequestCodeTab({
 
   const referenceKey = pullRequestReviewKey(reference);
   const commit = selectedCommitOid;
-  const scopeKey = commit === null ? referenceKey : `${referenceKey}@${commit}`;
+  const scopeKey = JSON.stringify([environmentId, referenceKey, commit]);
   // The panel keeps this mounted across pull requests, so an open composer would otherwise
   // survive the switch and attach its comment to whichever one is on screen when it is sent.
   const [stateScopeKey, setStateScopeKey] = useState(scopeKey);
@@ -434,9 +436,21 @@ function PullRequestCodeTab({
     if (appliedRefreshToken.current === refreshToken) return;
     appliedRefreshToken.current = refreshToken;
     setSliceState({ key: scopeKey, cursor: null, slices: NO_SLICES });
+    // An equal refetch keeps the answer's identity, so the emptied slices refill only if the
+    // applied page is forgotten too.
+    setAppliedPage(null);
     refreshFirstDiffPage();
     refreshFilesViewed();
   }, [refreshToken, scopeKey, refreshFirstDiffPage, refreshFilesViewed]);
+  const appliedBackgroundRefreshToken = useRef(backgroundRefreshToken);
+  useEffect(() => {
+    if (appliedBackgroundRefreshToken.current === backgroundRefreshToken) return;
+    appliedBackgroundRefreshToken.current = backgroundRefreshToken;
+    // Keeping slices mounted preserves scroll; the page merge invalidates changed pages.
+    setSliceState((previous) => ({ ...previous, cursor: null }));
+    refreshFirstDiffPage();
+    refreshFilesViewed();
+  }, [backgroundRefreshToken, refreshFirstDiffPage, refreshFilesViewed]);
 
   // The sentinel is held as state rather than a ref because the viewer mounts its own footer:
   // an effect reading a ref could run before that node exists and would never arm the observer.
@@ -457,6 +471,9 @@ function PullRequestCodeTab({
     resolve: hostReview.resolve && detail.viewerPermissions.resolve,
   };
   const canCommentOnLines = review.inlineComment && commit === null;
+  // Agent context is local, so it does not require host comment permission.
+  const canSelectLines =
+    commit === null && (review.inlineComment || onAddToAgentSelection !== undefined);
   // The cache key carries the theme, which is what the tokenizer caches against, so a theme
   // change is still a fresh parse. The patch's own hash is part of it too: a refreshed page
   // reuses its cursor, and a key of position alone would hand back the parse it replaced.
@@ -702,7 +719,7 @@ function PullRequestCodeTab({
     range: SelectedLineRange | null,
     context: { item: CodeViewItem<ReviewAnnotationGroup> },
   ) => {
-    if (!range || !canCommentOnLines) return;
+    if (!range || !canSelectLines) return;
     const item = context.item;
     if (item.type !== "diff") return;
     const file = files.find((candidate) => buildFileDiffRenderKey(candidate) === item.id);
@@ -826,8 +843,8 @@ function PullRequestCodeTab({
     themeType: resolvedTheme,
     stickyHeaders: true,
     loadDiffFiles,
-    enableGutterUtility: canCommentOnLines && draft === null,
-    enableLineSelection: canCommentOnLines && draft === null,
+    enableGutterUtility: canSelectLines && draft === null,
+    enableLineSelection: canSelectLines && draft === null,
     onGutterUtilityClick: beginComment,
     onLineSelectionEnd: beginComment,
   };
@@ -924,13 +941,13 @@ function PullRequestCodeTab({
           onRemove={() => removeComment(reviewKey, comment.id)}
         />
       ))}
-      {annotation.metadata.draft && draft ? (
+      {annotation.metadata.draft && draft && canSelectLines ? (
         <DiffCommentAnnotation
           kind="draft"
           rangeLabel={`${draft.path}:${getReviewPositionAnchor(draft.position).line}`}
           text=""
-          submitLabel="Add to review"
-          {...(onAddToAgentSelection
+          submitLabel={canCommentOnLines ? "Add to review" : "Add to agent"}
+          {...(canCommentOnLines && onAddToAgentSelection
             ? {
                 secondaryAction: {
                   label: uiT("Add to agent"),
@@ -946,6 +963,14 @@ function PullRequestCodeTab({
             setSelectedLines(null);
           }}
           onComment={(body) => {
+            if (!canCommentOnLines) {
+              if (onAddToAgentSelection) {
+                finishSelection(draft, body, (comment) =>
+                  onAddToAgentSelection({ comment, request: body }),
+                );
+              }
+              return;
+            }
             addComment(reviewKey, {
               id: nextPendingReviewCommentId(),
               path: draft.path,
@@ -968,7 +993,7 @@ function PullRequestCodeTab({
   // to the whole diff and it is not drawn without commits to list, so a scope that outlived them
   // would leave the tab reading one obsolete commit with nothing to press.
   const selectedCommit = orderedCommits.find((entry) => entry.oid === commit);
-  const scopeLabel = selectedCommit ? selectedCommit.messageHeadline : "All commits";
+  const scopeLabel = selectedCommit ? selectedCommit.messageHeadline : uiT("All commits");
   const changeIgnoreWhitespace = (next: boolean) => {
     setIgnoreWhitespace(next);
     setDraft(null);
@@ -1027,7 +1052,7 @@ function PullRequestCodeTab({
         ) : null}
         <PullRequestMetaLine>
           <span className="shrink-0 tabular-nums">
-            {files.length} {files.length === 1 ? "file" : "files"}
+            {files.length} {files.length === 1 ? uiT("file") : uiT("files")}
             {nextCursor === null ? "" : "+"}
           </span>
           {filesViewed.enabled && files.length > 0 ? (
@@ -1038,13 +1063,13 @@ function PullRequestCodeTab({
               <span className="truncate">
                 {viewedFilesStore === "environment"
                   ? uiT("viewed in {0}", { "0": APP_BASE_NAME })
-                  : "viewed"}
+                  : uiT("viewed")}
               </span>
               {viewedFilesStore === "environment" ? (
                 <Tooltip>
                   <TooltipTrigger render={<span className="flex shrink-0 items-center" />}>
                     <InfoIcon
-                      aria-label="These ticks are kept here, not on the host"
+                      aria-label={uiT("These ticks are kept here, not on the host")}
                       className="text-muted-foreground size-3.5"
                     />
                   </TooltipTrigger>
@@ -1059,14 +1084,14 @@ function PullRequestCodeTab({
                 <Tooltip>
                   <TooltipTrigger render={<span className="flex shrink-0 items-center" />}>
                     <TriangleAlertIcon
-                      aria-label="Your ticks could not be read"
+                      aria-label={uiT("Your ticks could not be read")}
                       className="size-3.5 text-warning-foreground"
                     />
                   </TooltipTrigger>
                   <TooltipPopup side="bottom">
                     {uiT(
                       "The boxes below are whatever was last read, and empty if nothing has been read yet.",
-                    )}{" "}
+                    )}
                     {filesViewed.error}
                   </TooltipPopup>
                 </Tooltip>
@@ -1075,7 +1100,7 @@ function PullRequestCodeTab({
                 <Tooltip>
                   <TooltipTrigger render={<span className="flex shrink-0 items-center" />}>
                     <TriangleAlertIcon
-                      aria-label="This count covers only part of the change"
+                      aria-label={uiT("This count covers only part of the change")}
                       className="size-3.5 text-warning-foreground"
                     />
                   </TooltipTrigger>
@@ -1092,7 +1117,7 @@ function PullRequestCodeTab({
             <Tooltip>
               <TooltipTrigger render={<span className="flex shrink-0 items-center" />}>
                 <TriangleAlertIcon
-                  aria-label="Some of this diff was not shown"
+                  aria-label={uiT("Some of this diff was not shown")}
                   className="size-3.5 text-warning-foreground"
                 />
               </TooltipTrigger>
@@ -1107,7 +1132,7 @@ function PullRequestCodeTab({
             <Tooltip>
               <TooltipTrigger render={<span className="flex shrink-0 items-center" />}>
                 <MessageSquareOffIcon
-                  aria-label="Line comments are written from the whole change"
+                  aria-label={uiT("Line comments are written from the whole change")}
                   className="size-3.5"
                 />
               </TooltipTrigger>
@@ -1128,7 +1153,7 @@ function PullRequestCodeTab({
                 <DropdownMenuTrigger
                   render={<Button size="icon-sm" variant="ghost" />}
                   className="@lg:hidden"
-                  aria-label="Diff options"
+                  aria-label={uiT("Diff options")}
                 />
               }
             >
@@ -1191,7 +1216,7 @@ function PullRequestCodeTab({
             </TooltipPopup>
           </Tooltip>
           <ToggleGroup
-            aria-label="Diff layout"
+            aria-label={uiT("Diff layout")}
             className="shrink-0"
             variant="segmented"
             value={[diffLayout]}
@@ -1202,10 +1227,10 @@ function PullRequestCodeTab({
               }
             }}
           >
-            <Toggle aria-label="Stacked diff view" value="stacked">
+            <Toggle aria-label={uiT("Stacked diff view")} value="stacked">
               <Rows3Icon className="size-3.5" />
             </Toggle>
-            <Toggle aria-label="Split diff view" value="split">
+            <Toggle aria-label={uiT("Split diff view")} value="split">
               <Columns2Icon className="size-3.5" />
             </Toggle>
           </ToggleGroup>
@@ -1322,12 +1347,17 @@ function PullRequestCodeTab({
   );
 
   if (diffQuery.isPending && loadedSlices.length === 0) {
-    return withToolbar(<DiffPanelLoadingState label="Loading pull request diff..." />);
+    return withToolbar(<DiffPanelLoadingState label={uiT("Loading pull request diff...")} />);
   }
 
   if (diffQuery.error && loadedSlices.length === 0) {
     return withToolbar(
-      <p className="px-4 py-5 text-sm text-muted-foreground">{diffQuery.error}</p>,
+      <PullRequestDiffUnavailableState
+        error={diffQuery.error}
+        provider={detail.provider}
+        url={detail.url}
+        onRetry={() => diffQuery.refresh()}
+      />,
     );
   }
 
@@ -1397,7 +1427,8 @@ function PullRequestCodeTab({
                         <div key={thread.id}>
                           {thread.line === null ? null : (
                             <p className="px-3 text-xs text-muted-foreground">
-                              {uiT("Line")} {thread.line}
+                              {uiT("Line")}
+                              {thread.line}
                             </p>
                           )}
                           {renderThreadCard(thread)}

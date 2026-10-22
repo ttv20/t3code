@@ -6,11 +6,13 @@ import { cn } from "../../lib/utils";
 
 export function ExpandableText({
   text,
+  collapsedText = text,
   className,
   collapsedClassName = "line-clamp-3",
   expandLabel = "Show full error",
 }: {
   text: string;
+  collapsedText?: string;
   className?: string;
   collapsedClassName?: string;
   expandLabel?: string;
@@ -18,7 +20,7 @@ export function ExpandableText({
   const { t: uiT } = useUiLanguage();
   const textId = useId();
   const [expanded, setExpanded] = useState(false);
-  const canExpand = text.length > 180 || text.includes("\n");
+  const canExpand = collapsedText !== text || text.length > 180 || text.includes("\n");
 
   return (
     <div className={cn("min-w-0", className)}>
@@ -29,7 +31,7 @@ export function ExpandableText({
           !expanded && canExpand ? collapsedClassName : null,
         )}
       >
-        {text}
+        {expanded ? text : collapsedText}
       </div>
       {canExpand ? (
         <InlineButton

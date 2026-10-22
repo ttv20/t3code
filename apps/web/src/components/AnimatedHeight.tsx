@@ -1,5 +1,3 @@
-"use client";
-
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { observeResize } from "../lib/observeResize";
 
@@ -87,7 +85,10 @@ export function AnimatedHeight({
       style={
         heightState.height === null
           ? undefined
-          : { height: heightState.height, overflow: heightState.isClipping ? "clip" : "visible" }
+          : {
+              height: heightState.height,
+              overflow: holdHeight || heightState.isClipping ? "clip" : "visible",
+            }
       }
       onTransitionEnd={(event) => {
         if (event.target !== event.currentTarget || event.propertyName !== "height") return;

@@ -83,7 +83,7 @@ export function ContextChipPopover(props: {
         }
       >
         {props.icon}
-        <ContextChipLabel>{props.label}</ContextChipLabel>
+        <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
       </PopoverTrigger>
       <PopoverPopup side="top" width="lg" padding="compact">
         <PopoverTitle className="sr-only">{props.accessibleLabel}</PopoverTitle>
@@ -121,7 +121,7 @@ export function PullRequestChip(props: {
       onAuxClick={(event) => props.onOpen(event, props.metadata.url)}
     >
       <StateIcon />
-      <ContextChipLabel>{props.label}</ContextChipLabel>
+      <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
     </ContextChip>
   );
   if (previewTarget !== null) {
@@ -211,9 +211,11 @@ export function ImageChipButton({
       ) : (
         <ImageIcon />
       )}
-      <ContextChipLabel className="max-w-72">{middleTruncateAttachmentName(name)}</ContextChipLabel>
-      <span className="shrink-0 text-3xs text-current">{size}</span>
-      {suffix ? <span className="text-3xs text-current">{suffix}</span> : null}
+      <ContextChipLabel className="flex items-baseline gap-[0.33em]">
+        <span className="max-w-72 truncate">{middleTruncateAttachmentName(name)}</span>
+        <span className="shrink-0 text-3xs text-current">{size}</span>
+        {suffix ? <span className="text-3xs text-current">{suffix}</span> : null}
+      </ContextChipLabel>
     </ContextChip>
   );
 }
@@ -285,11 +287,11 @@ function FileChipContent(props: {
       ) : (
         <PierreEntryIcon pathValue={props.name} kind="file" theme={props.theme} />
       )}
-      <ContextChipLabel className="max-w-72">
-        {middleTruncateAttachmentName(props.name)}
+      <ContextChipLabel className="flex items-baseline gap-[0.33em]">
+        <span className="max-w-72 truncate">{middleTruncateAttachmentName(props.name)}</span>
+        <span className="shrink-0 text-3xs text-current">{props.size}</span>
+        {props.suffix ? <span className="text-3xs text-current">{props.suffix}</span> : null}
       </ContextChipLabel>
-      <span className="shrink-0 text-3xs text-current">{props.size}</span>
-      {props.suffix ? <span className="text-3xs text-current">{props.suffix}</span> : null}
     </>
   );
 }
@@ -299,7 +301,7 @@ export function UnresolvedChip(props: { label: string; tooltip: string; copyMark
   return (
     <ContextChipShell
       icon={<CircleDashedIcon />}
-      label={props.label}
+      label={uiT(props.label)}
       state="unresolved"
       aria-label={uiT("Unavailable context, {0}", { "0": props.label })}
       data-markdown-copy={props.copyMarkdown}

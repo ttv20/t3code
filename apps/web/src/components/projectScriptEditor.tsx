@@ -209,7 +209,10 @@ export function ProjectScriptEditorDialog({
       <AlertDialog open={deleteConfirmOpen && canEditActions} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogPopup>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete action "{deleteName}"?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {uiT('Delete action "')}
+              {deleteName}"?
+            </AlertDialogTitle>
             <AlertDialogDescription>{uiT("This action cannot be undone.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -437,7 +440,7 @@ function ProjectScriptEditorForm({
                         type="button"
                         variant="outline"
                         className="size-9 shrink-0"
-                        aria-label="Choose icon"
+                        aria-label={uiT("Choose icon")}
                       />
                     }
                   >
@@ -472,7 +475,7 @@ function ProjectScriptEditorForm({
                 <Input
                   id="script-name"
                   autoFocus
-                  placeholder="Test"
+                  placeholder={uiT("Test")}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -483,7 +486,7 @@ function ProjectScriptEditorForm({
               <Input
                 disabled={!canWriteSettings}
                 id="script-keybinding"
-                placeholder="Press shortcut"
+                placeholder={uiT("Press shortcut")}
                 value={keybinding}
                 readOnly
                 onKeyDown={captureKeybinding}
@@ -493,7 +496,7 @@ function ProjectScriptEditorForm({
                   message={
                     "Press a shortcut. Use {0} to clear. Shortcuts are environment-wide. Projects using the same action share its shortcut."
                   }
-                  values={{ "0": <code>Backspace</code> }}
+                  values={{ "0": <code>{uiT("Backspace")}</code> }}
                 />
               </p>
             </div>
@@ -501,7 +504,7 @@ function ProjectScriptEditorForm({
               <Label htmlFor="script-command">{uiT("Command")}</Label>
               <Textarea
                 id="script-command"
-                placeholder="bun test"
+                placeholder={uiT("bun test")}
                 value={command}
                 onChange={(event) => setCommand(event.target.value)}
               />
@@ -569,7 +572,7 @@ function ProjectScriptEditorForm({
             disabled={isSaving || !canEditActions}
             onClick={() => onRequestDelete(name)}
           >
-            Delete
+            {uiT("Delete")}
           </Button>
         )}
         <Button type="button" variant="outline" onClick={close}>

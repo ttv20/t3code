@@ -1,13 +1,11 @@
+import { useUiLanguage } from "../../i18n";
 import type { InlineSkill } from "@t3tools/shared/inlineSkills";
-import type {
-  OrchestrationV2ThreadProjection,
-  OrchestrationV2SearchThreadResult,
-  ScopedThreadRef,
-} from "@t3tools/contracts";
+import type { OrchestrationV2SearchThreadResult, ScopedThreadRef } from "@t3tools/contracts";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { orchestrationEnvironment } from "~/state/orchestration";
+import { useThreadProjection } from "~/state/entities";
 import { useEnvironmentQuery } from "~/state/query";
 import { useDebouncedValue } from "~/state/queries";
 import {
@@ -42,14 +40,17 @@ export function useThreadFind({
   enabled,
   progressive = false,
   skills = EMPTY_SKILLS,
-  content,
 }: {
   thread: ScopedThreadRef | null;
   enabled: boolean;
   progressive?: boolean;
   skills?: readonly InlineSkill[];
-  content: Pick<OrchestrationV2ThreadProjection, "visibleTurnItems" | "runs"> | undefined;
 }) {
+  const { t: uiT } = useUiLanguage();
+
+  // Read here rather than passed in: a streamed delta re-renders only the find
+  // provider, which refreshes open results from it.
+  const content = useThreadProjection(enabled ? thread : null)?.projection;
   // Held in state so the timeline props that carry it can be stored in state too.
   const [positionReader] = useState<RefObject<ThreadFindPositionReader | null>>(() => ({
     current: null,
@@ -67,8 +68,8 @@ export function useThreadFind({
     if (!enabled) {
       toastManager.add({
         id: "thread-find-unavailable",
-        title: "Thread search is unavailable on this server.",
-        description: "Update the server to enable it.",
+        title: uiT("Thread search is unavailable on this server."),
+        description: uiT("Update the server to enable it."),
       });
       return;
     }

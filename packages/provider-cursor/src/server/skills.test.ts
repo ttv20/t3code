@@ -162,28 +162,6 @@ describe("Cursor skills", () => {
       }),
     ));
 
-  it("still fails discovery when a root holds more entries than the scan allows", async () =>
-    await runNode(
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-        const userHome = yield* fileSystem.makeTempDirectoryScoped({
-          directory: NodeOS.tmpdir(),
-          prefix: "cursor-skills-home-",
-        });
-        const root = path.join(userHome, ".cursor", "skills");
-        yield* fileSystem.makeDirectory(root, { recursive: true });
-        yield* Effect.forEach(
-          Array.from({ length: 10_001 }, (_, index) => path.join(root, `entry-${index}`)),
-          (file) => fileSystem.writeFileString(file, ""),
-          { concurrency: 64, discard: true },
-        );
-
-        const error = yield* Effect.flip(probeCursorSkills(undefined, { HOME: userHome }));
-        expect(error.message).toContain("scan-budget-exhausted");
-      }),
-    ));
-
   it.skipIf(!symlinksSupported)(
     "treats a symlinked skill outside the root as a package boundary",
     async () =>

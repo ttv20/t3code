@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import type { PullRequestDetail } from "@t3tools/contracts";
 import {
   pullRequestAgentActions,
@@ -13,6 +14,8 @@ export function usePullRequestAgentActions(
   pr: PullRequestDetail | null,
   filePath?: string,
 ) {
+  const { t: uiT } = useUiLanguage();
+
   const links = usePullRequestThreads(params, pr, filePath);
   const connected = usePullRequestConnected(params.environmentId);
   const actions = pr ? pullRequestAgentActions(pr, links.canWatch) : [];
@@ -36,7 +39,9 @@ export function usePullRequestAgentActions(
       image: "bubble.left.and.bubble.right",
       attributes: { disabled: task !== "ask" && Boolean(thread.archivedAt) },
     })),
-    ...(links.canAsk ? [{ id: `${task}:new`, title: "Start a new thread", image: "plus" }] : []),
+    ...(links.canAsk
+      ? [{ id: `${task}:new`, title: uiT("Start a new thread"), image: "plus" }]
+      : []),
   ];
   const menuAction = (task: PullRequestAgentTask) => {
     const action = actions.find((action) => action.task === task);

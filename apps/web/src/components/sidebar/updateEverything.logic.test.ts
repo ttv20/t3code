@@ -157,6 +157,7 @@ describe("runUpdateEverything", () => {
   it("restarts servers after providers finish and returns every result", async () => {
     const calls: string[] = [];
     let finishProviders = (_value: string) => {};
+    const providersStarted = Promise.withResolvers<void>();
     const run = runUpdateEverything({
       downloadLocal: async () => {
         calls.push("download");
@@ -166,6 +167,7 @@ describe("runUpdateEverything", () => {
         new Promise<string>((resolve) => {
           calls.push("providers");
           finishProviders = resolve;
+          providersStarted.resolve();
         }),
       updateServers: async () => {
         calls.push("servers");
@@ -173,7 +175,7 @@ describe("runUpdateEverything", () => {
       },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await providersStarted.promise;
     expect(calls).toEqual(["download", "providers"]);
     finishProviders("provider results");
     expect(await run).toEqual({ localReady: true, providers: "provider results", servers: 2 });
@@ -362,6 +364,16 @@ describe("update everything summary", () => {
       getUpdateEverythingToastView({ ...empty, failures: ["alvin: offline"] }, "0.0.50"),
     ).toEqual({ type: "error", title: "Update failed", description: "alvin: offline" });
     expect(getUpdateEverythingToastView({ ...empty, failures: [] }, "0.0.50")).toBeNull();
+  });
+
+  it("localizes restart summaries while preserving server names", () => {
+    expect(
+      getUpdateEverythingToastView(
+        { ...result, failures: [], restarting: ["alvin"] },
+        "0.0.50",
+        "he",
+      )?.description,
+    ).toBe("alvin עדיין באתחול.");
   });
 
   it("names servers still restarting when this app relaunched", () => {

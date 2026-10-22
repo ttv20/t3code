@@ -1,7 +1,4 @@
-"use client";
-
 import { useUiLanguage } from "../i18n";
-
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
@@ -48,6 +45,7 @@ function ResizeHandle(props: {
   readonly onKeyDown: Props["onKeyDown"];
 }) {
   const { t: uiT } = useUiLanguage();
+
   const {
     direction,
     label,
@@ -108,6 +106,7 @@ export function BrowserViewportResizeHandles({
   onKeyDown,
 }: Props) {
   const { t: uiT } = useUiLanguage();
+
   const left = layout.viewportX;
   const top = layout.viewportY;
   const right = left + layout.viewportWidth;

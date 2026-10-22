@@ -160,6 +160,7 @@ export function AppBar(props: AppBarProps) {
       onBack={props.onBack}
       leading={props.sidebar !== false ? <AndroidWorkspaceSidebarButton /> : undefined}
       hideBottomBorder={props.hideBottomBorder}
+      compact={props.compact}
       actions={
         search
           ? [
@@ -218,9 +219,9 @@ export function AppBar(props: AppBarProps) {
                 />
                 <SearchField
                   inputRef={inputRef}
-                  accessibilityLabel={search.placeholder}
+                  accessibilityLabel={uiT(search.placeholder)}
                   clearAccessibilityLabel={search.clearAccessibilityLabel ?? "Clear search"}
-                  placeholder={search.placeholder}
+                  placeholder={uiT(search.placeholder)}
                   value={search.value}
                   onChangeText={search.onChangeText}
                 />

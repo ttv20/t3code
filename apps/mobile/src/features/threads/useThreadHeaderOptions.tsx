@@ -24,6 +24,7 @@ export function useThreadHeaderOptions(props: {
   readonly onReturnToThread?: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const deviceType = useDeviceType();
   const usesDuoHeader = usesNativeWorkspaceColumns && isDuoDevice(deviceType);
@@ -44,7 +45,7 @@ export function useThreadHeaderOptions(props: {
       ...(props.onReturnToThread
         ? [
             withNativeGlassHeaderItem({
-              accessibilityLabel: "Return to chat",
+              accessibilityLabel: uiT("Return to chat"),
               icon: { name: "chevron.left", type: "sfSymbol" as const },
               identifier: "thread-left-return",
               onPress: props.onReturnToThread,
@@ -62,14 +63,14 @@ export function useThreadHeaderOptions(props: {
           type: "sfSymbol" as const,
         },
         identifier: "thread-left-sidebar",
-        label: panes.primarySidebarVisible ? uiT("Maximize content") : uiT("Show thread sidebar"),
+        label: panes.primarySidebarVisible ? "Maximize content" : "Show thread sidebar",
         onPress: togglePrimarySidebar,
         type: "button" as const,
       }),
       ...(!usesDuoHeader
         ? [
             withNativeGlassHeaderItem({
-              accessibilityLabel: "New task",
+              accessibilityLabel: uiT("New task"),
               icon: { name: "square.and.pencil", type: "sfSymbol" as const },
               identifier: "thread-left-new-task",
               label: uiT("New task"),
@@ -86,14 +87,13 @@ export function useThreadHeaderOptions(props: {
       togglePrimarySidebar,
       usesDuoHeader,
       usesNativeWorkspaceColumns,
-      uiT,
     ],
   );
   const canGoBack = navigation.canGoBack();
   const compactHomeHeaderItems = useMemo<NativeHeaderItems>(
     () => [
       withNativeGlassHeaderItem({
-        accessibilityLabel: "Go to threads list",
+        accessibilityLabel: uiT("Go to threads list"),
         icon: { name: "list.bullet", type: "sfSymbol" as const },
         identifier: "thread-left-home",
         onPress: () => navigation.dispatch(StackActions.replace("Home")),
@@ -101,24 +101,6 @@ export function useThreadHeaderOptions(props: {
       }),
     ],
     [navigation],
-  );
-
-  const duoRightHeaderItems = useMemo<NativeHeaderItems>(
-    () => [
-      ...threadCenterHeaderItems,
-      { type: "spacing", spacing: 8 },
-
-      withNativeGlassHeaderItem({
-        type: "button" as const,
-        axisBehavior: "verticalPreferred",
-        identifier: "thread-right-new-task",
-        label: uiT("New task"),
-        accessibilityLabel: "New task",
-        icon: { name: "square.and.pencil", type: "sfSymbol" as const },
-        onPress: () => navigation.navigate("NewTaskSheet", { screen: "NewTask" }),
-      }),
-    ],
-    [navigation, threadCenterHeaderItems],
   );
 
   const options: AppNativeStackNavigationOptions = {
@@ -137,12 +119,9 @@ export function useThreadHeaderOptions(props: {
       : canGoBack
         ? undefined
         : () => compactHomeHeaderItems,
+    // The workspace navigator adds compose to the Duo detail column's bar.
     unstable_headerRightItems: () =>
-      usesDuoHeader
-        ? duoRightHeaderItems
-        : layout.usesSplitView
-          ? threadCenterHeaderItems
-          : compactRightHeaderItems,
+      usesDuoHeader || layout.usesSplitView ? threadCenterHeaderItems : compactRightHeaderItems,
     unstable_headerToolbarItems: () => [],
     unstable_headerSubtitle: props.usesNativeHeaderGlass ? props.subtitle : undefined,
     contentStyle: undefined,
@@ -158,7 +137,6 @@ export function useThreadHeaderOptions(props: {
       splitLeftHeaderItems,
       threadCenterHeaderItems,
       compactRightHeaderItems,
-      duoRightHeaderItems,
       usesDuoHeader,
       environmentId,
       threadId,

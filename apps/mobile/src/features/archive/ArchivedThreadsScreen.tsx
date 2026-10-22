@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { Button } from "../../components/ui/Button";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
@@ -15,7 +16,7 @@ import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppBar } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { useCallback, useMemo, useRef, type ComponentProps } from "react";
-import { Platform, Pressable, RefreshControl, useWindowDimensions, View } from "react-native";
+import { Platform, RefreshControl, useWindowDimensions, View } from "react-native";
 import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 
@@ -47,6 +48,7 @@ function ArchivedThreadsHeader(props: {
   readonly onSortOrderChange: (sortOrder: ArchivedThreadSortOrder) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const hasCustomFilter = props.selectedEnvironmentId !== null || props.sortOrder !== "newest";
@@ -188,6 +190,7 @@ function ArchivedThreadRow(props: {
   readonly thread: EnvironmentThreadShell;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { width: windowWidth } = useWindowDimensions();
   const cardColor = useUniwindTheme()["--color-grouped-card"];
   const canOperateThread = useEnvironmentScope(
@@ -277,15 +280,16 @@ function ArchivedThreadRow(props: {
 
 function ArchiveError(props: { readonly message: string; readonly onRetry: () => void }) {
   const { t: uiT } = useUiLanguage();
+
   return (
     <View className="rounded-[20px] border border-danger-border bg-danger p-4">
       <Text className="text-base font-t3-bold text-danger-foreground">
         {uiT("Could not load every archive")}
       </Text>
       <Text className="mt-1 text-sm text-foreground-muted">{props.message}</Text>
-      <Pressable className="mt-3 self-start active:opacity-60" onPress={props.onRetry}>
-        <Text className="text-sm font-t3-bold text-danger-foreground">{uiT("Try again")}</Text>
-      </Pressable>
+      <View className="mt-3">
+        <Button label={uiT("Try again")} tone="secondary" onPress={props.onRetry} />
+      </View>
     </View>
   );
 }
@@ -306,6 +310,7 @@ export function ArchivedThreadsScreen(props: {
   readonly onUnarchiveThread: (thread: EnvironmentThreadShell) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
   const { onDeleteThread, onUnarchiveThread } = props;
   const openSwipeableRef = useRef<SwipeableMethods | null>(null);
   const archiveScrollGesture = useNativeGesture();
@@ -413,7 +418,7 @@ export function ArchivedThreadsScreen(props: {
         title={isFiltered ? uiT("No matching threads") : uiT("No archived threads")}
       />
     );
-  }, [isFiltered, isInitialLoad, uiT]);
+  }, [isFiltered, isInitialLoad]);
 
   return (
     // Keep the list inside this native container. Form-sheet resizing otherwise

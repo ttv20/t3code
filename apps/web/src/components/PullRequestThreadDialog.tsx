@@ -22,6 +22,7 @@ import { getSourceControlPresentation } from "~/sourceControlPresentation";
 import { useEnvironmentQuery } from "~/state/query";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { vcsEnvironment } from "~/state/vcs";
+import { OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST } from "./pullRequest/pullRequestCheckoutToast";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -34,6 +35,7 @@ import {
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
+import { toastManager } from "./ui/toast";
 
 interface PullRequestThreadDialogProps {
   open: boolean;
@@ -164,7 +166,7 @@ export function PullRequestThreadDialog({
         setPrepareErrorMessage(
           error instanceof Error
             ? error.message
-            : `Failed to prepare ${terminology.singular} thread.`,
+            : uiT("Failed to prepare {0} thread.", { "0": terminology.singular }),
         );
       }
       return;
@@ -173,6 +175,9 @@ export function PullRequestThreadDialog({
       branch: result.value.branch,
       worktreePath: result.value.worktreePath,
     });
+    if (!result.value.isOnPullRequestHead) {
+      toastManager.add(OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST);
+    }
     onOpenChange(false);
   };
 
@@ -251,7 +256,7 @@ export function PullRequestThreadDialog({
           {resolvedPullRequest ? (
             <div className="rounded-xl border border-border/70 bg-muted/24 p-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+                <div className="min-w-0 [unicode-bidi:plaintext]">
                   <p className="truncate font-medium text-sm">{resolvedPullRequest.title}</p>
                   <p className="truncate text-muted-foreground text-xs">
                     #{resolvedPullRequest.number} · {resolvedPullRequest.headBranch} {uiT("to")}{" "}

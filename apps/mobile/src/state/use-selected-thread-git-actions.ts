@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import { useCallback, useEffect, useEffectEvent, useMemo } from "react";
 
 import { EnvironmentProject, EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
@@ -33,6 +34,8 @@ import { useThreadSelection } from "./use-thread-selection";
 import { useSelectedThreadWorktree } from "./use-selected-thread-worktree";
 
 export function useSelectedThreadGitActions() {
+  const { t: uiT } = useUiLanguage();
+
   const updateThreadMetadata = useAtomCommand(threadEnvironment.updateMetadata, {
     reportFailure: false,
   });
@@ -125,13 +128,14 @@ export function useSelectedThreadGitActions() {
             target,
             {
               operation: "refresh_status",
-              label: "Refreshing source control status",
+              label: uiT("Refreshing source control status"),
             },
             execute,
           );
       if (AsyncResult.isFailure(result)) {
         const error = Cause.squash(result.cause);
-        const message = error instanceof Error ? error.message : "Failed to refresh git status.";
+        const message =
+          error instanceof Error ? error.message : uiT("Failed to refresh git status.");
         setPendingConnectionError(message);
         return null;
       }
@@ -208,9 +212,13 @@ export function useSelectedThreadGitActions() {
           : await vcsActionManager.track(appAtomRegistry, target, { operation, label }, run);
       if (AsyncResult.isFailure(result)) {
         const error = Cause.squash(result.cause);
-        const message = error instanceof Error ? error.message : "Git action failed.";
+        const message = error instanceof Error ? error.message : uiT("Git action failed.");
         setPendingConnectionError(message);
-        showGitActionResult({ type: "error", title: "Git action failed", description: message });
+        showGitActionResult({
+          type: "error",
+          title: uiT("Git action failed"),
+          description: message,
+        });
         return null;
       }
       return result.value;

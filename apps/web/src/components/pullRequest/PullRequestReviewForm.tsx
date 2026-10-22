@@ -118,9 +118,9 @@ export function PullRequestReviewForm({
       : verdict === "approve" || summary.trim().length > 0 || comments.length > 0;
   const placeholder =
     selectedVerdict === undefined || canSubmit(selectedVerdict.value, "")
-      ? "Summarize your review (optional)"
+      ? uiT("Summarize your review (optional)")
       : selectedVerdict.value === "request-changes" && requestChangesSummaryRequired
-        ? "Summarize your review (required to request changes)"
+        ? uiT("Summarize your review (required to request changes)")
         : "Summarize your review or add line comments";
 
   return (
@@ -130,7 +130,7 @@ export function PullRequestReviewForm({
         rows={3}
         value={body}
         placeholder={placeholder}
-        aria-label="Review summary"
+        aria-label={uiT("Review summary")}
         onChange={(event) => setSummary(reviewKey, event.target.value)}
       />
       <div className="mt-2 flex justify-end gap-2">
@@ -142,7 +142,11 @@ export function PullRequestReviewForm({
               if (value !== null) setRequestedVerdict(value);
             }}
           >
-            <SelectTrigger size="xs" className="mr-auto w-auto min-w-0" aria-label="Review verdict">
+            <SelectTrigger
+              size="xs"
+              className="mr-auto w-auto min-w-0"
+              aria-label={uiT("Review verdict")}
+            >
               <span className="flex items-center gap-1.5">
                 {selectedVerdict?.icon}
                 {selectedVerdict?.label}

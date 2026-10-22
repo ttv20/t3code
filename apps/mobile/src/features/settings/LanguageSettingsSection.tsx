@@ -20,7 +20,7 @@ export function LanguageSettingsSection() {
         {INTERFACE_LANGUAGES.map((option, index) => (
           <SettingsChoiceRow
             key={option.value}
-            label={option.label}
+            label={uiT(option.label)}
             separated={index > 0}
             selected={(preferences?.interfaceLanguage ?? "system") === option.value}
             onPress={() => update({ interfaceLanguage: option.value })}
@@ -36,7 +36,7 @@ export function LanguageSettingsSection() {
         {INTERFACE_DIRECTIONS.map((option, index) => (
           <SettingsChoiceRow
             key={option.value}
-            label={option.label}
+            label={uiT(option.label)}
             separated={index > 0}
             selected={(preferences?.interfaceDirection ?? "auto") === option.value}
             onPress={() => update({ interfaceDirection: option.value })}

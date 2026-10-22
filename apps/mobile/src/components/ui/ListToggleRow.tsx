@@ -23,7 +23,7 @@ export function ListToggleRow(
           <Pressable
             accessibilityLabel={uiT("Set {0} on for selected environments", { "0": props.label })}
             accessibilityRole="button"
-            accessibilityHint={props.description}
+            accessibilityHint={uiT(props.description)}
             accessibilityState={{ disabled: Boolean(props.disabled) }}
             disabled={props.disabled}
             className="rounded-full bg-subtle px-3 py-2 active:opacity-70"
@@ -35,8 +35,8 @@ export function ListToggleRow(
           </Pressable>
         ) : (
           <ThemedSwitch
-            accessibilityLabel={props.label}
-            accessibilityHint={props.description}
+            accessibilityLabel={uiT(props.label)}
+            accessibilityHint={uiT(props.description)}
             disabled={props.disabled}
             onValueChange={props.onValueChange}
             value={props.value}

@@ -1,6 +1,10 @@
+import { useUiLanguage } from "../../i18n";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentId,
   ProjectId,
@@ -28,12 +32,18 @@ import type { ReviewCommentContext } from "~/reviewCommentContext";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 
 import { toastManager } from "../ui/toast";
-import { handoffPrompt, handoffReviewComments, readableFailure } from "./pullRequestDetail.logic";
+import { OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST } from "./pullRequestCheckoutToast";
+import {
+  checkoutFailureDescription,
+  handoffPrompt,
+  handoffReviewComments,
+  readableFailure,
+} from "./pullRequestDetail.logic";
 import { pullRequestEntryKey, type EnvironmentPullRequestEntry } from "./pullRequestList.logic";
 
 export function usePullRequestDefaultMergeMethodResolver(
   environmentId: EnvironmentId,
-  projectId: ProjectId,
+  projectId: ProjectId | null,
 ) {
   const projectDefault = useEnvironmentSettings(
     environmentId,
@@ -230,6 +240,8 @@ export function usePullRequestHandoffs({
   environmentId: EnvironmentId;
   detail: PullRequestHandoffDetail | null;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const newThread = useNewThreadHandler();
   const prepareThread = usePreparePullRequestThreadAction({
     environmentId,
@@ -285,14 +297,14 @@ export function usePullRequestHandoffs({
     if (opened === null) {
       toastManager.add({
         type: "error",
-        title: "Could not open a thread",
-        description: "Try again from the project, or open a thread first.",
+        title: uiT("Could not open a thread"),
+        description: uiT("Try again from the project, or open a thread first."),
       });
       return;
     }
     toastManager.add({
       type: "success",
-      title: "Asked in a thread",
+      title: uiT("Asked in a thread"),
       description:
         task.prompt.length > 0
           ? "The question is in the composer — read it over, then send."
@@ -311,7 +323,7 @@ export function usePullRequestHandoffs({
     // would survive the update and pin the result on screen.
     const toastId = toastManager.add({
       type: "loading",
-      title: "Preparing the pull request checkout...",
+      title: uiT("Preparing the pull request checkout..."),
     });
     const projectRef = scopeProjectRef(environmentId, detail.projectId);
     // The thread is opened before the checkout rather than after it, because the project's setup
@@ -325,8 +337,8 @@ export function usePullRequestHandoffs({
       setHandoff(null);
       toastManager.update(toastId, {
         type: "error",
-        title: "Could not open a thread for the checkout",
-        description: "Try again from the project, or open a thread first.",
+        title: uiT("Could not open a thread for the checkout"),
+        description: uiT("Try again from the project, or open a thread first."),
       });
       return;
     }
@@ -337,12 +349,12 @@ export function usePullRequestHandoffs({
     });
     if (prepared._tag === "Failure") {
       setHandoff(null);
-      const detailMessage =
-        prepareThread.error instanceof Error ? prepareThread.error.message : null;
       toastManager.update(toastId, {
         type: "error",
-        title: "Could not prepare the pull request checkout",
-        ...(detailMessage ? { description: detailMessage } : {}),
+        title: uiT("Could not prepare the pull request checkout"),
+        description: checkoutFailureDescription(
+          isAtomCommandInterrupted(prepared) ? undefined : squashAtomCommandFailure(prepared),
+        ),
       });
       return;
     }
@@ -358,18 +370,15 @@ export function usePullRequestHandoffs({
       setHandoff(null);
       toastManager.update(toastId, {
         type: "error",
-        title: "Checked out, but the thread stayed where it was",
-        description: `The checkout is ready on \`${prepared.value.branch}\`. Point a thread at it from the branch picker, then ask again.`,
+        title: uiT("Checked out, but the thread stayed where it was"),
+        description: uiT(
+          "The checkout is ready on `{0}`. Point a thread at it from the branch picker, then ask again.",
+          { "0": prepared.value.branch },
+        ),
       });
       return;
     }
     setHandoff(null);
-    const staleCheckoutToast = {
-      type: "warning",
-      title: "Checked out, but not on the latest commits",
-      description:
-        "The checkout could not be moved onto the pull request's latest commits, so the code there is older than the pull request. Uncommitted work or local commits keep it where it is.",
-    } as const;
     if (task === null) {
       toastManager.update(
         toastId,
@@ -382,7 +391,7 @@ export function usePullRequestHandoffs({
                   ? "This repository is on the pull request's branch, with a thread open on it."
                   : "The pull request is in its own worktree, with a thread open on it.",
             }
-          : staleCheckoutToast,
+          : OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST,
       );
       return;
     }
@@ -392,10 +401,10 @@ export function usePullRequestHandoffs({
       prepared.value.isOnPullRequestHead
         ? {
             type: "success",
-            title: "Checkout ready",
-            description: "The task is in the composer — read it over, then send.",
+            title: uiT("Checkout ready"),
+            description: uiT("The task is in the composer — read it over, then send."),
           }
-        : staleCheckoutToast,
+        : OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST,
     );
   };
 
