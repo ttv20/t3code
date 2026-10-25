@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
@@ -16,7 +17,8 @@ import {
   type LimitPoolWindow,
 } from "@t3tools/shared/usageLimits";
 import { Fragment, type ReactNode, useId, useState } from "react";
-import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { Defs, Path, Pattern, Rect, Svg } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -154,18 +156,12 @@ function PoolWindowCard({
   const navigation = useNavigation();
   const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
   const openAccount = (account: LimitAccount) =>
-    navigation.navigate("SettingsSheet", {
-      screen: "SettingsContent",
-      params: {
-        screen: "SettingsUsageAccount",
-        params: {
-          accountKey: account.key,
-          windowId: pool.id,
-          windowKind: pool.kind,
-          environmentIds,
-          now,
-        },
-      },
+    navigation.navigate("SettingsUsageAccount", {
+      accountKey: account.key,
+      windowId: pool.id,
+      windowKind: pool.kind,
+      environmentIds,
+      now,
     });
   return (
     <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
@@ -202,7 +198,12 @@ function PoolWindowCard({
             <Pressable
               key={account.key}
               accessibilityRole="button"
-              accessibilityLabel={`Segment ${index + 1}, ${accountName(account)}, ${remainingPercent(window)}% left${timeLeft === null ? "" : `, ${timeLeft}% of the window left`}`}
+              accessibilityLabel={uiT("Segment {0}, {1}, {2}% left{3}", {
+                "0": index + 1,
+                "1": accountName(account),
+                "2": remainingPercent(window),
+                "3": timeLeft === null ? "" : `, ${timeLeft}% of the window left`,
+              })}
               accessibilityHint={uiT("Show account details")}
               onPress={() => openAccount(account)}
               className="h-7 min-w-0 flex-1 rounded-md"
@@ -241,7 +242,13 @@ function PoolWindowCard({
             <Pressable
               key={account.key}
               accessibilityRole="button"
-              accessibilityLabel={`Segment ${index + 1}, ${accountName(account)}, ${remainingPercent(window)}% left${resetsIn ? `, ${resetsIn}` : ""}${credits ? `, ${credits} reset credits banked` : ""}`}
+              accessibilityLabel={uiT("Segment {0}, {1}, {2}% left{3}{4}", {
+                "0": index + 1,
+                "1": accountName(account),
+                "2": remainingPercent(window),
+                "3": resetsIn ? `, ${resetsIn}` : "",
+                "4": credits ? `, ${credits} reset credits banked` : "",
+              })}
               accessibilityHint={uiT("Show account details")}
               onPress={() => openAccount(account)}
               className="min-h-[44px] flex-row items-center gap-2 active:opacity-60"
@@ -401,8 +408,10 @@ export function UsageLimitsSection({
             ))}
             {failedLabels.length > 0 ? (
               <Text className="text-sm font-t3-medium text-warning-foreground">
-                {failedLabels.join(", ")}{" "}
-                {uiT("could not refresh limits. Showing the last known values.")}
+                <UiText
+                  message={"{0} could not refresh limits. Showing the last known values."}
+                  values={{ "0": failedLabels.join(", ") }}
+                />
               </Text>
             ) : null}
           </View>
@@ -484,30 +493,32 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
             <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
               <Text className="text-sm font-t3-medium text-foreground">{uiT(window.label)}</Text>
               <Text className="text-3xl font-t3-bold tabular-nums text-foreground">
-                {remainingPercent(window)}
-                {uiT("% left")}
+                <UiText message={"{0}% left"} values={{ "0": remainingPercent(window) }} />
               </Text>
               {window.resetsAt ? (
                 <Text selectable className="text-sm text-foreground-muted">
-                  {uiT("Resets")}{" "}
-                  {new Date(window.resetsAt).toLocaleString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+                  <UiText
+                    message={"Resets {0}"}
+                    values={{
+                      "0": new Date(window.resetsAt).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }),
+                    }}
+                  />
                 </Text>
               ) : null}
               {evenPace !== null ? (
                 <Text className="text-sm text-foreground-muted">
-                  {uiT("Even pace:")}
-                  {evenPace}
-                  {uiT("% left by now")}
+                  <UiText message={"Even pace:{0}% left by now"} values={{ "0": evenPace }} />
                 </Text>
               ) : null}
               {reset && reset.restoresPercent > 0 ? (
                 <Text className="text-sm text-foreground-muted">
-                  {uiT("Restores")}
-                  {reset.restoresPercent}
-                  {uiT("% of the pool")}
+                  <UiText
+                    message={"Restores{0}% of the pool"}
+                    values={{ "0": reset.restoresPercent }}
+                  />
                 </Text>
               ) : null}
             </View>

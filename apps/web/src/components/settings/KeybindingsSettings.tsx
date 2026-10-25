@@ -831,7 +831,10 @@ function KeybindingKeyControl({
         <button
           type="button"
           onClick={() => setDraft({ isRecording: true })}
-          aria-label={`Edit shortcut for ${commandLabel(row.command)}: ${formatShortcutLabel(row.binding.shortcut)}`}
+          aria-label={uiT("Edit shortcut for {0}: {1}", {
+            "0": commandLabel(row.command),
+            "1": formatShortcutLabel(row.binding.shortcut),
+          })}
           className={cn(
             "inline-flex h-8 cursor-pointer items-center rounded-md border border-transparent px-1.5 sm:h-7 outline-none transition-colors hover:border-border/70 hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/24",
             pillClassName,
@@ -843,7 +846,7 @@ function KeybindingKeyControl({
         <Input
           data-keybinding-capture=""
           autoFocus={isRecording}
-          aria-label={`Keybinding for ${commandLabel(row.command)}`}
+          aria-label={uiT("Keybinding for {0}", { "0": commandLabel(row.command) })}
           value={isRecording ? "" : keyDraft}
           placeholder={isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
           size="sm"
@@ -929,7 +932,7 @@ function KeybindingRowMenu({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label={`Actions for ${commandLabel(row.command)}`}
+            aria-label={uiT("Actions for {0}", { "0": commandLabel(row.command) })}
           />
         }
       >
@@ -1320,9 +1323,7 @@ function keybindingAnchorIds(rows: ReturnType<typeof buildKeybindingRows>) {
   return ids;
 }
 
-// Rows come from a hook so they are cached on the server keybindings alone. Built
-// inline, the compiler joins them to the query's cache scope (filtering might
-// mutate them), and every keystroke rebuilds and re-renders every row.
+// Cache rows in a separate hook so the compiler does not rebuild them per search keystroke.
 function useKeybindingCatalog() {
   const serverKeybindings = useSettingsScope().environment?.serverConfig?.keybindings;
   const merged = mergeWithDefaultKeybindings(serverKeybindings ?? []);

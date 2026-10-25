@@ -129,7 +129,7 @@ export function DeviceToolsPanel(props: {
 
         <Section title={uiT("App")}>
           <Row label={uiT("Foreground")}>
-            <span className="truncate font-mono text-xs">{foregroundApp?.id ?? "—"}</span>
+            <span className="truncate font-mono text-xs">{foregroundApp?.id ?? "-"}</span>
           </Row>
           {foregroundApp ? (
             <div className="flex gap-1.5">

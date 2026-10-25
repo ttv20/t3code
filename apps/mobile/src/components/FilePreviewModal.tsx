@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import * as Dialog from "./ui/Dialog";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -34,6 +35,8 @@ function PreviewItemResolver(props: {
   readonly onRequestClose: () => void;
   readonly onOpenError?: (error: unknown) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { source } = props;
   const environmentId = "environmentId" in source ? source.environmentId : null;
   const refreshAssetUrl = useRefreshAssetUrl(
@@ -45,15 +48,14 @@ function PreviewItemResolver(props: {
   const onRequestClose = useEffectEvent(props.onRequestClose);
   const onResolutionError = useEffectEvent((error: unknown, fallbackMessage: string) => {
     if (props.onOpenError) props.onOpenError(error);
-    else Dialog.alert("Could not open preview", fallbackMessage);
+    else Dialog.alert(uiT("Could not open preview"), fallbackMessage);
     onRequestClose();
   });
   useEffect(() => Keyboard.dismiss(), []);
   useEffect(() => {
     if (environmentId === null || uri !== null) return;
     let cancelled = false;
-    // A cached URL may have expired while the app was suspended. Await reauthorization
-    // before handing a URL to Quick Look or ACTION_VIEW, which retain that URL.
+    // Refresh expired URLs before handing them to Quick Look or ACTION_VIEW, which retain them.
     void refreshAssetUrl()
       .then((url) => {
         if (cancelled) return;
@@ -174,8 +176,7 @@ export function FilePreviewModal(props: {
     },
     [navigation],
   );
-  // The v5 card host sits inside a legacy presentation envelope whose focus context
-  // can describe a different route. The preview belongs to this navigation route.
+  // The legacy envelope's focus context may describe a different route than this v5 card.
   const isFocused = useSyncExternalStore(
     subscribeToFocus,
     navigation.isFocused,

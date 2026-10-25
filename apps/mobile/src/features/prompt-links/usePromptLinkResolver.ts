@@ -64,13 +64,11 @@ export function usePromptLinkResolver(params: Readonly<Record<string, unknown>> 
     reportFailure: false,
   });
   const search = promptLinkSearchFromParams(params);
-  // A cold launch from a link has no projects or threads yet. Matching then would offer to
-  // clone a repository the user already has.
+  // Wait for cold-launch shells or existing repositories may be offered for cloning.
   const waitingForShells =
     catalogState.isLoadingConnections ||
     catalogState.hasPendingShellSnapshot ||
-    // A machine still connecting may hold the repository or thread. One that keeps failing to
-    // reconnect has settled offline, and must not hold every link.
+    // Connecting machines may hold the target; persistently offline ones must not block every link.
     catalogState.connectingEnvironments.some(
       (environment) =>
         environment.connectionState === "connecting" || environment.connectionError === null,
@@ -131,9 +129,11 @@ export function usePromptLinkResolver(params: Readonly<Record<string, unknown>> 
     }
     const modelUnavailable = writeDraft(draftKey, project.environmentId, request);
     navigation.dispatch(
-      StackActions.push("NewTaskDraft", {
-        draftId: draftKey,
-        title: request.pullRequest ? `PR #${request.pullRequest.number}` : project.title,
+      StackActions.push("Thread", {
+        draft: {
+          draftId: draftKey,
+          title: request.pullRequest ? `PR #${request.pullRequest.number}` : project.title,
+        },
       }),
     );
     if (request.prompt || pullRequestUnavailable !== null || modelUnavailable) {

@@ -1,3 +1,4 @@
+import { UiText } from "../i18n";
 import { useUiLanguage } from "../i18n";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
@@ -302,14 +303,14 @@ export default function DiffPanel({
         : uiT("Changes")
       : selectedTurn?.runId === latestTurn?.runId
         ? uiT("Latest turn")
-        : `Turn ${selectedCheckpointTurnCount ?? "?"}`;
+        : uiT("Turn {0}", { "0": selectedCheckpointTurnCount ?? "?" });
   const reviewSectionId = selectedTurn ? `turn:${selectedTurn.runId}` : selectedGitScope;
   const collapseScopeKey = routeThreadRef
     ? `${routeThreadRef.environmentId}:${routeThreadRef.threadId}:${reviewSectionId}`
     : null;
   const codeViewMountKey = `${collapseScopeKey ?? reviewSectionId}:${codeViewRevision}`;
   const reviewSectionTitle = selectedTurn
-    ? `Turn ${selectedCheckpointTurnCount ?? "?"}`
+    ? uiT("Turn {0}", { "0": selectedCheckpointTurnCount ?? "?" })
     : selectedGitScope === "unstaged"
       ? uiT("Uncommitted")
       : uiT("Changes");
@@ -396,7 +397,6 @@ export default function DiffPanel({
           cacheKey: selectedGitSource.diffHash,
         })
       : undefined;
-  // The code view keeps one loader for its lifetime; a new identity would remount it.
   const loadDiffFiles: FileDiffContentsLoader = useStableCallback(async (fileDiff) => {
     if (!currentLoadDiffFiles) {
       throw new Error("Diff file contents are unavailable for this selection.");
@@ -615,7 +615,6 @@ export default function DiffPanel({
       },
     });
   };
-  // Every file header holds these; a new identity per collapse change would redraw them all.
   const toggleDiffFileCollapsed = useStableCallback((fileKey: string) => {
     updateCollapsedDiffFiles((current) => {
       const next = new Set(current);
@@ -710,8 +709,7 @@ export default function DiffPanel({
                       >
                         <span className="flex items-center gap-2">
                           <span>
-                            {uiT("Turn")}
-                            {turnCount}
+                            <UiText message={"Turn{0}"} values={{ "0": turnCount }} />
                           </span>
                           <span className="ml-auto text-xs tabular-nums text-muted-foreground">
                             {formatShortTimestamp(summary.completedAt, settings.timestampFormat)}
@@ -733,8 +731,6 @@ export default function DiffPanel({
               "1": selectedGitSource.baseRef,
             })}
           >
-            {/* The head ref keeps 3rem while the row has room; below that the
-                base-ref button keeps 2.25rem so its menu stays reachable. */}
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -1022,8 +1018,12 @@ export default function DiffPanel({
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
             {isSelectedPatchTruncated && !lazySource && (
               <p className="shrink-0 border-b border-border/70 bg-muted/40 px-3 py-1.5 text-2xs text-muted-foreground">
-                {uiT("This preview exceeds the size limit. Changes shown are incomplete.")}
-                {selectedGitSource?.files ? uiT(" Totals include all changes.") : ""}
+                <UiText
+                  message={"This preview exceeds the size limit. Changes shown are incomplete.{0}"}
+                  values={{
+                    "0": selectedGitSource?.files ? uiT(" Totals include all changes.") : "",
+                  }}
+                />
               </p>
             )}
             {selectedPatchError && !renderablePatch && (
@@ -1059,8 +1059,7 @@ export default function DiffPanel({
                     const composedPath = event.nativeEvent.composedPath?.() ?? [];
                     for (const node of composedPath) {
                       if (!(node instanceof HTMLElement)) continue;
-                      // Header controls keep their own actions. In particular, the chevron must
-                      // not also trigger the row handler or the two toggles cancel each other.
+                      // Header buttons own their clicks; bubbling a chevron click would toggle twice.
                       if (node instanceof HTMLButtonElement || node instanceof HTMLAnchorElement) {
                         return;
                       }

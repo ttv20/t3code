@@ -83,7 +83,10 @@ function NumberLink({
               "inline-flex shrink-0 cursor-pointer items-center gap-0.5 font-medium underline-offset-2 hover:underline",
               toneClassName,
             )}
-            aria-label={uiT("Open pull request #{0} on host", { "0": detail.number })}
+            aria-label={uiT("Open {0} #{1} on host", {
+              "0": uiT(sourceControlClients.get(detail.provider).changeRequest.singular),
+              "1": detail.number,
+            })}
           >
             #{detail.number}
             <ExternalLinkIcon aria-hidden className="size-2.5" />

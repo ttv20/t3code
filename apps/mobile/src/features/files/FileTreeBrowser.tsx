@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 import { Button } from "../../components/ui/Button";
 import { LegendList } from "@legendapp/list/react-native";
 import type { ProjectEntry } from "@t3tools/contracts";
@@ -226,10 +227,10 @@ export function FileTreeBrowser(props: {
 
   const extraData = { expandedPaths, loadingDirectories, selectedPath };
 
-  // UIKit owns the header inset on every supported iOS version. Keep the
-  // list as direct screen content so automatic inset adjustment can find it.
+  // Keep the list as direct screen content so UIKit can apply header insets.
   return (
     <LegendList
+      renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
       contentInsetStartAdjustment={headerInset}
       alwaysBounceVertical
       className="flex-1"

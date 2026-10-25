@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import {
   isAtomCommandInterrupted,
@@ -77,7 +78,7 @@ export function ProviderAuthenticationSection({
       (provider.driver === "acpRegistry" && auth?.methods?.length === 0));
   const accountDescription = active
     ? auth?.phase === "starting"
-      ? uiT("Starting sign-in…")
+      ? (auth.message ?? uiT("Starting sign-in…"))
       : auth?.phase === "verifying"
         ? uiT("Checking your account…")
         : interaction?.type === "terminal"
@@ -91,7 +92,7 @@ export function ProviderAuthenticationSection({
         ? uiT("Discovering sign-in methods…")
         : needsExternalSetup
           ? uiT("No in-app sign-in advertised. Follow the provider's docs to finish setup.")
-          : `Sign in on ${environmentLabel}.`;
+          : uiT("Sign in on {0}.", { "0": environmentLabel });
   const statusMessage = auth?.phase === "failed" ? auth.message : null;
   const disabled = readOnly || pending || query.error !== null || isDiscovering;
   const draftId = `${auth?.flowId ?? ""}:${interaction?.id ?? ""}`;
@@ -137,8 +138,7 @@ export function ProviderAuthenticationSection({
   async function openBrowser() {
     if (!url || readOnly) return;
     const requiresConsent = interaction?.type === "browser" && interaction.requiresConsent;
-    // Browsers block tabs opened after an await, so the web build reserves one
-    // while the environment records consent.
+    // Reserve tabs before awaiting consent; browsers block later opens.
     const pending = requiresConsent && !window.desktopBridge ? window.open("", "_blank") : null;
     if (pending) pending.opener = null;
     try {
@@ -165,14 +165,20 @@ export function ProviderAuthenticationSection({
       description={
         signedIn && !active && provider.auth.email?.trim() ? (
           <span>
-            {uiT("Signed in as")}{" "}
-            <RedactedSensitiveText
-              key={provider.auth.email}
-              value={provider.auth.email}
-              ariaLabel={uiT("Toggle account email visibility")}
-              revealTooltip="Click to reveal email"
-              hideTooltip="Click to hide email"
-              className="max-w-full truncate"
+            <UiText
+              message={"Signed in as {0}"}
+              values={{
+                "0": (
+                  <RedactedSensitiveText
+                    key={provider.auth.email}
+                    value={provider.auth.email}
+                    ariaLabel={uiT("Toggle account email visibility")}
+                    revealTooltip="Click to reveal email"
+                    hideTooltip="Click to hide email"
+                    className="max-w-full truncate"
+                  />
+                ),
+              }}
             />
           </span>
         ) : (
@@ -229,8 +235,8 @@ export function ProviderAuthenticationSection({
                       variant="ghost-muted"
                       disabled={disabled}
                       onClick={() => {
-                        // Copy inside the click so the clipboard keeps the user
-                        // activation; the link only works once consent is recorded.
+                        // Copy during the click to retain clipboard activation; consent must still be
+                        // recorded before use.
                         const copied = writeTextToClipboard(url, "Provider sign-in link");
                         void (async () => {
                           await copied;
@@ -329,9 +335,16 @@ export function ProviderAuthenticationSection({
         <>
           {interaction?.type === "deviceCode" ? (
             <p className="py-2 text-sm text-muted-foreground">
-              {uiT("Enter code")}{" "}
-              <code className="select-all font-mono text-foreground">{interaction.userCode}</code>{" "}
-              {uiT("in your browser.")}
+              <UiText
+                message={"Enter code {0} in your browser."}
+                values={{
+                  "0": (
+                    <code className="select-all font-mono text-foreground">
+                      {interaction.userCode}
+                    </code>
+                  ),
+                }}
+              />
             </p>
           ) : null}
           {interaction?.type === "terminal" ? (
@@ -442,16 +455,22 @@ export function ProviderAuthenticationSection({
               }}
             >
               <label className="grid gap-1">
-                {uiT("If the final localhost page does not load, paste its full URL here.")}
-                <Input
-                  size="sm"
-                  id={`provider-callback-${instanceId}`}
-                  type="url"
-                  autoComplete="off"
-                  value={values.callback ?? ""}
-                  disabled={disabled}
-                  maxLength={16_384}
-                  onChange={(event) => updateDraft("callback", event.target.value)}
+                <UiText
+                  message={"If the final localhost page does not load, paste its full URL here.{0}"}
+                  values={{
+                    "0": (
+                      <Input
+                        size="sm"
+                        id={`provider-callback-${instanceId}`}
+                        type="url"
+                        autoComplete="off"
+                        value={values.callback ?? ""}
+                        disabled={disabled}
+                        maxLength={16_384}
+                        onChange={(event) => updateDraft("callback", event.target.value)}
+                      />
+                    ),
+                  }}
                 />
               </label>
               <Button

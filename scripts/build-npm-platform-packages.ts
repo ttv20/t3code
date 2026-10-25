@@ -1,23 +1,7 @@
 #!/usr/bin/env node
 /**
- * Turns the per-platform CLI archives of one release into the npm packages
- * behind `npx t3` / `npm i -g t3`: one `@t3code/t3-<platformKey>` package per
- * archive holding the archive's contents verbatim, plus the `t3` launcher
- * that lists them as optionalDependencies and execs the one npm installed.
- * The bytes a user gets from npm are therefore the release archive's, and
- * running them needs neither a Node runtime, npm, nor a native build.
- *
- * Output layout under `--output-dir`:
- *
- *   @t3code/t3-<platformKey>/      archive contents flattened + package.json
- *   @t3code/t3-<platformKey>.tgz   the same tree as an npm tarball
- *   t3/                             launcher: package.json, bin/t3.js, README.md
- *   t3.tgz                          the launcher as an npm tarball
- *
- * The tarballs are what gets published. `npm publish <dir>` always drops
- * `node_modules/` (npm-packlist ignores it whatever `files` says, and
- * bundleDependencies needs an arborist tree these flattened installs are
- * not), whereas `npm publish <tarball>` uploads the bytes as given.
+ * Publish tarballs rather than directories: npm-packlist drops node_modules
+ * from these flattened archives, while tarball publishing preserves them.
  */
 import { legacyCliLauncherScript } from "@t3tools/shared/legacyCliLauncher";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
@@ -89,13 +73,8 @@ export function npmPlatformPackageName(platformKey: CliArchivePlatformKey): stri
 }
 
 /**
- * package.json for one platform package; `os`/`cpu` let npm skip the other
- * five. The archive's runtime `node_modules` (native addons and their
- * loaders) ships inside the tarball, and npm only keeps a nested tree it can
- * account for: anything not declared is extraneous and pruned on the next
- * `npm install` in that project, which then breaks the executable. Declaring
- * every bundled package as a bundled dependency at the exact version on disk
- * makes npm treat the tree as part of this package and leave it alone.
+ * Declare every bundled package at its exact installed version so npm does not
+ * prune the archive's native loaders and addons as extraneous dependencies.
  */
 export function npmPlatformPackageManifest(
   platformKey: CliArchivePlatformKey,

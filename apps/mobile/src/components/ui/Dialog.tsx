@@ -47,7 +47,6 @@ export function prompt(request: TextInputDialogRequest): void {
   );
 }
 
-/** iOS alerts are presented directly by React Native. */
 export function Host() {
   const { t } = useUiLanguage();
   useEffect(() => {

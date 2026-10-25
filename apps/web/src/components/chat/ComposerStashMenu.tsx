@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useUiLanguage } from "../../i18n";
 import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
@@ -44,10 +45,7 @@ function stashEntrySnippet(
   return `(${t(message, { "0": attachmentCount })})`;
 }
 
-/**
- * The listener runs capture-phase on window so it wins over the composer's handlers while the
- * menu is open.
- */
+/** Window capture gives the open menu priority over composer key handlers. */
 export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
   entries: ReadonlyArray<PromptStashEntry>;
   stashShortcutLabel: string | null;
@@ -116,8 +114,7 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
         return;
       }
       if (event.key === "Enter") {
-        // A focused control inside the row (the delete button) owns its own
-        // activation; swallowing Enter here would restore instead of delete.
+        // Let the delete button handle Enter instead of restoring its row.
         if (event.target instanceof HTMLElement && event.target.closest("button[aria-label]")) {
           return;
         }
@@ -196,7 +193,9 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
                     type="button"
                     className="min-w-0 flex-1 cursor-pointer truncate text-left text-foreground/80 outline-none before:absolute before:inset-0 before:rounded-sm focus-visible:before:ring-2 focus-visible:before:ring-inset focus-visible:before:ring-ring"
                     data-stash-restore={entry.id}
-                    aria-label={`Restore stashed prompt: ${stashEntrySnippet(entry, uiT)}`}
+                    aria-label={uiT("Restore stashed prompt: {0}", {
+                      "0": stashEntrySnippet(entry, uiT),
+                    })}
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={() => onRestore(entry)}
                   >
@@ -206,14 +205,31 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
                 <ComposerBanner.Actions>
                   {entry.pendingImageCount ? (
                     <span className="shrink-0 text-muted-foreground">
-                      {uiT("saving")}
-                      {entry.pendingImageCount} {uiT("image")}
-                      {entry.pendingImageCount === 1 ? "" : "s"}…
+                      {entry.pendingImageCount === 1 ? (
+                        <UiText
+                          message={"saving{0}  image…"}
+                          values={{ "0": entry.pendingImageCount }}
+                        />
+                      ) : (
+                        <UiText
+                          message={"saving{0}  images…"}
+                          values={{ "0": entry.pendingImageCount }}
+                        />
+                      )}
                     </span>
                   ) : missingImageCount(entry) > 0 ? (
                     <span className="shrink-0 text-warning-foreground">
-                      {missingImageCount(entry)} {uiT("image")}
-                      {missingImageCount(entry) === 1 ? "" : "s"} {uiT("dropped")}
+                      {missingImageCount(entry) === 1 ? (
+                        <UiText
+                          message={"{0}  image  dropped"}
+                          values={{ "0": missingImageCount(entry) }}
+                        />
+                      ) : (
+                        <UiText
+                          message={"{0}  images  dropped"}
+                          values={{ "0": missingImageCount(entry) }}
+                        />
+                      )}
                     </span>
                   ) : null}
                   {entry.attachments.length > 0 ? (

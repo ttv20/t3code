@@ -116,11 +116,11 @@ export function useServerUpdate() {
     if (!quiet) {
       toastManager.add({
         type: "success",
-        title: `${serverLabel} updated`,
+        title: uiT("{0} updated", { "0": serverLabel }),
         description:
           selfUpdate === "desktop-managed"
-            ? `Desktop app relaunched on ${result.value.targetVersion}.`
-            : `Reconnected on t3@${result.value.targetVersion}.`,
+            ? uiT("Desktop app relaunched on {0}.", { "0": result.value.targetVersion })
+            : uiT("Reconnected on t3@{0}.", { "0": result.value.targetVersion }),
       });
     }
     return { status: "updated" };
@@ -214,10 +214,7 @@ export function ServerUpdateProgress({
   );
 }
 
-/**
- * Self-updates delegate their full lifecycle to client-runtime so this component can unmount
- * during reconnect without losing operation state.
- */
+/** client-runtime owns self-updates so unmounting during reconnect preserves operation state. */
 export function ServerUpdateAction({
   environmentId,
   serverLabel,
@@ -361,9 +358,7 @@ export function ServerUpdateAction({
   );
 }
 
-/**
- * Its version comes from the host descriptor because the host never delivers a server config.
- */
+/** Read the host descriptor's version because the host never delivers server config. */
 export function OutdatedServerUpdateAction({
   environmentId,
   serverLabel,
@@ -399,8 +394,8 @@ export function OutdatedServerUpdateAction({
     }
     toastManager.add({
       type: "success",
-      title: `${serverLabel} updated`,
-      description: `Reconnected on t3@${result.value.targetVersion}.`,
+      title: uiT("{0} updated", { "0": serverLabel }),
+      description: uiT("Reconnected on t3@{0}.", { "0": result.value.targetVersion }),
     });
   };
   return (

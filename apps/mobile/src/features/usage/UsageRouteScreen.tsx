@@ -1,10 +1,11 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { Button } from "../../components/ui/Button";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { ChatGptUsageSummary } from "./ChatGptUsageSummary";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { EnvironmentId, USAGE_CONTRACT_VERSION, type UsageProviderKind } from "@t3tools/contracts";
-import { type RouteProp, useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
+import { type RouteProp, useIsFocused, useRoute } from "@react-navigation/native";
 import { cursorKeychainAccessEnvironments } from "@t3tools/client-runtime/state/usage";
 import {
   updatingProvidersLabel,
@@ -56,6 +57,8 @@ import { useRefreshLimits } from "./UsageLimitsSection";
 import { UsageLimitsSection } from "./UsageLimitsPooled";
 import { Menu } from "../../components/ui/Menu";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { NativeStackScreenOptions } from "../../native/StackHeader";
+import { withNativeGlassHeaderItem } from "../layout/native-glass-header-items";
 import type { UsageChartMetric } from "./usageChartData";
 import { PROVIDER_LABEL, useProviderColors, useUsageMixColors } from "./usageProviders";
 
@@ -81,24 +84,30 @@ const CHART_HEIGHT = 180;
 const providerLabel = (provider: UsageProviderKind) => PROVIDER_LABEL[provider];
 const CURSOR_KEYCHAIN_COPY = "Requires access to your Cursor login in macOS Keychain.";
 
-export function UsageRouteScreen() {
+export function UsageRouteScreen(props: { readonly workspace?: boolean }) {
+  const route = useRoute<RouteProp<{ Usage: { tab?: string } | undefined }, "Usage">>();
+  return <UsageScreen workspace={props.workspace} tabParam={route.params?.tab} />;
+}
+
+function UsageScreen(props: {
+  readonly workspace?: boolean;
+  readonly tabParam: string | undefined;
+}) {
   const { t: uiT } = useUiLanguage();
 
-  const route = useRoute<RouteProp<{ Usage: { tab?: string } | undefined }, "Usage">>();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [selection, setSelection] = useState(() => ({
-    params: route.params,
-    tab: (route.params?.tab === "usage" ? "usage" : "limits") as UsageTab,
+    params: props.tabParam,
+    tab: (props.tabParam === "usage" ? "usage" : "limits") as UsageTab,
   }));
-  if (selection.params !== route.params) {
+  if (selection.params !== props.tabParam) {
     setSelection({
-      params: route.params,
-      tab: route.params?.tab === "usage" ? "usage" : "limits",
+      params: props.tabParam,
+      tab: props.tabParam === "usage" ? "usage" : "limits",
     });
   }
   const { tab } = selection;
-  const setTab = (tab: UsageTab) => setSelection({ params: route.params, tab });
+  const setTab = (tab: UsageTab) => setSelection({ params: props.tabParam, tab });
   const [windowSelection, setWindowSelection] = useState(() => ({
     days: 30,
     window: makeWindow(30),
@@ -237,14 +246,41 @@ export function UsageRouteScreen() {
     </Menu>
   ) : null;
 
-  useLayoutEffect(() => {
-    if (Platform.OS === "ios") {
-      navigation.setOptions({ headerRight: () => environmentFilter });
-    }
-  }, [navigation, environmentFilter]);
-
   return (
-    <SettingsScreen title={uiT("Usage")} trailing={environmentFilter}>
+    <SettingsScreen
+      title={uiT("Usage")}
+      trailing={environmentFilter}
+      workspaceRoot={props.workspace}
+    >
+      {Platform.OS === "ios" ? (
+        <NativeStackScreenOptions
+          optionsVersion={JSON.stringify({ showEnvironmentFilter, filterIcon, environmentActions })}
+          options={{
+            // A native menu item, unlike a custom view, moves into the Duo's vertical bar.
+            unstable_headerRightItems: () =>
+              showEnvironmentFilter
+                ? [
+                    withNativeGlassHeaderItem({
+                      accessibilityLabel: uiT("Filter usage environments"),
+                      icon: { name: filterIcon, type: "sfSymbol" },
+                      label: "",
+                      type: "menu",
+                      menu: {
+                        title: uiT("Environments"),
+                        items: environmentActions.map((action) => ({
+                          type: "action" as const,
+                          label: action.title,
+                          description: action.subtitle,
+                          state: action.state === "on" ? ("on" as const) : undefined,
+                          onPress: () => selectEnvironment(action.id),
+                        })),
+                      },
+                    }),
+                  ]
+                : [],
+          }}
+        />
+      ) : null}
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -301,8 +337,10 @@ export function UsageRouteScreen() {
               <ChatGptUsageSummary selectedEnvironmentIds={selectedEnvironmentIds} />
               {merged.duplicateSources.length > 0 ? (
                 <Text className="text-sm text-foreground-muted">
-                  {uiT("Counted once across environments sharing a transcript directory:")}{" "}
-                  {merged.duplicateSources.join(", ")}
+                  <UiText
+                    message={"Counted once across environments sharing a transcript directory: {0}"}
+                    values={{ "0": merged.duplicateSources.join(", ") }}
+                  />
                 </Text>
               ) : null}
               {isPending ? (
@@ -458,8 +496,6 @@ function CursorEnableRow({
   readonly bordered: boolean;
   readonly onEnabled: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const colors = useProviderColors();
   return (
     <View
@@ -471,8 +507,7 @@ function CursorEnableRow({
       <View className="min-w-0 flex-1 flex-row items-center gap-2">
         <View className="size-2.5 rounded-full" style={{ backgroundColor: colors.cursor }} />
         <Text className="shrink text-lg text-foreground">
-          {uiT("Cursor")}
-          {showEnvironment ? ` · ${label}` : ""}
+          <UiText message={"Cursor{0}"} values={{ "0": showEnvironment ? ` · ${label}` : "" }} />
         </Text>
       </View>
       <CursorEnableAction environmentId={environmentId} label={label} onEnabled={onEnabled} />
@@ -608,7 +643,7 @@ function ProviderSection(props: {
   const colors = useProviderColors();
   if (merged.providers.length === 0 && props.cursorAccessEnvironments.length === 0) return null;
 
-  // .sort() on a copy, not .toSorted(): Hermes doesn't ship the ES2023 method.
+  // Hermes lacks toSorted.
   const ordered = [...merged.providers].sort((a, b) =>
     metric === "cost" ? b.costUsd - a.costUsd : b.totalTokens - a.totalTokens,
   );
@@ -708,36 +743,41 @@ function TotalsSection(props: { readonly merged: MergedUsage; readonly isPast24H
         <MetricCell
           label={uiT("Processed tokens")}
           value={formatTokens(merged.totalTokens)}
-          detail={`${formatTokens(periodAverage)} per active ${props.isPast24Hours ? "hour" : "day"}`}
+          detail={uiT("{0} per active {1}", {
+            "0": formatTokens(periodAverage),
+            "1": props.isPast24Hours ? "hour" : "day",
+          })}
         />
         <MetricCell
           label={uiT("Cache savings")}
           value={formatUsd(merged.costQuality.cacheSavingsUsd)}
           detail={
             merged.costUsd > 0
-              ? `${(merged.costQuality.cacheSavingsUsd / merged.costUsd).toFixed(1)}x the raw cost`
-              : "vs full input rates"
+              ? uiT("{0}x the raw cost", {
+                  "0": (merged.costQuality.cacheSavingsUsd / merged.costUsd).toFixed(1),
+                })
+              : uiT("vs full input rates")
           }
         />
         <MetricCell
           label={uiT("Cached input")}
           value={formatTokens(merged.cachedInputTokens)}
-          detail={`${formatPercent(cachedShare)} of observed input`}
+          detail={uiT("{0} of observed input", { "0": formatPercent(cachedShare) })}
         />
         <MetricCell
           label={uiT("Uncached input")}
           value={formatTokens(merged.uncachedInputTokens)}
-          detail={`${formatTokens(merged.cacheCreationTokens)} cache writes`}
+          detail={uiT("{0} cache writes", { "0": formatTokens(merged.cacheCreationTokens) })}
         />
         <MetricCell
           label={uiT("Output")}
           value={formatTokens(merged.outputTokens)}
-          detail={`incl. ${formatTokens(merged.reasoningTokens)} reasoning`}
+          detail={uiT("incl. {0} reasoning", { "0": formatTokens(merged.reasoningTokens) })}
         />
         <MetricCell
           label={uiT("Unpriced")}
           value={formatPercent(merged.costQuality.unpricedShare)}
-          detail="of records, excluded from cost"
+          detail={uiT("of records, excluded from cost")}
         />
       </View>
     </SettingsSection>
@@ -848,7 +888,7 @@ function ModelsSection(props: { readonly merged: MergedUsage; readonly metric: U
   const colors = useProviderColors();
   if (merged.models.length === 0) return null;
 
-  // .sort() on a copy, not .toSorted(): Hermes doesn't ship the ES2023 method.
+  // Hermes lacks toSorted.
   const ordered = [...merged.models].sort((a, b) =>
     metric === "cost"
       ? b.costUsd - a.costUsd || b.totalTokens - a.totalTokens

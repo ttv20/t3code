@@ -555,7 +555,7 @@ function ProcessActions({
   onSignal: (process: ResourceTelemetryProcess, signal: ServerProcessSignal) => void;
 }) {
   if (!canSignalProcess(process)) {
-    return <span className="text-3xs text-muted-foreground/35">—</span>;
+    return <span className="text-3xs text-muted-foreground/35">-</span>;
   }
   const isSignaling = signalingKeys.has(processIdentityKey(process));
   return (
@@ -864,6 +864,11 @@ export function ResourceTelemetryDiagnostics({
     },
     environmentId,
   );
+  const refreshHistory = history.refresh;
+  const selectedHistoryRef = useRef({ environmentId, windowMs, refreshHistory });
+  useEffect(() => {
+    selectedHistoryRef.current = { environmentId, windowMs, refreshHistory };
+  }, [environmentId, windowMs, refreshHistory]);
   const signalServerProcess = useAtomCommand(serverEnvironment.signalProcess, {
     reportFailure: false,
   });
@@ -973,6 +978,17 @@ export function ResourceTelemetryDiagnostics({
       return;
     setIsRetrying(true);
     void retryTelemetry()
+      .then(() => {
+        refreshHistory();
+        const selectedHistory = selectedHistoryRef.current;
+        if (
+          environmentIdRef.current === environmentId &&
+          selectedHistory.environmentId === environmentId &&
+          selectedHistory.windowMs !== windowMs
+        ) {
+          selectedHistory.refreshHistory();
+        }
+      })
       .catch((error: unknown) => {
         toastManager.add({
           type: "error",
@@ -1052,14 +1068,20 @@ export function ResourceTelemetryDiagnostics({
               icon={<CpuIcon className="size-3.5" />}
               label={uiT("Current CPU")}
               value={allT3 ? `${allT3.currentCpuPercent.toFixed(1)}%` : "..."}
-              detail={allT3 ? `${formatCpuTime(allT3.cpuTimeMs)} observed CPU time` : undefined}
+              detail={
+                allT3
+                  ? uiT("{0} observed CPU time", { "0": formatCpuTime(allT3.cpuTimeMs) })
+                  : undefined
+              }
             />
             <IconStat
               icon={<MemoryStickIcon className="size-3.5" />}
               label={uiT("Resident memory")}
               value={allT3 ? formatBytes(allT3.currentRssBytes) : "..."}
               detail={
-                allT3 ? `${formatBytes(allT3.peakRssBytes)} combined process peaks` : undefined
+                allT3
+                  ? uiT("{0} combined process peaks", { "0": formatBytes(allT3.peakRssBytes) })
+                  : undefined
               }
             />
             <IconStat
@@ -1067,20 +1089,29 @@ export function ResourceTelemetryDiagnostics({
               label={uiT("Process count")}
               value={allT3 ? String(allT3.processCount) : "..."}
               detail={
-                allT3 ? `${allT3.processStarts} starts · ${allT3.processExits} exits` : undefined
+                allT3
+                  ? uiT("{0} starts · {1} exits", {
+                      "0": allT3.processStarts,
+                      "1": allT3.processExits,
+                    })
+                  : undefined
               }
             />
             <IconStat
               icon={<HardDriveIcon className="size-3.5" />}
               label={uiT("Read throughput")}
               value={allT3 ? formatRate(allT3.ioReadBytesPerSecond) : "..."}
-              detail={allT3 ? `${formatBytes(allT3.ioReadBytes)} observed` : undefined}
+              detail={
+                allT3 ? uiT("{0} observed", { "0": formatBytes(allT3.ioReadBytes) }) : undefined
+              }
             />
             <IconStat
               icon={<DatabaseIcon className="size-3.5" />}
               label={uiT("Write throughput")}
               value={allT3 ? formatRate(allT3.ioWriteBytesPerSecond) : "..."}
-              detail={allT3 ? `${formatBytes(allT3.ioWriteBytes)} observed` : undefined}
+              detail={
+                allT3 ? uiT("{0} observed", { "0": formatBytes(allT3.ioWriteBytes) }) : undefined
+              }
               tone={
                 allT3 && allT3.ioWriteBytesPerSecond >= 10 * 1_024 * 1_024
                   ? "danger"
@@ -1095,7 +1126,11 @@ export function ResourceTelemetryDiagnostics({
               value={
                 snapshot ? (speedLimit === null ? "Unknown" : `${speedLimit.toFixed(0)}%`) : "..."
               }
-              detail={snapshot ? `${snapshot.power.thermalState} thermal state` : undefined}
+              detail={
+                snapshot
+                  ? uiT("{0} thermal state", { "0": snapshot.power.thermalState })
+                  : undefined
+              }
               tone={speedLimit !== null && speedLimit < 80 ? "warning" : "default"}
             />
           </div>
@@ -1301,7 +1336,10 @@ export function ResourceTelemetryDiagnostics({
         headerAction={
           snapshot ? (
             <span className="text-3xs text-muted-foreground/55">
-              {uiT("Identity:")} <span className="font-mono">{uiT("PID + start time")}</span>
+              <UiText
+                message={"Identity:  {0}"}
+                values={{ "0": <span className="font-mono">{uiT("PID + start time")}</span> }}
+              />
             </span>
           ) : null
         }

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   type DesktopUpdateChannel,
   IDLE_COMPACTION_MODES,
+  globalIdleCompaction,
   ProviderDriverKind,
   type ProviderInstanceId,
   type SidebarProjectGroupingMode,
@@ -52,7 +53,9 @@ import {
 } from "./useScopedSettings";
 import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
 import { useSettingsScope } from "./SettingsScopeContext";
+import { scopedIdleCompaction } from "./scopedSettings";
 import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
+import { ThreadTitleInstructionsSettings } from "./ThreadTitleInstructionsSettings";
 import { useDesktopUpdateState } from "../../state/desktopUpdate";
 import {
   getCustomModelOptionsByInstance,
@@ -173,7 +176,8 @@ function AboutVersionSection() {
           stackedThreadToast({
             type: "error",
             title: uiT("Could not change update track"),
-            description: error instanceof Error ? error.message : "Update track change failed.",
+            description:
+              error instanceof Error ? error.message : uiT("Update track change failed."),
           }),
         );
       })
@@ -194,7 +198,7 @@ function AboutVersionSection() {
           stackedThreadToast({
             type: "error",
             title: uiT("Could not download update"),
-            description: error instanceof Error ? error.message : "Download failed.",
+            description: error instanceof Error ? error.message : uiT("Download failed."),
           }),
         );
       });
@@ -217,7 +221,8 @@ function AboutVersionSection() {
           stackedThreadToast({
             type: "error",
             title: uiT("Could not confirm update"),
-            description: error instanceof Error ? error.message : "Update confirmation failed.",
+            description:
+              error instanceof Error ? error.message : uiT("Update confirmation failed."),
           }),
         );
         return;
@@ -233,7 +238,7 @@ function AboutVersionSection() {
             stackedThreadToast({
               type: "error",
               title: uiT("Could not install update"),
-              description: error instanceof Error ? error.message : "Install failed.",
+              description: error instanceof Error ? error.message : uiT("Install failed."),
             }),
           );
         })
@@ -251,7 +256,7 @@ function AboutVersionSection() {
               type: "error",
               title: uiT("Could not check for updates"),
               description:
-                result.state.message ?? "Automatic updates are not available in this build.",
+                result.state.message ?? uiT("Automatic updates are not available in this build."),
             }),
           );
         }
@@ -261,7 +266,7 @@ function AboutVersionSection() {
           stackedThreadToast({
             type: "error",
             title: uiT("Could not check for updates"),
-            description: error instanceof Error ? error.message : "Update check failed.",
+            description: error instanceof Error ? error.message : uiT("Update check failed."),
           }),
         );
       });
@@ -521,6 +526,9 @@ export function useSettingsRestore(onRestored?: () => void) {
       : []),
     ...(settings.confirmQuit !== DEFAULT_UNIFIED_SETTINGS.confirmQuit ? ["Quit shortcut"] : []),
     ...(isTextGenerationModelDirty ? ["Text generation model"] : []),
+    ...(settings.threadTitleInstructions !== DEFAULT_UNIFIED_SETTINGS.threadTitleInstructions
+      ? ["Thread title instructions"]
+      : []),
     ...getChangedBrowserSettingLabels(settings),
     ...(settings.enableAgentBrowserAccess !== DEFAULT_UNIFIED_SETTINGS.enableAgentBrowserAccess
       ? ["Agent browser access"]
@@ -538,11 +546,8 @@ export function useSettingsRestore(onRestored?: () => void) {
     );
     if (!confirmed) return;
 
-    // Only touch the theme keys that are actually dirty, so a theme-storage
-    // failure cannot block restoring unrelated settings. Preferences are
-    // re-read after the confirmation dialog: they may have changed (another
-    // tab, an OS flip) while it was open, and rollback must restore the live
-    // values rather than the ones captured at render time.
+    // Reset only dirty theme keys so storage failures cannot block other settings; re-read after confirmation
+    // for safe rollback.
     let previousTheme = theme;
     try {
       previousTheme = readThemePreference();
@@ -560,9 +565,7 @@ export function useSettingsRestore(onRestored?: () => void) {
         }),
       );
     };
-    // Rollback restores the base preference first (which clears any mix) and
-    // then re-applies the captured mix on top, so no failure path can leave
-    // the pair of keys half-restored.
+    // Restore the base preference before the mix because restoring the base clears the mix.
     const previousHalves = liveHalves;
     const rollbackThemeState = () => {
       if (needsThemeReset) setTheme(previousTheme);
@@ -630,6 +633,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       confirmThreadUnpin: DEFAULT_UNIFIED_SETTINGS.confirmThreadUnpin,
       confirmQuit: DEFAULT_UNIFIED_SETTINGS.confirmQuit,
       textGenerationModelSelection: DEFAULT_UNIFIED_SETTINGS.textGenerationModelSelection,
+      threadTitleInstructions: DEFAULT_UNIFIED_SETTINGS.threadTitleInstructions,
       fontFamilySans: DEFAULT_UNIFIED_SETTINGS.fontFamilySans,
       fontFamilyComposer: DEFAULT_UNIFIED_SETTINGS.fontFamilyComposer,
       fontFamilyCode: DEFAULT_UNIFIED_SETTINGS.fontFamilyCode,
@@ -795,7 +799,7 @@ function LegacyFeaturesSection() {
 export function GeneralSettingsPanel() {
   const { t: uiT } = useUiLanguage();
 
-  const modifierLabel = isMacPlatform(navigator.platform) ? "⌘" : "Ctrl";
+  const modifierLabel = isMacPlatform(navigator.platform) ? "⌘" : uiT("Ctrl");
   const sendShortcutOptions = [
     { value: "enter", label: uiT("Enter") },
     {
@@ -807,7 +811,8 @@ export function GeneralSettingsPanel() {
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const navigate = useNavigate();
-  const { scope, environment, connectedEnvironments, target } = useSettingsScope();
+  const { scope, environment, connectedEnvironments, target, targets } = useSettingsScope();
+  const idleCompaction = scopedIdleCompaction(targets.length > 0 ? targets : [{ settings }]);
   const environmentId = environment?.environmentId ?? null;
   const isEnvironmentScope = scope.environmentIds.length === 1 && environmentId !== null;
   const hasServerTargets = connectedEnvironments.length > 0;
@@ -994,59 +999,29 @@ export function GeneralSettingsPanel() {
         />
 
         <SettingsRow
-          {...searchableSetting("working-shelf")}
-          description={uiT(
-            "Fold working and monitoring threads into a Working section. They return to the top of the inbox when they need you.",
-          )}
-          resetAction={
-            settings.sidebarWorkingShelfEnabled !==
-            DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled ? (
-              <SettingResetButton
-                label={uiT("working section")}
-                onClick={() =>
-                  updateSettings({
-                    sidebarWorkingShelfEnabled: DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled,
-                  })
-                }
-              />
-            ) : null
-          }
-          control={
-            <Switch
-              checked={settings.sidebarWorkingShelfEnabled}
-              onCheckedChange={(checked) =>
-                updateSettings({ sidebarWorkingShelfEnabled: Boolean(checked) })
-              }
-              aria-label={uiT("Working section (beta)")}
-            />
-          }
-        />
-
-        <SettingsRow
           serverScoped
-          settingKeys={["compactIdleThreads"]}
+          settingKeys={["idleCompaction", "compactIdleThreads"]}
+          mixed={idleCompaction.mixed}
           {...searchableSetting("compact-idle-threads")}
           description={uiT(
             "When to compact an idle Claude thread over 200,000 tokens: after you return, just before its prompt cache expires, or never. Each Claude provider can override this.",
           )}
           resetAction={
-            settings.compactIdleThreads !== DEFAULT_UNIFIED_SETTINGS.compactIdleThreads ? (
+            globalIdleCompaction(settings) !== globalIdleCompaction(DEFAULT_UNIFIED_SETTINGS) ? (
               <SettingResetButton
                 label={uiT("compact idle threads")}
                 onClick={() =>
-                  updateSettings({
-                    compactIdleThreads: DEFAULT_UNIFIED_SETTINGS.compactIdleThreads,
-                  })
+                  updateSettings({ idleCompaction: globalIdleCompaction(DEFAULT_UNIFIED_SETTINGS) })
                 }
               />
             ) : null
           }
           control={
             <Select
-              value={settings.compactIdleThreads}
+              value={idleCompaction.mixed ? null : globalIdleCompaction(settings)}
               onValueChange={(value) => {
                 const mode = IDLE_COMPACTION_MODES.find((candidate) => candidate.value === value);
-                if (mode) updateSettings({ compactIdleThreads: mode.value });
+                if (mode) updateSettings({ idleCompaction: mode.value });
               }}
             >
               <SelectTrigger
@@ -1055,15 +1030,22 @@ export function GeneralSettingsPanel() {
                 aria-label={uiT("Compact idle threads")}
               >
                 <SelectValue>
-                  {uiT(
-                    IDLE_COMPACTION_MODES.find((mode) => mode.value === settings.compactIdleThreads)
-                      ?.label,
-                  )}
+                  {(value: string | null) =>
+                    value === null
+                      ? "Mixed"
+                      : IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label
+                  }
                 </SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
                 {IDLE_COMPACTION_MODES.map((mode) => (
-                  <SelectItem hideIndicator key={mode.value} value={mode.value}>
+                  <SelectItem
+                    hideIndicator
+                    key={mode.value}
+                    value={mode.value}
+                    // A server from before modes has only the on/off switch, so it cannot store "Never".
+                    disabled={mode.value === "off" && !idleCompaction.neverAvailable}
+                  >
                     {uiT(mode.label)}
                   </SelectItem>
                 ))}
@@ -1980,6 +1962,7 @@ export function GeneralSettingsPanel() {
             )
           }
         />
+        <ThreadTitleInstructionsSettings />
       </SettingsSection>
 
       <SettingsSection id="about" title={uiT("About")}>

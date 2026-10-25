@@ -1,3 +1,4 @@
+import { UiText } from "../i18n";
 import { useUiLanguage } from "../i18n";
 import { ComposerSelectControl } from "./chat/ComposerControl";
 import { ComposerContextLabel } from "./ComposerContextLabel";
@@ -57,7 +58,7 @@ export const BranchToolbarEnvironmentSelector = memo(function BranchToolbarEnvir
 
   const environmentItems = [
     ...(onAutoEnvironment
-      ? [{ value: AUTO_VALUE, label: autoEnvironmentLabel ?? "Auto balance" }]
+      ? [{ value: AUTO_VALUE, label: autoEnvironmentLabel ?? uiT("Auto balance") }]
       : []),
     ...availableEnvironments.map((env) => ({
       value: environmentValue(env.environmentId),
@@ -66,11 +67,8 @@ export const BranchToolbarEnvironmentSelector = memo(function BranchToolbarEnvir
     ...(onAddToMachine ? [{ value: ADD_MACHINE_VALUE, label: uiT("Add to another machine") }] : []),
   ];
 
-  // The static label carries the xs control's height (h-7 sm:h-6) as well as
-  // its padding: the composer context strip has no min-height of its own, and
-  // the glass seam joining it to the composer assumes a fixed strip height, so
-  // a shorter label would drag the seam out of line whenever this label is the
-  // only thing in the strip.
+  // Match the xs control's height and padding: the composer strip has no min-height,
+  // and its glass seam assumes that height even when this label is the only control.
   if (envLocked || (onEnvironmentChange === undefined && onAddToMachine === undefined)) {
     const lockedRow = (
       <span
@@ -167,8 +165,10 @@ export const BranchToolbarEnvironmentSelector = memo(function BranchToolbarEnvir
           {onAddToMachine ? (
             <SelectItem value={ADD_MACHINE_VALUE}>
               <span className={ADD_TO_MACHINE_LABEL_CLASS}>
-                <PlusIcon aria-hidden="true" className="size-3" />
-                {uiT("Add to another machine")}
+                <UiText
+                  message={"{0}Add to another machine"}
+                  values={{ "0": <PlusIcon aria-hidden="true" className="size-3" /> }}
+                />
               </span>
             </SelectItem>
           ) : null}

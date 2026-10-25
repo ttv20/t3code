@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
@@ -41,7 +42,6 @@ export function SettingsEnvironmentDetailRouteScreen({
 }: StaticScreenProps<{
   readonly environmentId: EnvironmentId;
 }>) {
-  // Key local request state to the host even when navigation reuses this screen.
   return (
     <EnvironmentDetail
       key={route.params.environmentId}
@@ -119,8 +119,14 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
     if (disabled || !targetVersion || !capabilities || !supportsEnvironmentUpdate(capabilities))
       return;
     Dialog.alert(
-      `Update ${environment?.environmentLabel ?? "environment"}?`,
-      `Install T3 Code ${targetVersion}. ${capabilities.serverSelfUpdate === "desktop-managed" ? "The desktop app will close and relaunch." : "The server will restart and reconnect."} Running threads may be interrupted.`,
+      uiT("Update {0}?", { "0": environment?.environmentLabel ?? "environment" }),
+      uiT("Install T3 Code {0}. {1} Running threads may be interrupted.", {
+        "0": targetVersion,
+        "1":
+          capabilities.serverSelfUpdate === "desktop-managed"
+            ? "The desktop app will close and relaunch."
+            : "The server will restart and reconnect.",
+      }),
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -204,13 +210,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
               environmentId={environmentId}
               connected={connected}
               onAddRoute={() =>
-                navigation.navigate("SettingsSheet", {
-                  screen: "SettingsContent",
-                  params: {
-                    screen: "SettingsEnvironmentNew",
-                    params: { routeFor: environmentId },
-                  },
-                })
+                navigation.navigate("SettingsEnvironmentNew", { routeFor: environmentId })
               }
             />
             {outdated ? (
@@ -242,7 +242,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                 <SettingsSection title={uiT("T3 Code")}>
                   <View className="gap-1 p-4">
                     <Text className="text-base text-foreground">
-                      {uiT("Version")} {version}
+                      <UiText message={"Version  {0}"} values={{ "0": version }} />
                     </Text>
                     {running ? (
                       <Text className="text-sm text-foreground-muted">

@@ -66,8 +66,6 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 
-private val TABS = listOf("threads", "pullRequests", "settings")
-
 class T3WorkspaceNavigationModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("T3WorkspaceNavigation")
@@ -76,6 +74,7 @@ class T3WorkspaceNavigationModule : Module() {
       Prop("labels") { view: T3WorkspaceNavigationView, value: Map<String, String> ->
         view.labels = value
       }
+      Prop("tabs") { view: T3WorkspaceNavigationView, value: List<String> -> view.tabs = value }
       Prop("selectedTab") { view: T3WorkspaceNavigationView, value: String ->
         view.selectedTab = value
       }
@@ -130,6 +129,7 @@ class T3WorkspaceNavigationView(
   private val onOverlayChange by EventDispatcher()
   var rtl by mutableStateOf(false)
   var labels by mutableStateOf<Map<String, String>>(emptyMap())
+  var tabs by mutableStateOf(listOf("threads", "pullRequests", "usage", "settings"))
   var selectedTab by mutableStateOf("threads")
   var rail by mutableStateOf(false)
   var dark by mutableStateOf(false)
@@ -178,30 +178,28 @@ class T3WorkspaceNavigationView(
             LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
           ) {
             MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
-              if (rail) {
-                rail()
-              } else {
-                NavigationBar(
-                  modifier = Modifier.fillMaxSize(),
-                  containerColor = Color(containerColor),
-                  tonalElevation = androidx.compose.ui.unit.Dp(0f),
-                  windowInsets = WindowInsets(0),
-                ) {
-                  TABS.forEach { tab ->
-                    NavigationBarItem(
-                      selected = selectedTab == tab,
-                      onClick = { onTabSelected(mapOf("tab" to tab)) },
-                      icon = { Icon(tabIconPainter(tab), contentDescription = null) },
-                      label = { Text(tabTitle(tab), fontSize = (12 * textScale).sp) },
-                      colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color(selectedColor),
-                        selectedTextColor = Color(selectedColor),
-                        indicatorColor = Color(indicatorColor),
-                        unselectedIconColor = Color(unselectedColor),
-                        unselectedTextColor = Color(unselectedColor),
-                      ),
-                    )
-                  }
+            if (rail) {
+              rail() } else {
+              NavigationBar(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color(containerColor),
+                tonalElevation = androidx.compose.ui.unit.Dp(0f),
+                windowInsets = WindowInsets(0),
+                  ) {
+                tabs.forEach { tab ->
+                  NavigationBarItem(
+                    selected = selectedTab == tab,
+                    onClick = { onTabSelected(mapOf("tab" to tab)) },
+                    icon = { Icon(tabIconPainter(tab), contentDescription = null) },
+                    label = { Text(tabTitle(tab), fontSize = (12 * textScale).sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                      selectedIconColor = Color(selectedColor),
+                      selectedTextColor = Color(selectedColor),
+                      indicatorColor = Color(indicatorColor),
+                      unselectedIconColor = Color(unselectedColor),
+                      unselectedTextColor = Color(unselectedColor),
+                  ),
+                  ) }
                 }
               }
             }
@@ -281,12 +279,14 @@ class T3WorkspaceNavigationView(
             )
           }
         }
-        newThreadButton(fraction) {
-          expanded = false
-          onNewThread(emptyMap<String, Any>())
+        if (selectedTab == "threads") {
+          newThreadButton(fraction) {
+            expanded = false
+            onNewThread(emptyMap<String, Any>())
+          }
         }
         Spacer(Modifier.weight(1f))
-        TABS.forEach { tab ->
+        tabs.forEach { tab ->
           railItem(tab, fraction) {
             expanded = false
             onTabSelected(mapOf("tab" to tab))
@@ -370,7 +370,8 @@ class T3WorkspaceNavigationView(
 
   private fun tabTitle(tab: String) = when (tab) {
     "threads" -> labels["threads"] ?: "Chats"
-    "pullRequests" -> labels["pullRequests"] ?: "PRs"
+    "pullRequests" -> labels["pullRequests"] ?: "Pulls"
+    "usage" -> labels["usage"] ?: "Usage"
     else -> labels["settings"] ?: "Settings"
   }
 
@@ -382,6 +383,7 @@ class T3WorkspaceNavigationView(
     when (tab) {
       "threads" -> R.drawable.t3_chats
       "pullRequests" -> R.drawable.t3_pull_requests
+      "usage" -> R.drawable.t3_usage
       else -> R.drawable.t3_settings
     }
   )

@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { AsyncResult } from "effect/reactivity";
 import { useAtomRefresh } from "@effect/atom-react";
@@ -193,8 +194,13 @@ export function PullRequestReviewSheet({
       {reviewing && store.draft.comments.length ? (
         <View className="gap-2">
           <Text className="text-sm font-t3-medium">
-            {store.draft.comments.length} {uiT("pending line")}{" "}
-            {store.draft.comments.length === 1 ? uiT("comment") : uiT("comments")}
+            <UiText
+              message={"{0}  pending line {1}"}
+              values={{
+                "0": store.draft.comments.length,
+                "1": store.draft.comments.length === 1 ? uiT("comment") : uiT("comments"),
+              }}
+            />
           </Text>
           {store.draft.comments.map((draft) => (
             <Pressable
@@ -246,9 +252,18 @@ export function PullRequestReviewSheet({
       ) : null}
       {reviewing && !canSubmitComments ? (
         <Text className="text-sm text-danger-foreground">
-          {uiT(
-            "You can no longer submit line comments on this pull request. Your drafts are kept here.",
-          )}
+          <UiText
+            message={
+              "You can no longer submit line comments on this {0}. Your drafts are kept here."
+            }
+            values={{
+              "0": (
+                <UiText
+                  message={sourceControlClients.get(result.data?.provider).changeRequest.singular}
+                />
+              ),
+            }}
+          />
         </Text>
       ) : null}
       {submission.error || result.error || store.error ? (

@@ -55,9 +55,7 @@ export function SidebarThreadHeader({
   const { t: uiT } = useUiLanguage();
 
   const resultsVisible = isSearching && searchResultCount > 0;
-  // Results shrink as the query narrows, so the active index can outrun the
-  // list; pointing aria-activedescendant at a removed option strands the
-  // screen reader on nothing.
+  // Shrinking results can remove the active option; never leave aria-activedescendant pointing at it.
   const activeResultExists = resultsVisible && activeSearchResultIndex < searchResultCount;
   const newThreadLabel = newThreadShortcutLabel
     ? uiT("New thread ({0})", { "0": newThreadShortcutLabel })

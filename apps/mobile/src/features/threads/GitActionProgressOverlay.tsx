@@ -1,3 +1,5 @@
+import { useUiLanguage } from "../../i18n";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef } from "react";
@@ -13,6 +15,8 @@ export function GitActionProgressOverlay(props: {
   readonly onDismiss: () => void;
   readonly onOpenPullRequest?: (url: string) => Promise<boolean>;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { progress, onDismiss } = props;
   const openPullRequest = props.onOpenPullRequest;
   const insets = useSafeAreaInsets();
@@ -44,6 +48,18 @@ export function GitActionProgressOverlay(props: {
   if (progress.phase === "idle") {
     return null;
   }
+  const prUrl = progress.prUrl;
+  // A finished action reports only the URL it created.
+  const openLabel = prUrl
+    ? uiT("Open {0}", {
+        "0": uiT(
+          (
+            sourceControlClients.findByChangeRequestUrl(prUrl) ??
+            sourceControlClients.get(undefined)
+          ).changeRequest.shortLabel,
+        ),
+      })
+    : null;
 
   return (
     <Animated.View
@@ -64,7 +80,7 @@ export function GitActionProgressOverlay(props: {
               : "default"
         }
         busy={progress.phase === "running"}
-        action={progress.prUrl ? { label: "Open PR", onPress: handlePress } : undefined}
+        action={openLabel ? { label: openLabel, onPress: handlePress } : undefined}
         onDismiss={progress.phase === "running" ? undefined : onDismiss}
       />
     </Animated.View>

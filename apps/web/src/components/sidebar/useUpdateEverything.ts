@@ -38,13 +38,8 @@ const UPDATE_RESTART_DELAY_MS = 5_000;
 export type ReportLocalUpdateError = (title: string, description: string) => void;
 
 /**
- * The remote half of the sidebar update button: outdated providers on every
- * connected machine, and servers behind the version this client runs or is
- * about to install (`localUpdateVersion`). Standalone servers appear
- * only once GitHub has that fork release's CLI assets. `run` performs the whole
- * pass, including this app's own download and install when given. It updates quietly, tracks
- * each machine in the run state, and reports one summary toast at the end.
- * When this app installs, the summary waits for the relaunch.
+ * Standalone servers wait for the fork release's CLI assets. When this app
+ * installs too, defer the combined result toast until after relaunch.
  */
 export function useUpdateEverything(localUpdateVersion: string | null) {
   const { locale } = useUiLanguage();

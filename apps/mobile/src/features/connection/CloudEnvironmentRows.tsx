@@ -44,9 +44,7 @@ interface CloudEnvironmentRowsProps {
 }
 
 export function CloudEnvironmentRows(props: CloudEnvironmentRowsProps) {
-  // Showcase captures run without a Clerk publishable key, so `ClerkProvider`
-  // is never mounted and any `useAuth` call throws — the fixture states whether
-  // the rows are signed in instead of asking Clerk.
+  // Showcase lacks ClerkProvider; use fixture auth state to avoid a throwing useAuth call.
   if (props.showcaseSignedIn !== undefined) {
     return props.showcaseSignedIn ? <CloudEnvironmentRowsContent {...props} /> : null;
   }
@@ -341,9 +339,9 @@ function CloudEnvironmentRowShell(props: {
         accessibilityRole={props.onOpen ? "button" : undefined}
         accessibilityLabel={
           props.onOpen
-            ? `Manage ${props.label}`
+            ? uiT("Manage {0}", { "0": props.label })
             : props.onRemove
-              ? `Remove ${props.label} from this device`
+              ? uiT("Remove {0} from this device", { "0": props.label })
               : undefined
         }
         onPress={props.onOpen}
@@ -410,7 +408,7 @@ function CloudEnvironmentRowShell(props: {
         </StatusContainer>
       </ContentContainer>
       <ThemedSwitch
-        accessibilityLabel={`Enable ${props.label}`}
+        accessibilityLabel={uiT("Enable {0}", { "0": props.label })}
         style={{ alignSelf: "center" }}
         disabled={props.disabled}
         onValueChange={props.onValueChange}
@@ -421,9 +419,9 @@ function CloudEnvironmentRowShell(props: {
           accessibilityRole={props.onOpen ? "button" : undefined}
           accessibilityLabel={
             props.onOpen
-              ? `Manage ${props.label}`
+              ? uiT("Manage {0}", { "0": props.label })
               : props.onRemove
-                ? `Remove ${props.label} from this device`
+                ? uiT("Remove {0} from this device", { "0": props.label })
                 : undefined
           }
           accessibilityHint={

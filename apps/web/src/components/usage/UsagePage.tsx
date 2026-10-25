@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
@@ -138,10 +139,7 @@ function usageLoading(
   };
 }
 
-/**
- * The model whose detail dialog is open. It lives outside UsagePage so opening
- * or closing the dialog renders only its host, not the whole usage page.
- */
+/** Keep dialog selection outside UsagePage so opening/closing rerenders only its host. */
 const selectedUsageModelKeyAtom = Atom.make<string | null>(null).pipe(
   Atom.keepAlive,
   Atom.withLabel("usage:selected-model-key"),
@@ -364,10 +362,16 @@ export function UsagePage() {
 
   const windowLabel =
     shownHourly && shownWindow.sinceTime !== undefined && shownWindow.untilTime !== undefined
-      ? `${formatDateTimeShort(shownWindow.sinceTime, shownWindow.timeZone, hour12)} to ${formatDateTimeShort(shownWindow.untilTime, shownWindow.timeZone, hour12)}`
-      : `${formatDayShort(shownWindow.sinceDay)} to ${formatDayShort(shownWindow.untilDay)}`;
+      ? uiT("{0} to {1}", {
+          "0": formatDateTimeShort(shownWindow.sinceTime, shownWindow.timeZone, hour12),
+          "1": formatDateTimeShort(shownWindow.untilTime, shownWindow.timeZone, hour12),
+        })
+      : uiT("{0} to {1}", {
+          "0": formatDayShort(shownWindow.sinceDay),
+          "1": formatDayShort(shownWindow.untilDay),
+        });
   const topbarContent = (
-    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2 xl:flex">
+    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-2 @4xl/usage-header:flex">
       <WorkspaceBreadcrumb
         ariaLabel="Usage breadcrumb"
         className="min-w-0 [unicode-bidi:plaintext]"
@@ -399,11 +403,11 @@ export function UsagePage() {
         </WorkspaceBreadcrumbItem>
       </WorkspaceBreadcrumb>
       {!showingLimits ? (
-        <span className="hidden min-w-0 truncate text-xs text-muted-foreground 2xl:block">
+        <span className="hidden min-w-0 truncate text-xs text-muted-foreground @7xl/usage-header:block">
           {windowLabel}
         </span>
       ) : null}
-      <div className="ms-auto hidden min-w-0 items-center justify-end gap-2 xl:flex">
+      <div className="ms-auto hidden shrink-0 items-center justify-end gap-2 @4xl/usage-header:flex">
         <ToggleGroup
           aria-label={uiT("Usage metric")}
           variant="segmented"
@@ -446,7 +450,7 @@ export function UsagePage() {
           <RefreshIcon size="sm" refreshing={isRefreshing} />
         </Button>
       </div>
-      <div className="ms-auto flex min-w-0 items-center justify-end gap-1 xl:hidden">
+      <div className="ms-auto flex shrink-0 items-center justify-end gap-1 @4xl/usage-header:hidden">
         <Select
           value={metric}
           onValueChange={(value) => {
@@ -515,7 +519,9 @@ export function UsagePage() {
   return (
     <SidebarInset className="h-dvh min-h-0 overflow-hidden overscroll-y-none isolate">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground">
-        <WorkspacePageHeader electron={isElectron}>{topbarContent}</WorkspacePageHeader>
+        <WorkspacePageHeader electron={isElectron} className="@container/usage-header">
+          {topbarContent}
+        </WorkspacePageHeader>
 
         <ScrollArea className="min-h-0 flex-1">
           <WorkspacePageContainer width="wide">
@@ -647,16 +653,15 @@ function UsageOverview({
   const [breakdown, setBreakdown] = useState<"model" | "time">("model");
   const shownHourly = shownWindow.resolution === "hour";
   const loading = usageLoading(showingKept, selectedEnvironments, refreshingUsage, hiddenProviders);
-  // A primitive copy: reading `loading.partial` in the JSX would keep `loading` alive
-  // across every derivation below and fold them into one cache scope.
+  // Copy the primitive; JSX reads of loading.partial would merge all derivations into one compiler cache
+  // scope.
   const loadingPartial = loading.partial === true;
   const loadingProviders = new Set(
     PROVIDER_ORDER.filter((provider) => loading.everyProvider || loading.providers.has(provider)),
   );
   const providersWithData = new Set(providersWithUsage(merged.providers));
-  // `everyProvider` marks shown providers as loading; only `loading.providers`, which excludes
-  // hidden ones, may add a provider that has no data yet.
-  // Filtering a fresh copy, not the shared module array, lets the compiler cache this on its own.
+  // Only loading.providers excludes hidden providers without data. Filter a fresh array so the compiler can
+  // cache independently.
   const activeProviders = [...PROVIDER_ORDER].filter(
     (provider) => providersWithData.has(provider) || loading.providers.has(provider),
   );
@@ -727,7 +732,10 @@ function UsageOverview({
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <span>
                 <span className={figureClass(loadingPartial)}>
-                  {formatCount(merged.sessions)} {uiT("sessions")}
+                  <UiText
+                    message={"{0}  sessions"}
+                    values={{ "0": formatCount(merged.sessions) }}
+                  />
                 </span>
                 {metric === "cost" && uiT(" · API estimate")}
               </span>
@@ -809,7 +817,7 @@ function UsageOverview({
                     )}
                   >
                     {awaitingData
-                      ? "—"
+                      ? "-"
                       : metric === "cost"
                         ? formatUsd(totals?.costUsd ?? 0)
                         : formatTokens(totals?.totalTokens ?? 0)}
@@ -934,7 +942,7 @@ function UsageOverview({
             {(
               [
                 { value: "model", label: uiT("Model") },
-                { value: "time", label: shownHourly ? "Hour" : "Day" },
+                { value: "time", label: shownHourly ? uiT("Hour") : uiT("Day") },
               ] as const
             ).map((option) => (
               <Toggle key={option.value} value={option.value}>
@@ -1172,8 +1180,6 @@ function CursorEnableRow({
   readonly showEnvironment: boolean;
   readonly onEnabled: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <div className="flex min-w-0 items-baseline justify-between gap-4 text-sm">
       <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
@@ -1184,8 +1190,7 @@ function CursorEnableRow({
         />
         <ProviderMark provider="cursor" className="size-4" />
         <span className="truncate">
-          {uiT("Cursor")}
-          {showEnvironment ? ` · ${label}` : ""}
+          <UiText message={"Cursor{0}"} values={{ "0": showEnvironment ? ` · ${label}` : "" }} />
         </span>
       </span>
       <CursorEnableButton
@@ -1295,8 +1300,6 @@ function UsageCoverageNotice({
   readonly duplicateSources: readonly string[];
   readonly contractMismatches: MergedUsage["contractMismatches"];
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const failed = environments.filter((environment) => environment.error !== null);
   const mismatchByEnvironment = new Map(
     contractMismatches.map((mismatch) => [mismatch.environmentId, mismatch]),
@@ -1323,8 +1326,10 @@ function UsageCoverageNotice({
       ))}
       {duplicateSources.length > 0 ? (
         <span>
-          {uiT("Counted once across environments sharing a transcript directory:")}{" "}
-          {duplicateSources.join(", ")}
+          <UiText
+            message={"Counted once across environments sharing a transcript directory: {0}"}
+            values={{ "0": duplicateSources.join(", ") }}
+          />
         </span>
       ) : null}
     </div>

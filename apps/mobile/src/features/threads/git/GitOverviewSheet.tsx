@@ -9,6 +9,7 @@ import {
   requiresDefaultBranchConfirmation,
 } from "@t3tools/client-runtime/state/vcs";
 import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   CommonActions,
   StackActions,
@@ -137,14 +138,24 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
           }),
   }));
 
+  const { shortLabel, singular } = sourceControlClients.get(
+    gitStatus.data?.sourceControlProvider?.kind,
+  ).changeRequest;
+
   const openExistingPr = async () => {
     const prUrl = gitStatus.data?.pr?.state === "open" ? gitStatus.data.pr.url : null;
     if (!prUrl) {
-      Dialog.alert("No open PR", "This branch does not have an open pull request.");
+      Dialog.alert(
+        uiT("No open {0}", { "0": uiT(shortLabel) }),
+        uiT("This branch does not have an open {0}.", { "0": uiT(singular) }),
+      );
       return;
     }
     if (!(await openPullRequest(prUrl))) {
-      Dialog.alert("Unable to open PR", "The pull request could not be opened.");
+      Dialog.alert(
+        uiT("Unable to open {0}", { "0": uiT(shortLabel) }),
+        uiT("The {0} could not be opened.", { "0": uiT(singular) }),
+      );
     }
   };
 
@@ -217,15 +228,14 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
       return `${ahead} commit${ahead === 1 ? "" : "s"} ahead`;
     }
     if (item.kind === "open_pr" && status.pr?.number != null) {
-      return `PR #${status.pr.number} ${status.pr.state ?? "open"}`;
+      return `${shortLabel} #${status.pr.number} ${status.pr.state ?? "open"}`;
     }
     return undefined;
   };
 
   const behindCount = gitStatus.data?.behindCount ?? 0;
 
-  // Tying RefreshControl to the query's isPending flag left the spinner stuck
-  // (the status query reports pending during quiet background refreshes too).
+  // Background refreshes also report pending; using that query flag would stick the RefreshControl spinner.
   const [isRefreshing, setIsRefreshing] = useState(false);
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -269,7 +279,9 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
             label={uiT("Pull latest")}
             description={
               canWriteSourceControl
-                ? `${behindCount} commit${behindCount === 1 ? "" : "s"} behind upstream`
+                ? behindCount === 1
+                  ? uiT("{0} commit behind upstream", { "0": behindCount })
+                  : uiT("{0} commits behind upstream", { "0": behindCount })
                 : uiT("This connection cannot change source control.")
             }
             disabled={!canWriteSourceControl || busy || !isRepo}
@@ -309,15 +321,17 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         {linkedPrActions.canLink ? (
           <ListRow
             icon="link"
-            label={uiT("Link pull request")}
-            description={uiT("Attach a pull request by URL or number")}
+            label={uiT("Link {0}", { "0": uiT(linkedPrActions.terminology.singular) })}
+            description={uiT("Attach a {0} by URL or number", {
+              "0": uiT(linkedPrActions.terminology.singular),
+            })}
             onPress={linkedPrActions.promptLink}
           />
         ) : null}
       </ListSection>
 
       {linkedPrLines.length > 0 ? (
-        <ListSection title={uiT("Linked pull requests")}>
+        <ListSection title={uiT("Linked {0}", { "0": uiT(linkedPrActions.terminology.plural) })}>
           {linkedPrLines.map((line, index) => (
             <LinkedPullRequestRow
               key={linkedPullRequestKey(line)}

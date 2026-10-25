@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import {
   formatUiUsageReset,
@@ -88,7 +89,7 @@ function WindowRow(props: {
           {formatUiUsageWindowLabel(window.label, locale)}
         </Text>
         <Text className="text-sm font-t3-medium tabular-nums text-foreground">
-          {uiT("{0}% left", { "0": remaining })}
+          <UiText message={"{0}% left"} values={{ "0": remaining }} />
         </Text>
       </View>
       <View
@@ -279,8 +280,10 @@ export function ResetCredits(props: {
   const confirm = () => {
     if (!readEnvironmentScope(environmentId, AuthProvidersManageScope)) return;
     Dialog.alert(
-      "Use a reset credit?",
-      "This redeems one credit on your account and clears the current rate-limit windows. It cannot be undone.",
+      uiT("Use a reset credit?"),
+      uiT(
+        "This redeems one credit on your account and clears the current rate-limit windows. It cannot be undone.",
+      ),
       [
         { text: "Cancel", style: "cancel" },
         { text: "Use credit", onPress: () => void redeem() },
@@ -362,8 +365,7 @@ export function useRefreshLimits(
       }),
     ).finally(() => setNow(Date.now()));
   };
-  // Always toggles `refreshing`, even with nothing to probe: Android's
-  // RefreshControl keeps its spinner up until it sees true then false.
+  // Android RefreshControl needs a true-to-false cycle to stop, even with nothing to probe.
   const refreshManually = async () => {
     if (refreshingRef.current) return;
     refreshingRef.current = true;

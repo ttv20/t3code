@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { useEffect } from "react";
 import { AccessibilityInfo, Platform, Pressable, View } from "react-native";
 
@@ -6,7 +7,6 @@ import { AppText } from "./AppText";
 import { SymbolView, type AppSymbolName } from "./AppSymbol";
 import { GlassSurface } from "./GlassSurface";
 
-/** Inline feedback or a dismissible notice positioned by its owning screen. */
 export function Notice(props: {
   readonly message: string;
   readonly tone?: "default" | "danger";
@@ -16,6 +16,8 @@ export function Notice(props: {
   readonly onDismiss?: () => void;
   readonly dismissLabel?: string;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const danger = props.tone === "danger";
   useEffect(() => {
     // Live regions reach TalkBack; VoiceOver needs an explicit announcement.
@@ -52,7 +54,7 @@ export function Notice(props: {
       {props.onDismiss ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={props.dismissLabel ?? "Dismiss message"}
+          accessibilityLabel={props.dismissLabel ?? uiT("Dismiss message")}
           onPress={props.onDismiss}
           hitSlop={10}
           className="min-h-6 min-w-6 items-center justify-center active:opacity-60"

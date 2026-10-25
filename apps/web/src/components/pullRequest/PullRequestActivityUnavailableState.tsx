@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 
@@ -7,10 +8,13 @@ import { Button } from "../ui/button";
 
 export function PullRequestActivityUnavailableState({
   error,
+  term,
   onRetry,
   compact = false,
 }: {
   error: string;
+  /** The host's word for a change request, as in "pull request". */
+  term: string;
   onRetry: () => void;
   compact?: boolean;
 }) {
@@ -23,7 +27,10 @@ export function PullRequestActivityUnavailableState({
       )}
     >
       <p className="text-sm font-medium text-foreground">
-        {uiT("Could not load pull request activity")}
+        <UiText
+          message={"Could not load {0} activity"}
+          values={{ "0": <UiText message={term} /> }}
+        />
       </p>
       <p className="max-w-md text-xs text-muted-foreground">{error}</p>
       <Button size="sm" variant="outline" onClick={onRetry}>

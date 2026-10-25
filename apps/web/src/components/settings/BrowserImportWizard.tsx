@@ -76,10 +76,7 @@ export function BrowserImportWizard({
   );
   const [targetError, setTargetError] = useState<string>();
   const newProfileId = useRef(`profile-${randomUUID()}`);
-  // A second Import click before React has left the configure screen would
-  // start a second run; the parent refuses it, and applying that refusal here
-  // would drop the wizard out of the importing step while the first write is
-  // still going. The ref settles synchronously where state does not.
+  // Guard synchronously so a second click's refusal cannot leave the importing step during the first write.
   const importInFlight = useRef(false);
 
   const runImport = () => {
@@ -275,12 +272,10 @@ function FullDiskAccessStep({
           <UiText message={"Let T3 Code read {0}’s cookies"} values={{ "0": source.name }} />
         </DialogTitle>
         <DialogDescription>
-          <UiText
-            message={
-              "To import cookies from {0}, T3 Code needs Full Disk Access. Turn it on in System Settings, then come back to finish the import — you can revoke it again once the import is done."
-            }
-            values={{ "0": source.name }}
-          />
+          {uiT("To import cookies from")} {source.name}
+          {uiT(
+            ", T3 Code needs Full Disk Access. Turn it on in System Settings, then come back to finish the import. You can revoke it again once the import is done.",
+          )}
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>

@@ -293,11 +293,12 @@ export function WorkingTimelineRow({ row }: { row: Extract<TimelineRow, { kind: 
 
   const { isCompacting, isPreparingWorktree, backgroundWorktreeSetup } =
     use(TimelineRowActivityCtx);
-  const shimmer = isPreparingWorktree || isCompacting;
+  const compacting = row.compacting ?? (isCompacting ? "Compacting…" : undefined);
+  const shimmer = isPreparingWorktree || compacting !== undefined;
   const label = isPreparingWorktree ? (
     uiT("Setting up worktree…")
-  ) : isCompacting ? (
-    <CompactingLabel />
+  ) : compacting !== undefined ? (
+    <CompactingLabel label={compacting} />
   ) : row.createdAt ? (
     <>
       {uiT("Working for")}
@@ -340,7 +341,9 @@ function BackgroundWorktreeSetupChip({ snapshot }: { snapshot: WorktreeSetupSnap
             variant="ghost-muted"
             size="micro"
             className="ml-auto min-w-0 shrink-0"
-            aria-label={`Background setup is still running: ${scriptName}. Show setup progress.`}
+            aria-label={uiT("Background setup is still running: {0}. Show setup progress.", {
+              "0": scriptName,
+            })}
           />
         }
       >
@@ -360,13 +363,11 @@ function BackgroundWorktreeSetupChip({ snapshot }: { snapshot: WorktreeSetupSnap
   );
 }
 
-function CompactingLabel() {
-  const { t: uiT } = useUiLanguage();
-
+function CompactingLabel({ label }: { label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <Minimize2Icon aria-hidden="true" className="size-3" />
-      {uiT("Compacting…")}
+      {label}
     </span>
   );
 }

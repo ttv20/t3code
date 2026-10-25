@@ -158,7 +158,7 @@ function AttachmentDocumentBody(props: {
         title={uiT("No preview for this file")}
         detail={
           props.nativeError ??
-          "No app on this device can show this format. Save or share it to open it elsewhere."
+          uiT("No app on this device can show this format. Save or share it to open it elsewhere.")
         }
         actionLabel="Try again"
         onAction={props.onOpenNative}
@@ -211,8 +211,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     setNativeViewer("open");
     setNativeOpen(true);
   }, [nativeViewer, uri]);
-  // The viewer mints its own fresh URL from the resource, so a link that expired while this
-  // screen sat in the background is never handed to Quick Look or ACTION_VIEW.
+  // Mint a fresh URL: cached URLs may expire in the background before Quick Look or ACTION_VIEW opens.
   const nativeSource = ((): FilePreviewSource | null => {
     const kind = nativeKind ?? "document";
     const base = { kind, name: params.name, mimeType: params.mimeType };
@@ -228,8 +227,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     const message = pendingNativeError.current;
     pendingNativeError.current = null;
     if (nativeViewer === null) {
-      // A file this screen renders itself: an explicit viewer failure is worth a word.
-      if (message) Dialog.alert("Could not open document", message);
+      if (message) Dialog.alert(uiT("Could not open document"), message);
       return;
     }
     if (message) {
@@ -250,7 +248,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     renderedMode
       ? ({
           id: "preview",
-          title: renderedMode === "table" ? "Table" : "Preview",
+          title: renderedMode === "table" ? uiT("Table") : uiT("Preview"),
           icon: renderedMode === "table" ? "tablecells" : "eye",
           inline: true,
           onPress: () => setRendered(true),
@@ -268,7 +266,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     content && activeMode === "source"
       ? ({
           id: "word-wrap",
-          title: appearance.codeWordBreak ? "Disable word wrap" : "Enable word wrap",
+          title: appearance.codeWordBreak ? uiT("Disable word wrap") : uiT("Enable word wrap"),
           icon: "text.alignleft",
           inline: false,
           onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
@@ -277,7 +275,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     content
       ? ({
           id: "copy",
-          title: content.truncated ? "Copy preview" : "Copy contents",
+          title: content.truncated ? uiT("Copy preview") : uiT("Copy contents"),
           icon: "doc.on.doc",
           inline: false,
           onPress: () => copyTextWithHaptic(content.text),
@@ -286,7 +284,7 @@ export function AttachmentFileScreen(props: AttachmentFileScreenProps) {
     uri
       ? ({
           id: "share",
-          title: sharing ? "Opening share sheet…" : "Save or share",
+          title: sharing ? uiT("Opening share sheet…") : uiT("Save or share"),
           icon: "square.and.arrow.up",
           inline: false,
           onPress: () => void share(),

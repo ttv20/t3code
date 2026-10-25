@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { LegendList } from "@legendapp/list/react-native";
@@ -20,8 +21,6 @@ import {
   useLinkedPullRequestLines,
 } from "./LinkedPullRequestList";
 import { useLinkedPullRequestActions } from "./useLinkedPullRequestActions";
-
-const TITLE = "Linked pull requests";
 
 export function ThreadPullRequestsSheet(
   _props: StaticScreenProps<{ readonly environmentId: string; readonly threadId: string }>,
@@ -50,9 +49,12 @@ export function ThreadPullRequestsSheet(
     runtime: selectedEnvironmentRuntime,
   });
   const rowInputs = useMemo(() => ({ lines, actions }), [lines, actions]);
+  const { singular } = actions.terminology;
+  const title = uiT("Linked {0}", { "0": uiT(actions.terminology.plural) });
 
   const content = (
     <View className="flex-1 android:bg-sheet-solid ios:bg-screen">
+      {/* oxlint-disable-next-line t3code/require-registered-list-scroll -- Sheet content; sheets sit outside workspace columns and keep their own header handling. */}
       <LegendList
         data={lines}
         keyExtractor={linkedPullRequestKey}
@@ -79,14 +81,19 @@ export function ThreadPullRequestsSheet(
         ListHeaderComponent={
           lines.length > 0 ? (
             <Text className="px-4 pt-2 pb-1 text-xs text-foreground-muted">
-              {openCount} {uiT("open ·")}
-              {lines.length} {uiT("linked")}
+              <UiText
+                message={"{0}  open ·{1}  linked"}
+                values={{ "0": openCount, "1": lines.length }}
+              />
             </Text>
           ) : null
         }
         ListEmptyComponent={
           <Text className="pt-6 text-center text-sm text-foreground-muted">
-            {uiT("No linked pull requests.")}
+            <UiText
+              message={"No linked {0}."}
+              values={{ "0": <UiText message={actions.terminology.plural} /> }}
+            />
           </Text>
         }
       />
@@ -96,12 +103,12 @@ export function ThreadPullRequestsSheet(
   if (Platform.OS === "ios") {
     return (
       <View collapsable={false} className="flex-1 bg-sheet">
-        <SheetHeader presentation="native" title={TITLE} onClose={() => navigation.goBack()} />
+        <SheetHeader presentation="native" title={title} onClose={() => navigation.goBack()} />
         {actions.canLink ? (
           <Toolbar placement="right">
             <Toolbar.Button
               icon="plus"
-              accessibilityLabel={uiT("Link pull request")}
+              accessibilityLabel={uiT("Link {0}", { "0": uiT(singular) })}
               onPress={actions.promptLink}
             />
           </Toolbar>
@@ -115,14 +122,14 @@ export function ThreadPullRequestsSheet(
     <View collapsable={false} className="flex-1 bg-header">
       <NativeStackScreenOptions options={{ sheetCornerRadius: 28 }} />
       <AndroidSheetHeader
-        title={TITLE}
+        title={title}
         hideBottomBorder
         onBack={() => navigation.goBack()}
         actions={
           actions.canLink
             ? [
                 {
-                  accessibilityLabel: uiT("Link pull request"),
+                  accessibilityLabel: uiT("Link {0}", { "0": uiT(singular) }),
                   icon: "plus",
                   onPress: actions.promptLink,
                 },

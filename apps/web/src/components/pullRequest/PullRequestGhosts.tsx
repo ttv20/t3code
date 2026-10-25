@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import type { PullRequestListEntry, PullRequestSummary } from "@t3tools/contracts";
 import {
@@ -11,6 +12,11 @@ import {
   UsersIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+  type ChangeRequestTerminology,
+} from "@t3tools/client-runtime/source-control-clients";
 
 import { readLocalApi } from "~/localApi";
 import { cn } from "~/lib/utils";
@@ -109,13 +115,14 @@ export function PullRequestDetailGhost({
         isDraft: summary.isDraft ?? entry?.isDraft,
       }
     : entry;
+  const terminology = sourceControlClients.get(seed?.provider).changeRequest;
   const statePresentation = seed
     ? resolvePullRequestState({
         state: seed.state,
         isDraft: seed.isDraft ?? false,
       })
     : null;
-  // Passing list rollups can omit workflows awaiting approval; wait for detail to claim success.
+  // Passing list rollups can omit workflows awaiting approval; wait for detail.
   const checksPresentation =
     seed?.checksState === "failing" || seed?.checksState === "pending"
       ? pullRequestChecksStatePresentation(seed.checksState)
@@ -128,7 +135,7 @@ export function PullRequestDetailGhost({
   return (
     <div
       role="status"
-      aria-label={uiT("Loading pull request")}
+      aria-label={uiT("Loading {0}", { "0": uiT(terminology.singular) })}
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden bg-background",
         !seed && "motion-safe:animate-skeleton",
@@ -153,7 +160,10 @@ export function PullRequestDetailGhost({
                 <span className="min-w-0 truncate font-medium">{seed.repository}</span>
                 <InlineButton
                   onClick={() => void readLocalApi()?.shell.openExternal(seed.url)}
-                  aria-label={uiT("Open pull request #{0} on host", { "0": seed.number })}
+                  aria-label={uiT("Open {0} #{1} on host", {
+                    "0": uiT(terminology.singular),
+                    "1": seed.number,
+                  })}
                 >
                   <span className={statePresentation?.toneClassName}>#{seed.number}</span>
                   <ExternalLinkIcon aria-hidden className="size-2.5" />
@@ -173,7 +183,9 @@ export function PullRequestDetailGhost({
             size="icon-xs"
             variant="ghost"
             disabled
-            aria-label={uiT("Pull request actions loading")}
+            aria-label={uiT("{0} actions loading", {
+              "0": uiT(capitalizeTerm(terminology.singular)),
+            })}
           >
             <EllipsisIcon aria-hidden className="size-4" />
           </Button>
@@ -181,7 +193,7 @@ export function PullRequestDetailGhost({
             <Button
               size="icon-xs"
               variant="ghost"
-              aria-label={uiT("Collapse pull request panel")}
+              aria-label={uiT("Collapse {0} panel", { "0": uiT(terminology.singular) })}
               onClick={onClose}
             >
               <PanelRightIcon aria-hidden className="size-3.5" />
@@ -214,7 +226,10 @@ export function PullRequestDetailGhost({
               updated={
                 seed ? (
                   <span>
-                    {uiT("updated")} <RelativeTime timestamp={seed.updatedAt} />
+                    <UiText
+                      message={"updated  {0}"}
+                      values={{ "0": <RelativeTime timestamp={seed.updatedAt} /> }}
+                    />
                   </span>
                 ) : (
                   <GhostBar className="h-3 w-16" />
@@ -225,7 +240,7 @@ export function PullRequestDetailGhost({
                   <PullRequestCopyableCode
                     key={checkout}
                     value={checkout}
-                    target="pull request checkout command"
+                    target={`${terminology.singular} checkout command`}
                     copyLabel="Copy checkout command"
                     copiedLabel="Checkout command copied"
                     className="ml-auto font-mono"
@@ -251,7 +266,7 @@ export function PullRequestDetailGhost({
                     key={seed.headBranch}
                     value={seed.headBranch}
                     target="branch name"
-                    copyLabel="Copy pull request branch"
+                    copyLabel={`Copy ${terminology.singular} branch`}
                     copiedLabel="Branch name copied"
                     className="min-w-0 font-mono"
                   />
@@ -302,8 +317,10 @@ export function PullRequestDetailGhost({
           <div className="space-y-2">
             <div className="grid min-h-7 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs sm:min-h-6">
               <span className="flex items-center gap-1.5 text-muted-foreground">
-                <UsersIcon aria-hidden className="size-3.5" />
-                {uiT("Reviewers")}
+                <UiText
+                  message={"{0}Reviewers"}
+                  values={{ "0": <UsersIcon aria-hidden className="size-3.5" /> }}
+                />
               </span>
               <span className="flex min-w-0 items-center gap-1.5 text-foreground">
                 <GhostBar className="h-3 w-10" />
@@ -319,8 +336,10 @@ export function PullRequestDetailGhost({
             </div>
             <div className="grid min-h-7 min-w-0 grid-cols-[6rem_minmax(0,1fr)] items-center gap-2 text-xs sm:min-h-6">
               <span className="flex items-center gap-1.5 text-muted-foreground">
-                <TagIcon aria-hidden className="size-3.5" />
-                {uiT("Labels")}
+                <UiText
+                  message={"{0}Labels"}
+                  values={{ "0": <TagIcon aria-hidden className="size-3.5" /> }}
+                />
               </span>
               <span className="flex min-w-0 flex-wrap items-center gap-1 text-foreground">
                 {entry?.labels ? (
@@ -416,13 +435,19 @@ export function PullRequestTimelineGhost({ rows = 6 }: { rows?: number }) {
   );
 }
 
-export function PullRequestConversationGhost({ rows = 3 }: { rows?: number }) {
+export function PullRequestConversationGhost({
+  rows = 3,
+  terminology,
+}: {
+  rows?: number;
+  terminology: ChangeRequestTerminology;
+}) {
   const { t: uiT } = useUiLanguage();
 
   return (
     <div
       role="status"
-      aria-label={uiT("Loading pull request conversation")}
+      aria-label={uiT("Loading {0} conversation", { "0": uiT(terminology.singular) })}
       className="motion-safe:animate-skeleton space-y-4 py-2"
     >
       {Array.from({ length: rows }, (_, index) => (

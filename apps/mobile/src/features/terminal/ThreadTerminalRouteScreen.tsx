@@ -309,9 +309,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
   const isEnvironmentReady = environment.presentation?.connection.phase === "connected";
   const requestedTerminalId = firstRouteParam(params.terminalId);
   const terminalId = requestedTerminalId ?? DEFAULT_TERMINAL_ID;
-  // The native view treats any new positive value as a capture, including the first value a
-  // freshly created view receives after a reconnect or remount. Only pass a value while a
-  // capture is pending, and keep the sequence increasing so the next request always differs.
+  // Any new positive value triggers capture, even on remount. Pass one only while pending and keep increasing it.
   const captureSequenceRef = useRef(0);
   const [captureRequest, setCaptureRequest] = useState(0);
   const [capturedOutput, setCapturedOutput] = useState<string | null>(null);
@@ -1122,7 +1120,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
       <View className="flex-1 bg-screen">
         <EmptyState
           title={uiT("Thread unavailable")}
-          detail="This terminal route needs an active thread and workspace."
+          detail={uiT("This terminal route needs an active thread and workspace.")}
         />
       </View>
     );
@@ -1133,7 +1131,9 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
       <View className="flex-1 bg-screen">
         <EmptyState
           title={uiT("Terminal unavailable")}
-          detail="This thread does not have a workspace root yet, so there is nowhere to open a shell."
+          detail={uiT(
+            "This thread does not have a workspace root yet, so there is nowhere to open a shell.",
+          )}
         />
       </View>
     );
@@ -1186,8 +1186,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
               Platform.OS === "android"
                 ? themeVariables["--color-card-alt"]
                 : terminalTheme.background,
-            // The v5 column extends behind UIKit chrome. Its measured top
-            // reservation is zero when UIKit has already inset the body or moved the bar.
+            // Measured top reservation is zero when UIKit already inset the body or moved the bar.
             paddingTop:
               Platform.OS === "ios" ? (nativeColumnMetrics?.safeArea.top ?? insets.top) : 0,
             paddingBottom:
@@ -1214,7 +1213,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
           ) : terminalSession.data === null && terminalSession.error === null ? (
             <EmptyState
               title={uiT("Checking terminal access")}
-              detail="Waiting for this connection's permissions."
+              detail={uiT("Waiting for this connection's permissions.")}
             />
           ) : !canReadTerminal && !canOperateTerminal ? (
             <EmptyState
@@ -1225,7 +1224,7 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
               }
               detail={
                 terminalSession.error ??
-                "This connection does not have permission to view terminals."
+                uiT("This connection does not have permission to view terminals.")
               }
             />
           ) : canOperateTerminal && launchLocation === null ? (
@@ -1234,20 +1233,20 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
             ) : (
               <EmptyState
                 title={uiT("Loading terminals")}
-                detail="Reading existing terminal sessions."
+                detail={uiT("Reading existing terminal sessions.")}
               />
             )
           ) : !canOperateTerminal && !hasTerminalTarget && sessionsPending ? (
             <EmptyState
               title={uiT("Loading terminals")}
-              detail="Reading existing terminal sessions."
+              detail={uiT("Reading existing terminal sessions.")}
             />
           ) : !canOperateTerminal && !hasTerminalTarget && sessionsError !== null ? (
             <EmptyState title={uiT("Could not load terminals")} detail={sessionsError} />
           ) : !canOperateTerminal && !hasTerminalTarget ? (
             <EmptyState
               title={uiT("No terminal sessions")}
-              detail="Existing terminals will appear here when another client opens one."
+              detail={uiT("Existing terminals will appear here when another client opens one.")}
             />
           ) : !canOperateTerminal && terminal.error !== null ? (
             <EmptyState title={uiT("Terminal unavailable")} detail={terminal.error} />
@@ -1279,7 +1278,10 @@ export function ThreadTerminalRouteScreen(props: ThreadTerminalRouteScreenProps)
                     setCaptureRequest(0);
                     if (text.trim()) setCapturedOutput(text);
                     else
-                      Dialog.alert("No terminal output", "There is no visible output to attach.");
+                      Dialog.alert(
+                        uiT("No terminal output"),
+                        uiT("There is no visible output to attach."),
+                      );
                   }}
                   onInput={handleInput}
                   onResize={handleResize}

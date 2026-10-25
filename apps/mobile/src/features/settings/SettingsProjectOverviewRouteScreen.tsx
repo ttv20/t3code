@@ -40,6 +40,9 @@ import {
   SettingsEnvironmentFilterHeader,
 } from "./components/SettingsEnvironmentFilterHeader";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
+import { leaveSettingsPage } from "./settings-navigation";
+import { workspaceHasColumns } from "../workspace/workspace-selection-store";
+import { DEFAULT_SETTINGS_PAGE } from "../workspace/workspace-tab-navigation";
 
 export function SettingsProjectOverviewRouteScreen() {
   const { t: uiT } = useUiLanguage();
@@ -66,7 +69,8 @@ export function SettingsProjectOverviewRouteScreen() {
   // The filter can move to another project while a removal is still running.
   const finishProjectRemoval = (projectKey: string | null) => {
     if (latestProjectKey.current !== projectKey) return;
-    if (navigation.isFocused()) navigation.goBack();
+    if (navigation.isFocused())
+      leaveSettingsPage(navigation, workspaceHasColumns(), DEFAULT_SETTINGS_PAGE);
     // Otherwise the filter keeps pointing at the removed project as an unavailable one.
     selectProject(null);
   };
@@ -160,8 +164,10 @@ function ProjectOverviewContent(props: {
       (entry) => entry.environmentId === denied.environmentId,
     );
     Dialog.alert(
-      "Failed to remove project",
-      `This connection cannot change projects in ${environment?.label ?? "this environment"}.`,
+      uiT("Failed to remove project"),
+      uiT("This connection cannot change projects in {0}.", {
+        "0": environment?.label ?? "this environment",
+      }),
     );
     return false;
   };
@@ -182,7 +188,7 @@ function ProjectOverviewContent(props: {
       threads,
     });
     Dialog.confirm({
-      title: plan.targetKind === "checkout" ? "Remove checkout" : "Remove project",
+      title: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
       message: plan.confirmationMessage,
       confirmText: plan.targetKind === "checkout" ? "Remove checkout" : "Remove project",
       destructive: true,
@@ -202,7 +208,7 @@ function ProjectOverviewContent(props: {
                 const error = squashAtomCommandFailure(result);
                 Dialog.alert(
                   uiT('Failed to remove "{0}"', { "0": member.title }),
-                  error instanceof Error ? error.message : "An error occurred.",
+                  error instanceof Error ? error.message : uiT("An error occurred."),
                 );
               }
               return;
@@ -349,7 +355,10 @@ function ProjectOverviewContent(props: {
                   "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched.",
                 )
               : props.members.length > 1
-                ? `Deletes all ${props.members.length} checkout entries and their threads on every machine. Files on disk are not touched.`
+                ? uiT(
+                    "Deletes all {0} checkout entries and their threads on every machine. Files on disk are not touched.",
+                    { "0": props.members.length },
+                  )
                 : uiT("Deletes the project entry and its threads. Files on disk are not touched.")
           }
           tone="danger"
@@ -373,7 +382,7 @@ function RemoveCheckoutAction(props: {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Remove checkout ${props.member.workspaceRoot}`}
+      accessibilityLabel={uiT("Remove checkout {0}", { "0": props.member.workspaceRoot })}
       disabled={props.disabled || !canRemove}
       onPress={props.onPress}
       className="self-start rounded-full border border-border bg-card px-3 py-1.5 disabled:opacity-40"

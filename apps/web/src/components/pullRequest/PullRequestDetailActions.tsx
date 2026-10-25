@@ -82,6 +82,7 @@ export function PullRequestCheckoutMenu({
   pickableEnvironments,
   actingEnvironmentId,
   onActingEnvironmentChange,
+  term,
 }: {
   handoff: string | null;
   checkoutRoot: string | null;
@@ -91,6 +92,8 @@ export function PullRequestCheckoutMenu({
   pickableEnvironments: ReadonlyArray<PickableEnvironment>;
   actingEnvironmentId: EnvironmentId;
   onActingEnvironmentChange: (environmentId: EnvironmentId) => void;
+  /** The host's word for a change request, as in "pull request". */
+  term: string;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -119,7 +122,9 @@ export function PullRequestCheckoutMenu({
             />
           }
         />
-        <TooltipPopup>{uiT("Check out this pull request")}</TooltipPopup>
+        <TooltipPopup>
+          {uiT("Check out this")} {term}
+        </TooltipPopup>
       </Tooltip>
       <MenuPopup align="end" side="bottom">
         <MenuItem disabled={!canPrepareWorktree} onClick={() => onCheckout("worktree")}>
@@ -136,7 +141,7 @@ export function PullRequestCheckoutMenu({
           <span className="flex min-w-0 flex-col">
             <span>{uiT("In this repository")}</span>
             <span className="text-xs text-muted-foreground">
-              {uiT("Switches the branch you are working in, like `gh pr checkout`.")}
+              {uiT("Switches the branch you are working in.")}
             </span>
           </span>
         </MenuItem>

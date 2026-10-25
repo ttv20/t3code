@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
 
 import { AppText } from "./AppText";
@@ -5,6 +6,8 @@ import { IconButton } from "./IconButton";
 import type { NumberFieldProps } from "./NumberField.types";
 
 export function NumberField(props: NumberFieldProps) {
+  const { t: uiT } = useUiLanguage();
+
   const adjust = (amount: number) => {
     if (props.disabled) return;
     const next = Math.max(props.min, Math.min(props.max, props.value + amount));
@@ -13,7 +16,6 @@ export function NumberField(props: NumberFieldProps) {
 
   return (
     <View className="shrink-0 flex-row items-center">
-      {/* Match the 32dp switch track while retaining 48dp button touch targets. */}
       <View
         pointerEvents="none"
         className="absolute inset-x-0 rounded-full bg-subtle"
@@ -21,7 +23,7 @@ export function NumberField(props: NumberFieldProps) {
       />
       <IconButton
         icon="minus"
-        accessibilityLabel={`Decrease ${props.label}`}
+        accessibilityLabel={uiT("Decrease {0}", { "0": props.label })}
         disabled={props.disabled || props.value <= props.min}
         onPress={() => adjust(-1)}
       />
@@ -36,7 +38,7 @@ export function NumberField(props: NumberFieldProps) {
       </AppText>
       <IconButton
         icon="plus"
-        accessibilityLabel={`Increase ${props.label}`}
+        accessibilityLabel={uiT("Increase {0}", { "0": props.label })}
         disabled={props.disabled || props.value >= props.max}
         onPress={() => adjust(1)}
       />

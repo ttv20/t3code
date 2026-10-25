@@ -1,4 +1,8 @@
 import { useUiLanguage } from "../../i18n";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+} from "@t3tools/client-runtime/source-control-clients";
 import { memo } from "react";
 import { Pressable, View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -73,7 +77,27 @@ export const PullRequestListRow = memo(
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: props.selected, busy: props.busy }}
-            accessibilityLabel={`Pull request ${item.number}, ${item.title}, ${status.label}${conflict ? `, ${conflict.label.toLowerCase()}` : ""}, by ${item.author?.login ?? "unknown author"}${review ? `, ${review.accessibleLabel}` : ""}${item.checksState ? `, checks ${item.checksState}` : ""}${item.stack ? `, stack ${item.stack.position} of ${item.stack.size}` : ""}${item.labels.length ? `, ${item.labels.map((label) => label.name).join(", ")}` : ""}, ${item.additions} additions, ${item.deletions} deletions`}
+            accessibilityLabel={uiT(
+              "{0} {1}, {2}, {3}{4}, by {5}{6}{7}{8}{9}, {10} additions, {11} deletions",
+              {
+                "0": uiT(
+                  capitalizeTerm(sourceControlClients.get(item.provider).changeRequest.singular),
+                ),
+                "1": item.number,
+                "2": item.title,
+                "3": status.label,
+                "4": conflict ? `, ${conflict.label.toLowerCase()}` : "",
+                "5": item.author?.login ?? "unknown author",
+                "6": review ? `, ${review.accessibleLabel}` : "",
+                "7": item.checksState ? `, checks ${item.checksState}` : "",
+                "8": item.stack ? `, stack ${item.stack.position} of ${item.stack.size}` : "",
+                "9": item.labels.length
+                  ? `, ${item.labels.map((label) => label.name).join(", ")}`
+                  : "",
+                "10": item.additions,
+                "11": item.deletions,
+              },
+            )}
             accessibilityHint={uiT("Double tap to open. Touch and hold for quick actions.")}
             onPress={() => props.onSelect(item)}
             disabled={props.busy}

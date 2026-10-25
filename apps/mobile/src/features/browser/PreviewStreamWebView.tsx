@@ -75,7 +75,6 @@ async function sendFilesToPage(chooser: PreviewStreamFileChooser, pick: boolean)
       endHandoff();
     }
     for (const asset of result.canceled ? [] : result.assets) {
-      // React Native's FormData uploads a file part from its URI.
       body.append("file", {
         uri: asset.uri,
         name: asset.name,
@@ -264,7 +263,7 @@ function PreviewStreamDocumentView({
     setFileChooser(null);
     void sendFilesToPage(chooser, pick).catch((cause: unknown) =>
       Dialog.alert(
-        "Could not send the files to the page",
+        uiT("Could not send the files to the page"),
         cause instanceof Error ? cause.message : undefined,
       ),
     );
@@ -281,7 +280,7 @@ function PreviewStreamDocumentView({
       (text) => {
         if (text) command({ type: "text", text });
       },
-      () => Dialog.alert("Could not read the clipboard"),
+      () => Dialog.alert(uiT("Could not read the clipboard")),
     );
   const fail = (message: string) => {
     if (!active.current || failed.current) return;
@@ -445,7 +444,7 @@ function PreviewStreamDocumentView({
           <View className="flex-row justify-end gap-3">
             <Button label={uiT("Cancel")} tone="text" onPress={() => answerFileChooser(false)} />
             <Button
-              label={`Choose ${fileChooser.multiple ? "files" : "file"}`}
+              label={uiT("Choose {0}", { "0": fileChooser.multiple ? "files" : "file" })}
               tone="secondary"
               onPress={() => answerFileChooser(true)}
             />

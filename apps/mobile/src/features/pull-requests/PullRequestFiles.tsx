@@ -1,4 +1,7 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import {
   StackActions,
@@ -50,10 +53,13 @@ function fileDirectory(path: string) {
 }
 
 function useChangedFiles(params: PullRequestDiffParams) {
-  const diff = usePullRequestDiff(params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(pullRequestTarget(params)));
   // A commit's diff is part of the pull request, so the PR's file counts and viewed state don't apply.
   const pr = params.commit ? null : detail.data;
+  const terminology = sourceControlClients.get(
+    (detail.data ?? params.initialSummary)?.provider,
+  ).changeRequest;
+  const diff = usePullRequestDiff(params, terminology);
   const viewed = usePullRequestFilesViewed(params, pr);
   const filter = usePullRequestFileFilter(diff.parsed);
   const parsed = filter.parsed;
@@ -62,6 +68,7 @@ function useChangedFiles(params: PullRequestDiffParams) {
     filter,
     viewed,
     pr,
+    terminology,
     parsed,
     loading: diff.isPending && parsed.kind === "empty" && !diff.error,
   };
@@ -104,7 +111,12 @@ function FileRow(props: {
   return (
     <RowPressable
       accessibilityRole="button"
-      accessibilityLabel={`View diff for ${file.path}, ${file.additions} additions, ${file.deletions} deletions${props.viewed ? ", viewed" : ""}`}
+      accessibilityLabel={uiT("View diff for {0}, {1} additions, {2} deletions{3}", {
+        "0": file.path,
+        "1": file.additions,
+        "2": file.deletions,
+        "3": props.viewed ? ", viewed" : "",
+      })}
       onPress={props.onPress}
       className="min-h-14 flex-row items-center gap-3 border-b border-border-subtle py-3 active:opacity-70"
     >
@@ -120,8 +132,7 @@ function FileRow(props: {
         ) : null}
         {file.previousPath ? (
           <Text textRole="caption" className="text-foreground-muted" numberOfLines={1}>
-            {uiT("Renamed from")}
-            {file.previousPath}
+            <UiText message={"Renamed from{0}"} values={{ "0": file.previousPath }} />
           </Text>
         ) : null}
       </View>
@@ -195,7 +206,7 @@ function NoVisibleFiles({ files }: { readonly files: ChangedFiles }) {
         title={
           diff.nextCursor ? uiT("No non-test files loaded yet") : uiT("Only test files changed")
         }
-        detail="Test files are hidden from this review."
+        detail={uiT("Test files are hidden from this review.")}
         action={<Button label={uiT("Show test files")} tone="contrast" onPress={filter.showAll} />}
         variant="plain"
       />
@@ -275,7 +286,7 @@ export function usePullRequestFilesSection(params: PullRequestParams) {
     refresh: diff.refresh,
     header: (
       <>
-        <PullRequestReadStatus pending={false} error={diff.error} />
+        <PullRequestReadStatus pending={false} error={diff.error} terminology={files.terminology} />
         {loading ? (
           <View
             accessibilityLabel={uiT("Loading changed files")}
@@ -453,6 +464,7 @@ export function PullRequestFilesSheet({ route }: StaticScreenProps<PullRequestDi
       </Toolbar>
       <ScreenContent>
         <AnimatedLegendList
+          renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
           className="flex-1"
           data={parsed.kind === "files" ? groupByDirectory(parsed.files, collapsed) : []}
           keyExtractor={(item) => item.key}
@@ -492,7 +504,11 @@ export function PullRequestFilesSheet({ route }: StaticScreenProps<PullRequestDi
           estimatedItemSize={64}
           ListHeaderComponent={
             <>
-              <PullRequestReadStatus pending={false} error={diff.error} />
+              <PullRequestReadStatus
+                pending={false}
+                error={diff.error}
+                terminology={files.terminology}
+              />
               {parsed.kind === "files" ? (
                 <View className="flex-row items-center gap-2 py-2">
                   <Text textRole="caption" className="min-w-0 flex-1 text-foreground-muted">

@@ -22,7 +22,7 @@ import { getSourceControlPresentation } from "~/sourceControlPresentation";
 import { useEnvironmentQuery } from "~/state/query";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { vcsEnvironment } from "~/state/vcs";
-import { OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST } from "./pullRequest/pullRequestCheckoutToast";
+import { offHeadPullRequestCheckoutToast } from "./pullRequest/pullRequestCheckoutToast";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -116,7 +116,6 @@ export function PullRequestThreadDialog({
       cwd,
       reference: parsedReference,
     })?.pullRequest ?? null;
-  // The prepare action keys on this scope object, so it only ever reaches the hook.
   const preparePullRequestThreadAction = usePreparePullRequestThreadAction({ environmentId, cwd });
   const canOperateThread = useEnvironmentScope(environmentId, AuthOrchestrationOperateScope);
 
@@ -166,7 +165,7 @@ export function PullRequestThreadDialog({
         setPrepareErrorMessage(
           error instanceof Error
             ? error.message
-            : uiT("Failed to prepare {0} thread.", { "0": terminology.singular }),
+            : uiT("Failed to prepare {0} thread.", { "0": uiT(terminology.singular) }),
         );
       }
       return;
@@ -176,7 +175,7 @@ export function PullRequestThreadDialog({
       worktreePath: result.value.worktreePath,
     });
     if (!result.value.isOnPullRequestHead) {
-      toastManager.add(OFF_HEAD_PULL_REQUEST_CHECKOUT_TOAST);
+      toastManager.add(offHeadPullRequestCheckoutToast(terminology));
     }
     onOpenChange(false);
   };
@@ -184,9 +183,11 @@ export function PullRequestThreadDialog({
   const validationMessage = !referenceDirty
     ? null
     : reference.trim().length === 0
-      ? `Paste a ${terminology.singular} URL, checkout command, or enter 123 / #123.`
+      ? uiT("Paste a {0} URL, checkout command, or enter 123 / #123.", {
+          "0": uiT(terminology.singular),
+        })
       : parsedReference === null
-        ? `Use a ${terminology.singular} URL, checkout command, 123, or #123.`
+        ? uiT("Use a {0} URL, checkout command, 123, or #123.", { "0": uiT(terminology.singular) })
         : null;
   const errorMessage =
     validationMessage ??
@@ -196,7 +197,7 @@ export function PullRequestThreadDialog({
       : preparePullRequestThreadAction.error instanceof Error
         ? preparePullRequestThreadAction.error.message
         : preparePullRequestThreadAction.error
-          ? uiT("Failed to prepare {0} thread.", { "0": terminology.singular })
+          ? uiT("Failed to prepare {0} thread.", { "0": uiT(terminology.singular) })
           : null);
 
   return (
@@ -219,7 +220,10 @@ export function PullRequestThreadDialog({
               message={
                 "Resolve a {0} {1}, then create the draft thread in the main repo or in a dedicated worktree."
               }
-              values={{ "0": sourceControlPresentation.providerName, "1": terminology.singular }}
+              values={{
+                "0": sourceControlPresentation.providerName,
+                "1": <UiText message={terminology.singular} />,
+              }}
             />
           </DialogDescription>
         </DialogHeader>
@@ -231,7 +235,7 @@ export function PullRequestThreadDialog({
             <Input
               ref={referenceInputRef}
               placeholder={uiT("{0} URL, checkout command, or #42", {
-                "0": terminology.shortLabel,
+                "0": uiT(terminology.shortLabel),
               })}
               value={reference}
               onChange={(event) => {
@@ -259,8 +263,14 @@ export function PullRequestThreadDialog({
                 <div className="min-w-0 [unicode-bidi:plaintext]">
                   <p className="truncate font-medium text-sm">{resolvedPullRequest.title}</p>
                   <p className="truncate text-muted-foreground text-xs">
-                    #{resolvedPullRequest.number} · {resolvedPullRequest.headBranch} {uiT("to")}{" "}
-                    {resolvedPullRequest.baseBranch}
+                    <UiText
+                      message={"#{0} · {1}  to {2}"}
+                      values={{
+                        "0": resolvedPullRequest.number,
+                        "1": resolvedPullRequest.headBranch,
+                        "2": resolvedPullRequest.baseBranch,
+                      }}
+                    />
                   </p>
                 </div>
                 <span className={cn("shrink-0 text-xs capitalize", statusTone)}>

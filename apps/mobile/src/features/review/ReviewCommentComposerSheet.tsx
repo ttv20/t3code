@@ -2,7 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { TextInputWrapper } from "expo-paste-input";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, View, useWindowDimensions } from "react-native";
 import { KeyboardAvoidingView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,10 +28,7 @@ import {
 import { useAppearanceCodeSurface } from "../settings/appearance/useAppearanceCodeSurface";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { changeTone, DiffTokenText, ReviewChangeBar } from "./reviewDiffRendering";
-import {
-  highlightReviewSelectedLines,
-  type ReviewHighlightedToken,
-} from "./shikiReviewHighlighter";
+import { highlightReviewSelectedLines } from "./highlightReviewSelectedLines";
 
 const REVIEW_COMMENT_PREVIEW_MAX_LINES = 5;
 
@@ -51,15 +48,23 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
   const { codeSurface } = useAppearanceCodeSurface();
   const { environmentId, threadId } = props.route.params;
   const [commentText, setCommentText] = useState("");
-  const [highlightedLinesById, setHighlightedLinesById] = useState<
-    Record<string, ReadonlyArray<ReviewHighlightedToken>>
-  >({});
   const [attachments, setAttachments] = useState<ReadonlyArray<DraftComposerImageAttachment>>([]);
   const [previewFile, setPreviewFile] = useState<FilePreviewSource | null>(null);
 
   const selectedLines = useMemo(
     () => (target ? getSelectedReviewCommentLines(target) : []),
     [target],
+  );
+  const highlightedLinesById = useMemo(
+    () =>
+      target
+        ? highlightReviewSelectedLines({
+            filePath: target.filePath,
+            lines: selectedLines,
+            theme: selectedTheme,
+          })
+        : {},
+    [selectedLines, selectedTheme, target],
   );
   const firstLine = selectedLines[0] ?? null;
   const lastLine = selectedLines[selectedLines.length - 1] ?? null;
@@ -70,11 +75,11 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
   const selectionLabel =
     selectedLines.length === 1
       ? firstNumber !== null
-        ? `Line ${firstNumber}`
+        ? uiT("Line {0}", { "0": firstNumber })
         : uiT("File comment")
       : firstNumber !== null && lastNumber !== null
-        ? `Lines ${firstNumber}-${lastNumber}`
-        : `${selectedLines.length} lines selected`;
+        ? uiT("Lines {0}-{1}", { "0": firstNumber, "1": lastNumber })
+        : uiT("{0} lines selected", { "0": selectedLines.length });
   const previewHeight = Math.max(
     Math.min(selectedLines.length, REVIEW_COMMENT_PREVIEW_MAX_LINES) * codeSurface.rowHeight,
     codeSurface.rowHeight,
@@ -99,34 +104,6 @@ export function ReviewCommentComposerSheet(props: ReviewCommentComposerSheetProp
       }
     })();
   });
-
-  useEffect(() => {
-    if (!target || selectedLines.length === 0) {
-      setHighlightedLinesById({});
-      return;
-    }
-
-    let cancelled = false;
-    void highlightReviewSelectedLines({
-      filePath: target.filePath,
-      lines: selectedLines,
-      theme: selectedTheme,
-    })
-      .then((next) => {
-        if (!cancelled) {
-          setHighlightedLinesById(next);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHighlightedLinesById({});
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedLines, selectedTheme, target]);
 
   async function handlePickImages(): Promise<void> {
     const result = await pickComposerImages({ existingCount: attachments.length });

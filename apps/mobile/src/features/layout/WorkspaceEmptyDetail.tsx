@@ -9,13 +9,15 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import type { WorkspaceTab } from "../workspace/workspace-tabs-state";
 
 export function WorkspaceEmptyDetail(props: {
-  readonly tab?: WorkspaceTab;
+  readonly tab?: WorkspaceTab | "settings";
   readonly onStartNewTask?: () => void;
   readonly onAddConnection?: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
   const pullRequests = props.tab === "pullRequests";
+  const settings = props.tab === "settings";
+  if (props.tab === "usage") return <View className="flex-1 bg-screen" />;
   return (
     <View
       className={
@@ -28,7 +30,7 @@ export function WorkspaceEmptyDetail(props: {
         <View className="w-full max-w-[430px]">
           <EmptyState
             title={uiT("No environments connected")}
-            detail="Add an environment to load projects and start coding sessions."
+            detail={uiT("Add an environment to load projects and start coding sessions.")}
             variant="plain"
             action={
               <FloatingActionButton
@@ -50,16 +52,22 @@ export function WorkspaceEmptyDetail(props: {
             type="hierarchical"
           />
           <Text className="text-center text-xl font-t3-bold">
-            {pullRequests ? uiT("Select a pull request") : uiT("Select a thread")}
+            {settings
+              ? "Select a setting"
+              : pullRequests
+                ? uiT("Select a pull request")
+                : uiT("Select a thread")}
           </Text>
           <Text className="text-center text-base text-foreground-muted">
-            {pullRequests
-              ? uiT("Choose a pull request from the sidebar to review it.")
-              : Platform.OS === "android"
-                ? uiT("Choose a thread from the sidebar or start a new thread.")
-                : uiT("Choose a thread from the sidebar or start a new task.")}
+            {settings
+              ? "Choose a page from the sidebar."
+              : pullRequests
+                ? uiT("Choose a pull request from the sidebar to review it.")
+                : Platform.OS === "android"
+                  ? uiT("Choose a thread from the sidebar or start a new thread.")
+                  : uiT("Choose a thread from the sidebar or start a new task.")}
           </Text>
-          {props.onStartNewTask && !pullRequests ? (
+          {props.onStartNewTask && !pullRequests && !settings ? (
             Platform.OS === "android" ? (
               <NewThreadButton extended className="mt-2" onPress={props.onStartNewTask} />
             ) : (

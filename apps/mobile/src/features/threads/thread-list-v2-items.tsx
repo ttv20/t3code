@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import type { ThreadRowProviderInstance } from "./thread-provider-instance";
@@ -88,6 +89,12 @@ const STATUS_LABEL_BY_STATUS: Partial<Record<ThreadListV2Status, StatusLabel>> =
     className: "text-adaptive-indigo-600-300",
     iconTintClassName: "accent-adaptive-indigo-600-300",
   },
+  request: {
+    label: "Request",
+    icon: "person.crop.circle",
+    className: "text-adaptive-fuchsia-600-300",
+    iconTintClassName: "accent-adaptive-fuchsia-600-300",
+  },
   working: {
     label: "Working",
     icon: "circle.dashed",
@@ -126,8 +133,6 @@ function ThreadListV2Duration(props: { readonly startedAt: string | null }) {
   if (!Number.isFinite(startedAtMs)) return null;
   return ` ${formatWorkingDurationLabel(nowMs - startedAtMs)}`;
 }
-
-const SIDEBAR_V2_ROW_RADIUS = 12;
 
 function ThreadListV2Section(props: {
   readonly label: string;
@@ -228,6 +233,8 @@ const SHELF_LABEL = { working: "Working", snoozed: "Snoozed", settled: "Settled"
 function ThreadListV2ShelfHeader(
   props: ThreadListV2ShelfHeaderProps & { readonly kind: keyof typeof SHELF_LABEL },
 ) {
+  const { t: uiT } = useUiLanguage();
+
   const label = SHELF_LABEL[props.kind];
   return (
     <ThreadListV2Section
@@ -239,7 +246,10 @@ function ThreadListV2ShelfHeader(
         disabled: props.disabled,
         onToggle: props.onToggle,
         accessibilityLabel: `${props.count} ${props.kind} ${props.count === 1 ? "thread" : "threads"}`,
-        accessibilityHint: `${props.expanded ? "Collapses" : "Expands"} the ${props.kind} threads.`,
+        accessibilityHint: uiT("{0} the {1} threads.", {
+          "0": uiT(props.expanded ? "Collapses" : "Expands"),
+          "1": uiT(props.kind),
+        }),
       }}
     />
   );
@@ -287,8 +297,7 @@ export const ThreadListV2ShowMoreRow = memo(function ThreadListV2ShowMoreRow(pro
             : "text-xs font-t3-medium text-foreground-muted"
         }
       >
-        {uiT("Show more (")}
-        {props.hiddenCount} {uiT("settled hidden)")}
+        <UiText message={"Show more ({0}  settled hidden)"} values={{ "0": props.hiddenCount }} />
       </Text>
     </Pressable>
   );
@@ -304,6 +313,7 @@ const DRAFT_TASK_MENU_ACTIONS: MenuAction[] = [
 
 export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props: {
   readonly pendingTask: PendingNewTask;
+  readonly selected?: boolean;
   readonly project: EnvironmentProject | null;
   readonly projectTitle?: string;
   readonly environmentLabel: string | null;
@@ -326,9 +336,17 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
   const dormant = useSwipeRowDormant(props.activationKey);
   const theme = useUniwindTheme();
   const sidebarPane = props.pane === "sidebar";
-  const rowAppearance = getThreadListV2RowAppearance(theme, sidebarPane, false);
+  const rowAppearance = getThreadListV2RowAppearance(theme, sidebarPane, props.selected ?? false);
   const isDraft = pendingTask.kind === "draft";
   const deleteLabel = isDraft ? uiT("Discard") : uiT("Delete");
+  const taskMenuActions = useMemo(
+    () =>
+      (isDraft ? DRAFT_TASK_MENU_ACTIONS : PENDING_TASK_MENU_ACTIONS).map((action) => ({
+        ...action,
+        title: uiT(action.title),
+      })),
+    [isDraft, uiT],
+  );
   const handleDelete = useCallback(
     () => onDeletePendingTask(pendingTask),
     [onDeletePendingTask, pendingTask],
@@ -474,32 +492,27 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
         threadTitle={pendingTask.title}
       >
         {() => (
-          <Menu
-            actions={isDraft ? DRAFT_TASK_MENU_ACTIONS : PENDING_TASK_MENU_ACTIONS}
-            onPressAction={handleMenuAction}
-            shouldOpenOnLongPress
-          >
+          <Menu actions={taskMenuActions} onPressAction={handleMenuAction} shouldOpenOnLongPress>
             <RowPressable
               accessibilityHint={
                 isDraft
-                  ? `Opens the draft in the new task composer. Swipe left to ${deleteLabel.toLowerCase()}.`
-                  : `Sends when the environment reconnects. Opens the task for editing. Swipe left to ${deleteLabel.toLowerCase()}.`
+                  ? uiT("Opens the draft in the new task composer. Swipe left to {0}.", {
+                      "0": deleteLabel.toLowerCase(),
+                    })
+                  : uiT(
+                      "Sends when the environment reconnects. Opens the task for editing. Swipe left to {0}.",
+                      { "0": deleteLabel.toLowerCase() },
+                    )
               }
               accessibilityLabel={pendingTask.title}
               accessibilityRole="button"
+              accessibilityState={{ selected: props.selected ?? false }}
               key={pendingTask.key}
-              className={sidebarPane ? "bg-drawer" : "bg-screen"}
-              interactionClassName={sidebarPane ? "bg-thread-hover" : "bg-row-hover"}
+              className={rowAppearance.className}
+              interactionClassName={rowAppearance.interactionClassName}
+              interactionOpacity={rowAppearance.interactionOpacity}
               onPress={() => onSelectPendingTask(pendingTask)}
-              style={
-                sidebarPane
-                  ? {
-                      borderRadius: SIDEBAR_V2_ROW_RADIUS,
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                    }
-                  : undefined
-              }
+              style={rowAppearance.cardStyle}
             >
               {sidebarPane ? (
                 rowContent
@@ -601,6 +614,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const pinnedRow = props.pinned === true;
   const dormant = useSwipeRowDormant(props.activationKey);
 
+  const selectThread = () => onSelectThread(thread);
   const { providerDrivers, providerIconUrl } = useMemo(() => {
     const provider = props.providers?.find(
       (candidate) =>
@@ -662,10 +676,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   );
   const handleSettle = useCallback(() => onSettleThread(thread), [onSettleThread, thread]);
   const [customSnoozeOpen, setCustomSnoozeOpen] = useState(false);
-  // A recycled cell reassigns this mounted row to a different thread without
-  // remounting it, and the render closure stops running while list equality
-  // says the item is unchanged — so any row-local UI state must be dismissed
-  // when the identity under it changes.
+  // Recycling changes identity without remounting; clear local UI directly because equality may skip the render closure.
   const rowIdentity = `${thread.environmentId}:${thread.id}`;
   const [boundIdentity, setBoundIdentity] = useState(rowIdentity);
   if (boundIdentity !== rowIdentity) {
@@ -689,9 +700,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const handleArchive = useCallback(() => onArchiveThread(thread), [onArchiveThread, thread]);
 
   const canUnsettle = variant === "slim";
-  // The React Compiler caches render results on props and state, so a clock read
-  // in render would stay frozen until `thread` changes: the gate could never
-  // expire and its timer would re-fire every 50ms. The gate's clock is state.
+  // Keep time in state; cached render-time reads freeze the gate and trigger 50ms expiry loops.
   const [snoozeGateClock, setSnoozeGateClock] = useState(() => ({ thread, now: Date.now() }));
   if (snoozeGateClock.thread !== thread) setSnoozeGateClock({ thread, now: Date.now() });
   const snoozeGateNow = new Date(snoozeGateClock.now).toISOString();
@@ -915,8 +924,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         handleSnooze(snoozeSelection.preset.snoozedUntil);
       } else if (snoozeSelection._tag === "expired") {
         Dialog.alert(
-          "Could not snooze thread",
-          "That snooze time has passed. Choose another time.",
+          uiT("Could not snooze thread"),
+          uiT("That snooze time has passed. Choose another time."),
         );
       }
     },
@@ -951,7 +960,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     }
     if (swipeActions.primary === "unsnooze") {
       return {
-        accessibilityLabel: `Wake ${thread.title} now`,
+        accessibilityLabel: uiT("Wake {0} now", { "0": thread.title }),
         icon: "clock" as const,
         label: uiT("Wake"),
         onPress: handleUnsnooze,
@@ -959,13 +968,13 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     }
     return swipeActions.primary === "unsettle"
       ? {
-          accessibilityLabel: `Un-settle ${thread.title}`,
+          accessibilityLabel: uiT("Un-settle {0}", { "0": thread.title }),
           icon: "arrow.uturn.backward" as const,
           label: uiT("Un-settle"),
           onPress: handleUnsettle,
         }
       : {
-          accessibilityLabel: `Settle ${thread.title}`,
+          accessibilityLabel: uiT("Settle {0}", { "0": thread.title }),
           icon: "checkmark" as const,
           label: uiT("Settle"),
           onPress: handleSettle,
@@ -983,7 +992,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     () =>
       swipeActions.secondary === "snooze"
         ? {
-            accessibilityLabel: `Choose when to snooze ${thread.title}`,
+            accessibilityLabel: uiT("Choose when to snooze {0}", { "0": thread.title }),
             icon: "clock" as const,
             label: uiT("Snooze"),
             menu: {
@@ -999,8 +1008,10 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const swipeAccessibilityHint = !canOperateThread
     ? uiT("Opens the thread")
     : secondaryAction === null
-      ? `Opens the thread. Swipe left to ${primaryAction.label.toLowerCase()}.`
-      : `Opens the thread. Swipe left for ${primaryAction.label.toLowerCase()} and snooze actions.`;
+      ? uiT("Opens the thread. Swipe left to {0}.", { "0": primaryAction.label.toLowerCase() })
+      : uiT("Opens the thread. Swipe left for {0} and snooze actions.", {
+          "0": primaryAction.label.toLowerCase(),
+        });
 
   const cardContent = (
     <>
@@ -1199,8 +1210,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             accessibilityRole="button"
             accessibilityLabel={prBadgeLabel ?? undefined}
             onPress={handleOpenPullRequests}
-            // Without a long-press handler a hold that opens the row's iOS
-            // context menu would also open the pull request on release.
+            // Handle long-press so opening the iOS row menu cannot also open the PR on release.
             onLongPress={() => undefined}
             style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
           >
@@ -1282,7 +1292,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         }}
         onPress={() => {
           close();
-          onSelectThread(thread);
+          selectThread();
         }}
         style={rowAppearance.cardStyle}
       >
@@ -1313,7 +1323,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         className={rowAppearance.className}
         onPress={() => {
           close();
-          onSelectThread(thread);
+          selectThread();
         }}
         style={rowAppearance.style}
       >

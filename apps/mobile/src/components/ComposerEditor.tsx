@@ -4,7 +4,6 @@ import { ComposerContextId } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { useNavigation } from "@react-navigation/native";
 import { useEffect, useRef, useState } from "react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { encodeComposerContextFragment } from "@t3tools/shared/composerContextClipboard";
@@ -25,6 +24,7 @@ import {
 } from "../state/use-composer-drafts";
 import { importComposerContextClipboard } from "../lib/composerContextClipboard";
 import { mobilePreferencesAtom } from "../state/preferences";
+import { useOpenLinkedThread } from "../features/threads/useOpenLinkedThread";
 import { ComposerContextSheet } from "./ComposerContextSheet";
 import { AppText as Text } from "./ui/AppText";
 import {
@@ -107,8 +107,8 @@ export function ComposerEditor({
       }
       if (!insertComposerDraftContext(draftKey, result, insertion)) {
         Dialog.alert(
-          "Could not paste context",
-          "Remove some attachments or context items from the draft, then paste again.",
+          uiT("Could not paste context"),
+          uiT("Remove some attachments or context items from the draft, then paste again."),
         );
         return;
       }
@@ -123,7 +123,7 @@ export function ComposerEditor({
         );
       if (warnings.length > 0)
         Dialog.alert(
-          "Some context is unavailable",
+          uiT("Some context is unavailable"),
           [...warnings, "Those references are marked unavailable."].join("\n\n"),
         );
     });
@@ -133,8 +133,8 @@ export function ComposerEditor({
     if (AsyncResult.isFailure(settled) && !controller.signal.aborted) {
       const error = squashAtomCommandFailure(settled);
       Dialog.alert(
-        "Could not paste context",
-        error instanceof Error ? error.message : "Try copying again.",
+        uiT("Could not paste context"),
+        error instanceof Error ? error.message : uiT("Try copying again."),
       );
     }
   };
@@ -156,7 +156,7 @@ export function ComposerEditor({
           }),
         })
       : "";
-  const navigation = useNavigation();
+  const openLinkedThread = useOpenLinkedThread();
   const selectedReference = selected
     ? collectComposerContextReferences(selected.source)[0]
     : undefined;
@@ -241,7 +241,7 @@ export function ComposerEditor({
             : {})}
           onOpenThread={(thread) => {
             setSelected(null);
-            navigation.navigate("Thread", {
+            openLinkedThread({
               environmentId: String(thread.environmentId),
               threadId: String(thread.threadId),
             });

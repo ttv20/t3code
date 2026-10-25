@@ -53,8 +53,7 @@ export function QuestionAttachments(props: {
     props.requestId,
     props.question.id,
   ]);
-  // A focused input that unmounts never delivers its onBlur, so release focus here or
-  // the screen would keep treating the keyboard as owned by a removed input.
+  // Unmounted inputs never emit onBlur; explicitly release keyboard ownership.
   const focusedRef = useRef(false);
   const onInputFocusChange = props.onInputFocusChange;
   const releaseFocus = useEffectEvent(() => {
@@ -113,13 +112,13 @@ export function QuestionAttachments(props: {
           (appAtomRegistry.get(questionAttachmentPreparationAtom)[key] ?? 0) > 0
         ) {
           if (append(key, images) > 0)
-            Dialog.alert("Could not paste image", "Too many attachments.");
+            Dialog.alert(uiT("Could not paste image"), uiT("Too many attachments."));
         } else await releaseUnusedComposerAttachmentFiles(images);
       })
       .catch((error) =>
         Dialog.alert(
-          "Could not paste image",
-          error instanceof Error ? error.message : "Try again.",
+          uiT("Could not paste image"),
+          error instanceof Error ? error.message : uiT("Try again."),
         ),
       )
       .finally(() => changeQuestionAttachmentPreparation(key, -1));
@@ -161,12 +160,15 @@ export function QuestionAttachments(props: {
       }
       const rejected = append(key, picked);
       if (result.error || rejected > 0)
-        Dialog.alert("Could not attach file", result.error ?? "Too many attachments.");
+        Dialog.alert(uiT("Could not attach file"), result.error ?? uiT("Too many attachments."));
     });
     changeQuestionAttachmentPreparation(key, -1);
     if (AsyncResult.isFailure(picked)) {
       const error = squashAtomCommandFailure(picked);
-      Dialog.alert("Could not attach file", error instanceof Error ? error.message : "Try again.");
+      Dialog.alert(
+        uiT("Could not attach file"),
+        error instanceof Error ? error.message : uiT("Try again."),
+      );
     }
   };
   return (

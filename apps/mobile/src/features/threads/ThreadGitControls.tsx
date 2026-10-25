@@ -18,6 +18,7 @@ import {
   resolveQuickAction,
 } from "@t3tools/client-runtime/state/vcs";
 import { useNavigation } from "@react-navigation/native";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 
 import { useEnvironmentScope } from "../../state/session";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
@@ -64,7 +65,10 @@ function compactMenuStatus(gitStatus: VcsStatusResult | null): string {
     parts.push(`${gitStatus.behindCount} behind`);
   }
   if (gitStatus.pr?.state === "open") {
-    parts.push(`PR #${gitStatus.pr.number}`);
+    const { shortLabel } = sourceControlClients.get(
+      gitStatus.sourceControlProvider?.kind,
+    ).changeRequest;
+    parts.push(`${shortLabel} #${gitStatus.pr.number}`);
   }
 
   return parts.join(" · ");
@@ -87,6 +91,7 @@ export type ThreadGitMenuProps = {
   readonly environmentId: EnvironmentId | string;
   readonly threadId: ThreadId | string;
   readonly currentBranch: string | null;
+  readonly hasThread?: boolean;
   readonly gitStatus: VcsStatusResult | null;
   readonly gitOperationLabel: string | null;
   readonly onOpenFilesInspector?: () => void;
@@ -167,13 +172,22 @@ function useThreadGitControlModel(props: ThreadGitMenuProps) {
   })();
 
   const openExistingPr = async () => {
+    const { shortLabel, singular } = sourceControlClients.get(
+      gitStatus?.sourceControlProvider?.kind,
+    ).changeRequest;
     const prUrl = gitStatus?.pr?.state === "open" ? gitStatus.pr.url : null;
     if (!prUrl) {
-      Dialog.alert("No open PR", "This branch does not have an open pull request.");
+      Dialog.alert(
+        uiT("No open {0}", { "0": uiT(shortLabel) }),
+        uiT("This branch does not have an open {0}.", { "0": uiT(singular) }),
+      );
       return;
     }
     if (!(await openPullRequest(prUrl))) {
-      Dialog.alert("Unable to open PR", "The pull request could not be opened.");
+      Dialog.alert(
+        uiT("Unable to open {0}", { "0": uiT(shortLabel) }),
+        uiT("The {0} could not be opened.", { "0": uiT(singular) }),
+      );
     }
   };
 
@@ -193,6 +207,13 @@ function useThreadGitControlModel(props: ThreadGitMenuProps) {
       !input.featureBranch &&
       requiresDefaultBranchConfirmation(input.action, isDefaultRef)
     ) {
+      if (props.hasThread === false) {
+        Dialog.alert(
+          uiT("Choose a feature branch"),
+          uiT("Switch branches before publishing changes from this draft."),
+        );
+        return;
+      }
       navigation.navigate("GitConfirm", {
         environmentId: String(environmentId),
         threadId: String(threadId),
@@ -365,8 +386,11 @@ function useThreadGitHeaderActionItems(props: ThreadGitControlsProps): ThreadGit
             type: "action",
           },
           {
-            description: uiT("Turn diffs and worktree changes"),
-            disabled: !model.isRepo,
+            description:
+              props.hasThread === false
+                ? uiT("Available after the first message")
+                : uiT("Turn diffs and worktree changes"),
+            disabled: !model.isRepo || props.hasThread === false,
             icon: { name: "text.bubble", type: "sfSymbol" },
             label: uiT("Review changes"),
             onPress: model.openReview,
@@ -384,7 +408,11 @@ function useThreadGitHeaderActionItems(props: ThreadGitControlsProps): ThreadGit
               ]
             : []),
           {
-            description: uiT("Commit, files, branches"),
+            description:
+              props.hasThread === false
+                ? uiT("Available after the first message")
+                : uiT("Commit, files, branches"),
+            disabled: props.hasThread === false,
             icon: { name: "ellipsis", type: "sfSymbol" },
             label: uiT("More"),
             onPress: model.openGitInspector,
@@ -501,11 +529,6 @@ export function ThreadGitControls(props: ThreadGitControlsProps) {
   );
 }
 
-/**
- * The standalone git actions menu (branch status, quick commit/push action,
- * review, more). Rendered inside a Toolbar by both the thread
- * chat header and the review screen's toolbar.
- */
 export function ThreadGitMenu(props: ThreadGitMenuProps) {
   const menu = useThreadGitMenuDefinition(props);
   return menu ? createNativeHeaderMenu(menu) : null;
@@ -547,15 +570,22 @@ function threadGitMenuDefinition(
         id: "git-review",
         title: "Review changes",
         icon: "text.bubble",
-        disabled: !model.isRepo,
-        subtitle: "Turn diffs and worktree changes",
+        disabled: !model.isRepo || props.hasThread === false,
+        subtitle:
+          props.hasThread === false
+            ? "Available after the first message"
+            : "Turn diffs and worktree changes",
         onPress: model.openReview,
       },
       {
         id: "git-more",
         title: "More",
         icon: "ellipsis",
-        subtitle: "Commit, files, branches",
+        disabled: props.hasThread === false,
+        subtitle:
+          props.hasThread === false
+            ? "Available after the first message"
+            : "Commit, files, branches",
         onPress: model.openGitInspector,
       },
     ],

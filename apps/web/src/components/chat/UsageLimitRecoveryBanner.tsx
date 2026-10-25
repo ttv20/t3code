@@ -48,13 +48,17 @@ function RecoveryActions({ runId, resetAt, recovery, snoozedUntil, onChange }: R
 
   const scheduled =
     recovery?.runId === runId && recovery.resetAt === resetAt && recovery.autoResume;
+  // The server leaves snoozedUntil in place after the timer wakes the thread,
+  // so a snooze whose reset has passed is no longer active.
+  const resetPassed = Date.parse(resetAt ?? "") <= nowMs;
   const snoozed =
     recovery?.snooze === true &&
     recovery.runId === runId &&
     recovery.resetAt === resetAt &&
     resetAt !== null &&
     snoozedUntil !== null &&
-    Date.parse(snoozedUntil) === Date.parse(resetAt);
+    Date.parse(snoozedUntil) === Date.parse(resetAt) &&
+    !resetPassed;
   async function toggle(action: "resume" | "snooze") {
     if (resetAt === null) return;
     if (action === "snooze" && !snoozed && Date.parse(resetAt) <= Date.now()) {
@@ -76,14 +80,16 @@ function RecoveryActions({ runId, resetAt, recovery, snoozedUntil, onChange }: R
     } catch (cause) {
       toastManager.add({
         type: "error",
-        title: action === "resume" ? "Could not change auto-resume" : "Could not snooze thread",
-        description: cause instanceof Error ? cause.message : "An error occurred.",
+        title:
+          action === "resume"
+            ? uiT("Could not change auto-resume")
+            : uiT("Could not snooze thread"),
+        description: cause instanceof Error ? cause.message : uiT("An error occurred."),
       });
     }
     setPending(false);
   }
-  // Failures go to a toast: the actions column is auto-sized, so inline error
-  // text would widen it and crush the title.
+  // Inline errors would widen the actions column and crush the title.
   return (
     <>
       <Button size="xs" variant="ghost" disabled={pending} onClick={() => void toggle("resume")}>
@@ -93,16 +99,14 @@ function RecoveryActions({ runId, resetAt, recovery, snoozedUntil, onChange }: R
             ? uiT("Cancel auto-resume")
             : uiT("Resume at reset")}
       </Button>
-      {!snoozed ? (
-        <Button
-          size="xs"
-          variant="ghost"
-          disabled={pending || Date.parse(resetAt!) <= nowMs}
-          onClick={() => void toggle("snooze")}
-        >
-          {pending ? uiT("Saving...") : uiT("Snooze until reset")}
-        </Button>
-      ) : null}
+      <Button
+        size="xs"
+        variant="ghost"
+        disabled={pending || (!snoozed && resetPassed)}
+        onClick={() => void toggle("snooze")}
+      >
+        {pending ? "Saving..." : snoozed ? "Wake now" : "Snooze until reset"}
+      </Button>
     </>
   );
 }

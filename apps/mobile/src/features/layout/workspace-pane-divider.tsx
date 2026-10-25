@@ -20,8 +20,6 @@ export function WorkspacePaneDivider(props: WorkspacePaneDividerProps) {
   const { t: uiT } = useUiLanguage();
 
   const [dragging, setDragging] = useState(false);
-  // The pan callbacks fire after render, so effect events read the latest props
-  // while the gesture object stays stable across renders.
   const handleResizeStart = useEffectEvent(() => {
     setDragging(true);
     props.onResizeStart?.();

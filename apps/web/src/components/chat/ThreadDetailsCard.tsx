@@ -183,7 +183,7 @@ export function ThreadDetailsCard({
         <PopoverPopup
           anchor={anchor}
           align="end"
-          // Lines the card up with the find bar: the panel pads its card by 8px.
+          // Account for the find panel's 8px card padding.
           alignOffset={THREAD_DETAILS_CARD_GAP - 8}
           collisionAvoidance={{ side: "shift", align: "shift", fallbackAxisSide: "none" }}
           side="bottom"

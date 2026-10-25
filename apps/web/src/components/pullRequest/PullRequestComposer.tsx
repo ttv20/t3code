@@ -1,5 +1,8 @@
 import { useUiLanguage } from "../../i18n";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+} from "@t3tools/client-runtime/source-control-clients";
 import type { EnvironmentId, PullRequestDetailView, PullRequestRef } from "@t3tools/contracts";
 import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
@@ -38,6 +41,7 @@ export function PullRequestComposer({
   openReviewRequest?: number | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+  const term = sourceControlClients.get(detail.provider).changeRequest.singular;
   const [open, setOpen] = useState(false);
   const [reviewPending, setReviewPending] = useState(false);
   const [requestedMode, setRequestedMode] = useState<"comment" | "review">("comment");
@@ -45,8 +49,7 @@ export function PullRequestComposer({
   const reviewRef = useRef<HTMLTextAreaElement>(null);
   const pendingComments = usePendingReviewComments(reference);
   const clearComments = usePullRequestReviewStore((store) => store.clear);
-  // A summary typed but not sent is review work too, and it outlives the popover. Selected as a
-  // boolean rather than the text, so typing one does not re-render the composer per keystroke.
+  // Unsent summaries outlive the popover; select a boolean to avoid per-keystroke renders.
   const reviewKey = pullRequestReviewKey(reference);
   const summaryStarted = usePullRequestReviewStore(
     (store) => (store.summaries[reviewKey] ?? "").trim().length > 0,
@@ -79,13 +82,14 @@ export function PullRequestComposer({
         render={<Button size="icon" variant="glass" />}
         aria-label={
           pendingComments.length > 0
-            ? uiT("Review pull request, {0} {1} pending", {
-                "0": pendingComments.length,
-                "1": pendingComments.length === 1 ? "comment" : "comments",
+            ? uiT("Review {0}, {1} {2} pending", {
+                "0": uiT(term),
+                "1": pendingComments.length,
+                "2": pendingComments.length === 1 ? "comment" : "comments",
               })
             : reviewStarted || !canComment
-              ? uiT("Review pull request")
-              : uiT("Comment on pull request")
+              ? uiT("Review {0}", { "0": uiT(term) })
+              : uiT("Comment on {0}", { "0": uiT(term) })
         }
       >
         <MessageSquareIcon className="size-4" />
@@ -105,7 +109,7 @@ export function PullRequestComposer({
         sideOffset={8}
         width="lg"
         initialFocus={mode === "review" ? reviewRef : commentRef}
-        aria-label={uiT("Pull request composer")}
+        aria-label={uiT("{0} composer", { "0": uiT(capitalizeTerm(term)) })}
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           {canComment && verdicts.length > 0 ? (
@@ -127,7 +131,7 @@ export function PullRequestComposer({
             </ToggleGroup>
           ) : (
             <PopoverTitle>
-              {mode === "review" ? uiT("Review pull request") : uiT("Comment on pull request")}
+              {mode === "review" ? `Review ${term}` : `Comment on ${term}`}
             </PopoverTitle>
           )}
           <div className="flex items-center gap-1">
@@ -151,13 +155,13 @@ export function PullRequestComposer({
             </PopoverClose>
           </div>
         </div>
-        {/* Keep both forms mounted across toggles and dismissal so drafts and in-flight
-            submit guards survive closing and reopening the composer. */}
+        {/* Keep forms mounted to preserve drafts and submit guards across dismissal. */}
         {verdicts.length > 0 ? (
           <div hidden={mode !== "review"}>
             <PullRequestReviewForm
               environmentId={environmentId}
               reference={reference}
+              term={term}
               verdicts={verdicts}
               requestChangesSummaryRequired={sourceControlClients
                 .get(detail.provider)

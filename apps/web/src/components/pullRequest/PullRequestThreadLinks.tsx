@@ -8,8 +8,8 @@ import { useState } from "react";
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { usePullRequestLinking } from "~/hooks/usePullRequestLinking";
 
-import { parseChangeRequestUrl } from "~/lib/openPullRequestLink";
-import { normalizeThreadPullRequestKey } from "@t3tools/shared/threadPullRequests";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
 import { useProjects, useServerConfigs, useThreadShell, useThreadShells } from "~/state/entities";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
@@ -51,7 +51,11 @@ function EnabledPullRequestThreadLinks({
   onPickerOpenChange,
 }: PullRequestThreadLinksProps) {
   const { t: uiT } = useUiLanguage();
-  const parsed = parseChangeRequestUrl(url);
+
+  const parsedUrl = sourceControlClients.parseChangeRequestUrl(url);
+  const parsed = parsedUrl?.link ?? null;
+  const term = (parsedUrl?.definition ?? sourceControlClients.get(undefined)).changeRequest
+    .singular;
   const thread = useThreadShell(threadRef?.environmentId === environmentId ? threadRef : null);
   const currentThreadRef = thread === null ? null : threadRef;
   const linking = usePullRequestLinking(environmentId);
@@ -67,8 +71,7 @@ function EnabledPullRequestThreadLinks({
         })
       : null,
   );
-  // Refreshes can briefly clear the query value. Keep the last response so polling
-  // does not hide the linked-thread count between responses.
+  // Retain the last count while refresh temporarily clears query data.
   const [lastRelations, setLastRelations] = useState(relations.data);
   if (relations.data !== null && relations.data !== lastRelations) {
     setLastRelations(relations.data);
@@ -87,8 +90,8 @@ function EnabledPullRequestThreadLinks({
       toastManager.add({
         type: "error",
         title: remove
-          ? uiT("Could not unlink the pull request")
-          : uiT("Could not link the pull request"),
+          ? uiT("Could not unlink the {0}", { "0": uiT(term) })
+          : uiT("Could not link the {0}", { "0": uiT(term) }),
         description: error instanceof Error ? error.message : String(error),
       });
       return;
@@ -109,7 +112,10 @@ function EnabledPullRequestThreadLinks({
     linking.mode === "multiple" ? ((relations.data ?? lastRelations)?.threads ?? []) : [];
   const linkedThreadsLabel =
     linkedThreads.length > 0
-      ? `Linked from ${linkedThreads.length} ${linkedThreads.length === 1 ? "thread" : "threads"}`
+      ? uiT("Linked from {0} {1}", {
+          "0": linkedThreads.length,
+          "1": linkedThreads.length === 1 ? "thread" : "threads",
+        })
       : uiT("Linked threads");
   return (
     <>
@@ -167,7 +173,9 @@ function EnabledPullRequestThreadLinks({
       {display === "picker" ? (
         <Dialog open onOpenChange={onPickerOpenChange}>
           <DialogPopup className="max-w-md" showCloseButton={false}>
-            <DialogTitle className="sr-only">{uiT("Link pull request to a thread")}</DialogTitle>
+            <DialogTitle className="sr-only">
+              {uiT("Link")} {term} {uiT("to a thread")}
+            </DialogTitle>
             <ThreadPicker
               environmentId={environmentId}
               url={url}

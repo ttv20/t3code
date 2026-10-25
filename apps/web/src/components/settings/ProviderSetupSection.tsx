@@ -141,19 +141,25 @@ function ProviderSetupActions({
   const actionsDisabled = pendingLabel !== null || queryError !== null;
   const installationStatusMessage =
     installation?.phase === "downloading"
-      ? `Downloading ${(installation.downloadedBytes / 1_000_000).toFixed(1)} MB${installation.totalBytes === null ? "" : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)} MB`}.`
+      ? uiT("Downloading {0} MB{1}.", {
+          "0": (installation.downloadedBytes / 1_000_000).toFixed(1),
+          "1":
+            installation.totalBytes === null
+              ? ""
+              : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)} MB`,
+        })
       : installation?.phase === "extracting"
         ? uiT("Extracting Antigravity.")
         : installation?.phase === "verifying"
           ? uiT("Checking the downloaded runtime.")
           : installed
-            ? "Installed."
+            ? uiT("Installed.")
             : usesCustomBinary
               ? enabled
                 ? uiT("The configured Antigravity runtime is unavailable.")
                 : uiT("The configured Antigravity runtime has not been checked.")
               : installation?.totalBytes
-                ? `${Math.ceil(installation.totalBytes / 1_000_000)} MB download.`
+                ? uiT("{0} MB download.", { "0": Math.ceil(installation.totalBytes / 1_000_000) })
                 : uiT("Not installed.");
 
   async function runCommand<A, E>(
@@ -193,7 +199,8 @@ function ProviderSetupActions({
 
   return (
     <div className="divide-y divide-border/50">
-      {/* Keep the live region first so the last visible row is not followed by a sibling that adds its divider. */}
+      {/* Keep the live region first so sibling divider rules do not add a divider after the last visible
+       * row. */}
       <p className="sr-only" role="status">
         {pendingLabel ? `${pendingLabel}.` : null}
       </p>

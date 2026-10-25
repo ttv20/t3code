@@ -33,6 +33,8 @@ import { SymbolView } from "../../components/ui/AppSymbol";
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
 import { splitEnvironmentSections } from "./environmentSections";
+import { leaveSettingsPage } from "../settings/settings-navigation";
+import { workspaceHasColumns } from "../workspace/workspace-selection-store";
 
 type ConnectionsNewRouteParams = {
   readonly mode?: string;
@@ -55,8 +57,7 @@ export function ConnectionsNewRouteScreen({
   const navigation = useNavigation();
   const routeName = useRoute().name;
   const params = route.params ?? {};
-  // Deep-link prefill exists for development automation only. A production
-  // link must not arrive with attacker-chosen host and token already filled.
+  // Dev-only prefill prevents production links from supplying an attacker-chosen host and token.
   const routePairingUrl = __DEV__ ? (params.pairingUrl?.trim() ?? "") : "";
   const shouldAutoConnect =
     __DEV__ &&
@@ -119,8 +120,8 @@ export function ConnectionsNewRouteScreen({
     }
     if (permission.canAskAgain) return;
     Dialog.alert(
-      "Camera access needed",
-      "Camera access was denied for this app. Open Settings to enable it.",
+      uiT("Camera access needed"),
+      uiT("Camera access was denied for this app. Open Settings to enable it."),
       [
         { text: "Cancel", style: "cancel" },
         { text: "Open Settings", onPress: () => void Linking.openSettings() },
@@ -146,8 +147,8 @@ export function ConnectionsNewRouteScreen({
     } catch (error) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Dialog.alert(
-        "Invalid QR code",
-        error instanceof Error ? error.message : "Scanned QR code was not recognized.",
+        uiT("Invalid QR code"),
+        error instanceof Error ? error.message : uiT("Scanned QR code was not recognized."),
       );
       setTimeout(() => {
         setScannerLocked(false);
@@ -166,12 +167,12 @@ export function ConnectionsNewRouteScreen({
         : Haptics.NotificationFeedbackType.Error,
     );
     if (AsyncResult.isSuccess(result)) {
-      // Return to whatever opened the sheet. Replacing it with Home would
-      // nest Home inside any sheet still below it.
+      // Replacing with Home would nest it inside any sheet below; return to the opener.
       if (!navigation.canGoBack()) {
         navigation.dispatch(StackActions.replace("Home"));
       } else {
-        navigation.goBack();
+        // Added from the Settings list, the new environment shows on Environments.
+        leaveSettingsPage(navigation, workspaceHasColumns(), "SettingsEnvironments");
       }
     }
   };
@@ -195,7 +196,7 @@ export function ConnectionsNewRouteScreen({
       title={uiT("Add environment")}
       actions={[
         {
-          accessibilityLabel: isSubmitting ? "Connecting" : "Add environment",
+          accessibilityLabel: isSubmitting ? uiT("Connecting") : uiT("Add environment"),
           loading: isSubmitting,
           icon: "checkmark",
           tintColor: headerIconColor,
@@ -401,7 +402,7 @@ function T3ConnectSection() {
           label={uiT("Sign in to T3 Connect")}
           description={uiT("Reach your machines from anywhere, no network setup.")}
           disabled={!isLoaded}
-          onPress={() => navigation.navigate("SettingsSheet", { screen: "SettingsAuth" })}
+          onPress={() => navigation.navigate("SettingsAuth")}
         />
       )}
     </View>

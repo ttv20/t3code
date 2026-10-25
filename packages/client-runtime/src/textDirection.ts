@@ -6,13 +6,8 @@ const RTL_LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿\u{10800}-\u{10FFF}\u{1E800}-\u{1EFFF}]
 const LETTER = /\p{L}/u;
 
 /**
- * The base direction for a block of prose, or undefined when it has no letters.
- *
- * `dir="auto"` follows the first letter, which lays out an Arabic line that
- * opens with an English term (`StrictMode: يعيد الـ render مرتين`) left to
- * right, and developers write that way constantly. Counting words keeps such a
- * line right to left. Technical prose often contains many English terms, so
- * 30% RTL words is enough; words without letters do not vote.
+ * Words without letters do not vote. Mixed technical prose stays RTL when at
+ * least 30% of words start with an RTL letter, even when an English term leads.
  */
 export function textDirection(text: string): TextDirection | undefined {
   let rtlWords = 0;

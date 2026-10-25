@@ -20,8 +20,7 @@ import {
   type StartupCrashRecord,
 } from "./crash-log-model";
 
-// expo-updates keeps its persistent log this long. Reading any further back
-// returns nothing, so this is the whole available window.
+// expo-updates retains only seven days of logs.
 const LOG_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 type CrashLogState =
@@ -92,13 +91,13 @@ export function SettingsDiagnosticsRouteScreen() {
             <EmptyState
               icon="exclamationmark.triangle"
               title={uiT("Crash log unavailable")}
-              detail="Startup crash records are only kept in store and TestFlight builds."
+              detail={uiT("Startup crash records are only kept in store and TestFlight builds.")}
             />
           ) : records.length === 0 ? (
             <EmptyState
               icon="checkmark.circle"
               title={uiT("No startup crashes")}
-              detail="Nothing has taken the app down during launch in the last 7 days."
+              detail={uiT("Nothing has taken the app down during launch in the last 7 days.")}
             />
           ) : (
             records.map((record, index) => (

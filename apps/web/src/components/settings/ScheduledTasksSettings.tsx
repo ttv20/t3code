@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
@@ -203,7 +204,7 @@ function WebhookFiltersField({
           <div className="flex items-center gap-2">
             <div className="grid min-w-0 flex-1 grid-cols-1">
               <Input
-                aria-label={`Filter ${index + 1} path`}
+                aria-label={uiT("Filter {0} path", { "0": index + 1 })}
                 placeholder="body.action"
                 value={filter.path}
                 onChange={(event) => update(index, { path: event.target.value })}
@@ -212,7 +213,7 @@ function WebhookFiltersField({
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={`Remove filter ${index + 1}`}
+              aria-label={uiT("Remove filter {0}", { "0": index + 1 })}
               onClick={() => onChange(removeWebhookFilterDraft(filters, filter.id))}
             >
               <Trash2Icon />
@@ -227,7 +228,7 @@ function WebhookFiltersField({
               }}
             >
               <div className="grid w-44 shrink-0 grid-cols-1">
-                <SelectTrigger size="sm" aria-label={`Filter ${index + 1} test`}>
+                <SelectTrigger size="sm" aria-label={uiT("Filter {0} test", { "0": index + 1 })}>
                   <SelectValue>
                     {WEBHOOK_FILTER_OPS.find((option) => option.op === filter.op)?.label}
                   </SelectValue>
@@ -244,8 +245,8 @@ function WebhookFiltersField({
             {filter.op === "exists" ? null : (
               <div className="grid min-w-0 flex-1 grid-cols-1">
                 <Input
-                  aria-label={`Filter ${index + 1} value`}
-                  placeholder={filter.op === "in" ? "opened, reopened" : uiT("opened")}
+                  aria-label={uiT("Filter {0} value", { "0": index + 1 })}
+                  placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
                   value={filter.value}
                   onChange={(event) => update(index, { value: event.target.value })}
                 />
@@ -310,11 +311,7 @@ export function scheduleLabel(schedule: ScheduledTaskSchedule, locale: UiLocale 
   return t("{0} at {1}", { "0": days, "1": schedule.timeOfDay });
 }
 
-/**
- * `formatRelativeTime` only handles the past, and `nextRunAt` is a future
- * instant — render "in 5m" style labels for upcoming runs instead of a
- * misleading "just now".
- */
+/** formatRelativeTime handles only the past; upcoming runs need future labels. */
 function relativeLabel(value: string | null, nowMs: number): string {
   if (!value) return "Not scheduled";
   const diffMs = new Date(value).getTime() - nowMs;
@@ -331,8 +328,7 @@ function relativeLabel(value: string | null, nowMs: number): string {
   return `in ${Math.round(hours / 24)}d`;
 }
 
-// The clock is the label's own minute tick: the React Compiler caches a
-// `Date.now()` read in render on the timestamp alone.
+// Use the label's minute tick because the compiler caches render-time Date.now() on the timestamp.
 export function ScheduledRelativeLabel(props: { value: string | null }) {
   const nowMinute = useNowMinute();
   return relativeLabel(props.value, Date.parse(`${nowMinute}:00.000Z`));
@@ -897,7 +893,9 @@ function WebhookDeliveriesDialog({
                 </p>
               ) : null}
               <DeliveryBlock
-                title={selected.pendingWindow ? "Scheduled run" : uiT("Prompt sent to the agent")}
+                title={
+                  selected.pendingWindow ? uiT("Scheduled run") : uiT("Prompt sent to the agent")
+                }
               >
                 {selected.renderedPrompt ??
                   (selected.pendingWindow
@@ -906,8 +904,10 @@ function WebhookDeliveriesDialog({
               </DeliveryBlock>
               {selected.missingFields.length > 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  {uiT("Empty placeholders:")}
-                  {selected.missingFields.join(", ")}
+                  <UiText
+                    message={"Empty placeholders:{0}"}
+                    values={{ "0": selected.missingFields.join(", ") }}
+                  />
                 </p>
               ) : null}
               <DeliveryBlock title={uiT("Headers")}>
@@ -953,8 +953,17 @@ function WebhookDeliveriesDialog({
                     ) : null}
                     {delivery.missingFields.length > 0 ? (
                       <span className="text-muted-foreground">
-                        {delivery.missingFields.length} {uiT("empty placeholder")}
-                        {delivery.missingFields.length === 1 ? "" : "s"}
+                        {delivery.missingFields.length === 1 ? (
+                          <UiText
+                            message={"{0}  empty placeholder"}
+                            values={{ "0": delivery.missingFields.length }}
+                          />
+                        ) : (
+                          <UiText
+                            message={"{0}  empty placeholders"}
+                            values={{ "0": delivery.missingFields.length }}
+                          />
+                        )}
                       </span>
                     ) : null}
                   </button>
@@ -1025,7 +1034,7 @@ function WebhookEndpointField({
     const confirmed =
       (await requestConfirmDialog("Rotate this webhook URL?\nThe current URL stops working.", {
         variant: "destructive",
-      })) ?? window.confirm("Rotate this webhook URL? The current URL stops working.");
+      })) ?? window.confirm(uiT("Rotate this webhook URL? The current URL stops working."));
     if (!confirmed) return;
     setRotating(true);
     const result = await rotate({ environmentId, input: { id: task.id } });
@@ -1311,7 +1320,7 @@ function ScheduledTaskEditorForm({
         <DialogTitle>{draft.editingId ? uiT("Edit task") : uiT("New task")}</DialogTitle>
         <DialogDescription>
           {uiT(
-            "Run a prompt automatically — on an interval, at a fixed time, or when a webhook is called.",
+            "Run a prompt automatically on an interval, at a fixed time, or when a webhook is called.",
           )}
         </DialogDescription>
       </DialogHeader>

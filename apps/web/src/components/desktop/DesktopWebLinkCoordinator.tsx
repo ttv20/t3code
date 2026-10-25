@@ -2,7 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { promptLinkAppPath } from "@t3tools/shared/promptLinks";
 import { useRouter } from "@tanstack/react-router";
 import * as Effect from "effect/Effect";
@@ -157,7 +157,7 @@ export function DesktopWebLinkCoordinator() {
     // delivered at launch would miss its project and fall through to the browser. Hold PR
     // links, and only those, until discovery settles; an ordinary link never waits for it.
     const hold =
-      openPullRequestsInApp && parseChangeRequestUrl(url) !== null
+      openPullRequestsInApp && sourceControlClients.parseChangeRequestUrl(url) !== null
         ? projectsSettled()
         : Promise.resolve();
     void hold.then(() => {

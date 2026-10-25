@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import type { DevicePlatform, EnvironmentId } from "@t3tools/contracts";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -42,8 +43,7 @@ function screenAspect(platform: DevicePlatform, screen: DeviceScreenSize | null)
   return w / h;
 }
 
-// serve-sim streams the raw framebuffer; rotate the display for a device
-// that reports landscape while its frames stay portrait.
+// serve-sim sends raw portrait framebuffers even when iOS reports landscape; rotate the display.
 function screenRotation(platform: DevicePlatform, screen: DeviceScreenSize | null): number {
   if (platform !== "ios" || !screen || screen.width > screen.height) return 0;
   switch (screen.orientation) {
@@ -100,8 +100,6 @@ export function DeviceStreamView(props: {
   const [presentation, setPresentation] = useState<"phone" | "flat">("phone");
   const [keyboardAttached, setKeyboardAttached] = useState(false);
   const [phoneUnavailable, setPhoneUnavailable] = useState(false);
-  // The stream effect and the viewports' scene setup depend on these; a new
-  // identity per render would restart the stream and rebuild the 3D scene.
   const onPhoneUnavailable = useStableCallback(() => setPhoneUnavailable(true));
   const cancelPhoneInputRef = useRef<(() => void) | null>(null);
   const cancelPhoneInput = useStableCallback(() => cancelPhoneInputRef.current?.());
@@ -127,7 +125,6 @@ export function DeviceStreamView(props: {
   const [foldAngle, setFoldAngle] = useState<number | null>(null);
   const [mjpegUrl, setMjpegUrl] = useState<string | null>(null);
   const [mjpegGeneration, setMjpegGeneration] = useState(0);
-  // A new ref callback per render would detach and reattach the MJPEG image.
   const attachMjpegImage = useStableCallback((image: HTMLImageElement | null) => {
     clientRef.current?.setMjpegImage(image);
   });
@@ -225,10 +222,7 @@ export function DeviceStreamView(props: {
   }, [retainingFrame, showPhone]);
   const controlsInset = props.renderControls && !showPhone ? CONTROLS_RAIL_WIDTH : 0;
 
-  // The frame is the largest box at `aspect` that fits the container, so a
-  // narrow panel shows a shorter phone rather than a squeezed one. CSS
-  // `aspect-ratio` alone cannot do this: with the height pinned to 100% the
-  // width clamp wins and distorts the drawn frame.
+  // Fit the frame in both dimensions; pinned CSS height plus a width clamp distorts aspect-ratio.
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [host, setHost] = useState({ width: 0, height: 0 });
   useEffect(() => {
@@ -298,11 +292,11 @@ export function DeviceStreamView(props: {
 
   const phoneUnavailableReason =
     isDuo && !screen?.supportsHingeAngle
-      ? "iPhone Duo 3D requires Device Hub 0.11.0 or newer"
+      ? uiT("iPhone Duo 3D requires Device Hub 0.11.0 or newer")
       : phoneUnavailable
-        ? "3D is unavailable on this browser"
+        ? uiT("3D is unavailable on this browser")
         : mjpegUrl
-          ? "3D requires the H.264 stream"
+          ? uiT("3D requires the H.264 stream")
           : props.axOverlay
             ? uiT("Turn off accessibility frames to use 3D")
             : null;
@@ -535,9 +529,10 @@ export function DeviceStreamView(props: {
         {status === "streaming" && !inputState.connected ? (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-2">
             <span className="rounded-md bg-background/85 px-2 py-1 text-xs text-muted-foreground">
-              {uiT("Input disconnected")}
-              {inputState.detail ? ` (${inputState.detail})` : ""}
-              {uiT(", reconnecting…")}
+              <UiText
+                message={"Input disconnected{0}, reconnecting…"}
+                values={{ "0": inputState.detail ? ` (${inputState.detail})` : "" }}
+              />
             </span>
           </div>
         ) : null}
@@ -564,8 +559,7 @@ export function DeviceStreamView(props: {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    // An expired ticket surfaces as unauthorized on restart and
-                    // refreshes access through the effect; no need to mint one here.
+                    // Restart's unauthorized response renews expired tickets through the effect.
                     clientRef.current?.stop();
                     setPhoneUnavailable(false);
                     clientRef.current?.start();

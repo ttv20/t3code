@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
@@ -250,12 +251,11 @@ function WebhookFilterRows(props: {
         <View key={filter.id}>
           <View className="flex-row items-center gap-3 border-t border-border-subtle px-4 pt-3">
             <Text className="min-w-0 flex-1 text-sm text-foreground-muted">
-              {uiT("Filter")}
-              {index + 1}
+              <UiText message={"Filter{0}"} values={{ "0": index + 1 }} />
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Remove filter ${index + 1}`}
+              accessibilityLabel={uiT("Remove filter {0}", { "0": index + 1 })}
               disabled={props.disabled}
               hitSlop={8}
               onPress={() => props.onChange(removeWebhookFilterDraft(props.filters, filter.id))}
@@ -286,9 +286,9 @@ function WebhookFilterRows(props: {
           />
           {filter.op === "exists" ? null : (
             <FormField
-              label={filter.op === "in" ? "Values, comma-separated" : "Value"}
+              label={filter.op === "in" ? uiT("Values, comma-separated") : uiT("Value")}
               value={filter.value}
-              placeholder={filter.op === "in" ? "opened, reopened" : uiT("opened")}
+              placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
               disabled={props.disabled}
               onChange={(value) => update(index, { value })}
             />
@@ -542,10 +542,10 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
   const preventRemove = !saved && (hasChanges || saving);
   usePreventRemove(preventRemove, ({ data }) => {
     if (saving) {
-      Dialog.alert("Saving task", "Wait for the task to finish saving before leaving.");
+      Dialog.alert(uiT("Saving task"), uiT("Wait for the task to finish saving before leaving."));
       return;
     }
-    Dialog.alert("Discard changes?", "Your unsaved changes will be lost.", [
+    Dialog.alert(uiT("Discard changes?"), uiT("Your unsaved changes will be lost."), [
       { text: "Keep editing", style: "cancel" },
       {
         text: "Discard changes",
@@ -572,8 +572,7 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
           options={{
             headerBackVisible: false,
             gestureEnabled: !preventRemove,
-            // The system back button begins its native pop before the removal
-            // guard runs. Dispatch from a bar action so the guard runs first.
+            // Native Back pops before removal guards; a bar action lets the guard run first.
             unstable_headerLeftItems: () => [
               withNativeGlassHeaderItem({
                 type: "button",
@@ -718,8 +717,7 @@ function TaskForm({
       environmentUnavailable
     )
       return;
-    // Signatures are edited on desktop and web; send the task's current one,
-    // not the copy taken when this form opened, so a newer edit survives.
+    // Preserve signatures edited on other clients by sending the task's current value.
     const liveTask = tasks.data?.tasks.find((task) => task.id === draft.task?.id);
     const schedule = scheduleFromDraft(
       draft.schedule.mode === "webhook" && liveTask?.schedule.type === "webhook"
@@ -731,20 +729,24 @@ function TaskForm({
       parseMaxDeliveryAge(draft.schedule.maxDeliveryAgeMinutes) === undefined
     ) {
       Dialog.alert(
-        "Invalid age limit",
-        `Enter whole minutes from 1 to ${MAX_WEBHOOK_DELIVERY_AGE_MINUTES}, or leave it blank.`,
+        uiT("Invalid age limit"),
+        uiT("Enter whole minutes from 1 to {0}, or leave it blank.", {
+          "0": MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
+        }),
       );
       return;
     }
     const parsedFilters = parseWebhookFilterDrafts(draft.schedule.filters);
     if (draft.schedule.mode === "webhook" && "error" in parsedFilters) {
-      Dialog.alert("Invalid filter", parsedFilters.error);
+      Dialog.alert(uiT("Invalid filter"), parsedFilters.error);
       return;
     }
     if (draft.schedule.mode === "webhook" && schedule === null) {
       Dialog.alert(
-        "Invalid webhook settings",
-        "Each dedupe key must contain a valid request placeholder. The coalesce window must be whole seconds from 10 to 3600, or blank.",
+        uiT("Invalid webhook settings"),
+        uiT(
+          "Each dedupe key must contain a valid request placeholder. The coalesce window must be whole seconds from 10 to 3600, or blank.",
+        ),
       );
       return;
     }
@@ -757,13 +759,13 @@ function TaskForm({
       (draft.workspace === "existing_worktree" && !draft.checkoutPath.trim())
     ) {
       Dialog.alert(
-        "Incomplete task",
-        "Add a name, prompt, project, model, valid schedule, and checkout path if needed.",
+        uiT("Incomplete task"),
+        uiT("Add a name, prompt, project, model, valid schedule, and checkout path if needed."),
       );
       return;
     }
     if (!projects.some((project) => project.id === draft.projectId)) {
-      Dialog.alert("Project unavailable", "Choose a project in this environment.");
+      Dialog.alert(uiT("Project unavailable"), uiT("Choose a project in this environment."));
       return;
     }
     const input: ScheduledTaskUpsertInput = {
@@ -1066,8 +1068,7 @@ function TaskForm({
             <>
               <WebhookScheduleDetails
                 environmentId={environmentId}
-                // The live row, so a rotated URL shows up without reopening the form.
-                // Once the list has loaded, a missing task is gone; don't keep showing its URL.
+                // Use the live row for rotated URLs; hide the URL once a loaded list no longer contains the task.
                 task={
                   tasks.data
                     ? (tasks.data.tasks.find((task) => task.id === draft.task?.id) ?? null)
@@ -1243,7 +1244,7 @@ function WebhookScheduleDetails({
             tone="danger"
             disabled={disabled || rotating}
             onPress={() =>
-              Dialog.alert("Rotate URL?", "The current URL stops working immediately.", [
+              Dialog.alert(uiT("Rotate URL?"), uiT("The current URL stops working immediately."), [
                 { text: "Cancel", style: "cancel" },
                 {
                   text: "Rotate",
@@ -1254,7 +1255,7 @@ function WebhookScheduleDetails({
                       setRotating(false);
                       if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
                         Dialog.alert(
-                          "Could not rotate URL",
+                          uiT("Could not rotate URL"),
                           String(squashAtomCommandFailure(result)),
                         );
                       }
@@ -1380,8 +1381,7 @@ function EnvironmentTasks({
               </Text>
               {task.lastRunError ? (
                 <Text className="text-sm text-danger-foreground" numberOfLines={2}>
-                  {uiT("Last run failed:")}
-                  {task.lastRunError}
+                  <UiText message={"Last run failed:{0}"} values={{ "0": task.lastRunError }} />
                 </Text>
               ) : null}
             </Pressable>
@@ -1390,7 +1390,7 @@ function EnvironmentTasks({
                 { id: "edit", title: uiT("Edit") },
                 {
                   id: "toggle",
-                  title: task.enabled ? "Pause" : "Resume",
+                  title: task.enabled ? uiT("Pause") : uiT("Resume"),
                   attributes: { disabled: !canOperate },
                 },
                 ...(task.schedule.type === "webhook"
@@ -1407,7 +1407,7 @@ function EnvironmentTasks({
                 if (action === "edit") {
                   onEdit(task);
                 } else if (action === "delete") {
-                  Dialog.alert("Delete task?", task.title, [
+                  Dialog.alert(uiT("Delete task?"), task.title, [
                     { text: "Cancel", style: "cancel" },
                     {
                       text: "Delete",

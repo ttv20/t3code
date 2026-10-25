@@ -1,3 +1,4 @@
+import { UiText } from "../i18n";
 import { useUiLanguage } from "../i18n";
 import { Button } from "./ui/Button";
 import * as Dialog from "./ui/Dialog";
@@ -12,6 +13,7 @@ import type {
   ScopedThreadRef,
 } from "@t3tools/contracts";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { videoMimeType } from "@t3tools/shared/video";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -189,6 +191,10 @@ export function ComposerContextSheet(props: {
     record?.kind === "review-comment" && "pullRequest" in record
       ? record.pullRequest?.url
       : undefined;
+  const changeRequestTerm = (
+    (pullRequestUrl ? sourceControlClients.findByChangeRequestUrl(pullRequestUrl) : undefined) ??
+    sourceControlClients.get(undefined)
+  ).changeRequest.singular;
   const terminal = record?.kind === "terminal" && !("payload" in record) ? record : null;
   return (
     <Sheet title={terminal?.terminalLabel ?? props.label} onClose={props.onClose}>
@@ -205,8 +211,10 @@ export function ComposerContextSheet(props: {
       >
         {terminal ? (
           <Text className="text-sm text-foreground-muted">
-            {uiT("Lines")}
-            {terminal.lineStart}–{terminal.lineEnd}
+            <UiText
+              message={"Lines{0}–{1}"}
+              values={{ "0": terminal.lineStart, "1": terminal.lineEnd }}
+            />
           </Text>
         ) : null}
         {!record ? (
@@ -370,12 +378,20 @@ export function ComposerContextSheet(props: {
             onPress={() => {
               props.onClose();
               void openPullRequest(pullRequestUrl).catch(() =>
-                Dialog.alert("Could not open pull request", "Try again when connected."),
+                Dialog.alert(
+                  uiT("Could not open {0}", { "0": uiT(changeRequestTerm) }),
+                  uiT("Try again when connected."),
+                ),
               );
             }}
             className="rounded-xl bg-subtle p-4"
           >
-            <Text className="text-foreground">{uiT("Open pull request")}</Text>
+            <Text className="text-foreground">
+              <UiText
+                message={"Open {0}"}
+                values={{ "0": <UiText message={changeRequestTerm} /> }}
+              />
+            </Text>
           </Pressable>
         ) : null}
         {props.onOpenAttachment ? (
@@ -388,7 +404,7 @@ export function ComposerContextSheet(props: {
         ) : null}
         {props.onOpenPullRequest && !pullRequestUrl ? (
           <Button
-            label={uiT("Open pull request")}
+            label={uiT("Open {0}", { "0": uiT(changeRequestTerm) })}
             tone="secondary"
             onPress={props.onOpenPullRequest}
             fullWidth

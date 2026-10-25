@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import type {
   StorageCleanupReport,
@@ -178,7 +179,6 @@ const KEEP_WHEN_LABELS = {
   "tracked-changes": "Edited tracked files",
 } as const;
 
-/** One line for the last-run fold; identical results across machines collapse into one. */
 function lastRunSummary(
   entries: readonly { readonly label: string; readonly counts: string }[],
   machineCount: number,
@@ -265,13 +265,15 @@ function CleanupResults({
       })}
       {report.omittedCount > 0 && (
         <p className="px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
-          {environmentLabel}: {report.omittedCount.toLocaleString()} {uiT("more results.")}
+          <UiText
+            message={"{0}: {1}  more results."}
+            values={{ "0": environmentLabel, "1": report.omittedCount.toLocaleString() }}
+          />
         </p>
       )}
       {report.entries.length === 0 && report.omittedCount === 0 && (
         <p className="px-3 py-2.5 text-xs text-muted-foreground sm:px-4">
-          {environmentLabel}
-          {uiT(": Nothing needed cleanup.")}
+          <UiText message={"{0}: Nothing needed cleanup."} values={{ "0": environmentLabel }} />
         </p>
       )}
     </>
@@ -341,12 +343,19 @@ function CleanupSection() {
         ? `${report.counts.removed} removed, ${report.counts.kept} kept${report.counts.failed > 0 ? `, ${report.counts.failed} failed` : ""}`
         : "",
       description: report
-        ? `Last run ${formatRelativeTimeLabel(report.finishedAt)}. ${formatBytes(report.bytesFreed)} recovered.${report.counts.failed > 0 ? ` ${report.counts.failed} ${report.counts.failed === 1 ? "item" : "items"} couldn't be removed.` : ""}`
+        ? uiT("Last run {0}. {1} recovered.{2}", {
+            "0": formatRelativeTimeLabel(report.finishedAt),
+            "1": formatBytes(report.bytesFreed),
+            "2":
+              report.counts.failed > 0
+                ? ` ${report.counts.failed} ${report.counts.failed === 1 ? "item" : "items"} couldn't be removed.`
+                : "",
+          })
         : query?.failed
-          ? "Could not load the last run."
+          ? uiT("Could not load the last run.")
           : query?.loading
-            ? "Loading last run…"
-            : "Cleanup hasn't run yet.",
+            ? uiT("Loading last run…")
+            : uiT("Cleanup hasn't run yet."),
     };
   });
   const deleteNow = async () => {

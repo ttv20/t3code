@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
@@ -62,10 +63,7 @@ async function resolvedPayloadsForFiles(): Promise<ReadonlyArray<ResolvedSharePa
   try {
     return await getResolvedSharedPayloadsAsync();
   } catch (error) {
-    // iOS already gives the containing app a copied file:// URL, so raw
-    // payloads remain usable. Android normally resolves content:// into a
-    // private cache file; its modern File API can still read the raw URI when
-    // resolution fails.
+    // Raw iOS copied file URLs remain usable; Android's File API can read content URIs when resolution fails.
     console.warn("[incoming-share] could not resolve shared file metadata", error);
     return [];
   }
@@ -99,10 +97,7 @@ async function removeOwnedFile(uri: string): Promise<void> {
   }
   try {
     const { File, Paths } = await import("expo-file-system");
-    // Only delete files in directories this app owns: its documents and cache
-    // sandbox and its share-extension App Group container. An iOS
-    // open-in-place share points at the sender's own storage; deleting that
-    // URI would destroy the user's document.
+    // Delete only app-owned files; iOS open-in-place shares can reference the sender's original.
     const ownedRootUris = [
       Paths.document.uri,
       Paths.cache.uri,
@@ -143,9 +138,7 @@ async function removeReplayedPayloadFiles(payloads: ReadonlyArray<SharePayload>)
   await Promise.all([...uris].map(removeOwnedFile));
 }
 
-// Keep one operation queue across provider remounts (including development
-// Strict Mode remounts) so two app lifecycle notifications cannot ingest the
-// same native handoff independently.
+// Share the queue across remounts so lifecycle notifications cannot ingest one handoff twice.
 const incomingShareInbox = new IncomingShareInbox({
   loadDrafts: loadIncomingShareDrafts,
   writeDraft: writeIncomingShareDraft,
@@ -206,6 +199,8 @@ const incomingShareInbox = new IncomingShareInbox({
 });
 
 export function IncomingShareProvider(props: React.PropsWithChildren) {
+  const { t: uiT } = useUiLanguage();
+
   const enabled = receiveSharingEnabled();
   const [drafts, setDrafts] = useState<ReadonlyArray<IncomingShareDraft>>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -279,7 +274,7 @@ export function IncomingShareProvider(props: React.PropsWithChildren) {
     if (!error) {
       return;
     }
-    Dialog.alert("Could not import shared content", error.message, [
+    Dialog.alert(uiT("Could not import shared content"), error.message, [
       { text: "Dismiss", style: "cancel", onPress: () => setError(null) },
       {
         text: "Retry",

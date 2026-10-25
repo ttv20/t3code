@@ -228,16 +228,16 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
         type: "success",
         title:
           kind === "hosted-link"
-            ? "Hosted app link copied"
+            ? uiT("Hosted app link copied")
             : kind === "link"
-              ? "Pairing URL copied"
-              : "Pairing code copied",
+              ? uiT("Pairing URL copied")
+              : uiT("Pairing code copied"),
         description:
           kind === "hosted-link"
-            ? "Open it in the browser on the device you want to connect."
+            ? uiT("Open it in the browser on the device you want to connect.")
             : kind === "link"
-              ? "Open it in the client you want to pair to this environment."
-              : "Paste it into another client to finish pairing.",
+              ? uiT("Open it in the client you want to pair to this environment.")
+              : uiT("Paste it into another client to finish pairing."),
       });
     },
     onError: (error, { value, kind }) => {
@@ -250,12 +250,12 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
           type: "error",
           title: canCopyToClipboard
             ? kind === "hosted-link"
-              ? "Could not copy hosted app link"
+              ? uiT("Could not copy hosted app link")
               : kind === "link"
-                ? "Could not copy pairing URL"
-                : "Could not copy pairing code"
-            : "Clipboard copy unavailable",
-          description: canCopyToClipboard ? error.message : "Showing the full value instead.",
+                ? uiT("Could not copy pairing URL")
+                : uiT("Could not copy pairing code")
+            : uiT("Clipboard copy unavailable"),
+          description: canCopyToClipboard ? error.message : uiT("Showing the full value instead."),
         }),
       );
     },
@@ -388,7 +388,7 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                       size={132}
                       level="M"
                       marginSize={2}
-                      title={uiT("Pairing link — scan to open on another device")}
+                      title={uiT("Pairing link. Scan to open on another device")}
                     />
                   </div>
                 ) : null}
@@ -491,7 +491,7 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
                 size={168}
                 level="M"
                 marginSize={1}
-                title={uiT("Pairing link — scan to open on another device")}
+                title={uiT("Pairing link. Scan to open on another device")}
               />
             </div>
           ) : (

@@ -2,6 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { PullRequestAction } from "@t3tools/contracts";
 import { createContext, use, type ReactNode } from "react";
+import type { ChangeRequestTerminology } from "@t3tools/client-runtime/source-control-clients";
 
 import { useShortcutModifierState } from "~/shortcutModifierState";
 import { pullRequestEnvironment } from "~/state/pullRequests";
@@ -30,6 +31,7 @@ export interface PullRequestSpeedActionResult<Entry = EnvironmentPullRequestEntr
 export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntry>({
   entry,
   hostActions,
+  terminology,
   onActed,
   closing = false,
   sweeping = false,
@@ -37,6 +39,7 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
 }: {
   entry: Entry;
   hostActions: ReadonlySet<PullRequestAction>;
+  terminology: ChangeRequestTerminology;
   onActed?: (result: PullRequestSpeedActionResult<Entry>) => void;
   closing?: boolean;
   sweeping?: boolean;
@@ -60,6 +63,7 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
   const { actionPending, perform } = usePullRequestActionRunner({
     environmentId: entry.environmentId,
     reference,
+    terminology,
     onSuccess: (action) => onActed?.({ entry, action }),
     resolveMergeMethod: (detail) => {
       const allowed = detail.capabilities.mergeMethods.filter(
@@ -82,7 +86,10 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
     <SpeedModeGroup
       busy={busy}
       pending={actionPending || closing}
-      label={uiT("Quick actions for pull request #{0}", { "0": entry.number })}
+      label={uiT("Quick actions for {0} #{1}", {
+        "0": uiT(terminology.singular),
+        "1": entry.number,
+      })}
     >
       {actions.map((action) => {
         const label = ACTIONS[action].label;
@@ -110,7 +117,7 @@ export function PullRequestSpeedActions<Entry extends PullRequestSpeedActionEntr
             </TooltipTrigger>
             <TooltipPopup>
               {action === "merge" && entry.stack
-                ? uiT("Open this pull request to merge its stack")
+                ? `Open this ${terminology.singular} to merge its stack`
                 : action === "close" && onCloseSweepStart
                   ? uiT("Close immediately, or drag across rows to close several")
                   : uiT("{0} immediately", { "0": label })}

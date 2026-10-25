@@ -31,8 +31,7 @@ const SORTS = {
   created: "Newest created",
   oldest: "Oldest updated",
 } as const;
-// On Android the row sits under ScreenContent's 28dp corner. A 12dp inset keeps the
-// 16dp chip radius concentric with it (28 - 12 = 16).
+// A 12dp inset keeps 16dp chips concentric with Android's 28dp ScreenContent corner.
 const ROW_STYLE =
   Platform.OS === "android"
     ? { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8 }
@@ -84,7 +83,11 @@ export function PullRequestListFilters(props: {
   readonly onChange: (value: PullRequestListControls) => void;
   readonly authors: readonly string[];
   readonly labels: readonly string[];
+  /** Dot colors by lowercased label name, for the labels that have one. */
+  readonly labelColors: Readonly<Record<string, string>>;
   readonly projects: readonly { id: string; title: string; environmentId: string }[];
+  /** Opens a picker that searches the host, for a label or author no loaded row carries. */
+  readonly onSearch: (kind: "labels" | "authors") => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -157,6 +160,9 @@ export function PullRequestListFilters(props: {
         break;
       case "author":
         props.onChange({ ...value, filters: { ...value.filters, author: next || undefined } });
+        break;
+      case "search":
+        if (next === "labels" || next === "authors") props.onSearch(next);
         break;
       case "draft":
         props.onChange({
@@ -267,22 +273,30 @@ export function PullRequestListFilters(props: {
   const stateActions = choices("state", STATES, value.state, uiT);
   const involvementActions = choices("involvement", INVOLVEMENT, value.involvement, uiT);
   const labelActions: MenuProps["actions"] = [
+    { id: id("search", "labels"), title: uiT("Search labels…"), image: "magnifyingglass" },
     { id: id("labels", ""), title: uiT("All labels"), state: selectedLabels.length ? "off" : "on" },
-    ...labels.map((label) => ({
-      id: id("label", label),
-      title: label,
-      state: selectedLabelSet.has(label) ? ("on" as const) : ("off" as const),
-    })),
+    ...labels.map((label) => {
+      const color = props.labelColors[label.toLowerCase()];
+      return {
+        id: id("label", label),
+        title: label,
+        state: selectedLabelSet.has(label) ? ("on" as const) : ("off" as const),
+        ...(color ? { image: "circle.fill", imageColor: color } : {}),
+      };
+    }),
   ];
-  const authorActions = choices(
-    "author",
-    Object.fromEntries([
-      ["", uiT("All authors")],
-      ["me", uiT("Me")],
-      ...authors.map((login) => [login, login]),
-    ]),
-    author ?? "",
-  );
+  const authorActions: MenuProps["actions"] = [
+    { id: id("search", "authors"), title: uiT("Search authors…"), image: "magnifyingglass" },
+    ...choices(
+      "author",
+      Object.fromEntries([
+        ["", "All authors"],
+        ["me", "Me"],
+        ...authors.map((login) => [login, login]),
+      ]),
+      author ?? "",
+    ),
+  ];
   const customized = count > 0 || value.sort !== "updated" || props.environmentId !== null;
   // The Android header's filter button opens every filter.
   const headerMenu =

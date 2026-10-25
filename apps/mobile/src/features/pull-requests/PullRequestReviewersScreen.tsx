@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { SheetHeader } from "../../components/ui/SheetHeader";
 import { AsyncResult } from "effect/reactivity";
@@ -6,6 +7,7 @@ import { usePullRequestConnected } from "./usePullRequestConnected";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestReviewerCandidate } from "@t3tools/contracts";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -17,11 +19,10 @@ import {
   type ScrollViewProps,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ScrollViewMarker } from "react-native-screens";
+import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeScrollViewMarker";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Button } from "../../components/ui/Button";
-import { useRestingTopOffset } from "../../native/useRestingTopOffset";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
@@ -36,17 +37,9 @@ import { PullRequestAvatar } from "./PullRequestPresentation";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 
 function ReviewerScrollView(props: ScrollViewProps) {
-  const insets = useSafeAreaInsets();
-  const restingOffset = useRestingTopOffset(insets.top, props);
   return (
     <ScrollViewMarker style={{ flex: 1 }}>
-      <ScrollView
-        {...props}
-        {...restingOffset}
-        automaticallyAdjustContentInsets={false}
-        contentInsetAdjustmentBehavior="never"
-        contentInset={{ top: insets.top }}
-      />
+      <ScrollView {...props} contentInsetAdjustmentBehavior="automatic" />
     </ScrollViewMarker>
   );
 }
@@ -64,6 +57,9 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
   const target = pullRequestTarget(route.params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(target));
   const pr = detail.data;
+  const { singular } = sourceControlClients.get(
+    (pr ?? route.params.initialSummary)?.provider,
+  ).changeRequest;
   const canWrite = useAtomValue(
     composerPullRequests.requestReviewers.permissionAtom(target.environmentId),
   );
@@ -199,7 +195,10 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               ) : null}
               {!allowed ? (
                 <Text className="text-xs text-foreground-muted">
-                  {uiT("Requesting reviews requires write access and an open pull request.")}
+                  <UiText
+                    message={"Requesting reviews requires write access and an open {0}."}
+                    values={{ "0": <UiText message={singular} /> }}
+                  />
                 </Text>
               ) : null}
               {error ? (
@@ -256,7 +255,9 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                         ? uiT("No matching reviewers")
                         : uiT("No reviewers available")
                   }
-                  detail={result.error ?? "Search people and teams with access to this repository."}
+                  detail={
+                    result.error ?? uiT("Search people and teams with access to this repository.")
+                  }
                   variant="plain"
                 />
                 {result.error ? <Button label={uiT("Retry")} onPress={result.refresh} /> : null}
@@ -285,7 +286,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               <AppActivityIndicator />
             ) : (
               <Text className="text-danger-foreground">
-                {detail.error ?? uiT("Couldn't load this pull request.")}
+                {detail.error ?? `Couldn't load this ${singular}.`}
               </Text>
             )
           ) : (

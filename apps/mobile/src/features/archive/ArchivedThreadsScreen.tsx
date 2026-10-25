@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 import { Button } from "../../components/ui/Button";
 import type {
   EnvironmentProject,
@@ -265,7 +266,7 @@ function ArchivedThreadRow(props: {
       onSwipeableClose={props.onSwipeableClose}
       onSwipeableWillOpen={props.onSwipeableWillOpen}
       primaryAction={{
-        accessibilityLabel: `Unarchive ${props.thread.title}`,
+        accessibilityLabel: uiT("Unarchive {0}", { "0": props.thread.title }),
         icon: "arrow.uturn.backward",
         label: uiT("Unarchive"),
         onPress: props.onUnarchive,
@@ -412,8 +413,8 @@ export function ArchivedThreadsScreen(props: {
       <EmptyState
         detail={
           isFiltered
-            ? "Try another search or environment."
-            : "Threads you archive will appear here."
+            ? uiT("Try another search or environment.")
+            : uiT("Threads you archive will appear here.")
         }
         title={isFiltered ? uiT("No matching threads") : uiT("No archived threads")}
       />
@@ -421,8 +422,7 @@ export function ArchivedThreadsScreen(props: {
   }, [isFiltered, isInitialLoad, uiT]);
 
   return (
-    // Keep the list inside this native container. Form-sheet resizing otherwise
-    // treats the flattened background as a header and shrinks the list to zero.
+    // Without this native container, formSheet resizing mistakes the background for a header and collapses the list.
     <View collapsable={false} className="flex-1 bg-sheet">
       <ArchivedThreadsHeader
         environments={props.environments}
@@ -438,6 +438,7 @@ export function ArchivedThreadsScreen(props: {
       <SettingsScreenContent>
         <GestureDetector gesture={archiveScrollGesture}>
           <LegendList
+            renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
             className="flex-1"
             contentContainerStyle={{
               paddingBottom: 32,

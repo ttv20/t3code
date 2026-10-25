@@ -245,7 +245,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         stackedThreadToast({
           type: "error",
           title: uiT("Failed to un-settle thread"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
         }),
       );
     }
@@ -290,7 +290,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         stackedThreadToast({
           type: "error",
           title: uiT("Failed to wake thread"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
         }),
       );
     }
@@ -421,8 +421,11 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     const threadRef = scopeThreadRef(environmentId, threadId);
     const isEnvironmentLive = () =>
       appAtomRegistry.get(environmentShell.stateValueAtom(environmentId)).status === "live";
+    // The shell can leave idle subagent children out, so absence is not deletion there: the
+    // route decides from the thread's own detail.
+    const shellOmitsChildren = serverConfig?.shellThreadFamilies === true;
     // A just-launched child can reach this timeline before its shell syncs.
-    if (isEnvironmentLive() && readThreadShell(threadRef) === null) {
+    if (!shellOmitsChildren && isEnvironmentLive() && readThreadShell(threadRef) === null) {
       const location = router.latestLocation;
       await waitForThreadShell(threadRef, RELATED_THREAD_SHELL_WAIT_MS);
       if (
@@ -434,7 +437,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       }
     }
     const shell = readThreadShell(threadRef);
-    if (shell === null ? isEnvironmentLive() : shell.deletedAt != null) {
+    if (shell === null ? !shellOmitsChildren && isEnvironmentLive() : shell.deletedAt != null) {
       toastManager.add({ type: "info", title: uiT("This thread is no longer available") });
       return;
     }
@@ -545,7 +548,11 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     <ThreadStatusLine
       icon={<AlarmClockIcon />}
       label={
-        snoozedUntil ? `Snoozed, ${formatRelativeTimeUntilLabel(snoozedUntil)}` : uiT("Snoozed")
+        snoozedUntil
+          ? uiT("Snoozed, {0}", {
+              "0": formatRelativeTimeUntilLabel(snoozedUntil, undefined, locale),
+            })
+          : uiT("Snoozed")
       }
       clockMinute={nowMinute}
       actionLabel={isUnsnoozing ? "Waking..." : "Wake now"}
@@ -555,7 +562,11 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
   ) : activeThreadSettled ? (
     <ThreadStatusLine
       icon={<CheckCircle2Icon />}
-      label={settledAt ? `Settled ${formatRelativeTimeLabel(settledAt)}` : uiT("Settled")}
+      label={
+        settledAt
+          ? uiT("Settled {0}", { "0": formatRelativeTimeLabel(settledAt, undefined, locale) })
+          : uiT("Settled")
+      }
       clockMinute={nowMinute}
       actionLabel={isUnsettling ? "Un-settling..." : "Un-settle"}
       actionDisabled={!canOperateThread || isUnsettling}
@@ -577,7 +588,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         stackedThreadToast({
           type: "error",
           title,
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
         }),
       );
     };

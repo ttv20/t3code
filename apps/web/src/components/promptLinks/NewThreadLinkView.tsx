@@ -273,7 +273,6 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
   });
 
   useEffect(() => {
-    // Strict Mode replays effects; each launch opens at most once.
     if (launch === null || launchedRef.current === launch) return;
     launchedRef.current = launch;
     runLaunch(launch);
@@ -328,10 +327,7 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
   }
 }
 
-/**
- * The checkout runs the project's setup script on code from the pull request, so a link alone
- * never starts it.
- */
+/** Checkout runs setup from PR code, so links alone must not start it. */
 function PullRequestLinkCheckout({
   link,
   project,

@@ -29,14 +29,12 @@ import { EnvironmentSubagentAvatar } from "./V2LifecycleRow";
 
 const FOLDED_SCRIPT_MASK = "linear-gradient(to bottom, black calc(100% - 1.75rem), transparent)";
 
-/** The script as a fenced block, so it renders like any other code in the thread. */
 function scriptMarkdown(script: string) {
   const longestRun = Math.max(2, ...(script.match(/`+/g) ?? []).map((run) => run.length));
   const fence = "`".repeat(longestRun + 1);
   return `${fence}javascript\n${script.trimEnd()}\n${fence}`;
 }
 
-/** Opens a workflow coordinator's thread in place of its script: the plan, its agents, then the script. */
 export function WorkflowOpeningBlock(props: {
   readonly opening: WorkflowOpening;
   readonly environmentId: EnvironmentId;
@@ -62,7 +60,7 @@ export function WorkflowOpeningBlock(props: {
     );
   return (
     <section
-      aria-label={`Workflow started: ${headline.title}`}
+      aria-label={uiT("Workflow started: {0}", { "0": headline.title })}
       className="flex min-w-0 flex-col gap-3 px-1 py-0.5"
       data-workflow-opening
     >
@@ -86,7 +84,7 @@ export function WorkflowOpeningBlock(props: {
         ) : null}
       </header>
       {phases.map((phase) => (
-        <section key={phase.index} aria-label={`${phase.title} phase`}>
+        <section key={phase.index} aria-label={uiT("{0} phase", { "0": phase.title })}>
           <h4 className="flex items-baseline gap-2 px-2 pb-0.5 text-2xs font-medium text-muted-foreground">
             <span className="min-w-0 truncate" data-thread-find-text="true">
               {phase.title}
@@ -106,7 +104,6 @@ export function WorkflowOpeningBlock(props: {
   );
 }
 
-/** One member agent, drawn like the timeline's subagent rows; it opens the member's thread. */
 function WorkflowMemberRow(props: {
   readonly member: RuntimeSubagent;
   readonly environmentId: EnvironmentId;
@@ -115,6 +112,8 @@ function WorkflowMemberRow(props: {
   readonly driver: ProviderDriverKind | undefined;
   readonly onOpenThread: (threadId: string) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { member } = props;
   const threadId = member.childThreadId;
   const failed = member.status === "failed";
@@ -139,7 +138,7 @@ function WorkflowMemberRow(props: {
             ) : (
               <button
                 type="button"
-                aria-label={`Open ${member.title}`}
+                aria-label={uiT("Open {0}", { "0": member.title })}
                 aria-description={member.status}
                 onClick={() => props.onOpenThread(threadId)}
                 className={cn(
@@ -205,7 +204,6 @@ function WorkflowMemberRow(props: {
   );
 }
 
-/** The script as highlighted code, folded like a long message until opened or found. */
 function WorkflowScript(props: { readonly script: string }) {
   const { t: uiT } = useUiLanguage();
 

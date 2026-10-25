@@ -1,7 +1,15 @@
+import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
+import { useNewTaskFlow } from "./new-task-flow-provider";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
-import { useNavigation, usePreventRemove, type StaticScreenProps } from "@react-navigation/native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useNavigation,
+  useRoute,
+  usePreventRemove,
+  usePreventRemoveContext,
+  type StaticScreenProps,
+} from "@react-navigation/native";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import {
   isAtomCommandInterrupted,
@@ -16,23 +24,23 @@ import { checkoutNewTaskBranch } from "./checkout-new-task-branch";
 import { resolveNewTaskBranchWorktreePath } from "./new-task-context-presentation";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 
+import { ThreadScreenFallback } from "./ThreadScreenHost";
 import { NewTaskDraftScreen } from "./NewTaskDraftScreen";
 
-type NewTaskDraftRouteParams = {
-  readonly environmentId?: string | string[];
-  readonly projectId?: string | string[];
-  readonly branch?: string | null;
-  readonly worktreePath?: string | null;
-  readonly title?: string | string[];
-  readonly cloning?: string | string[];
-  readonly pendingTaskId?: string | string[];
-  readonly draftId?: string | string[];
-  readonly incomingShareId?: string | string[];
-};
+import type { NewTaskDraftRouteParams } from "./thread-route-state";
+export type { NewTaskDraftRouteParams } from "./thread-route-state";
 
 export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraftRouteParams>) {
   const { t: uiT } = useUiLanguage();
+  const currentRoute = useRoute();
   const params = useMemo(() => route.params ?? {}, [route.params]);
+  const { reset } = useNewTaskFlow();
+  const { deferThreadSelectionUntil } = useAdaptiveWorkspaceLayout();
+  const [initialized, setInitialized] = useState(false);
+  useLayoutEffect(() => {
+    reset();
+    setInitialized(true);
+  }, [reset]);
   const pendingTaskId = Array.isArray(params.pendingTaskId)
     ? params.pendingTaskId[0]
     : params.pendingTaskId;
@@ -72,6 +80,7 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
 
   const [pendingCheckouts, setPendingCheckouts] = useState(0);
   const checkoutTail = useRef(Promise.resolve());
+  const committedCheckoutReleases = useRef(new Set<() => void>());
   const waitingForProject =
     !project &&
     (catalogState.isLoadingConnections ||
@@ -105,10 +114,14 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
       setPendingCheckouts((count) => count - 1);
       if (active) setPreparation({ request: initialProjectRef, result, workspaceRoot });
     });
+    const committed = Promise.withResolvers<void>();
+    committedCheckoutReleases.current.add(committed.resolve);
+    deferThreadSelectionUntil(Promise.allSettled([checkoutTail.current, committed.promise]));
     return () => {
       active = false;
     };
   }, [
+    deferThreadSelectionUntil,
     environmentId,
     workspaceRoot,
     initialProjectRef,
@@ -122,17 +135,31 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
     preparation?.request === initialProjectRef && preparation.workspaceRoot === workspaceRoot
       ? preparation.result
       : null;
-  // The native-stack guard covers iOS swipe dismissal as well as back actions.
-  // A replaced request must settle too before the shared checkout is left behind.
+  // Guard native swipes too; replaced checkout requests must settle before leaving the shared checkout.
   const checkoutPending = pendingCheckouts > 0 || (needsPreparation && result === null);
   usePreventRemove(checkoutPending, () => undefined);
+  const { preventedRoutes } = usePreventRemoveContext();
+  const removalBlocked = preventedRoutes[currentRoute.key]?.preventRemove === true;
+  useEffect(() => {
+    if (checkoutPending || removalBlocked) return;
+    // Native-stack reads the provider state, which commits after the hook updates its registry.
+    for (const release of committedCheckoutReleases.current) release();
+    committedCheckoutReleases.current.clear();
+  }, [checkoutPending, removalBlocked]);
+  useEffect(() => {
+    const releases = committedCheckoutReleases.current;
+    return () => {
+      for (const release of releases) release();
+      releases.clear();
+    };
+  }, []);
   useEffect(() => {
     if (checkoutPending || result?._tag !== "Failure") return;
     if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
       Dialog.alert(
-        "Could not switch branch",
-        error instanceof Error ? error.message : "The branch could not be checked out.",
+        uiT("Could not switch branch"),
+        error instanceof Error ? error.message : uiT("The branch could not be checked out."),
       );
     }
     navigation.goBack();
@@ -155,17 +182,16 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
   );
   const preparingBranch = checkoutPending || (needsPreparation && result?._tag !== "Success");
 
+  if (!initialized) return null;
   return (
     <>
-      <NativeStackScreenOptions
-        options={{
-          title: Array.isArray(params.title) ? params.title[0] : (params.title ?? uiT("New task")),
-        }}
-      />
       {preparingBranch ? (
-        <View className="flex-1 items-center justify-center bg-screen">
-          <Text className="text-foreground">{uiT("Switching branch...")}</Text>
-        </View>
+        <ThreadScreenFallback>
+          <NativeStackScreenOptions options={{ title: uiT("New thread") }} />
+          <View className="flex-1 items-center justify-center bg-screen">
+            <Text className="text-foreground">{uiT("Switching branch...")}</Text>
+          </View>
+        </ThreadScreenFallback>
       ) : (
         <NewTaskDraftScreen
           initialProjectRef={preparedProjectRef}

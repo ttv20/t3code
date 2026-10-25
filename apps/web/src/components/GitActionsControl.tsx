@@ -1,3 +1,4 @@
+import { UiText } from "../i18n";
 import { useUiLanguage } from "../i18n";
 import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
 import { useAtomValue } from "@effect/atom-react";
@@ -1174,9 +1175,7 @@ export default function GitActionsControl({
         terminology: changeRequestTerminology,
       })
     : null;
-  // Follows the live status so the button tracks the tree while the dialog is open. Until the
-  // status loads, keep the option enabled: the server stays the authority and rejects a stale
-  // request with its own error.
+  // Keep enabled until live status loads; the server rejects stale requests.
   const featureBranchUnavailableReason = pendingDefaultBranchAction
     ? resolveFeatureBranchUnavailableReason({
         branchName: pendingDefaultBranchAction.branchName,
@@ -1217,8 +1216,7 @@ export default function GitActionsControl({
     };
   }, [activeEnvironmentId, gitCwd, refreshVcsStatus]);
 
-  // Not an effect event: retained toast actions must stay bound to the checkout and
-  // thread of the render that created them, not follow later selections.
+  // Toast actions must retain their original checkout/thread, so do not use an effect event.
   async function runGitActionWithToast({
     action,
     commitMessage,
@@ -1294,7 +1292,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Action failed"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
           timeout: errorToastTiming.timeout,
           ...(scopedToastData !== undefined ? { data: scopedToastData } : {}),
         }),
@@ -1427,7 +1425,7 @@ export default function GitActionsControl({
             stackedThreadToast({
               type: "error",
               title: uiT("Pull failed"),
-              description: error instanceof Error ? error.message : "An error occurred.",
+              description: error instanceof Error ? error.message : uiT("An error occurred."),
               timeout: errorToastTiming.timeout,
               ...(threadToastData !== undefined ? { data: threadToastData } : {}),
             }),
@@ -1527,7 +1525,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Unable to open file"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
           ...(threadToastData !== undefined ? { data: threadToastData } : {}),
         }),
       );
@@ -1548,7 +1546,7 @@ export default function GitActionsControl({
         stackedThreadToast({
           type: "error",
           title: uiT("Git initialization failed"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
           ...(threadToastData !== undefined ? { data: threadToastData } : {}),
         }),
       );
@@ -1626,9 +1624,10 @@ export default function GitActionsControl({
       ) : null}
       {gitStatusForActions?.refName === null && (
         <p className="px-2 py-1.5 text-xs text-warning">
-          {uiT(
-            "Detached HEAD: create and check out a branch to enable push and pull request actions.",
-          )}
+          <UiText
+            message={"Detached HEAD: create and check out a branch to enable push and {0} actions."}
+            values={{ "0": <UiText message={changeRequestTerminology.singular} /> }}
+          />
         </p>
       )}
       {gitStatusForActions &&
@@ -1915,8 +1914,10 @@ export default function GitActionsControl({
                     <span className="text-muted-foreground">{uiT("Files")}</span>
                     {!allSelected && !isEditingFiles && (
                       <span className="text-muted-foreground">
-                        ({selectedFiles.length} {uiT("of")}
-                        {allFiles.length})
+                        <UiText
+                          message={"({0}  of{1})"}
+                          values={{ "0": selectedFiles.length, "1": allFiles.length }}
+                        />
                       </span>
                     )}
                   </div>

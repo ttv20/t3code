@@ -1,3 +1,4 @@
+import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import { Button } from "../../components/ui/Button";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
@@ -82,19 +83,14 @@ const confirm = (title: string, message: string, action: string) =>
         { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
         { text: action, onPress: () => resolve(true) },
       ],
-      // Android dismisses an open alert when the next one shows; a dismissed
-      // request is declined rather than left holding an in-flight slot.
+      // Android dismisses earlier alerts when showing another; decline dismissed requests to release their slots.
       { cancelable: true, onDismiss: () => resolve(false) },
     );
   });
 
 const MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024;
 
-/**
- * A WebView cannot move between the two without reloading, so each is its own
- * view of the app: the inline one is torn down before full screen opens, and
- * comes back when it closes.
- */
+/** WebViews reload when moved; tear down inline before opening fullscreen and recreate it on return. */
 export function ThreadMcpApp(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
@@ -163,8 +159,7 @@ export function ThreadMcpApp(props: {
     }
     setLoaded(false);
     setHeight(MCP_APP_INLINE_MAX_HEIGHT);
-    // The first URL's token may have expired by now; the asset query keeps
-    // a refreshed one, which this new view can load.
+    // Use the asset query's refreshed token when creating a replacement view.
     if (asset._tag === "Success") setUri(asset.url);
     setGeneration(1);
   };
@@ -212,8 +207,7 @@ export function ThreadMcpApp(props: {
     reportFailure: false,
   });
   const [toolDefinition, setToolDefinition] = useState<unknown>(undefined);
-  // Read by the host on every message, so it always sees current values
-  // without being rebuilt (which would drop the app's session).
+  // Read current context per message without rebuilding the host and losing its session.
   const conversation = useThreadShell(
     scopeThreadRef(props.environmentId, props.conversationThreadId),
   );
@@ -304,7 +298,7 @@ export function ThreadMcpApp(props: {
         if (
           !info.value.readOnly &&
           !(await confirm(
-            `Allow ${app.server} to run ${info.value.title ?? name}?`,
+            uiT("Allow {0} to run {1}?", { "0": app.server, "1": info.value.title ?? name }),
             JSON.stringify(args, null, 2),
             "Allow",
           ))
@@ -328,9 +322,8 @@ export function ThreadMcpApp(props: {
         return result.value;
       },
       openLink: async (url) => {
-        // A WebView cannot tell whether the reader just tapped the app, so it
-        // asks, rather than letting an app leave T3 on a timer.
-        if (!(await confirm(`Open a link from ${app.server}?`, url, "Open"))) {
+        // WebViews cannot prove user activation; confirm links to prevent timer-driven navigation out of T3.
+        if (!(await confirm(uiT("Open a link from {0}?", { "0": app.server }), url, "Open"))) {
           throw new McpAppHostRefusal("Declined by the user.");
         }
         if (!(await tryOpenExternalUrl(url, "mcp-app"))) {
@@ -338,7 +331,9 @@ export function ThreadMcpApp(props: {
         }
       },
       sendMessage: async (text) => {
-        if (!(await confirm(`Send this message from ${app.server}?`, text, "Send"))) {
+        if (
+          !(await confirm(uiT("Send this message from {0}?", { "0": app.server }), text, "Send"))
+        ) {
           throw new McpAppHostRefusal("Declined by the user.");
         }
         await enqueueThreadOutboxMessage({
@@ -377,8 +372,7 @@ export function ThreadMcpApp(props: {
         }
         if (mode === "fullscreen" && current.displayMode !== "fullscreen") {
           await hostRef.current?.teardown();
-          // The wait may have let an approval arrive, or the user moved to
-          // another screen; either way the view reloads inline.
+          // Approval arrival or navigation during the wait requires reloading inline.
           if (latest.current.awaitingUser || !latest.current.navigation.isFocused()) {
             openNewDocument.current((value) => value + 1);
             return "inline";
@@ -402,7 +396,7 @@ export function ThreadMcpApp(props: {
       },
       downloadFile: async (files) => {
         const names = files.map((file) => file.name).join(", ");
-        if (!(await confirm(`Save a file from ${app.server}?`, names, "Save"))) {
+        if (!(await confirm(uiT("Save a file from {0}?", { "0": app.server }), names, "Save"))) {
           throw new McpAppHostRefusal("Declined by the user.");
         }
         for (const file of files) {
@@ -454,7 +448,6 @@ export function ThreadMcpApp(props: {
       void next.teardown();
       hostRef.current = null;
     };
-    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- A restarted view needs a new host.
   }, [uri, app, generation, documentKey]);
 
   useEffect(() => {
@@ -481,7 +474,7 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          The {app.server} {uiT("app is open full screen")}
+          <UiText message={"The {0}  app is open full screen"} values={{ "0": app.server }} />
         </Text>
       </View>
     );
@@ -494,7 +487,7 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center gap-2 rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          The {app.server} {uiT("app was closed")}
+          <UiText message={"The {0}  app was closed"} values={{ "0": app.server }} />
         </Text>
         <View className="items-center">
           <Button
@@ -515,7 +508,10 @@ export function ThreadMcpApp(props: {
       {navigatedAway ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            The {app.server} {uiT("app left its page and was stopped")}
+            <UiText
+              message={"The {0}  app left its page and was stopped"}
+              values={{ "0": app.server }}
+            />
           </Text>
         </View>
       ) : uri !== null && !crashed ? (
@@ -529,11 +525,7 @@ export function ThreadMcpApp(props: {
           style={{ flex: 1, backgroundColor: "transparent" }}
           nestedScrollEnabled
           originWhitelist={["*"]}
-          // Only the outer page loads at the top; the app opens links through
-          // the bridge. Android reports every navigation as top-frame, frames
-          // the app nests included, so it has no gate to apply: there the
-          // outer page never navigates, and the app frame's sandbox already
-          // forbids top navigation and popups.
+          // Android misreports nested frames as top-level; rely on iframe sandboxing there and gate navigation elsewhere.
           onShouldStartLoadWithRequest={(request) =>
             Platform.OS === "android" ||
             request.isTopFrame === false ||
@@ -565,8 +557,7 @@ export function ThreadMcpApp(props: {
       ) : asset._tag === "Failure" || crashed ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            {uiT("Unable to load the")}
-            {app.server} {uiT("app")}
+            <UiText message={"Unable to load the{0}  app"} values={{ "0": app.server }} />
           </Text>
         </View>
       ) : null}
