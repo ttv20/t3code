@@ -868,8 +868,8 @@ const AssistantMarkdownContent = memo(function AssistantMarkdownContent(props: {
 function useMarkdownStyles(): MarkdownStyleSets {
   const { appearance } = useAppearancePreferences();
   const nativeMarkdownTypography = useMemo(
-    () => resolveNativeMarkdownTypography(appearance.baseFontSize),
-    [appearance.baseFontSize],
+    () => resolveNativeMarkdownTypography(appearance.chatFontSize, appearance.chatLineHeight),
+    [appearance.chatFontSize, appearance.chatLineHeight],
   );
   const theme = useUniwindTheme();
   const markdownBodyColor = theme["--color-md-body"];
@@ -3060,7 +3060,9 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
           >
             <ThreadFeedPlaceholder
               title={uiT("No conversation yet")}
-              detail="Ask the agent to inspect the repo, run a command, or continue the active thread."
+              detail={uiT(
+                "Ask the agent to inspect the repo, run a command, or continue the active thread.",
+              )}
               topInset={topContentInset}
               bottomInset={bottomContentInset}
               horizontalPadding={horizontalPadding}

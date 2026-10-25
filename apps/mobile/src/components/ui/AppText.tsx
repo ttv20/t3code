@@ -10,6 +10,10 @@ import {
 import { MOBILE_TEXT_CLASSES } from "../../lib/typography";
 
 import { cn } from "../../lib/cn";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
 
 export type AppTextProps = RNTextProps & {
   readonly className?: string;
@@ -31,6 +35,31 @@ export function AppText({ className, textRole, ...props }: AppTextProps) {
       selectionColorClassName={Platform.OS === "android" ? "accent-focus/32" : undefined}
       {...props}
     />
+  );
+}
+
+export function ContentText({
+  children,
+  style,
+  ...props
+}: Omit<AppTextProps, "children"> & {
+  readonly children: string;
+}) {
+  const direction = resolveMarkdownDirection(countMarkdownDirectionCharacters(children));
+  return (
+    <AppText
+      {...props}
+      style={[
+        {
+          direction,
+          writingDirection: direction,
+          textAlign: "start",
+        },
+        style,
+      ]}
+    >
+      {children}
+    </AppText>
   );
 }
 

@@ -82,7 +82,8 @@ export function FloatingWorkingControl(props: {
   readonly onOpenQueue: () => void;
   readonly lift?: SharedValue<number>;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { direction, t: uiT } = useUiLanguage();
+  const horizontalDirection = direction === "rtl" ? -1 : 1;
   const { width: windowWidth } = useWindowDimensions();
   const [overlayWidth, setOverlayWidth] = useState(windowWidth);
   const [queueWidth, setQueueWidth] = useState(0);
@@ -118,7 +119,9 @@ export function FloatingWorkingControl(props: {
     transform: [{ translateY: -(lift?.value ?? 0) }],
   }));
   const arrowTransformStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -CONTROL_SEPARATION * (1 - separationProgress.value) }],
+    transform: [
+      { translateX: -horizontalDirection * CONTROL_SEPARATION * (1 - separationProgress.value) },
+    ],
   }));
   const arrowContentStyle = useAnimatedStyle(() => ({
     opacity: separationProgress.value,
@@ -148,7 +151,10 @@ export function FloatingWorkingControl(props: {
     }
   }, [capsuleWidth, hasStatus]);
   const capsuleStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: CONTROL_SEPARATION * (1 - separationProgress.value) }],
+    // Yoga mirrors the row in RTL; the physical offset for its hidden arrow must mirror too.
+    transform: [
+      { translateX: horizontalDirection * CONTROL_SEPARATION * (1 - separationProgress.value) },
+    ],
   }));
   const capsuleSizerStyle = useAnimatedStyle(() => ({
     width: capsuleWidth.value ?? 0,

@@ -129,7 +129,7 @@ function NativeSidebarContainer(props: ThreadNavigationSidebarProps) {
 function ThreadNavigationSidebarPane(
   props: ThreadNavigationSidebarProps & { readonly nativeChrome: boolean },
 ) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const { themeVariables: materialTheme } = useAppearancePreferences();
   const drawerColor = materialTheme["--color-drawer"];
@@ -210,11 +210,12 @@ function ThreadNavigationSidebarPane(
   const projectScopes = useMemo(
     () =>
       buildHomeProjectScopes({
+        locale,
         projects,
         environmentId: options.selectedEnvironmentId,
         projectGroupingMode: options.projectGroupingMode,
       }),
-    [projects, options.selectedEnvironmentId, options.projectGroupingMode],
+    [projects, options.selectedEnvironmentId, options.projectGroupingMode, locale],
   );
   const projectFilterOptions = projectScopes.map((scope) => ({
     key: scope.key,

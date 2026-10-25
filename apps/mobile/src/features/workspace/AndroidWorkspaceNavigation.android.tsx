@@ -1,4 +1,5 @@
 import { requireNativeView } from "expo";
+import { useUiLanguage } from "../../i18n";
 import { CommonActions, useNavigation } from "@react-navigation/native";
 import {
   Keyboard,
@@ -26,6 +27,8 @@ import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 export const ANDROID_WORKSPACE_RAIL_WIDTH = 72;
 
 interface NativeNavigationProps extends ViewProps {
+  readonly rtl: boolean;
+  readonly labels: Readonly<Record<string, string>>;
   readonly rail: boolean;
   readonly selectedTab: AndroidWorkspaceNavigationTab;
   readonly dark: boolean;
@@ -60,6 +63,7 @@ export function AndroidWorkspaceNavigation(props: {
   /** The rail needs the whole workspace while it widens over the list. */
   readonly onOverlayChange?: (overlay: boolean) => void;
 }) {
+  const { t, direction } = useUiLanguage();
   const workspace = useWorkspaceTabs()!;
   const root = useAndroidWorkspaceRoot();
   const navigation = useNavigation();
@@ -86,6 +90,17 @@ export function AndroidWorkspaceNavigation(props: {
       }
     >
       <NativeNavigation
+        rtl={direction === "rtl"}
+        labels={{
+          threads: t("Threads"),
+          pullRequests: t("PRs"),
+          pullRequestsExpanded: t("Pull requests"),
+          settings: t("Settings"),
+          newThread: t("New thread"),
+          closeNavigation: t("Close navigation rail"),
+          collapseNavigation: t("Collapse navigation rail"),
+          expandNavigation: t("Expand navigation rail"),
+        }}
         rail={rail}
         selectedTab={selectedTab}
         dark={themeAppearance === "dark"}

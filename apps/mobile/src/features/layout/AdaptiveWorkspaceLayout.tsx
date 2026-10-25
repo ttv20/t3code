@@ -790,7 +790,7 @@ function AdaptiveWorkspaceLayoutContent(
                 // lists never lay out at zero size and are ready, unchanged, on the way back. The
                 // content pane, laid out after it, covers it, in the same mount as the page.
                 style={[
-                  workspacePage ? { position: "absolute", top: 0, bottom: 0, left: 0 } : null,
+                  workspacePage ? { position: "absolute", top: 0, bottom: 0, start: 0 } : null,
                   sidebarAnimatedStyle,
                 ]}
               >
@@ -879,8 +879,10 @@ function AdaptiveWorkspaceLayoutContent(
               // The rail reserves its slot above and draws over the panes, so it can widen over
               // the list in place. It takes the whole workspace only while it is open.
               <View
-                className="absolute inset-y-0 left-0"
-                style={railOverlay ? { right: 0 } : { width: navigationRailWidth }}
+                className="absolute inset-y-0"
+                style={
+                  railOverlay ? { start: 0, end: 0 } : { start: 0, width: navigationRailWidth }
+                }
               >
                 <AndroidWorkspaceNavigation
                   rail

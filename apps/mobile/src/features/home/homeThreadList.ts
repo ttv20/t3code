@@ -1,4 +1,5 @@
 import { buildProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { translateUiText, type UiLocale } from "@t3tools/client-runtime/i18n";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
@@ -41,6 +42,7 @@ function getProjectSortTimestamp(
 }
 
 export function buildHomeProjectScopes(input: {
+  readonly locale?: UiLocale;
   readonly projects: ReadonlyArray<EnvironmentProject>;
   readonly environmentId: EnvironmentId | null;
   readonly projectGroupingMode: SidebarProjectGroupingMode;
@@ -58,7 +60,9 @@ export function buildHomeProjectScopes(input: {
   }).map((group) => {
     return {
       key: group.key,
-      title: group.label,
+      title: group.representative.isScratch
+        ? translateUiText(input.locale ?? "en", "No project")
+        : group.label,
       representative: group.representative,
       projects: group.members.map((member) => member.project),
       projectRefs: group.memberProjectRefs,

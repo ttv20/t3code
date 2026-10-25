@@ -348,7 +348,7 @@ function MiniPlayerShell({
   readonly cornerRadius?: (frame: PreviewMiniPlayerSize) => number;
   readonly children: (frame: PreviewMiniPlayerFrame) => ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction: uiDirection } = useUiLanguage();
 
   const canvas = useChatCanvas();
   const gestureRef = useRef<PointerGesture | null>(null);
@@ -421,7 +421,11 @@ function MiniPlayerShell({
   const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     const gesture = gestureRef.current;
     if (!gesture || gesture.pointerId !== event.pointerId || !container) return;
-    const delta = { x: event.clientX - gesture.pointerX, y: event.clientY - gesture.pointerY };
+    // Canvas x coordinates run from inline start, including the mirrored resize handles.
+    const delta = {
+      x: (event.clientX - gesture.pointerX) * (uiDirection === "rtl" ? -1 : 1),
+      y: event.clientY - gesture.pointerY,
+    };
     if (!gesture.moved && Math.hypot(delta.x, delta.y) < HANDLE_TAP_SLOP_PX) return;
     gesture.moved = true;
     const store = usePreviewMiniPlayerStore.getState();
@@ -471,7 +475,7 @@ function MiniPlayerShell({
           data-preview-mini-player={sourceKey}
           className="pointer-events-none absolute select-none"
           style={{
-            left: frame.x,
+            insetInlineStart: frame.x,
             top: frame.y,
             width: frame.width,
             height: frame.height,
@@ -482,7 +486,7 @@ function MiniPlayerShell({
             ref={handleRef}
             data-pill-open={pillOpen ? "" : undefined}
             className="group pointer-events-auto absolute z-[49] size-3 touch-none cursor-grab active:cursor-grabbing pointer-coarse:-m-2.5 pointer-coarse:size-8"
-            style={{ right: pillInset, top: pillInset }}
+            style={{ insetInlineEnd: pillInset, top: pillInset }}
             onPointerDown={(event) => beginGesture(event, null)}
             onPointerMove={handlePointerMove}
             onPointerUp={endGesture}

@@ -81,6 +81,8 @@ const HighlightedSourceLine = function HighlightedSourceLine(props: {
         numberOfLines={props.wordBreak ? undefined : 1}
         className="flex-1 font-normal text-foreground"
         style={{
+          writingDirection: "ltr",
+          textAlign: "left",
           fontFamily: REVIEW_MONO_FONT_FAMILY,
           fontSize: props.codeSurface.fontSize,
           lineHeight: props.codeSurface.rowHeight,
@@ -282,6 +284,8 @@ function JavaScriptSourceFileSurface(props: SourceFileSurfaceProps) {
       selectable
       selectionColorClassName={Platform.OS === "android" ? "accent-focus/32" : undefined}
       style={{
+        writingDirection: "ltr",
+        textAlign: "left",
         color: foreground,
         fontFamily: REVIEW_MONO_FONT_FAMILY,
         fontSize: codeSurface.fontSize,
@@ -368,7 +372,7 @@ function JavaScriptSourceFileSurface(props: SourceFileSurfaceProps) {
   );
 
   return (
-    <View className="relative flex-1 bg-sheet">
+    <View className="relative flex-1 bg-sheet" style={{ direction: "ltr" }}>
       <SourceHighlightStatusView status={status} />
       {usesLineList ? (
         codeWordBreak ? (

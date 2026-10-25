@@ -3,6 +3,7 @@ import { ChatCanvasContext } from "./ChatCanvasContext";
 import { resolveChatCanvasLayout, type ChatCanvasPreview } from "./chatCanvasLayout";
 import type { PreviewMiniPlayerObstacles } from "../preview/previewMiniPlayerLayout";
 import { observeResize } from "../../lib/observeResize";
+import { useUiLanguage } from "../../i18n";
 
 export function ChatCanvas({
   composerOverlayElement,
@@ -13,6 +14,7 @@ export function ChatCanvas({
   composerOverlayElement: HTMLElement | null;
   detailsCardTopInset?: number;
 }) {
+  const { direction } = useUiLanguage();
   const elementRef = useRef<HTMLDivElement | null>(null);
   const widthProbeRef = useRef<HTMLDivElement | null>(null);
   const [timelineElement, registerTimeline] = useState<HTMLElement | null>(null);
@@ -65,8 +67,16 @@ export function ChatCanvas({
       const findBarBounds = findBar?.getBoundingClientRect();
       const styles = getComputedStyle(probe);
       const next = {
-        findBarLeft: findBarBounds ? findBarBounds.left - canvasBounds.left : 0,
-        findBarRight: findBarBounds ? findBarBounds.right - canvasBounds.left : 0,
+        findBarLeft: findBarBounds
+          ? direction === "rtl"
+            ? canvasBounds.right - findBarBounds.right
+            : findBarBounds.left - canvasBounds.left
+          : 0,
+        findBarRight: findBarBounds
+          ? direction === "rtl"
+            ? canvasBounds.right - findBarBounds.left
+            : findBarBounds.right - canvasBounds.left
+          : 0,
         findBarBottom: findBarBounds ? findBarBounds.bottom - canvasBounds.top : 0,
         width: element.clientWidth,
         height: element.clientHeight,
@@ -92,7 +102,7 @@ export function ChatCanvas({
     if (composerOverlayElement) observed.push(composerOverlayElement);
     if (timelineElement) observed.push(timelineElement);
     return observeResize(observed, measure);
-  }, [composerOverlayElement, timelineElement, detailsCardTopInset]);
+  }, [composerOverlayElement, timelineElement, detailsCardTopInset, direction]);
   const container = { width: measurements.width, height: measurements.height };
   const findBar =
     detailsCardTopInset > 0

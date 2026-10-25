@@ -3,6 +3,18 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./text-direction": {
+      "types": "./src/textDirection.ts",
+      "default": "./src/textDirection.ts"
+    },
+    "./context-window": {
+      "types": "./src/contextWindow.ts",
+      "default": "./src/contextWindow.ts"
+    },
+    "./composer-usage-indicator": {
+      "types": "./src/composerUsageIndicator.ts",
+      "default": "./src/composerUsageIndicator.ts"
+    },
     "./workspace-basename-lookup": {
       "types": "./src/workspaceBasenameLookup.ts",
       "default": "./src/workspaceBasenameLookup.ts"

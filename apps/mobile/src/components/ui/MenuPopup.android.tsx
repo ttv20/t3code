@@ -1,4 +1,5 @@
 import { NativeThemeHost } from "./NativeThemeHost.android";
+import { useUiLanguage } from "../../i18n";
 import {
   Box,
   Column,
@@ -55,6 +56,7 @@ function MenuIcon(props: {
 
 /** Native popup positioned at the original trigger, outside virtualized rows. */
 export function MenuPopup(props: MenuPopupProps) {
+  const { direction } = useUiLanguage();
   const { appearance, themeVariables: colors } = useAppearancePreferences();
   const { scale, menuItemHeight } = useAndroidControlSizing();
   const body = resolveScaledTextRole("body", appearance.baseFontSize);
@@ -68,7 +70,10 @@ export function MenuPopup(props: MenuPopupProps) {
       {props.parent ? (
         <DropdownMenuItem onClick={props.onBack} modifiers={itemModifiers}>
           <DropdownMenuItem.LeadingIcon>
-            <MenuIcon name="arrow.left" onPress={props.onBack} />
+            <MenuIcon
+              name={direction === "rtl" ? "arrow.right" : "arrow.left"}
+              onPress={props.onBack}
+            />
           </DropdownMenuItem.LeadingIcon>
           <DropdownMenuItem.Text>
             <Text color={foreground} style={{ typography: "bodyLarge", ...body }}>
@@ -126,7 +131,7 @@ export function MenuPopup(props: MenuPopupProps) {
           {(action.subactions?.length ?? 0) > 0 ? (
             <DropdownMenuItem.TrailingIcon>
               <MenuIcon
-                name="chevron.right"
+                name={direction === "rtl" ? "chevron.left" : "chevron.right"}
                 onPress={() => props.onPress(action)}
                 disabled={action.attributes?.disabled}
               />

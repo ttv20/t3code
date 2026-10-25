@@ -49,7 +49,6 @@ describe("RTL sentence boundaries", () => {
     "לדוגמה משפט אחת ending. השני מתחיל",
     "לדוגמה משפט אחת ending.and השני מתחיל",
     "לדוגמה משפט אחת ending. \u200fand השני מתחיל",
-    "לדוגמה משפט אחת ending.\n\nand השני מתחיל בעברית עוד מילים",
     "לדוגמה משפט אחת ending.\n\n123 השני מתחיל בעברית עוד מילים",
     "לדוגמה משפט אחת ending. `and השני מתחיל`",
     "לדוגמה משפט אחת `ending. and` השני מתחיל",
@@ -97,4 +96,47 @@ it("preserves an interrupting table while correcting RTL prose", () => {
   expect(markdownForDisplay(source)).toBe(
     "משפט לדוגמה בעברית ארוכה ending. \u200fnext\n\n| a | b |\n|---|---|\n| c | d |",
   );
+});
+
+describe("native paragraph directions", () => {
+  it("resolves a new paragraph independently of the preceding sentence", () => {
+    expect(markdownForDisplay("לדוגמה משפט אחת ending.\n\nand השני מתחיל בעברית עוד מילים")).toBe(
+      "לדוגמה משפט אחת ending.\n\n\u200fand השני מתחיל בעברית עוד מילים",
+    );
+  });
+  it.each([
+    "- **Podcast Addict:** גם ללא סשן Play נגן נעוץ יכול לקבל פקודת ניגון דרך הממשק שלו.",
+    "- **Spotify:** גם ללא סשן Play נוסף ניסיון חידוש מקומי בלחיצה על אישור החיבור.",
+    "1. **Spotify:** נגן זה צריך להיות מיושר לימין לפי תוכן הפריט.",
+    "> **Podcast Addict:** זהו תיאור בעברית שמתחיל בשם באנגלית.",
+    "### **Spotify:** כותרת בעברית עם שם באנגלית",
+  ])("uses the shared threshold for English-prefixed Hebrew prose: %s", (source) => {
+    expect(markdownForDisplay(source)).toBe(source.replace("**", "\u200f**"));
+    expect(markdownForDisplay(markdownForDisplay(source))).toBe(markdownForDisplay(source));
+  });
+
+  it("resolves adjacent list items independently and excludes code and destinations", () => {
+    const source =
+      "- **Spotify:** נגן זה מקבל פקודות ניגון באופן מקומי.\n- English instructions for the player.\n- [Spotify](https://example.com/a-very-long-english-destination): הפעלת נגן מקומי.\n- `veryLongEnglishCodeIdentifier`: הסבר בעברית על הפעלת הנגן.";
+    expect(markdownForDisplay(source)).toBe(
+      "- \u200f**Spotify:** נגן זה מקבל פקודות ניגון באופן מקומי.\n- English instructions for the player.\n- \u200f[Spotify](https://example.com/a-very-long-english-destination): הפעלת נגן מקומי.\n- \u200f`veryLongEnglishCodeIdentifier`: הסבר בעברית על הפעלת הנגן.",
+    );
+  });
+
+  it("keeps predominantly English prose LTR even when it starts in Hebrew", () => {
+    expect(
+      markdownForDisplay(
+        "שלום this paragraph contains predominantly English instructions for the player.",
+      ),
+    ).toBe("\u200eשלום this paragraph contains predominantly English instructions for the player.");
+  });
+});
+
+it("uses the web word threshold independently of word length", () => {
+  expect(
+    markdownForDisplay("- extraordinarilyLongEnglishIdentifier one two three four five six א ב ג"),
+  ).toBe("- \u200fextraordinarilyLongEnglishIdentifier one two three four five six א ב ג");
+  const english =
+    "- one two three four five six seven eight אבגדהוזחטיכלמנסעפצקרשת אבגדהוזחטיכלמנסעפצקרשת";
+  expect(markdownForDisplay(english)).toBe(english);
 });

@@ -22,7 +22,7 @@ import type { AppBarProps } from "./AppBar.types";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function AppBar(props: AppBarProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
   const { search } = props;
   const { paddingTop, paddingBottom } = useToolbarLayout();
   const { scale, buttonSize, iconSize, smallIconSize } = useAndroidControlSizing();
@@ -110,7 +110,7 @@ export function AppBar(props: AppBarProps) {
                 style={{ width: buttonSize, height: buttonSize }}
               >
                 <SymbolView
-                  name="chevron.left"
+                  name={direction === "rtl" ? "chevron.right" : "chevron.left"}
                   size={iconSize}
                   tintColorClassName="accent-header-foreground"
                   type="monochrome"
@@ -214,7 +214,7 @@ export function AppBar(props: AppBarProps) {
               <View className="flex-1 flex-row items-center gap-1">
                 <ScreenHeaderButton
                   accessibilityLabel={search.closeAccessibilityLabel ?? uiT("Close search")}
-                  icon="arrow.left"
+                  icon={direction === "rtl" ? "arrow.right" : "arrow.left"}
                   onPress={closeSearch}
                 />
                 <SearchField

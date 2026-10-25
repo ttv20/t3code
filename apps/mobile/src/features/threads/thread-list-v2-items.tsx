@@ -35,7 +35,7 @@ import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSw
 
 import type { ThreadListProvider } from "../../state/thread-list-environments";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
-import { AppText as Text } from "../../components/ui/AppText";
+import { AppText as Text, ContentText } from "../../components/ui/AppText";
 import { Menu } from "../../components/ui/Menu";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
@@ -126,26 +126,6 @@ function ThreadListV2Duration(props: { readonly startedAt: string | null }) {
   if (!Number.isFinite(startedAtMs)) return null;
   return ` ${formatWorkingDurationLabel(nowMs - startedAtMs)}`;
 }
-
-const CARD_MENU_ACTIONS: MenuAction[] = [
-  { id: "settle", title: "Settle", image: "checkmark" },
-  { id: "delete", title: "Delete", image: "trash", attributes: { destructive: true } },
-];
-
-const SLIM_MENU_ACTIONS: MenuAction[] = [
-  { id: "unsettle", title: "Un-settle", image: "arrow.uturn.backward" },
-  { id: "delete", title: "Delete", image: "trash", attributes: { destructive: true } },
-];
-
-const SNOOZED_MENU_ACTIONS: MenuAction[] = [
-  { id: "unsnooze", title: "Wake thread", image: "clock" },
-  { id: "delete", title: "Delete", image: "trash", attributes: { destructive: true } },
-];
-
-const LEGACY_MENU_ACTIONS: MenuAction[] = [
-  { id: "archive", title: "Archive", image: "archivebox" },
-  { id: "delete", title: "Delete", image: "trash", attributes: { destructive: true } },
-];
 
 const SIDEBAR_V2_ROW_RADIUS = 12;
 
@@ -416,7 +396,7 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
           </Text>
         )}
       </View>
-      <Text
+      <ContentText
         className={cn(
           "mt-1 text-base font-t3-medium text-foreground",
           sidebarPane && "text-drawer-foreground",
@@ -424,7 +404,7 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
         numberOfLines={1}
       >
         {pendingTask.title}
-      </Text>
+      </ContentText>
       {branch || props.environmentLabel ? (
         <View className="mt-1 flex-row items-center gap-1">
           <Text
@@ -810,13 +790,28 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         : [],
     [props.autoSettleOptOutSupported, thread.autoSettleDisabledAt, uiT],
   );
+  const sharedMenuActions = useMemo(
+    () => ({
+      settle: { id: "settle", title: uiT("Settle"), image: "checkmark" },
+      unsettle: { id: "unsettle", title: uiT("Un-settle"), image: "arrow.uturn.backward" },
+      unsnooze: { id: "unsnooze", title: uiT("Wake thread"), image: "clock" },
+      archive: { id: "archive", title: uiT("Archive"), image: "archivebox" },
+      delete: {
+        id: "delete",
+        title: uiT("Delete"),
+        image: "trash",
+        attributes: { destructive: true },
+      },
+    }),
+    [uiT],
+  );
   const titleMenuItems = useMemo<MenuAction[]>(
     () => [
       { id: "rename", title: uiT("Rename"), image: "square.and.pencil" },
       ...buildThreadTitleRegenerationMenuItems({
         supported: props.titleRegenerationSupported,
         isRegenerating: thread.titleRegeneration != null,
-      }),
+      }).map((action) => ({ ...action, title: uiT(action.title) })),
     ],
     [props.titleRegenerationSupported, thread.titleRegeneration, uiT],
   );
@@ -832,53 +827,60 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       ...arrangementMenuItems,
       ...titleMenuItems,
       ...autoSettleMenuItems,
-      LEGACY_MENU_ACTIONS[0]!,
+      sharedMenuActions.archive,
       { id: "delete", title: uiT("Delete"), image: "trash", attributes: { destructive: true } },
     ],
-    [arrangementMenuItems, autoSettleMenuItems, snoozePresetActions, titleMenuItems, uiT],
+    [
+      arrangementMenuItems,
+      autoSettleMenuItems,
+      sharedMenuActions,
+      snoozePresetActions,
+      titleMenuItems,
+      uiT,
+    ],
   );
   const cardMenuActions = useMemo<MenuAction[]>(
     () => [
-      CARD_MENU_ACTIONS[0]!,
+      sharedMenuActions.settle,
       ...arrangementMenuItems,
       ...titleMenuItems,
       ...autoSettleMenuItems,
-      LEGACY_MENU_ACTIONS[0]!,
-      ...CARD_MENU_ACTIONS.slice(1),
+      sharedMenuActions.archive,
+      sharedMenuActions.delete,
     ],
-    [arrangementMenuItems, autoSettleMenuItems, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, sharedMenuActions, titleMenuItems],
   );
   const slimMenuActions = useMemo<MenuAction[]>(
     () => [
-      SLIM_MENU_ACTIONS[0]!,
+      sharedMenuActions.unsettle,
       ...arrangementMenuItems.filter(
         (action) => action.id !== "move-up" && action.id !== "move-down",
       ),
       ...titleMenuItems,
       ...autoSettleMenuItems,
-      LEGACY_MENU_ACTIONS[0]!,
-      SLIM_MENU_ACTIONS[1]!,
+      sharedMenuActions.archive,
+      sharedMenuActions.delete,
     ],
-    [arrangementMenuItems, autoSettleMenuItems, titleMenuItems],
+    [arrangementMenuItems, autoSettleMenuItems, sharedMenuActions, titleMenuItems],
   );
   const snoozedMenuActions = useMemo<MenuAction[]>(
     () => [
-      SNOOZED_MENU_ACTIONS[0]!,
+      sharedMenuActions.unsnooze,
       ...titleMenuItems,
       ...autoSettleMenuItems,
-      LEGACY_MENU_ACTIONS[0]!,
-      SNOOZED_MENU_ACTIONS[1]!,
+      sharedMenuActions.archive,
+      sharedMenuActions.delete,
     ],
-    [autoSettleMenuItems, titleMenuItems],
+    [autoSettleMenuItems, sharedMenuActions, titleMenuItems],
   );
   const legacyMenuActions = useMemo<MenuAction[]>(
     () => [
-      LEGACY_MENU_ACTIONS[0]!,
+      sharedMenuActions.archive,
       ...arrangementMenuItems,
       ...titleMenuItems,
-      LEGACY_MENU_ACTIONS[1]!,
+      sharedMenuActions.delete,
     ],
-    [arrangementMenuItems, titleMenuItems],
+    [arrangementMenuItems, sharedMenuActions, titleMenuItems],
   );
   const handleMenuAction = useCallback(
     ({ nativeEvent }: { readonly nativeEvent: { readonly event: string } }) => {
@@ -1099,7 +1101,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           </Text>
         )}
       </View>
-      <Text
+      <ContentText
         className={cn(
           "mt-1 text-base",
           !recede && "font-t3-medium",
@@ -1110,7 +1112,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         numberOfLines={2}
       >
         {thread.title}
-      </Text>
+      </ContentText>
       {props.searchMatch ? (
         <View className="mt-1">
           <ThreadSearchMatchExcerpt
@@ -1334,7 +1336,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             </View>
           ) : null}
           <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
-            <Text
+            <ContentText
               className={cn(
                 "text-base",
                 selected
@@ -1344,7 +1346,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               numberOfLines={1}
             >
               {thread.title}
-            </Text>
+            </ContentText>
             {props.searchMatch ? (
               <ThreadSearchMatchExcerpt
                 sidebar={sidebarPane}
@@ -1407,7 +1409,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                 ? [
                     {
                       id: "new-thread-on-branch",
-                      title: getThreadListV2NewBranchMenuTitle(thread.branch),
+                      title: getThreadListV2NewBranchMenuTitle(thread.branch, uiT),
                       image: "square.and.pencil",
                     },
                   ]

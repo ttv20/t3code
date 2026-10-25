@@ -10,7 +10,12 @@ import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import { buildHomeProjectScopes, sortHomeProjectScopes } from "../home/homeThreadList";
 import { DEFAULT_PR_LIST_CONTROLS, type PullRequestListControls } from "./pullRequestList";
 
-const STATES = { open: "Open", closed: "Closed", merged: "Merged", all: "All states" } as const;
+const STATES = {
+  open: "Open PRs",
+  closed: "Closed PRs",
+  merged: "Merged PRs",
+  all: "All states",
+} as const;
 const INVOLVEMENT = { all: "All PRs", reviewing: "Your review", authored: "By you" } as const;
 const DRAFTS = { all: "All drafts", only: "Drafts only", hide: "Hide drafts" } as const;
 const REVIEWS = {
@@ -33,10 +38,15 @@ const ROW_STYLE =
     ? { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8 }
     : { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10, gap: 8 };
 const id = (field: string, value: string) => JSON.stringify([field, value]);
-function choices(field: string, options: Readonly<Record<string, string>>, selected: string) {
+function choices(
+  field: string,
+  options: Readonly<Record<string, string>>,
+  selected: string,
+  translate?: (text: string) => string,
+) {
   return Object.entries(options).map(([value, title]) => ({
     id: id(field, value),
-    title,
+    title: translate ? translate(title) : title,
     state: value === selected ? ("on" as const) : ("off" as const),
   }));
 }
@@ -192,20 +202,20 @@ export function PullRequestListFilters(props: {
   const more: MenuProps["actions"] = [
     {
       id: "drafts",
-      title: value.filters.draft ? DRAFTS[value.filters.draft] : "Drafts",
-      subactions: choices("draft", DRAFTS, value.filters.draft ?? "all"),
+      title: uiT(value.filters.draft ? DRAFTS[value.filters.draft] : "Drafts"),
+      subactions: choices("draft", DRAFTS, value.filters.draft ?? "all", uiT),
     },
     {
       id: "reviews",
-      title: value.filters.review ? REVIEWS[value.filters.review] : "Reviews",
-      subactions: choices("review", REVIEWS, value.filters.review ?? "all"),
+      title: uiT(value.filters.review ? REVIEWS[value.filters.review] : "Reviews"),
+      subactions: choices("review", REVIEWS, value.filters.review ?? "all", uiT),
     },
     {
       id: "checks",
       title: value.filters.checks
-        ? uiT("{0} checks", { "0": CHECKS[value.filters.checks] })
-        : "Checks",
-      subactions: choices("checks", CHECKS, value.filters.checks ?? "all"),
+        ? uiT("{0} checks", { "0": uiT(CHECKS[value.filters.checks]) })
+        : uiT("Checks"),
+      subactions: choices("checks", CHECKS, value.filters.checks ?? "all", uiT),
     },
     {
       id: "projects",
@@ -213,11 +223,11 @@ export function PullRequestListFilters(props: {
         projects.find(
           (project) =>
             project.id === value.projectId && project.environmentId === value.projectEnvironmentId,
-        )?.title ?? "Project",
+        )?.title ?? uiT("Project"),
       subactions: choices(
         "project",
         Object.fromEntries([
-          ["", "All projects"],
+          ["", uiT("All projects")],
           ...projects.map((project) => [
             JSON.stringify([project.environmentId, project.id]),
             project.title,
@@ -226,7 +236,11 @@ export function PullRequestListFilters(props: {
         value.projectId ? JSON.stringify([value.projectEnvironmentId, value.projectId]) : "",
       ),
     },
-    { id: "sort", title: SORTS[value.sort], subactions: choices("sort", SORTS, value.sort) },
+    {
+      id: "sort",
+      title: uiT(SORTS[value.sort]),
+      subactions: choices("sort", SORTS, value.sort, uiT),
+    },
   ];
   const reset = (withEnvironment: boolean): MenuProps["actions"][number] => ({
     id: id("reset", withEnvironment ? "environment" : ""),
@@ -245,13 +259,13 @@ export function PullRequestListFilters(props: {
   const environmentActions = choices(
     "environment",
     Object.fromEntries([
-      ["", "All environments"],
+      ["", uiT("All environments")],
       ...props.environments.map((environment) => [environment.id, environment.label]),
     ]),
     props.environmentId ?? "",
   );
-  const stateActions = choices("state", STATES, value.state);
-  const involvementActions = choices("involvement", INVOLVEMENT, value.involvement);
+  const stateActions = choices("state", STATES, value.state, uiT);
+  const involvementActions = choices("involvement", INVOLVEMENT, value.involvement, uiT);
   const labelActions: MenuProps["actions"] = [
     { id: id("labels", ""), title: uiT("All labels"), state: selectedLabels.length ? "off" : "on" },
     ...labels.map((label) => ({
@@ -263,8 +277,8 @@ export function PullRequestListFilters(props: {
   const authorActions = choices(
     "author",
     Object.fromEntries([
-      ["", "All authors"],
-      ["me", "Me"],
+      ["", uiT("All authors")],
+      ["me", uiT("Me")],
       ...authors.map((login) => [login, login]),
     ]),
     author ?? "",

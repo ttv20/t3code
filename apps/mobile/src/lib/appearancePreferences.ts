@@ -11,6 +11,8 @@ export const DEFAULT_BASE_FONT_SIZE = MOBILE_TYPOGRAPHY.body.fontSize;
 export const MIN_BASE_FONT_SIZE = 11;
 export const MAX_BASE_FONT_SIZE = 22;
 export const BASE_FONT_SIZE_STEP = 1;
+export const MIN_CHAT_LINE_HEIGHT = 16;
+export const MAX_CHAT_LINE_HEIGHT = 48;
 
 export const DEFAULT_CODE_FONT_SIZE = MOBILE_CODE_SURFACE.fontSize;
 export const MIN_CODE_FONT_SIZE = 8;
@@ -19,6 +21,8 @@ export const CODE_FONT_SIZE_STEP = 1;
 
 export interface AppearancePreferences {
   readonly baseFontSize: number;
+  readonly chatFontSize: number | null;
+  readonly chatLineHeight: number | null;
   readonly terminalFontSize: number | null;
   readonly codeFontSize: number | null;
   readonly codeWordBreak: boolean;
@@ -26,6 +30,10 @@ export interface AppearancePreferences {
 
 export interface ResolvedAppearance {
   readonly baseFontSize: number;
+  readonly chatFontSize: number;
+  readonly isChatFontSizeCustom: boolean;
+  readonly chatLineHeight: number;
+  readonly isChatLineHeightCustom: boolean;
   readonly terminalFontSize: number;
   readonly codeFontSize: number;
   readonly codeWordBreak: boolean;
@@ -78,6 +86,19 @@ function normalizeCodeFontSize(value: number | null | undefined): number {
   return Math.min(MAX_CODE_FONT_SIZE, Math.max(MIN_CODE_FONT_SIZE, Math.round(value)));
 }
 
+function normalizeChatLineHeight(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(MAX_CHAT_LINE_HEIGHT, Math.max(MIN_CHAT_LINE_HEIGHT, Math.round(value)))
+    : null;
+}
+
+function resolveChatLineHeight(fontSize: number, value: number | null | undefined): number {
+  return Math.max(
+    fontSize + 2,
+    normalizeChatLineHeight(value) ?? resolveMarkdownFontSizes(fontSize).bodyLineHeight,
+  );
+}
+
 function normalizeCodeWordBreak(value: boolean | null | undefined): boolean {
   return value === true;
 }
@@ -94,6 +115,8 @@ function deriveCodeFontSize(baseFontSize: number): number {
 
 interface StoredAppearancePreferences {
   readonly baseFontSize?: number | null | undefined;
+  readonly chatFontSize?: number | null | undefined;
+  readonly chatLineHeight?: number | null | undefined;
   readonly markdownFontSize?: number | null | undefined;
   readonly terminalFontSize?: number | null | undefined;
   readonly codeFontSize?: number | null | undefined;
@@ -105,6 +128,11 @@ export function resolveAppearancePreferences(
 ): AppearancePreferences {
   return {
     baseFontSize: normalizeBaseFontSize(stored?.baseFontSize ?? stored?.markdownFontSize),
+    chatFontSize:
+      typeof stored?.chatFontSize === "number" && Number.isFinite(stored.chatFontSize)
+        ? normalizeBaseFontSize(stored.chatFontSize)
+        : null,
+    chatLineHeight: normalizeChatLineHeight(stored?.chatLineHeight),
     terminalFontSize:
       typeof stored?.terminalFontSize === "number" && Number.isFinite(stored.terminalFontSize)
         ? normalizeTerminalFontSize(stored.terminalFontSize)
@@ -118,8 +146,13 @@ export function resolveAppearancePreferences(
 }
 
 export function resolveAppearance(preferences: AppearancePreferences): ResolvedAppearance {
+  const chatFontSize = preferences.chatFontSize ?? preferences.baseFontSize;
   return {
     baseFontSize: preferences.baseFontSize,
+    chatFontSize,
+    isChatFontSizeCustom: preferences.chatFontSize !== null,
+    chatLineHeight: resolveChatLineHeight(chatFontSize, preferences.chatLineHeight),
+    isChatLineHeightCustom: preferences.chatLineHeight !== null,
     terminalFontSize:
       preferences.terminalFontSize ?? deriveTerminalFontSize(preferences.baseFontSize),
     codeFontSize: preferences.codeFontSize ?? deriveCodeFontSize(preferences.baseFontSize),
@@ -208,11 +241,14 @@ export function resolveScaledTextRole(role: keyof typeof MOBILE_TYPOGRAPHY, base
   };
 }
 
-export function resolveNativeMarkdownTypography(baseFontSize: number): NativeMarkdownTypography {
+export function resolveNativeMarkdownTypography(
+  baseFontSize: number,
+  lineHeight?: number,
+): NativeMarkdownTypography {
   const fontSizes = resolveMarkdownFontSizes(baseFontSize);
   return {
     fontSize: fontSizes.m,
-    lineHeight: fontSizes.bodyLineHeight,
+    lineHeight: resolveChatLineHeight(fontSizes.m, lineHeight),
     headingFontSizes: [
       fontSizes.h1,
       fontSizes.h2,

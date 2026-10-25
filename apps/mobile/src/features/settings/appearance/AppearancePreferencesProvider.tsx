@@ -65,6 +65,8 @@ interface AppearancePreferencesContextValue {
   readonly setThemeIdForBothAppearances: (value: MobileThemeId) => void;
   readonly setThemeMode: (value: MobileThemeMode) => void;
   readonly setBaseFontSize: (value: number) => void;
+  readonly setChatFontSize: (value: number | null) => void;
+  readonly setChatLineHeight: (value: number | null) => void;
   readonly setTerminalFontSize: (value: number | null) => void;
   readonly setCodeFontSize: (value: number | null) => void;
   readonly setCodeWordBreak: (value: boolean) => void;
@@ -127,10 +129,25 @@ export function AppearancePreferencesProvider(props: { readonly children: ReactN
   }, [themeIds, systemColorPalettes]);
   const themeVariables = themeVariablesByAppearance[themeAppearance];
   const activeThemeName = getMobileUniwindThemeName(themeId, themeAppearance);
-  const { baseFontSize, codeFontSize, codeWordBreak, terminalFontSize } = preferences;
+  const {
+    baseFontSize,
+    chatFontSize,
+    chatLineHeight,
+    codeFontSize,
+    codeWordBreak,
+    terminalFontSize,
+  } = preferences;
   const appearance = useMemo(
-    () => resolveAppearance({ baseFontSize, codeFontSize, codeWordBreak, terminalFontSize }),
-    [baseFontSize, codeFontSize, codeWordBreak, terminalFontSize],
+    () =>
+      resolveAppearance({
+        baseFontSize,
+        chatFontSize,
+        chatLineHeight,
+        codeFontSize,
+        codeWordBreak,
+        terminalFontSize,
+      }),
+    [baseFontSize, chatFontSize, chatLineHeight, codeFontSize, codeWordBreak, terminalFontSize],
   );
   const isReady = AsyncResult.isSuccess(preferencesResult);
   const runtimeState = useMemo<MobileThemeRuntimeState>(
@@ -245,6 +262,15 @@ export function AppearancePreferencesProvider(props: { readonly children: ReactN
     [runtimeState, syncThemeRuntime, updatePreferences],
   );
 
+  const setChatFontSize = useCallback(
+    (value: number | null) => updatePreferences({ chatFontSize: value }),
+    [updatePreferences],
+  );
+  const setChatLineHeight = useCallback(
+    (value: number | null) => updatePreferences({ chatLineHeight: value }),
+    [updatePreferences],
+  );
+
   const setTerminalFontSize = useCallback(
     (value: number | null) => {
       updatePreferences({ terminalFontSize: value });
@@ -289,6 +315,8 @@ export function AppearancePreferencesProvider(props: { readonly children: ReactN
       setThemeIdForBothAppearances,
       setThemeMode,
       setBaseFontSize,
+      setChatFontSize,
+      setChatLineHeight,
       setTerminalFontSize,
       setCodeFontSize,
       setCodeWordBreak,
@@ -310,6 +338,8 @@ export function AppearancePreferencesProvider(props: { readonly children: ReactN
       setThemeIdForBothAppearances,
       setThemeMode,
       setBaseFontSize,
+      setChatFontSize,
+      setChatLineHeight,
       setTerminalFontSize,
       setCodeFontSize,
       setCodeWordBreak,

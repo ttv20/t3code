@@ -1,3 +1,4 @@
+import type { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import type { ViewStyle } from "react-native";
 import type { MobileThemeVariables } from "../../lib/mobileTheme";
 
@@ -21,8 +22,11 @@ export const selectedThreadRowColors = {
   mutedIconTintClassName: "accent-thread-selected-foreground-muted",
 };
 
-export function getThreadListV2NewBranchMenuTitle(_branch: string) {
-  return "New thread on branch";
+export function getThreadListV2NewBranchMenuTitle(
+  _branch: string,
+  translate: ReturnType<typeof createUiTranslator>,
+) {
+  return translate("New thread on branch");
 }
 
 export function getThreadListV2RowAppearance(

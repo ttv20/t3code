@@ -22,6 +22,7 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
       tag: ${{ steps.release.outputs.tag }}
+      android_version_code: ${{ steps.release.outputs.android_version_code }}
       ref: ${{ github.sha }}
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
@@ -47,6 +48,8 @@ jobs:
           version="${version}-nightly.$(date -u +%Y%m%d).${GITHUB_RUN_NUMBER}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          # Published APKs must also upgrade locally tested builds of this app.
+          echo "android_version_code=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
 
       - name: Stamp release version
         run: node scripts/update-release-package-versions.ts "${{ steps.release.outputs.version }}"
@@ -301,7 +304,7 @@ jobs:
     with:
       ref: ${{ needs.build_linux_x64.outputs.ref }}
       version: ${{ needs.build_linux_x64.outputs.version }}
-      version_code: "${{ github.run_number }}"
+      version_code: "${{ needs.build_linux_x64.outputs.android_version_code }}"
       tag: ${{ needs.build_linux_x64.outputs.tag }}
 
   publish_macos:

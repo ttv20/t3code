@@ -64,9 +64,12 @@ export function ThreadCommandOutput(props: {
   return (
     <View className="pt-1.5">
       {data?.output.truncated ? (
-        <Text className="pb-0.5 text-3xs text-foreground-subtle">Earlier output not shown</Text>
+        <Text className="pb-0.5 text-3xs text-foreground-subtle">
+          {uiT("Earlier output not shown")}
+        </Text>
       ) : null}
       <ScrollView
+        style={{ direction: "ltr" }}
         ref={scrollRef}
         nestedScrollEnabled
         directionalLockEnabled
@@ -83,7 +86,11 @@ export function ThreadCommandOutput(props: {
           if (followRef.current) scrollRef.current?.scrollToEnd({ animated: false });
         }}
       >
-        <Text selectable className="font-mono text-2xs leading-normal text-foreground-muted">
+        <Text
+          selectable
+          style={{ writingDirection: "ltr", textAlign: "left" }}
+          className="font-mono text-2xs leading-normal text-foreground-muted"
+        >
           {spans.map((span, index) =>
             span.style === null ? (
               span.text

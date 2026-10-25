@@ -92,3 +92,40 @@ export function markdownWithRtlSentenceBoundaries(source: string, tree: Markdown
   return source;
 }
 import { resolveMarkdownDirection, startsWithRtlLetter } from "./markdownDirection.ts";
+
+/** Native first-strong renderers need an explicit mark when prose resolves the other way. */
+export function markdownWithNativeDirections(source: string, tree: MarkdownNode): string {
+  const insertions = sentenceBoundaryInsertions(tree, source).flatMap(({ node, offset }) => {
+    const start = node.position?.start.offset;
+    return start === undefined ? [] : [{ offset: start + offset, mark: RLM }];
+  });
+  const visit = (node: MarkdownNode) => {
+    if (node.type === "paragraph" || node.type === "heading" || node.type === "tableCell") {
+      const start = node.children?.[0]?.position?.start.offset;
+      const end = node.position?.end.offset;
+      if (start === undefined || end === undefined) return;
+      const text = source.slice(start, end);
+      if (/^[\u200e\u200f]/u.test(text)) return;
+      const prose = (child: MarkdownNode): string =>
+        child.type === "text"
+          ? (child.value ?? "")
+          : child.children
+            ? child.children.map(prose).join("")
+            : " ";
+      const direction = textDirection(prose(node));
+      if (direction === undefined) return;
+      if ((direction === "rtl") !== startsWithRtlLetter(text)) {
+        insertions.push({ offset: start, mark: direction === "rtl" ? RLM : "\u200e" });
+      }
+      return;
+    }
+    node.children?.forEach(visit);
+  };
+  visit(tree);
+  for (const { offset, mark } of insertions.sort((a, b) => b.offset - a.offset)) {
+    source = source.slice(0, offset) + mark + source.slice(offset);
+  }
+  return source;
+}
+
+import { textDirection } from "./textDirection.ts";

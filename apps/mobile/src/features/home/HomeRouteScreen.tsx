@@ -36,7 +36,7 @@ import { getConnectionAwareBrandHeaderOptions } from "./WorkspaceConnectionTitle
 import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
 
 export function HomeRouteScreen() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const { width: windowWidth } = useWindowDimensions();
   const nativePrimaryColumn = use(NativePrimaryColumnContext);
@@ -143,6 +143,7 @@ export function HomeRouteScreen() {
   const projectFilterOptions = useMemo(
     () =>
       buildHomeProjectScopes({
+        locale,
         projects,
         environmentId: selectedEnvironmentId,
         projectGroupingMode: listOptions.projectGroupingMode,
@@ -150,7 +151,7 @@ export function HomeRouteScreen() {
         key: scope.key,
         label: scope.title,
       })),
-    [listOptions.projectGroupingMode, projects, selectedEnvironmentId],
+    [listOptions.projectGroupingMode, projects, selectedEnvironmentId, locale],
   );
   const selectedProjectKey = projectFilterOptions.some(
     (project) => project.key === resolvedProjectKey,

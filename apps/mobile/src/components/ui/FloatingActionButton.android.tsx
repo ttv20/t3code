@@ -73,7 +73,7 @@ export function FloatingActionButton(props: FloatingActionButtonProps) {
         pointerEvents="none"
         className="absolute inset-y-0 justify-center"
         style={
-          props.variant === "extended" ? { left: 16 } : { left: 0, right: 0, alignItems: "center" }
+          props.variant === "extended" ? { start: 16 } : { left: 0, right: 0, alignItems: "center" }
         }
       >
         <SymbolView

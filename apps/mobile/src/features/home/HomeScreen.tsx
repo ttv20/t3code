@@ -253,7 +253,7 @@ function renderHomeScrollView(props: ScrollViewProps) {
 }
 
 export function HomeScreen(props: HomeScreenProps) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const workspace = useWorkspaceTabs();
   const [initialScrollOffset] = useState(() => workspace?.getScrollOffset("threads") ?? 0);
@@ -387,6 +387,7 @@ export function HomeScreen(props: HomeScreenProps) {
   });
 
   const projectScopes = buildHomeProjectScopes({
+    locale,
     projects: props.projects,
     environmentId: props.selectedEnvironmentId,
     projectGroupingMode: props.projectGroupingMode,

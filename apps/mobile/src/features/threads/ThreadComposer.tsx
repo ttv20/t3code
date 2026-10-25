@@ -1,4 +1,5 @@
 import { useUiLanguage } from "../../i18n";
+import { ComposerStatus } from "./ComposerStatus";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
 import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
@@ -30,7 +31,7 @@ import {
 import { StackActions, useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { Keyboard, Platform, View, type ViewStyle } from "react-native";
+import { Keyboard, Platform, View, useWindowDimensions, type ViewStyle } from "react-native";
 import { composerImageGallery } from "../../lib/composerImageGallery";
 import { filePreviewGallery } from "../../lib/filePreviewGallery";
 import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
@@ -225,8 +226,6 @@ export const COMPOSER_LAYOUT_TRANSITION =
   Platform.OS === "android" ? undefined : composerHeightTransition;
 // Share of the one-row composer the draft keeps; a long model name truncates first.
 const INLINE_EDITOR_MIN_WIDTH = "40%";
-// The one-row editor's horizontal padding plus room for the caret.
-const INLINE_EDITOR_TEXT_SLACK = 10;
 const INLINE_EDITOR_HEIGHT = 36;
 
 const COMPOSER_ATTACHMENT_ENTERING =
@@ -513,33 +512,19 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   const isVoiceInputPresented = voicePresentation.statusLabel !== null;
   const isExpanded = isFocused || settingsSheetPresentation.keepsComposerExpanded;
   const { setComposerEditing } = useAdaptiveWorkspaceLayout();
-  // The composer stays one row, with the model picker in it, until the draft would
-  // wrap. Then the draft stacks above the controls and returns to the row once it
-  // fits again. The native editor reports its laid-out text size: more than one
-  // line means the draft wrapped where it is, and the widest line is a one-line
-  // draft's natural width, which is compared with the row's text area so a draft
-  // laid out in the wider card still returns to the row when it fits, including
-  // when the pane widens. The measurements live in refs and only the verdict is
-  // state, so a keystroke that keeps the verdict costs no extra render.
-  const draftSizeRef = useRef({ width: 0, height: 0 });
-  const rowGeometryRef = useRef({ surfaceWidth: 0, leadingWidth: 0, trailingWidth: 0 });
-  const [draftOverflowsRow, setDraftOverflowsRow] = useState(false);
+  const [draftContentHeight, setDraftContentHeight] = useState(0);
+  const [editorEnlarged, setEditorEnlarged] = useState(false);
   const lineHeight = bodyText.lineHeight;
-  const updateDraftOverflow = () => {
-    const { width, height } = draftSizeRef.current;
-    const row = rowGeometryRef.current;
-    const rowTextWidth =
-      row.surfaceWidth - row.leadingWidth - row.trailingWidth - INLINE_EDITOR_TEXT_SLACK;
-    setDraftOverflowsRow(
-      height > lineHeight * 1.5 || (row.surfaceWidth > 0 && width > rowTextWidth),
-    );
-  };
-  const measureRow = (key: keyof typeof rowGeometryRef.current, value: number) => {
-    if (rowGeometryRef.current[key] === value) return;
-    rowGeometryRef.current = { ...rowGeometryRef.current, [key]: value };
-    updateDraftOverflow();
-  };
-  const usesCard = isExpanded && draftMessage.length > 0 && draftOverflowsRow;
+  const usesCard = isExpanded;
+  const { height: windowHeight } = useWindowDimensions();
+  const editorMaxHeight = Math.max(
+    lineHeight * 2 + 8,
+    Math.min(lineHeight * (editorEnlarged ? 12 : 6) + 8, windowHeight * 0.4),
+  );
+  const editorHeight = Math.min(
+    editorMaxHeight,
+    Math.max(lineHeight * 2 + 8, draftContentHeight + 8),
+  );
   const showsCompactDictation = isVoiceInputPresented && !usesCard;
   const isToolbarVisible = usesCard || isVoiceInputPresented;
   const hasEditingAttachments =
@@ -831,7 +816,6 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
       <Animated.View
         className="relative w-full self-center"
         style={{ maxWidth: props.contentMaxWidth }}
-        onLayout={(event) => measureRow("surfaceWidth", event.nativeEvent.layout.width)}
       >
         {!isSubmissionLocked &&
         composerMenu.trigger &&
@@ -913,11 +897,6 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               className={usesCard ? "px-[14px]" : "min-w-0 flex-1 px-[4px]"}
               style={usesCard ? undefined : { minWidth: INLINE_EDITOR_MIN_WIDTH }}
               layout={COMPOSER_LAYOUT_TRANSITION}
-              onLayout={
-                usesCard
-                  ? undefined
-                  : (event) => measureRow("leadingWidth", event.nativeEvent.layout.x)
-              }
             >
               <ComposerEditor
                 hidden={props.hidden}
@@ -1045,15 +1024,14 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
                   usesCard || Platform.OS === "android" ? 0 : collapsedEditorInset(bodyText)
                 }
                 onContentSizeChange={(size) => {
-                  draftSizeRef.current = size;
-                  updateDraftOverflow();
+                  setDraftContentHeight((current) =>
+                    Math.abs(current - size.height) < 1 ? current : size.height,
+                  );
                 }}
                 style={
                   usesCard
                     ? {
-                        // A stacked draft shows two to four lines, then scrolls.
-                        minHeight: lineHeight * 2 + 8,
-                        maxHeight: lineHeight * 4 + 8,
+                        height: editorHeight,
                         paddingVertical: 4,
                       }
                     : {
@@ -1095,10 +1073,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               </View>
             ) : null}
             {!usesCard ? (
-              <View
-                className="min-w-0 shrink flex-row items-center"
-                onLayout={(event) => measureRow("trailingWidth", event.nativeEvent.layout.width)}
-              >
+              <View className="min-w-0 shrink flex-row items-center">
                 {modelControl}
                 <ComposerDictationStartAction
                   state={voiceInput.state}
@@ -1187,6 +1162,19 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
                   </View>
                 )}
                 <View className="shrink-0 flex-row items-center">
+                  {usesCard && !isVoiceInputPresented ? (
+                    <ComposerActionButton
+                      accessibilityLabel={uiT(
+                        editorEnlarged ? "Collapse message editor" : "Expand message editor",
+                      )}
+                      icon={
+                        editorEnlarged
+                          ? "arrow.down.right.and.arrow.up.left"
+                          : "arrow.up.left.and.arrow.down.right"
+                      }
+                      onPress={() => setEditorEnlarged((current) => !current)}
+                    />
+                  ) : null}
                   <ComposerDictationPrimaryAction
                     state={voiceInput.state}
                     presentation={voicePresentation}
@@ -1224,6 +1212,14 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
             </ComposerDictationToolbar>
           </Animated.View>
         </ComposerSurface>
+        <ComposerStatus
+          environmentId={props.environmentId}
+          threadId={props.selectedThread.id}
+          provider={selectedProviderStatus}
+          connected={props.connectionState === "connected"}
+          hidden={props.hidden}
+          onShowUsageLimits={openUsageLimits}
+        />
 
         {props.connectionState === "connected" && !props.canOperateThread ? (
           <Text className="pt-2 text-xs text-foreground-muted">

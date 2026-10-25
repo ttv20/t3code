@@ -45,6 +45,26 @@ function makeThread(
 }
 
 describe("home project scopes", () => {
+  it("translates scratch labels without translating a project with the same name", () => {
+    const environmentId = EnvironmentId.make("local");
+    const scopes = buildHomeProjectScopes({
+      projects: [
+        makeProject({
+          environmentId,
+          id: ProjectId.make("scratch"),
+          title: "No project",
+          isScratch: true,
+        }),
+        makeProject({ environmentId, id: ProjectId.make("ordinary"), title: "No project" }),
+      ],
+      environmentId: null,
+      projectGroupingMode: "separate",
+      locale: "he",
+    });
+    expect(scopes.find((scope) => scope.representative.isScratch)?.title).toBe("אין פרויקט");
+    expect(scopes.find((scope) => !scope.representative.isScratch)?.title).toBe("No project");
+  });
+
   it("filters threads across both scratch hosts while retaining the selected environment boundary", () => {
     const localEnvironmentId = EnvironmentId.make("local");
     const remoteEnvironmentId = EnvironmentId.make("remote");

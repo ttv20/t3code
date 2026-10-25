@@ -62,6 +62,8 @@ export interface Preferences {
   readonly darkThemeId?: MobileThemeId;
   readonly themeMode?: MobileThemeMode;
   readonly baseFontSize?: number;
+  readonly chatFontSize?: number | null;
+  readonly chatLineHeight?: number | null;
   readonly terminalFontSize?: number | null;
   readonly markdownFontSize?: number;
   readonly codeFontSize?: number | null;
@@ -139,6 +141,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     darkThemeId?: MobileThemeId;
     themeMode?: MobileThemeMode;
     baseFontSize?: number;
+    chatFontSize?: number | null;
+    chatLineHeight?: number | null;
     terminalFontSize?: number | null;
     markdownFontSize?: number;
     codeFontSize?: number | null;
@@ -210,6 +214,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     preferences.themeMode = parsed.themeMode;
   }
   if (typeof parsed.baseFontSize === "number") preferences.baseFontSize = parsed.baseFontSize;
+  if (parsed.chatFontSize === null || typeof parsed.chatFontSize === "number") {
+    preferences.chatFontSize = parsed.chatFontSize;
+  }
+  if (parsed.chatLineHeight === null || typeof parsed.chatLineHeight === "number") {
+    preferences.chatLineHeight = parsed.chatLineHeight;
+  }
   if (typeof parsed.terminalFontSize === "number" || parsed.terminalFontSize === null) {
     preferences.terminalFontSize = parsed.terminalFontSize;
   }

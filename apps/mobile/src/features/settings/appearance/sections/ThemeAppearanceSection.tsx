@@ -124,10 +124,14 @@ function ThemeCard(props: {
   readonly themeId: MobileThemeId;
 }) {
   const { t: uiT } = useUiLanguage();
+  const appearanceLabels = { light: uiT("Light"), dark: uiT("Dark") };
   const choice = (appearance: MobileThemeAppearance, selected: boolean) => (
     <Pressable
-      accessibilityHint={uiT("Sets the {0} appearance only", { "0": appearance })}
-      accessibilityLabel={uiT("{0} {1} theme", { "0": props.label, "1": appearance })}
+      accessibilityHint={uiT("Sets the {0} appearance only", { "0": appearanceLabels[appearance] })}
+      accessibilityLabel={uiT("{0} {1} theme", {
+        "0": uiT(props.label),
+        "1": appearanceLabels[appearance],
+      })}
       accessibilityRole="button"
       accessibilityState={{ disabled: props.disabled, selected }}
       className={cn(
@@ -156,7 +160,7 @@ function ThemeCard(props: {
     <View className="min-w-36 flex-1 basis-[47%] gap-3 rounded-[24px] border border-border bg-grouped-card px-2 py-4">
       <Pressable
         accessibilityHint={uiT("Sets both light and dark appearances")}
-        accessibilityLabel={uiT("{0} theme", { "0": props.label })}
+        accessibilityLabel={uiT("{0} theme", { "0": uiT(props.label) })}
         accessibilityRole="button"
         accessibilityState={{
           disabled: props.disabled,
@@ -257,7 +261,7 @@ function ModeCard(props: {
   const { t: uiT } = useUiLanguage();
   return (
     <Pressable
-      accessibilityLabel={uiT("{0} appearance", { "0": props.label })}
+      accessibilityLabel={uiT("{0} appearance", { "0": uiT(props.label) })}
       accessibilityRole="radio"
       accessibilityState={{ checked: props.selected, disabled: props.disabled }}
       className={cn(

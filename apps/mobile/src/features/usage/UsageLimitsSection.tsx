@@ -1,4 +1,8 @@
 import { useUiLanguage } from "../../i18n";
+import {
+  formatUiUsageReset,
+  formatUiUsageWindowLabel,
+} from "@t3tools/client-runtime/usage-localization";
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
@@ -12,7 +16,6 @@ import {
 } from "@t3tools/contracts";
 import {
   formatDuration,
-  formatResetsIn,
   limitsNotice,
   paceOf,
   paceRemainingPercent,
@@ -45,13 +48,13 @@ function WindowRow(props: {
   readonly color: string | null;
   readonly now: number;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const { window, now } = props;
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const pace = paceOf(window, now);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   const [barWidth, setBarWidth] = useState(0);
   const tickX =
     timeLeft === null || barWidth < 6
@@ -81,10 +84,11 @@ function WindowRow(props: {
   return (
     <View className="gap-1">
       <View className="flex-row items-baseline justify-between gap-3">
-        <Text className="text-sm text-foreground">{uiT(window.label)}</Text>
+        <Text className="text-sm text-foreground">
+          {formatUiUsageWindowLabel(window.label, locale)}
+        </Text>
         <Text className="text-sm font-t3-medium tabular-nums text-foreground">
-          {remaining}
-          {uiT("% left")}
+          {uiT("{0}% left", { "0": remaining })}
         </Text>
       </View>
       <View
@@ -121,7 +125,9 @@ function WindowRow(props: {
       </View>
       {pace || resetsIn ? (
         <View className="flex-row justify-between gap-3">
-          <Text className="text-xs text-foreground-tertiary">{pace ? PACE_LABEL[pace] : ""}</Text>
+          <Text className="text-xs text-foreground-tertiary">
+            {pace ? uiT(PACE_LABEL[pace]) : ""}
+          </Text>
           <Text className="text-xs tabular-nums text-foreground-tertiary">{resetsIn ?? ""}</Text>
         </View>
       ) : null}

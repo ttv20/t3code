@@ -24,11 +24,16 @@ export function ListRowLayout({
   tone = "default",
 }: ListRowContentProps & { readonly accessory?: ReactNode; readonly tone?: "default" | "danger" }) {
   const { direction } = useUiLanguage();
-  const labelStyle = { textAlign: direction === "rtl" ? ("right" as const) : ("left" as const) };
+  const labelStyle = {
+    writingDirection: direction,
+    textAlign: "start" as const,
+    alignSelf: "stretch" as const,
+  };
   const { fontScale } = useWindowDimensions();
   const stackDetail = fontScale >= 1.5;
   return (
     <View
+      style={{ direction }}
       className={cn(
         "min-h-14 flex-row items-center gap-3 px-4 py-3",
         description && "min-h-18",
@@ -69,7 +74,7 @@ export function ListRowLayout({
       </View>
       {detail && !stackDetail ? (
         <AppText
-          style={{ textAlign: direction === "rtl" ? "left" : "right" }}
+          style={{ textAlign: "end" }}
           className="max-w-[40%] shrink text-sm text-foreground-muted"
 
           textRole="footnote"

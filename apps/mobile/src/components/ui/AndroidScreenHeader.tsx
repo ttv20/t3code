@@ -48,7 +48,7 @@ export function AndroidScreenHeader(props: {
   /** One row with the subtitle after the title, for screens short on height. */
   readonly compact?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
 
   const { colors } = useControlTheme();
   const titleTypography = useScaledTextRole("title");
@@ -78,7 +78,7 @@ export function AndroidScreenHeader(props: {
               {props.onBack ? (
                 <IconButton
                   accessibilityLabel={uiT("Navigate up")}
-                  icon="arrow.left"
+                  icon={direction === "rtl" ? "arrow.right" : "arrow.left"}
                   tintColorClassName="accent-header-foreground"
                   onPress={props.onBack}
                 />

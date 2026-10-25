@@ -1,4 +1,5 @@
 import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 import { resolveFilesystemReadAccess } from "@t3tools/client-runtime/state/filesystem";
 import { useEnvironmentPresentation } from "../../state/presentation";
 import { environmentSession } from "../../state/session";
@@ -256,6 +257,7 @@ type NewTaskFlowContextValue = {
 const NewTaskFlowContext = React.createContext<NewTaskFlowContextValue | null>(null);
 
 export function NewTaskFlowProvider(props: React.PropsWithChildren) {
+  const { locale } = useUiLanguage();
   const projects = useProjects();
   const threads = useThreadShells();
   const { savedConnectionsById } = useSavedRemoteConnections();
@@ -265,6 +267,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
 
   const projectScopes = sortHomeProjectScopes({
     scopes: buildHomeProjectScopes({
+      locale,
       projects,
       environmentId: null,
       projectGroupingMode: groupingSettings.sidebarProjectGroupingMode,

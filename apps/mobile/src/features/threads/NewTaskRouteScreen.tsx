@@ -384,10 +384,10 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                 <AppActivityIndicator colorClassName="accent-icon-muted" />
               ) : null}
               <Text className="text-center text-lg font-t3-bold text-foreground">
-                {projectEmptyState.title}
+                {uiT(projectEmptyState.title)}
               </Text>
               <Text className="text-center text-sm leading-normal text-foreground-muted">
-                {projectEmptyState.detail}
+                {uiT(projectEmptyState.detail)}
               </Text>
               {Platform.OS === "android" ? (
                 <>

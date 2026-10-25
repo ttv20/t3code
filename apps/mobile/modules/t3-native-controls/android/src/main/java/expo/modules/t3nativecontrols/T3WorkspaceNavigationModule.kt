@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,12 +49,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
@@ -69,6 +72,10 @@ class T3WorkspaceNavigationModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("T3WorkspaceNavigation")
     View(T3WorkspaceNavigationView::class) {
+      Prop("rtl") { view: T3WorkspaceNavigationView, value: Boolean -> view.rtl = value }
+      Prop("labels") { view: T3WorkspaceNavigationView, value: Map<String, String> ->
+        view.labels = value
+      }
       Prop("selectedTab") { view: T3WorkspaceNavigationView, value: String ->
         view.selectedTab = value
       }
@@ -121,6 +128,8 @@ class T3WorkspaceNavigationView(
   private val onTabSelected by EventDispatcher()
   private val onNewThread by EventDispatcher()
   private val onOverlayChange by EventDispatcher()
+  var rtl by mutableStateOf(false)
+  var labels by mutableStateOf<Map<String, String>>(emptyMap())
   var selectedTab by mutableStateOf("threads")
   var rail by mutableStateOf(false)
   var dark by mutableStateOf(false)
@@ -165,30 +174,34 @@ class T3WorkspaceNavigationView(
           ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool
         )
         setContent {
-          MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
-            if (rail) {
-              rail()
-            } else {
-              NavigationBar(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = Color(containerColor),
-                tonalElevation = androidx.compose.ui.unit.Dp(0f),
-                windowInsets = WindowInsets(0),
-              ) {
-                TABS.forEach { tab ->
-                  NavigationBarItem(
-                    selected = selectedTab == tab,
-                    onClick = { onTabSelected(mapOf("tab" to tab)) },
-                    icon = { Icon(tabIconPainter(tab), contentDescription = null) },
-                    label = { Text(tabTitle(tab), fontSize = (12 * textScale).sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                      selectedIconColor = Color(selectedColor),
-                      selectedTextColor = Color(selectedColor),
-                      indicatorColor = Color(indicatorColor),
-                      unselectedIconColor = Color(unselectedColor),
-                      unselectedTextColor = Color(unselectedColor),
-                    ),
-                  )
+          CompositionLocalProvider(
+            LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+          ) {
+            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+              if (rail) {
+                rail()
+              } else {
+                NavigationBar(
+                  modifier = Modifier.fillMaxSize(),
+                  containerColor = Color(containerColor),
+                  tonalElevation = androidx.compose.ui.unit.Dp(0f),
+                  windowInsets = WindowInsets(0),
+                ) {
+                  TABS.forEach { tab ->
+                    NavigationBarItem(
+                      selected = selectedTab == tab,
+                      onClick = { onTabSelected(mapOf("tab" to tab)) },
+                      icon = { Icon(tabIconPainter(tab), contentDescription = null) },
+                      label = { Text(tabTitle(tab), fontSize = (12 * textScale).sp) },
+                      colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(selectedColor),
+                        selectedTextColor = Color(selectedColor),
+                        indicatorColor = Color(indicatorColor),
+                        unselectedIconColor = Color(unselectedColor),
+                        unselectedTextColor = Color(unselectedColor),
+                      ),
+                    )
+                  }
                 }
               }
             }
@@ -234,7 +247,7 @@ class T3WorkspaceNavigationView(
       val fraction = progress.coerceIn(0f, 1f)
       if (fraction > 0f) {
         Scrim(
-          contentDescription = "Close navigation rail",
+          contentDescription = labels["closeNavigation"] ?: "Close navigation rail",
           onClick = { expanded = false },
           alpha = { fraction },
         )
@@ -257,7 +270,8 @@ class T3WorkspaceNavigationView(
             onClick = { expanded = !expanded },
             modifier = Modifier.semantics {
               contentDescription =
-                if (expanded) "Collapse navigation rail" else "Expand navigation rail"
+                if (expanded) labels["collapseNavigation"] ?: "Collapse navigation rail"
+                else labels["expandNavigation"] ?: "Expand navigation rail"
             },
           ) {
             Icon(
@@ -298,7 +312,7 @@ class T3WorkspaceNavigationView(
         .height(FAB_SIZE)
         .width(lerp(FAB_SIZE, EXPANDED_RAIL_WIDTH - RAIL_INSET * 2, fraction))
         .alpha(if (newEnabled) 1f else DISABLED_ALPHA)
-        .semantics { contentDescription = "New thread" },
+        .semantics { contentDescription = labels["newThread"] ?: "New thread" },
     ) {
       Row(
         Modifier.padding(start = (FAB_SIZE - ICON_SIZE) / 2).clipToBounds(),
@@ -306,7 +320,7 @@ class T3WorkspaceNavigationView(
       ) {
         Icon(painterResource(R.drawable.t3_new_thread), contentDescription = null)
         Text(
-          "New thread",
+          labels["newThread"] ?: "New thread",
           Modifier.padding(start = 12.dp).alpha(labelAlpha(fraction)).clearAndSetSemantics {},
           style = MaterialTheme.typography.labelLarge,
           fontSize = (14 * textScale).sp,
@@ -355,13 +369,13 @@ class T3WorkspaceNavigationView(
   }
 
   private fun tabTitle(tab: String) = when (tab) {
-    "threads" -> "Chats"
-    "pullRequests" -> "PRs"
-    else -> "Settings"
+    "threads" -> labels["threads"] ?: "Chats"
+    "pullRequests" -> labels["pullRequests"] ?: "PRs"
+    else -> labels["settings"] ?: "Settings"
   }
 
   private fun expandedTabTitle(tab: String) =
-    if (tab == "pullRequests") "Pull Requests" else tabTitle(tab)
+    if (tab == "pullRequests") labels["pullRequestsExpanded"] ?: "Pull requests" else tabTitle(tab)
 
   @Composable
   private fun tabIconPainter(tab: String) = painterResource(

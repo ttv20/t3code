@@ -19,7 +19,10 @@ export function AppearancePreviewSeparator() {
   return <View className="h-px bg-separator" />;
 }
 
-export function TextAppearancePreview(props: { readonly fontSize: number }) {
+export function TextAppearancePreview(props: {
+  readonly fontSize: number;
+  readonly lineHeight?: number;
+}) {
   const { t: uiT } = useUiLanguage();
   const sizes = resolveMarkdownFontSizes(props.fontSize);
 
@@ -27,27 +30,35 @@ export function TextAppearancePreview(props: { readonly fontSize: number }) {
     <View className="gap-1 p-4">
       <Text
         className="text-foreground"
-        style={{ fontSize: sizes.m, lineHeight: sizes.bodyLineHeight }}
+        style={{ fontSize: sizes.m, lineHeight: props.lineHeight ?? sizes.bodyLineHeight }}
       >
         {uiT("The quick brown fox jumps over the lazy dog.")}
+        {props.lineHeight !== undefined
+          ? `\n${uiT("Adjust line spacing without changing the text size.")}`
+          : null}
       </Text>
       <Text
         className="text-foreground-muted"
         style={{ fontSize: sizes.s, lineHeight: Math.round(sizes.s * 1.4) }}
       >
-        {uiT("Messages, labels, and headings scale with this size.")}
+        {uiT(
+          props.lineHeight !== undefined
+            ? "Applies to chat messages."
+            : "Messages, labels, and headings scale with this size.",
+        )}
       </Text>
     </View>
   );
 }
 
 export function TerminalAppearancePreview(props: { readonly fontSize: number }) {
-  const { t: uiT } = useUiLanguage();
   const { themeAppearance: scheme, themeId } = useAppearancePreferences();
   const theme = getMobileTerminalTheme(themeId, scheme);
   const lineHeight = Math.round(props.fontSize * 1.6);
   const lineStyle = {
-    fontFamily: "Menlo",
+    writingDirection: "ltr",
+    textAlign: "left",
+    fontFamily: CODE_FONT_FAMILY,
     fontSize: props.fontSize,
     lineHeight,
   } as const;
@@ -57,38 +68,38 @@ export function TerminalAppearancePreview(props: { readonly fontSize: number }) 
   ];
 
   return (
-    <View className="p-4">
+    <View className="p-4" style={{ direction: "ltr" }}>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.palette[2])}>→ </Text>
-        <Text style={span(theme.palette[6])}>{uiT("t3code")} </Text>
-        <Text style={span(theme.palette[4])}>{uiT("git:(")}</Text>
-        <Text style={span(theme.palette[1])}>{uiT("main")}</Text>
+        <Text style={span(theme.palette[6])}>t3code </Text>
+        <Text style={span(theme.palette[4])}>git:(</Text>
+        <Text style={span(theme.palette[1])}>main</Text>
         <Text style={span(theme.palette[4])}>)</Text>
         <Text style={span(theme.palette[3])}> ✗</Text>
-        <Text style={span(theme.foreground)}> {uiT("vpr dev")}</Text>
+        <Text style={span(theme.foreground)}> vpr dev</Text>
       </Text>
       <Text style={span(theme.foreground)}>
-        <Text style={span(theme.palette[2])}>{uiT("VITE v7.1.1")}</Text>
-        <Text style={span(theme.mutedForeground)}> {uiT("ready in")}</Text>
+        <Text style={span(theme.palette[2])}>VITE v7.1.1</Text>
+        <Text style={span(theme.mutedForeground)}> ready in</Text>
         <Text style={span(theme.foreground)}> 1.24s</Text>
       </Text>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.palette[2])}>→ </Text>
-        <Text style={span(theme.mutedForeground)}>{uiT("Local:")} </Text>
+        <Text style={span(theme.mutedForeground)}>Local: </Text>
         <Text style={span(theme.palette[6], { textDecorationLine: "underline" })}>
           http://127.0.0.1:5173/
         </Text>
       </Text>
       <Text style={span(theme.foreground)}>
-        <Text style={span(theme.palette[2])}>{uiT("✓ 85 passed")}</Text>
-        <Text style={span(theme.palette[3])}> {uiT("△ 2 warnings")}</Text>
-        <Text style={span(theme.palette[1])}> {uiT("✗ 0 failed")}</Text>
+        <Text style={span(theme.palette[2])}>✓ 85 passed</Text>
+        <Text style={span(theme.palette[3])}> △ 2 warnings</Text>
+        <Text style={span(theme.palette[1])}> ✗ 0 failed</Text>
       </Text>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.background, { backgroundColor: theme.palette[2] })}>
-          {uiT(" READY ")}
+          {" READY "}
         </Text>
-        <Text style={span(theme.mutedForeground)}> {uiT("watching for changes")}</Text>{" "}
+        <Text style={span(theme.mutedForeground)}> watching for changes</Text>{" "}
         <Text style={span(theme.cursorForeground)}>▏</Text>
       </Text>
     </View>
@@ -132,6 +143,7 @@ export function CodeAppearancePreview(props: {
       className="text-right text-icon-subtle"
       key={line.id}
       style={{
+        writingDirection: "ltr",
         fontFamily: CODE_FONT_FAMILY,
         fontSize: surface.lineNumberFontSize,
         lineHeight: surface.rowHeight,
@@ -148,6 +160,8 @@ export function CodeAppearancePreview(props: {
       key={line.id}
       numberOfLines={wrap ? undefined : 1}
       style={{
+        writingDirection: "ltr",
+        textAlign: "left",
         fontFamily: CODE_FONT_FAMILY,
         fontSize: surface.fontSize,
         lineHeight: surface.rowHeight,
@@ -171,7 +185,7 @@ export function CodeAppearancePreview(props: {
 
   if (props.wordBreak) {
     return (
-      <View className="p-4">
+      <View className="p-4" style={{ direction: "ltr" }}>
         {CODE_PREVIEW_LINES.map((line, index) => (
           <View className="flex-row" key={line.id}>
             {lineNumber(line, index)}
@@ -183,7 +197,7 @@ export function CodeAppearancePreview(props: {
   }
 
   return (
-    <View className="flex-row p-4">
+    <View className="flex-row p-4" style={{ direction: "ltr" }}>
       <View>{CODE_PREVIEW_LINES.map((line, index) => lineNumber(line, index))}</View>
       <ScrollView
         horizontal
