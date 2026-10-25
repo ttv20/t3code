@@ -978,15 +978,17 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
               compact
               hidden={showsCompactDictation}
             >
-              <ComposerAttachmentButton
-                size={hasSidebarTabBar ? "large" : "regular"}
-                disabled={isSubmissionLocked}
-                supportsFiles={Boolean(
-                  props.serverConfig?.environment.capabilities.fileAttachments,
-                )}
-                onPickMedia={props.onPickDraftMedia}
-                onPickFiles={props.onPickDraftFiles}
-              />
+              {!usesCard ? (
+                <ComposerAttachmentButton
+                  size={hasSidebarTabBar ? "large" : "regular"}
+                  disabled={isSubmissionLocked}
+                  supportsFiles={Boolean(
+                    props.serverConfig?.environment.capabilities.fileAttachments,
+                  )}
+                  onPickMedia={props.onPickDraftMedia}
+                  onPickFiles={props.onPickDraftFiles}
+                />
+              ) : null}
               <Animated.View
                 className="min-w-0 flex-1"
                 onLayout={compactEditor.onEditorLayout}
@@ -1024,48 +1026,45 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
                   ) : null}
                 </View>
               ) : null}
-              <View
-                className="min-w-0 shrink flex-row items-center"
-                style={
-                  compactEditor.isExpanded ? { flex: 1, justifyContent: "flex-end" } : undefined
-                }
-              >
-                {modelControl}
-                <ComposerDictationStartAction
-                  size={hasSidebarTabBar ? "large" : "regular"}
-                  state={voiceInput.state}
-                  isAvailable={voiceInput.isAvailable}
-                  disabled={isSubmissionLocked}
-                  onStart={voiceInput.start}
-                  onCancel={voiceInput.cancel}
-                />
-                {showStopAction ? (
-                  <ComposerActionButton
+              {!usesCard ? (
+                <View className="min-w-0 shrink flex-row items-center">
+                  {modelControl}
+                  <ComposerDictationStartAction
                     size={hasSidebarTabBar ? "large" : "regular"}
-                    accessibilityLabel={uiT("Stop agent")}
-                    icon="stop.fill"
-                    variant="danger"
-                    disabled={!props.canOperateThread}
-                    onPress={props.onStopThread}
+                    state={voiceInput.state}
+                    isAvailable={voiceInput.isAvailable}
+                    disabled={isSubmissionLocked}
+                    onStart={voiceInput.start}
+                    onCancel={voiceInput.cancel}
                   />
-                ) : showResumeAction ? (
-                  <ComposerActionButton
-                    size={hasSidebarTabBar ? "large" : "regular"}
-                    accessibilityLabel={uiT("Resume queue")}
-                    icon="play"
-                    disabled={!props.canOperateThread || resumingQueue}
-                    onPress={() => void handleResumeQueue()}
-                  />
-                ) : (
-                  <SendActionButton
-                    size={hasSidebarTabBar ? "large" : "regular"}
-                    accessibilityLabel={sendBlockedReason ?? sendLabel}
-                    presentation={sendPresentation}
-                    disabled={!canSend}
-                    onSend={handleSend}
-                  />
-                )}
-              </View>
+                  {showStopAction ? (
+                    <ComposerActionButton
+                      size={hasSidebarTabBar ? "large" : "regular"}
+                      accessibilityLabel={uiT("Stop agent")}
+                      icon="stop.fill"
+                      variant="danger"
+                      disabled={!props.canOperateThread}
+                      onPress={props.onStopThread}
+                    />
+                  ) : showResumeAction ? (
+                    <ComposerActionButton
+                      size={hasSidebarTabBar ? "large" : "regular"}
+                      accessibilityLabel={uiT("Resume queue")}
+                      icon="play"
+                      disabled={!props.canOperateThread || resumingQueue}
+                      onPress={() => void handleResumeQueue()}
+                    />
+                  ) : (
+                    <SendActionButton
+                      size={hasSidebarTabBar ? "large" : "regular"}
+                      accessibilityLabel={sendBlockedReason ?? sendLabel}
+                      presentation={sendPresentation}
+                      disabled={!canSend}
+                      onSend={handleSend}
+                    />
+                  )}
+                </View>
+              ) : null}
             </ComposerDictationDraftContent>
             <Animated.View
               style={[
