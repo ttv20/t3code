@@ -9250,5 +9250,7 @@
   "Create revert merge request": "Create revert merge request",
   "Create revert change request": "Create revert change request",
   "Commit, push & PR": "Commit, push & PR",
-  "Commit, push & MR": "Commit, push & MR"
+  "Commit, push & MR": "Commit, push & MR",
+  "Push & create PR": "Push & create PR",
+  "Push & create MR": "Push & create MR"
 }

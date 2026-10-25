@@ -9250,5 +9250,7 @@
   "Create revert merge request": "יצירת בקשת שחזור",
   "Create revert change request": "יצירת בקשת שחזור שינוי",
   "Commit, push & PR": "קומיט, דחיפה ובקשת מיזוג",
-  "Commit, push & MR": "קומיט, דחיפה ובקשת מיזוג"
+  "Commit, push & MR": "קומיט, דחיפה ובקשת מיזוג",
+  "Push & create PR": "דחיפה ויצירת בקשת מיזוג",
+  "Push & create MR": "דחיפה ויצירת בקשת מיזוג"
 }
