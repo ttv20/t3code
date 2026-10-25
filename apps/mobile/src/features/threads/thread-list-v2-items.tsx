@@ -1,4 +1,3 @@
-import { UiText } from "../../i18n";
 import { useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import type { ThreadRowProviderInstance } from "./thread-provider-instance";
@@ -276,16 +275,29 @@ export const ThreadListV2SettledShelfHeader = memo(function ThreadListV2SettledS
 export const ThreadListV2ShowMoreRow = memo(function ThreadListV2ShowMoreRow(props: {
   readonly pane?: "screen" | "sidebar";
   readonly hiddenCount: number;
+  /** Older settled threads are loading, or their last read failed. */
+  readonly state?: "loading" | "failed";
   readonly onPress: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
+  const label =
+    props.state === "loading"
+      ? uiT("Loading")
+      : props.state === "failed"
+        ? uiT("Could not load older threads. Retry")
+        : uiT("Show more ({0} settled hidden)", { "0": props.hiddenCount });
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={uiT("Show {0} more settled threads", {
-        "0": Math.min(props.hiddenCount, THREAD_LIST_V2_SETTLED_PAGE_COUNT),
-      })}
+      accessibilityLabel={
+        props.state === undefined
+          ? uiT("Show {0} more settled threads", {
+              "0": Math.min(props.hiddenCount, THREAD_LIST_V2_SETTLED_PAGE_COUNT),
+            })
+          : label
+      }
+      disabled={props.state === "loading"}
       onPress={props.onPress}
       className="mx-4 mt-2 items-center rounded-lg border border-dashed border-border py-2.5"
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
@@ -297,7 +309,7 @@ export const ThreadListV2ShowMoreRow = memo(function ThreadListV2ShowMoreRow(pro
             : "text-xs font-t3-medium text-foreground-muted"
         }
       >
-        <UiText message={"Show more ({0}  settled hidden)"} values={{ "0": props.hiddenCount }} />
+        {label}
       </Text>
     </Pressable>
   );

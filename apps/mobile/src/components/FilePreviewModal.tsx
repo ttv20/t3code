@@ -13,6 +13,11 @@ import {
 import { Keyboard } from "react-native";
 
 import { loadLocalAttachmentPreview } from "../lib/localAttachmentPreview";
+import {
+  downloadAndShareAttachment,
+  nativeViewerErrorMessage,
+  shareLocalAttachment,
+} from "../lib/attachmentDownload";
 import { useRefreshAssetUrl } from "../state/assets";
 import { filePreviewGallery, filePreviewKey, filePreviewName } from "../lib/filePreviewGallery";
 import { FilePreviewGallery } from "./FilePreviewGallery";
@@ -109,6 +114,8 @@ function ResolvedFilePreview(props: {
   readonly onRequestClose: () => void;
   readonly onOpenError?: (error: unknown) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   // Freeze the group at opening; streaming messages and URL refreshes must not reopen the viewer.
   const [items] = useState(() => filePreviewGallery(props.source, []));
   const [resolved, setResolved] = useState<Record<string, ResolvedFilePreviewSource>>({});
@@ -125,6 +132,34 @@ function ResolvedFilePreview(props: {
     [items, resolved],
   );
   const ready = selected && gallery.length === items.length;
+  const onOpenError = (error: unknown) => {
+    if (props.onOpenError) return props.onOpenError(error);
+    Dialog.alert(uiT("Could not open preview"), nativeViewerErrorMessage(error), [
+      { text: "Cancel", style: "cancel" },
+      ...(selected?.kind === "document"
+        ? [
+            {
+              text: "Save or share",
+              onPress: () => {
+                const input = {
+                  attachment: {
+                    name: filePreviewName(selected),
+                    mimeType: selected.mimeType ?? "application/octet-stream",
+                  },
+                  signal: new AbortController().signal,
+                };
+                const sharing = /^(file|content):/.test(selected.uri)
+                  ? shareLocalAttachment({ ...input, uri: selected.uri })
+                  : downloadAndShareAttachment({ ...input, url: selected.uri });
+                void sharing.catch(() =>
+                  Dialog.alert(uiT("Could not share file"), uiT("Please try again.")),
+                );
+              },
+            },
+          ]
+        : []),
+    ]);
+  };
   return (
     <>
       {items.map((item) => (
@@ -140,7 +175,7 @@ function ResolvedFilePreview(props: {
         <FilePreview
           source={{ ...selected, gallery }}
           onRequestClose={props.onRequestClose}
-          onOpenError={props.onOpenError}
+          onOpenError={onOpenError}
         />
       ) : null}
     </>

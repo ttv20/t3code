@@ -1,3 +1,5 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off -- Vite config runs before any Effect runtime.
+import * as NodeFSP from "node:fs/promises";
 import * as NodeZlib from "node:zlib";
 
 import react from "@vitejs/plugin-react";
@@ -41,6 +43,8 @@ const configuredRelayTracingUrl = repoEnv.VITE_RELAY_OTLP_TRACES_URL?.trim() || 
 const configuredRelayTracingDataset = repoEnv.VITE_RELAY_OTLP_TRACES_DATASET?.trim() || "";
 const configuredRelayTracingToken = repoEnv.VITE_RELAY_OTLP_TRACES_TOKEN?.trim() || "";
 const configuredHostedAppChannel = process.env.VITE_HOSTED_APP_CHANNEL?.trim() || "";
+const configuredReleaseChannel =
+  process.env.T3CODE_BUILT_DEV === "1" ? "dev" : process.env.VITE_RELEASE_CHANNEL?.trim() || "";
 const configuredAppVersion = process.env.APP_VERSION?.trim() || pkg.version;
 const configuredDesktopUpdateRepository =
   process.env.T3CODE_DESKTOP_UPDATE_REPOSITORY?.trim() ||
@@ -116,6 +120,34 @@ const browserTestProject = {
         // position starts hovered. test/browserSetup.ts parks it off the page before each test.
         resetPointer: async ({ page }) => {
           await page.mouse.move(-1, -1);
+        },
+      },
+    },
+  },
+} satisfies TestProjectInlineConfiguration;
+
+// Render scenarios count React commits; they run only through scripts/render-metrics.ts,
+// which reads the per-scenario reports this command writes.
+const renderScenariosProject = {
+  ...browserTestProject,
+  test: {
+    ...browserTestProject.test,
+    name: "renders",
+    include: ["test/*.renders.tsx"],
+    // App scenarios mount the whole app per test, which outlasts 15s on a loaded machine.
+    hookTimeout: 60_000,
+    testTimeout: 60_000,
+    setupFiles: ["./test/renderCounter.ts", ...browserTestProject.test.setupFiles],
+    browser: {
+      ...browserTestProject.test.browser,
+      // Vitest names each instance in place, so a shared array would clash with the browser project.
+      instances: [{ browser: "chromium" }],
+      commands: {
+        ...browserTestProject.test.browser.commands,
+        writeRenderReport: async (_context, scenario: string, json: string) => {
+          const directory = process.env.T3CODE_RENDER_REPORT_DIR;
+          if (!directory) throw new Error("T3CODE_RENDER_REPORT_DIR is not set");
+          await NodeFSP.writeFile(`${directory}/${scenario}.json`, json);
         },
       },
     },
@@ -239,6 +271,7 @@ export default defineConfig(() => {
       "import.meta.env.T3CODE_DESKTOP_UPDATE_REPOSITORY": JSON.stringify(
         configuredDesktopUpdateRepository,
       ),
+      "import.meta.env.VITE_RELEASE_CHANNEL": JSON.stringify(configuredReleaseChannel),
       "import.meta.env.APP_VERSION": JSON.stringify(configuredAppVersion),
     },
     resolve: {
@@ -296,7 +329,11 @@ export default defineConfig(() => {
       sourcemap: buildSourcemap,
     },
     test: {
-      projects: [defineProject(unitTestProject), defineProject(browserTestProject)],
+      projects: [
+        defineProject(unitTestProject),
+        defineProject(browserTestProject),
+        defineProject(renderScenariosProject),
+      ],
     },
   };
 });

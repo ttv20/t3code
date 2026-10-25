@@ -7,7 +7,8 @@ import {
   type EnvironmentId,
   type ResolvedKeybindingsConfig,
 } from "@t3tools/contracts";
-import { memo, useEffect, useRef } from "react";
+import { memo, use, useEffect, useRef } from "react";
+import { BackgroundThreadContext } from "./backgroundThread";
 import { isOpenFavoriteEditorShortcut, shortcutLabelForCommand } from "../../keybindings";
 import { usePreferredEditor } from "../../editorPreferences";
 import { editorLabelForPlatform } from "../../editorLabels";
@@ -281,8 +282,9 @@ export const OpenInPicker = memo(function OpenInPicker({
     "editor.openFavorite",
   );
 
+  const backgroundThread = use(BackgroundThreadContext);
   useEffect(() => {
-    if (!enableShortcut || !canOpenEditor) return;
+    if (!enableShortcut || !canOpenEditor || backgroundThread) return;
     const handler = (e: globalThis.KeyboardEvent) => {
       if (e.defaultPrevented || !isOpenFavoriteEditorShortcut(e, keybindings)) return;
       if (!openInCwd) return;
@@ -302,6 +304,7 @@ export const OpenInPicker = memo(function OpenInPicker({
     window.addEventListener("keydown", handler, true);
     return () => window.removeEventListener("keydown", handler, true);
   }, [
+    backgroundThread,
     canOpenEditor,
     enableShortcut,
     environmentId,
@@ -413,6 +416,13 @@ export const OpenInPicker = memo(function OpenInPicker({
             className={cn(
               isPanel ? THREAD_DETAILS_PANEL_ICON_CLASS : "size-3.5",
               getOpenInIconClass(primaryOption.kind),
+              // Full-color app icons outshout the panel's line icons until the row is in use.
+              isPanel &&
+                "redesign:grayscale redesign:dark:opacity-70 redesign:group-hover/details-split:grayscale-0 redesign:dark:group-hover/details-split:opacity-100 redesign:group-has-[[data-popup-open]]/details-split:grayscale-0 redesign:dark:group-has-[[data-popup-open]]/details-split:opacity-100",
+              // A hairline keeps pale app icons from dissolving into the card.
+              isPanel &&
+                primaryOption.kind === "brand" &&
+                "redesign:rounded-sm redesign:ring-1 redesign:ring-black/10 redesign:dark:ring-white/15",
             )}
           />
         ) : isPanel ? (

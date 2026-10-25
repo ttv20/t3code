@@ -8,7 +8,7 @@ import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import { useEnvironments, type EnvironmentPresentation } from "../../state/environments";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { ProjectFavicon } from "../ProjectFavicon";
-import { InlineButton } from "../ui/button";
+import { Button } from "../ui/button";
 import {
   Combobox,
   ComboboxEmpty,
@@ -72,7 +72,7 @@ export function SettingsScopeSentence() {
     onChange: scope.selectScope,
   };
   return (
-    <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 px-3 text-base text-muted-foreground sm:px-4">
+    <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 px-3 text-sm text-muted-foreground sm:px-4">
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="shrink-0">{uiT("Applying settings for")}</span>
         <ProjectScopeMenu {...props} />
@@ -140,12 +140,16 @@ function ScopeMenu({
   const trigger = (
     <Trigger
       aria-label={`${ariaLabel}: ${label}`}
-      render={<InlineButton tone="picker" />}
+      render={<Button variant="outline" size="sm" />}
       className="min-w-0 max-w-72"
     >
       {icon}
       <span className="min-w-0 truncate">{label}</span>
-      <ChevronDownIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+      <ChevronDownIcon
+        aria-hidden
+        strokeWidth={1.75}
+        className="-me-0.5 size-3.5 shrink-0 text-muted-foreground opacity-70"
+      />
     </Trigger>
   );
   const choices = allOption ? [allOption, ...options] : options;
@@ -248,7 +252,7 @@ function EnvironmentScopeMenu({
     : environments;
   return (
     <ScopeMenu
-      ariaLabel="Environment scope"
+      ariaLabel={uiT("Environment scope")}
       icon={
         selected ? (
           <EnvironmentMachineIcon
@@ -312,7 +316,7 @@ function ProjectScopeMenu({ value, groups, environments, onChange }: SettingsSco
   }));
   return (
     <ScopeMenu
-      ariaLabel="Project scope"
+      ariaLabel={uiT("Project scope")}
       icon={selected ? <ProjectFavicon project={selected} className="size-3.5 shrink-0" /> : null}
       label={
         selected?.displayName ?? (value.project ? uiT("Unavailable project") : uiT("All projects"))

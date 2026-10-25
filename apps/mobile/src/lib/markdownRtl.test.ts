@@ -3,7 +3,17 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
-import { markdownForDisplay, type MarkdownNode } from "./markdownDocument";
+import {
+  markdownForDisplay,
+  markdownForNativeRendering,
+  type MarkdownNode,
+} from "./markdownDocument";
+
+it("preserves RTL sentence boundaries through native file-link normalization", () => {
+  expect(
+    markdownForNativeRendering("לדוגמה משפט אחת ending. and השני מתחיל עם `src/app.ts`", /^src\//),
+  ).toBe("לדוגמה משפט אחת ending. \u200fand השני מתחיל עם [src/app.ts](<src/app.ts>)");
+});
 
 const processor = unified().use(remarkParse).use(remarkGfm).use(remarkRtlSentenceBoundaries);
 

@@ -360,6 +360,35 @@ export function AppearanceSettingsPanel() {
             </div>
           }
         />
+        {/* Only the new design grays project icons, so the option only exists there. */}
+        {settings.redesignEnabled ? (
+          <SettingsRow
+            {...searchableSetting("sidebar-project-icon-colors")}
+            description={uiT("Show project icons in the sidebar in full color instead of gray.")}
+            resetAction={
+              settings.sidebarProjectIconColors !==
+              DEFAULT_UNIFIED_SETTINGS.sidebarProjectIconColors ? (
+                <SettingResetButton
+                  label={uiT("colored project icons")}
+                  onClick={() =>
+                    updateSettings({
+                      sidebarProjectIconColors: DEFAULT_UNIFIED_SETTINGS.sidebarProjectIconColors,
+                    })
+                  }
+                />
+              ) : null
+            }
+            control={
+              <Switch
+                checked={settings.sidebarProjectIconColors}
+                onCheckedChange={(checked) =>
+                  updateSettings({ sidebarProjectIconColors: Boolean(checked) })
+                }
+                aria-label={uiT("Colored project icons")}
+              />
+            }
+          />
+        ) : null}
         <SettingsRow
           {...searchableSetting("math-rendering")}
           description={uiT(

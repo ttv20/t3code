@@ -187,14 +187,14 @@ function AutoSettleSettingsRows() {
         <SettingsSection title={uiT("Usage limits")}>
           <SettingsSwitchRow
             icon="clock"
-            label={uiT("Auto-resume limited threads")}
+            label={uiT("Resume after usage limits")}
             value={uniformMobileSetting(displayTargets, "autoResumeLimitedThreads")}
             disabled={disabled}
             onValueChange={(value) => writeToAll({ autoResumeLimitedThreads: value })}
           />
           <SettingsSwitchRow
             icon="clock"
-            label={uiT("Snooze limited threads")}
+            label={uiT("Snooze until limits reset")}
             value={uniformMobileSetting(displayTargets, "snoozeLimitedThreads")}
             disabled={disabled}
             onValueChange={(value) => writeToAll({ snoozeLimitedThreads: value })}
