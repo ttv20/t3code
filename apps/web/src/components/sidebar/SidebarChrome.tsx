@@ -170,7 +170,7 @@ function SidebarUtilityItem({
   );
 }
 
-export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
+const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const navigateToMainApp = useNavigateToMainApp();

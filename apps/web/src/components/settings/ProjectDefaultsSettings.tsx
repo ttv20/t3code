@@ -180,7 +180,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
               instanceEntries={entries}
               modelOptionsByInstance={modelOptions}
               triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-              {...(mixedModel ? { triggerLabel: "Mixed" } : {})}
+              {...(mixedModel ? { triggerLabel: uiT("Mixed") } : {})}
               getModelDisabledReason={modelDisabledReason}
               onOpenProviderSetup={(instanceId) => {
                 if (representative)
@@ -246,10 +246,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             <SelectValue>
               {(value: string | null) =>
                 value === "local" || value === "worktree"
-                  ? resolveEnvModeLabel(value)
+                  ? uiT(resolveEnvModeLabel(value))
                   : unavailable
-                    ? "Unavailable"
-                    : "Mixed"
+                    ? uiT("Unavailable")
+                    : uiT("Mixed")
               }
             </SelectValue>
           </SelectTrigger>
@@ -311,7 +311,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {mixedPermissions
                       ? uiT("Mixed")
-                      : runtimeModeConfig[settings.defaultRuntimeMode].label}
+                      : uiT(runtimeModeConfig[settings.defaultRuntimeMode].label)}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -368,10 +368,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {(value: string | null) =>
                       isWorktreeSubmodules(value)
-                        ? WORKTREE_SUBMODULES_LABELS[value]
+                        ? uiT(WORKTREE_SUBMODULES_LABELS[value])
                         : unavailable
-                          ? "Unavailable"
-                          : "Mixed"
+                          ? uiT("Unavailable")
+                          : uiT("Mixed")
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -483,10 +483,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   <SelectValue>
                     {(value: string | null) =>
                       value === "merge" || value === "squash" || value === "rebase"
-                        ? PULL_REQUEST_MERGE_METHOD_LABELS[value]
+                        ? uiT(PULL_REQUEST_MERGE_METHOD_LABELS[value])
                         : value === "last"
-                          ? "Last selected"
-                          : "Mixed"
+                          ? uiT("Last selected")
+                          : uiT("Mixed")
                     }
                   </SelectValue>
                 </SelectTrigger>

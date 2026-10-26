@@ -1041,7 +1041,7 @@ export function GeneralSettingsPanel() {
                   {(value: string | null) =>
                     value === null
                       ? "Mixed"
-                      : IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label
+                      : uiT(IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label ?? "")
                   }
                 </SelectValue>
               </SelectTrigger>

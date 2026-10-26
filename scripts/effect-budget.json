@@ -175,6 +175,7 @@
   "apps/mobile/src/widgets/SubscriptionUsageCoordinator.tsx": 1,
   "apps/mobile/src/widgets/useSubscriptionUsage.ts": 1,
   "apps/web/src/AppRoot.tsx": 1,
+  "apps/web/src/UiLanguageProvider.tsx": 1,
   "apps/web/src/browser/BrowserProfileReporter.tsx": 1,
   "apps/web/src/browser/BrowserSurfaceSlot.tsx": 2,
   "apps/web/src/browser/ElectronBrowserHost.tsx": 3,

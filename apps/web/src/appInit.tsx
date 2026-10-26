@@ -1,4 +1,3 @@
-import { resolveUiDirection, resolveUiLocale } from "@t3tools/client-runtime/i18n";
 import type { ClientSettings } from "@t3tools/contracts/settings";
 import { createBrowserHistory, createHashHistory } from "@tanstack/react-router";
 
@@ -25,14 +24,6 @@ function startClientAppearance(): void {
     const settings = getClientSettings();
     const previous = applied;
     applied = settings;
-    if (
-      previous?.interfaceLanguage !== settings.interfaceLanguage ||
-      previous.interfaceDirection !== settings.interfaceDirection
-    ) {
-      const locale = resolveUiLocale(settings.interfaceLanguage, navigator.languages);
-      root.lang = locale;
-      root.dir = resolveUiDirection(locale, settings.interfaceDirection);
-    }
     if (previous?.diffColorScheme !== settings.diffColorScheme) {
       root.dataset.diffColorScheme = settings.diffColorScheme;
     }
