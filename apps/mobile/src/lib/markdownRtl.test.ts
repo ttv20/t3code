@@ -6,8 +6,75 @@ import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rt
 import {
   markdownForDisplay,
   markdownForNativeRendering,
+  prepareNativeMarkdown,
+  parseMarkdownDocument,
   type MarkdownNode,
 } from "./markdownDocument";
+import { ENRICHED_INLINE_FILE_LINK_REGEX } from "./enrichedLinkPresentation";
+
+describe("native direction before file presentation", () => {
+  const prose = "alpha beta gamma delta epsilon zeta eta א ב ג";
+
+  it("excludes inline file code at exactly 30% RTL words", () => {
+    const source = `- ${prose} \`src/app.ts\``;
+    expect(prepareNativeMarkdown(source, ENRICHED_INLINE_FILE_LINK_REGEX).markdown).toBe(
+      `- \u200f${prose} [src/app.ts](<src/app.ts>)`,
+    );
+  });
+
+  it("excludes a filename replacing a file embed at exactly 30% RTL words", () => {
+    const source = `- ${prose} ![notes](./notes.md)`;
+    const prepared = prepareNativeMarkdown(
+      source,
+      ENRICHED_INLINE_FILE_LINK_REGEX,
+      () => "notes.md",
+    );
+    expect(prepared.markdown).toBe(`- \u200f${prose} [notes.md](<./notes.md>)`);
+    expect([...prepared.fileHrefs]).toEqual(["./notes.md"]);
+  });
+
+  it("keeps a solitary image standalone without direction marks from its alt text", () => {
+    const source = "![תיאור בעברית](./audio.mp3)";
+    const prepared = prepareNativeMarkdown(
+      source,
+      ENRICHED_INLINE_FILE_LINK_REGEX,
+      (_href, standalone) => (standalone ? null : "audio.mp3"),
+    );
+    expect(prepared.markdown).toBe(source);
+    expect(prepared.fileHrefs.size).toBe(0);
+  });
+
+  it("keeps below-threshold prose LTR when an embed receives a Hebrew filename", () => {
+    const prepared = prepareNativeMarkdown(
+      "שלום alpha beta gamma ![notes](./notes.md)",
+      ENRICHED_INLINE_FILE_LINK_REGEX,
+      () => "הערות בעברית.md",
+    );
+    expect(prepared.markdown).toBe("\u200eשלום alpha beta gamma [הערות בעברית.md](<./notes.md>)");
+  });
+
+  it("preserves file destinations, labels and fenced code while resolving direction", () => {
+    const path = String.raw`C:\repo\_draft\a&copy;.ts`;
+    const code = 'const label = "שלום";';
+    const prepared = prepareNativeMarkdown(
+      `${prose} \`${path}\` ![notes](./notes&a.md)\n\n\`\`\`ts\n${code}\n\`\`\``,
+      ENRICHED_INLINE_FILE_LINK_REGEX,
+      () => "notes [draft]&.md",
+    );
+    expect(prepared.markdown.startsWith("\u200f")).toBe(true);
+    const document = parseMarkdownDocument(prepared.markdown);
+    const paragraph = document.children[0];
+    const links =
+      paragraph?.type === "paragraph"
+        ? paragraph.children.filter((node) => node.type === "link")
+        : [];
+    expect(links.map((link) => [link.url, link.children.map(proseText).join("")])).toEqual([
+      [path, path],
+      ["./notes&a.md", "notes [draft]&.md"],
+    ]);
+    expect(document.children.find((node) => node.type === "code")?.value).toBe(code);
+  });
+});
 
 it("preserves RTL sentence boundaries through native file-link normalization", () => {
   expect(

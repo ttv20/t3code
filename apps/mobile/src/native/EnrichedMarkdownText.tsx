@@ -5,13 +5,7 @@ import {
   formatComposerContextHref,
   formatComposerContextReference,
 } from "@t3tools/shared/composerContextReferences";
-import {
-  markdownForNativeRendering,
-  markdownWithFileEmbeds,
-  markdownWithHtml,
-  markdownWithInlineFileLinks,
-  markdownForDisplay,
-} from "../lib/markdownDocument";
+import { prepareNativeMarkdown } from "../lib/markdownDocument";
 import { isValidElement, useCallback, useMemo, useState, type ReactNode } from "react";
 import { Platform, Share, StyleSheet, View } from "react-native";
 import {
@@ -160,20 +154,10 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
 
   const { renderImage, resolveImageSource, fileEmbedLabel } = props;
   const { themeAppearance, mathRenderingEnabled } = useAppearancePreferences();
-  const { markdown, fileHrefs } = useMemo(() => {
-    if (!fileEmbedLabel) {
-      return {
-        markdown: markdownForNativeRendering(props.markdown, ENRICHED_INLINE_FILE_LINK_REGEX),
-        fileHrefs: new Set<string>(),
-      };
-    }
-    const content = markdownWithInlineFileLinks(
-      markdownWithHtml(props.markdown),
-      ENRICHED_INLINE_FILE_LINK_REGEX,
-    );
-    const files = markdownWithFileEmbeds(content, fileEmbedLabel);
-    return { ...files, markdown: markdownForDisplay(files.markdown) };
-  }, [props.markdown, fileEmbedLabel]);
+  const { markdown, fileHrefs } = useMemo(
+    () => prepareNativeMarkdown(props.markdown, ENRICHED_INLINE_FILE_LINK_REGEX, fileEmbedLabel),
+    [props.markdown, fileEmbedLabel],
+  );
   const [parsedLinkUrls, setParsedLinkUrls] = useState<ReadonlyArray<string>>([]);
   const onLinksChange = useCallback((links: MarkdownLinkOccurrence[]) => {
     const urls = [...new Set(links.map((link) => link.url))];

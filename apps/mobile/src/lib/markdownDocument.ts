@@ -390,13 +390,30 @@ export function parseMarkdownDocument(markdown: string): Root {
 /** Prepare display text without changing the stored message or its code and destinations. */
 export function markdownForDisplay(markdown: string): string {
   const source = markdownWithTableBreaks(markdownWithHtml(markdown));
+  return markdownWithDisplayDirections(source);
+}
+
+function markdownWithDisplayDirections(source: string): string {
   if (!/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u.test(source)) return source;
   return markdownWithNativeDirections(source, parser.parse(source));
 }
 
 export function markdownForNativeRendering(markdown: string, fileLink: RegExp): string {
   // HTML wrappers can expose Markdown that wasn't in the first AST, so normalize them first.
-  return markdownForDisplay(transformNativeMarkdown(markdownWithHtml(markdown), fileLink, true));
+  const source = markdownWithDisplayDirections(markdownWithHtml(markdown));
+  return transformNativeMarkdown(source, fileLink, true);
+}
+
+export function prepareNativeMarkdown(
+  markdown: string,
+  fileLink: RegExp,
+  fileEmbedLabel?: (href: string, standalone: boolean) => string | null,
+) {
+  // Generated file labels must not vote in the prose's direction or split standalone images.
+  const content = markdownForNativeRendering(markdown, fileLink);
+  return fileEmbedLabel
+    ? markdownWithFileEmbeds(content, fileEmbedLabel)
+    : { markdown: content, fileHrefs: new Set<string>() };
 }
 
 /** Native media slots only cover standalone images; nested file embeds must become links. */
