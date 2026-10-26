@@ -30,7 +30,7 @@ type PreviewProps = {
 };
 
 function FileCardHeader(props: PreviewProps) {
-  const { t: uiT } = useUiLanguage();
+  const { direction, t: uiT } = useUiLanguage();
 
   return (
     <Pressable
@@ -52,7 +52,11 @@ function FileCardHeader(props: PreviewProps) {
           {props.sizeBytes !== undefined ? ` · ${formatAttachmentSize(props.sizeBytes)}` : ""}
         </Text>
       </View>
-      <SymbolView name="chevron.right" size={12} tintColorClassName="accent-foreground-muted" />
+      <SymbolView
+        name={direction === "rtl" ? "chevron.left" : "chevron.right"}
+        size={12}
+        tintColorClassName="accent-foreground-muted"
+      />
     </Pressable>
   );
 }
