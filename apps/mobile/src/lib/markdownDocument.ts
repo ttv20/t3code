@@ -393,15 +393,31 @@ export function markdownForDisplay(markdown: string): string {
   return markdownWithDisplayDirections(source);
 }
 
-function markdownWithDisplayDirections(source: string): string {
+function markdownWithDisplayDirections(
+  source: string,
+  isFileLabel?: (href: string, label: string) => boolean,
+): string {
   if (!/[\u0590-\u08ff\ufb1d-\ufdff\ufe70-\ufefc]/u.test(source)) return source;
-  return markdownWithNativeDirections(source, parser.parse(source));
+  const tree = parser.parse(source);
+  if (isFileLabel) {
+    const visit = (node: MarkdownNode) => {
+      if (node.type === "link" && node.children.length === 1) {
+        const label = node.children[0];
+        if (label?.type === "text" && isFileLabel(node.url, label.value)) {
+          // Mask file labels only in the analysis tree; rendered code, labels and hrefs stay intact.
+          node.children = [{ type: "inlineCode", value: "" }];
+          return;
+        }
+      }
+      if ("children" in node) node.children.forEach(visit);
+    };
+    visit(tree);
+  }
+  return markdownWithNativeDirections(source, tree);
 }
 
 export function markdownForNativeRendering(markdown: string, fileLink: RegExp): string {
-  // HTML wrappers can expose Markdown that wasn't in the first AST, so normalize them first.
-  const source = markdownWithDisplayDirections(markdownWithHtml(markdown));
-  return transformNativeMarkdown(source, fileLink, true);
+  return prepareNativeMarkdown(markdown, fileLink).markdown;
 }
 
 export function prepareNativeMarkdown(
@@ -409,11 +425,28 @@ export function prepareNativeMarkdown(
   fileLink: RegExp,
   fileEmbedLabel?: (href: string, standalone: boolean) => string | null,
 ) {
-  // Generated file labels must not vote in the prose's direction or split standalone images.
-  const content = markdownForNativeRendering(markdown, fileLink);
-  return fileEmbedLabel
-    ? markdownWithFileEmbeds(content, fileEmbedLabel)
+  const content = transformNativeMarkdown(markdownWithHtml(markdown), fileLink, true);
+  const fileLabels = new Map<string, Set<string>>();
+  const files = fileEmbedLabel
+    ? markdownWithFileEmbeds(content, (href, standalone) => {
+        const label = fileEmbedLabel(href, standalone);
+        if (label !== null) {
+          const url = href.replace(/</g, "%3C").replace(/>/g, "%3E");
+          const labels = fileLabels.get(url) ?? new Set<string>();
+          labels.add(label);
+          fileLabels.set(url, labels);
+        }
+        return label;
+      })
     : { markdown: content, fileHrefs: new Set<string>() };
+  return {
+    ...files,
+    markdown: markdownWithDisplayDirections(
+      files.markdown,
+      (href, label) =>
+        (fileLink.test(href) && label === href) || fileLabels.get(href)?.has(label) === true,
+    ),
+  };
 }
 
 /** Native media slots only cover standalone images; nested file embeds must become links. */

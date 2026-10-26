@@ -22,6 +22,18 @@ describe("native direction before file presentation", () => {
     );
   });
 
+  it("counts ordinary prose labels even when they link to the same file as an embed", () => {
+    expect(
+      prepareNativeMarkdown(
+        "alpha beta gamma delta epsilon zeta eta [א ב ג](./notes.md) ![notes](./notes.md)",
+        ENRICHED_INLINE_FILE_LINK_REGEX,
+        () => "notes.md",
+      ).markdown,
+    ).toBe(
+      "\u200falpha beta gamma delta epsilon zeta eta [א ב ג](./notes.md) [notes.md](<./notes.md>)",
+    );
+  });
+
   it("excludes a filename replacing a file embed at exactly 30% RTL words", () => {
     const source = `- ${prose} ![notes](./notes.md)`;
     const prepared = prepareNativeMarkdown(
@@ -52,6 +64,26 @@ describe("native direction before file presentation", () => {
     );
     expect(prepared.markdown).toBe("\u200eשלום alpha beta gamma [הערות בעברית.md](<./notes.md>)");
   });
+
+  it.each([
+    [
+      "![תיאור](./notes.md) הסבר בעברית כאן",
+      "notes.md",
+      "\u200f[notes.md](<./notes.md>) הסבר בעברית כאן",
+    ],
+    [
+      "![notes](./notes.md) alpha beta gamma",
+      "הערות.md",
+      "\u200e[הערות.md](<./notes.md>) alpha beta gamma",
+    ],
+  ])(
+    "resolves visible first-strong direction after a leading file embed: %s",
+    (source, label, expected) => {
+      expect(
+        prepareNativeMarkdown(source, ENRICHED_INLINE_FILE_LINK_REGEX, () => label).markdown,
+      ).toBe(expected);
+    },
+  );
 
   it("preserves file destinations, labels and fenced code while resolving direction", () => {
     const path = String.raw`C:\repo\_draft\a&copy;.ts`;
