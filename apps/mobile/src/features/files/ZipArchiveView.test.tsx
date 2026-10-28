@@ -313,3 +313,8 @@ it("keeps the archive and selected entry when the parent re-renders with a new r
   );
   expect(navigation.remove).not.toBeNull();
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});
