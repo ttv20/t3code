@@ -71,7 +71,7 @@ describe("KeybindingsSettings.logic", () => {
     for (const row of filtered) expect(rows).toContain(row);
     expect(filterKeybindingRows(rows, "  ")).toBe(rows);
   });
-  it.each(["pu", "pull request", "copy link", "thread id"])(
+  it.each(["pu", "pull request", "copy link", "thread"])(
     "finds the copy link shortcut with %s",
     (query) => {
       const rows = filterKeybindingRows(buildKeybindingRows(DEFAULT_RESOLVED_KEYBINDINGS), query);

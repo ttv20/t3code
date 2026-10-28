@@ -1,6 +1,7 @@
 import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
 import type { AnyRouter } from "@tanstack/react-router";
 import { EnvironmentId } from "@t3tools/contracts";
+import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 import { Atom, AtomRegistry } from "effect/reactivity";
@@ -11,6 +12,7 @@ import { fakeTimers, stubGlobal } from "../../test/render";
 const state = vi.hoisted(() => ({
   mode: "notifications",
   inApp: false,
+  language: "en" as "en" | "he",
   toast: vi.fn(),
   shells: null as unknown as { set: (id: string, value: unknown) => void },
   navigate: vi.fn(),
@@ -65,6 +67,8 @@ vi.mock(import("../hooks/useSettings"), async (original) => ({
     return () => state.settingsListeners.delete(listener);
   }) as never,
   getClientSettings: (() => ({
+    ...DEFAULT_CLIENT_SETTINGS,
+    interfaceLanguage: state.language,
     notificationMode: state.mode,
     inAppNotificationsEnabled: state.inApp,
   })) as never,
@@ -189,6 +193,7 @@ function setup() {
   stack.defer(() => testRegistry.dispose());
   state.mode = "notifications";
   state.inApp = false;
+  state.language = "en";
   state.settingsListeners.clear();
   registry.set(environmentIdsAtom, ["one", "two"]);
   state.shells.set("one", shell());
@@ -241,22 +246,30 @@ it.each(["hasPendingApprovals", "hasPendingUserInput"] as const)(
   },
 );
 
-it("holds a completion through a continuation gap and notifies once it settles", async () => {
-  await using app = setup();
-  app.start();
-  using _timers = fakeTimers();
-  const finished = (turnId: string, completedAt: string) => ({
-    latestTurn: { turnId, state: "completed", completedAt },
-  });
-  state.shells.set("one", shell(finished("turn-1", "2026-09-13T07:00:01.000Z")));
-  state.shells.set(
-    "one",
-    shell({ latestTurn: { turnId: "turn-2", state: "running", completedAt: null } }),
-  );
-  state.shells.set("one", shell(finished("turn-2", "2026-09-13T07:00:02.000Z")));
-  expect(TestNotification.sent).toEqual([]);
-  await vi.advanceTimersByTimeAsync(WORKING_EXIT_GRACE_MS - 1);
-  expect(TestNotification.sent).toEqual([]);
-  await vi.advanceTimersByTimeAsync(1);
-  expect(TestNotification.sent.map((sent) => sent.title)).toEqual(["Thread completed"]);
-});
+it.each([
+  ["en", "Thread completed"],
+  ["he", "השיחה הושלמה"],
+] as const)(
+  "notifies once in the current language (%s) after a continuation gap",
+  async (language, title) => {
+    await using app = setup();
+    app.start();
+    using _timers = fakeTimers();
+    const finished = (turnId: string, completedAt: string) => ({
+      latestTurn: { turnId, state: "completed", completedAt },
+    });
+    state.shells.set("one", shell(finished("turn-1", "2026-09-13T07:00:01.000Z")));
+    state.shells.set(
+      "one",
+      shell({ latestTurn: { turnId: "turn-2", state: "running", completedAt: null } }),
+    );
+    state.shells.set("one", shell(finished("turn-2", "2026-09-13T07:00:02.000Z")));
+    expect(TestNotification.sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(WORKING_EXIT_GRACE_MS - 1);
+    expect(TestNotification.sent).toEqual([]);
+    state.language = language;
+    await vi.advanceTimersByTimeAsync(1);
+    expect(TestNotification.sent.map((sent) => sent.title)).toEqual([title]);
+    expect(TestNotification.sent[0]?.options.body).toBe("Test thread");
+  },
+);

@@ -140,7 +140,7 @@ describe("installPasskeyBridge", () => {
     })) as PublicKeyCredential;
 
     assert.strictEqual((credential.response as AuthenticatorAssertionResponse).userHandle, null);
-    const json = credential.toJSON() as { response: Record<string, unknown> };
+    const json = credential.toJSON();
     assert.notProperty(json.response, "userHandle");
   });
 
