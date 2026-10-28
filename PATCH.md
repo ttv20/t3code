@@ -37,6 +37,7 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 ## Android local completion notifications
 
 - Settings → Notifications can enable local completion alerts without signing in or configuring T3 Connect or Firebase. Notifications require Android's permission.
+- Android's app battery settings may also need to allow background activity so the connection stays active. See [Mobile notifications](docs/user/mobile-notifications.md#local-completion-alerts-on-android).
 - While the app receives live updates in the background, a completed turn can show a notification that opens its thread. The notification title follows the interface language; the thread title retains its original text.
 - Initial snapshots and reconnections do not replay old completions. Active-app viewing, interrupted work, and environments already covered by registered push delivery do not produce duplicate local alerts.
 - This uses the existing connection. It does not keep Android awake or guarantee delivery after Android pauses the app or its connection.
