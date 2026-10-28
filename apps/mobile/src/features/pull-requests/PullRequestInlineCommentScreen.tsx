@@ -35,7 +35,7 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
   const body = editedBody ?? saved?.body ?? "";
   const detail = useEnvironmentQuery(composerPullRequests.detail(pullRequestTarget(params)));
   const { refresh: refreshDetail } = detail;
-  useFocusEffect(() => refreshDetail());
+  useFocusEffect(refreshDetail);
   const permissions = usePullRequestPermissions(params, detail.data);
   const stale = detail.data && detail.data.headSha !== params.headSha;
   const pending = useRef(false);
@@ -131,20 +131,24 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
         <Button
           label={uiT("Delete draft")}
           onPress={() =>
-            Dialog.alert("Delete this draft?", "Your other review comments will be kept.", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: () => {
-                  store.update((draft) => ({
-                    ...draft,
-                    comments: draft.comments.filter((comment) => comment.id !== saved.id),
-                  }));
-                  navigation.goBack();
+            Dialog.alert(
+              uiT("Delete this draft?"),
+              uiT("Your other review comments will be kept."),
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    store.update((draft) => ({
+                      ...draft,
+                      comments: draft.comments.filter((comment) => comment.id !== saved.id),
+                    }));
+                    navigation.goBack();
+                  },
                 },
-              },
-            ])
+              ],
+            )
           }
         />
       ) : null}

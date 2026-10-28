@@ -48,7 +48,7 @@ export function ThreadPullRequestsSheet(
     project: selectedThreadProject,
     runtime: selectedEnvironmentRuntime,
   });
-  const rowInputs = useMemo(() => ({ lines, actions }), [lines, actions]);
+  const rowInputs = { lines, actions };
   const { singular } = actions.terminology;
   const title = uiT("Linked {0}", { "0": uiT(actions.terminology.plural) });
 

@@ -107,8 +107,9 @@ export function FloatingWorkingControl(props: {
   );
   const separationProgress = useSharedValue(props.showScrollToEnd ? 1 : 0);
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- animates the Reanimated separation value when scroll-to-end visibility changes
   useEffect(() => {
-    separationProgress.value = withTiming(props.showScrollToEnd ? 1 : 0, CONTROL_TIMING);
+    separationProgress.set(withTiming(props.showScrollToEnd ? 1 : 0, CONTROL_TIMING));
   }, [props.showScrollToEnd, separationProgress]);
 
   const lift = props.lift;
@@ -134,14 +135,15 @@ export function FloatingWorkingControl(props: {
     }
     const first = measuredWidthRef.current === null;
     measuredWidthRef.current = width;
-    capsuleWidth.value = first ? width : withTiming(width, CONTROL_TIMING);
+    capsuleWidth.set(first ? width : withTiming(width, CONTROL_TIMING));
   };
   const hasStatus = props.status !== null;
   const hasCapsule = hasStatus || hasQueue || hasAgents || hasPreview;
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- clears the Reanimated capsule width value and measured width when the status goes away
   useEffect(() => {
     if (!hasStatus) {
       measuredWidthRef.current = null;
-      capsuleWidth.value = null;
+      capsuleWidth.set(null);
     }
   }, [capsuleWidth, hasStatus]);
   const capsuleStyle = useAnimatedStyle(() => ({
@@ -251,7 +253,7 @@ export function FloatingWorkingControl(props: {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={uiT("Open queue, {0} messages", { "0": props.queuedCount })}
-          accessibilityHint={uiT("Opens queued messages for reordering, steering, or removal")}
+          accessibilityHint={uiT("Opens queued messages to send now, edit, or remove")}
           onPress={props.onOpenQueue}
           onLayout={(event) => setQueueWidth(settleWidth(event.nativeEvent.layout.width))}
           style={{ maxWidth: Math.min(overlayWidth, windowWidth) * 0.45 }}
@@ -581,8 +583,9 @@ function WorkingDuration(props: {
   );
 }
 
-export function WorkingTimer(props: { readonly startedAt: string }) {
+function WorkingTimer(props: { readonly startedAt: string }) {
   const { t: uiT } = useUiLanguage();
+
   const nowMs = useVisibleSecondClock(true);
   return (
     <SystemText

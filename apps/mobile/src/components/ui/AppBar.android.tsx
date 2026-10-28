@@ -1,13 +1,7 @@
 import { useUiLanguage } from "../../i18n";
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  BackHandler,
-  Keyboard,
-  Pressable,
-  TextInput,
-  type TextInputInstance,
-  View,
-} from "react-native";
+import { useRef, useState } from "react";
+import { Keyboard, Pressable, TextInput, type TextInputInstance, View } from "react-native";
+import { useHardwareBack } from "../../lib/backHandler";
 import { useToolbarLayout } from "./useToolbarLayout";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { AndroidWorkspaceSidebarButton } from "../../features/layout/workspace-sidebar-toolbar";
@@ -31,19 +25,15 @@ export function AppBar(props: AppBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const searching = search !== undefined && (searchOpen || search.value.length > 0);
   const onSearchChange = search?.onChangeText;
-  const closeSearch = useCallback(() => {
+  const closeSearch = () => {
     onSearchChange?.("");
     setSearchOpen(false);
     Keyboard.dismiss();
-  }, [onSearchChange]);
-  useEffect(() => {
-    if (!searching || search?.mode === "inline") return;
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      closeSearch();
-      return true;
-    });
-    return () => subscription.remove();
-  }, [closeSearch, searching, search?.mode]);
+  };
+  useHardwareBack(searching && search?.mode !== "inline", () => {
+    closeSearch();
+    return true;
+  });
   const menuView = props.menus?.map((menu) => (
     <Menu
       key={menu.title}
@@ -172,7 +162,7 @@ export function AppBar(props: AppBarProps) {
               ...(search.refreshInToolbar && search.onRefresh
                 ? [
                     {
-                      accessibilityLabel: search.refreshAccessibilityLabel ?? "Refresh",
+                      accessibilityLabel: search.refreshAccessibilityLabel ?? uiT("Refresh"),
                       icon: "arrow.clockwise" as const,
                       onPress: search.onRefresh,
                     },

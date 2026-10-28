@@ -1,15 +1,15 @@
+import { currentUiLocale, currentUiTranslator } from "../../currentUiTranslator";
 import type { UiLocale } from "@t3tools/client-runtime/i18n";
-import { useUiLanguage } from "../../i18n";
+
 import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { Atom } from "effect/reactivity";
-import { useEffect } from "react";
+import { AsyncResult, Atom } from "effect/reactivity";
 
 import { APP_VERSION } from "~/branding";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { useDesktopUpdateState } from "~/state/desktopUpdate";
+import { desktopUpdateStateAtom } from "~/state/desktopUpdate";
 import { serverEnvironment } from "~/state/server";
 import { resolveVersionMismatch } from "~/versionSkew";
 import type { ServerUpdateOutcome, ServerUpdateTarget } from "../ServerUpdateAction";
@@ -316,37 +316,38 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale:
   }
 }
 
-let notifiedNotAppliedVersion: string | null = null;
-
-export function DesktopUpdateLaunchNotice() {
-  const { t: uiT, locale } = useUiLanguage();
-  const notAppliedVersion = useDesktopUpdateState()?.notAppliedVersion ?? null;
-
-  useEffect(() => {
-    const saved = takeSavedUpdateEverythingResult();
-    if (!saved) return;
+/** Reports, once per launch, how the update run that restarted the app ended. */
+export function startDesktopUpdateLaunchNotice(): () => void {
+  const locale = currentUiLocale();
+  const saved = takeSavedUpdateEverythingResult();
+  if (saved) {
     const handedOff = saved.handedOff ?? [];
     showUpdateEverythingResult(
       { ...saved, restarting: handedOff.map((server) => server.label) },
       locale,
     );
     followHandedOffServers(handedOff, locale);
-  }, [locale]);
+  }
 
-  useEffect(() => {
-    if (notAppliedVersion === null || notifiedNotAppliedVersion === notAppliedVersion) return;
-    notifiedNotAppliedVersion = notAppliedVersion;
-    toastManager.add(
-      stackedThreadToast({
-        type: "error",
-        title: uiT("Update did not apply"),
-        description: uiT("T3 Code is still on {0}. Install {1} again from the update button.", {
-          "0": APP_VERSION,
-          "1": notAppliedVersion,
+  let notifiedNotAppliedVersion: string | null = null;
+  return appAtomRegistry.subscribe(
+    desktopUpdateStateAtom,
+    (result) => {
+      const notAppliedVersion =
+        AsyncResult.getOrElse(result, () => null)?.notAppliedVersion ?? null;
+      if (notAppliedVersion === null || notifiedNotAppliedVersion === notAppliedVersion) return;
+      notifiedNotAppliedVersion = notAppliedVersion;
+      toastManager.add(
+        stackedThreadToast({
+          type: "error",
+          title: currentUiTranslator()("Update did not apply"),
+          description: currentUiTranslator()(
+            "T3 Code is still on {0}. Install {1} again from the update button.",
+            { "0": APP_VERSION, "1": notAppliedVersion },
+          ),
         }),
-      }),
-    );
-  }, [notAppliedVersion, uiT]);
-
-  return null;
+      );
+    },
+    { immediate: true },
+  );
 }

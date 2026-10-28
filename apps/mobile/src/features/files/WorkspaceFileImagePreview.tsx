@@ -1,5 +1,5 @@
 import { useUiLanguage } from "../../i18n";
-import { useId, useMemo, useState } from "react";
+import { useId, useState } from "react";
 import { Image, Pressable, View } from "react-native";
 
 import { FilePreviewLoading } from "./FilePreviewFeedback";
@@ -20,10 +20,7 @@ function ResolvedWorkspaceFileImagePreview(props: {
   const [preview, setPreview] = useState<FilePreviewSource | null>(null);
   const sourceIdentifier = useId();
   const mediaActions = useMediaActions(props.actionsSource);
-  const imageSource = useMemo(
-    () => ({ uri: props.uri, cache: "force-cache" as const }),
-    [props.uri],
-  );
+  const imageSource = { uri: props.uri, cache: "force-cache" as const };
 
   return (
     <View className="relative flex-1 bg-subtle">

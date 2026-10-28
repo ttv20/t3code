@@ -6,7 +6,7 @@ import { copyTextWithHaptic } from "../../../lib/copyTextWithHaptic";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../../state/preferences";
 import { serverEnvironment } from "../../../state/server";
 import type { SettingsTarget } from "../settings-environment-filter";
-import { SettingsActionRow } from "./SettingsActionRow";
+import { ListActionRow as SettingsActionRow } from "../../../components/ui/ListActionRow";
 import { SettingsSection } from "./SettingsSection";
 
 /** Suggests `t3 doctor` on every machine whose database still holds at least 1 GiB of freed pages. */
@@ -42,7 +42,7 @@ export function DatabaseStorageNotice({
           icon="doc.on.doc"
           label={targets.find((target) => target.environmentId === environmentId)?.label ?? ""}
           description={status.compactCommand}
-          detail={`${(status.reclaimableBytes / 1024 ** 3).toFixed(1)} GiB`}
+          detail={uiT("{0} GiB", { "0": (status.reclaimableBytes / 1024 ** 3).toFixed(1) })}
           onPress={() => copyTextWithHaptic(status.compactCommand, { target: "command" })}
         />
       ))}

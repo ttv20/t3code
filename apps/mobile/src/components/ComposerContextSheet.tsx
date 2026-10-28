@@ -119,7 +119,7 @@ export function ComposerContextSheet(props: {
       : undefined;
   if (record && !("payload" in record) && (record.kind === "image" || record.kind === "file")) {
     const mimeType = videoMimeType(record) ?? record.mimeType;
-    const previewKind = filePreviewKind(record);
+    const previewKind = filePreviewKind(record, { richDocuments: false });
     const resource = {
       _tag: "attachment" as const,
       attachmentId: record.attachmentId,
@@ -284,18 +284,23 @@ export function ComposerContextSheet(props: {
                   label={uiT("Requested changes")}
                   value={record.styleChanges.join("\n")}
                 />
-                {record.elements?.map((element, index) => (
-                  <View key={`${element.selector ?? element.tagName}:${index}`} className="gap-3">
-                    <ContextField
-                      label={uiT("Element")}
-                      value={element.componentName ?? element.tagName}
-                    />
-                    <ContextField label={uiT("Selector")} value={element.selector} code />
-                    <ContextSource source={element.source} />
-                    <ContextField label={uiT("HTML")} value={element.htmlPreview} code />
-                    <ContextField label={uiT("Styles")} value={element.styles} code />
-                  </View>
-                ))}
+                {record.elements?.map(
+                  (element, index) => (
+                    /* oxlint-disable react/no-array-index-key -- Captured DOM elements are a fixed snapshot without persistent element IDs. */ <View
+                      key={`${element.selector ?? element.tagName}:${index}`}
+                      className="gap-3"
+                    >
+                      <ContextField
+                        label={uiT("Element")}
+                        value={element.componentName ?? element.tagName}
+                      />
+                      <ContextField label={uiT("Selector")} value={element.selector} code />
+                      <ContextSource source={element.source} />
+                      <ContextField label={uiT("HTML")} value={element.htmlPreview} code />
+                      <ContextField label={uiT("Styles")} value={element.styles} code />
+                    </View>
+                  ) /* oxlint-enable react/no-array-index-key */,
+                )}
               </>
             ) : null}
             {record.kind === "element" ? (
@@ -337,6 +342,9 @@ export function ComposerContextSheet(props: {
                   />
                 ) : null}
               </View>
+            ) : null}
+            {record.kind === "environment" ? (
+              <ContextField label={uiT("Machine")} value={record.label} />
             ) : null}
             {record.kind === "skill" ? (
               <View className="gap-3">

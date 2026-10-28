@@ -34,6 +34,13 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 - Clicking the meters opens the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Available reset credits can be redeemed through the existing permission checks and confirmation dialog. Manual refresh uses upstream's targeted provider refresh.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
 
+## Android local completion notifications
+
+- Settings → Notifications can enable local completion alerts without signing in or configuring T3 Connect or Firebase. Notifications require Android's permission.
+- While the app receives live updates in the background, a completed turn can show a notification that opens its thread. The notification title follows the interface language; the thread title retains its original text.
+- Initial snapshots and reconnections do not replay old completions. Active-app viewing, interrupted work, and environments already covered by registered push delivery do not produce duplicate local alerts.
+- This uses the existing connection. It does not keep Android awake or guarantee delivery after Android pauses the app or its connection.
+
 ## Interface translation and direction
 
 - Web, desktop, and native mobile share English, Hebrew, Arabic, and Persian translation catalogs. New installations follow the browser or device language; language and direction preferences are saved per client. An explicit LTR or RTL preference overrides the language's automatic layout direction.

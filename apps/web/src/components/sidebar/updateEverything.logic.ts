@@ -7,7 +7,6 @@ import {
   resolveServerSelfUpdateCapability,
   resolveVersionMismatch,
   supportsDesktopAppUpdate,
-  supportsServerUpdateThreadContinuation,
 } from "~/versionSkew";
 import type { ServerUpdateOutcome, ServerUpdateTarget } from "../ServerUpdateAction";
 
@@ -47,9 +46,7 @@ export function collectRestartingMachines(
     return [
       {
         environmentId: machine.environmentId,
-        continuesThreads:
-          config.environment.capabilities.threadRestartContinuation === true &&
-          config.settings.continueThreadsAfterServerUpdate === true,
+        continuesThreads: config.settings.continueThreadsAfterServerUpdate === true,
       },
     ];
   });
@@ -116,8 +113,6 @@ export function collectServerUpdateTargets(
       selfUpdate,
       installation: config.environment.capabilities.serverInstallation,
       desktopAppUpdate,
-      threadContinuation: supportsServerUpdateThreadContinuation(config),
-      continueThreadsAfterServerUpdate: config.settings.continueThreadsAfterServerUpdate ?? false,
       targetVersion,
     });
   }
@@ -371,6 +366,11 @@ export function getUpdateEverythingToastView(
 
 export interface UpdateEverythingPlan {
   readonly localVersion: string | null;
+  /** Machines whose servers this app hosts; this app's update restarts them. */
+  readonly localMachines: ReadonlyArray<{
+    readonly environmentId: EnvironmentId;
+    readonly label: string;
+  }>;
   readonly servers: ReadonlyArray<
     Pick<ServerUpdateTarget, "environmentId" | "serverLabel" | "selfUpdate" | "targetVersion">
   >;
@@ -379,23 +379,30 @@ export interface UpdateEverythingPlan {
     readonly label: string;
     readonly providers: ReadonlyArray<string>;
   }>;
+  readonly skipped: ReadonlyArray<SkippedMachine>;
+}
+
+export interface UpdateEverythingRow {
+  readonly environmentId: EnvironmentId | null;
+  readonly label: string;
+  readonly app: "this-app" | "server" | "desktop-app" | null;
+  readonly skipped: string | null;
+  readonly providers: ReadonlyArray<string>;
 }
 
 function joinList(parts: ReadonlyArray<string>, locale: UiLocale = "en"): string {
   return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(parts);
 }
 
-/**
- * Text for the sidebar tooltip and the confirmation. `summary` reads like
- * "Update this app, 2 servers, and 3 providers". `lines` has one entry per
- * machine, this app first, such as "alvin: server to 0.0.50, Codex, Claude".
- */
+/** One row per machine: this app's machines first, then servers, provider-only, and skipped. */
 export function describeUpdateEverything(
   plan: UpdateEverythingPlan,
   locale: UiLocale = "en",
 ): {
   readonly summary: string;
-  readonly lines: ReadonlyArray<string>;
+  readonly version: string | null;
+  readonly providerCount: number;
+  readonly rows: ReadonlyArray<UpdateEverythingRow>;
 } {
   const t = createUiTranslator(locale);
   const providerCount = plan.providerMachines.reduce(
@@ -414,30 +421,46 @@ export function describeUpdateEverything(
   const list = joinList(parts, locale);
   const summary = t("Update {0}", { "0": list });
 
-  const machines = new Map<EnvironmentId, { label: string; items: string[] }>();
-  const itemsFor = (environmentId: EnvironmentId, label: string) => {
-    const existing = machines.get(environmentId);
-    if (existing) return existing.items;
-    const items: string[] = [];
-    machines.set(environmentId, { label, items });
-    return items;
+  const rows = new Map<EnvironmentId | null, UpdateEverythingRow>();
+  const update = (
+    environmentId: EnvironmentId | null,
+    label: string,
+    change: Partial<UpdateEverythingRow>,
+  ) => {
+    const row = rows.get(environmentId) ?? {
+      environmentId,
+      label,
+      app: null,
+      skipped: null,
+      providers: [],
+    };
+    rows.set(environmentId, { ...row, ...change });
   };
+  if (plan.localVersion) {
+    if (plan.localMachines.length === 0) update(null, "This app", { app: "this-app" });
+    for (const machine of plan.localMachines) {
+      update(machine.environmentId, machine.label, { app: "this-app" });
+    }
+  }
   for (const server of plan.servers) {
-    itemsFor(server.environmentId, server.serverLabel).push(
-      server.selfUpdate === "desktop-managed"
-        ? t("desktop app update")
-        : t("server to {0}", { "0": server.targetVersion }),
-    );
+    update(server.environmentId, server.serverLabel, {
+      app: server.selfUpdate === "desktop-managed" ? "desktop-app" : "server",
+    });
   }
   for (const machine of plan.providerMachines) {
-    itemsFor(machine.environmentId, machine.label).push(...machine.providers);
+    update(machine.environmentId, machine.label, { providers: machine.providers });
+  }
+  for (const machine of plan.skipped) {
+    update(machine.environmentId, machine.label, { skipped: machine.reason });
   }
 
   return {
     summary,
-    lines: [
-      ...(plan.localVersion ? [t("This app: {0}, restarts last", { "0": plan.localVersion })] : []),
-      ...Array.from(machines.values(), ({ label, items }) => `${label}: ${items.join(", ")}`),
-    ],
+    version:
+      plan.localVersion ??
+      plan.servers.find((server) => server.selfUpdate !== "desktop-managed")?.targetVersion ??
+      null,
+    providerCount,
+    rows: Array.from(rows.values()),
   };
 }

@@ -47,27 +47,25 @@ export function QuestionAttachments(props: {
   const [previewVideo, setPreviewVideo] = useState<VideoPreviewSource | null>(null);
   const configs = useServerConfigs();
   const drafts = useAtomValue(composerDraftsAtom);
-  const scopeKey = JSON.stringify([
-    selectedThread?.environmentId,
-    selectedThread?.id,
-    props.requestId,
-    props.question.id,
-  ]);
-  // Unmounted inputs never emit onBlur; explicitly release keyboard ownership.
   const focusedRef = useRef(false);
   const onInputFocusChange = props.onInputFocusChange;
-  const releaseFocus = useEffectEvent(() => {
-    if (focusedRef.current) onInputFocusChange?.(false);
-  });
-  useEffect(() => () => releaseFocus(), []);
-  const pickerScope = useRef<{ key: string; active: boolean } | null>(null);
+  // The caller keys this component by request and question, so unmounting ends any open
+  // picker's scope.
+  const pickerScope = useRef<{ active: boolean }>({ active: false });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- opens a scope that native picker and paste callbacks check, and closes it on unmount
   useEffect(() => {
-    const scope = { key: scopeKey, active: true };
+    const scope = { active: true };
     pickerScope.current = scope;
     return () => {
       scope.active = false;
     };
-  }, [scopeKey]);
+  }, []);
+  // Unmounted inputs never emit onBlur; explicitly release keyboard ownership.
+  const releaseFocus = useEffectEvent(() => {
+    if (focusedRef.current) onInputFocusChange?.(false);
+  });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- releases keyboard ownership on unmount, since an unmounted native input never emits blur
+  useEffect(() => () => releaseFocus(), []);
   const append = (
     key: string,
     attachments: Parameters<typeof appendComposerDraftAttachments>[1],
@@ -89,12 +87,7 @@ export function QuestionAttachments(props: {
   };
   const paste = useNativePaste((uris) => {
     const scope = pickerScope.current;
-    if (
-      !selectedThread ||
-      props.disabled ||
-      !configs.get(selectedThread.environmentId)?.environment.capabilities.questionAttachments
-    )
-      return;
+    if (!selectedThread || props.disabled || !configs.get(selectedThread.environmentId)) return;
     const key = questionAttachmentDraftKey(
       selectedThread.environmentId,
       selectedThread.id,
@@ -108,7 +101,7 @@ export function QuestionAttachments(props: {
     })
       .then(async (images) => {
         if (
-          scope?.active &&
+          scope.active &&
           (appAtomRegistry.get(questionAttachmentPreparationAtom)[key] ?? 0) > 0
         ) {
           if (append(key, images) > 0)
@@ -126,7 +119,7 @@ export function QuestionAttachments(props: {
   if (!selectedThread || props.question.allowCustomAnswer === false) return null;
   const { environmentId, id: threadId } = selectedThread;
   const capabilities = configs.get(environmentId)?.environment.capabilities;
-  const canAttach = capabilities?.questionAttachments === true;
+  const canAttach = capabilities !== undefined;
   const key = questionAttachmentDraftKey(
     environmentId,
     threadId,
@@ -152,7 +145,7 @@ export function QuestionAttachments(props: {
       const picked = "files" in result ? result.files : result.attachments;
       // Resolution on another client clears the reservation while the picker is open.
       if (
-        !scope?.active ||
+        !scope.active ||
         (appAtomRegistry.get(questionAttachmentPreparationAtom)[key] ?? 0) === 0
       ) {
         await releaseUnusedComposerAttachmentFiles(picked);
@@ -176,7 +169,7 @@ export function QuestionAttachments(props: {
       {canAttach ? (
         <ComposerAttachmentButton
           disabled={props.disabled}
-          supportsFiles={Boolean(capabilities?.fileAttachments)}
+          supportsFiles
           onPickMedia={() => pick("media")}
           onPickFiles={() => pick("files")}
         />

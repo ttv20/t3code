@@ -1,7 +1,10 @@
 import { render } from "../../../test/render";
 import { createRef, useLayoutEffect, useState } from "react";
 import { expect, it, vi } from "vite-plus/test";
-import { ComposerPromptEditor, type ComposerPromptEditorHandle } from "../ComposerPromptEditor";
+import {
+  ComposerPromptEditorTiptap as ComposerPromptEditor,
+  type ComposerPromptEditorHandle,
+} from "../ComposerPromptEditorTiptap";
 import { observeResize } from "../../lib/observeResize";
 import { ComposerPromptRow } from "./ComposerPromptRow";
 import "~/index.css";
@@ -66,7 +69,7 @@ function expectClearance(container: HTMLElement, direction: "ltr" | "rtl", selec
 }
 
 it.each(["ltr", "rtl"] as const)(
-  "keeps the collapsed placeholder clear of growing actions in %s",
+  "keeps the inline placeholder clear of growing actions in %s",
   async (direction) => {
     for (const width of [360, 700]) {
       // The geometry fixture has no navigation.

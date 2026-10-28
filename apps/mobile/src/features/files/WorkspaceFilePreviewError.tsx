@@ -1,6 +1,5 @@
 import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
-import { useCallback } from "react";
 import { View } from "react-native";
 
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -19,10 +18,10 @@ export function WorkspaceFilePreviewError(props: {
   const { environmentId, onRetry } = props;
   const environment = useEnvironmentPresentation(environmentId);
   const retryEnvironment = useAtomCommand(environmentCatalog.retryNow, "environment retry");
-  const retryConnection = useCallback(() => {
+  const retryConnection = () => {
     if (environmentId !== null) void retryEnvironment(environmentId);
     onRetry();
-  }, [environmentId, onRetry, retryEnvironment]);
+  };
 
   if (props.reason === "disconnected") {
     return (
@@ -47,8 +46,8 @@ export function WorkspaceFilePreviewError(props: {
     <View className="flex-1 items-center justify-center bg-sheet px-6">
       <EmptyState
         title={uiT("Preview unavailable")}
-        detail="This file may be missing, unsupported, or unavailable on this environment."
-        actionLabel="Try again"
+        detail={uiT("This file may be missing, unsupported, or unavailable on this environment.")}
+        actionLabel={uiT("Try again")}
         onAction={props.onRetry}
       />
     </View>

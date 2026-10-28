@@ -1,9 +1,10 @@
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useState } from "react";
 import { Pressable, type ColorValue } from "react-native";
 
+import { useDeadlinePassed } from "../../lib/clock";
 import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 
 const COPY_FEEDBACK_DURATION_MS = 1200;
@@ -22,17 +23,12 @@ export const CopyTextButton = memo(function CopyTextButton(props: {
   readonly buttonSize?: number;
 }) {
   const { t: uiT } = useUiLanguage();
-  const [copied, setCopied] = useState(false);
-  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(
-    () => () => {
-      if (resetTimeoutRef.current) {
-        clearTimeout(resetTimeoutRef.current);
-      }
-    },
-    [],
+  const [copiedAtMs, setCopiedAtMs] = useState<number | null>(null);
+  const feedbackEnded = useDeadlinePassed(
+    copiedAtMs === null ? null : copiedAtMs + COPY_FEEDBACK_DURATION_MS,
   );
+  const copied = copiedAtMs !== null && !feedbackEnded;
 
   return (
     <Pressable
@@ -52,14 +48,7 @@ export const CopyTextButton = memo(function CopyTextButton(props: {
           Dialog.alert(uiT("Could not copy"), uiT("Try again."));
           return;
         }
-        setCopied(true);
-        if (resetTimeoutRef.current) {
-          clearTimeout(resetTimeoutRef.current);
-        }
-        resetTimeoutRef.current = setTimeout(() => {
-          setCopied(false);
-          resetTimeoutRef.current = null;
-        }, COPY_FEEDBACK_DURATION_MS);
+        setCopiedAtMs(Date.now());
       }}
       style={({ pressed }) => ({
         width: props.buttonSize ?? 30,

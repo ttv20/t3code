@@ -36,9 +36,13 @@ describe("saved chat typography", () => {
           }),
         );
         yield* Effect.gen(function* () {
-          const first = yield* MobilePreferences.make();
+          const first = yield* MobilePreferences.MobilePreferencesStore.pipe(
+            Effect.provide(MobilePreferences.layer),
+          );
           yield* first.savePatch({ chatFontSize, chatLineHeight });
-          const reopened = yield* MobilePreferences.make();
+          const reopened = yield* MobilePreferences.MobilePreferencesStore.pipe(
+            Effect.provide(MobilePreferences.layer),
+          );
           expect(yield* reopened.load).toMatchObject({
             chatFontSize,
             chatLineHeight,

@@ -21,7 +21,7 @@ export function ThreadStatusLine(props: {
       {props.icon}
       <span className="min-w-0 truncate">{uiT(props.label)}</span>
       <span aria-hidden="true">·</span>
-      <InlineButton tone="muted" disabled={props.actionDisabled} onClick={props.onAction}>
+      <InlineButton disabled={props.actionDisabled} onClick={props.onAction}>
         {uiT(props.actionLabel)}
       </InlineButton>
     </div>

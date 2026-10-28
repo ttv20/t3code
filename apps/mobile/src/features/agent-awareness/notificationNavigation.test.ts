@@ -1,4 +1,5 @@
-import type { NotificationResponse } from "expo-notifications";
+import { foregroundNotificationBehavior } from "./foregroundNotificationBehavior";
+import type { Notification, NotificationResponse } from "expo-notifications";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { consumeLastAgentNotificationResponse } from "./notificationResponseConsumer";
@@ -126,4 +127,28 @@ describe("routeAgentNotificationResponseOnce", () => {
 
     expect(navigations).toEqual(["/threads/env/thread"]);
   });
+});
+
+it("suppresses a local completion that arrives after foregrounding, while retaining push presentation rules", () => {
+  const local = responseWithData({
+    localCompletion: true,
+    environmentId: "env",
+    threadId: "other-thread",
+  });
+  expect(
+    foregroundNotificationBehavior(
+      local.notification as Notification,
+      "/threads/env/current-thread",
+    ),
+  ).toMatchObject({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false });
+  const push = responseWithData({ environmentId: "env", threadId: "other-thread" });
+  expect(
+    foregroundNotificationBehavior(
+      push.notification as Notification,
+      "/threads/env/current-thread",
+    ),
+  ).toMatchObject({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true });
+  expect(
+    foregroundNotificationBehavior(push.notification as Notification, "/threads/env/other-thread"),
+  ).toMatchObject({ shouldShowBanner: false });
 });

@@ -29,8 +29,8 @@ function AccountSummary({ account }: { readonly account: UsageLimitsReport["acco
     <>
       {label.includes("@") ? (
         <RedactedSensitiveText
-          key={label}
-          value={label}
+          key={uiT(label)}
+          value={uiT(label)}
           ariaLabel={uiT("Toggle account label visibility")}
           revealTooltip="Click to reveal account"
           hideTooltip="Click to hide account"
@@ -60,7 +60,6 @@ export function usageLimitsBannerItem(
   return {
     id,
     variant: "info",
-    priority: "notice",
     icon: <GaugeIcon />,
     title: "Usage limits",
     description: summary,

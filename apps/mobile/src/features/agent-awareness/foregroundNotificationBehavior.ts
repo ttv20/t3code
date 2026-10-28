@@ -20,6 +20,7 @@ export function foregroundNotificationBehavior(
   notification: Notification,
   deepLinkOnScreen: string | null,
 ): NotificationBehavior {
+  if (notification.request.content.data?.localCompletion === true) return SUPPRESS;
   const target = extractAgentNotificationDeepLink({ notification });
   if (target !== null && target === deepLinkOnScreen) {
     return SUPPRESS;

@@ -2,7 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { DownloadIcon, PlusIcon } from "lucide-react";
 import type { ChangeEvent, DragEvent, UIEvent } from "react";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import {
   getCustomThemes,
@@ -139,18 +139,75 @@ function ThemeJsonEditor({
 
 type ImportableThemeFile = { name: string; size: number; text: () => Promise<string> };
 
+interface ThemeImportCallbacks {
+  onImported: (theme: ThemeDefinition) => boolean;
+  onImportedMany: (themes: ReadonlyArray<ThemeDefinition>, context: { updated: boolean }) => void;
+}
+
 export function ThemeImportDialog({
   open,
   onOpenChange,
   onImported,
   onImportedMany,
-}: {
+}: ThemeImportCallbacks & {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImported: (theme: ThemeDefinition) => boolean;
-  onImportedMany: (themes: ReadonlyArray<ThemeDefinition>, context: { updated: boolean }) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+
+  // Each opening is a fresh session: its body remounts with clean state, and
+  // closing aborts every read, search, and install the session started.
+  const [session, setSession] = useState(() => ({
+    open,
+    id: 0,
+    controller: new AbortController(),
+  }));
+  if (session.open !== open) {
+    setSession(
+      open ? { open, id: session.id + 1, controller: new AbortController() } : { ...session, open },
+    );
+  }
+  const close = () => {
+    session.controller.abort();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) onOpenChange(true);
+        else close();
+      }}
+    >
+      <DialogPopup className="max-w-3xl overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>{uiT("Add a theme")}</DialogTitle>
+        </DialogHeader>
+        <ThemeImportBody
+          key={session.id}
+          session={session.controller}
+          onClose={close}
+          onImported={onImported}
+          onImportedMany={onImportedMany}
+        />
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+function ThemeImportBody({
+  session,
+  onClose,
+  onImported,
+  onImportedMany,
+}: ThemeImportCallbacks & {
+  session: AbortController;
+  onClose: () => void;
+}) {
+  const { t: uiT } = useUiLanguage();
+
+  const { signal } = session;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [json, setJson] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -158,27 +215,10 @@ export function ThemeImportDialog({
   const [isReading, setIsReading] = useState(false);
   const [isDropTarget, setIsDropTarget] = useState(false);
   const [conflicts, setConflicts] = useState<ReadonlyArray<ThemeDefinition> | null>(null);
+  // A newer read supersedes an older one still in flight.
   const importRequestRef = useRef(0);
-
-  const [renderedOpen, setRenderedOpen] = useState(open);
-  if (renderedOpen !== open) {
-    setRenderedOpen(open);
-    setIsDropTarget(false);
-    if (open) {
-      setJson("");
-      setFileName(null);
-      setError(null);
-      setIsReading(false);
-      setConflicts(null);
-    }
-  }
-  useEffect(() => {
-    if (!open) return;
-    importRequestRef.current += 1;
-    return () => {
-      importRequestRef.current += 1;
-    };
-  }, [open]);
+  const isCurrentRequest = (requestId: number) =>
+    requestId === importRequestRef.current && !signal.aborted;
 
   const readThemeFile = async (file: ImportableThemeFile) => {
     const oversized = describeOversizedThemeFile(file.size);
@@ -190,7 +230,7 @@ export function ThemeImportDialog({
     const requestId = ++importRequestRef.current;
     setIsReading(true);
     const fileText = await settlePromise(() => file.text());
-    if (requestId !== importRequestRef.current) return;
+    if (!isCurrentRequest(requestId)) return;
     setIsReading(false);
     if (fileText._tag === "Failure") {
       setError("Could not read that file. Paste the JSON below instead.");
@@ -205,7 +245,7 @@ export function ThemeImportDialog({
     const requestId = ++importRequestRef.current;
     setIsReading(true);
     return installThemeBatch(files, requestId).finally(() => {
-      if (requestId === importRequestRef.current) setIsReading(false);
+      if (isCurrentRequest(requestId)) setIsReading(false);
     });
   };
 
@@ -233,7 +273,7 @@ export function ThemeImportDialog({
         );
       }
     }
-    if (requestId !== importRequestRef.current) return;
+    if (!isCurrentRequest(requestId)) return;
     const installed: ThemeDefinition[] = [];
     const conflicting: ThemeDefinition[] = [];
     for (const theme of pairVsCodeThemes(resolveThemeLabelCollisions(parsed))) {
@@ -255,7 +295,7 @@ export function ThemeImportDialog({
     } else if (conflicting.length > 0) {
       setConflicts(conflicting);
     } else if (installed.length > 0) {
-      onOpenChange(false);
+      onClose();
     }
   };
 
@@ -267,7 +307,7 @@ export function ThemeImportDialog({
 
   const openFilePicker = () => {
     const bridge = window.desktopBridge;
-    if (bridge?.pickThemeFiles) {
+    if (bridge) {
       void bridge.pickThemeFiles().then((picked) => {
         if (!picked || picked.length === 0) return;
         readThemeFiles(
@@ -354,7 +394,7 @@ export function ThemeImportDialog({
     if (resolved.length > 0) onImportedMany(resolved, { updated: mode === "update" });
     setConflicts(null);
     if (failures.length > 0) setError(failures.join("; "));
-    else onOpenChange(false);
+    else onClose();
   };
 
   const handleSubmit = () => {
@@ -381,148 +421,135 @@ export function ThemeImportDialog({
         setError("Theme added, but it could not be selected. Try again.");
         return;
       }
-      onOpenChange(false);
+      onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "That theme file is invalid.");
     }
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) setError(null);
-        onOpenChange(nextOpen);
-      }}
-    >
-      <DialogPopup className="max-w-3xl overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>{uiT("Add a theme")}</DialogTitle>
-        </DialogHeader>
-        <DialogPanel>
-          <ThemeSearchSection
-            onInstalled={(themes, context) => {
-              onImportedMany(themes, context);
-              onOpenChange(false);
-            }}
-            open={open}
+    <DialogPanel>
+      <ThemeSearchSection
+        onInstalled={(themes, context) => {
+          onImportedMany(themes, context);
+          onClose();
+        }}
+        signal={signal}
+      />
+
+      <div className="flex items-center gap-3" aria-hidden>
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-muted-foreground text-2xs uppercase tracking-wider">
+          {uiT("or import a file")}
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {(() => {
+        const dropHandlers = {
+          onDragEnter: (event: DragEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            setIsDropTarget(true);
+          },
+          onDragOver: (event: DragEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            setIsDropTarget(true);
+          },
+          onDragLeave: (event: DragEvent<HTMLDivElement>) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+            setIsDropTarget(false);
+          },
+          onDrop: handleDrop,
+        };
+        const fileInput = (
+          <input
+            ref={fileInputRef}
+            accept=".json,application/json"
+            className="sr-only"
+            onChange={handleFileChange}
+            multiple
+            type="file"
           />
-
-          <div className="flex items-center gap-3" aria-hidden>
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-muted-foreground text-2xs uppercase tracking-wider">
-              {uiT("or import a file")}
-            </span>
-            <div className="h-px flex-1 bg-border" />
+        );
+        const chooseButton = (label = "Choose files") => (
+          <Button disabled={isReading} size="sm" variant="outline" onClick={openFilePicker}>
+            <DownloadIcon />
+            {isReading ? "Reading…" : label}
+          </Button>
+        );
+        const editorSection = () => (
+          <div className="space-y-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <label className="text-sm font-medium" htmlFor="theme-json-editor">
+                {uiT("Theme JSON")}
+              </label>
+            </div>
+            <ThemeJsonEditor id="theme-json-editor" onChange={setJson} value={json} />
           </div>
-
-          {(() => {
-            const dropHandlers = {
-              onDragEnter: (event: DragEvent<HTMLDivElement>) => {
-                event.preventDefault();
-                setIsDropTarget(true);
-              },
-              onDragOver: (event: DragEvent<HTMLDivElement>) => {
-                event.preventDefault();
-                setIsDropTarget(true);
-              },
-              onDragLeave: (event: DragEvent<HTMLDivElement>) => {
-                if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
-                setIsDropTarget(false);
-              },
-              onDrop: handleDrop,
-            };
-            const fileInput = (
-              <input
-                ref={fileInputRef}
-                accept=".json,application/json"
-                className="sr-only"
-                onChange={handleFileChange}
-                multiple
-                type="file"
-              />
-            );
-            const chooseButton = (label = "Choose files") => (
-              <Button disabled={isReading} size="sm" variant="outline" onClick={openFilePicker}>
-                <DownloadIcon />
-                {isReading ? uiT("Reading…") : uiT(label)}
+        );
+        if (conflicts) {
+          return (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+                <p className="text-sm font-medium">{uiT("Already installed")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {conflicts.map((theme) => theme.label).join(", ")}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" onClick={() => resolveConflicts("update")}>
+                  {uiT("Update existing")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => resolveConflicts("copy")}>
+                  {uiT("Keep both")}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setConflicts(null)}>
+                  {uiT("Back")}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => onClose()}>
+                  {uiT("Cancel")}
+                </Button>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-4">
+            <div
+              className={cn(
+                "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-3 transition-colors",
+                isDropTarget ? "border-ring bg-accent/20" : "border-border/80 bg-muted/20",
+              )}
+              {...dropHandlers}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{uiT("Theme file")}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {fileName ?? "Drop T3 Code or VS Code .json files"}
+                </p>
+              </div>
+              {chooseButton()}
+              {fileInput}
+            </div>
+            {editorSection()}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="ghost" onClick={() => onClose()}>
+                {uiT("Cancel")}
               </Button>
-            );
-            const editorSection = () => (
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-between gap-3">
-                  <label className="text-sm font-medium" htmlFor="theme-json-editor">
-                    {uiT("Theme JSON")}
-                  </label>
-                </div>
-                <ThemeJsonEditor id="theme-json-editor" onChange={setJson} value={json} />
-              </div>
-            );
-            if (conflicts) {
-              return (
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-                    <p className="text-sm font-medium">{uiT("Already installed")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {conflicts.map((theme) => theme.label).join(", ")}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button size="sm" onClick={() => resolveConflicts("update")}>
-                      {uiT("Update existing")}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => resolveConflicts("copy")}>
-                      {uiT("Keep both")}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setConflicts(null)}>
-                      {uiT("Back")}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)}>
-                      {uiT("Cancel")}
-                    </Button>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div className="space-y-4">
-                <div
-                  className={cn(
-                    "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-3 transition-colors",
-                    isDropTarget ? "border-ring bg-accent/20" : "border-border/80 bg-muted/20",
-                  )}
-                  {...dropHandlers}
-                >
-                  <div className="min-w-0 [unicode-bidi:plaintext]">
-                    <p className="text-sm font-medium">{uiT("Theme file")}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {fileName ?? uiT("Drop T3 Code or VS Code .json files")}
-                    </p>
-                  </div>
-                  {chooseButton()}
-                  {fileInput}
-                </div>
-                {editorSection()}
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                    {uiT("Cancel")}
-                  </Button>
-                  <Button disabled={!json.trim() || isReading} onClick={handleSubmit}>
-                    <PlusIcon />
-                    {uiT("Add theme")}
-                  </Button>
-                </div>
-              </div>
-            );
-          })()}
+              <Button disabled={!json.trim() || isReading} onClick={handleSubmit}>
+                <PlusIcon />
+                {uiT("Add theme")}
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
 
-          {error ? (
-            <Alert aria-live="polite" variant="error">
-              {error}
-            </Alert>
-          ) : null}
-        </DialogPanel>
-      </DialogPopup>
-    </Dialog>
+      {error ? (
+        <Alert aria-live="polite" variant="error">
+          {error}
+        </Alert>
+      ) : null}
+    </DialogPanel>
   );
 }

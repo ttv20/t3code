@@ -91,6 +91,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
     void handleNewThread(scopeProjectRef(environmentId, projectId));
   };
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- opens, updates and closes imperative toastManager toasts to match the current project clones
   useEffect(() => {
     const seen = new Set<ProjectId>();
     for (const clone of clones) {
@@ -221,6 +222,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
     uiT,
   ]);
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- closes every tracked clone toast in toastManager when the coordinator unmounts
   useEffect(
     () => () => {
       for (const tracked of toasts.current.values()) toastManager.close(tracked.toastId);

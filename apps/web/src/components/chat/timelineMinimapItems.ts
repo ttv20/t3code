@@ -3,6 +3,7 @@ import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
+import { parseThreadLinkHref } from "@t3tools/shared/threadLinks";
 import type { Nodes } from "mdast";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
@@ -87,7 +88,9 @@ function markdownNodeText(node: Nodes): string {
   if (node.type === "image" || node.type === "imageReference") return node.alt ?? "";
   if (!("children" in node)) return "";
   const separator = INLINE_PARENT_TYPES.has(node.type) ? "" : " ";
-  return node.children.map(markdownNodeText).join(separator);
+  const text = node.children.map(markdownNodeText).join(separator);
+  // A thread autolink's only text is its URL.
+  return node.type === "link" && parseThreadLinkHref(text) !== null ? "a thread" : text;
 }
 
 function compactMinimapPreview(text: string | null | undefined) {

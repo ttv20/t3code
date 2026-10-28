@@ -8,7 +8,7 @@ import {
   type EnvironmentId,
   type ServerProvider,
 } from "@t3tools/contracts";
-import { useEffect, useEffectEvent, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 
 import { useEnvironmentSettings } from "../../hooks/useSettings";
@@ -19,7 +19,10 @@ import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { WizardFooter, WizardHeader, WizardPanel, WizardPopup } from "../ui/wizard";
+import { MultipleAccountsNote } from "./MultipleAccountsNote";
 import { SettingsRow } from "./settingsLayout";
+
+const CODEX_DRIVER_KIND = ProviderDriverKind.make("codex");
 
 export function AddCodexAccountDialog({
   environmentId,
@@ -44,11 +47,9 @@ export function AddCodexAccountDialog({
   const [instanceId, setInstanceId] = useState<ProviderInstanceId | null>(null);
   const [pending, setPending] = useState(false);
   const provider = providers?.find((candidate) => candidate.instanceId === instanceId);
+  // Closes itself once the new account connects; the owner unmounts it after
+  // the close animation.
   const connected = usesChatGptSharing(provider);
-  const closeAfterConnection = useEffectEvent(onClose);
-  useEffect(() => {
-    if (connected) closeAfterConnection();
-  }, [connected]);
 
   const createAccount = async () => {
     if (pending || !name.trim() || !readEnvironmentScope(environmentId, AuthProvidersManageScope))
@@ -62,7 +63,7 @@ export function AddCodexAccountDialog({
           providerInstances: {
             ...settings.providerInstances,
             [id]: {
-              driver: ProviderDriverKind.make("codex"),
+              driver: CODEX_DRIVER_KIND,
               displayName,
               enabled: true,
               config: { enabled: true, setupMode: "managed" },
@@ -88,6 +89,9 @@ export function AddCodexAccountDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      onOpenChangeComplete={(open) => {
+        if (!open && connected) onClose();
+      }}
     >
       <WizardPopup size="wide">
         <WizardHeader
@@ -109,6 +113,7 @@ export function AddCodexAccountDialog({
           ) : (
             <form
               id="add-codex-account"
+              className="grid gap-3"
               onSubmit={(event) => {
                 event.preventDefault();
                 void createAccount();
@@ -127,6 +132,7 @@ export function AddCodexAccountDialog({
                   />
                 }
               />
+              <MultipleAccountsNote environmentId={environmentId} driver={CODEX_DRIVER_KIND} />
             </form>
           )}
         </WizardPanel>

@@ -115,7 +115,7 @@ describe("ThreadPullRequestServiceV2 reads", () => {
           }),
           Layer.mock(ProjectStore.ProjectStoreV2)({
             listShells: () => Effect.succeed([project]),
-            getShell: () => Effect.succeed(Option.some(project)),
+            getShell: () => Effect.succeedSome(project),
           }),
           Layer.mock(GitManager.GitManager)({
             branchPullRequest: (_input, options) =>
@@ -143,7 +143,6 @@ describe("ThreadPullRequestServiceV2 reads", () => {
           }),
           // No client holds an activity lease.
           Layer.mock(BackgroundPolicy.BackgroundPolicy)({
-            hasDemand: () => Effect.succeed(false),
             shouldRunScopeWork: () => Effect.succeed(false),
             shouldRunOpportunisticWork: Effect.succeed(false),
           }),
@@ -234,7 +233,7 @@ describe("ThreadPullRequestServiceV2 reads", () => {
             }),
             Layer.mock(ProjectStore.ProjectStoreV2)({
               listShells: () => Effect.succeed([project]),
-              getShell: () => Effect.succeed(Option.some(project)),
+              getShell: () => Effect.succeedSome(project),
             }),
             Layer.mock(GitManager.GitManager)({
               branchPullRequest: () => Effect.succeed(null),

@@ -45,7 +45,7 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
         stackedThreadToast({
           type: "error",
           title,
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
         }),
       );
     }
@@ -58,7 +58,7 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
       : activeProjectClone !== null && activeProjectClone.phase !== "done"
         ? uiT("Repository not cloned")
         : activeProjectFileCopy?.phase === "copying"
-          ? "Copying files"
+          ? uiT("Copying files")
           : null;
   const projectCloneBannerItem = (() => {
     if (activeProjectFileCopy?.phase === "failed" && activeProjectRef) {
@@ -80,7 +80,6 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
       return {
         id: `project-clone:${projectId}`,
         variant: "info",
-        priority: "activity",
         icon: <DownloadIcon />,
         title: uiT("Cloning {0}", { "0": name }),
         description: projectCloneProgressSummary(activeProjectClone),
@@ -107,7 +106,7 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
       title: cancelled
         ? uiT("Cancelled cloning {0}", { "0": name })
         : uiT("Failed to clone {0}", { "0": name }),
-      description: cancelled ? "Retry to bring in the repository." : activeProjectClone.error,
+      description: cancelled ? uiT("Retry to bring in the repository.") : activeProjectClone.error,
       actions: (
         <>
           <Button

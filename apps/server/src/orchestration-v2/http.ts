@@ -5,6 +5,7 @@ import {
 } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Result from "effect/Result";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder";
@@ -132,10 +133,12 @@ export const layer = HttpApiBuilder.group(
         anchorThreadId?: Parameters<
           typeof threadManagement.getThreadSnapshotWindow
         >[1]["anchorThreadId"],
+        deferWork = false,
       ) {
         return yield* threadManagement
           .getThreadSnapshotWindow(threadId, {
             rowLimit: THREAD_HISTORY_SNAPSHOT_ROW_LIMIT,
+            deferWork,
             userTurnLimit:
               anchorItemId === undefined
                 ? THREAD_HISTORY_PAGE_POLICY.maxUserTurns
@@ -222,9 +225,12 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadBoundedSnapshot")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          const snapshot = yield* loadThreadSnapshotWindow(args.params.threadId).pipe(
-            traceLocalHandlerWork,
-          );
+          const snapshot = yield* loadThreadSnapshotWindow(
+            args.params.threadId,
+            undefined,
+            undefined,
+            args.query.deferWork === "1",
+          ).pipe(traceLocalHandlerWork);
           const bounded = buildBoundedThreadProjection({
             projection: snapshot.projection,
             snapshotSequence: snapshot.snapshotSequence,
@@ -245,9 +251,11 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadHistoryPage")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          try {
-            decodeThreadHistoryCursor(args.query.cursor);
-          } catch (cause) {
+          const decoded = yield* Effect.try(() =>
+            decodeThreadHistoryCursor(args.query.cursor),
+          ).pipe(Effect.result);
+          if (Result.isFailure(decoded)) {
+            const cause = decoded.failure.cause;
             if (cause instanceof InvalidThreadHistoryCursorError)
               return yield* failEnvironmentInvalidRequest("invalid_history_cursor");
             return yield* failEnvironmentInternal("orchestration_thread_history_failed", cause);
@@ -258,6 +266,11 @@ export const layer = HttpApiBuilder.group(
               args.query.cursor,
               args.query.throughEntryId,
               args.query.view === "conversation",
+              args.query.view === "work"
+                ? "work"
+                : args.query.deferWork === "1"
+                  ? "deferred"
+                  : undefined,
             )
             .pipe(
               Effect.map((page) =>

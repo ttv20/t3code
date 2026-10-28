@@ -32,6 +32,7 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as Broker from "../mcp/PreviewAutomationBroker.ts";
 import * as DesktopChannel from "./DesktopBrowserChannel.ts";
 import * as Manager from "./Manager.ts";
+import * as PreviewAgentActivity from "./PreviewAgentActivity.ts";
 import * as ServerBrowser from "./ServerBrowser.ts";
 import * as PreviewBrowser from "./PreviewBrowser.ts";
 
@@ -95,6 +96,8 @@ function makeSession(frame?: ReturnType<typeof makeFrame>) {
         // A snapshot sizes its screenshot from the PNG header; viewers get JPEG frames as-is.
         return { data: (input as { format: string }).format === "png" ? PNG_HEADER : "ZnJhbWU=" };
       }
+      // Snapshots shrink their screenshot in the page; the header stands in for the result.
+      if (method === "Runtime.callFunctionOn") return { result: { value: PNG_HEADER } };
       if (method === "Page.getFrameTree") return { frameTree: { frame: { id: "main" } } };
       if (method === "Page.createIsolatedWorld") {
         return {
@@ -275,6 +278,7 @@ const desktopRenders = (tabId: string) => {
   return desktopTabs.has(tabId);
 };
 const releasedDesktopTabs: Array<string> = [];
+const desktopTurns = new NodeEvents.EventEmitter();
 const desktopConnections: Array<{ endpoint: string; context: ReturnType<typeof makeContext> }> = [];
 const testThread = {
   threadId: ThreadId.make("browser-test-thread"),
@@ -335,7 +339,9 @@ const dependencies = Layer.mergeAll(
         Effect.sync(() => releasedDesktopTabs.push(key.tabId)),
       ),
     pointer: () => Effect.void,
+    turn: (threadId, active) => Effect.sync(() => desktopTurns.emit("turn", threadId, active)),
   }),
+  PreviewAgentActivity.layer,
 ).pipe(
   Layer.provideMerge(ServerConfig.layerTest(process.cwd(), { prefix: "t3-server-browser-" })),
   Layer.provideMerge(NodeServices.layer),
@@ -377,6 +383,28 @@ beforeEach(() => {
   releasedDesktopTabs.length = 0;
   desktopConnections.length = 0;
 });
+
+it.live("tells the desktop once per thread when its agent turns start and end", () =>
+  Effect.gen(function* () {
+    yield* ServerBrowser.ServerBrowser;
+    const activity = yield* PreviewAgentActivity.PreviewAgentActivity;
+    const threadId = scope.thread.threadId;
+    const turns = yield* Queue.unbounded<readonly [string, boolean]>();
+    const record = (id: string, active: boolean) => Queue.offerUnsafe(turns, [id, active]);
+    desktopTurns.on("turn", record);
+    yield* Effect.addFinalizer(() => Effect.sync(() => desktopTurns.off("turn", record)));
+    const endFirst = yield* activity.begin(threadId);
+    // An overlapping turn on the same thread neither starts nor ends focus on its own.
+    const endSecond = yield* activity.begin(threadId);
+    expect(yield* Queue.take(turns)).toEqual([threadId, true]);
+    yield* endFirst;
+    yield* endFirst;
+    expect(yield* activity.active(threadId)).toBe(true);
+    yield* endSecond;
+    expect(yield* Queue.take(turns)).toEqual([threadId, false]);
+    expect(yield* Queue.size(turns)).toBe(0);
+  }).pipe(Effect.scoped, Effect.provide(layer)),
+);
 
 it.live("preview_open reports its navigation timeout instead of the request budget", () =>
   Effect.scoped(
@@ -443,6 +471,27 @@ it.live.each(["desktop" as const, undefined])(
         expect(reused.tabId).toBe(tabId);
       }),
     ).pipe(Effect.provide(layer)),
+);
+
+it.effect("a tab the desktop does not draw is marked headless, so the desktop streams it", () =>
+  Effect.scoped(
+    Effect.gen(function* () {
+      const { broker, tabId } = yield* ready;
+      const manager = yield* Manager.PreviewManager;
+      desktopRendersNext = true;
+      const desktopTab = yield* broker.invoke<PreviewAutomationStatus>({
+        scope,
+        operation: "open",
+        input: { reuseExistingTab: false, show: false },
+      });
+      const { sessions } = yield* manager.list({ threadId: scope.thread.threadId });
+      const headlessOf = (id: string | null) =>
+        sessions.find((session) => session.tabId === id)?.headless;
+
+      expect(headlessOf(tabId)).toBe(true);
+      expect(headlessOf(desktopTab.tabId)).toBeUndefined();
+    }),
+  ).pipe(Effect.provide(layer)),
 );
 
 it.live.each([

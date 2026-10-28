@@ -11,14 +11,7 @@ import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
 import type { ReviewSectionItem } from "./reviewModel";
 import { useReviewHeaderPresentation } from "./useReviewHeaderPresentation";
 import { Screen, ScreenStack, ScreenStackHeaderConfig } from "react-native-screens";
-import {
-  type Ref,
-  type ReactElement,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { type Ref, type ReactElement, useImperativeHandle, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -443,7 +436,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
 
   const { nativeReviewDiffStyle } = useAppearanceCodeSurface();
   useAdaptiveWorkspacePaneRole("inspector");
-  const { panes, showAuxiliaryPane } = useAdaptiveWorkspaceLayout();
+  const { panes } = useAdaptiveWorkspaceLayout();
   const navigation = useNavigation();
   const selectDetail = useSelectWorkspaceDetail();
   const insets = useSafeAreaInsets();
@@ -462,9 +455,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
   const bottomContentInset =
     Platform.OS === "ios" ? safeArea.bottom + 8 : Math.max(insets.bottom, 18) + 18;
 
-  useEffect(() => {
-    showAuxiliaryPane("inspector");
-  }, [environmentId, showAuxiliaryPane, threadId]);
   const {
     error,
     reviewSections,
@@ -472,7 +462,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
     refreshSelectedSection,
     selectSection,
     isSelectedSectionPending,
-    diffPreviewRevision,
   } = useReviewSections({
     enabled: isEnvironmentReady,
     environmentId,
@@ -496,7 +485,6 @@ export function ReviewSheet(props: ReviewSheetProps) {
     environmentId,
     cwd: selectedThreadCwd,
     selectedSection,
-    revision: diffPreviewRevision,
     draftMessage,
   });
   // Expo may return null before registration or in older binaries; use the fallback.
@@ -732,6 +720,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
               >
                 {listHeader}
                 <View className="min-w-0 flex-1 [unicode-bidi:plaintext]" collapsable={false}>
+                  {/* oxlint-disable-next-line react/static-components -- The resolver returns a cached native component with stable identity. */}
                   <NativeReviewDiffView
                     collapsable={false}
                     testID="review-native-diff-view"

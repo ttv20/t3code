@@ -1,5 +1,5 @@
 import { Host } from "@expo/ui/jetpack-compose";
-import { useMemo, type ComponentProps } from "react";
+import { type ComponentProps } from "react";
 import { createNativeThemeColors } from "../../lib/nativeTheme";
 import { useControlTheme } from "./useControlTheme";
 import { useUiLanguage } from "../../i18n";
@@ -9,10 +9,7 @@ export function NativeThemeHost(
 ) {
   const { direction } = useUiLanguage();
   const { colors, colorScheme, systemColorsActive } = useControlTheme();
-  const colorOverrides = useMemo(
-    () => (systemColorsActive ? undefined : createNativeThemeColors(colors)),
-    [colors, systemColorsActive],
-  );
+  const colorOverrides = systemColorsActive ? undefined : createNativeThemeColors(colors);
   return (
     <Host
       layoutDirection={direction === "rtl" ? "rightToLeft" : "leftToRight"}

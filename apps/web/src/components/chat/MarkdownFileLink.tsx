@@ -12,6 +12,7 @@ import { readLocalApi } from "../../localApi";
 import { cn } from "../../lib/utils";
 import { shouldOpenMarkdownFileLinkInEditor } from "../../markdown-links";
 import type { markdownFileCopyPaths } from "../../markdownFileHostPath";
+import { documentChipKindForFileName } from "../../pierre-icons";
 import { ContextChip } from "../ContextChip";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -90,7 +91,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to open file"),
-            description: error instanceof Error ? error.message : "An error occurred.",
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       } catch (cause) {
@@ -102,7 +103,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to open file"),
-            description: cause instanceof Error ? cause.message : "An error occurred.",
+            description: cause instanceof Error ? cause.message : uiT("An error occurred."),
           }),
         );
       }
@@ -140,7 +141,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to open file in browser"),
-            description: error instanceof Error ? error.message : "An error occurred.",
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       } catch (cause) {
@@ -152,7 +153,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to open file in browser"),
-            description: cause instanceof Error ? cause.message : "An error occurred.",
+            description: cause instanceof Error ? cause.message : uiT("An error occurred."),
           }),
         );
       }
@@ -178,7 +179,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to reveal file"),
-            description: error instanceof Error ? error.message : "An error occurred.",
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       } catch (cause) {
@@ -190,7 +191,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Unable to reveal file"),
-            description: cause instanceof Error ? cause.message : "An error occurred.",
+            description: cause instanceof Error ? cause.message : uiT("An error occurred."),
           }),
         );
       }
@@ -236,7 +237,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
           stackedThreadToast({
             type: "error",
             title: uiT("Failed to copy {0}", { "0": title.toLowerCase() }),
-            description: error instanceof Error ? error.message : "An error occurred.",
+            description: error instanceof Error ? error.message : uiT("An error occurred."),
           }),
         );
       },
@@ -323,6 +324,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
     canOpenInBrowser,
     canOpenInPanel,
   });
+  const chipKind = documentChipKindForFileName(iconPath) ?? "mention";
 
   return (
     <Tooltip>
@@ -330,7 +332,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
         render={
           hasPrimaryAction ? (
             <ContextChip
-              kind="mention"
+              kind={chipKind}
               dir="ltr"
               render={<a href={href} />}
               className={MARKDOWN_FILE_LINK_CLASS_NAME}
@@ -359,7 +361,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
             </ContextChip>
           ) : (
             <ContextChip
-              kind="mention"
+              kind={chipKind}
               dir="ltr"
               render={<button type="button" />}
               aria-label={uiT("File options for {0}", { "0": label })}

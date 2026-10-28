@@ -7,11 +7,12 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { EnvironmentId, ThreadId, type PreviewSessionSnapshot } from "@t3tools/contracts";
 import { normalizePreviewUrl, previewPdfAssetUrl } from "@t3tools/shared/preview";
 import * as Option from "effect/Option";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Platform, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Platform, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ControlPill } from "../../components/ui/ControlPill";
+import { useAppForeground } from "../../lib/appState";
 import { AppBar } from "../../components/ui/AppBar";
 
 import { useThreadServerBrowserTabs } from "../../state/preview";
@@ -37,7 +38,7 @@ type BrowserPreviewRouteScreenProps = StaticScreenProps<{
 
 export function BrowserPreviewRouteScreen({ route }: BrowserPreviewRouteScreenProps) {
   const navigation = useNavigation();
-  const onClose = useCallback(() => navigation.goBack(), [navigation]);
+  const onClose = () => navigation.goBack();
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
       <BrowserPreviewStack.Navigator
@@ -82,7 +83,7 @@ function BrowserPreviewScreen({
   const prepared = usePreparedConnection(environmentId);
   const httpBaseUrl = Option.isSome(prepared) ? prepared.value.httpBaseUrl : null;
   const focused = useIsFocused();
-  const [foreground, setForeground] = useState(AppState.currentState !== "background");
+  const foreground = useAppForeground();
   const [selectedTabId, setSelectedTabId] = useState(initialTabId);
   const [pictureInPicture, setPictureInPicture] = useState(NO_PICTURE_IN_PICTURE);
   const [streaming, setStreaming] = useState(false);
@@ -97,19 +98,14 @@ function BrowserPreviewScreen({
     setPictureInPicture(NO_PICTURE_IN_PICTURE);
     setSelectedTabId(tabId);
   }
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (state) =>
-      setForeground(state !== "background"),
-    );
-    return () => subscription.remove();
-  }, []);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- closes the focused route through the navigator once the thread has no browser tabs left
   useEffect(() => {
     if (focused && loaded && tabs.length === 0) onClose();
   }, [focused, loaded, tabs.length, onClose]);
-  const onPictureInPicture = useCallback((state: PreviewPictureInPictureState, detail?: string) => {
+  const onPictureInPicture = (state: PreviewPictureInPictureState, detail?: string) => {
     setPictureInPicture({ supported: state.supported, active: state.active });
-    if (detail) Dialog.alert("Picture in picture is unavailable", detail);
-  }, []);
+    if (detail) Dialog.alert(uiT("Picture in picture is unavailable"), detail);
+  };
   const selectTab = (next: string) => {
     setPictureInPicture(NO_PICTURE_IN_PICTURE);
     setSelectedTabId(next);
@@ -131,8 +127,8 @@ function BrowserPreviewScreen({
             ? [
                 {
                   accessibilityLabel: pictureInPicture.active
-                    ? "Exit picture in picture"
-                    : "Picture in picture",
+                    ? uiT("Exit picture in picture")
+                    : uiT("Picture in picture"),
                   icon: {
                     ios: pictureInPicture.active ? "pip.exit" : "pip.enter",
                     android: "visibility",
@@ -233,7 +229,7 @@ function BrowserAddressBar({
     try {
       onCommand({ type: "navigate", url: normalizePreviewUrl(value) });
     } catch {
-      Dialog.alert("Could not open this address", "Enter an http or https URL.");
+      Dialog.alert(uiT("Could not open this address"), uiT("Enter an http or https URL."));
     }
   };
   return (

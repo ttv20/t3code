@@ -221,8 +221,22 @@ describe("AssetAccess", () => {
         ["recording.webm", "video/webm"],
         ["report.html", "text/html"],
         ["report.pdf", "application/pdf"],
+        ["notes.odt", "application/vnd.oasis.opendocument.text"],
+        ["budget.ods", "application/vnd.oasis.opendocument.spreadsheet"],
+        ["slides.odp", "application/vnd.oasis.opendocument.presentation"],
+        ["notes.rtf", "application/rtf"],
+        ["book.epub", "application/epub+zip"],
+        ["analysis.ipynb", "application/x-ipynb+json"],
         ["tone.wav", "audio/wav"],
         ["tone.webm-audio", "audio/webm"],
+        ["archive.zip", "application/zip"],
+        ["archive.jar", "application/java-archive"],
+        ["archive.tar", "application/x-tar"],
+        ["archive.gz", "application/gzip"],
+        ["archive.tgz", "application/gzip"],
+        ["data.sqlite", "application/vnd.sqlite3"],
+        ["data.sqlite3", "application/vnd.sqlite3"],
+        ["data.db", "application/vnd.sqlite3"],
       ] as const) {
         const filePath = path.join(outside, name);
         yield* fs.writeFileString(filePath, "media");
@@ -915,9 +929,63 @@ describe("AssetAccess", () => {
         kind: "file",
         path: canonicalCssPath,
       });
+      for (const extension of ["otf", "ttf", "woff", "woff2"]) {
+        const fontName = `preview.${extension}`;
+        const fontPath = path.join(root, fontName);
+        yield* fileSystem.writeFileString(fontPath, "font bytes");
+        const canonicalFontPath = yield* fileSystem.realPath(fontPath);
+        for (const resource of [
+          { _tag: "workspace-file" as const, threadId: ThreadId.make("thread-1"), path: htmlPath },
+          { _tag: "draft-workspace-file" as const, cwd: root, path: "report.html" },
+        ]) {
+          const url = yield* issueAssetUrl({ resource, workspaceRoot: root });
+          const suffix = url.relativeUrl.slice(`${ASSET_ROUTE_PREFIX}/`.length);
+          expect(yield* resolveAsset(suffix.slice(0, suffix.indexOf("/")), fontName)).toEqual({
+            kind: "file",
+            path: canonicalFontPath,
+          });
+        }
+      }
       expect(yield* resolveAsset(token, "../secret.txt")).toBeNull();
       expect(yield* resolveAsset(token, ".env")).toBeNull();
       expect(yield* resolveAsset(`${token}tampered`, "report.html")).toBeNull();
+      for (const extension of [
+        "odt",
+        "ods",
+        "odp",
+        "rtf",
+        "epub",
+        "ipynb",
+        "zip",
+        "jar",
+        "tar",
+        "gz",
+        "tgz",
+        "sqlite",
+        "sqlite3",
+        "db",
+        "docx",
+        "xlsx",
+        "pptx",
+        "bmp",
+        "heic",
+        "tif",
+        "tiff",
+        "weba",
+        "mmd",
+        "mermaid",
+      ]) {
+        const siblingName = `private.${extension}`;
+        yield* fileSystem.writeFileString(path.join(root, siblingName), "private sibling");
+        for (const resource of [
+          { _tag: "workspace-file" as const, threadId: ThreadId.make("thread-1"), path: htmlPath },
+          { _tag: "draft-workspace-file" as const, cwd: root, path: "report.html" },
+        ]) {
+          const url = yield* issueAssetUrl({ resource, workspaceRoot: root });
+          const suffix = url.relativeUrl.slice(`${ASSET_ROUTE_PREFIX}/`.length);
+          expect(yield* resolveAsset(suffix.slice(0, suffix.indexOf("/")), siblingName)).toBeNull();
+        }
+      }
     }).pipe(Effect.provide(layerTest)),
   );
 
@@ -955,6 +1023,77 @@ describe("AssetAccess", () => {
     }).pipe(Effect.provide(layerTest)),
   );
 
+  it.effect("issues exact workspace URLs for every non-HTML preview", () =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const root = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "t3-asset-image-workspace-",
+      });
+      const assetsDirectory = path.join(root, "assets");
+      yield* fileSystem.makeDirectory(assetsDirectory, { recursive: true });
+      yield* fileSystem.writeFileString(
+        path.join(assetsDirectory, "private.docx"),
+        "private document",
+      );
+      for (const extension of [
+        "pdf",
+        "odt",
+        "ods",
+        "odp",
+        "rtf",
+        "epub",
+        "ipynb",
+        "png",
+        "bmp",
+        "heic",
+        "tif",
+        "tiff",
+        "docx",
+        "xlsx",
+        "pptx",
+        "ttf",
+        "otf",
+        "woff",
+        "woff2",
+        "zip",
+        "jar",
+        "tar",
+        "gz",
+        "tgz",
+        "sqlite",
+        "sqlite3",
+        "db",
+      ]) {
+        const name = `preview.${extension}`;
+        const filePath = path.join(assetsDirectory, name);
+        const siblingName = `other.${extension}`;
+        yield* fileSystem.writeFileString(filePath, "preview");
+        yield* fileSystem.writeFileString(
+          path.join(assetsDirectory, siblingName),
+          "private sibling",
+        );
+        const canonicalPath = yield* fileSystem.realPath(filePath);
+        for (const resource of [
+          {
+            _tag: "workspace-file" as const,
+            threadId: ThreadId.make("thread-1"),
+            path: filePath,
+          },
+          { _tag: "draft-workspace-file" as const, cwd: root, path: `assets/${name}` },
+        ]) {
+          const result = yield* issueAssetUrl({ resource, workspaceRoot: root });
+          const suffix = result.relativeUrl.slice(`${ASSET_ROUTE_PREFIX}/`.length);
+          const token = suffix.slice(0, suffix.indexOf("/"));
+          expect(yield* resolveAsset(token, name)).toEqual({ kind: "file", path: canonicalPath });
+          expect(yield* resolveAsset(token, siblingName)).toBeNull();
+          expect(yield* resolveAsset(token, "private.docx")).toBeNull();
+          expect(yield* resolveAsset(token, `../${name}`)).toBeNull();
+        }
+      }
+    }).pipe(Effect.provide(layerTest)),
+  );
+
   it.effect("previews workspace files with literal fragment characters in their paths", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
@@ -963,7 +1102,27 @@ describe("AssetAccess", () => {
       const directory = path.join(root, "assets#archive");
       yield* fileSystem.makeDirectory(directory);
 
-      for (const name of ["icon#v2.png", "report#draft.pdf"]) {
+      for (const name of [
+        "icon#v2.png",
+        "report#draft.pdf",
+        "report.docx",
+        "workbook.xlsx",
+        "slides.pptx",
+        "notes.odt",
+        "budget.ods",
+        "slides.odp",
+        "notes.rtf",
+        "book.epub",
+        "analysis.ipynb",
+        "specimen.ttf",
+        "specimen.otf",
+        "specimen.woff",
+        "specimen.woff2",
+        "image.bmp",
+        "image.heic",
+        "image.tif",
+        "image.tiff",
+      ]) {
         const filePath = path.join(directory, name);
         yield* fileSystem.writeFileString(filePath, "preview fixture");
         const canonicalFile = yield* fileSystem.realPath(filePath);
@@ -1049,6 +1208,20 @@ describe("AssetAccess", () => {
       for (const [extension, mimeType] of [
         ["pdf", "application/pdf"],
         ["svg", "image/svg+xml"],
+        ["bmp", "image/bmp"],
+        ["ttf", "font/ttf"],
+        ["otf", "font/otf"],
+        ["woff", "font/woff"],
+        ["woff2", "font/woff2"],
+        ["weba", "audio/webm"],
+        ["zip", "application/zip"],
+        ["jar", "application/java-archive"],
+        ["tar", "application/x-tar"],
+        ["gz", "application/gzip"],
+        ["tgz", "application/gzip"],
+        ["sqlite", "application/vnd.sqlite3"],
+        ["sqlite3", "application/vnd.sqlite3"],
+        ["db", "application/vnd.sqlite3"],
       ] as const) {
         const attachmentId = `thread-1-00000000-0000-4000-8000-000000000001-${extension}`;
         const attachmentPath = path.join(config.attachmentsDir, `${attachmentId}.${extension}`);
@@ -1059,7 +1232,7 @@ describe("AssetAccess", () => {
             _tag: "attachment",
             attachmentId,
             fileName: `report.${extension}`,
-            mimeType,
+            mimeType: "text/html",
             disposition: "inline",
           },
         });
@@ -1083,8 +1256,8 @@ describe("AssetAccess", () => {
       const config = yield* ServerConfig.ServerConfig;
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const attachmentId = "thread-1-00000000-0000-4000-8000-000000000002-zip";
-      const attachmentPath = path.join(config.attachmentsDir, `${attachmentId}.zip`);
+      const attachmentId = "thread-1-00000000-0000-4000-8000-000000000002-7z";
+      const attachmentPath = path.join(config.attachmentsDir, `${attachmentId}.7z`);
       yield* fileSystem.makeDirectory(config.attachmentsDir, { recursive: true });
       yield* fileSystem.writeFile(attachmentPath, new Uint8Array([1, 2, 3]));
 
@@ -1092,7 +1265,7 @@ describe("AssetAccess", () => {
         resource: {
           _tag: "attachment",
           attachmentId,
-          fileName: "archive.zip",
+          fileName: "archive.7z",
           mimeType: "text/html",
           disposition: "inline",
         },
@@ -1243,8 +1416,10 @@ describe("AssetAccess", () => {
       },
     ]);
     return Effect.gen(function* () {
+      const decodeAssetCreateUrlInput = Schema.decodeEffect(AssetCreateUrlInput);
+
       // Every client and server release spells the resource this way on the wire.
-      const { resource } = yield* Schema.decodeUnknownEffect(AssetCreateUrlInput)({
+      const { resource } = yield* decodeAssetCreateUrlInput({
         resource: { _tag: "github-media", cwd: "/repo", url },
       });
       const issued = yield* issueAssetUrl({ resource });
@@ -1273,6 +1448,8 @@ describe("AssetAccess", () => {
 
   it.effect("refuses media no host keeps behind a credential, without echoing the URL", () =>
     Effect.gen(function* () {
+      const encodeAssetAccessError = Schema.encodeEffect(Schema.fromJsonString(AssetAccessError));
+
       for (const url of [
         "https://example.com/shot.png",
         "https://example.com/shot.png?token=private-media-token",
@@ -1281,7 +1458,7 @@ describe("AssetAccess", () => {
           resource: { _tag: SOURCE_CONTROL_MEDIA_ASSET, cwd: "/repo", url },
         }).pipe(Effect.flip);
         expect(error._tag).toBe("AssetGitHubMediaUrlValidationError");
-        const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(AssetAccessError))(error);
+        const encoded = yield* encodeAssetAccessError(error);
         expect(encoded).not.toContain(url);
       }
     }).pipe(Effect.provide(layerTest)),

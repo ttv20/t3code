@@ -334,6 +334,7 @@ function UsageChartPlot({
     plot.style.setProperty("--usage-tooltip-top", `${top}px`);
   };
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- positions the hover tooltip through plot CSS variables before paint and on ResizeObserver
   useLayoutEffect(() => {
     if (hoverIndex === null) return;
     positionTooltip();
@@ -420,6 +421,8 @@ export function UsageProviderChart({
   timeZone,
   hour12,
 }: UsageProviderChartProps) {
+  const { t: uiT } = useUiLanguage();
+
   const periods = resolution === "hour" ? hours : days;
   const totals: readonly (DailyTotals | HourlyTotals)[] = resolution === "hour" ? hourly : daily;
   const byPeriod = new Map(
@@ -469,7 +472,10 @@ export function UsageProviderChart({
           loadingProviders={loadingProviders}
           format={format}
           formatTooltipPeriod={formatTooltipPeriod}
-          ariaLabel={`${resolution === "hour" ? "Hourly" : "Daily"} ${metric === "tokens" ? "processed tokens" : "cost"} by provider`}
+          ariaLabel={uiT("{0} {1} by provider", {
+            "0": resolution === "hour" ? "Hourly" : "Daily",
+            "1": metric === "tokens" ? "processed tokens" : "cost",
+          })}
         >
           {scale.ticks.map((tick) => {
             const y = toY(tick);

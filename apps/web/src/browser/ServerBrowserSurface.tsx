@@ -50,7 +50,6 @@ export interface ServerBrowserHandle {
 }
 
 const RESIZE_THROTTLE_MS = 150;
-const ACCESS_RETRY_MS = 10_000;
 // Reuse nearby probes when a slow link would return the tap's answer after it ends.
 const PROBE_REUSE_PX = 24;
 const PROBE_REUSE_MS = 10_000;
@@ -164,7 +163,6 @@ export function ServerBrowserSurface(props: {
     pdfUrl = null,
     ref,
   } = props;
-  const access = usePreviewStreamAccess(environmentId);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const keySentRef = useRef(false);
@@ -192,6 +190,7 @@ export function ServerBrowserSurface(props: {
   };
   const unauthorizedRef = useRef(0);
   const [accessDenied, setAccessDenied] = useState(false);
+  const access = usePreviewStreamAccess(environmentId, { retry: visible && !accessDenied });
   const [hostSetup, setHostSetup] = useState<PreviewStreamHostSetup | null>(null);
   const pendingMoveRef = useRef<MouseInput | null>(null);
   const pendingWheelRef = useRef<WheelInput | null>(null);
@@ -312,6 +311,7 @@ export function ServerBrowserSurface(props: {
     [pdfUrl, send],
   );
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- observes the canvas container's size, sends resizes to the stream and grows the frame cap
   useEffect(() => {
     const element = canvasRef.current?.parentElement;
     if (!element) return;
@@ -357,6 +357,7 @@ export function ServerBrowserSurface(props: {
     };
   }, [followSize]);
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- opens the preview stream client and paints its frames onto the canvas while visible
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!visible || accessDenied || hostSetup || !access || !cap || !canvas) return;
@@ -461,12 +462,7 @@ export function ServerBrowserSurface(props: {
     visible,
   ]);
 
-  useEffect(() => {
-    if (!visible || accessDenied || access !== null) return;
-    const timer = setInterval(() => refreshPreviewStreamAccess(environmentId), ACCESS_RETRY_MS);
-    return () => clearInterval(timer);
-  }, [access, accessDenied, environmentId, visible]);
-
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- registers a non-passive wheel listener on the canvas so it can stop the panel scrolling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -487,6 +483,7 @@ export function ServerBrowserSurface(props: {
     return () => canvas.removeEventListener("wheel", onWheel);
   }, [pagePoint, queueWheel]);
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- cancels the pending input animation frame when the component unmounts
   useEffect(
     () => () => {
       if (inputFrameRef.current !== null) cancelAnimationFrame(inputFrameRef.current);

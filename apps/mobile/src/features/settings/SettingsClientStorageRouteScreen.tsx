@@ -19,7 +19,7 @@ import {
 } from "../../state/client-cache-state";
 import { useServerConfigs } from "../../state/entities";
 import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
-import { SettingsActionRow } from "./components/SettingsActionRow";
+import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
 
@@ -49,7 +49,7 @@ export function SettingsClientStorageRouteScreen() {
       savedConnectionsById[environment.environmentId]?.environmentLabel ??
       environment.environmentId;
     Dialog.confirm({
-      title: `Clear cache for ${label}?`,
+      title: uiT("Clear cache for {0}?", { "0": label }),
       message:
         "This removes offline threads, server metadata, and cached branches for this environment. The saved connection and credentials stay intact.",
       confirmText: "Clear Cache",
@@ -178,12 +178,16 @@ function CacheEnvironmentRow(props: {
   readonly first: boolean;
   readonly onClear: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <View className={props.first ? undefined : "border-t border-border"}>
       <SettingsActionRow
         icon={ENVIRONMENT_MACHINE_SYMBOLS[props.machine]}
         label={props.environmentLabel}
-        description={`Clear ${formatBytes(props.environment.payloadBytes)} of cached data`}
+        description={uiT("Clear {0} of cached data", {
+          "0": formatBytes(props.environment.payloadBytes),
+        })}
         tone="danger"
         disabled={props.disabled}
         onPress={props.onClear}

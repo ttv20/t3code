@@ -33,9 +33,13 @@ describe("saved interface language", () => {
           }),
         );
         yield* Effect.gen(function* () {
-          const first = yield* MobilePreferences.make();
+          const first = yield* MobilePreferences.MobilePreferencesStore.pipe(
+            Effect.provide(MobilePreferences.layer),
+          );
           yield* first.savePatch({ interfaceLanguage: language, interfaceDirection: "auto" });
-          const reopened = yield* MobilePreferences.make();
+          const reopened = yield* MobilePreferences.MobilePreferencesStore.pipe(
+            Effect.provide(MobilePreferences.layer),
+          );
           expect(yield* reopened.load).toMatchObject({
             interfaceLanguage: language,
             interfaceDirection: "auto",

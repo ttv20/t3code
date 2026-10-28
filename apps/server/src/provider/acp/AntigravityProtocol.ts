@@ -1,5 +1,4 @@
 import type {
-  ProviderApprovalDecision,
   ProviderApprovalOption,
   ProviderUserInputAnswers,
   UserInputQuestion,
@@ -44,19 +43,6 @@ export function isAntigravityUserInputRequest(
   request: EffectAcpSchema.RequestPermissionRequest,
 ): boolean {
   return request.toolCall.toolCallId.startsWith("interaction_");
-}
-
-export function selectAntigravityPermissionOptionId(
-  request: EffectAcpSchema.RequestPermissionRequest,
-  decision: ProviderApprovalDecision,
-): string | undefined {
-  if (decision === "cancel" || isAntigravityUserInputRequest(request)) {
-    return undefined;
-  }
-  const kind =
-    decision === "accept" ? "allow_once" : decision === "decline" ? "reject_once" : "allow_always";
-  const option = request.options.find((entry) => entry.kind === kind);
-  return option?.optionId.trim() ? option.optionId : undefined;
 }
 
 /** Copy truncated text so V8 cannot retain the original large string. */
@@ -228,6 +214,7 @@ function sanitizeToolValue(value: unknown, budget: ToolPayloadBudget, depth: num
 export function sanitizeAntigravityToolPayload(payload: unknown): unknown {
   return sanitizeToolValue(payload, { nodes: 512, text: 64_000 }, 0);
 }
+const isJsonRecord = Schema.is(Schema.Record(Schema.String, Schema.Json));
 
 export function normalizeAntigravitySessionUpdate(
   notification: EffectAcpSchema.SessionNotification,
@@ -256,9 +243,7 @@ export function normalizeAntigravitySessionUpdate(
         ? { rawOutput: sanitizeAntigravityToolPayload(update.rawOutput) }
         : {}),
       ...(update.content !== undefined ? { content: content ?? [] } : {}),
-      ...(update._meta !== undefined
-        ? { _meta: Schema.is(Schema.Record(Schema.String, Schema.Json))(meta) ? meta : null }
-        : {}),
+      ...(update._meta !== undefined ? { _meta: isJsonRecord(meta) ? meta : null } : {}),
     },
   };
 }
@@ -339,10 +324,6 @@ export function normalizeAntigravityToolCall(toolCall: AcpToolCallState): AcpToo
   };
 }
 
-export function isAntigravityOpenCommand(toolCall: AcpToolCallState): boolean {
-  return toolCall.kind === "execute" && toolCall.status === "inProgress";
-}
-
 /** ACP 1.1.1 reports subagent calls as ordinary tools without child IDs or models. */
 export function classifyAntigravitySubagentToolCall(
   toolCall: AcpToolCallState,
@@ -356,17 +337,6 @@ export function classifyAntigravitySubagentToolCall(
   const update = Predicate.isObject(rawPayload) ? rawPayload.update : undefined;
   const meta = Predicate.isObject(update) ? update._meta : toolCall.data.meta;
   return Predicate.isObject(meta) && meta.is_mcp_tool_call === true ? "mcp" : "subagent";
-}
-
-/** History sends a completed start before the separate result and its final status. */
-export function isAntigravitySubagentReplayStart(rawPayload: unknown): boolean {
-  const update = Predicate.isObject(rawPayload) ? rawPayload.update : undefined;
-  return (
-    Predicate.isObject(update) &&
-    update.sessionUpdate === "tool_call" &&
-    update.status === "completed" &&
-    (update.rawOutput === undefined || update.rawOutput === null)
-  );
 }
 
 export function antigravitySubagentOutput(toolCall: AcpToolCallState): string | undefined {

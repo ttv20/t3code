@@ -5,13 +5,14 @@ import { WorkspaceExtraTab } from "./WorkspaceExtraTab";
 import { SettingsRouteScreen } from "../settings/SettingsRouteScreen";
 import { WorkspaceSectionToolbar } from "./WorkspaceSectionToolbar";
 import { useNavigation } from "@react-navigation/native";
-import { use, useCallback, useMemo } from "react";
+import { use } from "react";
 import { Platform, View, useWindowDimensions } from "react-native";
 import { useKeyboardState } from "react-native-keyboard-controller";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CompactBrandTitle } from "../../components/CompactBrandTitle";
 import { AndroidScreenHeader } from "../../components/ui/AndroidScreenHeader";
+import { HeaderItemsWidthContext } from "../../native/header-items-width";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
 import { isDuoDevice } from "../../lib/device-type";
@@ -19,7 +20,6 @@ import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
 import { useWorkspaceSurface } from "./useWorkspaceSurface";
 import {
   useDeviceType,
-  useDuoBottomBarInset,
   useNativeColumnLayoutMetrics,
   useNativeLayoutMetrics,
 } from "../../native/native-layout-metrics";
@@ -36,7 +36,6 @@ import {
 import { WorkspaceToolbar } from "./WorkspaceToolbar";
 import {
   WORKSPACE_DOCK,
-  workspaceSearchBottomClearance,
   workspaceDockBottomClearance,
   workspaceToolbarHeight,
 } from "./workspace-tabs-state";
@@ -52,11 +51,12 @@ import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 const TAB_TITLES = WORKSPACE_TAB_LABELS;
 
 function WorkspaceRootTitle(props: {
-  readonly maxWidth: number;
+  readonly columnWidth: number;
   readonly onOpenEnvironments: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
   const { state, settingsOpen } = useWorkspaceTabs()!;
+  const maxWidth = Math.max(0, props.columnWidth - (use(HeaderItemsWidthContext) ?? 160));
   const enabled = useEnabledNavigationTabs();
   const tabTitle = settingsOpen
     ? uiT("Settings")
@@ -64,10 +64,12 @@ function WorkspaceRootTitle(props: {
       ? TAB_TITLES[state.selectedTab]
       : uiT("Navigation");
   return (
-    <View style={{ width: props.maxWidth, minHeight: 32, justifyContent: "center" }}>
+    <View style={{ width: maxWidth, minHeight: 32, justifyContent: "center" }}>
       <WorkspaceConnectionTitle
-        brand={<CompactBrandTitle accessibilityLabel={uiT("T3 Code, {0}", { "0": tabTitle })} />}
-        maxWidth={props.maxWidth}
+        brand={
+          <CompactBrandTitle accessibilityLabel={uiT("T3 Code, {0}", { "0": tabTitle })} fit />
+        }
+        maxWidth={maxWidth}
         onPress={props.onOpenEnvironments}
       />
     </View>
@@ -98,31 +100,24 @@ function WorkspaceRootContent() {
       (nativeMetrics !== null && nativeMetrics.verticalBarEdge !== "none"));
   const width = columnMetrics?.width ?? windowWidth;
   const insets = useSafeAreaInsets();
-  const bottomBarInset = useDuoBottomBarInset();
   const keyboardHeight = useKeyboardState((keyboard) => keyboard.height);
   const workspace = useWorkspaceTabs()!;
   const { state } = workspace;
-  const renderHeaderTitle = useCallback(
-    () => (
-      <WorkspaceRootTitle
-        maxWidth={Math.max(0, width - 160)}
-        onOpenEnvironments={() => openSettings(navigation, "SettingsEnvironments")}
-      />
-    ),
-    [width, navigation],
-  );
   // Settings is a workspace tab too; its list takes the place of the selected tab's.
   const settingsOpen = workspace.settingsOpen;
+  const renderHeaderTitle = () => (
+    <WorkspaceRootTitle
+      columnWidth={width}
+      onOpenEnvironments={() => openSettings(navigation, "SettingsEnvironments")}
+    />
+  );
   const tab = state.tabs[settingsOpen ? "settings" : state.selectedTab];
   const bottomClearance =
     layout.primarySidebarOverlaysContent && state.selectedTab === "usage"
       ? workspaceDockBottomClearance({ bottomInset: insets.bottom, keyboardHeight })
       : Platform.OS === "ios" && isDuoDevice(deviceType)
-        ? workspaceSearchBottomClearance({
-            bottomInset: insets.bottom,
-            bottomBarInset,
-            keyboardHeight,
-          })
+        ? // The column's safe area already holds the Duo's search toolbar and keyboard.
+          Math.max(insets.bottom, keyboardHeight) + 16
         : compactTabs || deviceType === "pad"
           ? workspaceDockBottomClearance({ bottomInset: insets.bottom, keyboardHeight })
           : Platform.OS === "ios"
@@ -135,7 +130,7 @@ function WorkspaceRootContent() {
             : keyboardHeight > 0 && tab.searchMode !== "resting"
               ? keyboardHeight + 64
               : Math.max(insets.bottom, 12) + workspaceToolbarHeight(tab.searchMode) + 16;
-  const context = useMemo(() => ({ ...workspace, bottomClearance }), [workspace, bottomClearance]);
+  const context = { ...workspace, bottomClearance };
 
   return (
     <WorkspaceTabsContext value={context}>

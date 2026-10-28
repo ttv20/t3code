@@ -7,7 +7,6 @@ import {
   markdownForDisplay,
   markdownForNativeRendering,
   prepareNativeMarkdown,
-  parseMarkdownDocument,
   type MarkdownNode,
 } from "./markdownDocument";
 import { ENRICHED_INLINE_FILE_LINK_REGEX } from "./enrichedLinkPresentation";
@@ -94,7 +93,7 @@ describe("native direction before file presentation", () => {
       () => "notes [draft]&.md",
     );
     expect(prepared.markdown.startsWith("\u200f")).toBe(true);
-    const document = parseMarkdownDocument(prepared.markdown);
+    const document = processor.parse(prepared.markdown);
     const paragraph = document.children[0];
     const links =
       paragraph?.type === "paragraph"

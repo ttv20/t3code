@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import { HStack, ProgressView, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   accessibilityElement,
@@ -30,9 +29,11 @@ function SubscriptionUsage(
     showsContainerBackground?: boolean;
   },
 ) {
-  const { t: uiT } = useUiLanguage();
-
-  ("widget");
+  "widget";
+  const uiT = (message: string, values: Readonly<Record<string, unknown>> = {}) =>
+    (props.messages?.[message] ?? message).replace(/\{(\d+)\}/g, (token, key: string) =>
+      String(values[key] ?? token),
+    );
   // The extension evaluates this function without the app's module scope.
   const family = widgetEnvironment.widgetFamily;
   // Gallery snapshots can render an old timeline entry after it has expired.
@@ -178,7 +179,7 @@ function SubscriptionUsage(
         ) : null}
         {shown.map((window) => (
           <VStack
-            key={uiT(window.label)}
+            key={window.label}
             alignment="leading"
             spacing={dense ? 1 : 2}
             modifiers={[
@@ -196,7 +197,7 @@ function SubscriptionUsage(
                   lineLimit(1),
                 ]}
               >
-                {uiT(window.label)}
+                {window.label}
               </Text>
               <Spacer />
               <Text
@@ -274,7 +275,14 @@ function SubscriptionUsage(
           modifiers={[font({ textStyle: "caption2" }), foregroundStyle(secondary), lineLimit(1)]}
         >
           {props.checkedAt
-            ? `As of ${new Date(props.checkedAt).toLocaleString(undefined, { hour: "numeric", minute: "2-digit", month: "short", day: "numeric" })}`
+            ? uiT("As of {0}", {
+                "0": new Date(props.checkedAt).toLocaleString(props.locale, {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  month: "short",
+                  day: "numeric",
+                }),
+              })
             : uiT("Tap to connect in T3")}
         </Text>
       ) : null}

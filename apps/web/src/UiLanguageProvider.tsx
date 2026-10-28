@@ -16,6 +16,7 @@ export function UiLanguageProvider({ children }: { children: ReactNode }) {
   const direction = resolveUiDirection(locale, directionPreference);
   const value = { locale, direction, t: createUiTranslator(locale) };
 
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- sets document language and direction before paint so portals follow the selected interface
   useLayoutEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = direction;

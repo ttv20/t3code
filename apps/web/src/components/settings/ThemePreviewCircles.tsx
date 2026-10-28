@@ -167,14 +167,14 @@ export function ThemePreviewCircles({
         const mode = preview.mode;
         const isPicked = activeModes.includes(mode);
         return (
-          <Tooltip key={mode}>
+          <Tooltip key={uiT(mode)}>
             <TooltipTrigger
               render={
                 <button
                   aria-label={uiT("Use {0} {1} mode", { "0": label, "1": uiT(mode) })}
                   aria-pressed={isPicked}
                   className={cn(
-                    "relative flex size-[68px] shrink-0 transform-gpu cursor-pointer items-center justify-center rounded-full p-1 outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+                    "relative flex size-[68px] shrink-0 transform-gpu cursor-pointer items-center justify-center rounded-full p-1.5 outline-none transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-5 focus-visible:outline-foreground/60",
                     isPicked && "hover:scale-100",
                   )}
                   onClick={(event) => {

@@ -97,6 +97,7 @@ const LOGIN_SHELL_ENV_NAMES = [
   "T3CODE_TELEMETRY_ENABLED",
   "T3CODE_POSTHOG_KEY",
   "T3CODE_POSTHOG_HOST",
+  "T3CODE_GITHUB_APP_CLIENT_ID",
   "__MISE_DIFF",
 ] as const;
 const WINDOWS_PROFILE_ENV_NAMES = ["PATH", "FNM_DIR", "FNM_MULTISHELL_PATH"] as const;
@@ -457,6 +458,7 @@ const installPosixEnvironment = Effect.fn("desktop.shellEnvironment.installPosix
       "T3CODE_TELEMETRY_ENABLED",
       "T3CODE_POSTHOG_KEY",
       "T3CODE_POSTHOG_HOST",
+      "T3CODE_GITHUB_APP_CLIENT_ID",
     ] as const) {
       if (!config.env[name] && shellEnvironment[name]) {
         config.env[name] = shellEnvironment[name];

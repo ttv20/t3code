@@ -1,17 +1,17 @@
 import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from "expo-audio";
-import { useCallback, useEffect, useState } from "react";
-import { AppState, Linking, Pressable, View } from "react-native";
+import { useState } from "react";
+import { Linking, useWindowDimensions, View } from "react-native";
 import Reanimated, { ReduceMotion, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { type AppSymbolName, SymbolView } from "../../components/ui/AppSymbol";
+import { type AppSymbolName } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
+import { makePermissionStatusAtom } from "../../lib/permissionStatusAtom";
 import {
   isMicrophoneDevice,
   type MicrophoneEntry,
@@ -20,36 +20,37 @@ import {
   microphoneOrder,
 } from "../../lib/microphonePriority";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
-import { SettingsActionRow } from "./components/SettingsActionRow";
+import { ListRowLayout } from "../../components/ui/ListRowLayout";
+import { ThreadSwipeable } from "../home/thread-swipe-actions";
+import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { SettingsDragHandle } from "./components/SettingsDragHandle";
 import { SettingsSection } from "./components/SettingsSection";
 
-const REMOVE_SIZE = 20;
-
 type MicrophonePermission = "checking" | "granted" | "ask" | "denied";
 
+function toMicrophonePermission(response: {
+  readonly granted: boolean;
+  readonly canAskAgain: boolean;
+}): MicrophonePermission {
+  return response.granted ? "granted" : response.canAskAgain ? "ask" : "denied";
+}
+
+const readMicrophonePermission = () =>
+  getRecordingPermissionsAsync().then(toMicrophonePermission, (): MicrophonePermission => "ask");
+
+const microphonePermissionAtom = makePermissionStatusAtom<MicrophonePermission>({
+  label: "mobile:microphone-permission",
+  initial: "checking",
+  read: readMicrophonePermission,
+});
+
 function useMicrophonePermission() {
-  const [permission, setPermission] = useState<MicrophonePermission>("checking");
-  const apply = useCallback(
-    (response: { readonly granted: boolean; readonly canAskAgain: boolean }) =>
-      setPermission(response.granted ? "granted" : response.canAskAgain ? "ask" : "denied"),
-    [],
-  );
-  const refresh = useCallback(
-    () => void getRecordingPermissionsAsync().then(apply, () => setPermission("ask")),
-    [apply],
-  );
-  useEffect(() => {
-    refresh();
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") refresh();
-    });
-    return () => subscription.remove();
-  }, [refresh]);
-  const request = useCallback(
-    () => void requestRecordingPermissionsAsync().then(apply, refresh),
-    [apply, refresh],
-  );
+  const permission = useAtomValue(microphonePermissionAtom);
+  const setPermission = useAtomSet(microphonePermissionAtom);
+  const request = () =>
+    void requestRecordingPermissionsAsync()
+      .then(toMicrophonePermission, readMicrophonePermission)
+      .then(setPermission);
   return { permission, request };
 }
 
@@ -98,9 +99,7 @@ export function SettingsMicrophoneRouteScreen() {
   const entries = microphoneOrder(
     AsyncResult.isSuccess(preferencesResult) ? preferencesResult.value.microphones : undefined,
   );
-  const hasDevices = entries.some(isMicrophoneDevice);
   const { permission, request: requestPermission } = useMicrophonePermission();
-  const [editing, setEditing] = useState(false);
   const [drag, setDrag] = useState<{ readonly key: string; readonly translation: number } | null>(
     null,
   );
@@ -170,18 +169,7 @@ export function SettingsMicrophoneRouteScreen() {
             </Text>
           </>
         ) : null}
-        <SettingsSection
-          title={uiT("Preferred order")}
-          trailing={
-            hasDevices ? (
-              <Button
-                label={editing ? uiT("Done") : uiT("Edit")}
-                tone="text"
-                onPress={() => setEditing((value) => !value)}
-              />
-            ) : undefined
-          }
-        >
+        <SettingsSection title={uiT("Preferred order")}>
           {entries.map((entry, index) => {
             const key = microphoneEntryKey(entry);
             const shift =
@@ -199,7 +187,6 @@ export function SettingsMicrophoneRouteScreen() {
                 position={index + 1}
                 count={entries.length}
                 reorderable={ready}
-                editing={editing && hasDevices}
                 offset={index === dragFrom ? (drag?.translation ?? 0) : shift}
                 lifted={index === dragFrom}
                 onHeight={setRowHeight}
@@ -218,7 +205,7 @@ export function SettingsMicrophoneRouteScreen() {
         </SettingsSection>
         <Text className="px-2 text-sm text-foreground-muted">
           {uiT(
-            "Voice input records from the first connected microphone in this list. Wired and Bluetooth devices are added by name after you use voice input with them connected; until then, the Other row ranks them.",
+            "Voice input records from the first connected microphone in this list. Wired and Bluetooth devices are added by name after you use voice input with them connected; until then, the Other row ranks them. Swipe a device left to forget it.",
           )}
         </Text>
       </ScrollView>
@@ -231,7 +218,6 @@ function MicrophoneRow(props: {
   readonly position: number;
   readonly count: number;
   readonly reorderable: boolean;
-  readonly editing: boolean;
   readonly offset: number;
   readonly lifted: boolean;
   readonly onHeight: (height: number) => void;
@@ -243,9 +229,10 @@ function MicrophoneRow(props: {
 }) {
   const { t: uiT } = useUiLanguage();
 
-  const { lifted, offset, entry } = props;
+  const { lifted, offset, entry, onForget } = props;
   const kind = KINDS[entry.kind];
   const title = isMicrophoneDevice(entry) ? entry.name : kind.row;
+  const { width: windowWidth } = useWindowDimensions();
   const style = useAnimatedStyle(() => ({
     transform: [
       {
@@ -256,35 +243,9 @@ function MicrophoneRow(props: {
     ],
     zIndex: lifted ? 1 : 0,
   }));
-  return (
-    <Reanimated.View
-      style={style}
-      onLayout={(event) => props.onHeight(event.nativeEvent.layout.height)}
-      className={cn(
-        "flex-row items-center gap-4 pl-4",
-        props.position > 1 && !lifted && "border-t border-border-subtle",
-        lifted && "bg-grouped-card shadow-md",
-        !props.reorderable && "pr-4",
-      )}
-    >
-      {props.editing && props.onForget ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={uiT("Forget {0}", { "0": title })}
-          hitSlop={8}
-          onPress={props.onForget}
-          className="active:opacity-70"
-        >
-          <SymbolView
-            name="xmark.circle.fill"
-            size={REMOVE_SIZE}
-            tintColorClassName="accent-danger-foreground"
-            type="monochrome"
-          />
-        </Pressable>
-      ) : props.editing ? (
-        <View style={{ width: REMOVE_SIZE }} />
-      ) : null}
+  const row = (
+    // Opaque so the swipe actions stay hidden until the row slides over them.
+    <View className="flex-row items-center bg-grouped-card">
       <View
         accessible
         accessibilityLabel={uiT("{0}, {1}, {2} of {3}", {
@@ -293,23 +254,17 @@ function MicrophoneRow(props: {
           "2": props.position,
           "3": props.count,
         })}
-        className="min-w-0 flex-1 flex-row items-center gap-4 py-4"
+        accessibilityActions={onForget ? [{ name: "forget", label: uiT("Forget") }] : undefined}
+        onAccessibilityAction={({ nativeEvent }) => {
+          if (nativeEvent.actionName === "forget") onForget?.();
+        }}
+        className="min-w-0 flex-1"
       >
-        <SymbolView
-          name={kind.icon}
-          size={22}
-          tintColorClassName="accent-icon"
-          type="monochrome"
-          weight="regular"
+        <ListRowLayout
+          icon={kind.icon}
+          label={title}
+          description={isMicrophoneDevice(entry) ? kind.label : kind.rowDescription}
         />
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text numberOfLines={1} className="text-lg text-foreground">
-            {title}
-          </Text>
-          <Text numberOfLines={1} className="text-sm text-foreground-muted">
-            {isMicrophoneDevice(entry) ? kind.label : kind.rowDescription}
-          </Text>
-        </View>
       </View>
       {props.reorderable ? (
         <SettingsDragHandle
@@ -322,6 +277,39 @@ function MicrophoneRow(props: {
           onStep={props.onStep}
         />
       ) : null}
+    </View>
+  );
+  return (
+    <Reanimated.View
+      style={style}
+      onLayout={(event) => props.onHeight(event.nativeEvent.layout.height)}
+      className={cn(
+        props.position > 1 && !lifted && "border-t border-border-subtle",
+        lifted && "bg-grouped-card shadow-md",
+      )}
+    >
+      {onForget ? (
+        <ThreadSwipeable
+          backgroundColor="transparent"
+          fullSwipeAction="primary"
+          fullSwipeWidth={windowWidth - 40}
+          onDelete={onForget}
+          primaryAction={{
+            accessibilityLabel: uiT("Forget {0}", { "0": title }),
+            destructive: true,
+            icon: "trash",
+            label: uiT("Forget"),
+            onPress: onForget,
+          }}
+          secondaryAction={null}
+          threadKey={`microphone:${microphoneEntryKey(entry)}`}
+          threadTitle={title}
+        >
+          {() => row}
+        </ThreadSwipeable>
+      ) : (
+        row
+      )}
     </Reanimated.View>
   );
 }

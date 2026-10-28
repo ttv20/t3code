@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import type { ComponentProps } from "react";
 import {
@@ -50,16 +49,19 @@ export interface AgentActivityProps {
   readonly activeCount: number;
   readonly updatedAt: string;
   readonly activities: ReadonlyArray<AgentActivityRowProps>;
+  readonly messages?: Readonly<Record<string, string>>;
 }
 
 // Widget serialization excludes module helpers; use only imported view/modifier factories.
-export function AgentActivity(
+function AgentActivity(
   props: AgentActivityProps,
   environment: LiveActivityEnvironment,
 ): LiveActivityLayout {
-  const { t: uiT } = useUiLanguage();
-
-  ("widget");
+  "widget";
+  const uiT = (message: string, values: Readonly<Record<string, unknown>> = {}) =>
+    (props.messages?.[message] ?? message).replace(/\{(\d+)\}/g, (token, key: string) =>
+      String(values[key] ?? token),
+    );
 
   // Hierarchical foregrounds inherit system tint and vibrancy.
   type Foreground = Parameters<typeof foregroundStyle>[0];
@@ -133,7 +135,7 @@ export function AgentActivity(
   const doneLabel = failedRow ? uiT("Failed") : uiT("Done");
   const outcomeLabel = failedRow ? uiT("Agent work failed") : uiT("Agent work completed");
 
-  const agentWord = props.activeCount === 1 ? "agent" : "agents";
+  const agentWord = props.activeCount === 1 ? uiT("agent") : uiT("agents");
   const agentsLabel = allDone
     ? outcomeLabel
     : environment.isStale
@@ -349,8 +351,8 @@ export function AgentActivity(
       >
         {attentionRow
           ? attentionRow.phase === "waiting_for_approval"
-            ? uiT("Approval")
-            : uiT("Input")
+            ? (props.messages?.["Approval"] ?? "Approval")
+            : (props.messages?.["Input"] ?? "Input")
           : failedRow
             ? "Failed"
             : activeLabel}

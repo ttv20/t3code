@@ -28,8 +28,8 @@ GitCafe.
 ```sh
 git remote set-url origin https://git.cafe/pingdotgg/t3code.git
 git remote add github https://github.com/pingdotgg/t3code.git
-gh repo set-default pingdotgg/t3code   # for the few `gh` commands below
-bun install -g @gitcafe/cli   # `cafe` needs Bun 1.2 or newer
+gh repo set-default pingdotgg/t3code   # `gh` is still used for merging
+bun install -g @gitcafe/cli@latest   # `cafe` needs Bun 1.2 or newer
 cafe auth login && cafe auth http setup
 cafe skills install --global  # optional: cafe-* skills for coding agents
 ```
@@ -39,14 +39,14 @@ With `origin` on git.cafe, work through GitCafe and leave GitHub's API alone:
 - Push to `origin`, open PRs with `cafe pr create` (`--head owner/repo:branch` from a fork) or
   `cafe stack submit`, and use `cafe` for everything after that. Link the git.cafe PR URL, not the
   github.com one, wherever a tool tracks the PR, so polling stays on GitCafe.
-- Read checks with `cafe pr status <n>`.
+- Read checks with `cafe pr status <n>`, and GitHub Actions logs with `cafe ci logs <run>` (run ids
+  from `cafe ci list --pr <n>`). `cafe ci rerun <run>` reruns one. These need `cafe` 0.11 or newer.
 - Write closing references as `Fixes pingdotgg/t3code#<n>`. GitCafe turns a bare `#<n>` in text it
   syncs to GitHub into a git.cafe link, and GitHub does not close issues from those.
-- Two things still need `gh`: CI logs and reruns (`gh run view --log`, `gh run rerun`), and
-  merging, with `gh pr merge <n> --match-head-commit <sha>`, because `cafe pr merge` cannot pin
-  the commit you reviewed.
-- `cafe` flags differ from `gh`: `--repo` not `-R`, `cafe issue comments <n>` not `--comments`,
-  `cafe pr status` not `pr checks`. `cafe api` paths omit `/api` (`cafe api /repos/...`).
+- Merge with `gh pr merge <n> --match-head-commit <sha>`, because `cafe pr merge` cannot pin the
+  commit you reviewed.
+- `cafe` commands differ from `gh`: `cafe issue comments <n>` not `--comments`, `cafe pr status`
+  not `pr checks`.
 
 ## Choosing a dev process
 
@@ -62,13 +62,29 @@ Add `--browser` to open a browser automatically.
 Linked worktrees default to their own `.t3/userdata`, even when `T3CODE_HOME` is set.
 The main checkout defaults to `~/.t3/dev`. An explicit `--home-dir` wins in both cases.
 The first start in a worktree seeds its empty database from a read-only copy of
-`~/.t3/userdata`; `--no-seed` or `T3CODE_DEV_SEED=0` skips that.
+`~/.t3/userdata/statev2.sqlite` if the source is at most 500 MiB. Larger sources warn
+and dev starts with an empty database. `--no-seed` or `T3CODE_DEV_SEED=0` skips seeding.
+To copy a larger source, run `vp run migrate-dev-db` with dev stopped. It may use
+substantial disk space before pruning.
 Never run a development server against the live `~/.t3/userdata`.
 See [test data](../../AGENTS.md#test-data) for copying a consistent database snapshot.
 
 Read ports from the `[dev-runner]` output. Worktrees derive stable preferences from their paths,
 but occupied ports can shift them. `T3CODE_PORT_OFFSET` or `T3CODE_DEV_INSTANCE` can select a
 different preference when needed.
+
+### Replay provider
+
+`vp run dev` registers `Replay (dev)`, a local ACP agent at
+[dev-replay-agent.ts](../../apps/server/scripts/dev-replay-agent.ts). It plays recorded
+ACP transcripts with simulated streaming, so the real adapter, orchestration, and UI run
+without a paid model. Each scenario is a model, and each prompt plays the next recorded turn.
+Bundled servers, including desktop dev, skip it because they have no agent script.
+Dev servers add it back on start, so turn it off in Settings instead of removing it.
+To add a scenario, point a `SCENARIOS` entry at a generic ACP replay fixture
+(`registry_transcript.ndjson`) or a file in [dev-replay](../../apps/server/scripts/dev-replay).
+The agent replays session updates, permission requests, and questions. It drops session setup
+and vendor frames, so Grok and fx recordings lose their vendor-only behavior.
 
 ### Sharing and remote debugging
 

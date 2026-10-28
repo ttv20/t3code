@@ -56,10 +56,11 @@ function DocumentPreview(props: {
     if (props.onOpenError) props.onOpenError(error);
     else
       Dialog.alert(
-        "Could not open document",
-        "A compatible viewer must be installed. Check your connection and try again.",
+        uiT("Could not open document"),
+        uiT("A compatible viewer must be installed. Check your connection and try again."),
       );
   });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- opens the attachment in an external viewer and aborts the open on cleanup
   useEffect(() => {
     const controller = new AbortController();
     const input = {

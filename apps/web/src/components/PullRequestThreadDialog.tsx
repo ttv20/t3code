@@ -9,13 +9,13 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   readCachedPullRequestResolution,
   usePreparePullRequestThreadAction,
-  usePullRequestResolution,
-} from "~/lib/sourceControlActions";
+  usePullRequestResolutionState,
+} from "~/state/sourceControlActions";
 import { cn } from "~/lib/utils";
 import { parsePullRequestReference } from "@t3tools/client-runtime/pull-request-link-input";
 import { getSourceControlPresentation } from "~/sourceControlPresentation";
@@ -92,20 +92,9 @@ export function PullRequestThreadDialog({
   const terminology = sourceControlPresentation.terminology;
   const SourceControlIcon = sourceControlPresentation.Icon;
 
-  useEffect(() => {
-    if (!open) return;
-    const frame = window.requestAnimationFrame(() => {
-      referenceInputRef.current?.focus();
-      referenceInputRef.current?.select();
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [open]);
-
   const parsedReference = parsePullRequestReference(reference);
   const parsedDebouncedReference = parsePullRequestReference(debouncedReference);
-  const pullRequestResolution = usePullRequestResolution({
+  const pullRequestResolution = usePullRequestResolutionState({
     environmentId,
     cwd,
     reference: open ? parsedDebouncedReference : null,
@@ -209,11 +198,18 @@ export function PullRequestThreadDialog({
         }
       }}
     >
-      <DialogPopup className="max-w-xl">
+      <DialogPopup
+        className="max-w-xl"
+        initialFocus={() => {
+          referenceInputRef.current?.focus();
+          referenceInputRef.current?.select();
+          return false;
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <SourceControlIcon className="me-2 size-4" />
-            {uiT("Checkout")} {terminology.singular}
+            {uiT("Checkout")} {uiT(terminology.singular)}
           </DialogTitle>
           <DialogDescription>
             <UiText
@@ -222,7 +218,7 @@ export function PullRequestThreadDialog({
               }
               values={{
                 "0": sourceControlPresentation.providerName,
-                "1": <UiText message={terminology.singular} />,
+                "1": <UiText message={uiT(terminology.singular)} />,
               }}
             />
           </DialogDescription>
@@ -230,7 +226,7 @@ export function PullRequestThreadDialog({
         <DialogPanel>
           <label className="grid gap-1.5">
             <span className="text-xs font-medium text-foreground capitalize">
-              {terminology.singular}
+              {uiT(terminology.singular)}
             </span>
             <Input
               ref={referenceInputRef}
@@ -283,7 +279,7 @@ export function PullRequestThreadDialog({
           {isResolving ? (
             <div className="flex items-center gap-2 text-muted-foreground text-xs">
               <Spinner size="sm" />
-              {uiT("Resolving")} {terminology.singular}...
+              {uiT("Resolving")} {uiT(terminology.singular)}...
             </div>
           ) : null}
 

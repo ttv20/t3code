@@ -9,7 +9,7 @@ import { useNavigation, type StaticScreenProps } from "@react-navigation/native"
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestReviewerCandidate } from "@t3tools/contracts";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -90,13 +90,14 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
         (a, b) => Number(b.isRequested) - Number(a.isRequested) || a.login.localeCompare(b.login),
       );
   })();
-  useEffect(() => {
-    if (candidates.length === 0) return;
+  // A new search shows its best matches from the top.
+  const search = (next: string) => {
+    setQuery(next);
     listRef.current?.scrollToOffset({
       offset: Platform.OS === "ios" ? -insets.top : 0,
       animated: false,
     });
-  }, [candidates, insets.top]);
+  };
   const update = async (
     candidate: Pick<PullRequestReviewerCandidate, "id" | "kind" | "isRequested">,
   ) => {
@@ -122,7 +123,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
       return;
     }
     if (!pr?.capabilities.reviewers.listCandidates) {
-      setQuery("");
+      search("");
       detail.refresh();
     }
   };
@@ -130,8 +131,8 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
   const searchOptions = {
     placeholder: uiT("Search reviewers"),
     autoCapitalize: "none" as const,
-    onChangeText: (event: { nativeEvent: { text: string } }) => setQuery(event.nativeEvent.text),
-    onCancelButtonPress: () => setQuery(""),
+    onChangeText: (event: { nativeEvent: { text: string } }) => search(event.nativeEvent.text),
+    onCancelButtonPress: () => search(""),
     hideNavigationBar: false,
     hideWhenScrolling: false,
     obscureBackground: false,
@@ -154,7 +155,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               ? [
                   createNativeMailSearchToolbarItem({
                     placeholder: uiT("Search reviewers"),
-                    onSearchTextChange: setQuery,
+                    onSearchTextChange: search,
                     showsSearchDismissButton: true,
                     searchTextChangeId: "pr-reviewer-search",
                   }),
@@ -188,7 +189,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                   placeholder={uiT("Search reviewers")}
                   placeholderTextColorClassName="accent-foreground-muted"
                   value={query}
-                  onChangeText={setQuery}
+                  onChangeText={search}
                   autoCapitalize="none"
                   className="min-h-11 rounded-xl bg-grouped-card px-3 text-sm"
                 />
@@ -299,7 +300,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                 placeholder={uiT("Reviewer login or ID")}
                 placeholderTextColorClassName="accent-foreground-muted"
                 value={query}
-                onChangeText={setQuery}
+                onChangeText={search}
                 autoCapitalize="none"
                 autoCorrect={false}
                 className="min-h-12 rounded-xl bg-grouped-card px-3 text-base"

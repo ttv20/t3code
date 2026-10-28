@@ -13,7 +13,10 @@ export function ThreadListFilters(
     | "selectedProjectKey"
     | "onEnvironmentChange"
     | "onProjectChange"
-  >,
+  > & {
+    /** List padding the scroller bleeds through so pills start where row content does. */
+    readonly gutter: number;
+  },
 ) {
   const { t: uiT } = useUiLanguage();
   const selectedEnvironment = props.environments.find(
@@ -26,7 +29,8 @@ export function ThreadListFilters(
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10, gap: 8 }}
+      style={{ marginHorizontal: -props.gutter }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 10, gap: 8 }}
     >
       <ListFilterMenu
         label={selectedEnvironment?.label ?? uiT("All environments")}
