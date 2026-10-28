@@ -3,13 +3,26 @@ package expo.modules.t3agentnotifications
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.Promise
 
 class T3AgentNotificationsModule : Module() {
+  private val completionGraceHandler = Handler(Looper.getMainLooper())
+
   override fun definition() = ModuleDefinition {
     Name("T3AgentNotifications")
+
+    AsyncFunction("waitForCompletionGrace") { delayMs: Double, promise: Promise ->
+      completionGraceHandler.postDelayed({ promise.resolve(null) }, delayMs.toLong().coerceAtLeast(0))
+    }
+
+    OnDestroy {
+      completionGraceHandler.removeCallbacksAndMessages(null)
+    }
 
     Function("configure") {
         deviceId: String,

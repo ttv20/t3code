@@ -350,6 +350,21 @@ describe("resolveSnoozePresets", () => {
 });
 
 describe("localized snooze presets", () => {
+  it("keeps Hebrew snooze menus usable without RelativeTimeFormat", () => {
+    const original = Object.getOwnPropertyDescriptor(Intl, "RelativeTimeFormat")!;
+    using _restore = {
+      [Symbol.dispose]: () => Object.defineProperty(Intl, "RelativeTimeFormat", original),
+    };
+    Object.defineProperty(Intl, "RelativeTimeFormat", { ...original, value: undefined });
+    const presets = resolveSnoozePresets(localDate(2026, 4, 8, 10), {
+      locale: "he",
+      presets: [{ kind: "after", minutes: 180 }],
+      formatTime: () => "13:00",
+    });
+    expect(presets[0]?.label).toMatch(/[\u0590-\u05ff]/u);
+    expect(presets[0]?.label).toContain("2026");
+    expect(presets[0]?.snoozedUntil).toBe(localDate(2026, 4, 8, 13).toISOString());
+  });
   it("uses the selected interface language for custom durations and calendar weekdays", () => {
     const presets = resolveSnoozePresets(localDate(2026, 4, 8, 10), {
       locale: "he",

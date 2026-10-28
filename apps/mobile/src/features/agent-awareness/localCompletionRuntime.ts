@@ -21,6 +21,7 @@ import {
   type LocalCompletionThread,
 } from "./localCompletionNotifications";
 import { hasAgentAwarenessPushRegistration } from "./remoteRegistration";
+import { scheduleAndroidNotificationGrace } from "./androidNotifications";
 
 export function installLocalCompletionNotifications(): () => void {
   if (Platform.OS !== "android") return () => undefined;
@@ -89,6 +90,7 @@ export function installLocalCompletionNotifications(): () => void {
   };
   const tracker = createLocalCompletionNotifications({
     canNotify,
+    schedule: scheduleAndroidNotificationGrace,
     notify: (environmentId, thread) => {
       void present(environmentId, thread).catch((error) =>
         console.warn("Could not show local completion notification.", error),

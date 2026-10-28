@@ -1003,12 +1003,15 @@ const RootStackConfig = createWorkspaceStackNavigator({
       screen: ConnectionsNewRouteScreen,
       linking: "connections/new",
       options: {
-        // Mount the iOS header immediately to avoid remounting the pairing form.
-        ...(Platform.OS === "ios" ? SHEET_GLASS_HEADER_OPTIONS : undefined),
         title: "Add Environment",
-        ...HORIZONTAL_FORM_SHEET_OPTIONS,
-        sheetAllowedDetents: [0.55, 0.7],
-        sheetGrabberVisible: true,
+        ...(Platform.OS === "android"
+          ? { presentation: "card" as const, headerShown: false }
+          : {
+              ...SHEET_GLASS_HEADER_OPTIONS,
+              ...HORIZONTAL_FORM_SHEET_OPTIONS,
+              sheetAllowedDetents: [0.55, 0.7],
+              sheetGrabberVisible: true,
+            }),
       },
     }),
     NotFound: createNativeStackScreen({

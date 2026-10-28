@@ -13,6 +13,7 @@ const { Children, harness } = vi.hoisted(() => ({
 }));
 
 vi.mock("react-native", () => ({
+  Platform: { OS: "ios" },
   View: Children,
   Pressable: Children,
   Linking: { openSettings: vi.fn() },

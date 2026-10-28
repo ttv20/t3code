@@ -53,6 +53,47 @@ function setup() {
   };
 }
 
+it("delivers and cancels background grace without advancing React Native frame timers", () => {
+  vi.useFakeTimers();
+  const notifications: string[] = [];
+  const callbacks: Array<() => void> = [];
+  const cancelled = new Set<number>();
+  const tracker = createLocalCompletionNotifications({
+    canNotify: () => true,
+    notify: (_, thread) => notifications.push(thread.runId!),
+    schedule: (callback: () => void, delayMs: number) => {
+      expect(delayMs).toBe(WORKING_EXIT_GRACE_MS);
+      const index = callbacks.push(callback) - 1;
+      return () => cancelled.add(index);
+    },
+  });
+  const thread = (runId: string, completed: boolean): LocalCompletionThread => ({
+    id: "thread",
+    runId,
+    completed,
+    quiet: false,
+    title: "שלום",
+  });
+  const observe = (runId: string, completed: boolean) =>
+    tracker.observe("env", { generation: 1, live: true, threads: [thread(runId, completed)] });
+  try {
+    observe("run-1", false);
+    observe("run-1", true);
+    expect(callbacks).toHaveLength(1);
+    callbacks[0]!();
+    expect(notifications).toEqual(["run-1"]);
+    observe("run-2", false);
+    observe("run-2", true);
+    observe("run-3", false);
+    expect(cancelled.has(1)).toBe(true);
+    callbacks[1]!();
+    expect(notifications).toEqual(["run-1"]);
+  } finally {
+    tracker.dispose();
+    vi.useRealTimers();
+  }
+});
+
 it("notifies once for a live completion after the continuation grace, scoped by environment and run", () => {
   using h = setup();
   for (const env of ["machine-a", "machine-b"]) h.observe(env, [h.thread(false)]);

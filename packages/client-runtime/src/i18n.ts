@@ -56,12 +56,32 @@ export const UI_DATE_LOCALES = {
 } as const;
 
 const relativeTimeFormatters = new Map<UiLocale, Intl.RelativeTimeFormat>();
+const dateTimeFormatters = new Map<UiLocale, Intl.DateTimeFormat>();
+
+export function formatUiDateTime(value: number, locale: UiLocale) {
+  let formatter = dateTimeFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(UI_DATE_LOCALES[locale], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    dateTimeFormatters.set(locale, formatter);
+  }
+  return formatter.format(value);
+}
 
 /** Format past and future instants in the interface language; reject invalid dates. */
 // @effect-diagnostics-next-line globalDate:off -- UI labels also run outside an Effect runtime.
 export function formatUiRelativeTime(value: string, locale: UiLocale, now = Date.now()) {
   const elapsedSeconds = (Date.parse(value) - now) / 1000;
   if (!Number.isFinite(elapsedSeconds)) return null;
+  // Hermes can format calendar dates but does not provide RelativeTimeFormat.
+  if (typeof Intl.RelativeTimeFormat !== "function") {
+    return formatUiDateTime(Date.parse(value), locale);
+  }
   let formatter = relativeTimeFormatters.get(locale);
   if (!formatter) {
     formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });

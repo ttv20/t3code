@@ -18,22 +18,29 @@ export interface LocalCompletionSnapshot {
 export function createLocalCompletionNotifications(options: {
   readonly canNotify: (environmentId: string) => boolean;
   readonly notify: (environmentId: string, thread: LocalCompletionThread) => void;
+  readonly schedule?: (callback: () => void, delayMs: number) => () => void;
 }) {
+  const schedule =
+    options.schedule ??
+    ((callback, delayMs) => {
+      const timer = setTimeout(callback, delayMs);
+      return () => clearTimeout(timer);
+    });
   const environments = new Map<
     string,
     {
       generation: number;
       previous: ReadonlyMap<string, LocalCompletionThread>;
       readonly handled: Map<string, string>;
-      readonly pending: Map<string, ReturnType<typeof setTimeout>>;
+      readonly pending: Map<string, () => void>;
     }
   >();
   const cancel = (environmentId: string, threadId?: string) => {
     const state = environments.get(environmentId);
     if (!state) return;
-    for (const [id, timer] of state.pending) {
+    for (const [id, stop] of state.pending) {
       if (threadId !== undefined && threadId !== id) continue;
-      clearTimeout(timer);
+      stop();
       state.pending.delete(id);
     }
   };
@@ -81,7 +88,7 @@ export function createLocalCompletionNotifications(options: {
         const runId = thread.runId;
         previous.pending.set(
           thread.id,
-          setTimeout(() => {
+          schedule(() => {
             previous.pending.delete(thread.id);
             previous.handled.set(thread.id, runId);
             const latest = previous.previous.get(thread.id);

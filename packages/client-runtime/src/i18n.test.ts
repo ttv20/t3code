@@ -13,6 +13,24 @@ import {
 } from "./i18n.ts";
 
 describe("interface localization", () => {
+  it.each(["en", "he", "ar", "fa"] as const)(
+    "keeps timestamps readable in %s without RelativeTimeFormat",
+    (locale) => {
+      const original = Object.getOwnPropertyDescriptor(Intl, "RelativeTimeFormat")!;
+      using _restore = {
+        [Symbol.dispose]: () => Object.defineProperty(Intl, "RelativeTimeFormat", original),
+      };
+      Object.defineProperty(Intl, "RelativeTimeFormat", { ...original, value: undefined });
+      const now = Date.parse("2026-10-15T00:00:00Z");
+      const past = formatUiRelativeTime("2026-10-14T23:55:00Z", locale, now);
+      const future = formatUiRelativeTime("2026-10-15T03:00:00Z", locale, now);
+      expect(past).toEqual(expect.any(String));
+      expect(future).toEqual(expect.any(String));
+      expect(past).not.toBe(future);
+      expect(past).toMatch(/[0-9\u0660-\u0669\u06f0-\u06f9]{4}/u);
+      expect(formatUiRelativeTime("invalid", locale, now)).toBeNull();
+    },
+  );
   it.each(["en", "he", "ar", "fa"] as const)("formats past and future instants in %s", (locale) => {
     const now = Date.parse("2026-10-15T00:00:00Z");
     const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });

@@ -1,5 +1,5 @@
 // @effect-diagnostics globalDate:off -- UI snooze presets use local calendar boundaries and Intl labels.
-import { createUiTranslator, UI_DATE_LOCALES, type UiLocale } from "../i18n.ts";
+import { createUiTranslator, formatUiDateTime, UI_DATE_LOCALES, type UiLocale } from "../i18n.ts";
 import * as DateTime from "effect/DateTime";
 import { DEFAULT_SNOOZE_PRESETS, type SnoozePresetSetting } from "@t3tools/contracts/settings";
 
@@ -244,6 +244,9 @@ function snoozePresetLabel(
   if (locale !== "en") {
     const t = createUiTranslator(locale);
     if (setting.kind === "after") {
+      if (typeof Intl.RelativeTimeFormat !== "function") {
+        return formatUiDateTime(wake.getTime(), locale);
+      }
       const minutes = setting.minutes;
       const [value, unit] =
         minutes % 1440 === 0

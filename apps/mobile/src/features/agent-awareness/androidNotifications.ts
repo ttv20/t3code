@@ -8,6 +8,7 @@ interface AndroidAgentNotifications {
   setThreadOnScreen?(path: string | null): void;
   openLiveUpdateSettings?(): boolean;
   showShowcaseActivity?(scheme: string, data: Record<string, string>): void;
+  waitForCompletionGrace?(delayMs: number): Promise<void>;
 }
 
 const native =
@@ -44,6 +45,27 @@ export function clearAndroidAgentNotifications(): void {
 
 export function setAndroidThreadOnScreen(path: string | null): void {
   native?.setThreadOnScreen?.(path);
+}
+
+export function scheduleAndroidNotificationGrace(
+  callback: () => void,
+  delayMs: number,
+): () => void {
+  let cancelled = false;
+  // React Native's frame timers stop on Activity pause, while the socket can still receive completion.
+  const wait = native?.waitForCompletionGrace?.(delayMs);
+  if (wait === undefined) {
+    console.warn("Local completion notifications require an updated native client.");
+    return () => undefined;
+  }
+  void wait
+    .then(() => {
+      if (!cancelled) callback();
+    })
+    .catch((error) => console.warn("Could not wait for local completion notification.", error));
+  return () => {
+    cancelled = true;
+  };
 }
 
 export function supportsAndroidLiveUpdateSettings(): boolean {

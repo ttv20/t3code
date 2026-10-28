@@ -15,7 +15,7 @@ import {
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { useState } from "react";
-import { Linking, Pressable, StyleSheet, View } from "react-native";
+import { Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { cn } from "../../lib/cn";
@@ -181,7 +181,7 @@ function PairingForm({
 
   return (
     <SettingsScreen
-      formSheet={routeName === "ConnectionsNew"}
+      formSheet={Platform.OS === "ios" && routeName === "ConnectionsNew"}
       title={uiT("Add environment")}
       actions={[
         {
