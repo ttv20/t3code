@@ -265,7 +265,7 @@ export function ShimmeringWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { direction, t: uiT } = useUiLanguage();
 
   const [availableWidth, setAvailableWidth] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
@@ -318,13 +318,15 @@ export function ShimmeringWorkContent(props: {
   // The React Compiler memoizes these, so re-renders don't rebuild the native
   // animation nodes.
   const inputRange = [0, SHIMMER_SWEEP_MS / (SHIMMER_SWEEP_MS + SHIMMER_PAUSE_MS), 1];
+  const sweepStart = direction === "rtl" ? SHIMMER_WIDTH : -SHIMMER_WIDTH;
+  const sweepEnd = direction === "rtl" ? -contentWidth : contentWidth;
   const sweepTranslateX = progress.interpolate({
     inputRange,
-    outputRange: [-SHIMMER_WIDTH, contentWidth, contentWidth],
+    outputRange: [sweepStart, sweepEnd, sweepEnd],
   });
   const counterSweepTranslateX = progress.interpolate({
     inputRange,
-    outputRange: [SHIMMER_WIDTH, -contentWidth, -contentWidth],
+    outputRange: [-sweepStart, -sweepEnd, -sweepEnd],
   });
 
   return (
@@ -355,7 +357,7 @@ export function ShimmeringWorkContent(props: {
             position: "absolute",
             top: 0,
             bottom: 0,
-            left: 0,
+            start: 0,
             overflow: "hidden",
             width: SHIMMER_WIDTH,
             transform: [{ translateX: sweepTranslateX }],
@@ -381,7 +383,13 @@ export function ShimmeringWorkContent(props: {
             }
           >
             <NativeAnimated.View
-              style={{ width: availableWidth, transform: [{ translateX: counterSweepTranslateX }] }}
+              style={{
+                position: "absolute",
+                top: 0,
+                start: 0,
+                width: availableWidth,
+                transform: [{ translateX: counterSweepTranslateX }],
+              }}
             >
               <ShimmerWorkContent
                 textClassName={props.textClassName}

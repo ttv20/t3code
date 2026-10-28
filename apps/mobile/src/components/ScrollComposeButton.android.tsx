@@ -4,7 +4,6 @@ import { Box, ExtendedFloatingActionButton, Icon, Text } from "@expo/ui/jetpack-
 import {
   defaultMinSize,
   fillMaxWidth,
-  graphicsLayer,
   height,
   onSizeChanged,
   size,
@@ -22,7 +21,7 @@ export function ScrollComposeButton(props: {
   readonly className?: string;
   readonly style?: StyleProp<ViewStyle>;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { direction, t: uiT } = useUiLanguage();
   const { appearance, themeVariables: colors } = useAppearancePreferences();
   const typography = resolveScaledTextRole("footnote", appearance.baseFontSize);
   const { iconSize, fabSize } = useAndroidControlSizing();
@@ -39,7 +38,14 @@ export function ScrollComposeButton(props: {
       className={props.className}
       style={[props.style, { left: 20, height: fabSize }]}
     >
-      <View pointerEvents="none" importantForAccessibility="no-hide-descendants">
+      <View
+        pointerEvents="none"
+        importantForAccessibility="no-hide-descendants"
+        style={{
+          transform: [{ scale }],
+          transformOrigin: direction === "rtl" ? "left top" : "right top",
+        }}
+      >
         <NativeThemeHost
           matchContents={{ vertical: true }}
           ignoreSafeAreaKeyboardInsets
@@ -52,12 +58,6 @@ export function ScrollComposeButton(props: {
               modifiers={[
                 defaultMinSize({ minWidth: nativeSize }),
                 height(nativeSize),
-                graphicsLayer({
-                  scaleX: scale,
-                  scaleY: scale,
-                  transformOriginX: 1,
-                  transformOriginY: 0,
-                }),
                 onSizeChanged(rememberWidth),
               ]}
             >
@@ -94,7 +94,7 @@ export function ScrollComposeButton(props: {
         android_ripple={{ foreground: true }}
         style={{
           position: "absolute",
-          right: 0,
+          end: 0,
           top: 0,
           bottom: 0,
           width: props.expanded ? buttonWidth * scale : fabSize,
