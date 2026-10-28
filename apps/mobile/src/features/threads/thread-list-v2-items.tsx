@@ -1088,7 +1088,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             />
           </View>
         ) : null}
-        <Text
+        <ContentText
           className={cn(
             "flex-1 text-base",
             !recede && "font-t3-medium",
@@ -1099,7 +1099,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           numberOfLines={2}
         >
           {thread.title}
-        </Text>
+        </ContentText>
         <View className="flex-row items-center gap-1.5" style={{ minHeight: titleLineHeight }}>
           {props.hasQueuedMessages ? <QueuedMessageIcon selected={selected} /> : null}
           {pinnedRow ? (
