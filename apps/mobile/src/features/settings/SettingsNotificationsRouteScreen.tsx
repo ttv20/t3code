@@ -86,7 +86,7 @@ export function SettingsNotificationsRouteScreen() {
         >
           <LocalCompletionNotificationSettings />
           <Text className="text-base text-foreground-muted">
-            {uiT("Notifications require T3 Connect in this app build.")}
+            {uiT("Push notifications require T3 Connect in this app build.")}
           </Text>
         </ScrollView>
       </SettingsScreen>

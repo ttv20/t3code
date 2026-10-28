@@ -9585,5 +9585,6 @@
   "{0} account options": "{0} account options",
   "{0} details for {1}": "{0} details for {1}",
   "{0} folder": "{0} folder",
-  "{0} is attached to your message.": "{0} is attached to your message."
+  "{0} is attached to your message.": "{0} is attached to your message.",
+  "Push notifications require T3 Connect in this app build.": "تتطلب إشعارات Push خدمة T3 Connect في هذا الإصدار من التطبيق."
 }

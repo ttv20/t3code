@@ -9585,5 +9585,6 @@
   "{0} account options": "אפשרויות חשבון {0}",
   "{0} details for {1}": "פרטי {0} עבור {1}",
   "{0} folder": "תיקיית {0}",
-  "{0} is attached to your message.": "{0} מצורף להודעה שלך."
+  "{0} is attached to your message.": "{0} מצורף להודעה שלך.",
+  "Push notifications require T3 Connect in this app build.": "התראות Push דורשות T3 Connect בגרסת האפליקציה הזו."
 }
