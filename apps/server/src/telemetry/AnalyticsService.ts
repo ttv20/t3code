@@ -98,14 +98,13 @@ function serverOsFromNodePlatform(platform: string): ClientOs {
 }
 
 /** @public */
-/** @public */
 export const make = Effect.gen(function* () {
   const telemetryConfig = yield* makeTelemetryConfig();
   if (!telemetryConfig.enabled || !telemetryConfig.posthogKey.trim()) {
     return AnalyticsService.of({
-      record: () => Effect.void,
+      record: Effect.fn("AnalyticsService.record")(() => Effect.void),
       flush: Effect.void,
-      recordOwners: () => Effect.void,
+      recordOwners: Effect.fn("AnalyticsService.recordOwners")(() => Effect.void),
     });
   }
 
