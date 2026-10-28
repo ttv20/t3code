@@ -211,7 +211,7 @@ function DisclosureRow(props: {
   readonly onPress: () => void;
   readonly isLast?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { direction, t: uiT } = useUiLanguage();
 
   return (
     <Pressable
@@ -226,11 +226,11 @@ function DisclosureRow(props: {
       <View className="flex-1" />
       {props.value ? (
         <Text className="text-sm text-foreground-muted" numberOfLines={1}>
-          {props.value}
+          {uiT(props.value)}
         </Text>
       ) : null}
       <SymbolView
-        name="chevron.right"
+        name={direction === "rtl" ? "chevron.left" : "chevron.right"}
         size={12}
         tintColorClassName="accent-icon-subtle"
         type="monochrome"
@@ -1181,7 +1181,7 @@ function ThreadSettingsChoiceContent(props: {
         {submenuContent.rows.map((row, index) => (
           <ChoiceRow
             key={row.id}
-            description={row.description}
+            description={row.description === undefined ? undefined : uiT(row.description)}
             isLast={index === submenuContent.rows.length - 1}
             label={uiT(row.label)}
             selected={row.selected}
@@ -1367,9 +1367,11 @@ function ThreadSettingsModelsScreen() {
             const title =
               submenu.kind === "runtime"
                 ? uiT("Runtime")
-                : (session.displayedDescriptors.find(
-                    (descriptor) => descriptor.type === "select" && descriptor.id === submenu.id,
-                  )?.label ?? uiT("Option"));
+                : uiT(
+                    session.displayedDescriptors.find(
+                      (descriptor) => descriptor.type === "select" && descriptor.id === submenu.id,
+                    )?.label ?? "Option",
+                  );
             navigation.navigate("ThreadSettingsChoice", { ...submenu, title });
           }}
         />
