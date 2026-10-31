@@ -126,19 +126,22 @@ const buildExeCmd = Command.make(
         !target &&
         (yield* HostProcess.Platform) === "linux" &&
         (yield* HostProcess.Architecture) === "arm64";
-      const spawnCommand = yield* resolveSpawnCommand("vp", ["pack"]);
       yield* runCommand(
-        ChildProcess.make(spawnCommand.command, spawnCommand.args, {
-          cwd: serverDir,
-          env: {
-            ...process.env,
-            T3CODE_PACK_EXE: linuxArm64 ? "bundle" : "1",
-            T3CODE_PACK_EXE_TARGET: target ?? "",
+        ChildProcess.make(
+          process.execPath,
+          [path.join(repoRoot, "node_modules/vite-plus/bin/vp"), "pack"],
+          {
+            cwd: serverDir,
+            env: {
+              ...process.env,
+              T3CODE_PACK_EXE: linuxArm64 ? "bundle" : "1",
+              T3CODE_PACK_EXE_TARGET: target ?? "",
+            },
+            stdout: config.verbose ? "inherit" : "ignore",
+            stderr: "inherit",
+            shell: false,
           },
-          stdout: config.verbose ? "inherit" : "ignore",
-          stderr: "inherit",
-          shell: spawnCommand.shell,
-        }),
+        ),
       );
 
       // Executables reject non-builtin imports even when bundling succeeds; inspect the emitted graph.
