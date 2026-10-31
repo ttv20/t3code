@@ -61,7 +61,7 @@ export function SettingsEnvironmentFilterHeader(props: {
                   type: "submenu",
                   label:
                     selectedIds === null
-                      ? uiT("All environments")
+                      ? "All environments"
                       : `${selectedTargets.length} ${selectedTargets.length === 1 ? "environment" : "environments"}`,
                   items: [
                     {
@@ -93,9 +93,7 @@ export function SettingsEnvironmentFilterHeader(props: {
                   label:
                     selectableProjectGroups.find((group) => group.key === selectedProjectKey)
                       ?.label ??
-                    (selectedProjectKey === null
-                      ? uiT("All projects")
-                      : uiT("Unavailable project")),
+                    (selectedProjectKey === null ? "All projects" : uiT("Unavailable project")),
                   items: [
                     {
                       type: "action",
@@ -105,7 +103,7 @@ export function SettingsEnvironmentFilterHeader(props: {
                     },
                     ...selectableProjectGroups.map((group) => ({
                       type: "action" as const,
-                      label: group.label,
+                      label: projectMenuLabel(group),
                       state: selectedProjectKey === group.key ? ("on" as const) : undefined,
                       onPress: () => selectProject(group.key),
                     })),
@@ -166,7 +164,7 @@ export function AndroidSettingsEnvironmentFilter() {
         },
         ...selectableProjectGroups.map((group) => ({
           id: `project:${group.key}`,
-          title: uiT("Project · {0}", { "0": group.label }),
+          title: uiT("Project · {0}", { "0": projectMenuLabel(group) }),
           state: selectedProjectKey === group.key ? ("on" as const) : ("off" as const),
         })),
       ]}
@@ -196,3 +194,6 @@ export function AndroidSettingsEnvironmentFilter() {
     </Menu>
   );
 }
+
+const projectMenuLabel = (group: { readonly label: string; readonly archived: boolean }) =>
+  group.archived ? `${group.label} · Archived` : group.label;

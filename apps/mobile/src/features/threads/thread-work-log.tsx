@@ -97,6 +97,7 @@ import Animated, {
   FadeOut,
   LinearTransition,
   ReduceMotion,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -543,11 +544,13 @@ export function ThreadWorkLog(props: ThreadWorkLogProps) {
     props.activities.every((row) => row.projectedItem.item.type === "reasoning")
   ) {
     return (
-      <ScrollView nestedScrollEnabled className="ml-7 max-h-96 py-1">
-        {props.activities.map((row) => (
-          <View key={row.id}>{props.renderReasoning(row.workEntry.detail ?? "")}</View>
-        ))}
-      </ScrollView>
+      <WorkLogBlock continues={props.continuesWorkLog}>
+        <ThreadReasoningGroup
+          activities={props.activities}
+          edgeFadeColor={props.edgeFadeColor}
+          renderReasoning={props.renderReasoning}
+        />
+      </WorkLogBlock>
     );
   }
 
@@ -567,6 +570,55 @@ export function ThreadWorkLog(props: ThreadWorkLogProps) {
         <WorkLogRows>{props.activities.map(renderRow)}</WorkLogRows>
       )}
     </WorkLogBlock>
+  );
+}
+
+function ThreadReasoningGroup(props: {
+  readonly activities: ReadonlyArray<ThreadFeedActivity>;
+  readonly edgeFadeColor: string;
+  readonly renderReasoning: (text: string) => ReactNode;
+}) {
+  const scrollOffset = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
+  const viewportHeight = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollOffset.set(event.contentOffset.y);
+  });
+  const bottomFadeStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(
+      1,
+      Math.max(0, contentHeight.value - viewportHeight.value - scrollOffset.value) /
+        WORK_GROUP_EDGE_FADE_HEIGHT,
+    ),
+  }));
+
+  return (
+    <View className="ml-7">
+      <Animated.ScrollView
+        nestedScrollEnabled
+        className="max-h-96"
+        contentContainerClassName="py-1"
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+        onLayout={(event) => {
+          viewportHeight.set(event.nativeEvent.layout.height);
+        }}
+        onContentSizeChange={(_width, height) => {
+          contentHeight.set(height);
+        }}
+      >
+        {props.activities.map((row) => (
+          <View key={row.id}>{props.renderReasoning(row.workEntry.detail ?? "")}</View>
+        ))}
+      </Animated.ScrollView>
+      <Animated.View
+        pointerEvents="none"
+        className="absolute inset-x-0 bottom-0"
+        style={[{ height: WORK_GROUP_EDGE_FADE_HEIGHT }, bottomFadeStyle]}
+      >
+        <EdgeFade color={props.edgeFadeColor} direction="up" />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -1057,7 +1109,7 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
         }
         accessibilityHint={
           notifiedSubagentThreadId !== undefined
-            ? uiT("Opens this agent's thread. Long press to copy.")
+            ? "Opens this agent's thread. Long press to copy."
             : canExpand
               ? uiT("Double tap to {0} full details. Long press to copy.", {
                   "0": expanded ? "hide" : "show",

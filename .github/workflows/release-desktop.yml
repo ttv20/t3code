@@ -427,6 +427,15 @@ jobs:
           mkdir -p "$target_dir"
           cp "native/resource-monitor/target/${{ inputs.rust_target }}/release/${binary_name}" "$target_dir/$binary_name"
 
+      - uses: ./.github/actions/setup-apt-mirrors
+        if: inputs.platform == 'linux'
+
+      # The Linux archive ships libatomic.so.1 and points t3's RUNPATH at it.
+      - name: Install patchelf
+        if: inputs.cli_archive && inputs.platform == 'linux'
+        shell: bash
+        run: command -v patchelf || { sudo apt-get update && sudo apt-get install -y patchelf; }
+
       - name: Build CLI archive
         if: inputs.cli_archive
         shell: bash

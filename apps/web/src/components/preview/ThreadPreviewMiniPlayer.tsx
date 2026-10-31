@@ -254,9 +254,7 @@ function BrowserMiniPlayer({ threadRef, tabId, miniPlayer }: Props & { readonly 
     } catch (error) {
       toastManager.add({
         type: "error",
-        title: serverTab
-          ? uiT("Unable to pop out preview")
-          : uiT("Unable to update popped-out preview"),
+        title: serverTab ? "Unable to pop out preview" : uiT("Unable to update popped-out preview"),
         description: error instanceof Error ? error.message : uiT("An error occurred."),
       });
     }
@@ -289,9 +287,7 @@ function BrowserMiniPlayer({ threadRef, tabId, miniPlayer }: Props & { readonly 
                   variant={poppedOut ? "secondary" : "ghost"}
                   size="icon-xs"
                   aria-label={
-                    poppedOut
-                      ? uiT("Close popped-out preview")
-                      : uiT("Pop preview into separate window")
+                    poppedOut ? "Close popped-out preview" : uiT("Pop preview into separate window")
                   }
                   disabled={!serverTab && !desktopOverlay?.hasWebContents}
                   onPointerDown={(event) => event.stopPropagation()}
@@ -302,7 +298,7 @@ function BrowserMiniPlayer({ threadRef, tabId, miniPlayer }: Props & { readonly 
               <PictureInPicture2 />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {poppedOut ? uiT("Close separate window") : uiT("Pop into separate window")}
+              {poppedOut ? "Close separate window" : uiT("Pop into separate window")}
             </TooltipPopup>
           </Tooltip>
         ) : null
@@ -375,8 +371,8 @@ function DeviceMiniPlayer({
   const device = deviceState.devices.find(
     (entry) => entry.hostId === source.hostId && entry.id === source.deviceId,
   );
-  const hostLabel =
-    deviceState.hosts.find((host) => host.id === source.hostId)?.label ?? uiT("Device host");
+  const host = deviceState.hosts.find((entry) => entry.id === source.hostId);
+  const hostLabel = host?.label ?? "Device host";
   const cornerRadius = (player: PreviewMiniPlayerSize) =>
     resolveDeviceMiniPlayerCornerRadius(source.platform, player);
 
@@ -413,6 +409,7 @@ function DeviceMiniPlayer({
             deviceDescription={`${hostLabel} · ${device?.version ?? source.platform}`}
             visible
             viewId={viewId}
+            serveSimOnly={host?.kind === "simlock"}
           />
         </div>
       )}
@@ -569,7 +566,7 @@ function MiniPlayerShell({
           >
             <div
               role={recording ? "status" : undefined}
-              aria-label={recording ? uiT("Recording preview") : undefined}
+              aria-label={recording ? "Recording preview" : undefined}
               aria-hidden={!recording}
               className="absolute right-0 top-0 size-2 transition-opacity group-hover:opacity-0 group-focus-within:opacity-0 group-data-pill-open:opacity-0 pointer-coarse:right-2.5 pointer-coarse:top-2.5"
             >

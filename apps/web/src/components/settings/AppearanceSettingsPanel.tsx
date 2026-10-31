@@ -36,6 +36,7 @@ import { searchableSetting } from "./settingsSearch";
 import { AdvancedSettings } from "./AdvancedSettings";
 import { PanelAnimationsPreview } from "./PanelAnimationsPreview";
 import { TypographySection } from "./TypographySettings";
+import { ThreadDetailsItemsRow } from "./ThreadDetailsItemsRow";
 
 const ENVIRONMENT_IDENTIFICATION_LABELS: Record<EnvironmentIdentificationMode, string> = {
   artwork: "Artwork",
@@ -278,6 +279,7 @@ export function AppearanceSettingsPanel() {
             </div>
           }
         />
+        <ThreadDetailsItemsRow />
         <SettingsRow
           {...searchableSetting("effort-display")}
           description={uiT(
@@ -408,7 +410,7 @@ export function AppearanceSettingsPanel() {
             {...searchableSetting("environment-identification")}
             description={
               environmentStageVariant
-                ? uiT("Choose how Dev and Nightly environments are identified.")
+                ? "Choose how Dev and Nightly environments are identified."
                 : uiT("Show Dev or Nightly artwork in the sidebar header.")
             }
             resetAction={

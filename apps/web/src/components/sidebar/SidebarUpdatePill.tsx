@@ -54,7 +54,7 @@ function shouldUseSidebarUpdateReleaseNotesPopover(
   showUpdateDetails: boolean,
   state: DesktopUpdateState | null,
 ): boolean {
-  return showUpdateDetails && state?.channel === "nightly" && state.releaseNotes.length > 0;
+  return showUpdateDetails && (state?.releaseNotes.length ?? 0) > 0;
 }
 
 function handleSidebarUpdateReleaseNotesPopoverOpenChange(
@@ -136,7 +136,7 @@ const toastUpdateError: ReportLocalUpdateError = (title, description) => {
   toastManager.add(stackedThreadToast({ type: "error", title, description }));
 };
 
-async function downloadLocalUpdate(
+export async function downloadLocalUpdate(
   bridge: DesktopBridge,
   {
     notifyDownloaded,
@@ -162,12 +162,13 @@ async function downloadLocalUpdate(
   }
 }
 
-async function installLocalUpdate(
+export async function installLocalUpdate(
   bridge: DesktopBridge,
   reportError: ReportLocalUpdateError = toastUpdateError,
+  expectedVersion?: string,
 ): Promise<boolean> {
   try {
-    const result = await bridge.installUpdate();
+    const result = await bridge.installUpdate(expectedVersion);
     if (!result.accepted) {
       showDesktopUpdateDownloadedToast(bridge, result.state);
       return false;
@@ -247,9 +248,9 @@ function SidebarUpdateControl() {
     : showUpdateDetails
       ? state
         ? getDesktopUpdateButtonTooltip(state)
-        : uiT("Update available")
+        : "Update available"
       : showCheckIcon
-        ? uiT("Checking for updates…")
+        ? "Checking for updates…"
         : (idleTooltip?.title ?? uiT("Check for updates"));
   const disabled = showCheckIcon
     ? true
@@ -546,7 +547,7 @@ function SidebarUpdateControl() {
         {showReleaseNotesPopover && state ? (
           <PopoverPopup
             align="center"
-            aria-label={uiT("Nightly update release notes")}
+            aria-label={uiT("Update release notes")}
             initialFocus={false}
             onKeyDownCapture={(event) => {
               if (

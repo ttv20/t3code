@@ -6,6 +6,7 @@ import {
 } from "@t3tools/client-runtime/usage-localization";
 import * as Dialog from "../../components/ui/Dialog";
 import { RegistryContext, useAtomMount, useAtomValue } from "@effect/atom-react";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   AuthProvidersManageScope,
   type EnvironmentId,
@@ -158,7 +159,7 @@ function AccountInstanceLabel({ value }: { readonly value: string }) {
     <Pressable
       className="shrink active:opacity-60"
       accessibilityRole="button"
-      accessibilityLabel={revealed ? uiT("Hide account label") : uiT("Reveal account label")}
+      accessibilityLabel={revealed ? "Hide account label" : uiT("Reveal account label")}
       onPress={() => setRevealed((current) => !current)}
     >
       <Text className="text-xs text-foreground-tertiary" numberOfLines={1}>
@@ -170,6 +171,7 @@ function AccountInstanceLabel({ value }: { readonly value: string }) {
 
 export function AccountLimits(props: {
   readonly driver: Driver;
+  readonly accentColor?: string | undefined;
   readonly label: string;
   readonly instanceLabel: string;
   readonly detail: string | undefined;
@@ -183,7 +185,8 @@ export function AccountLimits(props: {
   const { t: uiT } = useUiLanguage();
 
   const { limits, now, dense = false } = props;
-  const color = useBarColor(props.driver);
+  const providerColor = useBarColor(props.driver);
+  const color = normalizeProviderAccentColor(props.accentColor) ?? providerColor;
   if (!limits) return null;
   const notice = limitsNotice(limits);
   const externalUsage = limits.externalUsage;
@@ -320,7 +323,7 @@ export function ResetCredits(props: {
                 : "text-sm font-t3-medium text-foreground"
             }
           >
-            {busy ? uiT("Using…") : uiT("Use reset")}
+            {busy ? "Using…" : uiT("Use reset")}
           </Text>
         </Pressable>
       ) : null}

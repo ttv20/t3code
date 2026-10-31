@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import { DeviceHostUpdates } from "./DeviceHostUpdates";
 import type {
   DevicePlatform,
@@ -52,7 +52,7 @@ export function DevicePanel(props: {
   const { t: uiT } = useUiLanguage();
 
   const { environmentId, threadId } = props.threadRef;
-  const { state, loaded } = useDeviceState(environmentId);
+  const { state, loaded, error: stateError, refresh: refreshState } = useDeviceState(environmentId);
   const list = useAtomCommand(deviceEnvironment.list, { reportFailure: false });
   const open = useAtomCommand(deviceEnvironment.open);
   const close = useAtomCommand(deviceEnvironment.close);
@@ -88,6 +88,9 @@ export function DevicePanel(props: {
     ? state.devices.find(
         (device) => device.hostId === activeSession.hostId && device.id === activeSession.deviceId,
       )
+    : undefined;
+  const activeHost = activeDevice
+    ? state.hosts.find((host) => host.id === activeDevice.hostId)
     : undefined;
 
   const grouped = groupDevices(state);
@@ -172,6 +175,8 @@ export function DevicePanel(props: {
     state.bootingDevices?.filter((device) => device.threadId === threadId) ?? [];
   const { ready: hostReady, busy: hostBusy } = deviceHubReadiness(state);
   const loading = !activeDevice && (pendingDevice !== null || hostBusy || !loaded);
+  // Without a first snapshot a failed subscription never settles on its own.
+  const loadError = loaded ? null : stateError;
   const diagnostics = state.hosts.flatMap((host) => {
     const status = state.hostStatuses[host.id];
     const detail = status?.detail ?? (host.kind === "local" ? state.hostStatusDetail : undefined);
@@ -238,9 +243,8 @@ export function DevicePanel(props: {
               key={`${environmentId}\u0000${deviceKey(activeDevice)}`}
               environmentId={environmentId}
               device={activeDevice}
-              hostLabel={
-                state.hosts.find((host) => host.id === activeDevice.hostId)?.label ?? "Device host"
-              }
+              hostLabel={activeHost?.label ?? "Device host"}
+              hostKind={activeHost?.kind}
               hostDiagnostics={
                 diagnostics.find(({ hostId }) => hostId === activeDevice.hostId)?.detail
               }
@@ -259,15 +263,23 @@ export function DevicePanel(props: {
               }
               stage="opening"
               message={
-                pendingDevice
+                loadError ??
+                (pendingDevice
                   ? pendingDevice.booted
                     ? "Opening device…"
                     : "Starting device…"
                   : state.hostStatus === "installing"
                     ? (state.hostStatusDetail ?? "Installing device support…")
-                    : "Finding devices…"
+                    : "Finding devices…")
               }
-            />
+              error={loadError !== null}
+            >
+              {loadError !== null ? (
+                <Button size="sm" variant="outline" onClick={refreshState}>
+                  <UiText message={"Retry"} />
+                </Button>
+              ) : null}
+            </DeviceLoadingView>
           ) : (
             <div className="scrollbar-gutter-both flex size-full flex-col overflow-y-auto px-5 py-8 text-sm text-muted-foreground">
               <div
@@ -328,7 +340,7 @@ export function DevicePanel(props: {
                                 ) : (
                                   <Play />
                                 )}
-                                {device.booted ? uiT("Open") : uiT("Start")}
+                                {device.booted ? "Open" : uiT("Start")}
                               </Button>
                             </div>
                           ))}
@@ -394,7 +406,7 @@ function DeviceNotice(props: {
         size="icon-xs"
         variant="ghost"
         aria-label={
-          props.tone === "warning" ? uiT("Dismiss device warning") : uiT("Dismiss device error")
+          props.tone === "warning" ? "Dismiss device warning" : uiT("Dismiss device error")
         }
         onClick={props.onDismiss}
       >

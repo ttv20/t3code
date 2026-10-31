@@ -1,6 +1,12 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
+import {
+  canEditPullRequestMaintainerEdits,
+  maintainerEditsChoiceInForce,
+  type MaintainerEditsChoice,
+} from "@t3tools/client-runtime/pull-request-editing";
 import type { ChangeRequestTerminology } from "@t3tools/client-runtime/source-control-clients";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentId,
   PullRequestAction,
@@ -21,13 +27,17 @@ import {
   SparklesIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useId, useState } from "react";
 
 import { shortcutLabelForCommand } from "~/keybindings";
 import { readLocalApi } from "~/localApi";
+import { pullRequestEnvironment } from "~/state/pullRequests";
 import { primaryServerKeybindingsAtom } from "~/state/server";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { Button } from "../ui/button";
 import {
   Menu,
+  MenuCheckboxItem,
   MenuItem,
   MenuPopup,
   MenuRadioGroup,
@@ -37,11 +47,13 @@ import {
   MenuTrigger,
 } from "../ui/menu";
 import { RefreshIcon } from "../ui/refresh-icon";
+import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ActOnEnvironmentPicker, type PerformPullRequestAction } from "./PullRequestDetailActions";
 import {
   PULL_REQUEST_MERGE_METHOD_LABELS,
   pullRequestActionMenuHasGroup,
+  readableFailure,
 } from "./pullRequestDetail.logic";
 import { PullRequestGlyph } from "./pullRequestIcons";
 import type { PickableEnvironment } from "./pullRequestProjectAssignment.logic";
@@ -84,6 +96,8 @@ export function PullRequestActionsMenu({
   onSelectMergeMethod,
   showsDeleteBranch,
   environmentConnected,
+  canWriteSourceControl,
+  onMaintainerEditsSaved,
   confirmDeleteBranch,
   pendingAction,
   perform,
@@ -93,7 +107,17 @@ export function PullRequestActionsMenu({
   environmentId: EnvironmentId;
   reference: PullRequestRef;
   pullRequestKey: string;
-  detail: Pick<PullRequestDetail, "url" | "state" | "isDraft" | "headBranch">;
+  detail: Pick<
+    PullRequestDetail,
+    | "url"
+    | "state"
+    | "isDraft"
+    | "headBranch"
+    | "capabilities"
+    | "viewerPermissions"
+    | "maintainerCanModify"
+    | "observedAt"
+  >;
   terminology: ChangeRequestTerminology;
   linkThreadRef: ScopedThreadRef | null;
   onThreadPickerOpenChange: (open: boolean) => void;
@@ -124,6 +148,8 @@ export function PullRequestActionsMenu({
   onSelectMergeMethod: (method: PullRequestMergeMethod) => void;
   showsDeleteBranch: boolean;
   environmentConnected: boolean;
+  canWriteSourceControl: boolean;
+  onMaintainerEditsSaved: () => void;
   confirmDeleteBranch: () => Promise<void>;
   pendingAction: PullRequestAction | null;
   perform: PerformPullRequestAction;
@@ -135,6 +161,47 @@ export function PullRequestActionsMenu({
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const inlineConfirm = useInlineActionConfirm(pullRequestKey);
   const actionPending = pendingAction !== null;
+  const maintainerEditsHintId = useId();
+  const updatePullRequest = useAtomCommand(pullRequestEnvironment.update, {
+    reportFailure: false,
+  });
+  const [maintainerEditsChoice, setMaintainerEditsChoice] = useState<MaintainerEditsChoice | null>(
+    null,
+  );
+  const [maintainerEditsSaving, setMaintainerEditsSaving] = useState(false);
+  const maintainerEditsChoiceKept = maintainerEditsChoiceInForce(
+    maintainerEditsChoice,
+    pullRequestKey,
+    detail.observedAt,
+    maintainerEditsSaving,
+  );
+  if (maintainerEditsChoiceKept !== maintainerEditsChoice) {
+    setMaintainerEditsChoice(maintainerEditsChoiceKept);
+  }
+  const maintainerCanModify = maintainerEditsChoiceKept?.value ?? detail.maintainerCanModify;
+  const canSaveMaintainerEdits =
+    canWriteSourceControl && environmentConnected && !maintainerEditsSaving;
+  const saveMaintainerEdits = async (value: boolean) => {
+    if (!canSaveMaintainerEdits) return;
+    const previousChoice = maintainerEditsChoice;
+    setMaintainerEditsChoice({ key: pullRequestKey, observedAt: detail.observedAt, value });
+    setMaintainerEditsSaving(true);
+    const result = await updatePullRequest({
+      environmentId,
+      input: { ...reference, maintainerCanModify: value },
+    });
+    setMaintainerEditsSaving(false);
+    if (result._tag === "Failure") {
+      setMaintainerEditsChoice(previousChoice);
+      toastManager.add({
+        type: "error",
+        title: uiT("Could not save maintainer access"),
+        description: readableFailure(squashAtomCommandFailure(result), "Try again."),
+      });
+      return;
+    }
+    onMaintainerEditsSaved();
+  };
   return (
     <Menu>
       <Tooltip>
@@ -183,7 +250,7 @@ export function PullRequestActionsMenu({
         <MenuItem disabled={handoff !== null} onClick={askAboutPullRequest}>
           <MessageCircleQuestionIcon className="mt-1 size-3.5 shrink-0 self-start" />
           <span className="flex min-w-0 flex-col">
-            <span>{handoff === "ask" ? uiT("Opening...") : uiT("Ask a question")}</span>
+            <span>{handoff === "ask" ? "Opening..." : uiT("Ask a question")}</span>
             <span className="text-xs text-muted-foreground">
               {attachesToComposer
                 ? `Adds the ${terminology.singular} to this thread's composer.`
@@ -204,15 +271,15 @@ export function PullRequestActionsMenu({
         </MenuItem>
         <MenuItem disabled={handoff !== null || !canFixFindings} onClick={startFixFindings}>
           <HammerIcon className="size-3.5" />
-          {handoff === "findings" ? uiT("Preparing...") : handoffLabels.fixFindings}
+          {handoff === "findings" ? "Preparing..." : handoffLabels.fixFindings}
         </MenuItem>
         {canWriteGuide ? (
           <MenuItem disabled={guideRunning} onClick={writeGuide}>
             <SparklesIcon className="size-3.5" />
             {guideRunning
-              ? uiT("Writing guide...")
+              ? "Writing guide..."
               : !guideWritten
-                ? uiT("Write guide")
+                ? "Write guide"
                 : uiT("Rewrite guide")}
           </MenuItem>
         ) : null}
@@ -225,6 +292,38 @@ export function PullRequestActionsMenu({
           />
         ) : null}
         <MenuSeparator />
+        {canEditPullRequestMaintainerEdits(detail) ? (
+          <>
+            <MenuCheckboxItem
+              variant="icon"
+              checked={maintainerCanModify === true}
+              disabled={!canSaveMaintainerEdits}
+              closeOnClick={false}
+              aria-label={uiT("Allow edits from maintainers")}
+              aria-describedby={maintainerEditsHintId}
+              onCheckedChange={(value) => void saveMaintainerEdits(value)}
+            >
+              <span className="flex max-w-xs flex-col gap-0.5">
+                <span>
+                  <UiText message={"Allow edits from maintainers"} />
+                </span>
+                <span id={maintainerEditsHintId} className="text-xs text-muted-foreground">
+                  <UiText
+                    message={
+                      "Maintainers can push to this branch. If your fork has workflows, this can also give access to its secrets."
+                    }
+                  />
+                </span>
+                {maintainerEditsSaving ? (
+                  <span role="status" className="text-xs text-muted-foreground">
+                    <UiText message={"Saving…"} />
+                  </span>
+                ) : null}
+              </span>
+            </MenuCheckboxItem>
+            <MenuSeparator />
+          </>
+        ) : null}
         {detail.state === "open" ? (
           <>
             {showsDraftToggle ? (
@@ -237,20 +336,18 @@ export function PullRequestActionsMenu({
                 ) : (
                   <PullRequestGlyph.draft className="size-3.5" />
                 )}
-                {detail.isDraft ? uiT("Ready for review") : uiT("Convert to draft")}
+                {detail.isDraft ? "Ready for review" : uiT("Convert to draft")}
               </MenuItem>
             ) : null}
             {showsMergeNow ? (
               <MenuItem
                 closeOnClick={inlineConfirm.isArmed("merge")}
-                aria-label={
-                  inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")
-                }
+                aria-label={inlineConfirm.isArmed("merge") ? "Confirm merge?" : uiT("Merge now")}
                 disabled={actionPending}
                 {...inlineConfirm.props("merge", () => void perform("merge", selectedMergeMethod))}
               >
                 <PullRequestGlyph.merged className="size-3.5" />
-                {inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")}
+                {inlineConfirm.isArmed("merge") ? "Confirm merge?" : uiT("Merge now")}
               </MenuItem>
             ) : null}
             {autoMergeArmed && can("disable-auto-merge") ? (
@@ -263,7 +360,7 @@ export function PullRequestActionsMenu({
                 closeOnClick={inlineConfirm.isArmed("enable-auto-merge")}
                 aria-label={
                   inlineConfirm.isArmed("enable-auto-merge")
-                    ? uiT("Confirm auto-merge?")
+                    ? "Confirm auto-merge?"
                     : uiT("Enable auto-merge")
                 }
                 disabled={actionPending}
@@ -274,7 +371,7 @@ export function PullRequestActionsMenu({
               >
                 <PullRequestGlyph.merged className="size-3.5" />
                 {inlineConfirm.isArmed("enable-auto-merge")
-                  ? uiT("Confirm auto-merge?")
+                  ? "Confirm auto-merge?"
                   : uiT("Enable auto-merge")}
               </MenuItem>
             ) : null}
@@ -337,7 +434,7 @@ export function PullRequestActionsMenu({
               closeOnClick={inlineConfirm.isArmed("close")}
               aria-label={
                 inlineConfirm.isArmed("close")
-                  ? uiT("Confirm close?")
+                  ? "Confirm close?"
                   : uiT("Close {0}", { "0": uiT(terminology.singular) })
               }
               variant="destructive"
@@ -362,14 +459,14 @@ export function PullRequestActionsMenu({
             <MenuItem
               closeOnClick={inlineConfirm.isArmed("revert")}
               aria-label={
-                inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")
+                inlineConfirm.isArmed("revert") ? "Confirm revert?" : uiT("Revert changes")
               }
               variant={inlineConfirm.isArmed("revert") ? "destructive" : "default"}
               disabled={actionPending}
               {...inlineConfirm.props("revert", () => void perform("revert"))}
             >
               <RotateCcwIcon className="size-3.5" />
-              {inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")}
+              {inlineConfirm.isArmed("revert") ? "Confirm revert?" : uiT("Revert changes")}
             </MenuItem>
           </>
         ) : null}
@@ -384,10 +481,12 @@ export function PullRequestActionsMenu({
               <Trash2Icon className="mt-1 size-3.5 shrink-0 self-start" />
               <span className="flex min-w-0 flex-col">
                 <span>
-                  {pendingAction === "delete-branch" ? "Deleting branch..." : "Delete branch"}
+                  {pendingAction === "delete-branch" ? "Deleting branch..." : uiT("Delete branch")}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {environmentConnected ? detail.headBranch : "Reconnect to delete this branch"}
+                  {environmentConnected
+                    ? detail.headBranch
+                    : uiT("Reconnect to delete this branch")}
                 </span>
               </span>
             </MenuItem>

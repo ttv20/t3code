@@ -20,9 +20,9 @@ import { cn } from "~/lib/utils";
 
 const platformName = (platform: DevicePlatform) => (platform === "ios" ? "iOS" : "Android");
 
-export const deviceHubDescription =
+const deviceHubDescription =
   "Enable this environment to open simulators and emulators, whether they run here or on a remote device host.";
-export const agentDeviceDescription =
+const agentDeviceDescription =
   "Allow new agent sessions in this environment to start and control local and remote devices, with required tools set up automatically.";
 
 export const isAndroidDiscoveryUncertain = (state: DeviceServiceState) =>
@@ -58,7 +58,7 @@ function deviceHostDiagnostics(
   });
 }
 
-export function DeviceHostDiagnostics(props: {
+function DeviceHostDiagnostics(props: {
   readonly hosts: ReadonlyArray<Pick<DeviceServiceState["hosts"][number], "id" | "label">>;
   readonly hostStatuses: DeviceServiceState["hostStatuses"];
   readonly className?: string;
@@ -120,7 +120,7 @@ export function platformSetupStatus(state: DeviceServiceState, platform: DeviceP
     ready: true,
     message:
       remoteHost?.kind === "eas"
-        ? `${remoteHost.label} starts iOS Simulators in the cloud with EAS Simulator.`
+        ? `${remoteHost.label} starts ${platform === "ios" ? "iOS Simulators" : "Android emulators"} in the cloud with EAS Simulator.`
         : platform === "ios"
           ? `Xcode and iOS Simulator are available${location}.`
           : `The Android SDK and Emulator are available${location}.`,
@@ -264,7 +264,7 @@ export function DeviceSetup(props: {
             disabled={!canConfigure || !ready || pending !== null}
             onClick={() => void update("complete", { onboardingCompleted: true })}
           >
-            {pending === "complete" ? uiT("Saving…") : uiT("Done")}
+            {pending === "complete" ? "Saving…" : uiT("Done")}
           </Button>
         )}
       </WizardFooter>
@@ -289,15 +289,15 @@ export function DeviceHubSetupStatus({
       {pending
         ? state.hostStatus === "installing"
           ? compact
-            ? uiT("Installing…")
-            : uiT("Installing device hub…")
+            ? "Installing…"
+            : "Installing device hub…"
           : state.hostStatus === "starting"
             ? compact
-              ? uiT("Starting…")
-              : uiT("Starting device hub…")
+              ? "Starting…"
+              : "Starting device hub…"
             : compact
-              ? uiT("Updating…")
-              : uiT("Updating device hub…")
+              ? "Updating…"
+              : "Updating device hub…"
         : uiT("Device hub is ready.")}
     </p>
   );
@@ -322,7 +322,7 @@ function DevicePlatformSetup(props: {
       </p>
       <Button size="compact" variant="outline" disabled={props.disabled} onClick={props.onCheck}>
         {props.checking ? <Spinner size="xs" /> : null}
-        {props.checking ? uiT("Checking…") : uiT("Check again")}
+        {props.checking ? "Checking…" : uiT("Check again")}
       </Button>
     </div>
   );
@@ -338,14 +338,14 @@ export function AgentDeviceSetupStatus(props: {
     const label =
       props.state.hostStatus === "installing"
         ? props.compact
-          ? uiT("Installing…")
-          : uiT("Installing agent tools…")
+          ? "Installing…"
+          : "Installing agent tools…"
         : props.state.hostStatus === "starting"
           ? props.compact
-            ? uiT("Starting…")
-            : uiT("Starting agent tools…")
+            ? "Starting…"
+            : "Starting agent tools…"
           : props.compact
-            ? uiT("Updating…")
+            ? "Updating…"
             : uiT("Updating agent access…");
     return (
       <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -369,12 +369,11 @@ export function AgentDeviceSetupStatus(props: {
   return null;
 }
 
-export function PlatformStatus(props: {
+function PlatformStatus(props: {
   readonly platform: string;
   readonly status: { readonly ready: boolean; readonly message: string };
   readonly compact?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div
       className={cn("flex gap-2", !props.compact && "rounded-md border border-border/60 px-3 py-2")}
@@ -389,7 +388,7 @@ export function PlatformStatus(props: {
       <div className={cn(props.compact && props.status.ready && "flex items-center gap-2")}>
         <p className="font-medium">{props.platform}</p>
         <p className="text-xs text-muted-foreground">
-          {props.compact && props.status.ready ? uiT("Ready") : props.status.message}
+          {props.compact && props.status.ready ? "Ready" : props.status.message}
         </p>
       </div>
     </div>

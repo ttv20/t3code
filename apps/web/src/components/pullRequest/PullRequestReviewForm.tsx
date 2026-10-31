@@ -6,11 +6,13 @@ import { CheckIcon, MessageSquareIcon, XCircleIcon } from "lucide-react";
 import { useState, type ReactNode, type RefObject } from "react";
 
 import { pullRequestEnvironment } from "~/state/pullRequests";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectPopup, SelectTrigger } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { toastManager } from "../ui/toast";
+import { readableFailure } from "./pullRequestDetail.logic";
 import {
   pullRequestReviewKey,
   usePendingReviewComments,
@@ -98,7 +100,14 @@ export function PullRequestReviewForm({
     });
     onPendingChange(false);
     if (result._tag === "Failure") {
-      toastManager.add({ type: "error", title: uiT("The review could not be submitted") });
+      toastManager.add({
+        type: "error",
+        title: uiT("The review could not be submitted"),
+        description: readableFailure(
+          squashAtomCommandFailure(result),
+          "The host refused the review. Your draft is still here to try again.",
+        ),
+      });
       return;
     }
     // Preserve comments and summary edits made during submission.
@@ -118,9 +127,9 @@ export function PullRequestReviewForm({
       : verdict === "approve" || summary.trim().length > 0 || comments.length > 0;
   const placeholder =
     selectedVerdict === undefined || canSubmit(selectedVerdict.value, "")
-      ? uiT("Summarize your review (optional)")
+      ? "Summarize your review (optional)"
       : selectedVerdict.value === "request-changes" && requestChangesSummaryRequired
-        ? uiT("Summarize your review (required to request changes)")
+        ? "Summarize your review (required to request changes)"
         : "Summarize your review or add line comments";
 
   return (
@@ -173,7 +182,7 @@ export function PullRequestReviewForm({
             if (selectedVerdict !== undefined) void submit(selectedVerdict);
           }}
         >
-          {pending ? uiT("Submitting...") : uiT("Submit review")}
+          {pending ? "Submitting..." : uiT("Submit review")}
         </Button>
       </div>
     </>

@@ -49,10 +49,16 @@ const attentionLabels = {
   accessibility: "An accessibility call",
 };
 
-export function PullRequestGuideContent({ params }: { readonly params: PullRequestParams }) {
+export function PullRequestGuideContent({
+  params,
+  visible = true,
+}: {
+  readonly params: PullRequestParams;
+  readonly visible?: boolean;
+}) {
   const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
-  const state = useReviewGuide(params);
+  const state = useReviewGuide(params, visible);
   const { guide, stale } = reviewGuideState(state.data);
   return (
     <Animated.View layout={PR_ROW_LAYOUT} className="w-full max-w-[760px] self-center">
@@ -189,7 +195,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
               <>
                 <GuideNotice state={state} />
                 <Text className="text-2xl leading-8 font-t3-semibold">{stop.title}</Text>
-                <PullRequestMarkdown markdown={stop.summary} />
+                <PullRequestMarkdown lineBreaks={false} markdown={stop.summary} />
                 {stop.attention ? (
                   <View className="gap-3 rounded-xl border border-border bg-grouped-card p-4">
                     <View className="flex-row items-center gap-2">
@@ -198,7 +204,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                         {attentionLabels[stop.attention.kind]}
                       </Text>
                     </View>
-                    <PullRequestMarkdown markdown={stop.attention.note} />
+                    <PullRequestMarkdown lineBreaks={false} markdown={stop.attention.note} />
                   </View>
                 ) : null}
                 {stale ? (
@@ -238,7 +244,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                           <Text className="text-xs text-foreground-muted">
                             {note.path.split("/").at(-1)}:{note.line}
                           </Text>
-                          <PullRequestMarkdown markdown={note.body} />
+                          <PullRequestMarkdown lineBreaks={false} markdown={note.body} />
                         </View>
                       </View>
                     ))}
@@ -267,7 +273,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                   <View className="gap-3">
                     <Text className="font-t3-semibold">{uiT("Questions to consider")}</Text>
                     {stop.questions.map((question) => (
-                      <PullRequestMarkdown key={question} markdown={question} />
+                      <PullRequestMarkdown key={question} lineBreaks={false} markdown={question} />
                     ))}
                   </View>
                 ) : null}
@@ -275,9 +281,9 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                   accessibilityRole="button"
                   accessibilityLabel={
                     guide && position < guide.stops.length - 1
-                      ? uiT("Next stop")
+                      ? "Next stop"
                       : canReview
-                        ? uiT("Finish review")
+                        ? "Finish review"
                         : uiT("Finish tour")
                   }
                   className="mt-2 flex-row items-center gap-4 border-t border-border-subtle pt-5 pb-2 active:opacity-60"
@@ -307,7 +313,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                       {guide && position < guide.stops.length - 1
                         ? guide.stops[position + 1]?.title
                         : canReview
-                          ? uiT("Finish review")
+                          ? "Finish review"
                           : uiT("Finish tour")}
                     </Text>
                   </View>

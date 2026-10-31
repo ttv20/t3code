@@ -8,6 +8,7 @@ import {
 import type { AsyncResult } from "effect/reactivity";
 import { environmentSession } from "~/state/session";
 import type {
+  DesktopUpdateChannel,
   EnvironmentId,
   ServerInstallation,
   ServerSelfUpdateCapability,
@@ -27,6 +28,8 @@ import { serverEnvironment, updateOutdatedServer } from "~/state/server";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { manualServerUpdateCommand } from "~/versionSkew";
+import { useServerConfigs } from "~/state/entities";
+import { crossesReleaseTrack } from "@t3tools/shared/cliRelease";
 import { Button } from "./ui/button";
 import { toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
@@ -40,6 +43,29 @@ const pendingUpdateEnvironmentIds = new Set<EnvironmentId>();
 
 export function serverUpdateStageLabel(stage: ServerUpdateStage): string {
   return UPDATE_STAGE_LABELS[stage];
+}
+
+const CROSS_TRACK_NOTE = "Switch tracks in About → Update track";
+
+/** Hosts refuse a Stable/Nightly crossing outside a track switch, which checks the database first. */
+function refusedCrossing(
+  target: {
+    readonly selfUpdate: ServerSelfUpdateCapability | null;
+    readonly targetVersion: string;
+    readonly channel?: DesktopUpdateChannel | undefined;
+  },
+  serverVersion: string | undefined,
+): boolean {
+  return (
+    target.channel === undefined &&
+    target.selfUpdate !== null &&
+    serverVersion !== undefined &&
+    crossesReleaseTrack(serverVersion, target.targetVersion)
+  );
+}
+
+function CrossTrackNote() {
+  return <span className="text-muted-foreground text-xs">{CROSS_TRACK_NOTE}</span>;
 }
 
 function updateFailureMessage(error: unknown): string {
@@ -61,6 +87,12 @@ export interface ServerUpdateTarget {
   readonly targetVersion: string;
   readonly currentVersion?: string;
   readonly continueThreadsAfterServerUpdate?: boolean;
+  /** Set only by a track switch; the host's desktop app moves to this track. */
+  readonly channel?: DesktopUpdateChannel;
+  /** A track switch's checked release migration; the host re-checks its own database. */
+  readonly targetDatabaseMigration?: number;
+  /** The host already runs its track's newest build and only saves the track. */
+  readonly trackOnly?: boolean;
 }
 
 type UpdateButtonProps = Pick<ComponentProps<typeof Button>, "variant" | "size" | "className"> & {
@@ -91,7 +123,13 @@ export function useServerUpdate() {
     pendingUpdateEnvironmentIds.add(environmentId);
     const result = await updateServer({
       environmentId,
-      input: { targetVersion },
+      input: {
+        targetVersion,
+        ...(target.channel === undefined ? {} : { channel: target.channel }),
+        ...(target.targetDatabaseMigration === undefined
+          ? {}
+          : { targetDatabaseMigration: target.targetDatabaseMigration }),
+      },
     });
     pendingUpdateEnvironmentIds.delete(environmentId);
     if (result._tag === "Failure") {
@@ -132,12 +170,14 @@ export function ServerUpdatesAction({
 }) {
   const { t: uiT } = useUiLanguage();
   const update = useServerUpdate();
+  const serverConfigs = useServerConfigs();
   const pending = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const eligible = targets.filter(
     (target) =>
       target.selfUpdate !== null &&
-      (target.selfUpdate !== "desktop-managed" || target.desktopAppUpdate),
+      (target.selfUpdate !== "desktop-managed" || target.desktopAppUpdate) &&
+      !refusedCrossing(target, serverConfigs.get(target.environmentId)?.environment.serverVersion),
   );
   const handleUpdate = async () => {
     if (pending.current) return;
@@ -216,6 +256,7 @@ export function ServerUpdateAction({
   desktopAppUpdate = false,
   targetVersion,
   currentVersion,
+  channel,
   label = "Update",
   variant = "outline",
   size = "xs",
@@ -226,6 +267,7 @@ export function ServerUpdateAction({
   const { t: uiT } = useUiLanguage();
 
   const isDesktopAppUpdate = selfUpdate === "desktop-managed";
+  const serverVersion = useServerConfigs().get(environmentId)?.environment.serverVersion;
   const sessionStateAtom = environmentSession.sessionStateAtom(environmentId);
   const canUpdate = canUpdateServer(useAtomValue(sessionStateAtom));
   const update = useServerUpdate();
@@ -236,7 +278,7 @@ export function ServerUpdateAction({
         type: "success",
         title:
           installation?.kind === "npm-global"
-            ? uiT("Update command copied")
+            ? "Update command copied"
             : uiT("Relaunch command copied"),
         description:
           installation?.kind === "npm-global"
@@ -297,13 +339,17 @@ export function ServerUpdateAction({
     );
   }
 
+  if (refusedCrossing({ selfUpdate, targetVersion, channel }, serverVersion)) {
+    return <CrossTrackNote />;
+  }
+
   const manualCommand =
     selfUpdate === null ? manualServerUpdateCommand(targetVersion, installation) : null;
   const actionLabel =
     manualCommand !== null
       ? installation?.kind === "npm-global"
-        ? uiT("Copy update command")
-        : uiT("Copy relaunch command")
+        ? "Copy update command"
+        : "Copy relaunch command"
       : label;
   const onClick =
     manualCommand !== null
@@ -385,6 +431,9 @@ export function OutdatedServerUpdateAction({
       description: uiT("Reconnected on t3@{0}.", { "0": result.value.targetVersion }),
     });
   };
+  if (fromVersion !== undefined && crossesReleaseTrack(fromVersion, targetVersion)) {
+    return <CrossTrackNote />;
+  }
   return (
     <Button size="xs" variant="outline" onClick={() => void handleUpdate()}>
       {uiT(label)}

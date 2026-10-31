@@ -95,13 +95,9 @@ export function V2LifecycleRow(props: {
     const relatedThreadId = item.source.type === "run" ? item.source.threadId : item.targetThreadId;
     return (
       <TimelineSystemDivider
-        label={
-          item.source.type === "run" ? uiT("Forked from conversation") : uiT("Conversation fork")
-        }
+        label={item.source.type === "run" ? "Forked from conversation" : uiT("Conversation fork")}
         icon={GitForkIcon}
-        actionLabel={
-          item.source.type === "run" ? uiT("Open source conversation") : uiT("Open fork")
-        }
+        actionLabel={item.source.type === "run" ? "Open source conversation" : uiT("Open fork")}
         onAction={() => props.onOpenThread(relatedThreadId)}
       />
     );
@@ -327,17 +323,22 @@ const NOTIFICATION_OUTCOME_LABEL: Record<OrchestrationV2Notification["outcome"],
 export function SubagentNotificationLink(props: {
   readonly parentRef: ScopedThreadRef;
   readonly childThreadId: ThreadId;
+  readonly taskIds?: ReadonlyArray<NodeId> | undefined;
   readonly outcome: OrchestrationV2Notification["outcome"];
   readonly createdAt: string;
   readonly timestampFormat: TimestampFormat;
   readonly onOpenThread: (threadId: ThreadId) => void;
   readonly fallback: ReactNode;
 }) {
+  // Follow-up tasks share a child conversation; this notice reports a particular task result.
   const agent = useAtomValue(
     environmentThreadDetails.threadAtom(props.parentRef),
     (thread) =>
-      thread?.projection.subagents.find((agent) => agent.childThreadId === props.childThreadId) ??
-      null,
+      thread?.projection.subagents.find((agent) =>
+        props.taskIds === undefined
+          ? agent.childThreadId === props.childThreadId
+          : props.taskIds.includes(agent.id),
+      ) ?? null,
   );
   if (agent === null) return props.fallback;
   const resumed =
@@ -594,7 +595,7 @@ export function HandoffRow(props: {
   const entries = settings ? applyProviderInstanceSettings(derived, settings, null) : derived;
   return (
     <TimelineSystemDivider
-      label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
+      label={props.pending ? "Context handoff pending" : uiT("Context handoff")}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}

@@ -93,6 +93,7 @@ export function ReopenClosedViewShortcut() {
           environmentKnown: true,
           catalogReady: true,
           ownerExists: true,
+          sideChatExists: true,
           shellLive: true,
           panel,
         };
@@ -101,6 +102,10 @@ export function ReopenClosedViewShortcut() {
         environmentKnown: catalog.entries.has(ref.environmentId),
         catalogReady: catalog.isReady,
         ownerExists: readThreadShell(ref) !== null || drafts.getDraftThreadByRef(ref) !== null,
+        sideChatExists:
+          entry.kind !== "panel-tab" ||
+          entry.surface.kind !== "side-chat" ||
+          readThreadShell(scopeThreadRef(ref.environmentId, entry.surface.threadId)) !== null,
         shellLive:
           appAtomRegistry.get(environmentShell.stateValueAtom(ref.environmentId)).status === "live",
         panel,

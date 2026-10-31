@@ -151,7 +151,7 @@ function FileHeader(props: {
           ? [
               {
                 accessibilityLabel: panes.auxiliaryPaneVisible
-                  ? uiT("Hide file navigator")
+                  ? "Hide file navigator"
                   : uiT("Show file navigator"),
                 icon: "sidebar.right",
                 selected: panes.auxiliaryPaneVisible,
@@ -281,7 +281,7 @@ function FileContent(props: {
 
   if (isAudioFile) {
     return props.previewUri === null ? (
-      <FilePreviewLoading message="Loading file..." />
+      <FilePreviewLoading message={uiT("Loading file...")} />
     ) : (
       <AudioFilePreview uri={props.previewUri} onRetry={props.onRetryPreview} />
     );
@@ -313,7 +313,7 @@ function FileContent(props: {
   }
 
   if (props.fileContents === null) {
-    return <FilePreviewLoading message="Loading file..." />;
+    return <FilePreviewLoading message={uiT("Loading file...")} />;
   }
 
   return (
@@ -368,6 +368,7 @@ function useThreadFilesWorkspace(params: {
   readonly threadId?: string | string[];
   readonly cwd?: string | string[];
   readonly projectName?: string | string[];
+  readonly path?: string | string[];
 }) {
   const routeEnvironmentId = firstRouteParam(params.environmentId);
   const routeThreadId = firstRouteParam(params.threadId);
@@ -389,6 +390,7 @@ function useThreadFilesWorkspace(params: {
     cwd: routeCwd ?? selectedThreadCwd ?? project?.workspaceRoot ?? null,
     environmentId,
     projectName: routeProjectName ?? project?.title ?? "Files",
+    relativePath: normalizeRoutePath(params.path),
     selectedThread,
     threadId,
   };
@@ -531,12 +533,14 @@ export function ThreadFilesTreeScreen(props: ThreadFilesRouteScreenProps) {
         />
       );
     }
-    return <LoadingScreen message="Opening files..." messagePlacement="above-spinner" />;
+    return <LoadingScreen message={uiT("Opening files...")} messagePlacement="above-spinner" />;
   }
 
   if (!canReadFiles) {
     if (fileAccess.isPending) {
-      return <LoadingScreen message="Checking file access..." messagePlacement="above-spinner" />;
+      return (
+        <LoadingScreen message={uiT("Checking file access...")} messagePlacement="above-spinner" />
+      );
     }
     return (
       <FilesUnavailable
@@ -607,11 +611,9 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
   const { appearance, setCodeWordBreak } = useAppearancePreferences();
   const iconColor = useUniwindTheme()["--color-icon"];
   const params = props.route.params;
-  const relativePath = normalizeRoutePath(params.path);
   const targetLine = normalizeRouteLine(firstRouteParam(params.line));
-  const { cwd, environmentId, projectName, selectedThread, threadId } = useThreadFilesWorkspace(
-    props.route.params,
-  );
+  const { cwd, environmentId, projectName, relativePath, selectedThread, threadId } =
+    useThreadFilesWorkspace(props.route.params);
   const fileAccessSession = useEnvironmentQuery(
     environmentId !== null ? environmentSession.sessionStateAtom(environmentId) : null,
   );
@@ -804,7 +806,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       canToggleMode
         ? ({
             id: "preview",
-            title: filePreviewDelimiter({ name: relativePath }) ? uiT("Table") : uiT("Preview"),
+            title: filePreviewDelimiter({ name: relativePath }) ? "Table" : uiT("Preview"),
             icon: filePreviewDelimiter({ name: relativePath }) ? "tablecells" : "eye",
             inline: true,
             onPress: () => setModeOverride({ path: relativePath, mode: "preview" }),
@@ -822,7 +824,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       resolvedActiveMode === "source"
         ? ({
             id: "word-wrap",
-            title: appearance.codeWordBreak ? uiT("Disable word wrap") : uiT("Enable word wrap"),
+            title: appearance.codeWordBreak ? "Disable word wrap" : uiT("Enable word wrap"),
             icon: "text.alignleft",
             inline: false,
             onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
@@ -857,7 +859,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       fileData?.contents != null
         ? ({
             id: "copy-contents",
-            title: fileData.truncated ? uiT("Copy preview") : uiT("Copy contents"),
+            title: fileData.truncated ? "Copy preview" : uiT("Copy contents"),
             icon: "doc.on.doc",
             inline: false,
             onPress: () => copyTextWithHaptic(fileData.contents),
@@ -880,7 +882,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       isBrowserFile && typeof assetPreviewUri === "string"
         ? ({
             id: "open-browser",
-            title: Platform.OS === "ios" ? uiT("Open in Safari") : uiT("Open in browser"),
+            title: Platform.OS === "ios" ? "Open in Safari" : uiT("Open in browser"),
             icon: "safari",
             inline: false,
             onPress: () => tryOpenExternalUrl(assetPreviewUri, "file-preview"),
@@ -921,12 +923,14 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
   };
 
   if (environmentId === null || (threadId !== null && selectedThread === null)) {
-    return <LoadingScreen message="Opening file..." messagePlacement="above-spinner" />;
+    return <LoadingScreen message={uiT("Opening file...")} messagePlacement="above-spinner" />;
   }
 
   if (!canReadFiles) {
     if (fileAccess.isPending) {
-      return <LoadingScreen message="Checking file access..." messagePlacement="above-spinner" />;
+      return (
+        <LoadingScreen message={uiT("Checking file access...")} messagePlacement="above-spinner" />
+      );
     }
     return (
       <FilesUnavailable
@@ -948,7 +952,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
   }
 
   if (metadataPending) {
-    return <LoadingScreen message="Opening file..." messagePlacement="above-spinner" />;
+    return <LoadingScreen message={uiT("Opening file...")} messagePlacement="above-spinner" />;
   }
   if (directoryPath !== null) {
     return (

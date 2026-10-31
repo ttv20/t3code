@@ -176,7 +176,7 @@ export function GuideStop({
         {otherFiles.length > 0 ? (
           <section className="flex flex-col gap-1.5">
             <h3 className="text-xs font-medium text-muted-foreground">
-              {stop.excerpts.length > 0 ? uiT("Also in this stop") : uiT("Files in this stop")}
+              {stop.excerpts.length > 0 ? "Also in this stop" : uiT("Files in this stop")}
             </h3>
             <DiffWorkerPoolProvider>
               <ul className="flex flex-col overflow-hidden rounded-lg border border-border/60">
@@ -217,7 +217,7 @@ export function GuideStop({
                           ) : (
                             <p className="px-3 py-2 text-xs text-muted-foreground">
                               {diffLoading
-                                ? uiT("Loading the diff...")
+                                ? "Loading the diff..."
                                 : uiT("This file is not in the loaded diff.")}
                             </p>
                           )}
@@ -274,9 +274,9 @@ export function GuideStop({
 
         <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-border/60 pt-4">
           {nextTitle !== null ? (
-            <Button className="min-w-0 [unicode-bidi:plaintext]" onClick={() => onStep(1)}>
-              <span className="min-w-0 truncate">
-                {uiT("Next:")} {nextTitle}
+            <Button size="multiline" className="max-w-full" onClick={() => onStep(1)}>
+              <span className="min-w-0 break-words">
+                <UiText message={"Next:"} /> {nextTitle}
               </span>
               <ArrowRightIcon aria-hidden />
             </Button>

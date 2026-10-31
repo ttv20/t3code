@@ -32,6 +32,7 @@ import {
   isWslSettingsRowVisible,
   missingTailscaleEndpointDescription,
   resolveLocalVersionStatusLabel,
+  resolveTailscaleServeBaseUrl,
 } from "./ConnectionsSettings.logic";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
 import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
@@ -344,20 +345,11 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
     parsedTailscaleServePort >= 1 &&
     parsedTailscaleServePort <= 65_535;
 
-  const pendingTailscaleServeBaseUrl = (() => {
-    if (!pendingTailscaleServeEndpoint) return null;
-    if (!isTailscaleServePortValid) return pendingTailscaleServeEndpoint.httpBaseUrl;
-    if (parsedTailscaleServePort === DEFAULT_TAILSCALE_SERVE_PORT) {
-      return pendingTailscaleServeEndpoint.httpBaseUrl;
-    }
-    try {
-      const url = new URL(pendingTailscaleServeEndpoint.httpBaseUrl);
-      url.port = String(parsedTailscaleServePort);
-      return url.toString().replace(/\/$/u, "");
-    } catch {
-      return pendingTailscaleServeEndpoint.httpBaseUrl;
-    }
-  })();
+  const pendingTailscaleServeBaseUrl = resolveTailscaleServeBaseUrl(
+    pendingTailscaleServeEndpoint,
+    parsedTailscaleServePort,
+    isTailscaleServePortValid,
+  );
 
   const handleDesktopServerExposureChange = async (checked: boolean) => {
     if (
@@ -543,7 +535,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
         type: "success",
         title:
           revokedCount === 1
-            ? uiT("Revoked 1 other client")
+            ? "Revoked 1 other client"
             : uiT("Revoked {0} clients", { "0": revokedCount }),
         description: uiT("Other paired clients will need a new pairing link before reconnecting."),
       });
@@ -800,7 +792,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                 onClick={loadWslState}
                 disabled={isLoadingWslState}
               >
-                {isLoadingWslState ? uiT("Retrying…") : uiT("Retry")}
+                {isLoadingWslState ? "Retrying…" : uiT("Retry")}
               </Button>
             }
           />
@@ -843,9 +835,9 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
       : (desktopWslState.distro ?? defaultDistroName ?? BACKEND_VALUE_DEFAULT_WSL);
     const selectLabel =
       selectValue === BACKEND_VALUE_WSL_OFF
-        ? uiT("Off")
+        ? "Off"
         : selectValue === BACKEND_VALUE_DEFAULT_WSL
-          ? uiT("Default distro")
+          ? "Default distro"
           : selectValue;
     return (
       <>
@@ -894,7 +886,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                   desktopWslState.distros.map((distro) => (
                     <SelectItem hideIndicator key={distro.name} value={distro.name}>
                       {distro.name}
-                      {distro.isDefault ? uiT(" (default)") : ""}
+                      {distro.isDefault ? " (default)" : ""}
                     </SelectItem>
                   ))
                 )}
@@ -928,7 +920,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
         tailscaleHttpsEndpoint
           ? tailscaleHttpsEndpoint.status === "available"
             ? tailscaleHttpsEndpoint.httpBaseUrl
-            : uiT("Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL.")
+            : "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL."
           : missingTailscaleEndpointDescription(desktopServerExposureState)
       }
       control={
@@ -1009,7 +1001,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
       title={searchableSetting("network-access").title}
       description={
         desktopBridge
-          ? uiT("This connection cannot view or change network exposure.")
+          ? "This connection cannot view or change network exposure."
           : currentAuthPolicy === "remote-reachable"
             ? uiT(
                 "Remote access is already configured. Change network exposure where the server starts.",
@@ -1054,7 +1046,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
             {...searchableSetting("connections-environment")}
             title={
               primaryEnvironment?.label ??
-              (desktopBridge ? uiT("This machine") : uiT("Primary environment"))
+              (desktopBridge ? "This machine" : uiT("Primary environment"))
             }
             icon={
               <EnvironmentMachineIcon
@@ -1125,7 +1117,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                       targetVersion={primaryVersionMismatch.clientVersion}
                       label={
                         primaryServerUpdateState.status === "failed"
-                          ? uiT("Retry update")
+                          ? "Retry update"
                           : uiT("Update to {0}", { "0": primaryVersionMismatch.clientVersion })
                       }
                     />
@@ -1225,7 +1217,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   {pendingDesktopServerExposureMode === "network-accessible"
-                    ? uiT("Enable network access?")
+                    ? "Enable network access?"
                     : uiT("Disable network access?")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
@@ -1257,9 +1249,9 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                   {isUpdatingDesktopServerExposure && <Spinner size="sm" />}
                   <span className="[text-box:trim-both_cap_alphabetic]">
                     {isUpdatingDesktopServerExposure
-                      ? uiT("Restarting…")
+                      ? "Restarting…"
                       : pendingDesktopServerExposureMode === "network-accessible"
-                        ? uiT("Restart and enable")
+                        ? "Restart and enable"
                         : uiT("Restart and disable")}
                   </span>
                 </Button>
@@ -1278,14 +1270,14 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                 <AlertDialogTitle>
                   {pendingWslChange?.kind === "disable"
                     ? pendingWslChange.wasWslOnly
-                      ? uiT("Turn off WSL and switch back to Windows?")
-                      : uiT("Disable WSL backend?")
+                      ? "Turn off WSL and switch back to Windows?"
+                      : "Disable WSL backend?"
                     : pendingWslChange?.kind === "distro"
-                      ? uiT("Switch WSL distro?")
+                      ? "Switch WSL distro?"
                       : pendingWslChange?.kind === "enable"
-                        ? uiT("Start the WSL backend")
+                        ? "Start the WSL backend"
                         : pendingWslChange?.nextValue
-                          ? uiT("Run only the WSL backend?")
+                          ? "Run only the WSL backend?"
                           : uiT("Re-enable the Windows backend?")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
@@ -1566,6 +1558,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
       {hasCloudPublicConfig() ? (
         <RemoveT3ConnectEnvironmentDialog
           environmentLabel={pendingT3ConnectRemoval?.label ?? null}
+          environmentId={pendingT3ConnectRemoval?.environmentId ?? null}
           onCancel={() => setPendingT3ConnectRemoval(null)}
           onConfirm={() => {
             if (!pendingT3ConnectRemoval) return;

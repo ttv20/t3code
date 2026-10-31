@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useRef, useState, type PointerEvent } from "react";
 
@@ -15,6 +15,7 @@ function ProviderCustomColorPanel(props: {
   readonly value: string;
   readonly onPreview: (value: string) => void;
   readonly onCommit: (value: string) => void;
+  readonly showAddButton: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -22,6 +23,14 @@ function ProviderCustomColorPanel(props: {
   const [hsv, setHsv] = useState(() => hexToHsv(props.value));
   const currentColor = hsvToHex(hsv.h, hsv.s, hsv.v);
   const [hexDraft, setHexDraft] = useState<string | null>(null);
+  const [syncedValue, setSyncedValue] = useState(props.value);
+  if (syncedValue !== props.value) {
+    setSyncedValue(props.value);
+    if (currentColor !== props.value.toLowerCase()) {
+      setHsv(hexToHsv(props.value));
+      setHexDraft(null);
+    }
+  }
   // Pointer drags only preview and commit once on release, so a drag writes
   // settings once instead of on every pointer move. Keyboard steps commit
   // immediately because they have no release to wait for. Holds the latest
@@ -83,6 +92,15 @@ function ProviderCustomColorPanel(props: {
           aria-label={uiT("Custom hex accent color")}
           spellCheck={false}
         />
+        {props.showAddButton ? (
+          <PopoverClose
+            render={
+              <Button type="button" size="compact" onClick={() => onCommit(currentColor)}>
+                <UiText message={"Add color"} />
+              </Button>
+            }
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -131,6 +149,7 @@ function ProviderCustomColorPicker(props: {
           value={normalized ?? FALLBACK_ACCENT_COLOR}
           onPreview={props.onPreview}
           onCommit={props.onCommit}
+          showAddButton={!normalized}
         />
         {normalized ? (
           <div className="border-t border-border/60 p-1">

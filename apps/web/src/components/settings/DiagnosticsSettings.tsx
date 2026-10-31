@@ -49,7 +49,7 @@ function formatCount(value: number): string {
 
 function formatDuration(value: number): string {
   if (value < 1_000) return `${Math.round(value)} ms`;
-  return `${(value / 1_000).toFixed(value >= 10_000 ? 1 : 2)} s`;
+  return `${(value / 1_000).toFixed(value >= 10_000 ? 1 : 2).replace(/\.0+$/, "")} s`;
 }
 
 function formatBytes(value: number): string {
@@ -236,14 +236,14 @@ function TraceIdCell({ traceId }: { traceId: string }) {
             <Button
               size="icon-micro"
               variant="ghost-muted"
-              aria-label={copied ? uiT("Copied trace ID") : uiT("Copy trace ID")}
+              aria-label={copied ? "Copied trace ID" : uiT("Copy trace ID")}
               onClick={() => copyToClipboard(traceId)}
             >
               <CopyIcon className="size-3" />
             </Button>
           }
         />
-        <TooltipPopup side="top">{copied ? uiT("Copied") : uiT("Copy full trace ID")}</TooltipPopup>
+        <TooltipPopup side="top">{copied ? "Copied" : uiT("Copy full trace ID")}</TooltipPopup>
       </Tooltip>
     </div>
   );
@@ -453,10 +453,10 @@ const RESOURCE_HISTORY_WINDOWS = [
 ] as const;
 
 function formatCpuTime(seconds: number): string {
-  if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
+  if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2).replace(/\.0+$/, "")}s`;
   const minutes = seconds / 60;
-  if (minutes < 60) return `${minutes.toFixed(minutes >= 10 ? 1 : 2)}m`;
-  return `${(minutes / 60).toFixed(2)}h`;
+  if (minutes < 60) return `${minutes.toFixed(minutes >= 10 ? 1 : 2).replace(/\.0+$/, "")}m`;
+  return `${(minutes / 60).toFixed(2).replace(/\.0+$/, "")}h`;
 }
 
 function formatShortProcessName(command: string): string {
@@ -956,9 +956,9 @@ function DiagnosticsSettingsBody() {
       <SettingsPageContainer>
         <p className="text-sm text-muted-foreground">
           {environmentId === null
-            ? uiT("Connect an environment to see diagnostics.")
+            ? "Connect an environment to see diagnostics."
             : diagnosticsAccess.isPending
-              ? uiT("Checking diagnostics access…")
+              ? "Checking diagnostics access…"
               : diagnosticsAccess.error}
         </p>
       </SettingsPageContainer>
@@ -1029,7 +1029,7 @@ function DiagnosticsSettingsBody() {
           onSignal={signalProcess}
           emptyLabel={
             isProcessInitialLoading
-              ? uiT("Loading live processes...")
+              ? "Loading live processes..."
               : uiT("No live descendant processes found.")
           }
         />
@@ -1103,7 +1103,7 @@ function DiagnosticsSettingsBody() {
           processes={resourceData?.topProcesses ?? []}
           emptyLabel={
             isResourceInitialLoading
-              ? uiT("Collecting process resource samples...")
+              ? "Collecting process resource samples..."
               : uiT("No process resource samples found for this window.")
           }
         />
@@ -1225,7 +1225,7 @@ function DiagnosticsSettingsBody() {
           </DiagnosticsTable>
         ) : (
           <EmptyRows
-            label={isInitialLoading ? uiT("Loading failures...") : uiT("No failed spans found.")}
+            label={isInitialLoading ? "Loading failures..." : uiT("No failed spans found.")}
           />
         )}
       </SettingsSection>
@@ -1256,9 +1256,7 @@ function DiagnosticsSettingsBody() {
         ) : (
           <EmptyRows
             label={
-              isInitialLoading
-                ? uiT("Loading failure groups...")
-                : uiT("No repeated failures found.")
+              isInitialLoading ? "Loading failure groups..." : uiT("No repeated failures found.")
             }
           />
         )}
@@ -1289,9 +1287,7 @@ function DiagnosticsSettingsBody() {
             ))}
           </DiagnosticsTable>
         ) : (
-          <EmptyRows
-            label={isInitialLoading ? uiT("Loading slow spans...") : uiT("No spans found.")}
-          />
+          <EmptyRows label={isInitialLoading ? "Loading slow spans..." : uiT("No spans found.")} />
         )}
       </SettingsSection>
 
@@ -1360,7 +1356,7 @@ function DiagnosticsSettingsBody() {
         ) : (
           <EmptyRows
             label={
-              isInitialLoading ? uiT("Loading recent logs...") : uiT("No warnings or errors found.")
+              isInitialLoading ? "Loading recent logs..." : uiT("No warnings or errors found.")
             }
           />
         )}
@@ -1394,9 +1390,7 @@ function DiagnosticsSettingsBody() {
             ))}
           </DiagnosticsTable>
         ) : (
-          <EmptyRows
-            label={isInitialLoading ? uiT("Loading span names...") : uiT("No spans found.")}
-          />
+          <EmptyRows label={isInitialLoading ? "Loading span names..." : uiT("No spans found.")} />
         )}
       </SettingsSection>
       {exportFormEnvironmentId === environmentId && <TelemetryExportSettings />}

@@ -14,6 +14,7 @@ import {
   useManagedRelayEnvironments,
   useManagedTunnelUsage,
 } from "../../cloud/managedRelayState";
+import { relayEnvironmentDiscovery } from "../../state/relay";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { T3CHAT_SUBSCRIPTION_URL, TunnelUsageMeter, tunnelUpgradeCopy } from "../cloud/TunnelUsage";
 import { Button, InlineButton } from "../ui/button";
@@ -108,7 +109,7 @@ function T3ConnectEnvironmentRow(props: {
                   disabled={props.mutationPending}
                   onClick={() => props.onDeregister(environment)}
                 >
-                  {props.mutationPending ? uiT("Deregistering…") : uiT("Deregister")}
+                  {props.mutationPending ? "Deregistering…" : uiT("Deregister")}
                 </Button>
               </div>
             </div>
@@ -148,7 +149,7 @@ function T3ConnectTunnelUsage() {
               {tunnelUpgradeCopy(usage.upgrade)}{" "}
               {usage.upgrade === "link" ? (
                 <InlineButton disabled={t3Chat.pending !== null} onClick={() => void t3Chat.link()}>
-                  {t3Chat.pending === "link" ? "Opening…" : "Link T3 Chat"}
+                  {t3Chat.pending === "link" ? "Opening…" : uiT("Link T3 Chat")}
                 </InlineButton>
               ) : (
                 <a
@@ -172,6 +173,9 @@ export function T3ConnectUserProfilePage() {
   const { t: uiT } = useUiLanguage();
   const environmentsState = useManagedRelayEnvironments();
   const deregisterEnvironment = useAtomCommand(deregisterManagedRelayEnvironmentCommand, {
+    reportFailure: false,
+  });
+  const refreshRelayEnvironments = useAtomCommand(relayEnvironmentDiscovery.refreshAfterMutation, {
     reportFailure: false,
   });
   const [deregisteringEnvironmentId, setDeregisteringEnvironmentId] =
@@ -206,6 +210,7 @@ export function T3ConnectUserProfilePage() {
         return { accountId, linkedAtById };
       });
       environmentsState.refresh();
+      void refreshRelayEnvironments();
       toastManager.add({
         type: "success",
         title: uiT("Server deregistered"),

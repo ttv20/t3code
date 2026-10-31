@@ -99,6 +99,7 @@ import { stackedThreadToast, toastManager } from "../ui/toast";
 import { AddProviderInstanceDialog } from "./AddProviderInstanceDialog";
 import { ExpandableText } from "./ExpandableText";
 import { ProviderInstanceCard } from "./ProviderInstanceCard";
+import { useSecretSources } from "./SecretSourceInput";
 import { UsageProviderSettings } from "./UsageProviderSettings";
 import { ProviderSetupSection, readAntigravityAuthMethod } from "./ProviderSetupSection";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
@@ -262,13 +263,13 @@ function EnvironmentUnavailablePlaceholder({
 
   const isLoading = access.kind === "loading";
   const title = isLoading
-    ? uiT("Loading provider settings")
+    ? "Loading provider settings"
     : access.kind === "error"
-      ? uiT("Could not connect to this device")
+      ? "Could not connect to this device"
       : uiT("Provider settings are unavailable");
   const description = isLoading
     ? access.reason === "permissions"
-      ? uiT("Checking what this session is allowed to change.")
+      ? "Checking what this session is allowed to change."
       : uiT("Waiting for {0}'s configuration.", { "0": environment.label })
     : connectionStatusTitle(environment.connection);
   const error = isLoading ? null : environment.connection.error;
@@ -449,10 +450,10 @@ function ProviderSettingsPanelContent(target: ProviderSettingsTarget) {
       {options.length === 0 && !targetEnvironmentMissing ? (
         <ProviderSettingsPlaceholder
           icon={<EnvironmentMachineIcon kind={resolveEnvironmentMachineKind(null)} />}
-          title={isReady ? uiT("No connected devices") : uiT("Loading devices")}
+          title={isReady ? "No connected devices" : uiT("Loading devices")}
           description={
             isReady
-              ? uiT("Connect an execution environment before configuring providers.")
+              ? "Connect an execution environment before configuring providers."
               : uiT("Reading connected execution environments.")
           }
         />
@@ -652,7 +653,7 @@ export function EnvironmentProviderSettings({
     void (async () => {
       const result = await refreshServerProviders({
         environmentId,
-        input: { refreshModels: true },
+        input: { refreshModels: true, reloadSecrets: true },
       });
       refreshingRef.current = false;
       setIsRefreshingProviders(false);
@@ -1084,7 +1085,7 @@ export function EnvironmentProviderSettings({
             ) : (
               <div className="p-6 text-sm text-muted-foreground">
                 {targetInstanceMissing
-                  ? uiT("This provider instance is no longer available on this device.")
+                  ? "This provider instance is no longer available on this device."
                   : uiT("No providers configured.")}
               </div>
             )}
@@ -1278,6 +1279,7 @@ function ProviderInstanceRow({
   const { t: uiT } = useUiLanguage();
 
   const allProjects = useProjects();
+  const secretSources = useSecretSources(environmentId);
   const acpProjects =
     mode === "editor" && liveProvider?.driver === "acpRegistry"
       ? allProjects.filter((project) => project.environmentId === environmentId)
@@ -1316,6 +1318,7 @@ function ProviderInstanceRow({
   return (
     <ProviderInstanceCard
       environmentId={environmentId}
+      secretSources={secretSources}
       acpProjects={acpProjects}
       projectOverride={projectOverride}
       onAcceptUrlAuth={

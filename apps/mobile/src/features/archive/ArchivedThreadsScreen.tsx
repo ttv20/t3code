@@ -25,7 +25,7 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
-import { relativeTime } from "../../lib/time";
+import { RelativeTime } from "../../components/RelativeTime";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import { useServerConfigs } from "../../state/entities";
 import { useEnvironmentScope } from "../../state/session";
@@ -198,7 +198,6 @@ function ArchivedThreadRow(props: {
     props.thread.environmentId,
     AuthOrchestrationOperateScope,
   );
-  const timestamp = relativeTime(props.thread.archivedAt ?? props.thread.updatedAt);
   const subtitle = [props.environmentLabel, props.thread.branch].filter((part): part is string =>
     Boolean(part),
   );
@@ -224,7 +223,7 @@ function ArchivedThreadRow(props: {
             {props.thread.title}
           </Text>
           <Text className="min-w-[30px] text-right text-xs tabular-nums text-foreground-tertiary">
-            {timestamp}
+            <RelativeTime timestamp={props.thread.archivedAt ?? props.thread.updatedAt} />
           </Text>
         </View>
         {subtitle.length > 0 ? (
@@ -404,10 +403,10 @@ export function ArchivedThreadsScreen(props: {
       <EmptyState
         detail={
           isFiltered
-            ? uiT("Try another search or environment.")
+            ? "Try another search or environment."
             : uiT("Threads you archive will appear here.")
         }
-        title={isFiltered ? uiT("No matching threads") : uiT("No archived threads")}
+        title={isFiltered ? "No matching threads" : uiT("No archived threads")}
       />
     );
   }, [isFiltered, isInitialLoad, uiT]);

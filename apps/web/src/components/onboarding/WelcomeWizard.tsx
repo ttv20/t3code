@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
 import type {
@@ -16,6 +16,7 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import {
+  AgentSessionSource,
   AuthTerminalOperateScope,
   CommandId,
   defaultInstanceIdForDriver,
@@ -371,7 +372,7 @@ function ConnectionStep({
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {!environment.entry.enabled && environment.connection.phase !== "unsupported"
-                      ? uiT("Off")
+                      ? "Off"
                       : presentSavedCloudEnvironmentConnection(environment.connection).buttonLabel}
                   </span>
                 </span>
@@ -437,7 +438,7 @@ function ConnectionStep({
         <p className="mt-4 text-xs text-muted-foreground">
           {uiT("Not connected, so setup skips")}
           {skippedLabels.join(", ")}
-          {uiT(". You can set")} {skippedLabels.length === 1 ? uiT("it") : uiT("them")}{" "}
+          {uiT(". You can set")} {skippedLabels.length === 1 ? "it" : uiT("them")}{" "}
           {uiT("up later from Settings.")}
         </p>
       ) : null}
@@ -511,11 +512,11 @@ function ConnectAccountOption({
           <span className="flex-1 text-left">{uiT("T3 Connect")}</span>
           <span className="text-xs text-muted-foreground">
             {!isLoaded
-              ? uiT("Loading sign-in…")
+              ? "Loading sign-in…"
               : !isSignedIn
-                ? uiT("Sign in")
+                ? "Sign in"
                 : !discoveryReady
-                  ? uiT("Loading computers…")
+                  ? "Loading computers…"
                   : null}
           </span>
           <ChevronRightIcon
@@ -649,19 +650,20 @@ function PairingForm({
               {uiT("Need a pairing link?")}
             </CollapsibleTrigger>
             <Button type="submit" disabled={isPairing || pairingUrl.trim().length === 0}>
-              {isPairing ? uiT("Pairing...") : uiT("Pair")}
+              {isPairing ? "Pairing..." : uiT("Pair")}
             </Button>
           </div>
           <CollapsiblePanel>
             <p className="pt-3 text-sm text-muted-foreground">
-              {uiT("Run this on the computer with your code.")}
+              <UiText message={"On the computer with your code, start T3 Code or run"} />{" "}
+              <code className="font-mono">{uiT("npx t3 serve")}</code>
+              <UiText message={", then run:"} />
             </p>
             <CommandBlock command="npx t3 pair" className="mt-2" />
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {uiT("Start T3 Code first, or run")}
-              <code className="font-mono">{uiT("npx t3 serve")}</code>
-              {uiT(". Add")} <code className="font-mono">{uiT("--tailscale")}</code>{" "}
-              {uiT("to use your tailnet.")}
+              <UiText message={"On a tailnet, run"} />{" "}
+              <code className="font-mono">npx t3 pair --tailscale</code>{" "}
+              <UiText message={"instead."} />
             </p>
           </CollapsiblePanel>
         </Collapsible>
@@ -1002,7 +1004,7 @@ function AgentCard({
       <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
         <span className="block text-sm font-medium text-foreground">{displayName}</span>
         <p className="mt-0.5 text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
-          {providerState === "ready" ? uiT("Ready to code.") : summary.headline}
+          {providerState === "ready" ? "Ready to code." : summary.headline}
           {providerState !== "ready" && summary.detail ? ` · ${summary.detail}` : ""}
         </p>
       </div>
@@ -1026,7 +1028,7 @@ function AgentCard({
             disabled={terminalOpen || !terminalAvailable}
           >
             <TerminalIcon className="size-3.5" />
-            {providerState === "signIn" ? uiT("Sign in") : uiT("Install")}
+            {providerState === "signIn" ? "Sign in" : uiT("Install")}
           </Button>
         )}
       </div>
@@ -1549,7 +1551,7 @@ function ImportStep({
           onClick={() => void runImport(selected)}
         >
           {isImporting
-            ? uiT("Importing…")
+            ? "Importing…"
             : `Import ${selected.length} ${selected.length === 1 ? "project" : "projects"}`}
         </Button>
       </div>
@@ -1611,7 +1613,7 @@ function ImportCandidateList({
               <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-panel-open:rotate-90" />
               <span className="truncate text-sm text-muted-foreground">{uiT("Other folders")}</span>
               <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-                {other.length} {other.length === 1 ? uiT("folder") : uiT("folders")}
+                {other.length} {other.length === 1 ? "folder" : uiT("folders")}
               </span>
             </CollapsibleTrigger>
           </div>
@@ -1757,43 +1759,38 @@ function ImportCandidateRow({
   );
 }
 
+const IMPORT_SOURCE_NAMES: Record<AgentSessionSource, string> = {
+  claudeAgent: "Claude Code",
+  codex: "Codex",
+  pi: "Pi",
+};
+
 function ImportRowMeta({
   sources,
   threadCount,
   lastActiveAt,
 }: {
-  readonly sources: ReadonlyArray<"claudeAgent" | "codex"> | null;
+  readonly sources: ReadonlyArray<AgentSessionSource> | null;
   readonly threadCount: number;
   readonly lastActiveAt: string | null;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const relative = lastActiveAt === null ? null : formatRelativeTime(lastActiveAt);
   const age = relative === null ? "" : relative.suffix === null ? "now" : relative.value;
   return (
-    <span className="ml-auto grid shrink-0 grid-cols-[1rem_1rem_2.5rem_2.25rem] items-center gap-x-1 text-xs text-muted-foreground tabular-nums">
-      <span className="flex size-4 items-center justify-center">
-        {sources?.includes("claudeAgent") ? (
-          <span role="img" aria-label={uiT("Claude Code")}>
-            <ProviderInstanceIcon
-              driverKind={ProviderDriverKind.make("claudeAgent")}
-              displayName="Claude Code"
-              iconClassName="size-3"
-            />
-          </span>
-        ) : null}
-      </span>
-      <span className="flex size-4 items-center justify-center">
-        {sources?.includes("codex") ? (
-          <span role="img" aria-label={uiT("Codex")}>
-            <ProviderInstanceIcon
-              driverKind={ProviderDriverKind.make("codex")}
-              displayName="Codex"
-              iconClassName="size-3"
-            />
-          </span>
-        ) : null}
-      </span>
+    <span className="ml-auto grid shrink-0 grid-cols-[1rem_1rem_1rem_2.5rem_2.25rem] items-center gap-x-1 text-xs text-muted-foreground tabular-nums">
+      {AgentSessionSource.literals.map((source) => (
+        <span key={source} className="flex size-4 items-center justify-center">
+          {sources?.includes(source) ? (
+            <span role="img" aria-label={IMPORT_SOURCE_NAMES[source]}>
+              <ProviderInstanceIcon
+                driverKind={ProviderDriverKind.make(source)}
+                displayName={IMPORT_SOURCE_NAMES[source]}
+                iconClassName="size-3"
+              />
+            </span>
+          ) : null}
+        </span>
+      ))}
       <span className="text-right">{threadCount}</span>
       <span className="text-right whitespace-nowrap">{age}</span>
     </span>

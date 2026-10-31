@@ -2,7 +2,6 @@ import { useUiLanguage } from "../../i18n";
 import { UiText } from "../../i18n";
 import { projectChangeRequestUrl } from "@t3tools/client-runtime/change-request-links";
 import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
-import { changeRequestReferenceAutolinker } from "@t3tools/client-runtime/pull-request-markdown";
 import { useAtomValue } from "@effect/atom-react";
 import { usePullRequestStack } from "~/state/usePullRequestStack";
 import {
@@ -108,6 +107,7 @@ import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
 import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
 import { openOnHostLabel } from "./pullRequestLinkContextMenu";
 import { PullRequestMarkdownContext } from "./PullRequestMarkdown";
+import { pullRequestAutolinkPlugins } from "./pullRequestMarkdown.logic";
 import { PullRequestComposer } from "./PullRequestComposer";
 import { PullRequestSummaryTab } from "./PullRequestSummaryTab";
 import { PullRequestTimelineTab } from "./PullRequestTimelineTab";
@@ -241,7 +241,11 @@ function pullRequestMarkdownContext(
   detail: Pick<PullRequestDetail, "provider" | "url"> | null,
   threadRef: ScopedThreadRef | null,
 ) {
-  return { autolinks: changeRequestReferenceAutolinker(detail), threadRef };
+  return {
+    remarkPlugins: pullRequestAutolinkPlugins(detail),
+    lineBreaks: sourceControlClients.find(detail?.provider ?? "")?.hardLineBreaks ?? false,
+    threadRef,
+  };
 }
 
 function pullRequestStackReference(
@@ -417,16 +421,16 @@ export function PullRequestDetailPanel({
     Partial<Record<PullRequestDetailTab, boolean>>
   >({});
   const condensed = condensedByTab[tab] ?? false;
-  const scrollerByTab = useRef<Partial<Record<PullRequestDetailTab, HTMLDivElement | null>>>({});
+  const scrollerByTab = useRef<Partial<Record<PullRequestDetailTab, HTMLElement | null>>>({});
   // Fresh ref callbacks would detach and reattach every scroller on each render.
   const [scrollerRefs] = useState(() => ({
-    summary: (node: HTMLDivElement | null) => {
+    summary: (node: HTMLElement | null) => {
       scrollerByTab.current.summary = node;
     },
-    timeline: (node: HTMLDivElement | null) => {
+    timeline: (node: HTMLElement | null) => {
       scrollerByTab.current.timeline = node;
     },
-    code: (node: HTMLDivElement | null) => {
+    code: (node: HTMLElement | null) => {
       scrollerByTab.current.code = node;
     },
   }));
@@ -436,7 +440,7 @@ export function PullRequestDetailPanel({
   // so applying a delta afterward would compensate twice.
   const compensationRef = useRef<{
     tab: PullRequestDetailTab;
-    scroller: HTMLDivElement;
+    scroller: HTMLElement;
     target: number;
   } | null>(null);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- restores the scroller's scrollTop before paint after the header condenses
@@ -814,7 +818,7 @@ export function PullRequestDetailPanel({
         title: uiT("Added to the composer"),
         description:
           task.prompt.length > 0
-            ? uiT("The question is in the composer. Read it over, then send.")
+            ? "The question is in the composer. Read it over, then send."
             : uiT("The {0} is in the composer. Type your question, then send.", {
                 "0": uiT(terminology.singular),
               }),
@@ -854,7 +858,7 @@ export function PullRequestDetailPanel({
       title: uiT("Asked in a thread"),
       description:
         task.prompt.length > 0
-          ? uiT("The question is in the composer. Read it over, then send.")
+          ? "The question is in the composer. Read it over, then send."
           : uiT("The {0} is in the composer. Type your question, then send.", {
               "0": uiT(terminology.singular),
             }),
@@ -956,7 +960,7 @@ export function PullRequestDetailPanel({
         prepared.value.isOnPullRequestHead
           ? {
               type: "success",
-              title: mode === "local" ? uiT("Checked out here") : uiT("Checked out"),
+              title: mode === "local" ? "Checked out here" : uiT("Checked out"),
               description:
                 mode === "local"
                   ? uiT("This repository is on the {0}'s branch, with a thread open on it.", {
@@ -1248,7 +1252,7 @@ export function PullRequestDetailPanel({
   const resolveConflictsControl = (
     <PullRequestResolveConflictsButton
       handoff={handoff}
-      unavailable={attachTarget === null && checkoutRoot === null}
+      unavailable={attachTarget === null && (checkoutRoot === null || !canPrepareWorktree)}
       onResolve={startResolveConflicts}
     />
   );
@@ -1404,6 +1408,8 @@ export function PullRequestDetailPanel({
                 onSelectMergeMethod={selectMergeMethod}
                 showsDeleteBranch={showsDeleteBranch}
                 environmentConnected={environmentConnected}
+                canWriteSourceControl={canWriteSourceControl}
+                onMaintainerEditsSaved={refreshDetail}
                 confirmDeleteBranch={confirmDeleteBranch}
                 pendingAction={pendingAction}
                 perform={perform}
@@ -1645,7 +1651,7 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? uiT("Comments unavailable")
+                        ? "Comments unavailable"
                         : `${detail.commentCount.toLocaleString()} ${
                             detail.commentCount === 1 ? "comment" : "comments"
                           }`
@@ -1662,7 +1668,7 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? uiT("Commits unavailable")
+                        ? "Commits unavailable"
                         : `${detail.commits.length.toLocaleString()} ${
                             detail.commits.length === 1 ? "commit" : "commits"
                           }`
@@ -1685,7 +1691,7 @@ export function PullRequestDetailPanel({
                       <PullRequestReviewOutcomeIcon outcome="approved" className="size-3" />
                       {approvalCount.toLocaleString()}
                       <span className="sr-only">
-                        {approvalCount === 1 ? uiT("approval") : uiT("approvals")}
+                        {approvalCount === 1 ? "approval" : uiT("approvals")}
                       </span>
                     </span>
                   ) : null}
@@ -1695,7 +1701,7 @@ export function PullRequestDetailPanel({
                   variant="ghost-muted"
                   aria-label={
                     timelineOrder === "newest"
-                      ? uiT("Show oldest activity first")
+                      ? "Show oldest activity first"
                       : uiT("Show newest activity first")
                   }
                   onClick={() =>
@@ -1703,7 +1709,7 @@ export function PullRequestDetailPanel({
                   }
                 >
                   <ArrowDownUpIcon aria-hidden className="size-3" />
-                  {timelineOrder === "newest" ? uiT("Newest first") : uiT("Oldest first")}
+                  {timelineOrder === "newest" ? "Newest first" : uiT("Oldest first")}
                 </Button>
               </div>
             ) : null}

@@ -74,6 +74,7 @@ import { SettingsSection } from "./components/SettingsSection";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 import {
   editDraft,
+  parseIntervalMinutes,
   scheduledTaskDefaultModel,
   scheduleFromDraft,
   type ScheduledTaskDraft as Draft,
@@ -296,9 +297,9 @@ function WebhookFilterRows(props: {
           />
           {filter.op === "exists" ? null : (
             <FormField
-              label={filter.op === "in" ? uiT("Values, comma-separated") : uiT("Value")}
+              label={filter.op === "in" ? "Values, comma-separated" : uiT("Value")}
               value={filter.value}
-              placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
+              placeholder={filter.op === "in" ? "opened, reopened" : uiT("opened")}
               disabled={props.disabled}
               onChange={(value) => update(index, { value })}
             />
@@ -470,7 +471,7 @@ export function SettingsScheduledTasksRouteScreen() {
           ) : (
             <Text className="px-2 text-base text-foreground-muted">
               {availableTargets.length === 0
-                ? uiT("Connect an environment to view and create scheduled tasks.")
+                ? "Connect an environment to view and create scheduled tasks."
                 : uiT("No environments match these filters. Change the filter above.")}
             </Text>
           )}
@@ -644,7 +645,7 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
         ) : (
           <Text className="px-2 text-base text-foreground-muted">
             {availableTargets.length === 0
-              ? uiT("Connect an environment to create a scheduled task.")
+              ? "Connect an environment to create a scheduled task."
               : uiT(
                   "No environments match the current filters. Change the filters to create a task.",
                 )}
@@ -686,7 +687,16 @@ function TaskForm({
   const tasks = useEnvironmentQuery(
     serverEnvironment.scheduledTasksLive({ environmentId, input: {} }),
   );
-  const projects = useProjects().filter((project) => project.environmentId === environmentId);
+  // Pinned first. The chosen project stays listed after it is archived.
+  const projects = useProjects()
+    .filter(
+      (project) =>
+        project.environmentId === environmentId &&
+        (project.archivedAt == null ||
+          project.id === draft.projectId ||
+          project.id === draft.task?.projectId),
+    )
+    .sort((left, right) => Number(right.pinnedAt != null) - Number(left.pinnedAt != null));
   const config = useEnvironmentServerConfig(environmentId);
   const modelOptions = buildModelOptions(config, null, undefined, draft.projectId);
   const canOperate = useAtomValue(
@@ -1155,7 +1165,7 @@ function TaskForm({
                   setDraft({ ...draft, schedule: { ...draft.schedule, intervalMinutes } })
                 }
               />
-              {Number(draft.schedule.intervalMinutes) < 1 ? (
+              {!(parseIntervalMinutes(draft.schedule.intervalMinutes) >= 1) ? (
                 <Text className="px-4 pb-3 text-sm text-danger-foreground">
                   {uiT("Intervals must be at least 1 minute. Update this interval before saving.")}
                 </Text>
@@ -1192,7 +1202,7 @@ function TaskForm({
         loading={saving}
         disabled={!canOperate || dictationPending || taskMissing || environmentUnavailable}
         onPress={() => void save()}
-        label={saving ? uiT("Saving…") : draft.task ? uiT("Save changes") : uiT("Create task")}
+        label={saving ? "Saving…" : draft.task ? "Save changes" : uiT("Create task")}
       />
     </View>
   );
@@ -1243,7 +1253,7 @@ function WebhookScheduleDetails({
             className="gap-1 active:opacity-70"
           >
             <Text textRole="body" className="text-foreground">
-              {resolved.copyable ? uiT("Webhook URL") : uiT("Webhook path")}
+              {resolved.copyable ? "Webhook URL" : uiT("Webhook path")}
             </Text>
             <Text className="text-sm text-foreground-muted" numberOfLines={2} selectable>
               {resolved.address}
@@ -1253,7 +1263,7 @@ function WebhookScheduleDetails({
             <Text className="text-sm text-foreground-muted">{resolved.note}</Text>
           ) : null}
           <Button
-            label={rotating ? uiT("Rotating…") : uiT("Rotate URL")}
+            label={rotating ? "Rotating…" : uiT("Rotate URL")}
             tone="danger"
             disabled={disabled || rotating}
             onPress={() =>
@@ -1361,7 +1371,7 @@ function EnvironmentTasks({
         <Text className="p-4 text-base text-foreground-muted">{uiT("Loading tasks…")}</Text>
       ) : visibleTasks?.length === 0 ? (
         <Text className="p-4 text-base text-foreground-muted">
-          {projectIds === null ? uiT("No scheduled tasks yet.") : uiT("No tasks in this project.")}
+          {projectIds === null ? "No scheduled tasks yet." : uiT("No tasks in this project.")}
         </Text>
       ) : (
         visibleTasks?.map((task, index) => (
@@ -1387,7 +1397,7 @@ function EnvironmentTasks({
               <Text className="text-sm text-foreground-muted" numberOfLines={2}>
                 {describeSchedule(task)}
                 {!task.enabled
-                  ? uiT(" · Paused")
+                  ? " · Paused"
                   : task.nextRunAt
                     ? ` · ${formatNextScheduledTaskRun(task.nextRunAt, now)}`
                     : ""}
@@ -1403,7 +1413,7 @@ function EnvironmentTasks({
                 { id: "edit", title: uiT("Edit") },
                 {
                   id: "toggle",
-                  title: task.enabled ? uiT("Pause") : uiT("Resume"),
+                  title: task.enabled ? "Pause" : uiT("Resume"),
                   attributes: { disabled: !canOperate },
                 },
                 ...(task.schedule.type === "webhook"

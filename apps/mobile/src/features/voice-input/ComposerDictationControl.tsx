@@ -285,7 +285,8 @@ function VoiceActionButton(props: {
       style={{
         opacity: props.disabled && !props.loading ? 0.4 : 1,
         // Matches ComposerActionButton so the circle stays concentric with the large composer corner.
-        width: variant === "primary" && large ? 62 : undefined,
+        // An undefined width would still override the class's 44px width.
+        ...(variant === "primary" && large ? { width: 62 } : null),
       }}
     >
       <View
@@ -424,7 +425,7 @@ export function ComposerDictationPrimaryAction(props: {
         size={props.size}
         accessibilityLabel={
           props.presentation.confirmationEnabled
-            ? uiT("Finish dictation")
+            ? "Finish dictation"
             : (props.presentation.statusLabel ?? uiT("Preparing voice input"))
         }
         disabled={!props.presentation.confirmationEnabled}
@@ -453,7 +454,7 @@ export function ComposerDictationStartAction(props: {
   return (
     <VoiceActionButton
       size={props.size}
-      accessibilityLabel={openSettings ? uiT("Open microphone settings") : uiT("Start dictation")}
+      accessibilityLabel={openSettings ? "Open microphone settings" : uiT("Start dictation")}
       disabled={props.disabled}
       icon="mic"
       onPress={

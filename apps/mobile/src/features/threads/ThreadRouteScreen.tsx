@@ -81,7 +81,7 @@ import { useSelectedThreadWorktree } from "../../state/use-selected-thread-workt
 import { useThreadComposerState } from "../../state/use-thread-composer-state";
 import { resolveMergeBackTargetThreadId } from "@t3tools/client-runtime/state/thread-relationships";
 import { resolveLatestMergeBackRun } from "@t3tools/client-runtime/state/thread-workflows";
-import { threadEnvironment, useThreadFamily } from "../../state/threads";
+import { threadEnvironment } from "../../state/threads";
 import { EMPTY_ENVIRONMENT_THREAD_STATE } from "@t3tools/client-runtime/state/threads";
 import { useProjects } from "../../state/entities";
 import { projectThreadContentPresentation } from "./threadContentPresentation";
@@ -96,7 +96,11 @@ import {
   ThreadInspectorContentStack,
   type ThreadInspectorMode,
 } from "./thread-inspector-content-stack";
-import { threadRouteIsHydrating } from "./thread-route-hydration";
+import {
+  threadDetailErrorIsCurrent,
+  threadRouteIsHydrating,
+  threadRouteOpensDraft,
+} from "./thread-route-hydration";
 import { ThreadHeader } from "./ThreadHeader";
 import {
   useAndroidWorkspaceBack,
@@ -145,10 +149,11 @@ function ThreadRouteFallbackLayout(props: { readonly children: ReactNode }) {
 }
 
 function OpeningThreadLoadingScreen() {
+  const { t: uiT } = useUiLanguage();
   return (
     <ThreadRouteFallbackLayout>
       <LoadingScreen
-        message="Opening thread…"
+        message={uiT("Opening thread…")}
         messagePlacement="above-spinner"
         embedded={Platform.OS === "android"}
       />
@@ -246,12 +251,6 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
   const connectionsReady = useConnectionsReady();
   const { connectionState } = useRemoteConnectionStatus();
   const { selectedThread } = useThreadSelection();
-  // Subagent rows, the open child's own row and its ancestors come from the family when the
-  // shell leaves idle children out.
-  useThreadFamily(
-    selectedThread?.environmentId ?? null,
-    selectedThread?.lineage.rootThreadId ?? null,
-  );
   const params = props.route.params ?? {};
   const environmentIdRaw = firstRouteParam(params.environmentId);
   const threadIdRaw = firstRouteParam(params.threadId);
@@ -272,6 +271,13 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
       ? null
       : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
   const selectedThreadDetailState = useSelectedThreadDetailState();
+  const detailError = selectedThreadDetailState.error;
+  const [errorBeforeConnected, setErrorBeforeConnected] = useState(() =>
+    routeConnectionState === "connected" ? Option.none<string>() : detailError,
+  );
+  if (routeConnectionState !== "connected" && errorBeforeConnected !== detailError) {
+    setErrorBeforeConnected(detailError);
+  }
   const withInspectorHeader = (content: ReactNode) => (
     <>
       {props.inspectorPresentation ? (
@@ -304,21 +310,32 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
     shellStatus: routeEnvironmentShellState.status,
     shellHasError: routeEnvironmentShellState.hasError,
     detailStatus: selectedThreadDetailState.status,
-    detailHasError: Option.isSome(selectedThreadDetailState.error),
+    detailHasError: threadDetailErrorIsCurrent({
+      connectionState: routeConnectionState,
+      error: detailError,
+      errorBeforeConnected,
+    }),
   });
 
   if (stillHydrating) {
     return withInspectorHeader(<OpeningThreadLoadingScreen />);
   }
 
-  if (routeName === "Thread" && !props.inspectorPresentation) {
+  if (
+    routeName === "Thread" &&
+    !props.inspectorPresentation &&
+    threadRouteOpensDraft({
+      connectionState: routeConnectionState,
+      detailStatus: selectedThreadDetailState.status,
+    })
+  ) {
     return <UnavailableThreadDraftRedirect environmentId={environmentId} />;
   }
 
   return withInspectorHeader(
     <ThreadUnavailableScreen
       actionLabel={
-        routeEnvironmentRuntime === null ? uiT("Manage environments") : uiT("Reconnect environment")
+        routeEnvironmentRuntime === null ? "Manage environments" : uiT("Reconnect environment")
       }
       onAction={() => {
         if (routeEnvironmentRuntime !== null) {

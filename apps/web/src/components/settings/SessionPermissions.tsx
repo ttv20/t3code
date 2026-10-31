@@ -1,6 +1,9 @@
 import { useUiLanguage } from "../../i18n";
 import { type EnvironmentId, sessionGrantsScope } from "@t3tools/contracts";
-import { AUTH_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import {
+  AUTH_SCOPE_OPTIONS,
+  sessionPermissionsUnavailableMessage,
+} from "@t3tools/shared/authScopeOptions";
 import { useEnvironmentSessionState } from "~/state/session";
 
 export function SessionPermissions({
@@ -28,7 +31,7 @@ export function SessionPermissions({
           <li key={scope} className="flex items-start justify-between gap-3">
             <span>{uiT(title)}</span>
             <span className="shrink-0 text-muted-foreground">
-              {sessionGrantsScope(session.data!, scope) ? uiT("Allowed") : uiT("Not granted")}
+              {sessionGrantsScope(session.data!, scope) ? "Allowed" : uiT("Not granted")}
             </span>
           </li>
         ))}
@@ -36,9 +39,11 @@ export function SessionPermissions({
     </div>
   ) : (
     <p className="py-3 text-xs text-muted-foreground">
-      {uiT(
-        "Permissions not checked. Connect to this environment to view this session’s permissions.",
-      )}
+      {sessionPermissionsUnavailableMessage({
+        connected,
+        failed: session.hasError,
+        rejected: !session.hasError && !session.isPending && session.data?.authenticated === false,
+      })}
     </p>
   );
 }

@@ -12,6 +12,7 @@ import { useAtomValue } from "@effect/atom-react";
 import {
   Keyboard,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   View,
@@ -21,6 +22,7 @@ import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeS
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText as Text } from "../../components/ui/AppText";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
@@ -33,7 +35,6 @@ import {
   usePullRequestListFilters,
   type PullRequestFilterMenu,
 } from "./PullRequestListFilters";
-import { PullRequestCardRow } from "./PullRequestControls";
 import { usePullRequestList } from "./usePullRequestList";
 import { usePullRequestListControls } from "./usePullRequestListControls";
 import { usePullRequestListActions } from "./usePullRequestListActions";
@@ -45,6 +46,7 @@ import {
   scopedPullRequestListKey as pullRequestKey,
   type EnvironmentPullRequestListEntry,
   withoutScratchProjectScope,
+  pullRequestProjectChoices,
 } from "./pullRequestList";
 import { useDebouncedValue } from "../../state/queries";
 import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
@@ -58,34 +60,38 @@ function PullRequestScrollView(props: ScrollViewProps) {
   );
 }
 
-function PullRequestListErrors(props: { readonly messages: readonly string[] }) {
-  const { t: uiT } = useUiLanguage();
-
+function PullRequestListError(props: { readonly message: string }) {
   const [expanded, setExpanded] = useState(false);
-  const title = uiT("{0} {1} loading pull requests", {
-    "0": props.messages.length,
-    "1": props.messages.length === 1 ? "error" : "errors",
-  });
   return (
-    <View>
-      <PullRequestCardRow
-        title={title}
-        icon="exclamationmark.triangle"
-        compact
-        last
-        expanded={expanded}
-        accessibilityLabel={uiT("{0}. {1} details", {
-          "0": title,
-          "1": expanded ? "Hide" : "Show",
-        })}
-        onPress={() => setExpanded((value) => !value)}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={props.message}
+      accessibilityState={{ expanded }}
+      onPress={() => setExpanded((value) => !value)}
+      // A long press selects the text; collapsing under that selection crashes Android's
+      // smart-select animation, so it must not also count as a press.
+      onLongPress={() => undefined}
+      className="min-h-11 flex-row items-center gap-3 px-4 py-2.5 active:opacity-70"
+    >
+      <SymbolView
+        name="exclamationmark.triangle"
+        size={18}
+        tintColorClassName="accent-icon-muted"
       />
-      {expanded ? (
-        <Text selectable className="px-4 pb-3 text-sm text-foreground-muted">
-          {props.messages.join("\n")}
-        </Text>
-      ) : null}
-    </View>
+      <Text
+        selectable={expanded}
+        numberOfLines={expanded ? undefined : 1}
+        ellipsizeMode="tail"
+        className="min-w-0 flex-1 text-sm text-foreground-muted"
+      >
+        {props.message}
+      </Text>
+      <SymbolView
+        name={expanded ? "chevron.up" : "chevron.down"}
+        size={11}
+        tintColorClassName="accent-icon-muted"
+      />
+    </Pressable>
   );
 }
 
@@ -232,10 +238,14 @@ export function PullRequestsScreen(
   }
   const labelColors =
     knownFacets.environmentId === environmentId ? knownFacets.labelColors : facets.labelColors;
-  const projects = allProjects.filter(
-    (project) =>
-      !project.isScratch && (environmentId === null || project.environmentId === environmentId),
-  );
+  const projects = pullRequestProjectChoices(allProjects, {
+    environmentId,
+    controls,
+    environmentLabels: new Map(
+      environments.map((item) => [item.environmentId, item.environmentLabel]),
+    ),
+    servesPullRequests: (id) => configs.get(id)?.environment.capabilities.pullRequests === true,
+  });
   const filters = usePullRequestListFilters({
     environments: environments.map((item) => ({
       id: String(item.environmentId),
@@ -340,13 +350,14 @@ export function PullRequestsScreen(
           <>
             <PullRequestListFilters sidebar={sidebar} filters={filters} />
             {result.data?.errors.length ? (
-              <PullRequestListErrors
-                key={JSON.stringify(targets)}
-                messages={result.data.errors.map(
-                  (error) =>
-                    `${error.projectTitle || environments.find((environment) => environment.environmentId === error.environmentId)?.environmentLabel || "Environment"}: ${error.message}`,
-                )}
-              />
+              <View key={JSON.stringify(targets)}>
+                {result.data.errors.map((error) => (
+                  <PullRequestListError
+                    key={`${error.environmentId} ${error.projectTitle} ${error.message}`}
+                    message={`${error.projectTitle || environments.find((environment) => environment.environmentId === error.environmentId)?.environmentLabel || "Environment"}: ${error.message}`}
+                  />
+                ))}
+              </View>
             ) : null}
           </>
         }
@@ -388,21 +399,21 @@ export function PullRequestsScreen(
               <EmptyState
                 title={
                   result.error
-                    ? uiT("Couldn't load pull requests")
+                    ? "Couldn't load pull requests"
                     : targets.length && connectedTargets.length === 0
-                      ? uiT("Environment offline")
+                      ? "Environment offline"
                       : targets.length
                         ? query
-                          ? uiT("No results")
-                          : uiT("No matching pull requests")
+                          ? "No results"
+                          : "No matching pull requests"
                         : uiT("Connect an environment")
                 }
                 detail={
                   result.error ??
                   (targets.length && connectedTargets.length === 0
-                    ? uiT("Reconnect to load pull requests that aren't saved on this device.")
+                    ? "Reconnect to load pull requests that aren't saved on this device."
                     : targets.length
-                      ? uiT("Pull requests from the selected environments' projects appear here.")
+                      ? "Pull requests from the selected environments' projects appear here."
                       : uiT("Add an environment in Settings to browse its pull requests."))
                 }
                 variant="plain"

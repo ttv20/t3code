@@ -1,6 +1,4 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { UiText, useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -8,12 +6,10 @@ import { sourceControlClients } from "@t3tools/client-runtime/source-control-cli
 import type { PullRequestDetail, PullRequestMergeMethod } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { Menu } from "../../components/ui/Menu";
 import { Button } from "../../components/ui/Button";
-import { IconButton } from "../../components/ui/IconButton";
+import { SplitButton } from "../../components/ui/SplitButton";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -28,8 +24,8 @@ import {
 import { pullRequestStackMerge, singlePullRequestMergeAllowed } from "./pullRequestStack";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
-import type { PullRequestStackState } from "./usePullRequestStack";
 import { PullRequestGlyph } from "./pullRequestGlyphs";
+import type { PullRequestStackState } from "./usePullRequestStack";
 
 export function PullRequestMergeControls(props: {
   readonly pr: PullRequestDetail;
@@ -69,17 +65,17 @@ export function PullRequestMergeControls(props: {
   const checkingStack =
     permissions.connected && stack.supportsStackActions && !stack.isFresh && !stack.error;
   const reason = !permissions.connected
-    ? uiT("Reconnect to merge.")
+    ? "Reconnect to merge."
     : (mergeUnavailableReason(pr, permissions.canWrite, terminology) ?? stack.stack)
       ? !stack.supportsStackActions
-        ? uiT("This environment can display stacks but cannot merge them.")
+        ? "This environment can display stacks but cannot merge them."
         : !stack.isFresh
-          ? uiT("Refresh the stack before merging.")
+          ? "Refresh the stack before merging."
           : scope?.reason
       : !canMergeSingle
         ? stack.error
-          ? uiT("Couldn't check stack membership. Refresh before merging.")
-          : uiT("Checking stack membership…")
+          ? "Couldn't check stack membership. Refresh before merging."
+          : "Checking stack membership…"
         : null;
   const canMerge = !busy && method !== undefined && !reason;
   const label = method
@@ -151,7 +147,7 @@ export function PullRequestMergeControls(props: {
           ? uiT("Merge {0} stack layers?", { "0": scope.layers.length })
           : `${uiT(pullRequestActionLabel("merge", terminology))}?`
         : action === "enable-auto-merge"
-          ? uiT("Enable auto-merge?")
+          ? "Enable auto-merge?"
           : uiT("Disable auto-merge?");
     const message =
       action === "merge" && scope
@@ -185,117 +181,41 @@ export function PullRequestMergeControls(props: {
   };
   return (
     <View className="gap-2 border-t border-border-subtle p-3">
-      <View
-        className={
-          Platform.OS === "android"
-            ? "flex-row items-center gap-2"
-            : `flex-row overflow-hidden rounded-xl border-continuous ${canMerge ? "bg-prominent-action" : "bg-subtle-strong"}`
+      <SplitButton
+        label={busy ? "Working…" : !permissions.connected ? "Reconnect to merge" : label}
+        accessibilityLabel={
+          scope ? `${label}, ${scope.layers.length} stack layers through #${pr.number}` : label
         }
-      >
-        {Platform.OS === "android" ? (
-          <View className="min-w-0 flex-1 [unicode-bidi:plaintext]">
-            <Button
-              label={
-                busy ? uiT("Working…") : !permissions.connected ? uiT("Reconnect to merge") : label
-              }
-              tone="primary"
-              fullWidth
-              disabled={!canMerge}
-              loading={busy || checkingStack}
-              onPress={() => confirm("merge")}
-            />
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              scope
-                ? uiT("{0}, {1} stack layers through #{2}", {
-                    "0": label,
-                    "1": scope.layers.length,
-                    "2": pr.number,
-                  })
-                : label
-            }
-            accessibilityState={{ disabled: !canMerge, busy: busy || checkingStack }}
-            disabled={!canMerge}
-            onPress={() => confirm("merge")}
-            className="min-h-11 min-w-0 flex-1 flex-row items-center justify-center gap-2 px-3 py-2 active:opacity-70"
-          >
-            {busy || checkingStack ? (
-              <AppActivityIndicator size="small" colorClassName="accent-icon-muted" />
-            ) : (
-              <SymbolView
-                name={PullRequestGlyph.merged}
-                size={16}
-                tintColorClassName={
-                  canMerge ? "accent-prominent-action-foreground" : "accent-icon-muted"
-                }
-              />
-            )}
-            <Text
-              className={`shrink text-center text-sm font-t3-semibold ${canMerge ? "text-prominent-action-foreground" : "text-foreground-muted"}`}
-            >
-              {busy ? uiT("Working…") : !permissions.connected ? uiT("Reconnect to merge") : label}
-            </Text>
-          </Pressable>
-        )}
-        {methods.length > 0 || canAutoMerge ? (
-          <Menu
-            title={uiT("Merge options")}
-            actions={[
-              ...methods.map((id) => ({
-                id,
-                title: MERGE_METHODS[id].title,
-                state: id === method ? ("on" as const) : ("off" as const),
-                attributes: { disabled: busy },
-              })),
-              ...(canAutoMerge
-                ? [
-                    {
-                      id: autoAction,
-                      title: pr.autoMergeEnabled
-                        ? uiT("Disable auto-merge")
-                        : uiT("Enable auto-merge"),
-                      image: "clock",
-                    },
-                  ]
-                : []),
-            ]}
-            onPressAction={({ nativeEvent }) => {
-              const selected = methods.find((id) => id === nativeEvent.event);
-              if (selected) {
-                setSelectedMethod(selected);
-                savePreferences({ pullRequestMergeMethod: selected });
-              } else if (nativeEvent.event === autoAction && canAutoMerge) confirm(autoAction);
-            }}
-          >
-            {Platform.OS === "android" ? (
-              <View pointerEvents="none">
-                <IconButton
-                  accessibilityLabel={uiT("Merge options")}
-                  icon="chevron.down"
-                  variant="tonal"
-                />
-              </View>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={uiT("Merge options")}
-                className="min-h-11 w-11 items-center justify-center border-l border-border-subtle"
-              >
-                <SymbolView
-                  name="chevron.down"
-                  size={13}
-                  tintColorClassName={
-                    canMerge ? "accent-prominent-action-foreground" : "accent-icon-muted"
-                  }
-                />
-              </Pressable>
-            )}
-          </Menu>
-        ) : null}
-      </View>
+        icon={PullRequestGlyph.merged}
+        disabled={!canMerge}
+        loading={busy || checkingStack}
+        onPress={() => confirm("merge")}
+        menuTitle={uiT("Merge options")}
+        actions={[
+          ...methods.map((id) => ({
+            id,
+            title: MERGE_METHODS[id].title,
+            state: id === method ? ("on" as const) : ("off" as const),
+            attributes: { disabled: !canMerge && !canAutoMerge },
+          })),
+          ...(canAutoMerge
+            ? [
+                {
+                  id: autoAction,
+                  title: pr.autoMergeEnabled ? "Disable auto-merge" : uiT("Enable auto-merge"),
+                  image: "clock",
+                },
+              ]
+            : []),
+        ]}
+        onPressAction={(id) => {
+          const selected = methods.find((method) => method === id);
+          if (selected) {
+            setSelectedMethod(selected);
+            savePreferences({ pullRequestMergeMethod: selected });
+          } else if (id === autoAction && canAutoMerge) confirm(autoAction);
+        }}
+      />
       {permissions.connected &&
       reason &&
       reason !== MERGE_CONFLICT_REASON &&

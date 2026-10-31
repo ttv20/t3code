@@ -824,7 +824,7 @@ function KeybindingKeyControl({
           disabled={isSaving || keyDraft.trim().length === 0 || !isWhenDraftValid}
           onClick={save}
         >
-          {isSaving ? uiT("Saving") : uiT("Save")}
+          {isSaving ? "Saving" : uiT("Save")}
         </Button>
       ) : null}
       {showPill ? (
@@ -848,7 +848,7 @@ function KeybindingKeyControl({
           autoFocus={isRecording}
           aria-label={uiT("Keybinding for {0}", { "0": commandLabel(row.command) })}
           value={isRecording ? "" : keyDraft}
-          placeholder={isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
+          placeholder={isRecording ? "Press shortcut" : uiT("Unassigned")}
           size="sm"
           font="mono"
           className="w-44"
@@ -878,9 +878,13 @@ function WhenClauseControl({
   onValidityChange: (valid: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
+  // Closing unmounts the builder, which drops an unparsed draft and keeps the last valid value.
+  const handleOpenChange = (open: boolean) => {
+    if (!open) onValidityChange(true);
+  };
 
   return (
-    <Popover>
+    <Popover onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <Button
@@ -1170,7 +1174,7 @@ function NewKeybindingKeyInput({
       autoFocus={autoFocus}
       aria-label={uiT("Keybinding for {0}", { "0": draft.commandLabelText })}
       value={draft.isRecording ? "" : draft.keyDraft}
-      placeholder={draft.isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
+      placeholder={draft.isRecording ? "Press shortcut" : uiT("Unassigned")}
       size="sm"
       font="mono"
       className={className}
@@ -1257,7 +1261,7 @@ function NewKeybindingSettingsRow(props: NewKeybindingProps) {
           <KeybindingConflictWarning labels={draft.conflictLabels} />
           <NewKeybindingKeyInput draft={draft} className="w-44" />
           <Button size="sm" disabled={isSaving || !draft.canSave} onClick={draft.save}>
-            {isSaving ? uiT("Saving") : uiT("Save")}
+            {isSaving ? "Saving" : uiT("Save")}
           </Button>
           <NewKeybindingCancelIcon isSaving={isSaving} onCancel={onCancel} />
         </div>

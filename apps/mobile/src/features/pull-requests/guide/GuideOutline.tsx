@@ -32,7 +32,7 @@ export function GuideOutline({
           </Text>
           <Text className="text-sm text-foreground-muted">
             {uiT("through")}
-            {files.size} {files.size === 1 ? uiT("file") : uiT("files")}
+            {files.size} {files.size === 1 ? "file" : uiT("files")}
           </Text>
         </View>
         <Menu
@@ -65,7 +65,7 @@ export function GuideOutline({
       </View>
       {guide.stops[0]?.summary ? (
         <View className="mb-6">
-          <PullRequestMarkdown markdown={guide.stops[0].summary} />
+          <PullRequestMarkdown lineBreaks={false} markdown={guide.stops[0].summary} />
         </View>
       ) : null}
       {guide.stops.map((stop, position) => {

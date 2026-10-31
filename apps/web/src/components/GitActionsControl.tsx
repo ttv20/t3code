@@ -91,7 +91,7 @@ import {
   useVcsInitAction,
   useVcsPullAction,
 } from "../state/sourceControlActions";
-import { useThreadProjection, useQuietThreadShell } from "~/state/entities";
+import { useQuietThreadProjection, useQuietThreadShell } from "~/state/entities";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useEnvironmentQuery } from "~/state/query";
 import { serverEnvironment } from "~/state/server";
@@ -119,6 +119,8 @@ interface GitActionsControlProps {
   activeThreadRef: ScopedThreadRef | null;
   draftId?: DraftId;
   compact?: boolean;
+  showActions?: boolean;
+  showChanges?: boolean;
   onOpenChanges?: () => void;
 }
 
@@ -849,7 +851,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                   </span>
                   <h3 className="text-sm font-semibold text-foreground">
                     {publishResult.status === "pushed"
-                      ? uiT("Repository published")
+                      ? "Repository published"
                       : uiT("Repository created")}
                   </h3>
                   <p className="max-w-xs text-pretty text-xs text-muted-foreground">
@@ -906,7 +908,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                   setPublishWizardStep((step) => Math.max(0, step - 1));
                 }}
               >
-                {publishWizardStep === 0 ? uiT("Cancel") : uiT("Back")}
+                {publishWizardStep === 0 ? "Cancel" : uiT("Back")}
               </Button>
               {publishWizardStep < 1 ? (
                 <Button
@@ -940,6 +942,8 @@ export default function GitActionsControl({
   activeThreadRef,
   draftId,
   compact = false,
+  showActions = true,
+  showChanges = true,
   onOpenChanges,
 }: GitActionsControlProps) {
   const { t: uiT } = useUiLanguage();
@@ -970,7 +974,7 @@ export default function GitActionsControl({
         ? store.getDraftThreadByRef(activeThreadRef)
         : null,
   );
-  const activeServerThreadProjection = useThreadProjection(
+  const activeServerThreadProjection = useQuietThreadProjection(
     activeDraftThread !== null && activeServerThreadShell === null ? null : activeThreadRef,
   );
   const activeServerThread =
@@ -1119,7 +1123,7 @@ export default function GitActionsControl({
     hasPrimaryRemote,
   );
   const quickActionDisabledReason = !canWriteSourceControl
-    ? uiT("This connection cannot change source control.")
+    ? "This connection cannot change source control."
     : quickAction.disabled
       ? (quickAction.hint ?? uiT("This action is currently unavailable."))
       : null;
@@ -1314,7 +1318,7 @@ export default function GitActionsControl({
         }
 
         const pullResult = result.value;
-        const title = pullResult.status === "pulled" ? uiT("Pulled") : uiT("Already up to date");
+        const title = pullResult.status === "pulled" ? "Pulled" : uiT("Already up to date");
         const description =
           pullResult.status === "pulled"
             ? uiT("Updated {0} from {1}", {
@@ -1499,7 +1503,7 @@ export default function GitActionsControl({
 
   return (
     <>
-      {!isRepo ? (
+      {!showActions ? null : !isRepo ? (
         <ThreadDetailsControl
           size="xs"
           variant="ghost"
@@ -1510,7 +1514,7 @@ export default function GitActionsControl({
         >
           <GitBranchPlusIcon className="size-3.5" aria-hidden />
           <span className={cn("ml-0.5", THREAD_DETAILS_PANEL_LABEL_CLASS)}>
-            {initAction.isPending ? uiT("Initializing...") : uiT("Initialize Git")}
+            {initAction.isPending ? "Initializing..." : uiT("Initialize Git")}
           </span>
         </ThreadDetailsControl>
       ) : quietEmptyDraft || (compact && !gitActionProgress && !visibleInlineSuccess) ? null : (
@@ -1641,7 +1645,7 @@ export default function GitActionsControl({
         </div>
       )}
 
-      {isRepo && !quietEmptyDraft ? (
+      {showChanges && isRepo && !quietEmptyDraft ? (
         <ThreadDetailsControl
           type="button"
           variant="ghost"
@@ -1734,7 +1738,7 @@ export default function GitActionsControl({
                       size="xs"
                       onClick={() => setIsEditingFiles((prev) => !prev)}
                     >
-                      {isEditingFiles ? uiT("Done") : uiT("Edit")}
+                      {isEditingFiles ? "Done" : uiT("Edit")}
                     </Button>
                   )}
                 </div>
@@ -1858,13 +1862,16 @@ export default function GitActionsControl({
         </DialogPopup>
       </Dialog>
 
-      <PublishRepositoryDialog
-        open={isPublishDialogOpen}
-        onOpenChange={setIsPublishDialogOpen}
-        environmentId={activeEnvironmentId}
-        threadRef={activeThreadRef}
-        gitCwd={gitCwd}
-      />
+      {/* Its discovery query should stop when the Git actions row that opens it is hidden. */}
+      {showActions ? (
+        <PublishRepositoryDialog
+          open={isPublishDialogOpen}
+          onOpenChange={setIsPublishDialogOpen}
+          environmentId={activeEnvironmentId}
+          threadRef={activeThreadRef}
+          gitCwd={gitCwd}
+        />
+      ) : null}
 
       <Dialog
         open={pendingDefaultBranchAction !== null}

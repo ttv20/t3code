@@ -3,17 +3,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./text-direction": {
-      "types": "./src/textDirection.ts",
-      "default": "./src/textDirection.ts"
+    "./assembly-highlighting": {
+      "types": "./src/assemblyHighlighting.ts",
+      "default": "./src/assemblyHighlighting.ts"
     },
-    "./context-window": {
-      "types": "./src/contextWindow.ts",
-      "default": "./src/contextWindow.ts"
+    "./zip/bounded-zip": {
+      "types": "./src/zip/boundedZip.ts",
+      "default": "./src/zip/boundedZip.ts"
     },
-    "./composer-usage-indicator": {
-      "types": "./src/composerUsageIndicator.ts",
-      "default": "./src/composerUsageIndicator.ts"
+    "./zip/directory": {
+      "types": "./src/zip/zipDirectory.ts",
+      "default": "./src/zip/zipDirectory.ts"
     },
     "./workspace-basename-lookup": {
       "types": "./src/workspaceBasenameLookup.ts",
@@ -66,6 +66,10 @@
     "./secret-request": {
       "types": "./src/secretRequest.ts",
       "default": "./src/secretRequest.ts"
+    },
+    "./link-request": {
+      "types": "./src/linkRequest.ts",
+      "default": "./src/linkRequest.ts"
     },
     "./scheduled-task-webhook": {
       "types": "./src/scheduledTaskWebhook.ts",
@@ -163,6 +167,10 @@
       "types": "./src/queuedRunEdit.ts",
       "default": "./src/queuedRunEdit.ts"
     },
+    "./clock": {
+      "types": "./src/clock.ts",
+      "default": "./src/clock.ts"
+    },
     "./delayed-status": {
       "types": "./src/delayedStatus.ts",
       "default": "./src/delayedStatus.ts"
@@ -199,6 +207,10 @@
       "types": "./src/state/orchestration.ts",
       "default": "./src/state/orchestration.ts"
     },
+    "./state/thread-history-merge": {
+      "types": "./src/state/threadHistoryMerge.ts",
+      "default": "./src/state/threadHistoryMerge.ts"
+    },
     "./state/orchestration-v2-projection": {
       "types": "./src/state/orchestrationV2Projection.ts",
       "default": "./src/state/orchestrationV2Projection.ts"
@@ -214,6 +226,14 @@
     "./state/deviceHubAccess": {
       "types": "./src/state/deviceHubAccess.ts",
       "default": "./src/state/deviceHubAccess.ts"
+    },
+    "./state/peerLinks": {
+      "types": "./src/state/peerLinks.ts",
+      "default": "./src/state/peerLinks.ts"
+    },
+    "./state/peerPairingCode": {
+      "types": "./src/state/peerPairingCode.ts",
+      "default": "./src/state/peerPairingCode.ts"
     },
     "./state/preview": {
       "types": "./src/state/preview.ts",
@@ -319,6 +339,10 @@
       "types": "./src/state/threadExecution.ts",
       "default": "./src/state/threadExecution.ts"
     },
+    "./state/pending-user-input": {
+      "types": "./src/state/pendingUserInput.ts",
+      "default": "./src/state/pendingUserInput.ts"
+    },
     "./state/thread-requests": {
       "types": "./src/state/threadRequests.ts",
       "default": "./src/state/threadRequests.ts"
@@ -398,6 +422,10 @@
     "./thread-reference": {
       "types": "./src/threadReference.ts",
       "default": "./src/threadReference.ts"
+    },
+    "./pull-request-project-filter": {
+      "types": "./src/pullRequestProjectFilter.ts",
+      "default": "./src/pullRequestProjectFilter.ts"
     },
     "./thread-pull-request-compatibility": {
       "types": "./src/threadPullRequestCompatibility.ts",
@@ -487,6 +515,22 @@
       "types": "./src/modelTraits.ts",
       "default": "./src/modelTraits.ts"
     },
+    "./provider-clients": {
+      "types": "./src/providerClients.ts",
+      "default": "./src/providerClients.ts"
+    },
+    "./text-direction": {
+      "types": "./src/textDirection.ts",
+      "default": "./src/textDirection.ts"
+    },
+    "./context-window": {
+      "types": "./src/contextWindow.ts",
+      "default": "./src/contextWindow.ts"
+    },
+    "./composer-usage-indicator": {
+      "types": "./src/composerUsageIndicator.ts",
+      "default": "./src/composerUsageIndicator.ts"
+    },
     "./turn-work-label": {
       "types": "./src/turnWorkLabel.ts",
       "default": "./src/turnWorkLabel.ts"
@@ -510,34 +554,6 @@
     "./usage-localization": {
       "types": "./src/usageLocalization.ts",
       "default": "./src/usageLocalization.ts"
-    },
-    "./zip/bounded-zip": {
-      "types": "./src/zip/boundedZip.ts",
-      "default": "./src/zip/boundedZip.ts"
-    },
-    "./zip/directory": {
-      "types": "./src/zip/zipDirectory.ts",
-      "default": "./src/zip/zipDirectory.ts"
-    },
-    "./link-request": {
-      "types": "./src/linkRequest.ts",
-      "default": "./src/linkRequest.ts"
-    },
-    "./clock": {
-      "types": "./src/clock.ts",
-      "default": "./src/clock.ts"
-    },
-    "./state/peerLinks": {
-      "types": "./src/state/peerLinks.ts",
-      "default": "./src/state/peerLinks.ts"
-    },
-    "./state/peerPairingCode": {
-      "types": "./src/state/peerPairingCode.ts",
-      "default": "./src/state/peerPairingCode.ts"
-    },
-    "./provider-clients": {
-      "types": "./src/providerClients.ts",
-      "default": "./src/providerClients.ts"
     }
   },
   "scripts": {

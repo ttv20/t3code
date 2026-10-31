@@ -30,7 +30,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const { selectedThread } = useThreadSelection();
-  const { selectedThreadCwd, selectedThreadWorktreePath } = useSelectedThreadWorktree();
+  const { selectedThreadCwd } = useSelectedThreadWorktree();
   const gitState = useSelectedThreadGitState();
   const gitActions = useSelectedThreadGitActions();
   const { canChangeThreadBranch } = gitActions;
@@ -46,7 +46,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
 
   const currentBranchLabel =
     gitStatus.data?.refName ?? selectedThread?.branch ?? uiT("Detached HEAD");
-  const currentWorktreePath = selectedThreadWorktreePath;
+  const currentWorktreePath = selectedThreadCwd;
   const availableBranches = gitState.selectedThreadBranches;
   const branchesLoading = gitState.selectedThreadBranchesLoading;
   const busy = gitState.gitOperationLabel !== null;
@@ -202,10 +202,10 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
               const disabled = disabledExistingBranches.has(branch.name);
               const subtitle = branch.worktreePath
                 ? branch.worktreePath === currentWorktreePath
-                  ? uiT("Checked out in this thread")
-                  : uiT("Checked out in another worktree")
+                  ? "Checked out in this thread"
+                  : "Checked out in another worktree"
                 : branch.isDefault
-                  ? uiT("Default branch")
+                  ? "Default branch"
                   : uiT("Local branch");
 
               return (

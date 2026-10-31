@@ -9,7 +9,7 @@ import {
   type EnvironmentThreadSearchMatch,
   type ShownOrder,
 } from "@t3tools/client-runtime/state/thread-search";
-import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
+import { isListedThreadLineage, THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
 import {
   foldSearchQuery,
   PALETTE_MESSAGE_LIMIT,
@@ -405,7 +405,11 @@ export function CommandPalette(props: {
         })),
       );
     }
-    const projectItems: CommandPaletteItem[] = projects.map((project) => ({
+    const openProjects = projects.filter((project) => project.archivedAt == null);
+    const projectItems: CommandPaletteItem[] = [
+      ...openProjects.filter((project) => project.pinnedAt != null),
+      ...openProjects.filter((project) => project.pinnedAt == null),
+    ].map((project) => ({
       key: `project:${scopedProjectKey(project.environmentId, project.id)}`,
       kind: "project",
       project,
@@ -428,10 +432,7 @@ export function CommandPalette(props: {
         }),
     }));
     const threadItems: CommandPaletteItem[] = threads
-      .filter(
-        (thread) =>
-          thread.archivedAt === null && thread.lineage.relationshipToParent !== "subagent",
-      )
+      .filter((thread) => thread.archivedAt === null && isListedThreadLineage(thread.lineage))
       .map((thread) => {
         const project = projectByKey.get(scopedProjectKey(thread.environmentId, thread.projectId));
         const environment =
@@ -687,7 +688,7 @@ export function CommandPalette(props: {
                 contentContainerClassName="pb-2"
                 ListEmptyComponent={
                   <Text className="p-5 text-center text-foreground-muted">
-                    {search.isPending ? uiT("Searching…") : uiT("No results")}
+                    {search.isPending ? "Searching…" : uiT("No results")}
                   </Text>
                 }
                 // Message results from slower environments may still arrive below.

@@ -10,6 +10,7 @@ import {
   type ServerProvider,
 } from "@t3tools/contracts";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { sessionPermissionsUnavailableMessage } from "@t3tools/shared/authScopeOptions";
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 import { AsyncResult } from "effect/reactivity";
@@ -217,11 +218,14 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
               </Text>
             ) : !allowed ? (
               <Text className="px-2 text-sm text-foreground-muted">
-                {AsyncResult.isFailure(sessionResult)
-                  ? uiT("Could not verify your permissions. Reconnect to try again.")
-                  : session === null
-                    ? uiT("Checking permissions…")
-                    : uiT("This connection does not have permission to manage the environment.")}
+                {AsyncResult.isFailure(sessionResult) || session === null || !session.authenticated
+                  ? sessionPermissionsUnavailableMessage({
+                      connected,
+                      failed: AsyncResult.isFailure(sessionResult),
+                      rejected:
+                        !AsyncResult.isFailure(sessionResult) && session?.authenticated === false,
+                    })
+                  : uiT("This connection does not have permission to manage the environment.")}
               </Text>
             ) : null}
             {error ? (
@@ -240,7 +244,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                     {running ? (
                       <Text className="text-sm text-foreground-muted">
                         {updateState.stage === "resuming"
-                          ? uiT("Restarting and reconnecting…")
+                          ? "Restarting and reconnecting…"
                           : uiT("Downloading update…")}
                       </Text>
                     ) : updateState.status === "failed" ? (
@@ -259,7 +263,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                     !supportsEnvironmentUpdate(config.environment.capabilities) ? (
                       <Text className="text-sm text-foreground-muted">
                         {capabilities?.serverSelfUpdate === "desktop-managed"
-                          ? uiT("Update the desktop app on this machine.")
+                          ? "Update the desktop app on this machine."
                           : uiT("Update and restart T3 Code on this machine.")}
                       </Text>
                     ) : null}
@@ -301,7 +305,10 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                       void run("refresh", async () => {
                         if (!readEnvironmentScope(environmentId, AuthOrchestrationReadScope))
                           return;
-                        const result = await refreshProviders({ environmentId, input: {} });
+                        const result = await refreshProviders({
+                          environmentId,
+                          input: { reloadSecrets: true },
+                        });
                         if (AsyncResult.isFailure(result)) throw squashAtomCommandFailure(result);
                         setNotice("Provider status refreshed.");
                       });

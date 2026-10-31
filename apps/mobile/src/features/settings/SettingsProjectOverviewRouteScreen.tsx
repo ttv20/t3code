@@ -10,7 +10,10 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { deriveProjectGroupLabel } from "@t3tools/client-runtime/state/project-grouping";
+import {
+  deriveProjectGroupLabel,
+  type ProjectGroup,
+} from "@t3tools/client-runtime/state/project-grouping";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { useNavigation } from "@react-navigation/native";
 import { useRef, useState } from "react";
@@ -35,6 +38,7 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
 import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
+import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
 import {
   AndroidSettingsEnvironmentFilter,
   SettingsEnvironmentFilterHeader,
@@ -62,6 +66,7 @@ export function SettingsProjectOverviewRouteScreen() {
   };
   const navigation = useNavigation();
   const {
+    availableTargets,
     selectedTargets,
     projectGroups,
     selectedProjectKey,
@@ -100,7 +105,7 @@ export function SettingsProjectOverviewRouteScreen() {
                 "Choose a project with the filter above to manage its name, checkouts and removal.",
               )}
             </Text>
-          ) : members.length === 0 ? (
+          ) : !group || members.length === 0 ? (
             <Text className="px-2 text-base text-foreground-muted">
               {uiT(
                 "This project has no checkout on the selected connected environments. Change the filter above.",
@@ -110,6 +115,8 @@ export function SettingsProjectOverviewRouteScreen() {
             <ProjectOverviewContent
               key={`${selectedProjectKey}:${members.map((member) => member.id).join(",")}`}
               members={members}
+              group={group}
+              connectedTargets={availableTargets}
               environments={selectedTargets}
               hasOtherMembers={members.length < (group?.members.length ?? 0)}
               isRemoving={isRemoving}
@@ -128,6 +135,9 @@ export function SettingsProjectOverviewRouteScreen() {
 
 function ProjectOverviewContent(props: {
   readonly members: readonly EnvironmentProject[];
+  /** Pin and archive belong to the whole project, even when the filter picks one machine. */
+  readonly group: ProjectGroup;
+  readonly connectedTargets: readonly SettingsTarget[];
   readonly environments: readonly SettingsTarget[];
   readonly hasOtherMembers: boolean;
   readonly isRemoving: boolean;
@@ -145,10 +155,8 @@ function ProjectOverviewContent(props: {
   const [draftName, setDraftName] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const threads = useThreadShells();
-  const removableEnvironments = useEnvironmentsWithScope(
-    props.members,
-    AuthOrchestrationOperateScope,
-  );
+  const allMembers = props.group.members.map((member) => member.project);
+  const removableEnvironments = useEnvironmentsWithScope(allMembers, AuthOrchestrationOperateScope);
   const canRemoveGroup = props.members.every((member) =>
     removableEnvironments.has(member.environmentId),
   );
@@ -157,6 +165,52 @@ function ProjectOverviewContent(props: {
     label: uiT("project name update"),
     reportFailure: true,
   });
+  const organizeProject = useAtomCommand(projectEnvironment.update, {
+    label: uiT("project update"),
+    reportFailure: true,
+  });
+  const [isOrganizing, setIsOrganizing] = useState(false);
+  const memberTargets = allMembers.map((member) =>
+    props.connectedTargets.find((entry) => entry.environmentId === member.environmentId),
+  );
+  const offline = memberTargets.some((target) => target === undefined);
+  // Older servers drop pin and archive, so their projects do not offer them.
+  // Offline members are checked when the write runs, so their reason can show.
+  const canOrganize =
+    allMembers.every(
+      (member, index) =>
+        memberTargets[index] === undefined || removableEnvironments.has(member.environmentId),
+    ) &&
+    memberTargets.every(
+      (target) =>
+        target === undefined ||
+        target.serverConfig.environment.capabilities.projectOrganization === true,
+    );
+  // One machine at a time, stopping at the first failure, as web does.
+  const organize = async (input: { readonly pinned?: boolean; readonly archived?: boolean }) => {
+    setIsOrganizing(true);
+    for (const member of allMembers) {
+      if (!readEnvironmentScope(member.environmentId, AuthOrchestrationOperateScope)) {
+        Dialog.alert("Failed to update project", "This connection can no longer change it.");
+        break;
+      }
+      const result = await organizeProject({
+        environmentId: member.environmentId,
+        input: { projectId: member.id, ...input },
+      });
+      if (result._tag === "Failure") {
+        if (!isAtomCommandInterrupted(result)) {
+          const error = squashAtomCommandFailure(result);
+          Dialog.alert(
+            `Failed to update "${member.title}"`,
+            error instanceof Error ? error.message : "An error occurred.",
+          );
+        }
+        break;
+      }
+    }
+    setIsOrganizing(false);
+  };
   const nextName = (draftName ?? displayName).trim();
   const canSave = !isSaving && nextName.length > 0 && nextName !== displayName;
 
@@ -194,9 +248,9 @@ function ProjectOverviewContent(props: {
       unloadedThreadCount: readUnloadedThreadCount(members, threads),
     });
     Dialog.confirm({
-      title: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
+      title: plan.targetKind === "checkout" ? "Remove checkout" : uiT("Remove project"),
       message: plan.confirmationMessage,
-      confirmText: plan.targetKind === "checkout" ? "Remove checkout" : "Remove project",
+      confirmText: plan.targetKind === "checkout" ? "Remove checkout" : uiT("Remove project"),
       destructive: true,
       onCancel: finishRemoval,
       onConfirm: () => {
@@ -276,7 +330,7 @@ function ProjectOverviewContent(props: {
           </Text>
           <Text className="text-sm text-foreground-muted">
             {props.members.length === 1
-              ? uiT("1 checkout")
+              ? "1 checkout"
               : uiT("{0} checkouts", { "0": props.members.length })}
           </Text>
         </View>
@@ -306,6 +360,34 @@ function ProjectOverviewContent(props: {
           </View>
         </View>
       </SettingsSection>
+
+      {canOrganize ? (
+        <SettingsSection title={uiT("Organize")}>
+          <SettingsSwitchRow
+            icon="pin"
+            label={uiT("Pin")}
+            subtitle={
+              offline
+                ? "Connect every machine with this project to change this."
+                : "Pinned projects come first in project pickers."
+            }
+            value={props.group.pinned}
+            disabled={isOrganizing || offline}
+            onValueChange={(pinned) => void organize({ pinned })}
+          />
+          <SettingsActionRow
+            icon="archivebox"
+            label={props.group.archived ? "Unarchive project" : "Archive project"}
+            description={
+              props.group.archived
+                ? "Hidden from project pickers. Threads and files are kept."
+                : "Hides the project from project pickers. Threads and files are kept."
+            }
+            disabled={isOrganizing || offline}
+            onPress={() => void organize({ archived: !props.group.archived })}
+          />
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection title={uiT("Checkouts")}>
         {props.members.map((member, index) => {
@@ -350,9 +432,9 @@ function ProjectOverviewContent(props: {
           icon="trash"
           label={
             props.hasOtherMembers
-              ? uiT("Remove checkout")
+              ? "Remove checkout"
               : props.members.length > 1
-                ? uiT("Remove this project everywhere")
+                ? "Remove this project everywhere"
                 : uiT("Remove project")
           }
           description={

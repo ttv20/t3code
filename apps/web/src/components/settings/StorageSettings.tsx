@@ -18,6 +18,8 @@ import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { formatRelativeTimeLabel } from "../../timestampFormat";
 import { useNowMinute } from "../../hooks/useNowMinute";
+import { useDebouncedValue } from "../../state/queries";
+import { AnimatedHeight } from "../AnimatedHeight";
 import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
 
@@ -87,7 +89,7 @@ export function WorktreesDirectoryRow() {
           aria-label={uiT("Worktree location")}
           autoCapitalize="none"
           spellCheck={false}
-          placeholder={mixed ? uiT("Mixed") : uiT("Default")}
+          placeholder={mixed ? "Mixed" : uiT("Default")}
           defaultValue={mixed ? "" : settings.worktreesDirectory}
           onChange={() => {
             edited.current = true;
@@ -147,9 +149,9 @@ function RetentionControl({
           <NumberFieldGroup>
             <NumberFieldDecrement aria-label={uiT("Decrease {0}", { "0": label })} />
             <NumberFieldInput
-              aria-label={uiT("{0} in days", { "0": label })}
-              size={new Intl.NumberFormat().format(draft ?? value).length}
-              className="field-sizing-content w-auto min-w-[1ch] grow-0 text-right"
+              aria-label={`${label} in days`}
+              size={5}
+              className="w-auto grow-0 text-right"
             />
             <span aria-hidden="true" className="self-center pr-2 text-xs">
               {uiT("days")}
@@ -349,9 +351,9 @@ function CleanupSection() {
                 : "",
           })
         : query?.failed
-          ? uiT("Could not load the last run.")
+          ? "Could not load the last run."
           : query?.loading
-            ? uiT("Loading last run…")
+            ? "Loading last run…"
             : uiT("Cleanup hasn't run yet."),
     };
   });
@@ -391,7 +393,7 @@ function CleanupSection() {
           description={
             <span>
               {!hasRules
-                ? uiT("Turn on a cleanup rule to use this.")
+                ? "Turn on a cleanup rule to use this."
                 : summaries.map(({ environment, label, description }) => (
                     <span key={environment.environmentId} className="block">
                       {supported.length > 1 ? `${label}: ` : ""}
@@ -407,7 +409,7 @@ function CleanupSection() {
               disabled={pending || !hasRules || !state.some((entry) => entry.allowed)}
               onClick={() => void deleteNow()}
             >
-              {pending ? uiT("Deleting…") : uiT("Delete now")}
+              {pending ? "Deleting…" : uiT("Delete now")}
             </Button>
           }
         />
@@ -538,9 +540,9 @@ export function WorktreeCleanupSection() {
             title={uiT("Automatic worktree cleanup")}
             description={
               mode === "off"
-                ? uiT("Keep this project's worktrees until you delete them manually.")
+                ? "Keep this project's worktrees until you delete them manually."
                 : mode === "custom"
-                  ? uiT("Use these rules for this project.")
+                  ? "Use these rules for this project."
                   : uiT("Use each machine's worktree cleanup settings.")
             }
             serverScoped
@@ -559,11 +561,11 @@ export function WorktreeCleanupSection() {
                 <SelectTrigger size="sm" aria-label={uiT("Automatic worktree cleanup")}>
                   <SelectValue>
                     {mixedModes
-                      ? uiT("Mixed")
+                      ? "Mixed"
                       : mode === "inherit"
-                        ? uiT("Inherit")
+                        ? "Inherit"
                         : mode === "off"
-                          ? uiT("Off")
+                          ? "Off"
                           : uiT("Custom")}
                   </SelectValue>
                 </SelectTrigger>
@@ -681,9 +683,9 @@ export function WorktreeCleanupSection() {
                   status={ruleStatus("worktreeKeepWhen")}
                   description={
                     settings.worktreeKeepWhen === "any-local-files"
-                      ? uiT("Includes ignored files, except node_modules.")
+                      ? "Includes ignored files, except node_modules."
                       : settings.worktreeKeepWhen === "tracked-changes"
-                        ? uiT("Deletes untracked and ignored files, including .env.")
+                        ? "Deletes untracked and ignored files, including .env."
                         : uiT(
                             "Keeps edits and untracked files. Deletes ignored files, including .env.",
                           )
@@ -739,12 +741,31 @@ export function StorageCleanupSections() {
   const { scope, connectedEnvironments, targets } = useSettingsScope();
   const scopedSettings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
-  if (scope.kind === "project" || scope.kind === "checkout") return null;
   const settings = scopedSettings.storageCleanup;
-  const ruleStatus = (key: "browserArtifactsAfterDays" | "logsAfterDays") =>
-    targets.some((target) => target.settings.storageCleanup[key] !== settings[key])
+  const targetIdsKey = environmentIdsKey(targets.map((target) => target.environmentId).sort());
+  const artifactsMixed =
+    targets.length > 1 &&
+    targets.some(
+      (target) =>
+        target.settings.storageCleanup.browserArtifactsAfterDays !==
+        settings.browserArtifactsAfterDays,
+    );
+  const logsMixed =
+    targets.length > 1 &&
+    targets.some(
+      (target) => target.settings.storageCleanup.logsAfterDays !== settings.logsAfterDays,
+    );
+  const settledArtifactsStatus = useDebouncedValue(`${targetIdsKey}:${artifactsMixed}`, 300);
+  const settledLogsStatus = useDebouncedValue(`${targetIdsKey}:${logsMixed}`, 300);
+  const artifactsStatus =
+    targets.length > 1 && settledArtifactsStatus === `${targetIdsKey}:true`
       ? "Mixed across selected machines"
       : undefined;
+  const logsStatus =
+    targets.length > 1 && settledLogsStatus === `${targetIdsKey}:true`
+      ? "Mixed across selected machines"
+      : undefined;
+  if (scope.kind === "project" || scope.kind === "checkout") return null;
   const update = (patch: Partial<StorageCleanupSettings>) =>
     updateSettings({ storageCleanup: patch });
   const databaseStorageNotice = (
@@ -770,36 +791,40 @@ export function StorageCleanupSections() {
     <>
       {databaseStorageNotice}
       <SettingsSection id="storage-artifacts" title={uiT("Artifacts and logs")}>
-        <SettingsRow
-          title={uiT("Delete old browser artifacts")}
-          status={ruleStatus("browserArtifactsAfterDays")}
-          description={uiT(
-            "Delete saved browser captures after this many days. Older capture links will no longer open.",
-          )}
-          serverScoped
-          control={
-            <RetentionControl
-              label={uiT("Delete old browser artifacts")}
-              value={settings.browserArtifactsAfterDays}
-              onChange={(browserArtifactsAfterDays) => update({ browserArtifactsAfterDays })}
-            />
-          }
-        />
-        <SettingsRow
-          title={uiT("Delete old rotated logs")}
-          status={ruleStatus("logsAfterDays")}
-          description={uiT(
-            "Delete inactive rotated log files after this many days. Current logs are kept.",
-          )}
-          serverScoped
-          control={
-            <RetentionControl
-              label={uiT("Delete old rotated logs")}
-              value={settings.logsAfterDays}
-              onChange={(logsAfterDays) => update({ logsAfterDays })}
-            />
-          }
-        />
+        <AnimatedHeight>
+          <SettingsRow
+            title={uiT("Delete old browser artifacts")}
+            status={artifactsStatus}
+            description={uiT(
+              "Delete saved browser captures after this many days. Older capture links will no longer open.",
+            )}
+            serverScoped
+            control={
+              <RetentionControl
+                label={uiT("Delete old browser artifacts")}
+                value={settings.browserArtifactsAfterDays}
+                onChange={(browserArtifactsAfterDays) => update({ browserArtifactsAfterDays })}
+              />
+            }
+          />
+        </AnimatedHeight>
+        <AnimatedHeight>
+          <SettingsRow
+            title={uiT("Delete old rotated logs")}
+            status={logsStatus}
+            description={uiT(
+              "Delete inactive rotated log files after this many days. Current logs are kept.",
+            )}
+            serverScoped
+            control={
+              <RetentionControl
+                label={uiT("Delete old rotated logs")}
+                value={settings.logsAfterDays}
+                onChange={(logsAfterDays) => update({ logsAfterDays })}
+              />
+            }
+          />
+        </AnimatedHeight>
       </SettingsSection>
       <CleanupSection />
     </>

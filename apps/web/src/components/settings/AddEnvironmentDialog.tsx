@@ -121,6 +121,7 @@ export function AddEnvironmentDialog({
   const [sshHostSuggestionsOpen, setSshHostSuggestionsOpen] = useState(false);
   const highlightedSshHostRef = useRef<DesktopDiscoveredSshHost | undefined>(undefined);
   const [isAddingSavedBackend, setIsAddingSavedBackend] = useState(false);
+  const savedBackendSessionRef = useRef(0);
   const isSshDiscoveryActive = desktopBridge !== undefined && open && savedBackendMode === "ssh";
   const desktopSshHosts = useEnvironmentQuery(
     isSshDiscoveryActive ? desktopSshHostsStateAtom : null,
@@ -149,7 +150,20 @@ export function AddEnvironmentDialog({
   const hasSshHostSuggestionContent =
     desktopBridge !== undefined &&
     (isLoadingDiscoveredSshHosts || unsavedDiscoveredSshHosts.length > 0);
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      savedBackendSessionRef.current += 1;
+      setSavedBackendMode("remote");
+      setSavedBackendHost("");
+      setSavedBackendPairingCode("");
+      setSavedBackendSshHost("");
+      setSavedBackendSshUsername("");
+      setSavedBackendSshPort("");
+    }
+    onOpenChange(nextOpen);
+  };
   const connectSavedBackendSshTarget = async (target: DesktopSshEnvironmentTarget) => {
+    const session = savedBackendSessionRef.current;
     setIsAddingSavedBackend(true);
     onErrorChange(null);
     const result = await connectSshEnvironment({
@@ -158,22 +172,17 @@ export function AddEnvironmentDialog({
       ...(routeTarget ? { expectedEnvironmentId: routeTarget.environmentId } : {}),
     });
     if (result._tag === "Failure") {
-      if (!isAtomCommandInterrupted(result)) {
+      if (session === savedBackendSessionRef.current && !isAtomCommandInterrupted(result)) {
         pipe(squashAtomCommandFailure(result), formatDesktopSshConnectionError, onErrorChange);
       }
       setIsAddingSavedBackend(false);
       return;
     }
 
-    setSavedBackendHost("");
-    setSavedBackendPairingCode("");
-    setSavedBackendSshHost("");
-    setSavedBackendSshUsername("");
-    setSavedBackendSshPort("");
-    onOpenChange(false);
+    handleOpenChange(false);
     toastManager.add({
       type: "success",
-      title: routeTarget ? uiT("Route added") : uiT("Environment connected"),
+      title: routeTarget ? "Route added" : uiT("Environment connected"),
       description: routeTarget
         ? uiT("{0} can now be reached over SSH {1}.", {
             "0": routeTarget.label,
@@ -245,12 +254,7 @@ export function AddEnvironmentDialog({
       return;
     }
 
-    setSavedBackendHost("");
-    setSavedBackendPairingCode("");
-    setSavedBackendSshHost("");
-    setSavedBackendSshUsername("");
-    setSavedBackendSshPort("");
-    onOpenChange(false);
+    handleOpenChange(false);
     toastManager.add(
       routeTarget
         ? {
@@ -278,6 +282,7 @@ export function AddEnvironmentDialog({
   const handleSelectSshHostSuggestion = async (target: DesktopDiscoveredSshHost) => {
     if (isAddingSavedBackend || !desktopBridge) return;
 
+    const session = savedBackendSessionRef.current;
     setIsAddingSavedBackend(true);
     onErrorChange(null);
     setSavedBackendSshHost(target.alias);
@@ -285,7 +290,13 @@ export function AddEnvironmentDialog({
     try {
       resolved = await desktopBridge.resolveSshHost(target.alias);
     } catch (error) {
-      onErrorChange(formatDesktopSshConnectionError(error));
+      if (session === savedBackendSessionRef.current) {
+        onErrorChange(formatDesktopSshConnectionError(error));
+      }
+      setIsAddingSavedBackend(false);
+      return;
+    }
+    if (session !== savedBackendSessionRef.current) {
       setIsAddingSavedBackend(false);
       return;
     }
@@ -442,7 +453,7 @@ export function AddEnvironmentDialog({
       }
       return;
     }
-    onOpenChange(false);
+    handleOpenChange(false);
     toastManager.add({
       type: "success",
       title: uiT("Route added"),
@@ -477,11 +488,7 @@ export function AddEnvironmentDialog({
         onClick={() => void handleAddSavedBackend()}
       >
         <PlusIcon className="size-3.5" />
-        {isAddingSavedBackend
-          ? uiT("Adding…")
-          : routeTarget
-            ? uiT("Add route")
-            : uiT("Add environment")}
+        {isAddingSavedBackend ? "Adding…" : routeTarget ? "Add route" : uiT("Add environment")}
       </Button>
     </div>
   );
@@ -607,18 +614,14 @@ export function AddEnvironmentDialog({
           onClick={() => void handleAddSavedBackend()}
         >
           <PlusIcon className="size-3.5" />
-          {isAddingSavedBackend
-            ? uiT("Adding…")
-            : routeTarget
-              ? uiT("Add route")
-              : uiT("Add environment")}
+          {isAddingSavedBackend ? "Adding…" : routeTarget ? "Add route" : uiT("Add environment")}
         </Button>
       </div>
     </div>
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <Tooltip>
         <TooltipTrigger
           render={

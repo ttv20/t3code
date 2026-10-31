@@ -238,7 +238,7 @@ export function DevicePreviewScreen({
       : []),
     {
       id: "shutdown",
-      title: shuttingDown ? uiT("Shutting down…") : uiT("Shut down device"),
+      title: shuttingDown ? "Shutting down…" : uiT("Shut down device"),
       icon: "power",
       disabled: !preview || shuttingDown,
       onPress: () => void shutDownDevice(),
@@ -421,6 +421,7 @@ function OpenDevicePreview({
       access={access}
       platform={session.platform}
       deviceId={session.deviceId}
+      serveSimOnly={preview.serveSimOnly}
       colors={{
         background: themeVariables["--color-sheet-solid"],
         foreground: themeVariables["--color-foreground"],

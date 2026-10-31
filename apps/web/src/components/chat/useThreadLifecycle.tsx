@@ -59,9 +59,23 @@ import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { readEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { backgroundWorkNowItem, childInputNowItem, goalNowItem } from "./ThreadActivityBanners";
+import {
+  backgroundWorkNowItem,
+  childInputNowItem,
+  goalNowItem,
+  runStopNowItem,
+} from "./ThreadActivityBanners";
+import { useForceStopThread } from "./useForceStopThread";
+import { useAtomValue } from "@effect/atom-react";
+import type { RunStopPresentation } from "@t3tools/client-runtime/state/thread-execution";
+import { Atom } from "effect/reactivity";
+import { environmentThreadDetails } from "../../state/threads";
+import { openSideChatTab } from "../../lib/sideChatPane";
 import type { useLocalDispatchState } from "./useLocalDispatchState";
 const RELATED_THREAD_SHELL_WAIT_MS = 1_000;
+const NO_RUN_STOP_ATOM = Atom.make<RunStopPresentation | null>(null).pipe(
+  Atom.withLabel("web-thread-run-stop:empty"),
+);
 
 type PendingThreadRequests = ReturnType<typeof usePendingThreadRequests>;
 type LocalDispatchState = ReturnType<typeof useLocalDispatchState>;
@@ -75,6 +89,8 @@ interface ThreadLifecycleInput {
   readonly activeThread: EnvironmentThreadShell | undefined;
   readonly activeThreadId: ThreadId | null;
   readonly activeThreadRef: ScopedThreadRef | null;
+  /** Null until the thread's detail may load; see resolveThreadDetailRef. */
+  readonly threadDetailRef: ScopedThreadRef | null;
   readonly activeThreadKey: string | null;
   readonly activeThreadShell: EnvironmentThreadShell | null;
   readonly activeLatestRun: EnvironmentThreadShell["latestRun"];
@@ -100,7 +116,6 @@ interface ThreadLifecycleInput {
   readonly clearUsageLimitsFor: (threadKey: string) => void;
   readonly beginLocalDispatch: LocalDispatchState["beginLocalDispatch"];
   readonly resetLocalDispatch: LocalDispatchState["resetLocalDispatch"];
-  readonly scheduleComposerFocus: () => void;
   readonly scrollToEnd: (animated?: boolean) => void;
   readonly persistThreadSettingsForNextTurn: (input: {
     threadId: ThreadId;
@@ -128,6 +143,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     activeThread,
     activeThreadId,
     activeThreadRef,
+    threadDetailRef,
     activeThreadKey,
     activeThreadShell,
     activeLatestRun,
@@ -150,7 +166,6 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     clearUsageLimitsFor,
     beginLocalDispatch,
     resetLocalDispatch,
-    scheduleComposerFocus,
     scrollToEnd,
     persistThreadSettingsForNextTurn,
   } = input;
@@ -281,7 +296,11 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     setUnsnoozingThreadKey((current) => (current === threadKey ? null : current));
   };
   const handleUnsnoozeActiveThreadStable = useStableCallback(handleUnsnoozeActiveThread);
-  const [isRestoringThreadBranch, setIsRestoringThreadBranch] = useState(false);
+  const [restoringBranchThreadKeys, setRestoringBranchThreadKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const isRestoringThreadBranch =
+    activeThreadKey !== null && restoringBranchThreadKeys.has(activeThreadKey);
   const [revealedBranchMismatchKey, setRevealedBranchMismatchKey] = useState<string | null>(null);
   const [, setBranchMismatchDismissTick] = useState(0);
   const composerHasDraftContent = useComposerDraftStore((store) =>
@@ -316,7 +335,14 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     ) {
       return;
     }
-    setIsRestoringThreadBranch(true);
+    const threadKey = scopedThreadKey(scopeThreadRef(environmentId, activeThread.id));
+    const finishRestore = () =>
+      setRestoringBranchThreadKeys((current) => {
+        const next = new Set(current);
+        next.delete(threadKey);
+        return next;
+      });
+    setRestoringBranchThreadKeys((current) => new Set(current).add(threadKey));
     const checkoutResult = await switchGitRef({
       environmentId,
       input: {
@@ -325,7 +351,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       },
     });
     if (checkoutResult._tag === "Failure") {
-      setIsRestoringThreadBranch(false);
+      finishRestore();
       if (!isAtomCommandInterrupted(checkoutResult)) {
         toastManager.add(
           stackedThreadToast({
@@ -339,7 +365,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     }
 
     if (!readEnvironmentScope(environmentId, AuthSourceControlWriteScope)) {
-      setIsRestoringThreadBranch(false);
+      finishRestore();
       return;
     }
     const nextBranch = checkoutResult.value.refName ?? localCheckoutBranchMismatch.threadBranch;
@@ -349,7 +375,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         input: { threadId: activeThread.id, branch: nextBranch, worktreePath: null },
       });
       if (updateResult._tag === "Failure") {
-        setIsRestoringThreadBranch(false);
+        finishRestore();
         if (!isAtomCommandInterrupted(updateResult)) {
           toastManager.add(
             stackedThreadToast({
@@ -364,8 +390,12 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       }
     }
     gitStatusQuery.refresh();
-    setIsRestoringThreadBranch(false);
-    scheduleComposerFocus();
+    finishRestore();
+    if (currentRouteThreadKeyRef.current === routeThreadKey) {
+      window.requestAnimationFrame(() => {
+        if (currentRouteThreadKeyRef.current === routeThreadKey) composerRef.current?.focusAtEnd();
+      });
+    }
   };
   const handleSwitchCheckoutToThreadStable = useStableCallback(() => {
     void handleSwitchCheckoutToThread();
@@ -425,6 +455,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       toastManager.add({ type: "info", title: uiT("This thread is no longer available") });
       return;
     }
+    if (activeThreadRef && openSideChatTab(activeThreadRef, shell)) return;
     void navigate({
       to: "/$environmentId/$threadId",
       params: buildThreadRouteParams(threadRef),
@@ -514,6 +545,22 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
         })
       : null;
 
+  const forceStop = useForceStopThread(environmentId);
+  const anyRunStop = useAtomValue(
+    threadDetailRef ? environmentThreadDetails.runStopAtom(threadDetailRef) : NO_RUN_STOP_ATOM,
+  );
+  // A background Stop matters only while that work is still pending.
+  const runStop = anyRunStop?.background && activeBackgroundTasks.length === 0 ? null : anyRunStop;
+  const runStopNow =
+    activeThread && runStop !== null
+      ? runStopNowItem({
+          threadId: activeThread.id,
+          stop: runStop,
+          canForceStop: forceStop.canForceStop,
+          forceStopping: forceStop.stoppingThreadId === activeThread.id,
+          onForceStop: () => void forceStop.forceStopThread(activeThread.id, runStop.runId),
+        })
+      : null;
   const backgroundWorkNow = activeThread
     ? backgroundWorkNowItem({
         locale,
@@ -542,7 +589,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
           : uiT("Snoozed")
       }
       clockMinute={nowMinute}
-      actionLabel={isUnsnoozing ? uiT("Waking...") : uiT("Wake now")}
+      actionLabel={isUnsnoozing ? "Waking..." : uiT("Wake now")}
       actionDisabled={!canOperateThread || isUnsnoozing}
       onAction={() => void handleUnsnoozeActiveThreadStable()}
     />
@@ -555,7 +602,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
           : uiT("Settled")
       }
       clockMinute={nowMinute}
-      actionLabel={isUnsettling ? uiT("Un-settling...") : uiT("Un-settle")}
+      actionLabel={isUnsettling ? "Un-settling..." : uiT("Un-settle")}
       actionDisabled={!canOperateThread || isUnsettling}
       onAction={() => void handleUnsettleActiveThreadStable()}
     />
@@ -590,7 +637,14 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
       if (settleAndAdvance(activeThreadRef)) return;
       void settleThread(activeThreadRef).then(toastThreadActionFailure("Failed to settle thread"));
     },
-    "thread.pin": () => {
+    "thread.pin": ({ event }) => {
+      // An open project list pins its highlighted project with this key instead.
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[role="combobox"][aria-expanded="true"]') !== null
+      ) {
+        return false;
+      }
       if (!readEnvironmentScope(environmentId, AuthOrchestrationOperateScope)) return false;
       if (!activeThreadShell || !activeThreadRef || !serverConfigLoaded) return;
       void (
@@ -606,7 +660,9 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     shortcuts,
     acknowledgeActiveThreadWoke,
     activeBranchMismatchKey,
-    backgroundWorkNow,
+    // A Stop that went unanswered needs the user; one in progress is the thread's work.
+    attentionNow: runStop?.state === "unresponsive" ? runStopNow : childInputNow,
+    workNow: runStop?.state === "stopping" ? runStopNow : backgroundWorkNow,
     childInputNow,
     goalNow,
     handleSwitchCheckoutToThread,

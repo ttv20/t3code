@@ -43,7 +43,7 @@ import {
   pullRequestDiffInitialPosition,
 } from "./pullRequestDiffDebug";
 import { usePullRequestDiffHighlightFiles } from "./usePullRequestDiffHighlightFiles";
-import { isPullRequestTestFile } from "./pullRequestFileFilters";
+import { isTestChangedFile } from "@t3tools/shared/changedFileKind";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RegistryContext, useAtomRefresh, useAtomValue } from "@effect/atom-react";
@@ -76,7 +76,7 @@ import { useAndroidWorkspaceBack } from "../workspace/useAndroidWorkspaceNavigat
 import { EmptyState } from "../../components/ui/EmptyState";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { relativeTime } from "../../lib/time";
+import { RelativeTime } from "../../components/RelativeTime";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { usePullRequestConnected } from "./usePullRequestConnected";
 import { usePullRequestLiveChecks } from "./usePullRequestLiveChecks";
@@ -113,6 +113,7 @@ import {
   PullRequestReadStatus,
 } from "./PullRequestPresentation";
 import { usePullRequestFilesSection } from "./PullRequestFiles";
+import { usePullRequestMaintainerEdits } from "./usePullRequestMaintainerEdits";
 import { PullRequestDescription } from "./PullRequestDescription";
 import { PullRequestMediaVisibleContext } from "./PullRequestMedia";
 import { PullRequestMarkdownRepository } from "./PullRequestMarkdown";
@@ -203,7 +204,7 @@ function PullRequestIdentity(props: {
         <PullRequestDiffStats additions={pr.additions} deletions={pr.deletions} compact />
         {"changedFiles" in pr ? (
           <Text className="text-2xs text-foreground-muted">
-            {pr.changedFiles} {pr.changedFiles === 1 ? uiT("file") : uiT("files")}
+            {pr.changedFiles} {pr.changedFiles === 1 ? "file" : uiT("files")}
           </Text>
         ) : (
           <View className="h-3 w-12 rounded bg-subtle-strong" />
@@ -218,7 +219,10 @@ function PullRequestIdentity(props: {
           {pr.author?.login ?? uiT("Unknown author")}
         </Text>
         <Text className="shrink text-right text-2xs text-foreground-muted" numberOfLines={1}>
-          <UiText message={"Updated{0}  ago"} values={{ "0": relativeTime(pr.updatedAt) }} />
+          <UiText
+            message="Updated {0} ago"
+            values={{ "0": <RelativeTime timestamp={pr.updatedAt} /> }}
+          />
         </Text>
       </View>
       <View className="flex-row items-start gap-1.5">
@@ -287,7 +291,7 @@ function PullRequestLabels(props: {
       })}
       {editable ? (
         <Chip
-          label={props.pr.labels.length ? uiT("Edit") : uiT("Add labels")}
+          label={props.pr.labels.length ? "Edit" : uiT("Add labels")}
           icon="tag"
           size="small"
           accessibilityLabel={uiT("Edit labels")}
@@ -426,6 +430,11 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
   const terminology = sourceControlClients.get(identity?.provider).changeRequest;
   const permissions = usePullRequestPermissions(params, pr);
   const action = usePullRequestAction(params, pr);
+  const maintainerEdits = usePullRequestMaintainerEdits(
+    params,
+    pr,
+    permissions.canEditMaintainerEdits,
+  );
   const showsDeleteBranch = pr !== null && canPerformPullRequestAction(pr, "delete-branch");
   const confirmDeleteBranch = () =>
     pr &&
@@ -527,6 +536,19 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                     },
                   ]
                 : []),
+              ...(maintainerEdits.visible
+                ? [
+                    {
+                      accessibilityLabel: uiT("Allow edits from maintainers"),
+                      icon: "pencil" as const,
+                      selected: maintainerEdits.value,
+                      disabled: maintainerEdits.saving,
+                      subtitle: maintainerEdits.subtitle,
+                      overflowOnly: true,
+                      onPress: maintainerEdits.toggle,
+                    },
+                  ]
+                : []),
               ...(identity
                 ? [
                     {
@@ -609,6 +631,19 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                 <Toolbar.Label>{uiT("Edit description")}</Toolbar.Label>
               </Toolbar.MenuAction>
             ) : null}
+            {maintainerEdits.visible ? (
+              <Toolbar.MenuAction
+                icon="pencil"
+                isOn={maintainerEdits.value}
+                disabled={maintainerEdits.saving}
+                subtitle={maintainerEdits.subtitle}
+                onPress={maintainerEdits.toggle}
+              >
+                <Toolbar.Label>
+                  <UiText message={"Allow edits from maintainers"} />
+                </Toolbar.Label>
+              </Toolbar.MenuAction>
+            ) : null}
             {identity ? (
               <Toolbar.MenuAction
                 icon="arrow.up.right"
@@ -637,7 +672,7 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                 disabled={!action.available("delete-branch")}
                 subtitle={
                   action.busy
-                    ? uiT("Deleting…")
+                    ? "Deleting…"
                     : connected
                       ? pr.headBranch
                       : uiT("Reconnect to delete this branch.")
@@ -776,7 +811,12 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                               </View>
                             </View>
                           ) : null}
-                          {tab === "guide" ? <PullRequestGuideContent params={params} /> : null}
+                          {tab === "guide" ? (
+                            <PullRequestGuideContent
+                              params={params}
+                              visible={section === "guide"}
+                            />
+                          ) : null}
                           {tab === "activity" ? (
                             <PullRequestActivityFilters
                               value={activityFilter}
@@ -850,19 +890,25 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                           }}
                         >
                           <PullRequestIdentity pr={identity} params={params} />
-                          <SegmentedControl
-                            options={[
-                              { value: "overview", label: uiT("Overview") },
-                              ...(guidesEnabled
-                                ? [{ value: "guide" as const, label: uiT("Guide") }]
-                                : []),
-                              { value: "activity", label: uiT("Activity") },
-                            ]}
-                            selected={section}
-                            onSelect={selectSection}
-                            role="tab"
-                            size="compact"
-                          />
+                          {/* UIKit draws the tapped control's glass lens outside the hidden
+                              tab's opacity, so only the visible tab mounts the control. */}
+                          {Platform.OS !== "ios" || section === tab ? (
+                            <SegmentedControl
+                              options={[
+                                { value: "overview", label: uiT("Overview") },
+                                ...(guidesEnabled
+                                  ? [{ value: "guide" as const, label: uiT("Guide") }]
+                                  : []),
+                                { value: "activity", label: uiT("Activity") },
+                              ]}
+                              selected={section}
+                              onSelect={selectSection}
+                              role="tab"
+                              size="compact"
+                            />
+                          ) : (
+                            <View style={{ height: 32 }} />
+                          )}
                         </View>
                       ) : null}
                     </>
@@ -898,7 +944,7 @@ export function PullRequestFileRouteScreen(props: PullRequestFileRouteProps) {
     useNavigation<NativeStackNavigationProp<ReactNavigation.RootParamList, "PullRequestFile">>();
   const ready = usePullRequestDiffEntry(navigation);
   if (ready) return <PullRequestFileRouteContent {...props} />;
-  const title = props.route.params.commit ? uiT("Commit changes") : uiT("Changes");
+  const title = props.route.params.commit ? "Commit changes" : uiT("Changes");
   return (
     <View className="flex-1 bg-screen">
       <NativeStackScreenOptions options={{ title, headerTitle: title }} />
@@ -1021,7 +1067,7 @@ function PullRequestFileRouteContent({ route }: PullRequestFileRouteProps) {
   const jumpedUnder = useRef<boolean | null>(filter.hideTestFiles);
   const hasTestFiles =
     result.parsed.kind === "files" &&
-    result.parsed.files.some((file) => isPullRequestTestFile(file.path));
+    result.parsed.files.some((file) => isTestChangedFile(file.path));
   const jumpStarted = () =>
     jumpedUnder.current !== null && (!hasTestFiles || jumpedUnder.current === filter.hideTestFiles);
   const scrollToFile = (fileId: string) => {
@@ -1089,7 +1135,7 @@ function PullRequestFileRouteContent({ route }: PullRequestFileRouteProps) {
     setSelectedRowId(null);
     filter.toggle();
   };
-  const title = commit ? uiT("Commit changes") : uiT("Changes");
+  const title = commit ? "Commit changes" : uiT("Changes");
   const seekingFile = !targetFile && result.nextCursor !== null;
   const loadingDiff = (result.isPending && !data.rows.length) || (seekingFile && !result.error);
   return (
@@ -1201,7 +1247,7 @@ function PullRequestFileRouteContent({ route }: PullRequestFileRouteProps) {
             <Toolbar.MenuAction icon="bubble.left" onPress={() => commentOnLine()}>
               <Toolbar.Label>
                 {route.params.replacingDraftId
-                  ? uiT("Move draft to this line")
+                  ? "Move draft to this line"
                   : uiT("Add review comment")}
               </Toolbar.Label>
             </Toolbar.MenuAction>

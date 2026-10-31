@@ -1007,7 +1007,6 @@ const RootStackConfig = createWorkspaceStackNavigator({
         ...(Platform.OS === "android"
           ? { presentation: "card" as const, headerShown: false }
           : {
-              ...SHEET_GLASS_HEADER_OPTIONS,
               ...HORIZONTAL_FORM_SHEET_OPTIONS,
               sheetAllowedDetents: [0.55, 0.7],
               sheetGrabberVisible: true,

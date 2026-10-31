@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { LoaderCircleIcon, PauseIcon, PlayIcon, TriangleAlertIcon } from "lucide-react";
 import { createContext, useContext, useRef, useState } from "react";
 
@@ -16,6 +15,7 @@ type AudioPreviewProps = {
   readonly revision?: string | null;
   readonly onError?: () => void;
   readonly compact?: boolean;
+  readonly variant?: "chip" | "bubble";
   readonly failed?: boolean;
   readonly onOpen?: (() => void) | undefined;
   readonly onRetry?: () => void;
@@ -72,8 +72,6 @@ function audioTime(seconds: number) {
 }
 
 function AudioChip(props: AudioPreviewProps) {
-  const { t: uiT } = useUiLanguage();
-
   const audio = useRef<HTMLAudioElement | null>(null);
   const onUnmount = useContext(AudioPreviewUnmountContext);
   const [loadedSource, setLoadedSource] = useState<string | null>(null);
@@ -114,8 +112,9 @@ function AudioChip(props: AudioPreviewProps) {
     <ContextChip
       kind="file"
       {...(props.failed ? { state: "invalid" as const } : {})}
+      {...(props.variant === "bubble" ? { shape: "bubble" as const } : {})}
       className="relative isolate overflow-hidden"
-      title={props.failed ? uiT("Audio unavailable. Open the file or retry playback.") : props.name}
+      title={props.failed ? "Audio unavailable. Open the file or retry playback." : props.name}
     >
       <span
         aria-hidden
@@ -143,7 +142,7 @@ function AudioChip(props: AudioPreviewProps) {
       >
         <Icon aria-hidden className={loading && props.src ? "animate-spin" : undefined} />
       </ContextChipAction>
-      <ContextChipLabel className="max-w-72">
+      <ContextChipLabel className={props.variant === "bubble" ? "flex-1" : "max-w-72"}>
         {open ? (
           <button
             type="button"

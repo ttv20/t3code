@@ -59,7 +59,7 @@ function WorkspaceRootTitle(props: {
   const maxWidth = Math.max(0, props.columnWidth - (use(HeaderItemsWidthContext) ?? 160));
   const enabled = useEnabledNavigationTabs();
   const tabTitle = settingsOpen
-    ? uiT("Settings")
+    ? "Settings"
     : enabled.length
       ? TAB_TITLES[state.selectedTab]
       : uiT("Navigation");
@@ -134,10 +134,7 @@ function WorkspaceRootContent() {
 
   return (
     <WorkspaceTabsContext value={context}>
-      <View
-        className={`flex-1 ${sidebarPicker ? "bg-drawer" : surface.className}`}
-        style={sidebarPicker ? { paddingTop: insets.top } : undefined}
-      >
+      <View className={`flex-1 ${sidebarPicker ? "bg-drawer" : surface.className}`}>
         {Platform.OS === "ios" ? (
           <NativeStackScreenOptions
             optionsVersion={[
@@ -150,7 +147,7 @@ function WorkspaceRootContent() {
             ]}
             options={{
               title: settingsOpen
-                ? uiT("Settings")
+                ? "Settings"
                 : enabled.length
                   ? TAB_TITLES[state.selectedTab]
                   : uiT("Navigation"),
@@ -182,7 +179,7 @@ function WorkspaceRootContent() {
                     {
                       accessibilityLabel:
                         state.selectedTab === "threads"
-                          ? uiT("Search threads")
+                          ? "Search threads"
                           : uiT("Search pull requests"),
                       icon: "magnifyingglass" as const,
                       onPress: () => {
@@ -199,11 +196,7 @@ function WorkspaceRootContent() {
             ]}
           />
         )}
-        <SafeAreaInsetsContext
-          value={
-            sidebarPicker ? { ...insets, top: 0 } : compactTabs ? { ...insets, bottom: 0 } : insets
-          }
-        >
+        <SafeAreaInsetsContext value={compactTabs ? { ...insets, bottom: 0 } : insets}>
           {settingsOpen ? (
             <SettingsRouteScreen />
           ) : enabled.length === 0 ? (

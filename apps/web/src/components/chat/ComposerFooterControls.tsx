@@ -89,14 +89,14 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
           data-composer-control-label
           className={size === "xs" ? "sr-only" : "sr-only sm:not-sr-only"}
         >
-          {props.interactionMode === "plan" ? uiT("Plan") : uiT("Build")}
+          {props.interactionMode === "plan" ? "Plan" : uiT("Build")}
         </span>
       </TooltipTrigger>
       <TooltipPopup side="top">{interactionModeTooltip}</TooltipPopup>
     </Tooltip>
   ) : null;
 
-  // The chip opens the same Permissions toggle used in the effort menu.
+  // The chip opens the same Permissions toggle used in the model picker and the overflow menu.
   const permissionsTooltip = uiT("Permissions: {0}. {1}", {
     "0": uiT(runtimeModeOption.label),
     "1": uiT(runtimeModeOption.description),
@@ -118,7 +118,7 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
                   ref={permissionsChipRef}
                   data-composer-shortcut="composer.mode"
                   size={size}
-                  // Mirrors the effort chip's trailing pe-1 so both gaps around the bars match.
+                  // Mirrors the model trigger's trailing pe-1 so the gaps on both sides of the chip match.
                   className="ps-1.5"
                   aria-label={uiT("Permissions: {0}", { "0": uiT(runtimeModeOption.label) })}
                 />
@@ -162,7 +162,7 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
 /**
  * Permission modes as one horizontal toggle, with the shown mode named below.
  * Each segment is a real menu radio item, so arrow keys reach it from the rest of the menu
- * and a pick closes the menu. Lives inside a Menu: the permissions chip, the effort menu,
+ * and a pick closes the menu. Lives inside a Menu: the permissions chip, the model picker,
  * or the overflow menu.
  */
 export function ComposerPermissionsSection(props: {
@@ -190,7 +190,7 @@ export function ComposerPermissionsSection(props: {
         onValueChange={(value: RuntimeMode) => {
           if (value !== props.runtimeMode) props.onRuntimeModeChange(value);
         }}
-        className="flex gap-0.5 rounded-lg bg-input/40 p-0.5"
+        className="flex rounded-lg bg-input/40 p-0.5"
         // Menus navigate with Up/Down only; the row reads horizontally, so Left/Right move too.
         onKeyDown={(event) => {
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -211,15 +211,15 @@ export function ComposerPermissionsSection(props: {
             <MenuPrimitive.RadioItem
               key={option.mode}
               value={option.mode}
-              label={option.label}
-              aria-label={option.label}
+              label={uiT(option.label)}
+              aria-label={uiT(option.label)}
               aria-describedby={`${descriptionId}-${option.mode}`}
               closeOnClick
               onPointerEnter={() => setPreviewMode(option.mode)}
               onPointerLeave={() => setPreviewMode(null)}
               onFocus={() => setPreviewMode(option.mode)}
               onBlur={() => setPreviewMode(null)}
-              className="flex h-6 flex-1 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none data-checked:bg-input/72 data-checked:text-foreground data-highlighted:text-foreground not-data-checked:data-highlighted:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+              className="flex h-6 flex-1 cursor-pointer items-center justify-center text-muted-foreground outline-none first:rounded-l-md last:rounded-r-md data-checked:bg-input/72 data-checked:text-foreground data-highlighted:text-foreground not-data-checked:data-highlighted:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             >
               <OptionIcon aria-hidden="true" className="size-3.5" />
             </MenuPrimitive.RadioItem>
@@ -229,7 +229,7 @@ export function ComposerPermissionsSection(props: {
       {/* Static per-mode descriptions for screen readers; the preview below is visual only. */}
       {props.runtimeModeOptions.map((option) => (
         <span key={option.mode} id={`${descriptionId}-${option.mode}`} className="sr-only">
-          {option.description}
+          {uiT(option.description)}
         </span>
       ))}
       <div className="grid gap-0.5" aria-hidden="true">
@@ -240,10 +240,12 @@ export function ComposerPermissionsSection(props: {
               : "text-muted-foreground text-sm"
           }
         >
-          {shown.label}
+          {uiT(shown.label)}
         </span>
         {/* Two lines reserved so the menu does not shift while you preview modes. */}
-        <span className="min-h-8 text-muted-foreground text-xs leading-4">{shown.description}</span>
+        <span className="min-h-8 text-muted-foreground text-xs leading-4">
+          {uiT(shown.description)}
+        </span>
       </div>
     </div>
   );

@@ -443,8 +443,8 @@ function SidebarRail({
   const suppressClickRef = React.useRef(false);
   const resolvedResizable = sidebarInstance?.resizable ?? null;
   const canResize = resolvedResizable !== null && open;
-  const railLabel = canResize ? uiT("Resize Sidebar") : uiT("Toggle Sidebar");
-  const railTitle = canResize ? uiT("Drag to resize sidebar") : uiT("Toggle Sidebar");
+  const railLabel = canResize ? "Resize Sidebar" : uiT("Toggle Sidebar");
+  const railTitle = canResize ? "Drag to resize sidebar" : uiT("Toggle Sidebar");
   const resize = useResizeDrag<HTMLButtonElement>((event) => {
     const options = resolvedResizable;
     if (!options || !open) return null;
@@ -637,7 +637,10 @@ function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
 function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex flex-col gap-2 px-[var(--sidebar-content-inset)] py-1", className)}
+      className={cn(
+        "flex flex-col gap-2 px-[var(--sidebar-content-inset)] pt-1 pb-[var(--sidebar-content-inset)]",
+        className,
+      )}
       data-sidebar="footer"
       data-slot="sidebar-footer"
       {...props}

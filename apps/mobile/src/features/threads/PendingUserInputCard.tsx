@@ -28,9 +28,9 @@ import { useMarkdownPreviewStyles } from "../files/FileMarkdownPreview";
 import { useLiveThreadLinkLabels } from "../../state/entities";
 import {
   isPendingUserInputOptionSelected,
-  type PendingUserInput,
   type PendingUserInputDraftAnswer,
-} from "../../lib/threadActivity";
+} from "@t3tools/client-runtime/state/pending-user-input";
+import type { PendingUserInput } from "../../lib/threadActivity";
 
 export interface PendingUserInputCardProps {
   readonly environmentId: EnvironmentId;

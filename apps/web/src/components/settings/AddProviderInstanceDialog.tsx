@@ -56,6 +56,7 @@ import { resolveOfficialAcpRegistryIconUrl } from "./AcpRegistryIcon";
 import { AddManagedCodexAccountDialog } from "./CodexSetupSection";
 import { MultipleAccountsNote } from "./MultipleAccountsNote";
 import { ProviderEnvironmentSection } from "./ProviderInstanceCard";
+import { useSecretSources } from "./SecretSourceInput";
 
 /** Limit the slug to 48 chars so the composed ProviderInstanceId fits its 64-char cap. */
 function slugifyLabel(value: string): string {
@@ -163,6 +164,7 @@ export function AddProviderInstanceDialog({
   const { t: uiT } = useUiLanguage();
 
   const settings = useEnvironmentSettings(environmentId);
+  const secretSources = useSecretSources(environmentId);
   const persistProviderInstance = usePersistEnvironmentProviderInstanceMutation(environmentId);
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
 
@@ -489,7 +491,7 @@ export function AddProviderInstanceDialog({
                 <Collapsible open={showMoreProviders} onOpenChange={setShowMoreProviders}>
                   <div className="flex pt-2">
                     <CollapsibleTrigger render={<Button variant="ghost-muted" size="xs" />}>
-                      {showMoreProviders ? "Show less" : "Show more"}
+                      {showMoreProviders ? "Show less" : uiT("Show more")}
                       <ChevronDownIcon
                         aria-hidden
                         className={cn("transition-transform", showMoreProviders && "rotate-180")}
@@ -516,12 +518,14 @@ export function AddProviderInstanceDialog({
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <h3 className="text-sm font-medium text-foreground">
-                                {isLocalAcp ? "Local ACP command" : "Enter manually"}
+                                {isLocalAcp ? "Local ACP command" : uiT("Enter manually")}
                               </h3>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {isLocalAcp
                                   ? `Run an installed ACP executable on ${environmentLabel}.`
-                                  : "Enter an official registry ID and any local executable or auth override."}
+                                  : uiT(
+                                      "Enter an official registry ID and any local executable or auth override.",
+                                    )}
                               </p>
                             </div>
                             <Button
@@ -542,11 +546,13 @@ export function AddProviderInstanceDialog({
                               idPrefix="add-provider-acpRegistry-manual"
                               variant="settings"
                               onChange={setConfigDraft}
+                              environmentId={environmentId}
                             />
                             {isLocalAcp ? (
                               <ProviderEnvironmentSection
                                 environment={localEnvironment}
                                 onChange={setLocalEnvironment}
+                                secretSources={secretSources}
                               />
                             ) : null}
                           </SettingsGroup>
@@ -699,6 +705,7 @@ export function AddProviderInstanceDialog({
                     idPrefix={`add-provider-${driver}`}
                     variant="settings"
                     onChange={setConfigDraft}
+                    environmentId={environmentId}
                   />
                 </SettingsGroup>
               ) : !isAcpRegistry && wizardStep === 2 ? (
@@ -725,7 +732,7 @@ export function AddProviderInstanceDialog({
                   setWizardStep((step) => Math.max(0, step - 1));
                 }}
               >
-                {wizardStep === 0 ? uiT("Cancel") : uiT("Back")}
+                {wizardStep === 0 ? "Cancel" : uiT("Back")}
               </Button>
               {wizardStep === 0 && driver === "codex" ? (
                 <>
@@ -752,9 +759,9 @@ export function AddProviderInstanceDialog({
                   onClick={() => void handleSave()}
                 >
                   {isSaving
-                    ? uiT("Adding...")
+                    ? "Adding..."
                     : isAcpRegistry && !isLocalAcp
-                      ? uiT("Continue to sign-in")
+                      ? "Continue to sign-in"
                       : uiT("Add instance")}
                 </Button>
               )}

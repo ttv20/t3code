@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
 import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { ChevronDownIcon, SquarePenIcon } from "lucide-react";
@@ -10,6 +10,7 @@ import { useUiStateStore } from "../../uiStateStore";
 import { resolveSidebarFolderDot, resolveThreadLastVisitedAt } from "../Sidebar.logic";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { Button } from "../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const FOLDER_DOT_CLASS_NAME = {
   attention: "bg-warning",
@@ -44,7 +45,6 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
   onContextMenu: (group: SidebarProjectSnapshot, position: { x: number; y: number }) => void;
 }) {
   const { t: uiT } = useUiLanguage();
-
   const { group, collapsed, hiddenThreads } = props;
   const rowId = sidebarFolderRowId(group.projectKey);
   const localLastVisitedAtById = useUiStateStore((state) => state.threadLastVisitedAtById);
@@ -103,15 +103,24 @@ export const SidebarProjectFolderHeader = memo(function SidebarProjectFolderHead
       </button>
       {/* Sits over the count, which hides on hover, and left of the chevron. */}
       <span className="absolute inset-y-0 right-6 flex items-center opacity-0 focus-within:opacity-100 group-hover/project-folder:opacity-100 pointer-coarse:opacity-100">
-        <Button
-          data-sidebar-action-for={rowId}
-          size="icon-xs"
-          variant="ghost-muted"
-          aria-label={uiT("New thread in {0}", { "0": group.displayName })}
-          onClick={() => props.onNewThread(group)}
-        >
-          <SquarePenIcon aria-hidden />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                data-sidebar-action-for={rowId}
+                size="icon-xs"
+                variant="ghost-muted"
+                aria-label={uiT("New thread in {0}", { "0": group.displayName })}
+                onClick={() => props.onNewThread(group)}
+              />
+            }
+          >
+            <SquarePenIcon aria-hidden />
+          </TooltipTrigger>
+          <TooltipPopup>
+            <UiText message={"New thread in"} /> {group.displayName}
+          </TooltipPopup>
+        </Tooltip>
       </span>
     </li>
   );

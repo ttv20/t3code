@@ -63,6 +63,8 @@ import { useThreadPr } from "../../state/use-thread-pr";
 import { useSwipeRowDormant } from "../home/swipe-row-activation";
 import { ThreadSwipeable } from "../home/thread-swipe-actions";
 import { buildThreadTitleRegenerationMenuItems } from "./thread-title-regeneration-menu";
+import { canTurnThreadIntoProject, turnThreadIntoProject } from "./turnThreadIntoProject";
+import { threadCanArchive } from "../home/threadArchive";
 import {
   THREAD_LIST_V2_SETTLED_PAGE_COUNT,
   resolveThreadListV2SnoozeGateExpiryMs,
@@ -295,9 +297,9 @@ export const ThreadListV2ShowMoreRow = memo(function ThreadListV2ShowMoreRow(pro
 
   const label =
     props.state === "loading"
-      ? uiT("Loading")
+      ? "Loading"
       : props.state === "failed"
-        ? uiT("Could not load older threads. Retry")
+        ? "Could not load older threads. Retry"
         : uiT("Show more ({0} settled hidden)", { "0": props.hiddenCount });
   return (
     <Pressable
@@ -362,7 +364,7 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
   const sidebarPane = props.pane === "sidebar";
   const rowAppearance = getThreadListV2RowAppearance(theme, sidebarPane, props.selected ?? false);
   const isDraft = pendingTask.kind === "draft";
-  const deleteLabel = isDraft ? uiT("Discard") : uiT("Delete");
+  const deleteLabel = isDraft ? "Discard" : uiT("Delete");
   const taskMenuActions = useMemo(
     () =>
       (isDraft ? DRAFT_TASK_MENU_ACTIONS : PENDING_TASK_MENU_ACTIONS).map((action) => ({
@@ -698,6 +700,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       ? { ...workingLabel, label: uiT("Goal") }
       : workingLabel) ?? (isUnread ? DONE_STATUS_LABEL : undefined);
   const recede = shouldRecedeThreadRow({ status, selected });
+  const isRegeneratingTitle = thread.titleRegeneration != null;
+  const rowAccessibilityLabel = `${thread.title}${props.hasQueuedMessages ? ", messages queued to send" : ""}${isRegeneratingTitle ? ", regenerating title" : ""}`;
   const timeLabel = props.timeLabel;
 
   const visitThread = useAtomCommand(threadEnvironment.visit, { reportFailure: false });
@@ -859,15 +863,32 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     }),
     [uiT],
   );
+  const canTurnIntoProject = canTurnThreadIntoProject(thread);
   const titleMenuItems = useMemo<MenuAction[]>(
     () => [
       { id: "rename", title: uiT("Rename"), image: "square.and.pencil" },
       ...buildThreadTitleRegenerationMenuItems({
         supported: props.titleRegenerationSupported,
-        isRegenerating: thread.titleRegeneration != null,
+        isRegenerating: isRegeneratingTitle,
       }).map((action) => ({ ...action, title: uiT(action.title) })),
+      ...(canTurnIntoProject
+        ? [
+            {
+              id: "turn-into-project",
+              title: uiT("Turn into project"),
+              image: "folder.badge.plus",
+              attributes: { disabled: !threadCanArchive(thread.runtime) },
+            } satisfies MenuAction,
+          ]
+        : []),
     ],
-    [props.titleRegenerationSupported, thread.titleRegeneration, uiT],
+    [
+      canTurnIntoProject,
+      props.titleRegenerationSupported,
+      thread.runtime,
+      isRegeneratingTitle,
+      uiT,
+    ],
   );
   const snoozableCardMenuActions = useMemo<MenuAction[]>(
     () => [
@@ -952,6 +973,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       if (nativeEvent.event === "archive") handleArchive();
       if (nativeEvent.event === "rename") handleRename();
       if (nativeEvent.event === "regenerate-title") handleRegenerateTitle();
+      if (nativeEvent.event === "turn-into-project") void turnThreadIntoProject(thread);
       if (nativeEvent.event === "copy-thread") {
         const target = threadChipCopyTarget(
           { environmentId: thread.environmentId, threadId: thread.id },
@@ -1065,7 +1087,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     [handleMenuAction, snoozePresetActions, swipeActions.secondary, thread.title, uiT],
   );
   const swipeAccessibilityHint = !canOperateThread
-    ? uiT("Opens the thread")
+    ? "Opens the thread"
     : secondaryAction === null
       ? uiT("Opens the thread. Swipe left to {0}.", { "0": primaryAction.label.toLowerCase() })
       : uiT("Opens the thread. Swipe left for {0} and snooze actions.", {
@@ -1095,6 +1117,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             selected
               ? selectedThreadRowColors.foregroundClassName
               : rowAppearance.foregroundClassName,
+            isRegeneratingTitle && "opacity-55",
           )}
           numberOfLines={2}
         >
@@ -1315,11 +1338,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         interactionOpacity={rowAppearance.interactionOpacity}
         className={rowAppearance.className}
         accessibilityHint={swipeAccessibilityHint}
-        accessibilityLabel={
-          props.hasQueuedMessages
-            ? uiT("{0}, messages queued to send", { "0": thread.title })
-            : thread.title
-        }
+        accessibilityLabel={rowAccessibilityLabel}
         accessibilityRole="button"
         accessibilityState={{ selected }}
         accessibilityActions={rowAccessibilityActions}
@@ -1350,11 +1369,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         interactionClassName={rowAppearance.interactionClassName}
         interactionOpacity={rowAppearance.interactionOpacity}
         accessibilityHint={swipeAccessibilityHint}
-        accessibilityLabel={
-          props.hasQueuedMessages
-            ? uiT("{0}, messages queued to send", { "0": thread.title })
-            : thread.title
-        }
+        accessibilityLabel={rowAccessibilityLabel}
         accessibilityRole="button"
         accessibilityState={{ selected }}
         className={rowAppearance.className}
@@ -1366,8 +1381,9 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       >
         <View
           className={cn(
-            "min-h-[44px] flex-row items-center gap-2.5 py-2",
-            sidebarPane ? "px-3" : "px-5",
+            THREAD_LIST_V2_ROW_CONTENT_CLASS_NAME,
+            "min-h-[44px] flex-row items-center gap-2 py-2",
+            sidebarPane && "px-3",
           )}
         >
           {props.project ? (
@@ -1389,6 +1405,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                 selected
                   ? selectedThreadRowColors.foregroundClassName
                   : rowAppearance.mutedForegroundClassName,
+                isRegeneratingTitle && "opacity-55",
               )}
               numberOfLines={1}
             >

@@ -23,6 +23,7 @@ import {
   CommandShortcut,
 } from "./ui/command";
 import { getVirtualizedScrollFadeClassName } from "./ui/scroll-area";
+import { ProjectPinButton } from "./ProjectPinButton";
 import { SearchMatchHintLine, ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
 
 interface CommandPaletteResultsProps {
@@ -40,7 +41,7 @@ function CommandPaletteEmptyState(props: { emptyStateMessage?: string; isActions
     <div className="py-10 text-center text-sm text-muted-foreground">
       {props.emptyStateMessage ??
         (props.isActionsOnly
-          ? uiT("No matching actions.")
+          ? "No matching actions."
           : uiT("No matching commands, projects, or threads."))}
     </div>
   );
@@ -274,6 +275,14 @@ function CommandPaletteResultRow(props: {
         </span>
       )}
       {props.item.titleTrailingContent}
+      {props.item.kind === "action" && props.item.pin ? (
+        <ProjectPinButton
+          name={props.item.pin.name}
+          pinned={props.item.pin.pinned}
+          onToggle={props.item.pin.toggle}
+          shortcutLabel={shortcutLabelForCommand(props.keybindings, "thread.pin")}
+        />
+      ) : null}
       {props.item.timestamp ? (
         <span className="min-w-12 shrink-0 text-right text-xs tabular-nums text-muted-foreground/70">
           {props.item.timestamp}

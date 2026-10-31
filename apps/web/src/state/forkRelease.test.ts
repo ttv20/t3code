@@ -2,7 +2,10 @@ import { AtomRegistry } from "effect/reactivity";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { afterAll, afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { forkReleasePublishedAtom } from "./forkRelease";
+import * as Effect from "effect/Effect";
+import { it as effectIt } from "@effect/vitest";
+
+import { lookupForkTrackRelease, forkReleasePublishedAtom } from "./forkRelease";
 
 const version = "0.0.46-nightly.20261012.3021";
 
@@ -41,18 +44,37 @@ describe("forkReleasePublishedAtom", () => {
     vi.unstubAllGlobals();
   });
 
-  it("checks the fork's downloadable release without tracing headers", async () => {
-    fetchMock.mockImplementation(async () => Response.json(publishedRelease));
+  effectIt.effect("checks the fork's downloadable release without tracing headers", () =>
+    Effect.gen(function* () {
+      fetchMock.mockImplementation(async () => Response.json(publishedRelease));
 
-    const result = await settledCheck();
+      const result = yield* Effect.promise(settledCheck);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const request = new Request(fetchMock.mock.calls[0]?.[0] ?? "", fetchMock.mock.calls[0]?.[1]);
-    expect(request.url).toBe(`https://api.github.com/repos/ttv20/t3code/releases/tags/v${version}`);
-    expect(request.headers.get("traceparent")).toBeNull();
-    expect(request.headers.get("b3")).toBeNull();
-    expect(AsyncResult.getOrElse(result, () => false)).toBe(true);
-  });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const request = new Request(fetchMock.mock.calls[0]?.[0] ?? "", fetchMock.mock.calls[0]?.[1]);
+      expect(request.url).toBe(
+        `https://api.github.com/repos/ttv20/t3code/releases/tags/v${version}`,
+      );
+      expect(request.headers.get("traceparent")).toBeNull();
+      expect(request.headers.get("b3")).toBeNull();
+      expect(AsyncResult.getOrElse(result, () => false)).toBe(true);
+
+      fetchMock.mockClear();
+      fetchMock.mockImplementation(async () =>
+        Response.json([
+          { ...publishedRelease, tag_name: "v9.9.9-nightly.20261031.999", assets: [] },
+          publishedRelease,
+        ]),
+      );
+      expect(yield* lookupForkTrackRelease("nightly")).toEqual({ version });
+      const index = new Request(fetchMock.mock.calls[0]?.[0] ?? "", fetchMock.mock.calls[0]?.[1]);
+      expect(index.url).toBe(
+        "https://api.github.com/repos/ttv20/t3code/releases?per_page=100&page=1",
+      );
+      fetchMock.mockImplementation(async () => Response.json([]));
+      expect(yield* lookupForkTrackRelease("latest")).toBeNull();
+    }),
+  );
 
   it("reports a missing GitHub release as unpublished", async () => {
     fetchMock.mockImplementation(async () => new Response(null, { status: 404 }));

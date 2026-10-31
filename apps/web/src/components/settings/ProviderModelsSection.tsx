@@ -6,6 +6,7 @@ import {
   type ProviderInstanceId,
   type ServerProviderModel,
 } from "@t3tools/contracts";
+import { REASONING_SELECT_DESCRIPTOR_IDS } from "@t3tools/client-runtime/model-traits";
 import { type CustomModelDefinition, normalizeCustomModelSlug } from "@t3tools/shared/model";
 
 import { useStableCallback } from "../../hooks/useStableCallback";
@@ -28,7 +29,21 @@ const CUSTOM_MODEL_PLACEHOLDER_BY_KIND: Partial<Record<ProviderDriverKind, strin
 
 const FILTER_THRESHOLD = 8;
 
-function describeModelCapabilities(model: ServerProviderModel): string[] {
+const PROVIDER_ALIAS_SLUGS = new Set(["default", "auto"]);
+
+function hasReasoningControl(model: ServerProviderModel): boolean {
+  return (model.capabilities?.optionDescriptors ?? []).some((descriptor) =>
+    REASONING_SELECT_DESCRIPTOR_IDS.has(descriptor.id),
+  );
+}
+
+// Reasoning is the norm, so only its absence is labeled, and only when other models have it.
+// Custom and null capabilities are fallbacks or user-written, not discovered, so they prove nothing.
+// Alias slugs ("default", Cursor's "auto") defer to the provider's own model choice, so reasoning is unknown.
+function describeModelCapabilities(
+  model: ServerProviderModel,
+  flagMissingReasoning: boolean,
+): string[] {
   const descriptors = model.capabilities?.optionDescriptors ?? [];
   const labels: string[] = [];
   const hasFastMode = descriptors.some(
@@ -39,18 +54,14 @@ function describeModelCapabilities(model: ServerProviderModel): string[] {
         descriptor.options.some((option) => option.id === "fast" || option.label === "Fast")),
   );
   if (hasFastMode) labels.push("Fast mode");
-  if (descriptors.some((descriptor) => descriptor.id === "thinking")) labels.push("Thinking");
   if (
-    descriptors.some(
-      (descriptor) =>
-        descriptor.type === "select" &&
-        (descriptor.id === "reasoningEffort" ||
-          descriptor.id === "effort" ||
-          descriptor.id === "reasoning" ||
-          descriptor.id === "variant"),
-    )
+    flagMissingReasoning &&
+    !model.isCustom &&
+    model.capabilities &&
+    !PROVIDER_ALIAS_SLUGS.has(model.slug) &&
+    !hasReasoningControl(model)
   ) {
-    labels.push("Reasoning");
+    labels.push("No reasoning");
   }
   return labels;
 }
@@ -147,6 +158,7 @@ export function ProviderModelsSection({
   const hiddenCount = displayModels.filter(
     (model) => !model.isCustom && hiddenModelSet.has(model.slug),
   ).length;
+  const flagMissingReasoning = models.some(hasReasoningControl);
   const showFilter = models.length > FILTER_THRESHOLD;
   const normalizedFilter = filter.trim().toLowerCase();
   const isFiltering = showFilter && normalizedFilter.length > 0;
@@ -281,6 +293,7 @@ export function ProviderModelsSection({
         canMoveUp={!isFiltering && previousModel !== undefined && groupOf(previousModel) === group}
         canMoveDown={!isFiltering && nextModel !== undefined && groupOf(nextModel) === group}
         isFiltering={isFiltering}
+        flagMissingReasoning={flagMissingReasoning}
         canWritePreferences={canWritePreferences}
         canManageCustomModels={canManageCustomModels}
         {...rowHandlers}
@@ -321,12 +334,12 @@ export function ProviderModelsSection({
                 )
               }
             >
-              {allBuiltInModelsHidden ? uiT("Enable all") : uiT("Disable all")}
+              {allBuiltInModelsHidden ? "Enable all" : uiT("Disable all")}
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground">
             {models.length} {uiT("model")}
-            {models.length === 1 ? "" : "s"}
+            {models.length === 1 ? "" : uiT("s")}
             {favoriteCount > 0
               ? ` · ${favoriteCount} favorite${favoriteCount === 1 ? "" : "s"}`
               : ""}
@@ -353,9 +366,7 @@ export function ProviderModelsSection({
       >
         {visibleModels.length === 0 ? (
           <p className="px-2 py-2 text-xs text-muted-foreground">
-            {isFiltering
-              ? uiT("No models match.")
-              : uiT("No models reported for this provider yet.")}
+            {isFiltering ? "No models match." : uiT("No models reported for this provider yet.")}
           </p>
         ) : null}
         {visibleModels.map((model, index) => {
@@ -445,6 +456,7 @@ function ProviderModelRow({
   canMoveUp,
   canMoveDown,
   isFiltering,
+  flagMissingReasoning,
   canWritePreferences,
   canManageCustomModels,
   onToggleFavorite,
@@ -459,6 +471,7 @@ function ProviderModelRow({
   readonly canMoveUp: boolean;
   readonly canMoveDown: boolean;
   readonly isFiltering: boolean;
+  readonly flagMissingReasoning: boolean;
   readonly canWritePreferences: boolean;
   readonly canManageCustomModels: boolean;
   readonly onToggleFavorite: (slug: string) => void;
@@ -468,13 +481,12 @@ function ProviderModelRow({
   readonly onRemove: (slug: string) => void;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const capLabels = describeModelCapabilities(model);
+  const capLabels = describeModelCapabilities(model, flagMissingReasoning);
   const nameClassName = cn("text-xs", isHidden ? "text-muted-foreground" : "text-foreground/90");
   const pickerTooltip = model.isCustom
-    ? uiT("Custom models are always shown in the picker")
+    ? "Custom models are always shown in the picker"
     : isHidden
-      ? uiT("Hidden from picker")
+      ? "Hidden from picker"
       : uiT("Shown in picker");
 
   return (
@@ -504,7 +516,7 @@ function ProviderModelRow({
           <StarIcon className={cn("size-3", isFavorite && "fill-current text-warning")} />
         </TooltipTrigger>
         <TooltipPopup side="top">
-          {isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")}
+          {isFavorite ? "Remove from favorites" : uiT("Add to favorites")}
         </TooltipPopup>
       </Tooltip>
       <span className="flex min-w-0 items-baseline gap-2">

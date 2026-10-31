@@ -72,7 +72,7 @@ function RefreshFilesButton(props: { isPending: boolean; onRefresh: () => void }
       >
         <RefreshIcon refreshing={props.isPending} />
       </TooltipTrigger>
-      <TooltipPopup>{props.isPending ? uiT("Refreshing…") : uiT("Refresh files")}</TooltipPopup>
+      <TooltipPopup>{props.isPending ? "Refreshing…" : uiT("Refresh files")}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -199,6 +199,8 @@ export default function FileBrowserPanel({
         : { x: anchorRect.left, y: anchorRect.bottom };
       const fileTarget = { environmentId, filePath: relativePath, workspaceRoot: cwd };
       const fileMenuItems = fileContextMenu.buildItems(fileTarget);
+      // The app menu owns focus; the tree's outside-click handler would dismiss it before click.
+      context.close({ restoreFocus: !pointerIsFresh });
       void settlePromise(async () => {
         const clicked = await api.contextMenu.show(
           [
@@ -253,7 +255,6 @@ export default function FileBrowserPanel({
           }
         }
       }).then((result) => {
-        context.close();
         if (!AsyncResult.isSuccess(result)) throw Cause.squash(result.cause);
       });
     },
@@ -512,7 +513,7 @@ export default function FileBrowserPanel({
                   variant="ghost"
                   aria-label={
                     expandAll || allDirectoriesExpanded
-                      ? uiT("Collapse all folders")
+                      ? "Collapse all folders"
                       : uiT("Expand all folders")
                   }
                   onClick={toggleAllDirectories}
@@ -526,7 +527,7 @@ export default function FileBrowserPanel({
             </TooltipTrigger>
             <TooltipPopup>
               {expandAll || allDirectoriesExpanded
-                ? uiT("Collapse all folders")
+                ? "Collapse all folders"
                 : uiT("Expand all folders")}
             </TooltipPopup>
           </Tooltip>

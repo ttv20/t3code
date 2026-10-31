@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import {
   DEFAULT_SERVER_SETTINGS,
   type ModelSelection,
@@ -80,6 +80,14 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
   );
   const activeEntry = entries.find((entry) => entry.instanceId === selection?.instanceId);
   const mixedModel = useScopedSettingsMixed(["defaultModelSelection"]);
+  const mixedFallback = useScopedSettingsMixed(["fallbackModelSelection"]);
+  const fallbackSelection = settings.fallbackModelSelection ?? selection;
+  const fallbackModelOptions = getCustomModelOptionsByInstance(
+    settings,
+    providers,
+    fallbackSelection?.instanceId,
+    fallbackSelection?.model,
+  );
   const mixedPermissions = useScopedSettingsMixed(["defaultRuntimeMode"]);
   const PermissionIcon = runtimeModeConfig[settings.defaultRuntimeMode].icon;
   const mixedWorkspace = useScopedSettingsMixed(["defaultThreadEnvMode"]);
@@ -117,7 +125,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
       title={uiT("Model")}
       description={
         isProjectScope
-          ? uiT("Model for new threads in this project.")
+          ? "Model for new threads in this project."
           : !unavailable &&
               !mixedModel &&
               modelSource !== "project" &&
@@ -186,7 +194,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
       title={uiT("Workspace")}
       description={
         isProjectScope
-          ? uiT("Where new threads in this project start.")
+          ? "Where new threads in this project start."
           : uiT("Where new threads start. Projects and their t3.json can override it.")
       }
       resetAction={
@@ -211,7 +219,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                 value === "local" || value === "worktree"
                   ? uiT(resolveEnvModeLabel(value))
                   : unavailable
-                    ? uiT("Unavailable")
+                    ? "Unavailable"
                     : uiT("Mixed")
               }
             </SelectValue>
@@ -225,19 +233,76 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
     />
   );
 
+  const fallbackRow = !isProjectScope ? (
+    <SettingsRow
+      serverScoped
+      settingKeys={["fallbackModelSelection"]}
+      mixed={mixedFallback}
+      id="fallback-model"
+      title={uiT("Fallback model")}
+      description={uiT("Used for new threads when the default model's provider is out of usage.")}
+      resetAction={
+        mixedFallback || settings.fallbackModelSelection !== null ? (
+          <SettingResetButton
+            label={uiT("fallback model")}
+            onClick={() => updateSettings({ fallbackModelSelection: null })}
+          />
+        ) : null
+      }
+      control={
+        fallbackSelection ? (
+          <ProviderModelPicker
+            environmentId={representative?.environmentId ?? null}
+            activeInstanceId={fallbackSelection.instanceId}
+            model={fallbackSelection.model}
+            lockedProvider={null}
+            instanceEntries={entries}
+            modelOptionsByInstance={fallbackModelOptions}
+            triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
+            triggerAriaLabel={uiT("Fallback model")}
+            {...(mixedFallback
+              ? { triggerLabel: "Mixed" }
+              : settings.fallbackModelSelection === null
+                ? { triggerLabel: "None" }
+                : {})}
+            getModelDisabledReason={modelDisabledReason}
+            onInstanceModelChange={(instanceId, model) => {
+              const reason = modelDisabledReason(instanceId, model);
+              if (reason) {
+                toastManager.add({
+                  type: "error",
+                  title: uiT("Fallback model not saved"),
+                  description: reason,
+                });
+                return;
+              }
+              updateSettings({ fallbackModelSelection: createModelSelection(instanceId, model) });
+            }}
+          />
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            <UiText message={"No providers available"} />
+          </span>
+        )
+      }
+    />
+  ) : null;
+
   return (
     <SettingsSection
       id={category === "source-control" ? "source-control-defaults" : "project-defaults"}
-      title={category === "source-control" ? uiT("Repositories") : uiT("New threads")}
+      title={category === "source-control" ? "Repositories" : uiT("New threads")}
     >
       {category === "project" ? (
         <>
           {modelRow}
+          {fallbackRow}
           {workspaceRow}
         </>
       ) : category === "general" ? (
         <>
           {modelRow}
+          {fallbackRow}
           <SettingsRow
             serverScoped
             settingKeys={["defaultRuntimeMode"]}
@@ -245,7 +310,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             {...searchableSetting("default-permissions")}
             description={
               isProjectScope
-                ? uiT("Permissions for new threads in this project.")
+                ? "Permissions for new threads in this project."
                 : uiT("Default permissions for new threads. Projects can override them.")
             }
             resetAction={
@@ -273,7 +338,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   )}
                   <SelectValue>
                     {mixedPermissions
-                      ? uiT("Mixed")
+                      ? "Mixed"
                       : uiT(runtimeModeConfig[settings.defaultRuntimeMode].label)}
                   </SelectValue>
                 </SelectTrigger>
@@ -371,7 +436,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             {...searchableSetting("pull-request-merge-method")}
             description={
               isProjectScope
-                ? uiT("Pull requests in this project start with this method.")
+                ? "Pull requests in this project start with this method."
                 : uiT(
                     "Pull requests start with this method. Last selected reuses whatever you chose most recently on this device.",
                   )
@@ -400,7 +465,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                       value === "merge" || value === "squash" || value === "rebase"
                         ? uiT(PULL_REQUEST_MERGE_METHOD_LABELS[value])
                         : value === "last"
-                          ? uiT("Last selected")
+                          ? "Last selected"
                           : uiT("Mixed")
                     }
                   </SelectValue>
@@ -447,7 +512,7 @@ export function WorktreeSubmodulesRow() {
       {...searchableSetting("worktree-submodules")}
       description={
         isProjectScope
-          ? uiT("How new worktrees in this project populate git submodules.")
+          ? "How new worktrees in this project populate git submodules."
           : uiT(
               "How new worktrees populate git submodules. Projects and their t3.json can override it.",
             )

@@ -16,6 +16,7 @@ import {
   remainingPercent,
 } from "@t3tools/shared/usageLimits";
 import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import { AlertTriangleIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
 import {
   createContext,
@@ -184,7 +185,7 @@ function SegmentPopover({
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
         {account.plan ? <Row label={uiT("Plan")}>{uiT(account.plan)}</Row> : null}
         {where ? (
-          <Row label={account.environments.length > 0 ? uiT("Signed in") : uiT("Via")}>{where}</Row>
+          <Row label={account.environments.length > 0 ? "Signed in" : uiT("Via")}>{where}</Row>
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
@@ -219,7 +220,7 @@ function SegmentPopover({
               className="ms-auto"
               onClick={onRedeem}
             >
-              {redeem.busy ? uiT("Using…") : uiT("Use reset")}
+              {redeem.busy ? "Using…" : uiT("Use reset")}
             </Button>
           </span>
         </div>
@@ -510,7 +511,7 @@ function LegendRow({
             </span>
             <span className="sr-only">
               {credits} {uiT("reset")}
-              {credits === 1 ? uiT("credit") : uiT("credits")} {uiT("banked")}
+              {credits === 1 ? "credit" : uiT("credits")} {uiT("banked")}
             </span>
           </>
         ) : null}
@@ -543,7 +544,7 @@ function PoolBar({
               window={member.window}
               reset={restores.get(member.account.key)}
               refillPercent={member.refillPercent}
-              color={color}
+              color={normalizeProviderAccentColor(member.account.accentColor) ?? color}
               now={now}
               index={position + 1}
               showAccountName={pool.columns.length > 1}
@@ -692,6 +693,9 @@ export function UsageLimitsPooled({
             ) : null}
             <div className="min-w-0 space-y-1">
               <h2 className="text-sm font-medium">{link.label}</h2>
+              <p className="text-xs break-words text-muted-foreground">
+                {link.accounts.join(", ")}
+              </p>
               {link.url === CHATGPT_USAGE_URL ? (
                 <p className="text-xs text-muted-foreground">
                   {uiT("View usage in ChatGPT with your connected account.")}

@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { Globe, History, RadioTower } from "lucide-react";
 
@@ -42,9 +42,11 @@ export function PreviewEmptyState({
         </EmptyMedia>
         <EmptyTitle>{uiT("No preview yet")}</EmptyTitle>
         <EmptyDescription>
-          {uiT(
-            "Type a URL above, or run a dev script. Browser-ready localhost servers will show up here automatically.",
-          )}
+          <UiText
+            message={
+              "Type a URL above, or run a dev script. Local servers this thread starts will show up here automatically."
+            }
+          />
         </EmptyDescription>
       </Empty>
     );

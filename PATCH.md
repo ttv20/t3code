@@ -9,7 +9,7 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 
 ## In-app server updates
 
-- Upstream's sidebar **Update everything** popup is retained. Its standalone-server publication check uses this fork's GitHub release assets instead of upstream npm, refreshing every five minutes. It updates providers first, remote servers next, and the local desktop app last.
+- Upstream's sidebar **Update everything** popup is retained. Its standalone-server publication check uses this fork's GitHub release assets instead of upstream npm, refreshing every five minutes. It updates providers first, remote servers next, and the local desktop app last. Track switching also resolves releases from this fork. A cross-track switch stays blocked when a target release does not supply the database migration compatibility metadata.
 - Web and desktop **Settings → Connections** can check GitHub for newer fork releases even when the bundled client and server have identical versions. The primary machine has a **Check for updates** button; connected remote machines have the same action as a refresh icon.
 - Checks preserve the server's nightly/stable/preview channel and never offer a downgrade. Native mobile uses the same release lookup through its existing environment maintenance screen.
 - Installing uses upstream's remote self-update, progress, reconnect, and optional thread continuation. Settings actions show a confirmation popup naming the destination machine, version, install method, and restart impact; a missing popup host cancels rather than silently installing. These actions update T3 Code only, not provider CLIs.
@@ -72,7 +72,7 @@ Translation scope and the reasons behind these choices are recorded in [Translat
 ## Retired local patches
 
 - The custom Codex weekly usage RPC, polling, and cache were replaced by upstream usage-limit state.
-- `/btw` side questions were intentionally removed during the Sep 3 upstream update because they are no longer used.
+- The historical custom `/btw` implementation was retired. Upstream’s `/side` and `/btw` side chats are retained.
 - The old `/btw` migration compatibility shim was removed after the sole user's database was verified to have canonical upstream migration entries.
 - The local ImageView click-to-panel patch was replaced by upstream's richer web and mobile viewed-image rendering.
 - The local image-only mobile-web picker was replaced by upstream's general attachment picker.

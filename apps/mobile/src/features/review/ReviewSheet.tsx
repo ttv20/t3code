@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useReduceMotionEnabled } from "../../lib/appState";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { NativeInspectorContent } from "../../native/NativeInspectorContent";
 
@@ -100,7 +101,7 @@ function ReviewHeader(
           ? [
               {
                 accessibilityLabel: panes.auxiliaryPaneVisible
-                  ? uiT("Hide changed files")
+                  ? "Hide changed files"
                   : uiT("Show changed files"),
                 icon: "sidebar.right",
                 selected: panes.auxiliaryPaneVisible,
@@ -416,7 +417,7 @@ function ReviewFileNavigator({
           <View className="px-4 py-3">
             <Text className="text-sm font-t3-bold text-foreground">{uiT("Changed files")}</Text>
             <Text className="text-xs text-foreground-muted">
-              {files.length} {files.length === 1 ? uiT("file") : uiT("files")}
+              {files.length} {files.length === 1 ? "file" : uiT("files")}
             </Text>
           </View>
         </View>
@@ -434,6 +435,7 @@ type ReviewSheetProps = StaticScreenProps<{
 export function ReviewSheet(props: ReviewSheetProps) {
   const { t: uiT } = useUiLanguage();
 
+  const reduceMotion = useReduceMotionEnabled();
   const { nativeReviewDiffStyle } = useAppearanceCodeSurface();
   useAdaptiveWorkspacePaneRole("inspector");
   const { panes } = useAdaptiveWorkspaceLayout();
@@ -446,7 +448,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
   const environment = useEnvironmentPresentation(environmentId);
   const retryEnvironment = useAtomCommand(environmentCatalog.retryNow, "environment retry");
   const isEnvironmentReady = environment.presentation?.connection.phase === "connected";
-  const { draftMessage } = useThreadDraftForThread({ environmentId, threadId });
+  const { draftMessage, draftContext } = useThreadDraftForThread({ environmentId, threadId });
   const reviewCache = useReviewCacheForThread({ environmentId, threadId });
   const { selectedThreadCwd } = useSelectedThreadWorktree();
   const columnMetrics = useNativeColumnLayoutMetrics();
@@ -486,6 +488,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
     cwd: selectedThreadCwd,
     selectedSection,
     draftMessage,
+    draftContext,
   });
   // Expo may return null before registration or in older binaries; use the fallback.
   const NativeReviewDiffView = resolveNativeReviewDiffView();
@@ -497,6 +500,16 @@ export function ReviewSheet(props: ReviewSheetProps) {
     await refreshSelectedSection();
     setIsPullRefreshing(false);
   };
+  const isRefreshing = isPullRefreshing || isSelectedSectionPending || areFilePatchesPending;
+  // A refresh that starts programmatically adds its height to the native top inset and
+  // subtracts it when it ends. If topContentInset changes in between, the inset ends up
+  // short and the content sits under the header, so the fallback ScrollView starts over.
+  const [fallbackInset, setFallbackInset] = useState(topContentInset);
+  const [fallbackScrollViewKey, setFallbackScrollViewKey] = useState(0);
+  if (fallbackInset !== topContentInset) {
+    setFallbackInset(topContentInset);
+    if (isRefreshing) setFallbackScrollViewKey((key) => key + 1);
+  }
   const reviewFileNavigatorRef = useRef<ReviewFileNavigatorHandle>(null);
   const reviewFiles = parsedDiff.kind === "files" ? parsedDiff.files : [];
   const fileVisibility = useReviewFileVisibility({
@@ -553,7 +566,9 @@ export function ReviewSheet(props: ReviewSheetProps) {
     const nativeView = nativeReviewDiffViewRef.current;
     if (!nativeView) return;
     const result = await settlePromise(() =>
-      fileId === null ? nativeView.scrollToTop(true) : nativeView.scrollToFile(fileId, true),
+      fileId === null
+        ? nativeView.scrollToTop(!reduceMotion)
+        : nativeView.scrollToFile(fileId, !reduceMotion),
     );
     if (AsyncResult.isFailure(result)) {
       console.error("[review] Failed to navigate to diff file", squashAtomCommandFailure(result));
@@ -757,6 +772,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
             </View>
           ) : (
             <ScrollView
+              key={fallbackScrollViewKey}
               contentContainerStyle={
                 Platform.OS === "android" && (parsedDiff.kind === "empty" || !selectedSection)
                   ? { flexGrow: 1, justifyContent: "center" }
@@ -772,7 +788,7 @@ export function ReviewSheet(props: ReviewSheetProps) {
               refreshControl={
                 // Fallback and empty states need refresh controls; only Android has an explicit refresh menu.
                 <RefreshControl
-                  refreshing={isPullRefreshing || isSelectedSectionPending || areFilePatchesPending}
+                  refreshing={isRefreshing}
                   onRefresh={() => void handlePullToRefresh()}
                 />
               }

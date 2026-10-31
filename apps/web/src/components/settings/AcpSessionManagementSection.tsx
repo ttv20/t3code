@@ -182,9 +182,7 @@ export function AcpSessionManagementSection(props: {
       );
       toastManager.add({
         type: "success",
-        title: result.value.imported
-          ? uiT("ACP session imported")
-          : uiT("ACP session already imported"),
+        title: result.value.imported ? "ACP session imported" : uiT("ACP session already imported"),
       });
       return;
     }
@@ -216,7 +214,7 @@ export function AcpSessionManagementSection(props: {
     reportFailure("Could not delete ACP session", result);
   };
 
-  const loadProviders = async () => {
+  const loadProviders = async (resetProviderId?: string) => {
     if (projectId === null || loadingProviders) return;
     setLoadingProviders(true);
     const result = await listProviders({
@@ -226,11 +224,13 @@ export function AcpSessionManagementSection(props: {
     setLoadingProviders(false);
     if (result._tag === "Success") {
       setProviders(result.value.providers);
-      setProviderDrafts(
+      setProviderDrafts((current) =>
         Object.fromEntries(
           result.value.providers.map((provider) => [
             provider.providerId,
-            {
+            (resetProviderId !== undefined && provider.providerId !== resetProviderId
+              ? current[provider.providerId]
+              : undefined) ?? {
               apiType: provider.current?.apiType ?? provider.supported[0] ?? "",
               baseUrl: provider.current?.baseUrl ?? "",
               headers: "",
@@ -247,7 +247,8 @@ export function AcpSessionManagementSection(props: {
     if (
       !readEnvironmentScope(props.environmentId, AuthProvidersManageScope) ||
       projectId === null ||
-      savingProviderId !== null
+      savingProviderId !== null ||
+      loadingProviders
     )
       return;
     const draft = providerDrafts[provider.providerId];
@@ -277,14 +278,15 @@ export function AcpSessionManagementSection(props: {
     setSavingProviderId(null);
     if (result._tag === "Success") {
       toastManager.add({ type: "success", title: uiT("ACP provider configured") });
-      await loadProviders();
+      await loadProviders(provider.providerId);
       return;
     }
     reportFailure("Could not configure ACP provider", result);
   };
 
   const disableConfiguredProvider = async (provider: AcpRegistryConfigurableProvider) => {
-    if (projectId === null || savingProviderId !== null || provider.required) return;
+    if (projectId === null || savingProviderId !== null || loadingProviders || provider.required)
+      return;
     const confirmed = await ensureLocalApi().dialogs.confirm(
       `Disable ACP provider "${provider.providerId}"?`,
       { variant: "destructive" },
@@ -298,7 +300,7 @@ export function AcpSessionManagementSection(props: {
     setSavingProviderId(null);
     if (result._tag === "Success") {
       toastManager.add({ type: "success", title: uiT("ACP provider disabled") });
-      await loadProviders();
+      await loadProviders(provider.providerId);
       return;
     }
     reportFailure("Could not disable ACP provider", result);
@@ -341,7 +343,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={props.readOnly || loggingOut}
                 onClick={() => void logoutProvider()}
               >
-                {loggingOut ? uiT("Logging out") : uiT("Log out")}
+                {loggingOut ? "Logging out" : uiT("Log out")}
               </Button>
             ) : null}
             {canList && props.projects.length > 0 ? (
@@ -382,11 +384,7 @@ export function AcpSessionManagementSection(props: {
                   disabled={!canRead || loading || projectId === null}
                   onClick={() => void loadSessions()}
                 >
-                  {loading
-                    ? uiT("Loading")
-                    : sessions.length === 0
-                      ? uiT("List sessions")
-                      : uiT("Refresh")}
+                  {loading ? "Loading" : sessions.length === 0 ? "List sessions" : uiT("Refresh")}
                 </Button>
               </>
             ) : null}
@@ -424,9 +422,9 @@ export function AcpSessionManagementSection(props: {
                         onClick={() => void importNativeSession(session)}
                       >
                         {session.importedThreadId !== null
-                          ? uiT("Imported")
+                          ? "Imported"
                           : importingSessionId === session.sessionId
-                            ? uiT("Importing")
+                            ? "Importing"
                             : uiT("Import")}
                       </Button>
                       {canDelete ? (
@@ -441,9 +439,7 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void deleteNativeSession(session)}
                         >
-                          {deletingSessionId === session.sessionId
-                            ? uiT("Deleting")
-                            : uiT("Delete")}
+                          {deletingSessionId === session.sessionId ? "Deleting" : uiT("Delete")}
                         </Button>
                       ) : null}
                     </div>
@@ -461,7 +457,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={!canRead || loading}
                 onClick={() => void loadSessions(nextCursor)}
               >
-                {loading ? uiT("Loading") : uiT("Load more")}
+                {loading ? "Loading" : uiT("Load more")}
               </Button>
             ) : null}
           </>
@@ -481,13 +477,15 @@ export function AcpSessionManagementSection(props: {
               type="button"
               size="xs"
               variant="outline"
-              disabled={!canRead || loadingProviders || projectId === null}
+              disabled={
+                !canRead || loadingProviders || savingProviderId !== null || projectId === null
+              }
               onClick={() => void loadProviders()}
             >
               {loadingProviders
-                ? uiT("Loading")
+                ? "Loading"
                 : providers.length === 0
-                  ? uiT("List providers")
+                  ? "List providers"
                   : uiT("Refresh")}
             </Button>
           </div>
@@ -543,8 +541,8 @@ export function AcpSessionManagementSection(props: {
                           {provider.providerId}
                         </p>
                         <p className="text-3xs text-muted-foreground">
-                          {provider.current === null ? uiT("Disabled") : uiT("Configured")}
-                          {provider.required ? uiT(" · Required") : ""}
+                          {provider.current === null ? "Disabled" : uiT("Configured")}
+                          {provider.required ? " · Required" : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -555,19 +553,22 @@ export function AcpSessionManagementSection(props: {
                           disabled={
                             props.readOnly ||
                             savingProviderId !== null ||
+                            loadingProviders ||
                             draft.apiType.length === 0 ||
                             draft.baseUrl.length === 0
                           }
                           onClick={() => void saveProvider(provider)}
                         >
-                          {savingProviderId === provider.providerId ? uiT("Saving") : uiT("Save")}
+                          {savingProviderId === provider.providerId ? "Saving" : uiT("Save")}
                         </Button>
                         {!provider.required && provider.current !== null ? (
                           <Button
                             type="button"
                             size="xs"
                             variant="ghost-muted"
-                            disabled={props.readOnly || savingProviderId !== null}
+                            disabled={
+                              props.readOnly || savingProviderId !== null || loadingProviders
+                            }
                             onClick={() => void disableConfiguredProvider(provider)}
                           >
                             {uiT("Disable")}

@@ -31,7 +31,7 @@ import { THREAD_DETAILS_PANEL_ICON_CLASS } from "./threadDetailsPanelStyles";
 
 const serverKey = (server: DiscoveredLocalServer) => `${server.pid}:${server.port}`;
 
-/** Web servers the thread's terminals and agent started. Hidden while none run. */
+/** Local servers the thread's terminals and agent started. Hidden while none run. */
 export function ThreadServersPanel(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
@@ -53,7 +53,7 @@ export function ThreadServersPanel(props: {
   const [stoppingKey, setStoppingKey] = useState<string | null>(null);
 
   if (servers.length === 0) return null;
-  const externalClickLabel = isMacPlatform(navigator.platform) ? uiT("⌘-click") : uiT("Ctrl-click");
+  const externalClickLabel = isMacPlatform(navigator.platform) ? "⌘-click" : uiT("Ctrl-click");
   const threadRef = scopeThreadRef(props.environmentId, props.threadId);
 
   const reportFailure = (title: string, error: unknown) => {
