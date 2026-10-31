@@ -589,7 +589,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
           : uiT("Snoozed")
       }
       clockMinute={nowMinute}
-      actionLabel={isUnsnoozing ? "Waking..." : uiT("Wake now")}
+      actionLabel={isUnsnoozing ? uiT("Waking...") : uiT("Wake now")}
       actionDisabled={!canOperateThread || isUnsnoozing}
       onAction={() => void handleUnsnoozeActiveThreadStable()}
     />
@@ -602,7 +602,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
           : uiT("Settled")
       }
       clockMinute={nowMinute}
-      actionLabel={isUnsettling ? "Un-settling..." : uiT("Un-settle")}
+      actionLabel={isUnsettling ? uiT("Un-settling...") : uiT("Un-settle")}
       actionDisabled={!canOperateThread || isUnsettling}
       onAction={() => void handleUnsettleActiveThreadStable()}
     />

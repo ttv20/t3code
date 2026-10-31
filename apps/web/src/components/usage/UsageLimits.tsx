@@ -363,7 +363,7 @@ export function ResetCredits({
             if (readEnvironmentScope(environmentId, AuthProvidersManageScope)) setConfirming(true);
           }}
         >
-          {busy ? "Using…" : uiT("Use reset")}
+          {busy ? uiT("Using…") : uiT("Use reset")}
         </Button>
       ) : null}
       {status ? <span className="text-foreground">{status}</span> : null}

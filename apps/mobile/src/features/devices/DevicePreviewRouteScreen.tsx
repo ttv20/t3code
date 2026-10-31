@@ -238,7 +238,7 @@ export function DevicePreviewScreen({
       : []),
     {
       id: "shutdown",
-      title: shuttingDown ? "Shutting down…" : uiT("Shut down device"),
+      title: shuttingDown ? uiT("Shutting down…") : uiT("Shut down device"),
       icon: "power",
       disabled: !preview || shuttingDown,
       onPress: () => void shutDownDevice(),

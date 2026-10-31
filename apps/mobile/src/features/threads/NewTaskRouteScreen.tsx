@@ -173,12 +173,12 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
   const incomingShare = routeShareId ? getShare(routeShareId) : null;
   const incomingShareSubtitle = incomingShare
     ? incomingShare.attachments.length === 0
-      ? "Choose a project for what you shared"
+      ? uiT("Choose a project for what you shared")
       : incomingShare.attachments.length === 1
         ? `Choose a project for the ${incomingShare.attachments[0]?.type === "image" ? "image" : "file"} you shared`
         : `Choose a project for the ${incomingShare.attachments.length} ${incomingShare.attachments.every((attachment) => attachment.type === "image") ? "images" : "files"} you shared`
     : null;
-  const screenTitle = incomingShare ? "Start a task" : uiT("Choose project");
+  const screenTitle = incomingShare ? uiT("Start a task") : uiT("Choose project");
   const projectEmptyState = deriveProjectEmptyState(catalogState);
   const serverConfigs = useServerConfigs();
   const listScopes = pickableProjectGroups(projectScopes).filter(
@@ -411,7 +411,9 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                 <>
                   <Button
                     label={
-                      catalogState.hasReadyEnvironment ? "Add new project" : uiT("Add environment")
+                      catalogState.hasReadyEnvironment
+                        ? uiT("Add new project")
+                        : uiT("Add environment")
                     }
                     tone="primary"
                     onPress={() =>

@@ -59,7 +59,7 @@ function WorkspaceRootTitle(props: {
   const maxWidth = Math.max(0, props.columnWidth - (use(HeaderItemsWidthContext) ?? 160));
   const enabled = useEnabledNavigationTabs();
   const tabTitle = settingsOpen
-    ? "Settings"
+    ? uiT("Settings")
     : enabled.length
       ? TAB_TITLES[state.selectedTab]
       : uiT("Navigation");
@@ -147,7 +147,7 @@ function WorkspaceRootContent() {
             ]}
             options={{
               title: settingsOpen
-                ? "Settings"
+                ? uiT("Settings")
                 : enabled.length
                   ? TAB_TITLES[state.selectedTab]
                   : uiT("Navigation"),
@@ -179,7 +179,7 @@ function WorkspaceRootContent() {
                     {
                       accessibilityLabel:
                         state.selectedTab === "threads"
-                          ? "Search threads"
+                          ? uiT("Search threads")
                           : uiT("Search pull requests"),
                       icon: "magnifyingglass" as const,
                       onPress: () => {

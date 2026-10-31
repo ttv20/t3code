@@ -10,6 +10,7 @@ const LETTER = /\p{L}/u;
  * least 30% of words start with an RTL letter, even when an English term leads.
  */
 export function textDirection(text: string): TextDirection | undefined {
+  if (!RTL_LETTER.test(text)) return LETTER.test(text) ? "ltr" : undefined;
   let rtlWords = 0;
   let ltrWords = 0;
   for (const word of text.split(/\s+/)) {

@@ -90,15 +90,15 @@ export function startThreadNotifications(
     };
     const title =
       kind === "completion"
-        ? "Thread completed"
+        ? uiT("Thread completed")
         : status === "approval"
-          ? "Approval needed"
+          ? uiT("Approval needed")
           : status === "limited"
-            ? "Usage limit reached"
+            ? uiT("Usage limit reached")
             : status === "failed"
-              ? "Thread failed"
+              ? uiT("Thread failed")
               : status === "request"
-                ? "Guest request"
+                ? uiT("Guest request")
                 : uiT("Input needed");
     if (hasNotificationSound(mode)) {
       void playNotificationSound(kind, () =>
@@ -129,7 +129,7 @@ export function startThreadNotifications(
             ),
         },
         actionProps: {
-          children: "Open thread",
+          children: uiT("Open thread"),
           onClick: () => {
             toastManager.close(toastId);
             void router.navigate({

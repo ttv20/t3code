@@ -112,7 +112,9 @@ export const ModelListRow = memo(function ModelListRow(props: {
                   event.stopPropagation();
                 }}
                 disabled={Boolean(props.disabledReason)}
-                aria-label={props.isFavorite ? "Remove from favorites" : uiT("Add to favorites")}
+                aria-label={
+                  props.isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")
+                }
               >
                 <StarIcon
                   className={cn(
@@ -126,7 +128,7 @@ export const ModelListRow = memo(function ModelListRow(props: {
             }
           />
           <TooltipPopup side="top" align="center">
-            {props.isFavorite ? "Remove from favorites" : uiT("Add to favorites")}
+            {props.isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")}
           </TooltipPopup>
         </Tooltip>
         {/* Last, and always reserved, so stars and the check keep fixed columns. */}

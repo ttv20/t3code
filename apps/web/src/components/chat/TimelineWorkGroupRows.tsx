@@ -453,6 +453,7 @@ function LiveActivityContent({
   active?: boolean;
   highlighted?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const showTrailingFailureMark =
     failed && iconName !== undefined && !toolIconAcceptsTint(toolIcon);
 
@@ -470,7 +471,7 @@ function LiveActivityContent({
                   : "text-icon-muted",
             )}
             role={announceFailure ? "img" : undefined}
-            aria-label={announceFailure ? "Tool call failed" : undefined}
+            aria-label={announceFailure ? uiT("Tool call failed") : undefined}
           >
             <ToolActivityIconView
               icon={toolIcon}

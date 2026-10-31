@@ -784,13 +784,13 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     (questionAttachmentTarget &&
     !supportsQuestionAttachments &&
     (composerImages.length > 0 || composerFiles.length > 0)
-      ? "Update this server to send files with question answers"
+      ? uiT("Update this server to send files with question answers")
       : null) ??
     fileCapabilityBlockReason ??
     (supportsAttachmentUploads
       ? needsReattachFileCount > 0
         ? needsReattachFileCount === 1
-          ? "Attach the interrupted file again or remove it"
+          ? uiT("Attach the interrupted file again or remove it")
           : "Attach the interrupted files again or remove them"
         : attachmentUploadBlockReason({
             imageIds: [...composerImages, ...composerFiles].map((attachment) => attachment.id),
@@ -912,7 +912,8 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         : undefined))
     : undefined;
   const resolvedCompactDisabledReason =
-    compactDisabledReason ?? (noProviderAvailable ? "Compacting is unavailable right now" : null);
+    compactDisabledReason ??
+    (noProviderAvailable ? uiT("Compacting is unavailable right now") : null);
   const { modes: compatibleRuntimeModes, mode: compatibleRuntimeMode } =
     resolveCompatibleRuntimeMode(
       runtimeMode,
@@ -928,7 +929,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   );
   const sendDisabledReason =
     externalSendDisabledReason ??
-    (multipleModelSelections?.length === 0 ? "Select at least one model." : null) ??
+    (multipleModelSelections?.length === 0 ? uiT("Select at least one model.") : null) ??
     (activePendingProgress
       ? attachmentBlockReason
       : (attachmentBlockReason ??
@@ -1251,9 +1252,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     environmentUnavailable !== null ||
     (!composerSendState.hasSendableContent && !showResumeAction);
   const collapsedComposerPrimaryActionLabel = showResumeAction
-    ? "Resume thread"
+    ? uiT("Resume thread")
     : props.resumeCompactionTokens !== null && !props.keepFullHistory
-      ? "Open composer to compact and send"
+      ? uiT("Open composer to compact and send")
       : uiT("Send message");
   const showMobilePendingAnswerActions =
     isMobileViewport && !isComposerCollapsedMobile && pendingPrimaryAction !== null;
@@ -2634,7 +2635,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
           description:
             isEnvironmentRequestInvalidError(error) &&
             error.reason === "thread_transcript_too_large"
-              ? "This thread exceeds the attachment size limit. Try a shorter thread."
+              ? uiT("This thread exceeds the attachment size limit. Try a shorter thread.")
               : uiT("Check that its environment is connected and up to date, then try again."),
         });
       }
@@ -3224,7 +3225,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 >
                   {prompt.trim() ||
                     (showProviderUnavailable
-                      ? "Enable a provider in Settings"
+                      ? uiT("Enable a provider in Settings")
                       : uiT("Ask anything..."))}
                 </button>
                 {collapsedComposerImagePreviews}
@@ -3299,7 +3300,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                 {composerSuggestionsVisible && composerMenuItems.length === 0
                   ? isComposerMenuLoading
                     ? composerTriggerKind === "pull-request"
-                      ? "Finding pull request..."
+                      ? uiT("Finding pull request...")
                       : "Searching workspace files..."
                     : composerMenuEmptyState
                   : ""}
@@ -3385,11 +3386,11 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     placeholder={
                       isComposerApprovalState
                         ? activePendingApproval?.supportsFeedback
-                          ? "Send feedback to decline this request"
+                          ? uiT("Send feedback to decline this request")
                           : "Send a message to decline and redirect the agent"
                         : activePendingProgress
                           ? isChoiceOnlyPendingQuestion
-                            ? "Choose an option above"
+                            ? uiT("Choose an option above")
                             : uiT(
                                 "Type your own answer, or leave this blank to use the selected option",
                               )
@@ -3398,9 +3399,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                                 "Add feedback to refine the plan, or leave this blank to implement it",
                               )
                             : projectSelectionRequired
-                              ? "Choose a project above to start a thread"
+                              ? uiT("Choose a project above to start a thread")
                               : showProviderUnavailable
-                                ? "Enable a provider in Settings to send a message"
+                                ? uiT("Enable a provider in Settings to send a message")
                                 : uiT(DEFAULT_COMPOSER_PLACEHOLDER)
                     }
                     disabled={

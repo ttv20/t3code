@@ -672,7 +672,7 @@ function MessageAttachmentFile(props: {
   const videoType = videoMimeType(attachment);
   const isPdf = isPdfFile(attachment);
   const fileTypeLabel = isPdf
-    ? "PDF"
+    ? uiT("PDF")
     : (attachment.name.match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toUpperCase() ?? uiT("File"));
   const sizeLabel = formatAttachmentSize(attachment.sizeBytes);
   const httpBaseUrl = Option.isSome(preparedConnection)
@@ -3803,7 +3803,7 @@ function ThreadFeedLoadEarlierControl(props: ThreadFeedHistoryControls) {
       {props.hasMoreHistory ? (
         <View className="self-center">
           <Button
-            label={props.loading ? "Loading earlier activity…" : uiT("Load earlier activity")}
+            label={props.loading ? uiT("Loading earlier activity…") : uiT("Load earlier activity")}
             tone="secondary"
             accessibilityLabel={uiT("Load earlier activity")}
             disabled={props.loading}

@@ -691,12 +691,14 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
       return {
         kind: "stop",
         unresponsive,
-        label: unresponsive ? "Not responding to Stop" : uiT("Stopping…"),
+        label: unresponsive ? uiT("Not responding to Stop") : uiT("Stopping…"),
         action:
           unresponsive && canForceStop
             ? {
                 label:
-                  forceStoppingKey === selectedThreadKey ? "Force stopping..." : uiT("Force stop"),
+                  forceStoppingKey === selectedThreadKey
+                    ? uiT("Force stopping...")
+                    : uiT("Force stop"),
                 accessibilityLabel: uiT("Force stop the agent"),
                 disabled: forceStoppingKey === selectedThreadKey,
                 onPress: () =>
@@ -720,7 +722,9 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
       if (props.worktreeSetup) return null;
       return {
         kind: "preparing",
-        label: props.creationState.preparingWorktree ? "Setting up worktree…" : uiT("Starting…"),
+        label: props.creationState.preparingWorktree
+          ? uiT("Setting up worktree…")
+          : uiT("Starting…"),
       };
     }
     if (props.creationState?.kind === "failed") {
@@ -766,7 +770,7 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
           });
         },
         action: {
-          label: statusPending ? "Stopping..." : uiT("Stop"),
+          label: statusPending ? uiT("Stopping...") : uiT("Stop"),
           accessibilityLabel: uiT("Stop background work"),
           disabled: !props.canOperateThread || statusPending,
           onPress: () => void runStatusAction("stop"),
@@ -781,9 +785,9 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
               "0": snoozeWakeLabel(snoozedUntil, { now: lifecycleNow }),
             })
           : settled
-            ? "Settled"
+            ? uiT("Settled")
             : uiT("Woke from snooze");
-      const actionLabel = snoozed ? "Wake now" : settled ? "Un-settle" : uiT("Dismiss");
+      const actionLabel = snoozed ? uiT("Wake now") : settled ? uiT("Un-settle") : uiT("Dismiss");
       return {
         kind: "lifecycle",
         state,
@@ -791,9 +795,9 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
         action: {
           label: statusPending
             ? snoozed
-              ? "Waking..."
+              ? uiT("Waking...")
               : settled
-                ? "Un-settling..."
+                ? uiT("Un-settling...")
                 : "Dismissing..."
             : actionLabel,
           accessibilityLabel: actionLabel,
@@ -1684,7 +1688,7 @@ function ThreadDetailBody(props: ThreadDetailScreenProps) {
                         placeholder={
                           props.activePendingApproval
                             ? props.activePendingApproval.supportsFeedback
-                              ? "Send feedback to decline this request"
+                              ? uiT("Send feedback to decline this request")
                               : "Send a message to decline and redirect the agent"
                             : uiT("Ask anything")
                         }

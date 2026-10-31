@@ -199,7 +199,7 @@ export function DeviceControlsRail(props: {
         {props.hostKind === "simlock" ? null : (
           <RailButton
             tooltipSide={popupSide}
-            label={props.screenshotPending ? "Capturing screenshot" : "Save screenshot"}
+            label={props.screenshotPending ? uiT("Capturing screenshot") : "Save screenshot"}
             disabled={!view.streaming || props.screenshotPending}
             onClick={props.onScreenshot}
           >
@@ -231,7 +231,9 @@ export function DeviceControlsRail(props: {
             <MenuSeparator />
             <MenuItem variant="destructive" onClick={props.onPowerOff}>
               <Power />
-              {props.hostKind === "simlock" ? "Return device to the pool" : uiT("Power off device")}
+              {props.hostKind === "simlock"
+                ? uiT("Return device to the pool")
+                : uiT("Power off device")}
             </MenuItem>
           </MenuPopup>
         </Menu>
@@ -258,7 +260,9 @@ export function DeviceControlsRail(props: {
         {view.keyboard ? (
           <RailButton
             tooltipSide={popupSide}
-            label={view.keyboard.attached ? "Detach Magic Keyboard" : uiT("Attach Magic Keyboard")}
+            label={
+              view.keyboard.attached ? uiT("Detach Magic Keyboard") : uiT("Attach Magic Keyboard")
+            }
             pressed={view.keyboard.attached}
             onClick={view.keyboard.toggle}
           >

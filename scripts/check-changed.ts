@@ -478,6 +478,8 @@ const checkChanged = Effect.fn("checkChanged")(function* (input: {
               "test",
               "run",
               "--passWithNoTests",
+              "--maxWorkers",
+              String(concurrency),
               ...tests,
             ]),
             serial: true,

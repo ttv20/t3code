@@ -138,7 +138,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   const triggerTitle = selectedModel
     ? getTriggerDisplayModelName(selectedModel, activeEntry?.driverKind)
     : props.model === ANTIGRAVITY_DEFAULT_MODEL
-      ? "Choose model"
+      ? uiT("Choose model")
       : props.model || uiT("Choose model");
   const triggerLabel = selectedModel
     ? `${getDisplayModelName(selectedModel)}${selectedModel.isUnavailable ? " (Unavailable)" : ""}`
@@ -212,7 +212,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   });
   const multipleLabel = selectedEntries
     ? selectedEntries.length === 0
-      ? "Choose models"
+      ? uiT("Choose models")
       : `${selectedEntries
           .slice(0, 2)
           .map((selection) => selection.label)

@@ -696,12 +696,12 @@ function ThreadNavigationSidebarPane(
       }
     >
       {catalogState.isLoadingConnections
-        ? "Loading threads…"
+        ? uiT("Loading threads…")
         : Platform.OS === "android" && !catalogState.hasConnections
-          ? "No environments connected"
+          ? uiT("No environments connected")
           : props.searchQuery.trim().length > 0
             ? threadSearch.isPending
-              ? "Searching thread messages…"
+              ? uiT("Searching thread messages…")
               : "No matching threads"
             : selectedProjectScope !== null
               ? uiT("No threads in {0}", { "0": selectedProjectScope.title })

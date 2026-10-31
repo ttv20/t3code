@@ -684,7 +684,9 @@ export function HomeScreen(props: HomeScreenProps) {
             <EmptyState
               title={emptyState.title}
               detail={emptyState.detail}
-              actionLabel={!props.catalogState.hasReadyEnvironment ? "Add environment" : undefined}
+              actionLabel={
+                !props.catalogState.hasReadyEnvironment ? uiT("Add environment") : undefined
+              }
               onAction={!props.catalogState.hasReadyEnvironment ? props.onAddConnection : undefined}
               action={
                 Platform.OS === "android" && !props.catalogState.hasReadyEnvironment ? (

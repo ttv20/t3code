@@ -335,7 +335,7 @@ function LiveThreadRouteController(props: ThreadRouteScreenProps) {
   return withInspectorHeader(
     <ThreadUnavailableScreen
       actionLabel={
-        routeEnvironmentRuntime === null ? "Manage environments" : uiT("Reconnect environment")
+        routeEnvironmentRuntime === null ? uiT("Manage environments") : uiT("Reconnect environment")
       }
       onAction={() => {
         if (routeEnvironmentRuntime !== null) {

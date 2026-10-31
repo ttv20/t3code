@@ -209,7 +209,7 @@ export function ThreadLineageWorkflowRow({
                       ) : null}
                       <span className="shrink-0 text-2xs font-normal tabular-nums">
                         {phase.settledCount}/{phase.members.length}{" "}
-                        {phase.members.length === 1 ? "agent" : uiT("agents")}
+                        {phase.members.length === 1 ? uiT("agent") : uiT("agents")}
                       </span>
                       <span className="shrink-0 text-2xs font-normal tabular-nums empty:hidden">
                         <AgentElapsed agent={phaseElapsed(phase)} />

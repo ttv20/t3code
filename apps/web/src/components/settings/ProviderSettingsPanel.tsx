@@ -263,13 +263,13 @@ function EnvironmentUnavailablePlaceholder({
 
   const isLoading = access.kind === "loading";
   const title = isLoading
-    ? "Loading provider settings"
+    ? uiT("Loading provider settings")
     : access.kind === "error"
-      ? "Could not connect to this device"
+      ? uiT("Could not connect to this device")
       : uiT("Provider settings are unavailable");
   const description = isLoading
     ? access.reason === "permissions"
-      ? "Checking what this session is allowed to change."
+      ? uiT("Checking what this session is allowed to change.")
       : uiT("Waiting for {0}'s configuration.", { "0": environment.label })
     : connectionStatusTitle(environment.connection);
   const error = isLoading ? null : environment.connection.error;
@@ -450,10 +450,10 @@ function ProviderSettingsPanelContent(target: ProviderSettingsTarget) {
       {options.length === 0 && !targetEnvironmentMissing ? (
         <ProviderSettingsPlaceholder
           icon={<EnvironmentMachineIcon kind={resolveEnvironmentMachineKind(null)} />}
-          title={isReady ? "No connected devices" : uiT("Loading devices")}
+          title={isReady ? uiT("No connected devices") : uiT("Loading devices")}
           description={
             isReady
-              ? "Connect an execution environment before configuring providers."
+              ? uiT("Connect an execution environment before configuring providers.")
               : uiT("Reading connected execution environments.")
           }
         />
@@ -1085,7 +1085,7 @@ export function EnvironmentProviderSettings({
             ) : (
               <div className="p-6 text-sm text-muted-foreground">
                 {targetInstanceMissing
-                  ? "This provider instance is no longer available on this device."
+                  ? uiT("This provider instance is no longer available on this device.")
                   : uiT("No providers configured.")}
               </div>
             )}

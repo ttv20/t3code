@@ -230,13 +230,13 @@ export function DeviceStreamView(props: {
 
   const phoneUnavailableReason =
     isDuo && !screen?.supportsHingeAngle
-      ? "iPhone Duo 3D requires Device Hub 0.11.0 or newer"
+      ? uiT("iPhone Duo 3D requires Device Hub 0.11.0 or newer")
       : phoneUnavailable
-        ? "3D is unavailable on this browser"
+        ? uiT("3D is unavailable on this browser")
         : mjpegUrl
-          ? "3D requires the H.264 stream"
+          ? uiT("3D requires the H.264 stream")
           : props.axOverlay
-            ? "Turn off accessibility frames to use 3D"
+            ? uiT("Turn off accessibility frames to use 3D")
             : null;
 
   const keyboardSource = deviceKeyboard(props.platform, props.deviceName ?? "");

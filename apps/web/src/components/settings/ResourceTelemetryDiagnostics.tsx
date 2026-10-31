@@ -278,7 +278,8 @@ function AggregateCard({
           {uiT(label)}
         </div>
         <div className="rounded-md bg-muted/55 px-1.5 py-0.5 font-mono text-3xs tabular-nums text-muted-foreground/70">
-          {aggregate.processCount} {aggregate.processCount === 1 ? "process" : uiT("processes")}
+          {aggregate.processCount}{" "}
+          {aggregate.processCount === 1 ? uiT("process") : uiT("processes")}
         </div>
       </div>
       <div className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
@@ -316,7 +317,7 @@ function HealthSource({ label, health }: { label: string; health: ResourceTeleme
         <div className="text-sm font-medium text-foreground">{uiT(label)}</div>
         <div className="mt-1 text-2xs leading-relaxed text-muted-foreground/65">
           {expectedInBrowser
-            ? "Available when this page runs inside the desktop app."
+            ? uiT("Available when this page runs inside the desktop app.")
             : Option.match(health.lastError, {
                 onNone: () => "No reported errors",
                 onSome: (error) => error,

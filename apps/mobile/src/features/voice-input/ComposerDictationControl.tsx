@@ -425,7 +425,7 @@ export function ComposerDictationPrimaryAction(props: {
         size={props.size}
         accessibilityLabel={
           props.presentation.confirmationEnabled
-            ? "Finish dictation"
+            ? uiT("Finish dictation")
             : (props.presentation.statusLabel ?? uiT("Preparing voice input"))
         }
         disabled={!props.presentation.confirmationEnabled}
@@ -454,7 +454,7 @@ export function ComposerDictationStartAction(props: {
   return (
     <VoiceActionButton
       size={props.size}
-      accessibilityLabel={openSettings ? "Open microphone settings" : uiT("Start dictation")}
+      accessibilityLabel={openSettings ? uiT("Open microphone settings") : uiT("Start dictation")}
       disabled={props.disabled}
       icon="mic"
       onPress={

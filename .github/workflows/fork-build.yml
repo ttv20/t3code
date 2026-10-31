@@ -104,7 +104,7 @@ jobs:
       - uses: ./.github/actions/setup-apt-mirrors
 
       - name: Install desktop build libraries
-        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config patchelf
 
       - name: Build web, server, and desktop bundle
         run: vp run build:desktop

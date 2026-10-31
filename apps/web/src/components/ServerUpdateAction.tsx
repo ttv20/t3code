@@ -278,7 +278,7 @@ export function ServerUpdateAction({
         type: "success",
         title:
           installation?.kind === "npm-global"
-            ? "Update command copied"
+            ? uiT("Update command copied")
             : uiT("Relaunch command copied"),
         description:
           installation?.kind === "npm-global"
@@ -348,7 +348,7 @@ export function ServerUpdateAction({
   const actionLabel =
     manualCommand !== null
       ? installation?.kind === "npm-global"
-        ? "Copy update command"
+        ? uiT("Copy update command")
         : "Copy relaunch command"
       : label;
   const onClick =

@@ -93,7 +93,7 @@ export function PullRequestGuideTab({
     canWrite ? (
       <Button size={size} variant="outline" disabled={running} onClick={() => void write()}>
         {running ? <Spinner /> : <SparklesIcon aria-hidden className="size-3.5" />}
-        {running ? "Reading the change..." : uiT(label)}
+        {running ? uiT("Reading the change...") : uiT(label)}
       </Button>
     ) : null;
 
@@ -109,9 +109,9 @@ export function PullRequestGuideTab({
       <div className="scrollbar-gutter-both flex h-full flex-col items-center justify-center-safe gap-2 overflow-y-auto px-4 py-10 text-center">
         <p className="text-sm font-medium text-foreground">
           {running
-            ? "Writing a review guide"
+            ? uiT("Writing a review guide")
             : failure === null
-              ? "No review guide yet"
+              ? uiT("No review guide yet")
               : uiT("Could not write a review guide")}
         </p>
         <p className="max-w-md text-xs text-muted-foreground">

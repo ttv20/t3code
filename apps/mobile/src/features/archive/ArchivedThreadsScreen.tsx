@@ -403,10 +403,10 @@ export function ArchivedThreadsScreen(props: {
       <EmptyState
         detail={
           isFiltered
-            ? "Try another search or environment."
+            ? uiT("Try another search or environment.")
             : uiT("Threads you archive will appear here.")
         }
-        title={isFiltered ? "No matching threads" : uiT("No archived threads")}
+        title={isFiltered ? uiT("No matching threads") : uiT("No archived threads")}
       />
     );
   }, [isFiltered, isInitialLoad, uiT]);

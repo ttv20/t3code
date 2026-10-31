@@ -473,7 +473,7 @@ const TraitsMenuContent = memo(function TraitsMenuContentImpl(props: TraitsSelec
               {(["on", "off"] as const).map((value) => (
                 <MenuRadioItem key={value} value={value} hideIndicator closeOnClick>
                   <span className="flex w-full min-w-0 items-center justify-between gap-3">
-                    <span>{value === "on" ? "On" : uiT("Off")}</span>
+                    <span>{value === "on" ? uiT("On") : uiT("Off")}</span>
                   </span>
                 </MenuRadioItem>
               ))}

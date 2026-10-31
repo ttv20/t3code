@@ -265,7 +265,7 @@ export function ComposerControlsBar(props: {
       className="shrink-0"
     >
       <CircleAlertIcon className="size-4" />
-      {providerSetupInstanceId ? "Open provider settings" : uiT("No provider available")}
+      {providerSetupInstanceId ? uiT("Open provider settings") : uiT("No provider available")}
     </ComposerControl>
   ) : (
     <>

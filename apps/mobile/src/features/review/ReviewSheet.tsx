@@ -101,7 +101,7 @@ function ReviewHeader(
           ? [
               {
                 accessibilityLabel: panes.auxiliaryPaneVisible
-                  ? "Hide changed files"
+                  ? uiT("Hide changed files")
                   : uiT("Show changed files"),
                 icon: "sidebar.right",
                 selected: panes.auxiliaryPaneVisible,
@@ -387,7 +387,7 @@ function ReviewFileNavigator({
               hideBackButton
               hideShadow={false}
               navigationItemStyle="editor"
-              subtitle={`${files.length} ${files.length === 1 ? "file" : "files"}`}
+              subtitle={`${files.length} ${files.length === 1 ? uiT("file") : "files"}`}
               title={uiT("Changed files")}
               titleColor={foregroundColor}
               titleFontSize={17}
@@ -409,7 +409,7 @@ function ReviewFileNavigator({
       {Platform.OS === "android" ? (
         <AndroidScreenHeader
           title={uiT("Changed files")}
-          subtitle={`${files.length} ${files.length === 1 ? "file" : "files"}`}
+          subtitle={`${files.length} ${files.length === 1 ? uiT("file") : "files"}`}
           hideBottomBorder
         />
       ) : (
@@ -417,7 +417,7 @@ function ReviewFileNavigator({
           <View className="px-4 py-3">
             <Text className="text-sm font-t3-bold text-foreground">{uiT("Changed files")}</Text>
             <Text className="text-xs text-foreground-muted">
-              {files.length} {files.length === 1 ? "file" : uiT("files")}
+              {files.length} {files.length === 1 ? uiT("file") : uiT("files")}
             </Text>
           </View>
         </View>

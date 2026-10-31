@@ -32,7 +32,7 @@ export function ThreadDetailsItemsMenuItems() {
               })
             }
           >
-            {item.label}
+            <UiText message={item.label} />
           </MenuCheckboxItem>
         ))}
       </MenuGroup>

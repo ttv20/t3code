@@ -444,7 +444,7 @@ export function UsagePage() {
         </ToggleGroup>
         <Button
           onClick={refreshWindow}
-          aria-label={showingLimits ? "Refresh limits" : uiT("Refresh usage")}
+          aria-label={showingLimits ? uiT("Refresh limits") : uiT("Refresh usage")}
           aria-busy={isRefreshing}
           disabled={isRefreshing || (!showingLimits && !canReadDiagnostics)}
           size="icon-sm"
@@ -505,7 +505,7 @@ export function UsagePage() {
         </Select>
         <Button
           onClick={refreshWindow}
-          aria-label={showingLimits ? "Refresh limits" : uiT("Refresh usage")}
+          aria-label={showingLimits ? uiT("Refresh limits") : uiT("Refresh usage")}
           aria-busy={isRefreshing}
           disabled={isRefreshing || (!showingLimits && !canReadDiagnostics)}
           size="icon-sm"
@@ -840,8 +840,8 @@ function UsageOverview({
 
         <div className="flex min-w-0 flex-col gap-3">
           <h2 className="text-sm font-medium text-foreground">
-            {shownHourly ? "Hourly" : uiT("Daily")}{" "}
-            {metric === "tokens" ? "processed tokens" : uiT("cost")}
+            {shownHourly ? uiT("Hourly") : uiT("Daily")}{" "}
+            {metric === "tokens" ? uiT("processed tokens") : uiT("cost")}
           </h2>
           <UsageProviderChart
             providers={activeProviders}
@@ -935,7 +935,7 @@ function UsageOverview({
             {(
               [
                 { value: "model", label: uiT("Model") },
-                { value: "time", label: shownHourly ? "Hour" : uiT("Day") },
+                { value: "time", label: shownHourly ? uiT("Hour") : uiT("Day") },
               ] as const
             ).map((option) => (
               <Toggle key={option.value} value={option.value}>
@@ -1032,7 +1032,7 @@ function UsageOverview({
               </colgroup>
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="py-2 font-normal">{shownHourly ? "Hour" : uiT("Day")}</th>
+                  <th className="py-2 font-normal">{shownHourly ? uiT("Hour") : uiT("Day")}</th>
                   {activeProviders.map((provider) => (
                     <th key={provider} className="py-2 pl-4 text-right font-normal">
                       {PROVIDER_PRESENTATION[provider].label}
@@ -1356,7 +1356,7 @@ function UsageEnvironmentFilter({
 
   const allSelected = selectedEnvironmentIds === null;
   const label = allSelected
-    ? "All environments"
+    ? uiT("All environments")
     : selectedEnvironments.length === 1
       ? selectedEnvironments[0]!.label
       : uiT("{0} environments", { "0": selectedEnvironments.length });
@@ -1481,9 +1481,9 @@ function UsageProviderFilter({
   const visible = PROVIDER_ORDER.filter((provider) => !hiddenProviders.has(provider));
   const label =
     visible.length === PROVIDER_ORDER.length
-      ? "All providers"
+      ? uiT("All providers")
       : visible.length === 0
-        ? "No providers"
+        ? uiT("No providers")
         : visible.length === 1
           ? PROVIDER_PRESENTATION[visible[0]!].label
           : uiT("{0} providers", { "0": visible.length });

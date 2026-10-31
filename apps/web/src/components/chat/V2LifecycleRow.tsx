@@ -95,9 +95,13 @@ export function V2LifecycleRow(props: {
     const relatedThreadId = item.source.type === "run" ? item.source.threadId : item.targetThreadId;
     return (
       <TimelineSystemDivider
-        label={item.source.type === "run" ? "Forked from conversation" : uiT("Conversation fork")}
+        label={
+          item.source.type === "run" ? uiT("Forked from conversation") : uiT("Conversation fork")
+        }
         icon={GitForkIcon}
-        actionLabel={item.source.type === "run" ? "Open source conversation" : uiT("Open fork")}
+        actionLabel={
+          item.source.type === "run" ? uiT("Open source conversation") : uiT("Open fork")
+        }
         onAction={() => props.onOpenThread(relatedThreadId)}
       />
     );
@@ -595,7 +599,7 @@ export function HandoffRow(props: {
   const entries = settings ? applyProviderInstanceSettings(derived, settings, null) : derived;
   return (
     <TimelineSystemDivider
-      label={props.pending ? "Context handoff pending" : uiT("Context handoff")}
+      label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}

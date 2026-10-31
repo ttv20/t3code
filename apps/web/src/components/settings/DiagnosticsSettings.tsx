@@ -236,14 +236,14 @@ function TraceIdCell({ traceId }: { traceId: string }) {
             <Button
               size="icon-micro"
               variant="ghost-muted"
-              aria-label={copied ? "Copied trace ID" : uiT("Copy trace ID")}
+              aria-label={copied ? uiT("Copied trace ID") : uiT("Copy trace ID")}
               onClick={() => copyToClipboard(traceId)}
             >
               <CopyIcon className="size-3" />
             </Button>
           }
         />
-        <TooltipPopup side="top">{copied ? "Copied" : uiT("Copy full trace ID")}</TooltipPopup>
+        <TooltipPopup side="top">{copied ? uiT("Copied") : uiT("Copy full trace ID")}</TooltipPopup>
       </Tooltip>
     </div>
   );
@@ -956,9 +956,9 @@ function DiagnosticsSettingsBody() {
       <SettingsPageContainer>
         <p className="text-sm text-muted-foreground">
           {environmentId === null
-            ? "Connect an environment to see diagnostics."
+            ? uiT("Connect an environment to see diagnostics.")
             : diagnosticsAccess.isPending
-              ? "Checking diagnostics access…"
+              ? uiT("Checking diagnostics access…")
               : diagnosticsAccess.error}
         </p>
       </SettingsPageContainer>
@@ -1029,7 +1029,7 @@ function DiagnosticsSettingsBody() {
           onSignal={signalProcess}
           emptyLabel={
             isProcessInitialLoading
-              ? "Loading live processes..."
+              ? uiT("Loading live processes...")
               : uiT("No live descendant processes found.")
           }
         />
@@ -1103,7 +1103,7 @@ function DiagnosticsSettingsBody() {
           processes={resourceData?.topProcesses ?? []}
           emptyLabel={
             isResourceInitialLoading
-              ? "Collecting process resource samples..."
+              ? uiT("Collecting process resource samples...")
               : uiT("No process resource samples found for this window.")
           }
         />
@@ -1225,7 +1225,7 @@ function DiagnosticsSettingsBody() {
           </DiagnosticsTable>
         ) : (
           <EmptyRows
-            label={isInitialLoading ? "Loading failures..." : uiT("No failed spans found.")}
+            label={isInitialLoading ? uiT("Loading failures...") : uiT("No failed spans found.")}
           />
         )}
       </SettingsSection>
@@ -1256,7 +1256,9 @@ function DiagnosticsSettingsBody() {
         ) : (
           <EmptyRows
             label={
-              isInitialLoading ? "Loading failure groups..." : uiT("No repeated failures found.")
+              isInitialLoading
+                ? uiT("Loading failure groups...")
+                : uiT("No repeated failures found.")
             }
           />
         )}
@@ -1287,7 +1289,9 @@ function DiagnosticsSettingsBody() {
             ))}
           </DiagnosticsTable>
         ) : (
-          <EmptyRows label={isInitialLoading ? "Loading slow spans..." : uiT("No spans found.")} />
+          <EmptyRows
+            label={isInitialLoading ? uiT("Loading slow spans...") : uiT("No spans found.")}
+          />
         )}
       </SettingsSection>
 
@@ -1356,7 +1360,7 @@ function DiagnosticsSettingsBody() {
         ) : (
           <EmptyRows
             label={
-              isInitialLoading ? "Loading recent logs..." : uiT("No warnings or errors found.")
+              isInitialLoading ? uiT("Loading recent logs...") : uiT("No warnings or errors found.")
             }
           />
         )}
@@ -1390,7 +1394,9 @@ function DiagnosticsSettingsBody() {
             ))}
           </DiagnosticsTable>
         ) : (
-          <EmptyRows label={isInitialLoading ? "Loading span names..." : uiT("No spans found.")} />
+          <EmptyRows
+            label={isInitialLoading ? uiT("Loading span names...") : uiT("No spans found.")}
+          />
         )}
       </SettingsSection>
       {exportFormEnvironmentId === environmentId && <TelemetryExportSettings />}

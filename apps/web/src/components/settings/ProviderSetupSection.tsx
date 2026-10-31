@@ -151,14 +151,14 @@ function ProviderSetupActions({
                 : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)} MB`,
           })
         : installation?.phase === "extracting"
-          ? "Extracting Antigravity."
+          ? uiT("Extracting Antigravity.")
           : installation?.phase === "verifying"
-            ? "Checking the downloaded runtime."
+            ? uiT("Checking the downloaded runtime.")
             : installed
-              ? "Installed."
+              ? uiT("Installed.")
               : usesCustomBinary
                 ? enabled
-                  ? "The configured Antigravity runtime is unavailable."
+                  ? uiT("The configured Antigravity runtime is unavailable.")
                   : "The configured Antigravity runtime has not been checked."
                 : installation?.totalBytes
                   ? uiT("{0} MB download.", { "0": Math.ceil(installation.totalBytes / 1_000_000) })
@@ -283,12 +283,12 @@ function ProviderSetupActions({
                     {installation?.installedVersion
                       ? installation.version &&
                         installation.version !== installation.installedVersion
-                        ? "Update Antigravity"
+                        ? uiT("Update Antigravity")
                         : "Reinstall Antigravity"
                       : installation?.phase === "failed" || installation?.phase === "cancelled"
-                        ? "Retry installation"
+                        ? uiT("Retry installation")
                         : installed
-                          ? "Install managed runtime"
+                          ? uiT("Install managed runtime")
                           : uiT("Install Antigravity")}
                   </Button>
                 ) : null}

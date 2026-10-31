@@ -363,7 +363,7 @@ function SidebarThreadTooltip({
             <CircleAlertIcon className="size-3 shrink-0 stroke-current" />
             <div className="min-w-0 truncate">
               {thread.runtime.lastErrorClass === "usage_limit"
-                ? "Usage limit reached"
+                ? uiT("Usage limit reached")
                 : uiT("Error occurred")}
             </div>
           </div>
@@ -737,7 +737,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
   const topStatus =
     status === "working"
       ? {
-          label: thread.goal?.status === "active" ? "Goal" : uiT("Working"),
+          label: thread.goal?.status === "active" ? uiT("Goal") : uiT("Working"),
           icon: "working" as const,
           className: "text-info-foreground",
         }

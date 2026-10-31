@@ -1455,7 +1455,7 @@ function TimelineHistoryControl(props: MessagesTimelineHistoryControls) {
           >
             <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
             <span className="shrink-0">
-              {props.loading ? "Loading earlier turns…" : uiT("Load earlier turns")}
+              {props.loading ? uiT("Loading earlier turns…") : uiT("Load earlier turns")}
             </span>
             <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
           </button>

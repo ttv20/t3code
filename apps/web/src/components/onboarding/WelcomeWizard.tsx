@@ -372,7 +372,7 @@ function ConnectionStep({
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {!environment.entry.enabled && environment.connection.phase !== "unsupported"
-                      ? "Off"
+                      ? uiT("Off")
                       : presentSavedCloudEnvironmentConnection(environment.connection).buttonLabel}
                   </span>
                 </span>
@@ -438,7 +438,7 @@ function ConnectionStep({
         <p className="mt-4 text-xs text-muted-foreground">
           {uiT("Not connected, so setup skips")}
           {skippedLabels.join(", ")}
-          {uiT(". You can set")} {skippedLabels.length === 1 ? "it" : uiT("them")}{" "}
+          {uiT(". You can set")} {skippedLabels.length === 1 ? uiT("it") : uiT("them")}{" "}
           {uiT("up later from Settings.")}
         </p>
       ) : null}
@@ -512,11 +512,11 @@ function ConnectAccountOption({
           <span className="flex-1 text-left">{uiT("T3 Connect")}</span>
           <span className="text-xs text-muted-foreground">
             {!isLoaded
-              ? "Loading sign-in…"
+              ? uiT("Loading sign-in…")
               : !isSignedIn
-                ? "Sign in"
+                ? uiT("Sign in")
                 : !discoveryReady
-                  ? "Loading computers…"
+                  ? uiT("Loading computers…")
                   : null}
           </span>
           <ChevronRightIcon
@@ -650,7 +650,7 @@ function PairingForm({
               {uiT("Need a pairing link?")}
             </CollapsibleTrigger>
             <Button type="submit" disabled={isPairing || pairingUrl.trim().length === 0}>
-              {isPairing ? "Pairing..." : uiT("Pair")}
+              {isPairing ? uiT("Pairing...") : uiT("Pair")}
             </Button>
           </div>
           <CollapsiblePanel>
@@ -1004,7 +1004,7 @@ function AgentCard({
       <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
         <span className="block text-sm font-medium text-foreground">{displayName}</span>
         <p className="mt-0.5 text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
-          {providerState === "ready" ? "Ready to code." : summary.headline}
+          {providerState === "ready" ? uiT("Ready to code.") : summary.headline}
           {providerState !== "ready" && summary.detail ? ` · ${summary.detail}` : ""}
         </p>
       </div>
@@ -1028,7 +1028,7 @@ function AgentCard({
             disabled={terminalOpen || !terminalAvailable}
           >
             <TerminalIcon className="size-3.5" />
-            {providerState === "signIn" ? "Sign in" : uiT("Install")}
+            {providerState === "signIn" ? uiT("Sign in") : uiT("Install")}
           </Button>
         )}
       </div>
@@ -1551,7 +1551,7 @@ function ImportStep({
           onClick={() => void runImport(selected)}
         >
           {isImporting
-            ? "Importing…"
+            ? uiT("Importing…")
             : `Import ${selected.length} ${selected.length === 1 ? "project" : "projects"}`}
         </Button>
       </div>
@@ -1613,7 +1613,7 @@ function ImportCandidateList({
               <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-panel-open:rotate-90" />
               <span className="truncate text-sm text-muted-foreground">{uiT("Other folders")}</span>
               <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-                {other.length} {other.length === 1 ? "folder" : uiT("folders")}
+                {other.length} {other.length === 1 ? uiT("folder") : uiT("folders")}
               </span>
             </CollapsibleTrigger>
           </div>

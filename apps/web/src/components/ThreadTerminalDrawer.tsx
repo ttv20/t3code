@@ -1362,9 +1362,9 @@ function TerminalSidebarGroup({
   const terminalCount = terminalGroup.terminalIds.length;
   const isSplitGroup = terminalCount > 1;
   const groupLabel = !isSplitGroup
-    ? "Single"
+    ? uiT("Single")
     : terminalGroup.splitDirection === "vertical"
-      ? "Stacked"
+      ? uiT("Stacked")
       : uiT("Side by side");
   const GroupIcon = !isSplitGroup
     ? Square

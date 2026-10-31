@@ -9766,5 +9766,10 @@
   "Copy version {0}": "העתק גרסה {0}",
   "This connection cannot change settings on {0}.": "החיבור הזה אינו רשאי לשנות הגדרות בסביבות {0}.",
   "Thread details: {0} of {1} on": "פרטי שיחה: {0} מתוך {1} מופעלים",
-  "Could not switch to {0}": "לא ניתן לעבור ל־{0}"
+  "Could not switch to {0}": "לא ניתן לעבור ל־{0}",
+  "{0} of {1} on": "{0} מתוך {1} מופעלים",
+  "Using {0}": "משתמש ב־{0}",
+  "{0} is out of usage": "המכסה של {0} מוצתה",
+  " · resets {0}": " · מתאפס {0}",
+  "Dismiss fallback model notice": "סגור הודעה על המודל החלופי"
 }

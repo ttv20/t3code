@@ -477,11 +477,11 @@ function SourceControlRow(props: {
   const navigation = useNavigation();
   const title =
     props.source === "url"
-      ? "Git URL"
+      ? uiT("Git URL")
       : uiT("{0} repository", { "0": addProjectRemoteSourceLabel(props.source) });
   const subtitle =
     props.source === "url"
-      ? "Clone from a remote URL"
+      ? uiT("Clone from a remote URL")
       : `Clone ${addProjectRemoteSourceLabel(props.source)} ${props.hint}`;
   const icon =
     props.source === "url" ? (
@@ -627,7 +627,7 @@ export function AddProjectSourceScreen(props: { readonly environmentId?: string 
               title={uiT("Local folder")}
               subtitle={
                 canCreateProject
-                  ? "Browse a folder on disk"
+                  ? uiT("Browse a folder on disk")
                   : uiT("This connection cannot add projects.")
               }
               icon={
@@ -657,7 +657,7 @@ export function AddProjectSourceScreen(props: { readonly environmentId?: string 
                   ready={canCloneProject && readiness(candidate).ready}
                   hint={
                     !canCloneProject
-                      ? "This connection cannot clone projects."
+                      ? uiT("This connection cannot clone projects.")
                       : readiness(candidate).ready
                         ? addProjectRemoteSourcePathHint(candidate)
                         : (readiness(candidate).hint ?? "")
@@ -885,7 +885,9 @@ export function AddProjectRepositoryScreen(props: {
   };
 
   return (
-    <AddProjectShell title={source === "url" ? "Git URL" : addProjectRemoteSourceLabel(source)}>
+    <AddProjectShell
+      title={source === "url" ? uiT("Git URL") : addProjectRemoteSourceLabel(source)}
+    >
       {error ? <ErrorBanner message={error} /> : null}
       {environment ? (
         <>
@@ -904,7 +906,7 @@ export function AddProjectRepositoryScreen(props: {
             onSubmitEditing={() => void lookupRepository()}
           />
           <PrimaryActionButton
-            label={source === "url" ? "Continue" : uiT("Lookup repository")}
+            label={source === "url" ? uiT("Continue") : uiT("Lookup repository")}
             disabled={isSubmitting || repositoryInput.trim().length === 0}
             onPress={() => void lookupRepository()}
             loading={isSubmitting}

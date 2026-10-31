@@ -297,9 +297,9 @@ export const ThreadListV2ShowMoreRow = memo(function ThreadListV2ShowMoreRow(pro
 
   const label =
     props.state === "loading"
-      ? "Loading"
+      ? uiT("Loading")
       : props.state === "failed"
-        ? "Could not load older threads. Retry"
+        ? uiT("Could not load older threads. Retry")
         : uiT("Show more ({0} settled hidden)", { "0": props.hiddenCount });
   return (
     <Pressable
@@ -364,7 +364,7 @@ export const ThreadListV2PendingRow = memo(function ThreadListV2PendingRow(props
   const sidebarPane = props.pane === "sidebar";
   const rowAppearance = getThreadListV2RowAppearance(theme, sidebarPane, props.selected ?? false);
   const isDraft = pendingTask.kind === "draft";
-  const deleteLabel = isDraft ? "Discard" : uiT("Delete");
+  const deleteLabel = isDraft ? uiT("Discard") : uiT("Delete");
   const taskMenuActions = useMemo(
     () =>
       (isDraft ? DRAFT_TASK_MENU_ACTIONS : PENDING_TASK_MENU_ACTIONS).map((action) => ({
@@ -1087,7 +1087,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     [handleMenuAction, snoozePresetActions, swipeActions.secondary, thread.title, uiT],
   );
   const swipeAccessibilityHint = !canOperateThread
-    ? "Opens the thread"
+    ? uiT("Opens the thread")
     : secondaryAction === null
       ? uiT("Opens the thread. Swipe left to {0}.", { "0": primaryAction.label.toLowerCase() })
       : uiT("Opens the thread. Swipe left for {0} and snooze actions.", {

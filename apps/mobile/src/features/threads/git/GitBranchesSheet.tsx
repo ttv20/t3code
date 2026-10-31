@@ -202,10 +202,10 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
               const disabled = disabledExistingBranches.has(branch.name);
               const subtitle = branch.worktreePath
                 ? branch.worktreePath === currentWorktreePath
-                  ? "Checked out in this thread"
+                  ? uiT("Checked out in this thread")
                   : "Checked out in another worktree"
                 : branch.isDefault
-                  ? "Default branch"
+                  ? uiT("Default branch")
                   : uiT("Local branch");
 
               return (

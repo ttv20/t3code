@@ -9766,5 +9766,10 @@
   "Copy version {0}": "Copy version {0}",
   "This connection cannot change settings on {0}.": "This connection cannot change settings on {0}.",
   "Thread details: {0} of {1} on": "Thread details: {0} of {1} on",
-  "Could not switch to {0}": "Could not switch to {0}"
+  "Could not switch to {0}": "Could not switch to {0}",
+  "{0} of {1} on": "{0} of {1} on",
+  "Using {0}": "Using {0}",
+  "{0} is out of usage": "{0} is out of usage",
+  " · resets {0}": " · resets {0}",
+  "Dismiss fallback model notice": "Dismiss fallback model notice"
 }

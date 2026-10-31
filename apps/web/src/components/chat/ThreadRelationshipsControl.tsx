@@ -797,7 +797,7 @@ export function ThreadRelationshipsPanel(props: {
               />
               <TooltipPopup side="left">
                 {latestMergeBackRun === null
-                  ? "Complete a run in this fork before merging it back"
+                  ? uiT("Complete a run in this fork before merging it back")
                   : parentTitle
                     ? `Merge this conversation back into ${parentTitle}`
                     : uiT("Merge this conversation back into its source")}

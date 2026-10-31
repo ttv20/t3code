@@ -41,7 +41,7 @@ function CommandPaletteEmptyState(props: { emptyStateMessage?: string; isActions
     <div className="py-10 text-center text-sm text-muted-foreground">
       {props.emptyStateMessage ??
         (props.isActionsOnly
-          ? "No matching actions."
+          ? uiT("No matching actions.")
           : uiT("No matching commands, projects, or threads."))}
     </div>
   );

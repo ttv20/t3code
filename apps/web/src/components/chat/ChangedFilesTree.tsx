@@ -87,7 +87,9 @@ export const ChangedFilesCard = memo(function ChangedFilesCard(props: {
                     size="icon-xs"
                     variant="ghost-muted"
                     aria-label={
-                      allDirectoriesExpanded ? "Collapse all folders" : uiT("Expand all folders")
+                      allDirectoriesExpanded
+                        ? uiT("Collapse all folders")
+                        : uiT("Expand all folders")
                     }
                     data-scroll-anchor-ignore
                     onClick={() => {
@@ -103,7 +105,7 @@ export const ChangedFilesCard = memo(function ChangedFilesCard(props: {
                 />
               </TooltipTrigger>
               <TooltipPopup side="top">
-                {allDirectoriesExpanded ? "Collapse all folders" : uiT("Expand all folders")}
+                {allDirectoriesExpanded ? uiT("Collapse all folders") : uiT("Expand all folders")}
               </TooltipPopup>
             </Tooltip>
           )}

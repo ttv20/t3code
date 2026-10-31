@@ -376,7 +376,7 @@ function UsageScreen(props: {
                 ) : selectedEnvironments.length === 0 ? (
                   <Text className="py-16 text-center text-base text-foreground-muted">
                     {environments.length === 0
-                      ? "Connect an environment to see usage."
+                      ? uiT("Connect an environment to see usage.")
                       : uiT("Select an environment to see usage.")}
                   </Text>
                 ) : !canReadDiagnostics ? (
@@ -678,14 +678,14 @@ function UsageSummary(props: { readonly merged: MergedUsage; readonly metric: Us
   return (
     <View className="gap-0.5">
       <Text className="text-sm text-foreground-muted">
-        {metric === "cost" ? "Raw token cost" : uiT("Processed tokens")}
+        {metric === "cost" ? uiT("Raw token cost") : uiT("Processed tokens")}
       </Text>
       <Text className="text-4xl font-t3-bold tabular-nums text-foreground">
         {metric === "cost" ? `${formatUsd(merged.costUsd)}*` : formatTokens(merged.totalTokens)}
       </Text>
       <Text className="text-sm text-foreground-muted">
         {metric === "cost"
-          ? "* if billed at full API rate"
+          ? uiT("* if billed at full API rate")
           : `Across ${formatCount(merged.sessions)} sessions`}
       </Text>
     </View>
@@ -1036,7 +1036,7 @@ function ModelsSection(props: {
               {metric === "tokens"
                 ? formatTokens(model.totalTokens)
                 : isModelCostUnknown(model)
-                  ? "Unpriced"
+                  ? uiT("Unpriced")
                   : formatUsd(model.costUsd)}
             </Text>
           </View>

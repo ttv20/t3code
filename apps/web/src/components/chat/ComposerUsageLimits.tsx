@@ -1,3 +1,8 @@
+import {
+  createUiTranslator,
+  formatUiRelativeTime,
+  type UiLocale,
+} from "@t3tools/client-runtime/i18n";
 import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, UsageLimitsReport } from "@t3tools/contracts";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
@@ -72,6 +77,7 @@ export function usageLimitsBannerItem(
 }
 
 export function modelFallbackBannerItem({
+  locale = "en",
   fallbackModelName,
   defaultProviderName,
   defaultModelName,
@@ -80,6 +86,7 @@ export function modelFallbackBannerItem({
   onUseDefault,
   onDismiss,
 }: {
+  readonly locale?: UiLocale;
   readonly fallbackModelName: string;
   readonly defaultProviderName: string;
   readonly defaultModelName: string;
@@ -88,18 +95,28 @@ export function modelFallbackBannerItem({
   readonly onUseDefault: () => void;
   readonly onDismiss: () => void;
 }): ComposerBannerStackItem {
+  const t = createUiTranslator(locale);
   return {
     id: "fallback-model",
     variant: "info",
     icon: <GaugeIcon />,
-    title: `Using ${fallbackModelName}`,
-    description: `${defaultProviderName} is out of usage${resetsAt ? ` · resets ${formatUpcomingTimestamp(resetsAt, timestampFormat)}` : ""}`,
+    title: t("Using {0}", { "0": fallbackModelName }),
+    description:
+      t("{0} is out of usage", { "0": defaultProviderName }) +
+      (resetsAt
+        ? t(" · resets {0}", {
+            "0":
+              locale === "en"
+                ? formatUpcomingTimestamp(resetsAt, timestampFormat)
+                : (formatUiRelativeTime(resetsAt, locale) ?? ""),
+          })
+        : ""),
     actions: (
       <Button size="xs" variant="ghost" onClick={onUseDefault}>
         <UiText message={"Use"} /> {defaultModelName}
       </Button>
     ),
-    dismissLabel: "Dismiss fallback model notice",
+    dismissLabel: t("Dismiss fallback model notice"),
     onDismiss,
   };
 }

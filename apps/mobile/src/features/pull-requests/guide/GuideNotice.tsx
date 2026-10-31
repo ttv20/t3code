@@ -54,7 +54,7 @@ export function GuideNotice({ state }: { readonly state: ReturnType<typeof useRe
         ) : (
           <Text className="text-xs text-foreground-muted">
             {notice.kind === "failed"
-              ? "Reconnect or ask someone with write access to retry."
+              ? uiT("Reconnect or ask someone with write access to retry.")
               : uiT("Writing a guide requires a connection and write access.")}
           </Text>
         )}

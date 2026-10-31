@@ -958,7 +958,7 @@ function RightPanelTab(
               </button>
             }
           />
-          <TooltipPopup>{audio === "muted" ? "Unmute tab" : uiT("Mute tab")}</TooltipPopup>
+          <TooltipPopup>{audio === "muted" ? uiT("Unmute tab") : uiT("Mute tab")}</TooltipPopup>
         </Tooltip>
       )}
       {props.renaming ? (
@@ -1587,7 +1587,7 @@ function DeviceTabTooltip(props: {
       {target ? (
         <span className="text-muted-foreground">
           {host?.label ?? uiT("Device host")} ·{" "}
-          {device?.version ?? (target.platform === "ios" ? "iOS" : uiT("Android"))}
+          {device?.version ?? (target.platform === "ios" ? uiT("iOS") : uiT("Android"))}
         </span>
       ) : null}
     </div>

@@ -209,7 +209,7 @@ function MediaVideoPlayerContent(props: MediaVideoPlayerProps) {
             accessibilityRole="button"
             accessibilityLabel={uiT("Play {0}", { "0": props.name })}
             accessibilityHint={
-              mediaActions.actions.length > 0 ? "Touch and hold for media actions" : undefined
+              mediaActions.actions.length > 0 ? uiT("Touch and hold for media actions") : undefined
             }
             accessibilityState={{ disabled: props.uri === null || props.unavailable === true }}
             // Stays pressable so the long-press menu still opens on a failed or unsigned tile.

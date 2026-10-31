@@ -846,9 +846,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
       {mediaAboveText ? (
         <div className="flex max-w-[80%] justify-end">
           {/* The heading leads the media so screen readers reach it before the images. */}
-          <MessageAuthorHeading>
-            <UiText message={"You"} />
-          </MessageAuthorHeading>
+          <MessageAuthorHeading>{uiT("You")}</MessageAuthorHeading>
           {mediaBlock}
         </div>
       ) : null}
@@ -871,7 +869,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
             {folded
               ? senderLabel
               : userMessage.guestName === undefined
-                ? "You"
+                ? uiT("You")
                 : `${userMessage.guestName} (guest)`}
           </MessageAuthorHeading>
         )}
@@ -945,7 +943,9 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
                         <span className="block truncate">{label}</span>
                         {file.downloadable === false || pastedText ? (
                           <span className="block text-xs text-muted-foreground tabular-nums">
-                            {file.downloadable === false ? "Sending…" : formatBytes(file.sizeBytes)}
+                            {file.downloadable === false
+                              ? uiT("Sending…")
+                              : formatBytes(file.sizeBytes)}
                           </span>
                         ) : null}
                       </span>
@@ -1067,7 +1067,7 @@ function UserMessageIntentMarker({
       </TooltipTrigger>
       <TooltipPopup side="top">
         {intent === "promoted_queued_to_steer"
-          ? "Originally queued, then promoted to steer the active turn"
+          ? uiT("Originally queued, then promoted to steer the active turn")
           : uiT("Steered the active turn")}
       </TooltipPopup>
     </Tooltip>
@@ -1170,7 +1170,7 @@ const CollapsibleUserMessageBody = memo(function CollapsibleUserMessageBody(prop
               onClick={() => setExpanded((value) => !value)}
               className="-ml-1"
             >
-              {expanded ? "Show less" : uiT("Show full message")}
+              {expanded ? uiT("Show less") : uiT("Show full message")}
             </Button>
           ) : null}
         </div>

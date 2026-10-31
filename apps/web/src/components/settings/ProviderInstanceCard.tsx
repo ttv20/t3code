@@ -491,7 +491,7 @@ export function ProviderEnvironmentSection(props: {
                     }
                   />
                   <TooltipPopup side="top">
-                    {variable.sensitive ? "Sensitive, stored separately" : uiT("Plain text")}
+                    {variable.sensitive ? uiT("Sensitive, stored separately") : uiT("Plain text")}
                   </TooltipPopup>
                 </Tooltip>
               ) : null;
@@ -615,7 +615,7 @@ function ProjectOverrideInheritance({
                   layer.effective ? "text-foreground" : "text-muted-foreground",
                 )}
               >
-                {layer.enabled ? "On" : uiT("Off")}
+                {layer.enabled ? uiT("On") : uiT("Off")}
                 {layer.effective ? (
                   <CheckIcon aria-hidden className="size-3.5 shrink-0 text-primary" />
                 ) : (
@@ -955,7 +955,7 @@ export function ProviderInstanceCard({
                   variant="ghost-muted"
                   className={mode === "list" ? "pointer-events-auto relative shrink-0" : undefined}
                   aria-label={uiT("{0}, view details", {
-                    "0": updateProgress ? "Updating" : versionAdvisory.title,
+                    "0": updateProgress ? uiT("Updating") : versionAdvisory.title,
                   })}
                 >
                   {updateProgress ? (
@@ -974,7 +974,7 @@ export function ProviderInstanceCard({
           }
         />
         <TooltipPopup side="top">
-          {updateProgress ? "Updating" : versionAdvisory.title}
+          {updateProgress ? uiT("Updating") : versionAdvisory.title}
         </TooltipPopup>
       </Tooltip>
       <PopoverPopup side="bottom" align="end" width="md" aria-label={versionAdvisory.title}>
@@ -1003,7 +1003,7 @@ export function ProviderInstanceCard({
             >
               {isUpdating ? <Spinner /> : <DownloadIcon />}
               {isUpdating
-                ? "Updating"
+                ? uiT("Updating")
                 : versionAdvisory.targetVersion
                   ? uiT("Install {0}", {
                       "0": getProviderVersionLabel(versionAdvisory.targetVersion),

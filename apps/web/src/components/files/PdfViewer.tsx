@@ -358,7 +358,7 @@ export default function PdfViewer(props: {
           <MinusIcon className="size-3.5" />
         </FileSurfaceAction>
         <span className="min-w-14 text-center tabular-nums">
-          {zoom === null ? "Fit width" : `${Math.round(scale * 100)}%`}
+          {zoom === null ? uiT("Fit width") : `${Math.round(scale * 100)}%`}
         </span>
         <FileSurfaceAction
           label={uiT("Zoom in")}
@@ -395,7 +395,7 @@ export default function PdfViewer(props: {
           <>
             <span role="status">
               {finding
-                ? "Searching…"
+                ? uiT("Searching…")
                 : (findError ?? `${matches.length ? match + 1 : 0}/${matches.length}`)}
             </span>
             <FileSurfaceAction

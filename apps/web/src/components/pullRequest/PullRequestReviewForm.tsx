@@ -127,9 +127,9 @@ export function PullRequestReviewForm({
       : verdict === "approve" || summary.trim().length > 0 || comments.length > 0;
   const placeholder =
     selectedVerdict === undefined || canSubmit(selectedVerdict.value, "")
-      ? "Summarize your review (optional)"
+      ? uiT("Summarize your review (optional)")
       : selectedVerdict.value === "request-changes" && requestChangesSummaryRequired
-        ? "Summarize your review (required to request changes)"
+        ? uiT("Summarize your review (required to request changes)")
         : "Summarize your review or add line comments";
 
   return (
@@ -182,7 +182,7 @@ export function PullRequestReviewForm({
             if (selectedVerdict !== undefined) void submit(selectedVerdict);
           }}
         >
-          {pending ? "Submitting..." : uiT("Submit review")}
+          {pending ? uiT("Submitting...") : uiT("Submit review")}
         </Button>
       </div>
     </>

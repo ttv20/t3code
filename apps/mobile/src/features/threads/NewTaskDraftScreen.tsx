@@ -699,11 +699,11 @@ export function NewTaskDraftScreen(props: {
   const setupBlockReason =
     isIncomingShareReady && !isImportingShare
       ? cloneBlocksStart
-        ? "Wait for the project clone to finish."
+        ? uiT("Wait for the project clone to finish.")
         : flow.submitting
-          ? "Starting the thread…"
+          ? uiT("Starting the thread…")
           : flow.workspaceMode === "worktree" && (!flow.selectedBranchName || !flow.isGitRepoKnown)
-            ? "Choose a base branch before creating a worktree."
+            ? uiT("Choose a base branch before creating a worktree.")
             : null
       : uiT("Wait for shared content to finish importing.");
   const chooseProject = () => {
@@ -855,7 +855,7 @@ export function NewTaskDraftScreen(props: {
           chevronDirection="right"
           disabled={isComposerInteractionLocked || !flow.isGitRepo}
           icon="arrow.triangle.branch"
-          label={showBranchLoading ? "Loading branches…" : selectedBranchLabel}
+          label={showBranchLoading ? uiT("Loading branches…") : selectedBranchLabel}
           maxWidth="100%"
           onPress={() => openContextPicker("NewTaskBranch")}
         />

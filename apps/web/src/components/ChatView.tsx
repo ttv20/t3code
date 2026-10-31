@@ -2487,11 +2487,11 @@ export default function ChatView(props: ChatViewProps) {
   const compactDisabled = compactThreadUnavailable;
   const compactDisabledReason = compactDisabled
     ? !canOperateThread
-      ? "This connection cannot change threads."
+      ? uiT("This connection cannot change threads.")
       : !activeProject
-        ? "Choose a project before compacting"
+        ? uiT("Choose a project before compacting")
         : !manualCompactionProviderAvailable
-          ? "Compaction is unavailable for this provider"
+          ? uiT("Compaction is unavailable for this provider")
           : "Compacting is unavailable right now"
     : null;
   const resumeCompactionTokens =
@@ -2598,6 +2598,7 @@ export default function ChatView(props: ChatViewProps) {
       fallbackWindow !== dismissedFallbackWindow
         ? [
             modelFallbackBannerItem({
+              locale,
               fallbackModelName:
                 providerStatuses
                   .find((provider) => provider.instanceId === fallbackSelection.instanceId)
@@ -3620,7 +3621,7 @@ export default function ChatView(props: ChatViewProps) {
                               isRevertingCheckpoint={isRevertingCheckpoint}
                               sendDisabledReason={
                                 !canOperateThread
-                                  ? "This connection cannot change threads."
+                                  ? uiT("This connection cannot change threads.")
                                   : isEnvironmentChanging
                                     ? "Preparing machine"
                                     : isRevertingCheckpoint

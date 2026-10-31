@@ -601,9 +601,9 @@ function ManagedCodexSetup({
               : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)}`,
         })
       : installation?.phase === "extracting"
-        ? "Installing Codex."
+        ? uiT("Installing Codex.")
         : installation?.phase === "verifying"
-          ? "Checking Codex."
+          ? uiT("Checking Codex.")
           : installed
             ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by T3 Code"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
             : (installation?.message ?? uiT("T3 Code downloads and manages Codex for you."));
@@ -666,17 +666,17 @@ function ManagedCodexSetup({
       }}
     >
       {finishingSignIn
-        ? "Finishing sign-in..."
+        ? uiT("Finishing sign-in...")
         : handoffQuery.data?.phase === "finished"
           ? transferFailed
-            ? "Retry connection"
+            ? uiT("Retry connection")
             : "Finishing sign-in..."
           : auth?.phase === "waiting"
             ? remoteWeb
-              ? "Open ChatGPT sign-in"
+              ? uiT("Open ChatGPT sign-in")
               : "Open sign-in page"
             : presentation === "onboarding"
-              ? "Open sign-in page"
+              ? uiT("Open sign-in page")
               : uiT("Signing in...")}
     </Button>
   );
@@ -861,9 +861,9 @@ function ManagedCodexSetup({
                 }}
               >
                 {installActive || pending
-                  ? "Setting up..."
+                  ? uiT("Setting up...")
                   : hasSavedAccount
-                    ? "Reconnect account"
+                    ? uiT("Reconnect account")
                     : uiT("Continue with ChatGPT")}
               </ChatGptConnectionButton>
             )
@@ -999,9 +999,9 @@ function ManagedCodexSetup({
                   }}
                 >
                   {pending
-                    ? "Setting up..."
+                    ? uiT("Setting up...")
                     : hasSavedAccount
-                      ? "Reconnect account"
+                      ? uiT("Reconnect account")
                       : uiT("Continue with ChatGPT")}
                 </ChatGptConnectionButton>
                 {hasSavedAccount ? (
@@ -1081,7 +1081,7 @@ export function CodexManagedRuntimeFields({
               value={executablePath}
               title={executablePath}
               placeholder={
-                installation.error ? "Could not read runtime path" : uiT("Not installed")
+                installation.error ? uiT("Could not read runtime path") : uiT("Not installed")
               }
               disabled
             />
@@ -1107,7 +1107,7 @@ export function CodexManagedRuntimeFields({
         title={uiT("Shadow home path")}
         description={
           provider?.runtimePaths?.shadowHomePath
-            ? "Account-specific home sharing the Codex state above."
+            ? uiT("Account-specific home sharing the Codex state above.")
             : uiT("This instance uses the shared Codex home directly.")
         }
         control={
@@ -1116,7 +1116,7 @@ export function CodexManagedRuntimeFields({
               aria-label={uiT("Codex shadow home path")}
               value={provider?.runtimePaths?.shadowHomePath ?? ""}
               title={provider?.runtimePaths?.shadowHomePath ?? undefined}
-              placeholder={provider?.runtimePaths ? "Not used" : uiT("Unavailable")}
+              placeholder={provider?.runtimePaths ? uiT("Not used") : uiT("Unavailable")}
               disabled
             />
           </div>

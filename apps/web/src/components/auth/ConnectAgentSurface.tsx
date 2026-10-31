@@ -256,7 +256,7 @@ export function ConnectAgentSurface() {
 
         <div className="flex flex-wrap gap-2">
           <Button disabled={!canApprove} type="submit">
-            {pending === "approve" ? "Approving…" : uiT("Approve")}
+            {pending === "approve" ? uiT("Approving…") : uiT("Approve")}
           </Button>
           <Button
             disabled={pending !== null}
@@ -264,7 +264,7 @@ export function ConnectAgentSurface() {
             type="button"
             variant="outline"
           >
-            {pending === "deny" ? "Denying…" : uiT("Deny")}
+            {pending === "deny" ? uiT("Denying…") : uiT("Deny")}
           </Button>
         </div>
       </form>

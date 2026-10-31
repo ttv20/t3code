@@ -334,7 +334,7 @@ export function ProviderModelsSection({
                 )
               }
             >
-              {allBuiltInModelsHidden ? "Enable all" : uiT("Disable all")}
+              {allBuiltInModelsHidden ? uiT("Enable all") : uiT("Disable all")}
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground">
@@ -366,7 +366,9 @@ export function ProviderModelsSection({
       >
         {visibleModels.length === 0 ? (
           <p className="px-2 py-2 text-xs text-muted-foreground">
-            {isFiltering ? "No models match." : uiT("No models reported for this provider yet.")}
+            {isFiltering
+              ? uiT("No models match.")
+              : uiT("No models reported for this provider yet.")}
           </p>
         ) : null}
         {visibleModels.map((model, index) => {
@@ -484,9 +486,9 @@ function ProviderModelRow({
   const capLabels = describeModelCapabilities(model, flagMissingReasoning);
   const nameClassName = cn("text-xs", isHidden ? "text-muted-foreground" : "text-foreground/90");
   const pickerTooltip = model.isCustom
-    ? "Custom models are always shown in the picker"
+    ? uiT("Custom models are always shown in the picker")
     : isHidden
-      ? "Hidden from picker"
+      ? uiT("Hidden from picker")
       : uiT("Shown in picker");
 
   return (
@@ -516,7 +518,7 @@ function ProviderModelRow({
           <StarIcon className={cn("size-3", isFavorite && "fill-current text-warning")} />
         </TooltipTrigger>
         <TooltipPopup side="top">
-          {isFavorite ? "Remove from favorites" : uiT("Add to favorites")}
+          {isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")}
         </TooltipPopup>
       </Tooltip>
       <span className="flex min-w-0 items-baseline gap-2">

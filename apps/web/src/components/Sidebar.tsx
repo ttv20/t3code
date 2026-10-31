@@ -2810,7 +2810,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 stackedThreadToast({
                   type: "error",
                   title: didArchive
-                    ? "Thread archived, but navigation failed"
+                    ? uiT("Thread archived, but navigation failed")
                     : uiT("Failed to archive thread"),
                   description: error instanceof Error ? error.message : uiT("An error occurred."),
                 }),
@@ -3252,7 +3252,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 role="status"
                 className="px-2 py-6 text-center text-xs text-sidebar-muted-foreground"
               >
-                {threadSearch.isPending ? "Searching thread messages…" : uiT("No threads found")}
+                {threadSearch.isPending
+                  ? uiT("Searching thread messages…")
+                  : uiT("No threads found")}
               </p>
             )
           ) : null}
@@ -3577,9 +3579,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           {/* Plus means "add", so revealing more uses a chevron. */}
                           <ChevronDownIcon aria-hidden className="size-4 shrink-0" />
                           {olderSettledShelf.loading
-                            ? "Loading"
+                            ? uiT("Loading")
                             : olderSettledShelf.failed
-                              ? "Could not load older threads. Retry"
+                              ? uiT("Could not load older threads. Retry")
                               : uiT("Show {0} more", {
                                   "0": Math.min(hiddenSettledCount, SETTLED_TAIL_PAGE_COUNT),
                                 })}

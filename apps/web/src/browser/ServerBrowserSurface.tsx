@@ -767,7 +767,7 @@ export function ServerBrowserSurface(props: {
               send({ type: control.controller === "you" ? "releaseControl" : "takeControl" })
             }
           >
-            {control.controller === "you" ? "Release control" : uiT("Take control")}
+            {control.controller === "you" ? uiT("Release control") : uiT("Take control")}
           </Button>
         ) : null}
       </div>
@@ -833,7 +833,7 @@ export function ServerBrowserSurface(props: {
           >
             <p className="text-sm">
               {uiT("The page asks for")}
-              {fileChooser.multiple ? "files" : uiT("a file")}.
+              {fileChooser.multiple ? uiT("files") : uiT("a file")}.
             </p>
             <input
               ref={fileInputRef}
@@ -853,7 +853,7 @@ export function ServerBrowserSurface(props: {
               </Button>
               <Button size="sm" onClick={() => fileInputRef.current?.click()}>
                 {uiT("Choose")}
-                {fileChooser.multiple ? "files" : uiT("file")}
+                {fileChooser.multiple ? uiT("files") : uiT("file")}
               </Button>
             </div>
           </div>

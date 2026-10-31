@@ -31,7 +31,7 @@ export function SessionPermissions({
           <li key={scope} className="flex items-start justify-between gap-3">
             <span>{uiT(title)}</span>
             <span className="shrink-0 text-muted-foreground">
-              {sessionGrantsScope(session.data!, scope) ? "Allowed" : uiT("Not granted")}
+              {sessionGrantsScope(session.data!, scope) ? uiT("Allowed") : uiT("Not granted")}
             </span>
           </li>
         ))}

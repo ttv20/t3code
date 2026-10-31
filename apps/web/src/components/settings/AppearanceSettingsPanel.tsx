@@ -410,7 +410,7 @@ export function AppearanceSettingsPanel() {
             {...searchableSetting("environment-identification")}
             description={
               environmentStageVariant
-                ? "Choose how Dev and Nightly environments are identified."
+                ? uiT("Choose how Dev and Nightly environments are identified.")
                 : uiT("Show Dev or Nightly artwork in the sidebar header.")
             }
             resetAction={

@@ -336,9 +336,9 @@ function CommandPaletteDialog(props: {
     <CommandDialogPopup
       aria-label={
         props.mode === "files"
-          ? "File picker"
+          ? uiT("File picker")
           : props.mode === "content"
-            ? "Search project contents"
+            ? uiT("Search project contents")
             : uiT("Command palette")
       }
       className={cn("overflow-hidden", props.mode === "content" && "h-105")}
@@ -1014,10 +1014,10 @@ function OpenCommandPaletteDialog(props: {
 
     for (const source of orderedSources) {
       const label = addProjectRemoteSourceLabel(source);
-      const title = source === "url" ? "Git URL" : uiT("{0} repository", { "0": label });
+      const title = source === "url" ? uiT("Git URL") : uiT("{0} repository", { "0": label });
       const description =
         source === "url"
-          ? "Clone from a remote URL"
+          ? uiT("Clone from a remote URL")
           : uiT("Clone {0} {1}", { "0": label, "1": addProjectRemoteSourcePathHint(source) });
       const readiness = readinessBySource(source);
       const disabledHint = readiness.hint;
@@ -1116,7 +1116,7 @@ function OpenCommandPaletteDialog(props: {
     title: option.label,
     description: option.isConnected
       ? option.isPrimary
-        ? "This device"
+        ? uiT("This device")
         : option.environmentId
       : option.status,
     disabled: !option.isConnected,
@@ -1356,7 +1356,7 @@ function OpenCommandPaletteDialog(props: {
           : ["copy", "thread", "thread id", "reference"],
       title:
         activeThreadReferenceCopyTarget.kind === "pull-request"
-          ? "Copy PR link"
+          ? uiT("Copy PR link")
           : uiT("Copy thread"),
       description: activeThreadReferenceCopyTarget.description,
       icon: <LinkIcon className={ITEM_ICON_CLASS} />,
@@ -1577,7 +1577,7 @@ function OpenCommandPaletteDialog(props: {
 
   for (const direction of [1, -1] as const) {
     const title =
-      direction === 1 ? "Focus Next Workspace Area" : uiT("Focus Previous Workspace Area");
+      direction === 1 ? uiT("Focus Next Workspace Area") : uiT("Focus Previous Workspace Area");
     actionItems.push({
       kind: "action",
       value: `action:workspace-focus:${direction}`,
@@ -1618,7 +1618,7 @@ function OpenCommandPaletteDialog(props: {
       kind: "action",
       value: "action:project-pin",
       searchTerms: ["pin", "unpin", "project", "favorite"],
-      title: currentProjectGroup.pinned ? "Unpin project" : uiT("Pin project"),
+      title: currentProjectGroup.pinned ? uiT("Unpin project") : uiT("Pin project"),
       description: currentProjectGroup.displayName,
       icon: currentProjectGroup.pinned ? (
         <PinOffIcon className={ITEM_ICON_CLASS} />
@@ -2260,7 +2260,7 @@ function OpenCommandPaletteDialog(props: {
                 searchTerms: [],
                 title:
                   newProjectPublishTargets.length > 1
-                    ? "Create private repository"
+                    ? uiT("Create private repository")
                     : uiT("Create private repository on {0}", {
                         "0": newProjectPublishTarget.definition.label,
                       }),
@@ -2315,7 +2315,7 @@ function OpenCommandPaletteDialog(props: {
 
   const inputPlaceholder =
     newProjectFlow !== null
-      ? "Project name"
+      ? uiT("Project name")
       : (remoteProjectInputPlaceholder(addProjectCloneFlow) ??
         getCommandPaletteInputPlaceholder(paletteMode));
   const isSubmenu = paletteMode === "submenu" || paletteMode === "submenu-browse";
@@ -2347,10 +2347,10 @@ function OpenCommandPaletteDialog(props: {
   const submitModifierLabel = useMetaForMod ? "\u2318" : uiT("Ctrl");
   const submitActionLabel = isCloneDestinationStep
     ? willCreateProjectPath
-      ? "Create & Clone"
+      ? uiT("Create & Clone")
       : "Clone"
     : willCreateProjectPath
-      ? "Create & Add"
+      ? uiT("Create & Add")
       : uiT("Add");
   const addShortcutLabel = hasHighlightedBrowseItem
     ? uiT("{0} Enter", { "0": submitModifierLabel })
@@ -2361,7 +2361,7 @@ function OpenCommandPaletteDialog(props: {
     : uiT("Enter");
   const remoteProjectButtonLabel = addProjectCloneFlow
     ? addProjectCloneFlow.source === "url"
-      ? "Continue"
+      ? uiT("Continue")
       : "Lookup"
     : null;
   const isRemoteProjectPending = isRemoteProjectLookingUp || isRemoteProjectCloning;
@@ -2668,7 +2668,7 @@ function OpenCommandPaletteDialog(props: {
   const inputAccessory =
     newProjectFlow !== null ? (
       <CommandPaletteSubmitButton
-        label={isCreatingNewProject ? "Creating" : uiT("Create")}
+        label={isCreatingNewProject ? uiT("Creating") : uiT("Create")}
         shortcutLabel={createShortcutLabel}
         ariaLabel={uiT("Create ({0})", { "0": createShortcutLabel })}
         tooltip={uiT("Create ({0})", { "0": createShortcutLabel })}
@@ -2679,7 +2679,7 @@ function OpenCommandPaletteDialog(props: {
       />
     ) : addProjectCloneFlow?.step === "repository" ? (
       <CommandPaletteSubmitButton
-        label={isRemoteProjectPending ? "Working" : remoteProjectButtonLabel}
+        label={isRemoteProjectPending ? uiT("Working") : remoteProjectButtonLabel}
         shortcutLabel="Enter"
         ariaLabel={uiT("{0} (Enter)", { "0": remoteProjectButtonLabel ?? "Continue" })}
         tooltip={uiT("{0} (Enter)", { "0": remoteProjectButtonLabel ?? "Continue" })}
@@ -2690,12 +2690,14 @@ function OpenCommandPaletteDialog(props: {
       />
     ) : isBrowsing ? (
       <CommandPaletteSubmitButton
-        label={isCloneDestinationStep && isRemoteProjectPending ? "Cloning" : submitActionLabel}
+        label={
+          isCloneDestinationStep && isRemoteProjectPending ? uiT("Cloning") : submitActionLabel
+        }
         shortcutLabel={addShortcutLabel}
         ariaLabel={`${submitActionLabel} (${addShortcutLabel})`}
         tooltip={
           isCloneDestinationStep && !canCloneProject
-            ? "This connection needs permission to write source control and add projects."
+            ? uiT("This connection needs permission to write source control and add projects.")
             : canCreateProject
               ? `${submitActionLabel} (${addShortcutLabel})`
               : uiT("This connection cannot add projects.")
@@ -2722,14 +2724,14 @@ function OpenCommandPaletteDialog(props: {
   const footerActionLabel =
     newProjectFlow !== null
       ? highlightedItemValue === null
-        ? "Create"
+        ? uiT("Create")
         : highlightedItemValue === newProjectPublishToggleValue
-          ? "Toggle"
+          ? uiT("Toggle")
           : "Select"
       : addProjectCloneFlow?.step === "repository"
         ? (remoteProjectButtonLabel ?? uiT("Continue"))
         : !canSubmitBrowsePath || hasHighlightedBrowseItem
-          ? "Select"
+          ? uiT("Select")
           : undefined;
 
   const footerTrailing = canOpenProjectFromFileManager ? (

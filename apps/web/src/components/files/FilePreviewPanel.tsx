@@ -1310,7 +1310,7 @@ export default function FilePreviewPanel({
           ) : null}
           {showsRawText ? (
             <FileSurfaceAction
-              label={wordWrap ? "Disable word wrap" : uiT("Enable word wrap")}
+              label={wordWrap ? uiT("Disable word wrap") : uiT("Enable word wrap")}
               pressed={wordWrap}
               onPress={() => setWordWrapOverride(!wordWrap)}
             >
@@ -1327,7 +1327,7 @@ export default function FilePreviewPanel({
           ) : null}
           {!isHostFile && previewPath !== null ? (
             <FileSurfaceAction
-              label={explorerOpen ? "Hide file explorer" : uiT("Show file explorer")}
+              label={explorerOpen ? uiT("Hide file explorer") : uiT("Show file explorer")}
               pressed={explorerOpen}
               onPress={toggleExplorer}
             >
@@ -1646,7 +1646,7 @@ export function WorkspaceLargeTextPreview(props: {
       <div className={FILE_SURFACE_SUBHEADER_CLASS}>
         <span className="min-w-0 flex-1 text-xs text-muted-foreground">{uiT("Full file")}</span>
         <FileSurfaceAction
-          label={isCopied ? "Copied" : uiT("Copy contents")}
+          label={isCopied ? uiT("Copied") : uiT("Copy contents")}
           onPress={() => {
             const copy = copyContents.current;
             if (!copy) return;
@@ -1658,7 +1658,7 @@ export function WorkspaceLargeTextPreview(props: {
           {isCopied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
         </FileSurfaceAction>
         <FileSurfaceAction
-          label={saving ? "Preparing file…" : uiT("Save file")}
+          label={saving ? uiT("Preparing file…") : uiT("Save file")}
           disabled={saving}
           onPress={() => {
             setSaving(true);

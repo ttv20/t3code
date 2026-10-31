@@ -283,7 +283,7 @@ function AboutVersionSection() {
     actionLabel[action] ?? statusLabel[updateState?.status ?? ""] ?? uiT("Check for Updates");
   const description =
     action === "download" || action === "install"
-      ? "Update available."
+      ? uiT("Update available.")
       : (getDesktopUpdateDisabledReason(updateState) ?? uiT("Current version of the application."));
 
   return (
@@ -349,7 +349,7 @@ function AboutVersionSection() {
                 aria-label={uiT("Update track")}
                 disabled={switchChannel !== null || updateRun !== null}
               >
-                <SelectValue>{channelSwitchLabel(selectedUpdateChannel)}</SelectValue>
+                <SelectValue>{uiT(channelSwitchLabel(selectedUpdateChannel))}</SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
                 <SelectItem hideIndicator value="latest">
@@ -1229,7 +1229,7 @@ export function ChatSettingsPanel() {
                 aria-label={uiT("Follow-up behavior")}
               >
                 <SelectValue>
-                  {settings.followUpBehavior === "queue" ? "Queue" : uiT("Steer")}
+                  {settings.followUpBehavior === "queue" ? uiT("Queue") : uiT("Steer")}
                 </SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -1285,7 +1285,9 @@ function DiffColorsSettingsRow() {
                 <span className="size-2 rounded-full bg-diff-addition" />
               </span>
               <SelectValue>
-                {settings.diffColorScheme === "blue-orange" ? "Blue & orange" : uiT("Red & green")}
+                {settings.diffColorScheme === "blue-orange"
+                  ? uiT("Blue & orange")
+                  : uiT("Red & green")}
               </SelectValue>
             </SelectTrigger>
             <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -1401,7 +1403,7 @@ export function DiffsSettingsPanel() {
                 aria-label={uiT("Default diff file state")}
               >
                 <SelectValue>
-                  {settings.diffFilesCollapsed ? "Collapsed" : uiT("Expanded")}
+                  {settings.diffFilesCollapsed ? uiT("Collapsed") : uiT("Expanded")}
                 </SelectValue>
               </SelectTrigger>
               <SelectPopup align="end" alignItemWithTrigger={false}>
@@ -1611,7 +1613,7 @@ export function ThreadsSettingsPanel() {
               className="w-full sm:w-72"
               value={mixedAddProjectBaseDirectory ? "" : settings.addProjectBaseDirectory}
               onCommit={(next) => updateSettings({ addProjectBaseDirectory: next })}
-              placeholder={mixedAddProjectBaseDirectory ? "Mixed" : "~/"}
+              placeholder={mixedAddProjectBaseDirectory ? uiT("Mixed") : "~/"}
               spellCheck={false}
               aria-label={uiT("Add project base directory")}
             />
@@ -1889,7 +1891,7 @@ export function ThreadsSettingsPanel() {
             {...searchableSetting("response-streaming")}
             description={
               mixedResponseStreamingMode
-                ? "The selected targets use different streaming modes."
+                ? uiT("The selected targets use different streaming modes.")
                 : RESPONSE_STREAMING_MODE_DESCRIPTIONS[settings.responseStreamingMode]
             }
             resetAction={
@@ -2037,7 +2039,7 @@ export function MaintenanceSettingsPanel() {
           {...searchableSetting("diagnostics")}
           description={
             isEnvironmentScope
-              ? "Inspect processes, resource use, and logs on this environment."
+              ? uiT("Inspect processes, resource use, and logs on this environment.")
               : uiT("Inspect processes, resource use, and logs on one environment at a time.")
           }
           control={

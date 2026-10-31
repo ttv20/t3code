@@ -137,7 +137,7 @@ export function EnvironmentRoutesSection({
       trailing={
         routes.length > 1 ? (
           <Button
-            label={editing ? "Done" : uiT("Edit")}
+            label={editing ? uiT("Done") : uiT("Edit")}
             tone="text"
             onPress={() => setEditing((value) => !value)}
           />
@@ -163,7 +163,8 @@ export function EnvironmentRoutesSection({
               </Text>
               {AUTH_SCOPE_OPTIONS.map(({ scope, title }) => (
                 <Text key={scope} className="text-sm text-foreground">
-                  {title}: {sessionGrantsScope(session, scope) ? "Allowed" : uiT("Not granted")}
+                  {title}:{" "}
+                  {sessionGrantsScope(session, scope) ? uiT("Allowed") : uiT("Not granted")}
                 </Text>
               ))}
             </>

@@ -993,9 +993,9 @@ function ThreadSettingsMainContent(props: {
           <Text className="text-center text-sm text-foreground-muted">
             {session.providerFilter === FAVORITES_PROVIDER_FILTER &&
             session.searchQuery.trim().length === 0
-              ? "No favorite models"
+              ? uiT("No favorite models")
               : hasActiveCatalogFilter
-                ? "No matching models"
+                ? uiT("No matching models")
                 : uiT("No available models")}
           </Text>
         </View>
@@ -1374,7 +1374,7 @@ function ThreadSettingsModelsScreen() {
           onOpenSubmenu={(submenu) => {
             const title =
               submenu.kind === "runtime"
-                ? "Runtime"
+                ? uiT("Runtime")
                 : uiT(
                     session.displayedDescriptors.find(
                       (descriptor) => descriptor.type === "select" && descriptor.id === submenu.id,
@@ -1390,7 +1390,7 @@ function ThreadSettingsModelsScreen() {
           onCancel={presentation.onClose}
           accessibilityLabel={uiT("Cancel thread settings")}
           confirm={{
-            label: session.pendingModel ? "Save thread settings" : uiT("Done"),
+            label: session.pendingModel ? uiT("Save thread settings") : uiT("Done"),
             onPress: commitAndClose,
           }}
         />

@@ -1272,7 +1272,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
                       type: "error",
                       title:
                         operation === "link-pull-request-to-thread"
-                          ? "Unable to link pull request"
+                          ? uiT("Unable to link pull request")
                           : uiT("Unable to unlink pull request"),
                       description:
                         cause instanceof Error ? cause.message : uiT("The request failed."),

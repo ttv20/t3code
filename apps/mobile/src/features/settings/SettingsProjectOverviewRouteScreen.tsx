@@ -248,9 +248,9 @@ function ProjectOverviewContent(props: {
       unloadedThreadCount: readUnloadedThreadCount(members, threads),
     });
     Dialog.confirm({
-      title: plan.targetKind === "checkout" ? "Remove checkout" : uiT("Remove project"),
+      title: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
       message: plan.confirmationMessage,
-      confirmText: plan.targetKind === "checkout" ? "Remove checkout" : uiT("Remove project"),
+      confirmText: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
       destructive: true,
       onCancel: finishRemoval,
       onConfirm: () => {
@@ -330,7 +330,7 @@ function ProjectOverviewContent(props: {
           </Text>
           <Text className="text-sm text-foreground-muted">
             {props.members.length === 1
-              ? "1 checkout"
+              ? uiT("1 checkout")
               : uiT("{0} checkouts", { "0": props.members.length })}
           </Text>
         </View>
@@ -432,9 +432,9 @@ function ProjectOverviewContent(props: {
           icon="trash"
           label={
             props.hasOtherMembers
-              ? "Remove checkout"
+              ? uiT("Remove checkout")
               : props.members.length > 1
-                ? "Remove this project everywhere"
+                ? uiT("Remove this project everywhere")
                 : uiT("Remove project")
           }
           description={

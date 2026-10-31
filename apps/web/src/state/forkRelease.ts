@@ -89,7 +89,7 @@ export const lookupForkTrackRelease = Effect.fn("ForkRelease.lookupTrack")(
             assets.has(cliArchiveFileName(version, platform)),
           )
         ) {
-          return { version };
+          return { version, databaseMigration: undefined };
         }
       }
       if (releases.length < 100) break;

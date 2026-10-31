@@ -243,7 +243,7 @@ function WebhookFiltersField({
               <div className="grid min-w-0 flex-1 grid-cols-1">
                 <Input
                   aria-label={uiT("Filter {0} value", { "0": index + 1 })}
-                  placeholder={filter.op === "in" ? "opened, reopened" : uiT("opened")}
+                  placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
                   value={filter.value}
                   onChange={(event) => update(index, { value: event.target.value })}
                 />
@@ -932,7 +932,9 @@ function WebhookDeliveriesDialog({
                 </p>
               ) : null}
               <DeliveryBlock
-                title={selected.pendingWindow ? "Scheduled run" : uiT("Prompt sent to the agent")}
+                title={
+                  selected.pendingWindow ? uiT("Scheduled run") : uiT("Prompt sent to the agent")
+                }
               >
                 {selected.renderedPrompt ??
                   (selected.pendingWindow
@@ -955,7 +957,7 @@ function WebhookDeliveriesDialog({
               {selected.query ? (
                 <DeliveryBlock title={uiT("Query")}>{selected.query}</DeliveryBlock>
               ) : null}
-              <DeliveryBlock title={selected.bodyTruncated ? "Body (truncated)" : uiT("Body")}>
+              <DeliveryBlock title={selected.bodyTruncated ? uiT("Body (truncated)") : uiT("Body")}>
                 {selected.body || uiT("(empty)")}
               </DeliveryBlock>
             </div>
@@ -1103,7 +1105,7 @@ function WebhookEndpointField({
           onClick={() => copyToClipboard(url, undefined)}
         >
           <CopyIcon />
-          {isCopied ? "Copied" : uiT("Copy")}
+          {isCopied ? uiT("Copied") : uiT("Copy")}
         </Button>
         <Button
           size="sm"
@@ -1129,7 +1131,7 @@ function WebhookDeliveryMode({ environmentId }: { readonly environmentId: Enviro
   return (
     <p className="text-xs text-muted-foreground">
       {cloudLink.data.holdWebhooksWhileOffline
-        ? "Held for up to 24 hours while this environment is offline. "
+        ? uiT("Held for up to 24 hours while this environment is offline. ")
         : uiT("Forwarded live. Requests fail while this environment is offline. ")}
       <Link to="/settings/access" className="underline underline-offset-2">
         {uiT("Change in Sharing & access")}
@@ -1403,7 +1405,7 @@ function ScheduledTaskEditorForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{draft.editingId ? "Edit task" : uiT("New task")}</DialogTitle>
+        <DialogTitle>{draft.editingId ? uiT("Edit task") : uiT("New task")}</DialogTitle>
         <DialogDescription>
           {uiT(
             "Run a prompt automatically on an interval, at a fixed time, or when a webhook is called.",
@@ -1815,7 +1817,7 @@ function ScheduledTaskEditorForm({
                         value={draft.signatureSecret}
                         placeholder={
                           liveTask?.schedule.type === "webhook" && liveTask.webhook?.hasSecret
-                            ? "Unchanged"
+                            ? uiT("Unchanged")
                             : uiT("Shared secret")
                         }
                         onChange={(event) =>
@@ -1912,7 +1914,7 @@ function ScheduledTaskEditorForm({
           disabled={!canOperate || saving || editingTaskMissing || !connected || !tasksQuery.data}
           onClick={() => void submit()}
         >
-          {draft.editingId ? "Save task" : uiT("Create task")}
+          {draft.editingId ? uiT("Save task") : uiT("Create task")}
         </Button>
       </DialogFooter>
     </>

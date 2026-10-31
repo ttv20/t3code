@@ -100,7 +100,7 @@ export function SidebarUpdateReleaseNotes({
           const linkLabel =
             releaseNote.stats ??
             (omittedItemCount === 0
-              ? "View release on GitHub"
+              ? uiT("View release on GitHub")
               : `${omittedItemCount} more ${omittedItemCount === 1 ? "change" : "changes"} on GitHub`);
 
           if (releaseNote.intro !== undefined) {
@@ -130,7 +130,7 @@ export function SidebarUpdateReleaseNotes({
               <section>
                 <h3 className="text-foreground text-xs leading-4 font-semibold">
                   {index === 0
-                    ? "What's changed"
+                    ? uiT("What's changed")
                     : uiT("Changes in {0}", { "0": releaseNote.version })}
                 </h3>
                 <ul className="mt-2 space-y-1.5 pl-4 text-xs leading-5 text-popover-foreground/90">

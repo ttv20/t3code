@@ -65,16 +65,16 @@ export function PullRequestMergeControls(props: {
   const checkingStack =
     permissions.connected && stack.supportsStackActions && !stack.isFresh && !stack.error;
   const reason = !permissions.connected
-    ? "Reconnect to merge."
+    ? uiT("Reconnect to merge.")
     : (mergeUnavailableReason(pr, permissions.canWrite, terminology) ?? stack.stack)
       ? !stack.supportsStackActions
-        ? "This environment can display stacks but cannot merge them."
+        ? uiT("This environment can display stacks but cannot merge them.")
         : !stack.isFresh
-          ? "Refresh the stack before merging."
+          ? uiT("Refresh the stack before merging.")
           : scope?.reason
       : !canMergeSingle
         ? stack.error
-          ? "Couldn't check stack membership. Refresh before merging."
+          ? uiT("Couldn't check stack membership. Refresh before merging.")
           : "Checking stack membership…"
         : null;
   const canMerge = !busy && method !== undefined && !reason;
@@ -147,7 +147,7 @@ export function PullRequestMergeControls(props: {
           ? uiT("Merge {0} stack layers?", { "0": scope.layers.length })
           : `${uiT(pullRequestActionLabel("merge", terminology))}?`
         : action === "enable-auto-merge"
-          ? "Enable auto-merge?"
+          ? uiT("Enable auto-merge?")
           : uiT("Disable auto-merge?");
     const message =
       action === "merge" && scope
@@ -182,7 +182,7 @@ export function PullRequestMergeControls(props: {
   return (
     <View className="gap-2 border-t border-border-subtle p-3">
       <SplitButton
-        label={busy ? "Working…" : !permissions.connected ? "Reconnect to merge" : label}
+        label={busy ? uiT("Working…") : !permissions.connected ? uiT("Reconnect to merge") : label}
         accessibilityLabel={
           scope ? `${label}, ${scope.layers.length} stack layers through #${pr.number}` : label
         }
@@ -202,7 +202,7 @@ export function PullRequestMergeControls(props: {
             ? [
                 {
                   id: autoAction,
-                  title: pr.autoMergeEnabled ? "Disable auto-merge" : uiT("Enable auto-merge"),
+                  title: pr.autoMergeEnabled ? uiT("Disable auto-merge") : uiT("Enable auto-merge"),
                   image: "clock",
                 },
               ]

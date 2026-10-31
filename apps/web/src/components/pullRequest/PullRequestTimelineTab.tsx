@@ -339,10 +339,12 @@ function ConversationGroup({
           >
             <span className="min-w-0 flex-1 [unicode-bidi:plaintext]">
               <span className="block text-xs font-semibold">
-                {events.length.toLocaleString()} {events.length === 1 ? "comment" : uiT("comments")}
+                {events.length.toLocaleString()}{" "}
+                {events.length === 1 ? uiT("comment") : uiT("comments")}
               </span>
               <span className="block truncate text-3xs text-muted-foreground">
-                {actors.length.toLocaleString()} {actors.length === 1 ? "author" : uiT("authors")} ·{" "}
+                {actors.length.toLocaleString()}{" "}
+                {actors.length === 1 ? uiT("author") : uiT("authors")} ·{" "}
                 <RelativeTime timestamp={first.at} />
               </span>
             </span>
@@ -432,7 +434,7 @@ function ReviewThreadEvent({
             {replyCount > 0 ? (
               <>
                 {" "}
-                · {replyCount.toLocaleString()} {replyCount === 1 ? "reply" : uiT("replies")}
+                · {replyCount.toLocaleString()} {replyCount === 1 ? uiT("reply") : uiT("replies")}
               </>
             ) : null}
           </span>

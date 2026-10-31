@@ -202,7 +202,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
         render={<ComposerBanner.Row render={<button type="button" />} />}
         title={
           isCollapsed
-            ? "Show the question and its options"
+            ? uiT("Show the question and its options")
             : uiT("Hide the question and its options")
         }
         data-pending-user-input-toggle={isCollapsed ? "collapsed" : "expanded"}

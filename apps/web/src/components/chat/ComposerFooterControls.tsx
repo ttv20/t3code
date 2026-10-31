@@ -89,7 +89,7 @@ export const ComposerFooterModeControls = memo(function ComposerFooterModeContro
           data-composer-control-label
           className={size === "xs" ? "sr-only" : "sr-only sm:not-sr-only"}
         >
-          {props.interactionMode === "plan" ? "Plan" : uiT("Build")}
+          {props.interactionMode === "plan" ? uiT("Plan") : uiT("Build")}
         </span>
       </TooltipTrigger>
       <TooltipPopup side="top">{interactionModeTooltip}</TooltipPopup>

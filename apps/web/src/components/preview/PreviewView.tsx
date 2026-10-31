@@ -268,7 +268,7 @@ export function PreviewView({
         type: "error",
         title: uiT("Could not open this address"),
         description: isPreviewUrlNormalizationError(error)
-          ? "Enter an http or https URL."
+          ? uiT("Enter an http or https URL.")
           : error instanceof Error
             ? error.message
             : uiT("An error occurred."),
@@ -290,7 +290,7 @@ export function PreviewView({
         type: "error",
         title: uiT("Could not open this address"),
         description: isPreviewUrlNormalizationError(error)
-          ? "Enter an http or https URL."
+          ? uiT("Enter an http or https URL.")
           : error instanceof Error
             ? error.message
             : uiT("An error occurred."),

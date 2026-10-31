@@ -211,7 +211,7 @@ function FileViewedToggle({
         onClick={(event) => event.stopPropagation()}
       >
         <Checkbox
-          aria-label={stale ? "Changed" : uiT("Viewed")}
+          aria-label={stale ? uiT("Changed") : uiT("Viewed")}
           checked={viewed}
           onCheckedChange={(next, details) =>
             viewedFiles.setFileViewed(
@@ -845,7 +845,7 @@ function PullRequestCodeTab({
         size="icon-micro"
         variant="ghost-muted"
         aria-expanded={!collapsed}
-        aria-label={collapsed ? "Expand diff" : uiT("Collapse diff")}
+        aria-label={collapsed ? uiT("Expand diff") : uiT("Collapse diff")}
         className="mr-1"
         onClick={(event) => {
           event.stopPropagation();
@@ -1094,12 +1094,12 @@ function PullRequestCodeTab({
         ) : null}
         <PullRequestMetaLine>
           <span className="shrink-0 tabular-nums">
-            {files.length} {files.length === 1 ? "file" : uiT("files")}
+            {files.length} {files.length === 1 ? uiT("file") : uiT("files")}
             {nextCursor === null ? "" : "+"}
           </span>
           {hiddenTestFileCount > 0 ? (
             <Button type="button" size="xs" variant="link" onClick={() => setHideTestFiles(false)}>
-              {hiddenTestFileCount} test {hiddenTestFileCount === 1 ? "file" : uiT("files")}{" "}
+              {hiddenTestFileCount} test {hiddenTestFileCount === 1 ? uiT("file") : uiT("files")}{" "}
               <UiText message={"hidden"} />
             </Button>
           ) : null}
@@ -1246,7 +1246,9 @@ function PullRequestCodeTab({
               render={
                 <Toggle
                   aria-label={
-                    ignoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")
+                    ignoreWhitespace
+                      ? uiT("Show whitespace changes")
+                      : uiT("Hide whitespace changes")
                   }
                   variant="ghost"
                   size="sm"
@@ -1258,7 +1260,7 @@ function PullRequestCodeTab({
               <PilcrowIcon className="size-3.5" />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {ignoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")}
+              {ignoreWhitespace ? uiT("Show whitespace changes") : uiT("Hide whitespace changes")}
             </TooltipPopup>
           </Tooltip>
           <ToggleGroup
@@ -1285,7 +1287,7 @@ function PullRequestCodeTab({
               render={
                 <Toggle
                   aria-label={
-                    wordWrap ? "Disable diff line wrapping" : uiT("Enable diff line wrapping")
+                    wordWrap ? uiT("Disable diff line wrapping") : uiT("Enable diff line wrapping")
                   }
                   variant="ghost"
                   size="sm"
@@ -1299,7 +1301,7 @@ function PullRequestCodeTab({
               <TextWrapIcon className="size-3.5" />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {wordWrap ? "Disable line wrapping" : uiT("Enable line wrapping")}
+              {wordWrap ? uiT("Disable line wrapping") : uiT("Enable line wrapping")}
             </TooltipPopup>
           </Tooltip>
         </div>
@@ -1311,7 +1313,9 @@ function PullRequestCodeTab({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={allFilesCollapsed ? "Expand all files" : uiT("Collapse all files")}
+                  aria-label={
+                    allFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")
+                  }
                   onClick={toggleAllFiles}
                 />
               }
@@ -1322,7 +1326,7 @@ function PullRequestCodeTab({
               />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {allFilesCollapsed ? "Expand all files" : uiT("Collapse all files")}
+              {allFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")}
             </TooltipPopup>
           </Tooltip>
         ) : null}
@@ -1342,7 +1346,7 @@ function PullRequestCodeTab({
               <FlaskConicalOffIcon className="size-3.5" />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {hideTestFiles ? "Show test files" : uiT("Hide test files")}
+              {hideTestFiles ? uiT("Show test files") : uiT("Hide test files")}
             </TooltipPopup>
           </Tooltip>
         ) : null}
@@ -1351,7 +1355,7 @@ function PullRequestCodeTab({
             <TooltipTrigger
               render={
                 <Toggle
-                  aria-label={fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
+                  aria-label={fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
                   variant="ghost"
                   size="sm"
                   pressed={fileTreeOpen}
@@ -1362,7 +1366,7 @@ function PullRequestCodeTab({
               <FolderTreeIcon className="size-3.5" />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
+              {fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
             </TooltipPopup>
           </Tooltip>
         ) : null}
@@ -1445,7 +1449,7 @@ function PullRequestCodeTab({
               <CollapsibleTrigger className="flex w-full items-center gap-1.5 px-4 py-2 text-left text-xs text-muted-foreground">
                 <span>
                   {nextCursor === null
-                    ? "Conversations not on the current diff"
+                    ? uiT("Conversations not on the current diff")
                     : uiT("Conversations not on the diff loaded so far")}
                 </span>
                 <ChevronRightIcon
@@ -1457,7 +1461,7 @@ function PullRequestCodeTab({
                 </span>
                 <span className="sr-only">
                   {orphanThreads.length === 1
-                    ? "1 conversation"
+                    ? uiT("1 conversation")
                     : uiT("{0} conversations", { "0": orphanThreads.length })}
                 </span>
               </CollapsibleTrigger>
@@ -1562,9 +1566,9 @@ function PullRequestCodeTab({
                       onClick={diffQuery.error !== null ? () => diffQuery.refresh() : loadNextSlice}
                     >
                       {diffQuery.error !== null
-                        ? "Retry"
+                        ? uiT("Retry")
                         : diffQuery.isPending
-                          ? "Loading more files..."
+                          ? uiT("Loading more files...")
                           : uiT("Load more files")}
                     </Button>
                   </div>

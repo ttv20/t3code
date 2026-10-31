@@ -250,7 +250,7 @@ export function PullRequestActionsMenu({
         <MenuItem disabled={handoff !== null} onClick={askAboutPullRequest}>
           <MessageCircleQuestionIcon className="mt-1 size-3.5 shrink-0 self-start" />
           <span className="flex min-w-0 flex-col">
-            <span>{handoff === "ask" ? "Opening..." : uiT("Ask a question")}</span>
+            <span>{handoff === "ask" ? uiT("Opening...") : uiT("Ask a question")}</span>
             <span className="text-xs text-muted-foreground">
               {attachesToComposer
                 ? `Adds the ${terminology.singular} to this thread's composer.`
@@ -262,7 +262,7 @@ export function PullRequestActionsMenu({
           <BookOpenIcon className="mt-1 size-3.5 shrink-0 self-start" />
           <span className="flex min-w-0 flex-col">
             <span>
-              {handoff === "explain" ? "Opening..." : `Explain this ${terminology.shortLabel}`}
+              {handoff === "explain" ? uiT("Opening...") : `Explain this ${terminology.shortLabel}`}
             </span>
             <span className="text-xs text-muted-foreground">
               {uiT("A walk through the diff and what to read closely.")}
@@ -271,15 +271,15 @@ export function PullRequestActionsMenu({
         </MenuItem>
         <MenuItem disabled={handoff !== null || !canFixFindings} onClick={startFixFindings}>
           <HammerIcon className="size-3.5" />
-          {handoff === "findings" ? "Preparing..." : handoffLabels.fixFindings}
+          {handoff === "findings" ? uiT("Preparing...") : handoffLabels.fixFindings}
         </MenuItem>
         {canWriteGuide ? (
           <MenuItem disabled={guideRunning} onClick={writeGuide}>
             <SparklesIcon className="size-3.5" />
             {guideRunning
-              ? "Writing guide..."
+              ? uiT("Writing guide...")
               : !guideWritten
-                ? "Write guide"
+                ? uiT("Write guide")
                 : uiT("Rewrite guide")}
           </MenuItem>
         ) : null}
@@ -336,18 +336,20 @@ export function PullRequestActionsMenu({
                 ) : (
                   <PullRequestGlyph.draft className="size-3.5" />
                 )}
-                {detail.isDraft ? "Ready for review" : uiT("Convert to draft")}
+                {detail.isDraft ? uiT("Ready for review") : uiT("Convert to draft")}
               </MenuItem>
             ) : null}
             {showsMergeNow ? (
               <MenuItem
                 closeOnClick={inlineConfirm.isArmed("merge")}
-                aria-label={inlineConfirm.isArmed("merge") ? "Confirm merge?" : uiT("Merge now")}
+                aria-label={
+                  inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")
+                }
                 disabled={actionPending}
                 {...inlineConfirm.props("merge", () => void perform("merge", selectedMergeMethod))}
               >
                 <PullRequestGlyph.merged className="size-3.5" />
-                {inlineConfirm.isArmed("merge") ? "Confirm merge?" : uiT("Merge now")}
+                {inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")}
               </MenuItem>
             ) : null}
             {autoMergeArmed && can("disable-auto-merge") ? (
@@ -360,7 +362,7 @@ export function PullRequestActionsMenu({
                 closeOnClick={inlineConfirm.isArmed("enable-auto-merge")}
                 aria-label={
                   inlineConfirm.isArmed("enable-auto-merge")
-                    ? "Confirm auto-merge?"
+                    ? uiT("Confirm auto-merge?")
                     : uiT("Enable auto-merge")
                 }
                 disabled={actionPending}
@@ -371,7 +373,7 @@ export function PullRequestActionsMenu({
               >
                 <PullRequestGlyph.merged className="size-3.5" />
                 {inlineConfirm.isArmed("enable-auto-merge")
-                  ? "Confirm auto-merge?"
+                  ? uiT("Confirm auto-merge?")
                   : uiT("Enable auto-merge")}
               </MenuItem>
             ) : null}
@@ -434,7 +436,7 @@ export function PullRequestActionsMenu({
               closeOnClick={inlineConfirm.isArmed("close")}
               aria-label={
                 inlineConfirm.isArmed("close")
-                  ? "Confirm close?"
+                  ? uiT("Confirm close?")
                   : uiT("Close {0}", { "0": uiT(terminology.singular) })
               }
               variant="destructive"
@@ -442,7 +444,9 @@ export function PullRequestActionsMenu({
               {...inlineConfirm.props("close", () => void perform("close"))}
             >
               <PullRequestGlyph.closed className="size-3.5" />
-              {inlineConfirm.isArmed("close") ? "Confirm close?" : `Close ${terminology.singular}`}
+              {inlineConfirm.isArmed("close")
+                ? uiT("Confirm close?")
+                : `Close ${terminology.singular}`}
             </MenuItem>
           </>
         ) : detail.state === "closed" && can("reopen") ? (
@@ -459,14 +463,14 @@ export function PullRequestActionsMenu({
             <MenuItem
               closeOnClick={inlineConfirm.isArmed("revert")}
               aria-label={
-                inlineConfirm.isArmed("revert") ? "Confirm revert?" : uiT("Revert changes")
+                inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")
               }
               variant={inlineConfirm.isArmed("revert") ? "destructive" : "default"}
               disabled={actionPending}
               {...inlineConfirm.props("revert", () => void perform("revert"))}
             >
               <RotateCcwIcon className="size-3.5" />
-              {inlineConfirm.isArmed("revert") ? "Confirm revert?" : uiT("Revert changes")}
+              {inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")}
             </MenuItem>
           </>
         ) : null}
@@ -481,7 +485,9 @@ export function PullRequestActionsMenu({
               <Trash2Icon className="mt-1 size-3.5 shrink-0 self-start" />
               <span className="flex min-w-0 flex-col">
                 <span>
-                  {pendingAction === "delete-branch" ? "Deleting branch..." : uiT("Delete branch")}
+                  {pendingAction === "delete-branch"
+                    ? uiT("Deleting branch...")
+                    : uiT("Delete branch")}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {environmentConnected

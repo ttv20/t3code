@@ -240,7 +240,7 @@ export function EasDeviceHostEditor(props: {
                   : account.status === "failed"
                     ? account.error
                     : account.status === "checking"
-                      ? "Checking the Expo account…"
+                      ? uiT("Checking the Expo account…")
                       : uiT("Check the Expo account before choosing a project.")}
               </p>
               <Button

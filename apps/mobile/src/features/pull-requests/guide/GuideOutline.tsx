@@ -32,7 +32,7 @@ export function GuideOutline({
           </Text>
           <Text className="text-sm text-foreground-muted">
             {uiT("through")}
-            {files.size} {files.size === 1 ? "file" : uiT("files")}
+            {files.size} {files.size === 1 ? uiT("file") : uiT("files")}
           </Text>
         </View>
         <Menu

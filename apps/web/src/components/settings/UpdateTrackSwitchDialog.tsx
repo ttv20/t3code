@@ -45,7 +45,7 @@ export function UpdateTrackSwitchDialog({
   if (AsyncResult.isSuccess(release) && release.value !== null) {
     return <SwitchPlan release={{ channel, ...release.value }} onClose={onClose} />;
   }
-  const label = channelSwitchLabel(channel);
+  const label = uiT(channelSwitchLabel(channel));
   return (
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogPopup>
@@ -88,7 +88,7 @@ function SwitchPlan({
   const switchesLocal = crossesLocal && !updatesOff;
   const [checking, setChecking] = useState(false);
   const everything = useUpdateEverything(switchesLocal ? release.version : null, release);
-  const label = channelSwitchLabel(release.channel);
+  const label = uiT(channelSwitchLabel(release.channel));
   // This app's reinstall restarts every server it hosts, so each of their databases must allow it.
   const localBlocked = localSwitchBlockReason(
     APP_VERSION,

@@ -89,7 +89,7 @@ export function WorktreesDirectoryRow() {
           aria-label={uiT("Worktree location")}
           autoCapitalize="none"
           spellCheck={false}
-          placeholder={mixed ? "Mixed" : uiT("Default")}
+          placeholder={mixed ? uiT("Mixed") : uiT("Default")}
           defaultValue={mixed ? "" : settings.worktreesDirectory}
           onChange={() => {
             edited.current = true;
@@ -351,9 +351,9 @@ function CleanupSection() {
                 : "",
           })
         : query?.failed
-          ? "Could not load the last run."
+          ? uiT("Could not load the last run.")
           : query?.loading
-            ? "Loading last run…"
+            ? uiT("Loading last run…")
             : uiT("Cleanup hasn't run yet."),
     };
   });
@@ -393,7 +393,7 @@ function CleanupSection() {
           description={
             <span>
               {!hasRules
-                ? "Turn on a cleanup rule to use this."
+                ? uiT("Turn on a cleanup rule to use this.")
                 : summaries.map(({ environment, label, description }) => (
                     <span key={environment.environmentId} className="block">
                       {supported.length > 1 ? `${label}: ` : ""}
@@ -409,7 +409,7 @@ function CleanupSection() {
               disabled={pending || !hasRules || !state.some((entry) => entry.allowed)}
               onClick={() => void deleteNow()}
             >
-              {pending ? "Deleting…" : uiT("Delete now")}
+              {pending ? uiT("Deleting…") : uiT("Delete now")}
             </Button>
           }
         />
@@ -540,9 +540,9 @@ export function WorktreeCleanupSection() {
             title={uiT("Automatic worktree cleanup")}
             description={
               mode === "off"
-                ? "Keep this project's worktrees until you delete them manually."
+                ? uiT("Keep this project's worktrees until you delete them manually.")
                 : mode === "custom"
-                  ? "Use these rules for this project."
+                  ? uiT("Use these rules for this project.")
                   : uiT("Use each machine's worktree cleanup settings.")
             }
             serverScoped
@@ -561,11 +561,11 @@ export function WorktreeCleanupSection() {
                 <SelectTrigger size="sm" aria-label={uiT("Automatic worktree cleanup")}>
                   <SelectValue>
                     {mixedModes
-                      ? "Mixed"
+                      ? uiT("Mixed")
                       : mode === "inherit"
-                        ? "Inherit"
+                        ? uiT("Inherit")
                         : mode === "off"
-                          ? "Off"
+                          ? uiT("Off")
                           : uiT("Custom")}
                   </SelectValue>
                 </SelectTrigger>
@@ -683,9 +683,9 @@ export function WorktreeCleanupSection() {
                   status={ruleStatus("worktreeKeepWhen")}
                   description={
                     settings.worktreeKeepWhen === "any-local-files"
-                      ? "Includes ignored files, except node_modules."
+                      ? uiT("Includes ignored files, except node_modules.")
                       : settings.worktreeKeepWhen === "tracked-changes"
-                        ? "Deletes untracked and ignored files, including .env."
+                        ? uiT("Deletes untracked and ignored files, including .env.")
                         : uiT(
                             "Keeps edits and untracked files. Deletes ignored files, including .env.",
                           )
@@ -709,7 +709,7 @@ export function WorktreeCleanupSection() {
                       >
                         <SelectValue>
                           {ruleStatus("worktreeKeepWhen")
-                            ? "Mixed"
+                            ? uiT("Mixed")
                             : KEEP_WHEN_LABELS[settings.worktreeKeepWhen]}
                         </SelectValue>
                       </SelectTrigger>

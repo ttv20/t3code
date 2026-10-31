@@ -204,7 +204,7 @@ function PullRequestIdentity(props: {
         <PullRequestDiffStats additions={pr.additions} deletions={pr.deletions} compact />
         {"changedFiles" in pr ? (
           <Text className="text-2xs text-foreground-muted">
-            {pr.changedFiles} {pr.changedFiles === 1 ? "file" : uiT("files")}
+            {pr.changedFiles} {pr.changedFiles === 1 ? uiT("file") : uiT("files")}
           </Text>
         ) : (
           <View className="h-3 w-12 rounded bg-subtle-strong" />
@@ -291,7 +291,7 @@ function PullRequestLabels(props: {
       })}
       {editable ? (
         <Chip
-          label={props.pr.labels.length ? "Edit" : uiT("Add labels")}
+          label={props.pr.labels.length ? uiT("Edit") : uiT("Add labels")}
           icon="tag"
           size="small"
           accessibilityLabel={uiT("Edit labels")}
@@ -672,7 +672,7 @@ export function PullRequestRouteScreen({ route }: StaticScreenProps<PullRequestP
                 disabled={!action.available("delete-branch")}
                 subtitle={
                   action.busy
-                    ? "Deleting…"
+                    ? uiT("Deleting…")
                     : connected
                       ? pr.headBranch
                       : uiT("Reconnect to delete this branch.")
@@ -944,7 +944,7 @@ export function PullRequestFileRouteScreen(props: PullRequestFileRouteProps) {
     useNavigation<NativeStackNavigationProp<ReactNavigation.RootParamList, "PullRequestFile">>();
   const ready = usePullRequestDiffEntry(navigation);
   if (ready) return <PullRequestFileRouteContent {...props} />;
-  const title = props.route.params.commit ? "Commit changes" : uiT("Changes");
+  const title = props.route.params.commit ? uiT("Commit changes") : uiT("Changes");
   return (
     <View className="flex-1 bg-screen">
       <NativeStackScreenOptions options={{ title, headerTitle: title }} />
@@ -1135,7 +1135,7 @@ function PullRequestFileRouteContent({ route }: PullRequestFileRouteProps) {
     setSelectedRowId(null);
     filter.toggle();
   };
-  const title = commit ? "Commit changes" : uiT("Changes");
+  const title = commit ? uiT("Commit changes") : uiT("Changes");
   const seekingFile = !targetFile && result.nextCursor !== null;
   const loadingDiff = (result.isPending && !data.rows.length) || (seekingFile && !result.error);
   return (
@@ -1247,7 +1247,7 @@ function PullRequestFileRouteContent({ route }: PullRequestFileRouteProps) {
             <Toolbar.MenuAction icon="bubble.left" onPress={() => commentOnLine()}>
               <Toolbar.Label>
                 {route.params.replacingDraftId
-                  ? "Move draft to this line"
+                  ? uiT("Move draft to this line")
                   : uiT("Add review comment")}
               </Toolbar.Label>
             </Toolbar.MenuAction>

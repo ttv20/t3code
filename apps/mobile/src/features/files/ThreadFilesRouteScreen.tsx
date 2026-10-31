@@ -151,7 +151,7 @@ function FileHeader(props: {
           ? [
               {
                 accessibilityLabel: panes.auxiliaryPaneVisible
-                  ? "Hide file navigator"
+                  ? uiT("Hide file navigator")
                   : uiT("Show file navigator"),
                 icon: "sidebar.right",
                 selected: panes.auxiliaryPaneVisible,
@@ -806,7 +806,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       canToggleMode
         ? ({
             id: "preview",
-            title: filePreviewDelimiter({ name: relativePath }) ? "Table" : uiT("Preview"),
+            title: filePreviewDelimiter({ name: relativePath }) ? uiT("Table") : uiT("Preview"),
             icon: filePreviewDelimiter({ name: relativePath }) ? "tablecells" : "eye",
             inline: true,
             onPress: () => setModeOverride({ path: relativePath, mode: "preview" }),
@@ -824,7 +824,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       resolvedActiveMode === "source"
         ? ({
             id: "word-wrap",
-            title: appearance.codeWordBreak ? "Disable word wrap" : uiT("Enable word wrap"),
+            title: appearance.codeWordBreak ? uiT("Disable word wrap") : uiT("Enable word wrap"),
             icon: "text.alignleft",
             inline: false,
             onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
@@ -859,7 +859,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       fileData?.contents != null
         ? ({
             id: "copy-contents",
-            title: fileData.truncated ? "Copy preview" : uiT("Copy contents"),
+            title: fileData.truncated ? uiT("Copy preview") : uiT("Copy contents"),
             icon: "doc.on.doc",
             inline: false,
             onPress: () => copyTextWithHaptic(fileData.contents),
@@ -882,7 +882,7 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
       isBrowserFile && typeof assetPreviewUri === "string"
         ? ({
             id: "open-browser",
-            title: Platform.OS === "ios" ? "Open in Safari" : uiT("Open in browser"),
+            title: Platform.OS === "ios" ? uiT("Open in Safari") : uiT("Open in browser"),
             icon: "safari",
             inline: false,
             onPress: () => tryOpenExternalUrl(assetPreviewUri, "file-preview"),

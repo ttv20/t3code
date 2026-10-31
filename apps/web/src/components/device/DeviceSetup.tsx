@@ -264,7 +264,7 @@ export function DeviceSetup(props: {
             disabled={!canConfigure || !ready || pending !== null}
             onClick={() => void update("complete", { onboardingCompleted: true })}
           >
-            {pending === "complete" ? "Saving…" : uiT("Done")}
+            {pending === "complete" ? uiT("Saving…") : uiT("Done")}
           </Button>
         )}
       </WizardFooter>
@@ -289,14 +289,14 @@ export function DeviceHubSetupStatus({
       {pending
         ? state.hostStatus === "installing"
           ? compact
-            ? "Installing…"
+            ? uiT("Installing…")
             : "Installing device hub…"
           : state.hostStatus === "starting"
             ? compact
-              ? "Starting…"
+              ? uiT("Starting…")
               : "Starting device hub…"
             : compact
-              ? "Updating…"
+              ? uiT("Updating…")
               : "Updating device hub…"
         : uiT("Device hub is ready.")}
     </p>
@@ -322,7 +322,7 @@ function DevicePlatformSetup(props: {
       </p>
       <Button size="compact" variant="outline" disabled={props.disabled} onClick={props.onCheck}>
         {props.checking ? <Spinner size="xs" /> : null}
-        {props.checking ? "Checking…" : uiT("Check again")}
+        {props.checking ? uiT("Checking…") : uiT("Check again")}
       </Button>
     </div>
   );
@@ -338,14 +338,14 @@ export function AgentDeviceSetupStatus(props: {
     const label =
       props.state.hostStatus === "installing"
         ? props.compact
-          ? "Installing…"
+          ? uiT("Installing…")
           : "Installing agent tools…"
         : props.state.hostStatus === "starting"
           ? props.compact
-            ? "Starting…"
+            ? uiT("Starting…")
             : "Starting agent tools…"
           : props.compact
-            ? "Updating…"
+            ? uiT("Updating…")
             : uiT("Updating agent access…");
     return (
       <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -374,6 +374,7 @@ function PlatformStatus(props: {
   readonly status: { readonly ready: boolean; readonly message: string };
   readonly compact?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <div
       className={cn("flex gap-2", !props.compact && "rounded-md border border-border/60 px-3 py-2")}
@@ -388,7 +389,7 @@ function PlatformStatus(props: {
       <div className={cn(props.compact && props.status.ready && "flex items-center gap-2")}>
         <p className="font-medium">{props.platform}</p>
         <p className="text-xs text-muted-foreground">
-          {props.compact && props.status.ready ? "Ready" : props.status.message}
+          {props.compact && props.status.ready ? uiT("Ready") : props.status.message}
         </p>
       </div>
     </div>

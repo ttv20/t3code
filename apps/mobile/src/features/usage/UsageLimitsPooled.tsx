@@ -457,7 +457,7 @@ export function UsageLimitsSection({
       externalLinks.length === 0 ? (
         <Text className="py-12 text-center text-base text-foreground-muted">
           {selected.size === 0
-            ? "Select an environment to see limits."
+            ? uiT("Select an environment to see limits.")
             : uiT("No provider on the selected environments reports subscription limits.")}
         </Text>
       ) : null}
@@ -597,7 +597,9 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               {account.email ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={revealed ? "Hide account email" : uiT("Reveal account email")}
+                  accessibilityLabel={
+                    revealed ? uiT("Hide account email") : uiT("Reveal account email")
+                  }
                   onPress={() => setRevealed((value) => !value)}
                   className="min-h-[44px] justify-center"
                 >
@@ -646,7 +648,7 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
             </View>
             <View className="gap-2 rounded-[24px] border-continuous bg-grouped-card p-4">
               <Text className="text-sm font-t3-medium text-foreground">
-                {account.environments.length ? "Signed in" : uiT("Source")}
+                {account.environments.length ? uiT("Signed in") : uiT("Source")}
               </Text>
               {account.environments.length ? (
                 account.environments.map((environment) => (

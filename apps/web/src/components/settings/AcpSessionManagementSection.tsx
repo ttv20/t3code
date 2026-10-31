@@ -182,7 +182,9 @@ export function AcpSessionManagementSection(props: {
       );
       toastManager.add({
         type: "success",
-        title: result.value.imported ? "ACP session imported" : uiT("ACP session already imported"),
+        title: result.value.imported
+          ? uiT("ACP session imported")
+          : uiT("ACP session already imported"),
       });
       return;
     }
@@ -343,7 +345,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={props.readOnly || loggingOut}
                 onClick={() => void logoutProvider()}
               >
-                {loggingOut ? "Logging out" : uiT("Log out")}
+                {loggingOut ? uiT("Logging out") : uiT("Log out")}
               </Button>
             ) : null}
             {canList && props.projects.length > 0 ? (
@@ -384,7 +386,11 @@ export function AcpSessionManagementSection(props: {
                   disabled={!canRead || loading || projectId === null}
                   onClick={() => void loadSessions()}
                 >
-                  {loading ? "Loading" : sessions.length === 0 ? "List sessions" : uiT("Refresh")}
+                  {loading
+                    ? uiT("Loading")
+                    : sessions.length === 0
+                      ? uiT("List sessions")
+                      : uiT("Refresh")}
                 </Button>
               </>
             ) : null}
@@ -422,9 +428,9 @@ export function AcpSessionManagementSection(props: {
                         onClick={() => void importNativeSession(session)}
                       >
                         {session.importedThreadId !== null
-                          ? "Imported"
+                          ? uiT("Imported")
                           : importingSessionId === session.sessionId
-                            ? "Importing"
+                            ? uiT("Importing")
                             : uiT("Import")}
                       </Button>
                       {canDelete ? (
@@ -439,7 +445,9 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void deleteNativeSession(session)}
                         >
-                          {deletingSessionId === session.sessionId ? "Deleting" : uiT("Delete")}
+                          {deletingSessionId === session.sessionId
+                            ? uiT("Deleting")
+                            : uiT("Delete")}
                         </Button>
                       ) : null}
                     </div>
@@ -457,7 +465,7 @@ export function AcpSessionManagementSection(props: {
                 disabled={!canRead || loading}
                 onClick={() => void loadSessions(nextCursor)}
               >
-                {loading ? "Loading" : uiT("Load more")}
+                {loading ? uiT("Loading") : uiT("Load more")}
               </Button>
             ) : null}
           </>
@@ -483,9 +491,9 @@ export function AcpSessionManagementSection(props: {
               onClick={() => void loadProviders()}
             >
               {loadingProviders
-                ? "Loading"
+                ? uiT("Loading")
                 : providers.length === 0
-                  ? "List providers"
+                  ? uiT("List providers")
                   : uiT("Refresh")}
             </Button>
           </div>
@@ -541,8 +549,8 @@ export function AcpSessionManagementSection(props: {
                           {provider.providerId}
                         </p>
                         <p className="text-3xs text-muted-foreground">
-                          {provider.current === null ? "Disabled" : uiT("Configured")}
-                          {provider.required ? " · Required" : ""}
+                          {provider.current === null ? uiT("Disabled") : uiT("Configured")}
+                          {provider.required ? uiT(" · Required") : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -559,7 +567,7 @@ export function AcpSessionManagementSection(props: {
                           }
                           onClick={() => void saveProvider(provider)}
                         >
-                          {savingProviderId === provider.providerId ? "Saving" : uiT("Save")}
+                          {savingProviderId === provider.providerId ? uiT("Saving") : uiT("Save")}
                         </Button>
                         {!provider.required && provider.current !== null ? (
                           <Button

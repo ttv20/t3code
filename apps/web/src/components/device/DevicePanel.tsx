@@ -330,7 +330,7 @@ export function DevicePanel(props: {
                                 variant="outline"
                                 size="sm"
                                 disabled={pendingDeviceKey !== null}
-                                aria-label={`${device.booted ? "Open" : "Start"} ${device.name}`}
+                                aria-label={`${device.booted ? uiT("Open") : "Start"} ${device.name}`}
                                 onClick={() => void selectDevice(deviceKey(device))}
                               >
                                 {pendingDeviceKey === deviceKey(device) ? (
@@ -340,7 +340,7 @@ export function DevicePanel(props: {
                                 ) : (
                                   <Play />
                                 )}
-                                {device.booted ? "Open" : uiT("Start")}
+                                {device.booted ? uiT("Open") : uiT("Start")}
                               </Button>
                             </div>
                           ))}
@@ -406,7 +406,7 @@ function DeviceNotice(props: {
         size="icon-xs"
         variant="ghost"
         aria-label={
-          props.tone === "warning" ? "Dismiss device warning" : uiT("Dismiss device error")
+          props.tone === "warning" ? uiT("Dismiss device warning") : uiT("Dismiss device error")
         }
         onClick={props.onDismiss}
       >

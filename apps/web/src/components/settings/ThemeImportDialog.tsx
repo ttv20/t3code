@@ -473,7 +473,7 @@ function ThemeImportBody({
         const chooseButton = (label = "Choose files") => (
           <Button disabled={isReading} size="sm" variant="outline" onClick={openFilePicker}>
             <DownloadIcon />
-            {isReading ? "Reading…" : label}
+            {isReading ? uiT("Reading…") : label}
           </Button>
         );
         const editorSection = () => (

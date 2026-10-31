@@ -125,7 +125,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
       title={uiT("Model")}
       description={
         isProjectScope
-          ? "Model for new threads in this project."
+          ? uiT("Model for new threads in this project.")
           : !unavailable &&
               !mixedModel &&
               modelSource !== "project" &&
@@ -194,7 +194,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
       title={uiT("Workspace")}
       description={
         isProjectScope
-          ? "Where new threads in this project start."
+          ? uiT("Where new threads in this project start.")
           : uiT("Where new threads start. Projects and their t3.json can override it.")
       }
       resetAction={
@@ -219,7 +219,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                 value === "local" || value === "worktree"
                   ? uiT(resolveEnvModeLabel(value))
                   : unavailable
-                    ? "Unavailable"
+                    ? uiT("Unavailable")
                     : uiT("Mixed")
               }
             </SelectValue>
@@ -291,7 +291,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
   return (
     <SettingsSection
       id={category === "source-control" ? "source-control-defaults" : "project-defaults"}
-      title={category === "source-control" ? "Repositories" : uiT("New threads")}
+      title={category === "source-control" ? uiT("Repositories") : uiT("New threads")}
     >
       {category === "project" ? (
         <>
@@ -310,7 +310,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             {...searchableSetting("default-permissions")}
             description={
               isProjectScope
-                ? "Permissions for new threads in this project."
+                ? uiT("Permissions for new threads in this project.")
                 : uiT("Default permissions for new threads. Projects can override them.")
             }
             resetAction={
@@ -338,7 +338,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   )}
                   <SelectValue>
                     {mixedPermissions
-                      ? "Mixed"
+                      ? uiT("Mixed")
                       : uiT(runtimeModeConfig[settings.defaultRuntimeMode].label)}
                   </SelectValue>
                 </SelectTrigger>
@@ -436,7 +436,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             {...searchableSetting("pull-request-merge-method")}
             description={
               isProjectScope
-                ? "Pull requests in this project start with this method."
+                ? uiT("Pull requests in this project start with this method.")
                 : uiT(
                     "Pull requests start with this method. Last selected reuses whatever you chose most recently on this device.",
                   )
@@ -465,7 +465,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                       value === "merge" || value === "squash" || value === "rebase"
                         ? uiT(PULL_REQUEST_MERGE_METHOD_LABELS[value])
                         : value === "last"
-                          ? "Last selected"
+                          ? uiT("Last selected")
                           : uiT("Mixed")
                     }
                   </SelectValue>
@@ -512,7 +512,7 @@ export function WorktreeSubmodulesRow() {
       {...searchableSetting("worktree-submodules")}
       description={
         isProjectScope
-          ? "How new worktrees in this project populate git submodules."
+          ? uiT("How new worktrees in this project populate git submodules.")
           : uiT(
               "How new worktrees populate git submodules. Projects and their t3.json can override it.",
             )
@@ -538,7 +538,7 @@ export function WorktreeSubmodulesRow() {
                 isWorktreeSubmodules(value)
                   ? WORKTREE_SUBMODULES_LABELS[value]
                   : unavailable
-                    ? "Unavailable"
+                    ? uiT("Unavailable")
                     : "Mixed"
               }
             </SelectValue>

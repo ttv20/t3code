@@ -131,7 +131,7 @@ export function WorkspaceToolbar(props: {
   const searchButton = foldedSearch ? (
     <Toolbar.Button
       identifier="workspace-search"
-      accessibilityLabel={searchVisible ? "Close search" : searchLabel}
+      accessibilityLabel={searchVisible ? uiT("Close search") : searchLabel}
       icon={searchVisible ? "xmark" : "magnifyingglass"}
       onPress={searchVisible ? () => searchRef.current?.cancelSearch() : focusSearch}
       separateBackground

@@ -8,7 +8,7 @@ describe("settled work labels", () => {
   });
 
   it("keeps English duration formatting", () => {
-    expect(formatTurnWorkLabel(2_000, false)).toBe("Worked for 2.0s");
+    expect(formatTurnWorkLabel(2_000, false)).toBe("Worked for 2s");
     expect(formatTurnWorkLabel(4_077_000, false)).toBe("Worked for 1h 7m 57s");
     expect(formatTurnWorkLabel(12_000, true)).toBe("You stopped after 12s");
   });

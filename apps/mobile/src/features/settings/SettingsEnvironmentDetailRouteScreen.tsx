@@ -244,7 +244,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                     {running ? (
                       <Text className="text-sm text-foreground-muted">
                         {updateState.stage === "resuming"
-                          ? "Restarting and reconnecting…"
+                          ? uiT("Restarting and reconnecting…")
                           : uiT("Downloading update…")}
                       </Text>
                     ) : updateState.status === "failed" ? (
@@ -263,7 +263,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                     !supportsEnvironmentUpdate(config.environment.capabilities) ? (
                       <Text className="text-sm text-foreground-muted">
                         {capabilities?.serverSelfUpdate === "desktop-managed"
-                          ? "Update the desktop app on this machine."
+                          ? uiT("Update the desktop app on this machine.")
                           : uiT("Update and restart T3 Code on this machine.")}
                       </Text>
                     ) : null}

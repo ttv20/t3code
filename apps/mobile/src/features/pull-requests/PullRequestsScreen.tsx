@@ -399,21 +399,21 @@ export function PullRequestsScreen(
               <EmptyState
                 title={
                   result.error
-                    ? "Couldn't load pull requests"
+                    ? uiT("Couldn't load pull requests")
                     : targets.length && connectedTargets.length === 0
-                      ? "Environment offline"
+                      ? uiT("Environment offline")
                       : targets.length
                         ? query
-                          ? "No results"
+                          ? uiT("No results")
                           : "No matching pull requests"
                         : uiT("Connect an environment")
                 }
                 detail={
                   result.error ??
                   (targets.length && connectedTargets.length === 0
-                    ? "Reconnect to load pull requests that aren't saved on this device."
+                    ? uiT("Reconnect to load pull requests that aren't saved on this device.")
                     : targets.length
-                      ? "Pull requests from the selected environments' projects appear here."
+                      ? uiT("Pull requests from the selected environments' projects appear here.")
                       : uiT("Add an environment in Settings to browse its pull requests."))
                 }
                 variant="plain"

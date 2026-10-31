@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../i18n";
 import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import { PinIcon, PinOffIcon } from "lucide-react";
 import type { KeyboardEvent } from "react";
@@ -31,7 +32,8 @@ export function ProjectPinButton(props: {
   readonly onToggle: () => void;
   readonly shortcutLabel?: string | null;
 }) {
-  const action = `${props.pinned ? "Unpin" : "Pin"} ${props.name}`;
+  const { t } = useUiLanguage();
+  const action = t(props.pinned ? "Unpin {0}" : "Pin {0}", { "0": props.name });
   return (
     <span
       className={cn(

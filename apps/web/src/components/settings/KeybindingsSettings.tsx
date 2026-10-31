@@ -824,7 +824,7 @@ function KeybindingKeyControl({
           disabled={isSaving || keyDraft.trim().length === 0 || !isWhenDraftValid}
           onClick={save}
         >
-          {isSaving ? "Saving" : uiT("Save")}
+          {isSaving ? uiT("Saving") : uiT("Save")}
         </Button>
       ) : null}
       {showPill ? (
@@ -848,7 +848,7 @@ function KeybindingKeyControl({
           autoFocus={isRecording}
           aria-label={uiT("Keybinding for {0}", { "0": commandLabel(row.command) })}
           value={isRecording ? "" : keyDraft}
-          placeholder={isRecording ? "Press shortcut" : uiT("Unassigned")}
+          placeholder={isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
           size="sm"
           font="mono"
           className="w-44"
@@ -1174,7 +1174,7 @@ function NewKeybindingKeyInput({
       autoFocus={autoFocus}
       aria-label={uiT("Keybinding for {0}", { "0": draft.commandLabelText })}
       value={draft.isRecording ? "" : draft.keyDraft}
-      placeholder={draft.isRecording ? "Press shortcut" : uiT("Unassigned")}
+      placeholder={draft.isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
       size="sm"
       font="mono"
       className={className}
@@ -1261,7 +1261,7 @@ function NewKeybindingSettingsRow(props: NewKeybindingProps) {
           <KeybindingConflictWarning labels={draft.conflictLabels} />
           <NewKeybindingKeyInput draft={draft} className="w-44" />
           <Button size="sm" disabled={isSaving || !draft.canSave} onClick={draft.save}>
-            {isSaving ? "Saving" : uiT("Save")}
+            {isSaving ? uiT("Saving") : uiT("Save")}
           </Button>
           <NewKeybindingCancelIcon isSaving={isSaving} onCancel={onCancel} />
         </div>
@@ -1535,7 +1535,7 @@ export function KeybindingsSettingsPanel() {
       {!canWriteSettings ? (
         <p className="text-xs text-muted-foreground">
           {connectedEnvironments.length === 0
-            ? "Connect an environment to change keybindings."
+            ? uiT("Connect an environment to change keybindings.")
             : uiT("This connection can view keybindings but cannot change them.")}
         </p>
       ) : null}

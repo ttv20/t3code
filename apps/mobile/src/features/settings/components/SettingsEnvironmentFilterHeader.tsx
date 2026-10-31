@@ -61,7 +61,7 @@ export function SettingsEnvironmentFilterHeader(props: {
                   type: "submenu",
                   label:
                     selectedIds === null
-                      ? "All environments"
+                      ? uiT("All environments")
                       : `${selectedTargets.length} ${selectedTargets.length === 1 ? "environment" : "environments"}`,
                   items: [
                     {
@@ -93,7 +93,9 @@ export function SettingsEnvironmentFilterHeader(props: {
                   label:
                     selectableProjectGroups.find((group) => group.key === selectedProjectKey)
                       ?.label ??
-                    (selectedProjectKey === null ? "All projects" : uiT("Unavailable project")),
+                    (selectedProjectKey === null
+                      ? uiT("All projects")
+                      : uiT("Unavailable project")),
                   items: [
                     {
                       type: "action",

@@ -221,7 +221,7 @@ const RunContextSelector = memo(function RunContextSelector({
       <TooltipPopup>
         {isPanel
           ? forceNewWorktree
-            ? "Each model starts in its own worktree."
+            ? uiT("Each model starts in its own worktree.")
             : (workspacePath ?? workspaceLabel)
           : uiT(workspaceLabel)}
       </TooltipPopup>

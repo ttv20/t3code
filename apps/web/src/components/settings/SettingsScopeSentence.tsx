@@ -85,7 +85,7 @@ export function SettingsScopeSentence() {
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
         <span className="shrink-0">
-          {scope.search.machine || scope.scope.kind === "checkout" ? "on" : uiT("across")}
+          {scope.search.machine || scope.scope.kind === "checkout" ? uiT("on") : uiT("across")}
         </span>
         <EnvironmentScopeMenu {...props} />
       </span>
@@ -272,9 +272,9 @@ function EnvironmentScopeMenu({
         selected
           ? settingsScopeEnvironmentLabel(selected, environments)
           : environmentValue !== ALL_ENVIRONMENTS_VALUE
-            ? "Unavailable environment"
+            ? uiT("Unavailable environment")
             : singleEnvironment
-              ? "No environments"
+              ? uiT("No environments")
               : uiT("All environments")
       }
       value={environmentValue}
@@ -324,7 +324,9 @@ function ProjectScopeMenu({ value, groups, environments, onChange }: SettingsSco
     <ScopeMenu
       ariaLabel={uiT("Project scope")}
       icon={selected ? <ProjectFavicon project={selected} className="size-3.5 shrink-0" /> : null}
-      label={selected?.displayName ?? (value.project ? "Unavailable project" : uiT("All projects"))}
+      label={
+        selected?.displayName ?? (value.project ? uiT("Unavailable project") : uiT("All projects"))
+      }
       value={projectAxisValue(value)}
       onChange={(next) => onChange(selectProjectAxis(value, next))}
       searchLabel="Search projects"

@@ -536,9 +536,9 @@ function ThreadArrangementSheet(props: { onClose: () => void }) {
                           >
                             <Text className="text-sm text-foreground-muted">
                               {olderSettledShelf.loading
-                                ? "Loading"
+                                ? uiT("Loading")
                                 : olderSettledShelf.failed
-                                  ? "Could not load older threads. Retry"
+                                  ? uiT("Could not load older threads. Retry")
                                   : `Show more (${settledCount - visibleSettled.length} settled hidden)`}
                             </Text>
                           </Pressable>

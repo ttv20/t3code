@@ -213,7 +213,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           {...pointerFocusProps}
           disabled={isSendBusy || isSendDisabled || isEnvironmentUnavailable}
         >
-          {isSendBusy ? "Sending..." : uiT("Refine")}
+          {isSendBusy ? uiT("Sending...") : uiT("Refine")}
         </button>
       );
     }
@@ -226,7 +226,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           {...pointerFocusProps}
           disabled={isSendBusy || isSendDisabled || isEnvironmentUnavailable}
         >
-          {isSendBusy ? "Sending..." : uiT("Implement")}
+          {isSendBusy ? uiT("Sending...") : uiT("Implement")}
         </button>
         <Menu>
           <MenuTrigger
@@ -275,15 +275,15 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   const compactsBeforeSend = compactTokens !== null && !keepFullHistory;
 
   const submitLabel = showResume
-    ? "Resume thread"
+    ? uiT("Resume thread")
     : isEditingQueuedMessage
-      ? "Update queued message"
+      ? uiT("Update queued message")
       : compactsBeforeSend
-        ? "Compact and send"
+        ? uiT("Compact and send")
         : isQueuing
-          ? "Queue message"
+          ? uiT("Queue message")
           : isRunning
-            ? "Steer message"
+            ? uiT("Steer message")
             : uiT("Submit message");
   const submitStatus = isEnvironmentUnavailable
     ? "Environment disconnected"
@@ -377,7 +377,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
         >
           <Minimize2Icon aria-hidden="true" />
           <span className="@max-[480px]/composer-surface:hidden">
-            {keepFullHistory ? "Keep" : uiT("Compact")}
+            {keepFullHistory ? uiT("Keep") : uiT("Compact")}
           </span>
           <span className="text-muted-foreground">{compactTokens}</span>
         </TooltipTrigger>
@@ -388,7 +388,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
               : `Next send compacts ${compactTokens} tokens first.`}
           </div>
           <div>
-            {keepFullHistory ? "Click to compact first" : uiT("Click to keep full history")}
+            {keepFullHistory ? uiT("Click to compact first") : uiT("Click to keep full history")}
           </div>
         </TooltipPopup>
       </Tooltip>

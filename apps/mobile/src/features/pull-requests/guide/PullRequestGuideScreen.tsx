@@ -281,9 +281,9 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                   accessibilityRole="button"
                   accessibilityLabel={
                     guide && position < guide.stops.length - 1
-                      ? "Next stop"
+                      ? uiT("Next stop")
                       : canReview
-                        ? "Finish review"
+                        ? uiT("Finish review")
                         : uiT("Finish tour")
                   }
                   className="mt-2 flex-row items-center gap-4 border-t border-border-subtle pt-5 pb-2 active:opacity-60"
@@ -313,7 +313,7 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
                       {guide && position < guide.stops.length - 1
                         ? guide.stops[position + 1]?.title
                         : canReview
-                          ? "Finish review"
+                          ? uiT("Finish review")
                           : uiT("Finish tour")}
                     </Text>
                   </View>

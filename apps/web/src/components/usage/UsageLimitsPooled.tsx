@@ -185,7 +185,7 @@ function SegmentPopover({
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
         {account.plan ? <Row label={uiT("Plan")}>{uiT(account.plan)}</Row> : null}
         {where ? (
-          <Row label={account.environments.length > 0 ? "Signed in" : uiT("Via")}>{where}</Row>
+          <Row label={account.environments.length > 0 ? uiT("Signed in") : uiT("Via")}>{where}</Row>
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
@@ -220,7 +220,7 @@ function SegmentPopover({
               className="ms-auto"
               onClick={onRedeem}
             >
-              {redeem.busy ? "Using…" : uiT("Use reset")}
+              {redeem.busy ? uiT("Using…") : uiT("Use reset")}
             </Button>
           </span>
         </div>
@@ -316,6 +316,7 @@ function RedeemableSegment({
 }: Omit<Parameters<typeof SegmentTriggers>[0], "redeem"> & {
   readonly redeemAt: NonNullable<LimitAccount["redeem"]>;
 }) {
+  const { t: uiT } = useUiLanguage();
   const redeem = useResetCredit(redeemAt.environmentId, redeemAt.input);
   return (
     <>
@@ -330,7 +331,7 @@ function RedeemableSegment({
       {redeem.busy || redeem.status ? (
         <span role="status" className="col-span-full text-xs text-muted-foreground">
           <AccountName account={props.account} className="font-medium text-foreground" />{" "}
-          {redeem.busy ? "Using reset credit…" : redeem.status}
+          {redeem.busy ? uiT("Using reset credit…") : redeem.status}
         </span>
       ) : null}
     </>
@@ -382,7 +383,7 @@ function SegmentTriggers({
               "2": resetsIn ? `, ${resetsIn}` : "",
               "3": timeLeft === null ? "" : `, ${timeLeft}% of the window left`,
               "4": credits
-                ? `, ${credits} reset ${credits === 1 ? "credit" : "credits"} banked`
+                ? `, ${credits} reset ${credits === 1 ? uiT("credit") : "credits"} banked`
                 : "",
             })}
             className="relative h-5 min-w-0 cursor-pointer rounded-md bg-muted text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[popup-open]:ring-1 data-[popup-open]:ring-inset data-[popup-open]:ring-border @2xl/pool:h-8"
@@ -511,7 +512,7 @@ function LegendRow({
             </span>
             <span className="sr-only">
               {credits} {uiT("reset")}
-              {credits === 1 ? "credit" : uiT("credits")} {uiT("banked")}
+              {credits === 1 ? uiT("credit") : uiT("credits")} {uiT("banked")}
             </span>
           </>
         ) : null}

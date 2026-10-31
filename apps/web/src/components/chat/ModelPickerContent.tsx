@@ -1027,7 +1027,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
                       className="group w-full cursor-pointer"
                     >
                       <span className="text-sm leading-snug text-muted-foreground group-hover:text-foreground group-data-highlighted:text-foreground">
-                        {legacySection.isExpanded ? "Show less" : uiT("Show more")}
+                        {legacySection.isExpanded ? uiT("Show less") : uiT("Show more")}
                       </span>
                     </ComboboxItem>
                   );
@@ -1073,7 +1073,7 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
               updateRequiredNotices={updateRequiredNotices}
               emptyLabel={
                 selectedInstanceId === "favorites" && !isSearching
-                  ? "No favorites yet"
+                  ? uiT("No favorites yet")
                   : uiT("No models found")
               }
               onRequestClose={onRequestClose}

@@ -174,7 +174,9 @@ function DiffFileCollapseToggle({
           icon={collapsed ? ChevronRight : ChevronDown}
         />
       </TooltipTrigger>
-      <TooltipPopup side="top">{collapsed ? "Expand diff" : uiT("Collapse diff")}</TooltipPopup>
+      <TooltipPopup side="top">
+        {collapsed ? uiT("Expand diff") : uiT("Collapse diff")}
+      </TooltipPopup>
     </Tooltip>
   );
 }
@@ -421,19 +423,19 @@ export default function DiffPanel({
     selectedCommitSha !== null
       ? (selectedCommitSubject ?? `Commit ${selectedCommitSha.slice(0, 7)}`)
       : selectedGitScope === "unstaged"
-        ? "Uncommitted"
+        ? uiT("Uncommitted")
         : "Changes";
   const selectedScopeLabel = toolCallSelection
-    ? "Tool call"
+    ? uiT("Tool call")
     : selectedRunId === null
       ? selectedCommitSha !== null
         ? (selectedCommitSubject ?? "Commit")
         : selectedGitScopeLabel
       : selectedTurn?.runId === latestTurn?.runId
-        ? "Latest turn"
+        ? uiT("Latest turn")
         : `Turn ${selectedCheckpointTurnCount ?? "?"}`;
   const reviewSectionTitle = toolCallSelection
-    ? "Tool call"
+    ? uiT("Tool call")
     : selectedTurn
       ? `Turn ${selectedCheckpointTurnCount ?? "?"}`
       : selectedGitScopeLabel;
@@ -947,7 +949,7 @@ export default function DiffPanel({
                 ) : !canReadFiles ? (
                   <DropdownMenuItem disabled>
                     {fileAccess.isPending
-                      ? "Checking file access..."
+                      ? uiT("Checking file access...")
                       : (fileAccess.error ?? "This connection cannot read local diffs.")}
                   </DropdownMenuItem>
                 ) : branchCommits === null ? (
@@ -1126,7 +1128,7 @@ export default function DiffPanel({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={isRefreshingDiff ? "Refreshing diff" : uiT("Refresh diff")}
+                  aria-label={isRefreshingDiff ? uiT("Refreshing diff") : uiT("Refresh diff")}
                   onClick={refreshDiffFromUserAction}
                 />
               }
@@ -1134,7 +1136,7 @@ export default function DiffPanel({
               <RefreshIcon size="sm" refreshing={isRefreshingDiff} />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {isRefreshingDiff ? "Refreshing diff…" : uiT("Refresh diff")}
+              {isRefreshingDiff ? uiT("Refreshing diff…") : uiT("Refresh diff")}
             </TooltipPopup>
           </Tooltip>
         )}
@@ -1147,7 +1149,7 @@ export default function DiffPanel({
                   size="icon-sm"
                   variant="ghost"
                   aria-label={
-                    allDiffFilesCollapsed ? "Expand all files" : uiT("Collapse all files")
+                    allDiffFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")
                   }
                   onClick={toggleDiffFileCollapse}
                 />
@@ -1159,7 +1161,7 @@ export default function DiffPanel({
               />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {allDiffFilesCollapsed ? "Expand all files" : uiT("Collapse all files")}
+              {allDiffFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")}
             </TooltipPopup>
           </Tooltip>
         )}
@@ -1187,7 +1189,7 @@ export default function DiffPanel({
             render={
               <Toggle
                 aria-label={
-                  wordWrap ? "Disable diff line wrapping" : uiT("Enable diff line wrapping")
+                  wordWrap ? uiT("Disable diff line wrapping") : uiT("Enable diff line wrapping")
                 }
                 variant="ghost"
                 size="sm"
@@ -1201,7 +1203,7 @@ export default function DiffPanel({
             <TextWrapIcon className="size-3.5" />
           </TooltipTrigger>
           <TooltipPopup side="top">
-            {wordWrap ? "Disable line wrapping" : uiT("Enable line wrapping")}
+            {wordWrap ? uiT("Disable line wrapping") : uiT("Enable line wrapping")}
           </TooltipPopup>
         </Tooltip>
         <Tooltip>
@@ -1209,7 +1211,9 @@ export default function DiffPanel({
             render={
               <Toggle
                 aria-label={
-                  diffIgnoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")
+                  diffIgnoreWhitespace
+                    ? uiT("Show whitespace changes")
+                    : uiT("Hide whitespace changes")
                 }
                 variant="ghost"
                 size="sm"
@@ -1223,7 +1227,7 @@ export default function DiffPanel({
             <PilcrowIcon className="size-3.5" />
           </TooltipTrigger>
           <TooltipPopup side="top">
-            {diffIgnoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")}
+            {diffIgnoreWhitespace ? uiT("Show whitespace changes") : uiT("Hide whitespace changes")}
           </TooltipPopup>
         </Tooltip>
         {testFileCount > 0 && (
@@ -1253,7 +1257,7 @@ export default function DiffPanel({
             <TooltipTrigger
               render={
                 <Toggle
-                  aria-label={fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
+                  aria-label={fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
                   variant="ghost"
                   size="sm"
                   pressed={fileTreeOpen}
@@ -1264,7 +1268,7 @@ export default function DiffPanel({
               <FolderTreeIcon className="size-3.5" />
             </TooltipTrigger>
             <TooltipPopup side="top">
-              {fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
+              {fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
             </TooltipPopup>
           </Tooltip>
         )}
@@ -1300,7 +1304,9 @@ export default function DiffPanel({
             {isSelectedPatchTruncated && !lazySource && (
               <p className="shrink-0 border-b border-border/70 bg-muted/40 px-3 py-1.5 text-2xs text-muted-foreground">
                 {uiT("This preview exceeds the size limit. Changes shown are incomplete.")}
-                {isGitSelection && selectedGitSource?.files ? " Totals include all changes." : ""}
+                {isGitSelection && selectedGitSource?.files
+                  ? uiT(" Totals include all changes.")
+                  : ""}
               </p>
             )}
             {omittedToolCallFiles > 0 && (
@@ -1328,7 +1334,7 @@ export default function DiffPanel({
                         wordWrap && "whitespace-pre-wrap wrap-break-word",
                       )}
                     >
-                      {text === "" ? "Empty content." : text}
+                      {text === "" ? uiT("Empty content.") : text}
                     </pre>
                   </div>
                 ))}
@@ -1338,11 +1344,11 @@ export default function DiffPanel({
                 <DiffPanelLoadingState
                   label={
                     toolCallSelection
-                      ? "Loading tool call diff..."
+                      ? uiT("Loading tool call diff...")
                       : selectedTurn
-                        ? "Loading checkpoint diff..."
+                        ? uiT("Loading checkpoint diff...")
                         : selectedGitScope === "unstaged"
-                          ? "Loading uncommitted changes..."
+                          ? uiT("Loading uncommitted changes...")
                           : selectedGitScope === "commit"
                             ? "Loading commit..."
                             : "Loading changes..."
@@ -1352,7 +1358,7 @@ export default function DiffPanel({
                 <div className="flex h-full items-center justify-center px-3 py-2 text-xs text-muted-foreground/70">
                   <p>
                     {hasNoNetChanges
-                      ? "No net changes in this selection."
+                      ? uiT("No net changes in this selection.")
                       : uiT("No patch available for this selection.")}
                   </p>
                 </div>

@@ -631,9 +631,9 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   });
   const contextImports = useAtomValue(composerContextImportsAtom);
   const sendBlockedReason =
-    (queuedEdit?.saving === true ? "Saving…" : null) ??
+    (queuedEdit?.saving === true ? uiT("Saving…") : null) ??
     props.sendBlockedReason ??
-    (pendingPastedTextAttachmentCount > 0 ? "Attaching pasted text" : null) ??
+    (pendingPastedTextAttachmentCount > 0 ? uiT("Attaching pasted text") : null) ??
     attachmentBlockReason;
   const canSend =
     (props.canOperateThread || props.connectionState !== "connected") &&

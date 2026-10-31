@@ -241,7 +241,7 @@ export function AddProviderInstanceDialog({
       : "Select an ACP or configure one manually.";
   const wizardStepSummaries = isAcpRegistry
     ? ([
-        isLocalAcp ? "Local ACP command" : (selectedAcp?.name ?? (manualAgentId || null)),
+        isLocalAcp ? uiT("Local ACP command") : (selectedAcp?.name ?? (manualAgentId || null)),
         previewLabel,
         null,
       ] as const)
@@ -491,7 +491,7 @@ export function AddProviderInstanceDialog({
                 <Collapsible open={showMoreProviders} onOpenChange={setShowMoreProviders}>
                   <div className="flex pt-2">
                     <CollapsibleTrigger render={<Button variant="ghost-muted" size="xs" />}>
-                      {showMoreProviders ? "Show less" : uiT("Show more")}
+                      {showMoreProviders ? uiT("Show less") : uiT("Show more")}
                       <ChevronDownIcon
                         aria-hidden
                         className={cn("transition-transform", showMoreProviders && "rotate-180")}
@@ -518,7 +518,7 @@ export function AddProviderInstanceDialog({
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <h3 className="text-sm font-medium text-foreground">
-                                {isLocalAcp ? "Local ACP command" : uiT("Enter manually")}
+                                {isLocalAcp ? uiT("Local ACP command") : uiT("Enter manually")}
                               </h3>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {isLocalAcp
@@ -732,7 +732,7 @@ export function AddProviderInstanceDialog({
                   setWizardStep((step) => Math.max(0, step - 1));
                 }}
               >
-                {wizardStep === 0 ? "Cancel" : uiT("Back")}
+                {wizardStep === 0 ? uiT("Cancel") : uiT("Back")}
               </Button>
               {wizardStep === 0 && driver === "codex" ? (
                 <>
@@ -759,9 +759,9 @@ export function AddProviderInstanceDialog({
                   onClick={() => void handleSave()}
                 >
                   {isSaving
-                    ? "Adding..."
+                    ? uiT("Adding...")
                     : isAcpRegistry && !isLocalAcp
-                      ? "Continue to sign-in"
+                      ? uiT("Continue to sign-in")
                       : uiT("Add instance")}
                 </Button>
               )}

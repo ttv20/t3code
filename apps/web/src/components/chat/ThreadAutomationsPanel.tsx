@@ -1,5 +1,5 @@
-import { createUiTranslator, type UiLocale, UiText } from "@t3tools/client-runtime/i18n";
-import { useUiLanguage } from "../../i18n";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { useNavigate } from "@tanstack/react-router";

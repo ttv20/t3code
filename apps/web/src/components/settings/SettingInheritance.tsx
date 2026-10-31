@@ -295,7 +295,7 @@ export function SettingInheritance({
                         layer.effective ? "font-medium text-foreground" : "text-muted-foreground",
                       )}
                     >
-                      {layer.key === "environment" ? "Environment" : layer.label}
+                      {layer.key === "environment" ? uiT("Environment") : layer.label}
                     </span>
                     <span
                       className={cn(
@@ -348,7 +348,7 @@ export function SettingInheritance({
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {winningLayer?.key === "environment"
-                              ? "Environment"
+                              ? uiT("Environment")
                               : winningLayer?.label}
                           </span>
                           <ChevronRightIcon
@@ -408,7 +408,7 @@ export function SettingInheritance({
                       )}
                       {onClearOverrides ? (
                         <InlineButton onClick={() => onClearOverrides(overriding)}>
-                          {uiT("Reset")} {overriding.length === 1 ? "it" : uiT("all")}
+                          {uiT("Reset")} {overriding.length === 1 ? uiT("it") : uiT("all")}
                         </InlineButton>
                       ) : null}
                     </div>

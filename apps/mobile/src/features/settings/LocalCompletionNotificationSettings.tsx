@@ -25,28 +25,29 @@ export function LocalCompletionNotificationSettings() {
       return;
     }
     setRequesting(true);
-    try {
-      const permission = await runtime.runPromise(requestAgentNotificationPermission);
-      setStatus(permission.type === "granted" ? "enabled" : "disabled");
-      if (permission.type === "granted") save({ localCompletionNotificationsEnabled: true });
-      else if (permission.type === "denied" && !permission.canAskAgain) {
+    await runtime
+      .runPromise(requestAgentNotificationPermission)
+      .then((permission) => {
+        setStatus(permission.type === "granted" ? "enabled" : "disabled");
+        if (permission.type === "granted") save({ localCompletionNotificationsEnabled: true });
+        else if (permission.type === "denied" && !permission.canAskAgain) {
+          Dialog.alert(
+            uiT("Notifications disabled"),
+            uiT("Notifications were denied for this app. Open Settings to enable them."),
+            [
+              { text: uiT("Cancel"), style: "cancel" },
+              { text: uiT("Open Settings"), onPress: () => void Linking.openSettings() },
+            ],
+          );
+        }
+      })
+      .catch(() => {
         Dialog.alert(
-          uiT("Notifications disabled"),
-          uiT("Notifications were denied for this app. Open Settings to enable them."),
-          [
-            { text: uiT("Cancel"), style: "cancel" },
-            { text: uiT("Open Settings"), onPress: () => void Linking.openSettings() },
-          ],
+          uiT("Notifications unavailable"),
+          uiT("Could not request notification permission."),
         );
-      }
-    } catch {
-      Dialog.alert(
-        uiT("Notifications unavailable"),
-        uiT("Could not request notification permission."),
-      );
-    } finally {
-      setRequesting(false);
-    }
+      })
+      .finally(() => setRequesting(false));
   };
   return (
     <SettingsSection title={uiT("Local notifications")}>

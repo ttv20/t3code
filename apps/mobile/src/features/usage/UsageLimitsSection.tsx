@@ -159,7 +159,7 @@ function AccountInstanceLabel({ value }: { readonly value: string }) {
     <Pressable
       className="shrink active:opacity-60"
       accessibilityRole="button"
-      accessibilityLabel={revealed ? "Hide account label" : uiT("Reveal account label")}
+      accessibilityLabel={revealed ? uiT("Hide account label") : uiT("Reveal account label")}
       onPress={() => setRevealed((current) => !current)}
     >
       <Text className="text-xs text-foreground-tertiary" numberOfLines={1}>
@@ -323,7 +323,7 @@ export function ResetCredits(props: {
                 : "text-sm font-t3-medium text-foreground"
             }
           >
-            {busy ? "Using…" : uiT("Use reset")}
+            {busy ? uiT("Using…") : uiT("Use reset")}
           </Text>
         </Pressable>
       ) : null}

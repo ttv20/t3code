@@ -128,7 +128,9 @@ export function SimlockDeviceHostEditor(props: {
           }}
         >
           <DialogHeader>
-            <DialogTitle>{props.isNew ? "Add Simlock host" : uiT("Edit Simlock host")}</DialogTitle>
+            <DialogTitle>
+              {props.isNew ? uiT("Add Simlock host") : uiT("Edit Simlock host")}
+            </DialogTitle>
             <DialogDescription>
               {several
                 ? uiT(
@@ -190,7 +192,7 @@ export function SimlockDeviceHostEditor(props: {
               ))}
               <p className="text-xs text-muted-foreground">
                 <UiText message={"Leases, drives, and streams devices. Create one"} />
-                {several ? " per environment" : ""} <UiText message={"with"} />{" "}
+                {several ? uiT(" per environment") : ""} <UiText message={"with"} />{" "}
                 <code>simlock --gateway token create --role agent</code>
                 <UiText
                   message={", or leave it blank to add it later. A blank token uses the machine's"}

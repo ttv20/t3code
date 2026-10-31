@@ -176,7 +176,7 @@ export function GuideStop({
         {otherFiles.length > 0 ? (
           <section className="flex flex-col gap-1.5">
             <h3 className="text-xs font-medium text-muted-foreground">
-              {stop.excerpts.length > 0 ? "Also in this stop" : uiT("Files in this stop")}
+              {stop.excerpts.length > 0 ? uiT("Also in this stop") : uiT("Files in this stop")}
             </h3>
             <DiffWorkerPoolProvider>
               <ul className="flex flex-col overflow-hidden rounded-lg border border-border/60">
@@ -217,7 +217,7 @@ export function GuideStop({
                           ) : (
                             <p className="px-3 py-2 text-xs text-muted-foreground">
                               {diffLoading
-                                ? "Loading the diff..."
+                                ? uiT("Loading the diff...")
                                 : uiT("This file is not in the loaded diff.")}
                             </p>
                           )}

@@ -150,7 +150,7 @@ export function ProjectSettingsPanel({
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
         {groups.length === 0
-          ? "Add a project from the sidebar to configure it here."
+          ? uiT("Add a project from the sidebar to configure it here.")
           : uiT("This project is no longer available.")}
       </div>
     );
@@ -433,7 +433,7 @@ function ProjectDetail({
           {!canEditGroup ? (
             <p className="px-3 py-2 text-sm text-muted-foreground sm:px-4">
               {group.memberProjects.length > 1
-                ? "Shared settings require permission to change every checkout in this group."
+                ? uiT("Shared settings require permission to change every checkout in this group.")
                 : uiT("This connection cannot change this project.")}
             </p>
           ) : null}
@@ -564,7 +564,7 @@ function ProjectDetail({
                       )
                     }
                   >
-                    {group.archived ? "Unarchive" : uiT("Archive")}
+                    {group.archived ? uiT("Unarchive") : uiT("Archive")}
                   </Button>
                 }
               />
@@ -578,9 +578,9 @@ function ProjectDetail({
           <SettingsRow
             title={
               hasOtherMembers
-                ? "Remove checkout"
+                ? uiT("Remove checkout")
                 : group.memberProjects.length > 1
-                  ? "Remove this project everywhere"
+                  ? uiT("Remove this project everywhere")
                   : uiT("Remove project")
             }
             description={
@@ -604,9 +604,9 @@ function ProjectDetail({
               >
                 <Trash2Icon />
                 {hasOtherMembers
-                  ? "Remove checkout"
+                  ? uiT("Remove checkout")
                   : group.memberProjects.length > 1
-                    ? "Remove all entries"
+                    ? uiT("Remove all entries")
                     : uiT("Remove project")}
               </Button>
             }

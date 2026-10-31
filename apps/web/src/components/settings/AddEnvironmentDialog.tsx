@@ -182,7 +182,7 @@ export function AddEnvironmentDialog({
     handleOpenChange(false);
     toastManager.add({
       type: "success",
-      title: routeTarget ? "Route added" : uiT("Environment connected"),
+      title: routeTarget ? uiT("Route added") : uiT("Environment connected"),
       description: routeTarget
         ? uiT("{0} can now be reached over SSH {1}.", {
             "0": routeTarget.label,
@@ -488,7 +488,11 @@ export function AddEnvironmentDialog({
         onClick={() => void handleAddSavedBackend()}
       >
         <PlusIcon className="size-3.5" />
-        {isAddingSavedBackend ? "Adding…" : routeTarget ? "Add route" : uiT("Add environment")}
+        {isAddingSavedBackend
+          ? uiT("Adding…")
+          : routeTarget
+            ? uiT("Add route")
+            : uiT("Add environment")}
       </Button>
     </div>
   );
@@ -614,7 +618,11 @@ export function AddEnvironmentDialog({
           onClick={() => void handleAddSavedBackend()}
         >
           <PlusIcon className="size-3.5" />
-          {isAddingSavedBackend ? "Adding…" : routeTarget ? "Add route" : uiT("Add environment")}
+          {isAddingSavedBackend
+            ? uiT("Adding…")
+            : routeTarget
+              ? uiT("Add route")
+              : uiT("Add environment")}
         </Button>
       </div>
     </div>

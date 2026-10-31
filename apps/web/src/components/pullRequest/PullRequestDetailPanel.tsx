@@ -818,7 +818,7 @@ export function PullRequestDetailPanel({
         title: uiT("Added to the composer"),
         description:
           task.prompt.length > 0
-            ? "The question is in the composer. Read it over, then send."
+            ? uiT("The question is in the composer. Read it over, then send.")
             : uiT("The {0} is in the composer. Type your question, then send.", {
                 "0": uiT(terminology.singular),
               }),
@@ -858,7 +858,7 @@ export function PullRequestDetailPanel({
       title: uiT("Asked in a thread"),
       description:
         task.prompt.length > 0
-          ? "The question is in the composer. Read it over, then send."
+          ? uiT("The question is in the composer. Read it over, then send.")
           : uiT("The {0} is in the composer. Type your question, then send.", {
               "0": uiT(terminology.singular),
             }),
@@ -960,7 +960,7 @@ export function PullRequestDetailPanel({
         prepared.value.isOnPullRequestHead
           ? {
               type: "success",
-              title: mode === "local" ? "Checked out here" : uiT("Checked out"),
+              title: mode === "local" ? uiT("Checked out here") : uiT("Checked out"),
               description:
                 mode === "local"
                   ? uiT("This repository is on the {0}'s branch, with a thread open on it.", {
@@ -1651,7 +1651,7 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? "Comments unavailable"
+                        ? uiT("Comments unavailable")
                         : `${detail.commentCount.toLocaleString()} ${
                             detail.commentCount === 1 ? "comment" : "comments"
                           }`
@@ -1668,7 +1668,7 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? "Commits unavailable"
+                        ? uiT("Commits unavailable")
                         : `${detail.commits.length.toLocaleString()} ${
                             detail.commits.length === 1 ? "commit" : "commits"
                           }`
@@ -1691,7 +1691,7 @@ export function PullRequestDetailPanel({
                       <PullRequestReviewOutcomeIcon outcome="approved" className="size-3" />
                       {approvalCount.toLocaleString()}
                       <span className="sr-only">
-                        {approvalCount === 1 ? "approval" : uiT("approvals")}
+                        {approvalCount === 1 ? uiT("approval") : uiT("approvals")}
                       </span>
                     </span>
                   ) : null}
@@ -1701,7 +1701,7 @@ export function PullRequestDetailPanel({
                   variant="ghost-muted"
                   aria-label={
                     timelineOrder === "newest"
-                      ? "Show oldest activity first"
+                      ? uiT("Show oldest activity first")
                       : uiT("Show newest activity first")
                   }
                   onClick={() =>
@@ -1709,7 +1709,7 @@ export function PullRequestDetailPanel({
                   }
                 >
                   <ArrowDownUpIcon aria-hidden className="size-3" />
-                  {timelineOrder === "newest" ? "Newest first" : uiT("Oldest first")}
+                  {timelineOrder === "newest" ? uiT("Newest first") : uiT("Oldest first")}
                 </Button>
               </div>
             ) : null}

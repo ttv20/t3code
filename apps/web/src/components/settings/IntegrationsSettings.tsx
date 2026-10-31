@@ -934,7 +934,7 @@ function DeviceIntegrationControls({
               }}
             >
               {pending === `update-${tool}`
-                ? "Updating…"
+                ? uiT("Updating…")
                 : uiT("Update to v{0}", { "0": version.requiredVersion })}
             </Button>
           ) : null}
@@ -951,7 +951,7 @@ function DeviceIntegrationControls({
                 );
               }}
             >
-              {pending === "check" ? "Checking…" : uiT("Check versions")}
+              {pending === "check" ? uiT("Checking…") : uiT("Check versions")}
             </Button>
           ) : null}
         </div>
@@ -1487,7 +1487,7 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
                       <MenuSeparator />
                       <MenuItem disabled>
                         {environmentsReady
-                          ? "Connect to an environment to clear profile data"
+                          ? uiT("Connect to an environment to clear profile data")
                           : uiT("Checking environments…")}
                       </MenuItem>
                     </>
@@ -1545,7 +1545,7 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
                 }
               }}
             >
-              {profileRemovalInFlight ? "Removing…" : uiT("Remove profile")}
+              {profileRemovalInFlight ? uiT("Removing…") : uiT("Remove profile")}
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>
@@ -1623,7 +1623,7 @@ export function BrowserSettingsPanel() {
   const { t: uiT } = useUiLanguage();
 
   const desktopOnly = !isElectron;
-  const desktopOnlyMessage = desktopOnly ? "Only available in the desktop app." : undefined;
+  const desktopOnlyMessage = desktopOnly ? uiT("Only available in the desktop app.") : undefined;
 
   return (
     <SettingsPageContainer>

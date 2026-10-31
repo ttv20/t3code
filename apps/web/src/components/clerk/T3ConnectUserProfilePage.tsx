@@ -109,7 +109,7 @@ function T3ConnectEnvironmentRow(props: {
                   disabled={props.mutationPending}
                   onClick={() => props.onDeregister(environment)}
                 >
-                  {props.mutationPending ? "Deregistering…" : uiT("Deregister")}
+                  {props.mutationPending ? uiT("Deregistering…") : uiT("Deregister")}
                 </Button>
               </div>
             </div>
@@ -149,7 +149,7 @@ function T3ConnectTunnelUsage() {
               {tunnelUpgradeCopy(usage.upgrade)}{" "}
               {usage.upgrade === "link" ? (
                 <InlineButton disabled={t3Chat.pending !== null} onClick={() => void t3Chat.link()}>
-                  {t3Chat.pending === "link" ? "Opening…" : uiT("Link T3 Chat")}
+                  {t3Chat.pending === "link" ? uiT("Opening…") : uiT("Link T3 Chat")}
                 </InlineButton>
               ) : (
                 <a

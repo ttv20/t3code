@@ -47,8 +47,10 @@ export function ThreadDetailsItemsRow() {
               />
             }
           >
-            {enabled} <UiText message={"of"} /> {THREAD_DETAILS_ITEMS.length}{" "}
-            <UiText message={"on"} />
+            <UiText
+              message="{0} of {1} on"
+              values={{ "0": enabled, "1": THREAD_DETAILS_ITEMS.length }}
+            />
             <ChevronDownIcon aria-hidden />
           </MenuTrigger>
           <MenuPopup align="end">

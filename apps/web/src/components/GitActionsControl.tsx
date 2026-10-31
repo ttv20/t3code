@@ -851,7 +851,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                   </span>
                   <h3 className="text-sm font-semibold text-foreground">
                     {publishResult.status === "pushed"
-                      ? "Repository published"
+                      ? uiT("Repository published")
                       : uiT("Repository created")}
                   </h3>
                   <p className="max-w-xs text-pretty text-xs text-muted-foreground">
@@ -908,7 +908,7 @@ function PublishRepositoryDialog(props: PublishRepositoryDialogProps) {
                   setPublishWizardStep((step) => Math.max(0, step - 1));
                 }}
               >
-                {publishWizardStep === 0 ? "Cancel" : uiT("Back")}
+                {publishWizardStep === 0 ? uiT("Cancel") : uiT("Back")}
               </Button>
               {publishWizardStep < 1 ? (
                 <Button
@@ -1123,7 +1123,7 @@ export default function GitActionsControl({
     hasPrimaryRemote,
   );
   const quickActionDisabledReason = !canWriteSourceControl
-    ? "This connection cannot change source control."
+    ? uiT("This connection cannot change source control.")
     : quickAction.disabled
       ? (quickAction.hint ?? uiT("This action is currently unavailable."))
       : null;
@@ -1318,7 +1318,7 @@ export default function GitActionsControl({
         }
 
         const pullResult = result.value;
-        const title = pullResult.status === "pulled" ? "Pulled" : uiT("Already up to date");
+        const title = pullResult.status === "pulled" ? uiT("Pulled") : uiT("Already up to date");
         const description =
           pullResult.status === "pulled"
             ? uiT("Updated {0} from {1}", {
@@ -1514,7 +1514,7 @@ export default function GitActionsControl({
         >
           <GitBranchPlusIcon className="size-3.5" aria-hidden />
           <span className={cn("ml-0.5", THREAD_DETAILS_PANEL_LABEL_CLASS)}>
-            {initAction.isPending ? "Initializing..." : uiT("Initialize Git")}
+            {initAction.isPending ? uiT("Initializing...") : uiT("Initialize Git")}
           </span>
         </ThreadDetailsControl>
       ) : quietEmptyDraft || (compact && !gitActionProgress && !visibleInlineSuccess) ? null : (
@@ -1738,7 +1738,7 @@ export default function GitActionsControl({
                       size="xs"
                       onClick={() => setIsEditingFiles((prev) => !prev)}
                     >
-                      {isEditingFiles ? "Done" : uiT("Edit")}
+                      {isEditingFiles ? uiT("Done") : uiT("Edit")}
                     </Button>
                   )}
                 </div>

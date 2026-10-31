@@ -297,7 +297,7 @@ export function BrowserDeviceToolbar({
               type="button"
               aria-label={
                 aspectRatio === null
-                  ? "Lock viewport aspect ratio"
+                  ? uiT("Lock viewport aspect ratio")
                   : uiT("Unlock viewport aspect ratio")
               }
               aria-pressed={aspectRatio !== null}
@@ -314,7 +314,7 @@ export function BrowserDeviceToolbar({
           )}
         </TooltipTrigger>
         <TooltipPopup side="top">
-          {aspectRatio === null ? "Lock aspect ratio" : uiT("Unlock aspect ratio")}
+          {aspectRatio === null ? uiT("Lock aspect ratio") : uiT("Unlock aspect ratio")}
         </TooltipPopup>
       </Tooltip>
       <Button

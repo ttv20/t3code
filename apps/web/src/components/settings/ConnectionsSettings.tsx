@@ -535,7 +535,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
         type: "success",
         title:
           revokedCount === 1
-            ? "Revoked 1 other client"
+            ? uiT("Revoked 1 other client")
             : uiT("Revoked {0} clients", { "0": revokedCount }),
         description: uiT("Other paired clients will need a new pairing link before reconnecting."),
       });
@@ -792,7 +792,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                 onClick={loadWslState}
                 disabled={isLoadingWslState}
               >
-                {isLoadingWslState ? "Retrying…" : uiT("Retry")}
+                {isLoadingWslState ? uiT("Retrying…") : uiT("Retry")}
               </Button>
             }
           />
@@ -835,9 +835,9 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
       : (desktopWslState.distro ?? defaultDistroName ?? BACKEND_VALUE_DEFAULT_WSL);
     const selectLabel =
       selectValue === BACKEND_VALUE_WSL_OFF
-        ? "Off"
+        ? uiT("Off")
         : selectValue === BACKEND_VALUE_DEFAULT_WSL
-          ? "Default distro"
+          ? uiT("Default distro")
           : selectValue;
     return (
       <>
@@ -886,7 +886,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                   desktopWslState.distros.map((distro) => (
                     <SelectItem hideIndicator key={distro.name} value={distro.name}>
                       {distro.name}
-                      {distro.isDefault ? " (default)" : ""}
+                      {distro.isDefault ? uiT(" (default)") : ""}
                     </SelectItem>
                   ))
                 )}
@@ -1001,7 +1001,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
       title={searchableSetting("network-access").title}
       description={
         desktopBridge
-          ? "This connection cannot view or change network exposure."
+          ? uiT("This connection cannot view or change network exposure.")
           : currentAuthPolicy === "remote-reachable"
             ? uiT(
                 "Remote access is already configured. Change network exposure where the server starts.",
@@ -1046,7 +1046,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
             {...searchableSetting("connections-environment")}
             title={
               primaryEnvironment?.label ??
-              (desktopBridge ? "This machine" : uiT("Primary environment"))
+              (desktopBridge ? uiT("This machine") : uiT("Primary environment"))
             }
             icon={
               <EnvironmentMachineIcon
@@ -1117,7 +1117,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                       targetVersion={primaryVersionMismatch.clientVersion}
                       label={
                         primaryServerUpdateState.status === "failed"
-                          ? "Retry update"
+                          ? uiT("Retry update")
                           : uiT("Update to {0}", { "0": primaryVersionMismatch.clientVersion })
                       }
                     />
@@ -1217,7 +1217,7 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   {pendingDesktopServerExposureMode === "network-accessible"
-                    ? "Enable network access?"
+                    ? uiT("Enable network access?")
                     : uiT("Disable network access?")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
@@ -1249,9 +1249,9 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                   {isUpdatingDesktopServerExposure && <Spinner size="sm" />}
                   <span className="[text-box:trim-both_cap_alphabetic]">
                     {isUpdatingDesktopServerExposure
-                      ? "Restarting…"
+                      ? uiT("Restarting…")
                       : pendingDesktopServerExposureMode === "network-accessible"
-                        ? "Restart and enable"
+                        ? uiT("Restart and enable")
                         : uiT("Restart and disable")}
                   </span>
                 </Button>
@@ -1270,14 +1270,14 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
                 <AlertDialogTitle>
                   {pendingWslChange?.kind === "disable"
                     ? pendingWslChange.wasWslOnly
-                      ? "Turn off WSL and switch back to Windows?"
+                      ? uiT("Turn off WSL and switch back to Windows?")
                       : "Disable WSL backend?"
                     : pendingWslChange?.kind === "distro"
-                      ? "Switch WSL distro?"
+                      ? uiT("Switch WSL distro?")
                       : pendingWslChange?.kind === "enable"
-                        ? "Start the WSL backend"
+                        ? uiT("Start the WSL backend")
                         : pendingWslChange?.nextValue
-                          ? "Run only the WSL backend?"
+                          ? uiT("Run only the WSL backend?")
                           : uiT("Re-enable the Windows backend?")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>

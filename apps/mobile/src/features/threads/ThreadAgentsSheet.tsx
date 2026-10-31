@@ -207,7 +207,7 @@ function AgentRow(props: {
         className="min-w-0 flex-1"
         accessibilityHint={
           subagent.remoteChild === undefined
-            ? "Provider-managed agent. Its work appears in the transcript."
+            ? uiT("Provider-managed agent. Its work appears in the transcript.")
             : uiT("Runs on {0}. Connect to it to open its thread.", {
                 "0": subagent.remoteChild.label,
               })

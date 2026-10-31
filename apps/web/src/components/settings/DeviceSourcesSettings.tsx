@@ -366,7 +366,7 @@ export function DeviceSourcesSettings(props: {
     title: uiT("Local simulators"),
     description:
       members.length > 1
-        ? "Simulators and emulators installed on each environment's own machine."
+        ? uiT("Simulators and emulators installed on each environment's own machine.")
         : uiT("Simulators and emulators installed on this environment's machine."),
     environments: active.map((member) => {
       const local = member.state?.hosts.find((host) => host.kind === "local");
@@ -668,7 +668,7 @@ function PlatformIcon(props: {
         render={
           <button
             type="button"
-            aria-label={`${props.row.title}: ${props.label} ${available ? "available" : "not available"}`}
+            aria-label={`${props.row.title}: ${props.label} ${available ? uiT("available") : "not available"}`}
             className={cn(
               "relative grid size-6 shrink-0 place-items-center rounded-md outline-hidden hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
               available ? "text-foreground" : "text-muted-foreground/45",
@@ -687,7 +687,7 @@ function PlatformIcon(props: {
       <PopoverPopup side="top" align="end" width="sm">
         <p className="text-sm font-medium">
           {props.label}{" "}
-          {available ? (partial ? "available on some" : "available") : uiT("not available")}
+          {available ? (partial ? uiT("available on some") : "available") : uiT("not available")}
         </p>
         {props.row.shared ? (
           <>
@@ -738,7 +738,7 @@ function PlatformIcon(props: {
                 <Fragment key={environment.environmentId}>
                   <dt className="text-muted-foreground">{environment.label}</dt>
                   <dd className={entry?.available ? "" : "text-muted-foreground"}>
-                    {entry?.available ? "Available" : (entry?.reason ?? "Not available")}
+                    {entry?.available ? uiT("Available") : (entry?.reason ?? "Not available")}
                   </dd>
                 </Fragment>
               );
