@@ -139,6 +139,8 @@ export default mergeConfig(
       },
     },
     test: {
+      // The generated Codex schema is too large for the module runner's per-export transform.
+      deps: { optimizer: { ssr: { enabled: true, include: ["effect-codex-app-server/client"] } } },
       // Parallel sqlite/git/worktree/orchestration tests introduce load-sensitive flakes.
       fileParallelism: false,
       sequence: { sequencer: WeightedShardSequencer },

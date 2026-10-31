@@ -6,6 +6,8 @@ import type * as Context from "effect/Context";
 import { expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 
+// Transform the lazy chat module before timing the reserved-thread behavior.
+import "./ChatView";
 import { AppRoot } from "~/AppRoot";
 import { DraftId, useComposerDraftStore } from "~/composerDraftStore";
 import { __setClientSettingsForTests } from "~/hooks/useSettings";
