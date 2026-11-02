@@ -6,7 +6,7 @@ import {
   type ProviderInstanceId,
   type ServerProviderModel,
 } from "@t3tools/contracts";
-import { REASONING_SELECT_DESCRIPTOR_IDS } from "@t3tools/client-runtime/model-traits";
+import { isReasoningControl } from "@t3tools/client-runtime/model-traits";
 import { type CustomModelDefinition, normalizeCustomModelSlug } from "@t3tools/shared/model";
 
 import { useStableCallback } from "../../hooks/useStableCallback";
@@ -32,9 +32,7 @@ const FILTER_THRESHOLD = 8;
 const PROVIDER_ALIAS_SLUGS = new Set(["default", "auto"]);
 
 function hasReasoningControl(model: ServerProviderModel): boolean {
-  return (model.capabilities?.optionDescriptors ?? []).some((descriptor) =>
-    REASONING_SELECT_DESCRIPTOR_IDS.has(descriptor.id),
-  );
+  return (model.capabilities?.optionDescriptors ?? []).some(isReasoningControl);
 }
 
 // Reasoning is the norm, so only its absence is labeled, and only when other models have it.
@@ -338,12 +336,15 @@ export function ProviderModelsSection({
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground">
-            {models.length} {uiT("model")}
-            {models.length === 1 ? "" : uiT("s")}
+            {uiT(models.length === 1 ? "1 model" : "{0} models", { "0": models.length })}
             {favoriteCount > 0
-              ? ` · ${favoriteCount} favorite${favoriteCount === 1 ? "" : "s"}`
+              ? uiT(favoriteCount === 1 ? " · 1 favorite" : " · {0} favorites", {
+                  "0": favoriteCount,
+                })
               : ""}
-            {hiddenCount > 0 ? ` · ${hiddenCount} hidden` : ""}
+            {hiddenCount > 0
+              ? uiT(hiddenCount === 1 ? " · 1 hidden" : " · {0} hidden", { "0": hiddenCount })
+              : ""}
           </span>
         </div>
         {driverKind !== "antigravity" && !isAdding ? (

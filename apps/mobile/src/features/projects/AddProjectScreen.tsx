@@ -24,6 +24,7 @@ import {
   getNewProjectPublishTarget,
   getNewProjectPublishTargets,
   getNewProjectRepository,
+  githubIncompleteOwnerRepositoryMessage,
   defaultHostCloneUrl,
   normalizePastedCloneUrl,
   parseAddProjectRemoteSource,
@@ -47,6 +48,7 @@ import {
   inferProjectTitleFromPath,
   isWindowsPlatform,
 } from "@t3tools/client-runtime/state/projects";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
@@ -281,7 +283,7 @@ function ProjectPathInput(props: {
     <TextInput
       className="h-12 min-h-12 rounded-[24px] px-4 py-0 text-base leading-snug"
       value={props.value}
-      onChangeText={props.onChangeText}
+      onChangeText={(text) => props.onChangeText(resolvePastedPath(props.value, text))}
       autoCapitalize="none"
       autoCorrect={false}
       placeholder={uiT("~/projects/my-app")}
@@ -842,6 +844,11 @@ export function AddProjectRepositoryScreen(props: {
 
   const lookupRepository = async () => {
     if (!environment || repositoryInput.trim().length === 0 || isSubmitting) return;
+    const incompleteOwnerMessage = githubIncompleteOwnerRepositoryMessage(source, repositoryInput);
+    if (incompleteOwnerMessage) {
+      setError(incompleteOwnerMessage);
+      return;
+    }
     setError(null);
     setIsSubmitting(true);
     const provider = addProjectRemoteSourceProvider(source);

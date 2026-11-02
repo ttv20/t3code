@@ -1,9 +1,11 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
+import { createUiTranslator, formatUiDateTime, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AuthOrchestrationOperateScope,
+  clampManagedRuntimeMode,
+  managedCapabilityDenial,
   resolveProjectProviderInstanceEnabled,
 } from "@t3tools/contracts";
 import { readEnvironmentScope } from "../../state/session";
@@ -25,6 +27,7 @@ import {
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import {
   DEFAULT_WEBHOOK_PROMPT,
   emptyWebhookFilterDraft,
@@ -87,10 +90,7 @@ import {
   scheduledTaskEditorSessionAtom,
 } from "./scheduled-task-editor-state";
 import { appAtomRegistry } from "../../state/atom-registry";
-import {
-  formatNextScheduledTaskRun,
-  formatScheduledTaskInterval,
-} from "./scheduledTaskPresentation";
+import { formatNextScheduledTaskRun } from "./scheduledTaskPresentation";
 
 type ScheduledTaskRoutes = {
   SettingsScheduledTaskNew: undefined;
@@ -109,11 +109,28 @@ const DAYS = [
   { index: 0, label: "Sun" },
 ] as const;
 
-function describeSchedule(task: ScheduledTask): string {
-  if (task.schedule.type === "webhook") return "On webhook";
-  if (task.schedule.type === "interval") return formatScheduledTaskInterval(task.schedule.everyMs);
-  const days = task.schedule.weekdays?.length ? repeatLabel(task.schedule.weekdays) : "Every day";
-  return `${days} at ${formatTime(task.schedule.timeOfDay)}`;
+function describeSchedule(task: ScheduledTask, locale: UiLocale): string {
+  const t = createUiTranslator(locale);
+  if (task.schedule.type === "webhook") return t("On webhook");
+  if (task.schedule.type === "once") {
+    return t("Once, {0}", { "0": formatUiDateTime(Date.parse(task.schedule.runAt), locale) });
+  }
+  if (task.schedule.type === "interval") {
+    const minutes = task.schedule.everyMs / 60_000;
+    return Number.isInteger(minutes)
+      ? t("Every {0} min", { "0": minutes })
+      : t("Every {0} sec", { "0": Math.round(task.schedule.everyMs / 1000) });
+  }
+  const weekdays = task.schedule.weekdays ?? [];
+  const days =
+    weekdays.length === 0
+      ? t("Every day")
+      : weekdays.length === 5 && weekdays.every((day) => day >= 1 && day <= 5)
+        ? t("Weekdays")
+        : weekdays
+            .map((day) => t(DAYS.find((entry) => entry.index === day)?.label ?? ""))
+            .join(", ");
+  return t("{0} at {1}", { "0": days, "1": formatTime(task.schedule.timeOfDay) });
 }
 
 function formatTime(value: string): string {
@@ -122,6 +139,14 @@ function formatTime(value: string): string {
   const time = new Date();
   time.setHours(hours ?? 9, minutes ?? 0, 0, 0);
   return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function formatRunAtDate(value: Date): string {
+  return value.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatRunAtTime(value: Date): string {
+  return value.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 function timePickerValue(value: string): Date {
@@ -188,6 +213,7 @@ function SelectRow(props: {
   readonly onSelect: (id: string) => void;
   readonly borderTop?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   const value = (
     <View className="min-w-0 flex-1 flex-row items-center justify-end gap-2">
       {props.valueIcon}
@@ -210,7 +236,7 @@ function SelectRow(props: {
         }
       >
         <Text textRole="body" className="text-foreground">
-          {props.label}
+          {uiT(props.label)}
         </Text>
         {value}
       </View>
@@ -231,7 +257,7 @@ function SelectRow(props: {
         }
       >
         <Text textRole="body" className="text-foreground">
-          {props.label}
+          {uiT(props.label)}
         </Text>
         {value}
         <SymbolView
@@ -337,6 +363,7 @@ function PickerRow(props: {
   readonly disabled?: boolean;
   readonly borderTop?: boolean;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       accessibilityRole="button"
@@ -351,7 +378,7 @@ function PickerRow(props: {
       }
     >
       <Text textRole="body" className="text-foreground">
-        {props.label}
+        {uiT(props.label)}
       </Text>
       <Text
         textRole="footnote"
@@ -699,6 +726,8 @@ function TaskForm({
     .sort((left, right) => Number(right.pinnedAt != null) - Number(left.pinnedAt != null));
   const config = useEnvironmentServerConfig(environmentId);
   const modelOptions = buildModelOptions(config, null, undefined, draft.projectId);
+  // Existing webhook tasks keep the option so they can still switch to a timer.
+  const webhookDenial = managedCapabilityDenial(config?.managedPolicy, "webhookTasks");
   const canOperate = useAtomValue(
     serverEnvironment.upsertScheduledTask.permissionAtom(environmentId),
   );
@@ -708,6 +737,7 @@ function TaskForm({
   });
   const submissionPending = useRef(false);
   const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [runAtPicker, setRunAtPicker] = useState<"date" | "time" | null>(null);
   const taskMissing =
     draft.task !== null &&
     tasks.data !== null &&
@@ -722,6 +752,9 @@ function TaskForm({
     }
   };
 
+  const offersOnce =
+    config?.environment.capabilities.oneTimeSchedules === true ||
+    draft.task?.schedule.type === "once";
   const save = async () => {
     if (
       !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope) ||
@@ -748,6 +781,13 @@ function TaskForm({
         uiT("Enter whole minutes from 1 to {0}, or leave it blank.", {
           "0": MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
         }),
+      );
+      return;
+    }
+    if (draft.schedule.mode === "once" && !offersOnce) {
+      Dialog.alert(
+        "Once is not available here",
+        "This environment runs an older T3 Code. Update it to schedule a one-time task, or pick another schedule.",
       );
       return;
     }
@@ -802,7 +842,9 @@ function TaskForm({
                 baseRef: draft.baseRef.trim() || "main",
                 startFromOrigin: draft.startFromOrigin,
               },
-      runtimeMode: draft.runtimeMode,
+      // Tasks have no mode picker; a mode above the administrator's ceiling is refused.
+      runtimeMode:
+        clampManagedRuntimeMode(config?.managedPolicy, draft.runtimeMode) ?? draft.runtimeMode,
       interactionMode: draft.task?.interactionMode ?? "default",
       creationSource: draft.task?.creationSource ?? "mobile",
     };
@@ -934,10 +976,10 @@ function TaskForm({
             label={uiT("Run in")}
             value={
               draft.workspace === "worktree"
-                ? "New worktree"
+                ? uiT("New worktree")
                 : draft.workspace === "root"
-                  ? "Project checkout"
-                  : "Specific checkout"
+                  ? uiT("Project checkout")
+                  : uiT("Specific checkout")
             }
             actions={[
               {
@@ -980,7 +1022,12 @@ function TaskForm({
               disabled={saving}
               value={draft.checkoutPath}
               borderTop
-              onChange={(checkoutPath) => setDraft({ ...draft, checkoutPath })}
+              onChange={(checkoutPath) =>
+                setDraft({
+                  ...draft,
+                  checkoutPath: resolvePastedPath(draft.checkoutPath, checkoutPath),
+                })
+              }
             />
           ) : null}
         </SettingsSection>
@@ -991,19 +1038,33 @@ function TaskForm({
               variant="card"
               options={[
                 { value: "fixed_time", label: uiT("At a time") },
+                // Older servers reject one-time schedules on save.
+                ...(offersOnce || draft.schedule.mode === "once"
+                  ? [{ value: "once" as const, label: uiT("Once") }]
+                  : []),
                 { value: "interval", label: uiT("Interval") },
-                { value: "webhook", label: uiT("On webhook") },
+                ...(webhookDenial === undefined || draft.schedule.mode === "webhook"
+                  ? [{ value: "webhook" as const, label: uiT("On webhook") }]
+                  : []),
               ]}
               selected={draft.schedule.mode}
               onSelect={(mode) => {
                 setTimePickerOpen(false);
+                setRunAtPicker(null);
                 setDraft({
                   ...draft,
                   prompt:
                     mode === "webhook" && !draft.prompt.trim()
                       ? DEFAULT_WEBHOOK_PROMPT
                       : draft.prompt,
-                  schedule: { ...draft.schedule, mode },
+                  schedule: {
+                    ...draft.schedule,
+                    mode,
+                    runAt:
+                      mode === "once" && !draft.schedule.runAt
+                        ? new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000).toISOString()
+                        : draft.schedule.runAt,
+                  },
                 });
               }}
             />
@@ -1085,6 +1146,57 @@ function TaskForm({
                 }}
               />
             </>
+          ) : draft.schedule.mode === "webhook" && webhookDenial !== undefined && draft.enabled ? (
+            <Text className="border-t border-border-subtle px-4 py-3 text-sm text-foreground-muted">
+              {`${webhookDenial} Switch the task to a timer, or turn it off, to save it.`}
+            </Text>
+          ) : draft.schedule.mode === "once" ? (
+            (["date", "time"] as const).map((field) => {
+              const runAt = new Date(draft.schedule.runAt);
+              const label = field === "date" ? formatRunAtDate(runAt) : formatRunAtTime(runAt);
+              return (
+                <View key={field}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${field === "date" ? "Date" : uiT("Time")}, ${label}`}
+                    onPress={() => setRunAtPicker((open) => (open === field ? null : field))}
+                    className="min-h-14 flex-row items-center gap-3 border-t border-border-subtle px-4 py-3 active:opacity-70"
+                  >
+                    <Text textRole="body" className="text-foreground">
+                      {field === "date" ? uiT("Date") : uiT("Time")}
+                    </Text>
+                    <Text
+                      textRole="footnote"
+                      className="min-w-0 flex-1 text-right text-foreground-muted"
+                    >
+                      {label}
+                    </Text>
+                    <SymbolView
+                      name="chevron.right"
+                      size={14}
+                      tintColorClassName="accent-chevron"
+                      type="monochrome"
+                    />
+                  </Pressable>
+                  {runAtPicker === field ? (
+                    <DateTimePicker
+                      value={runAt}
+                      mode={field}
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onDismiss={() => setRunAtPicker(null)}
+                      onValueChange={(_, selected) => {
+                        // Android shows a dialog that closes on pick; iOS stays inline.
+                        if (Platform.OS === "android") setRunAtPicker(null);
+                        setDraft({
+                          ...draft,
+                          schedule: { ...draft.schedule, runAt: selected.toISOString() },
+                        });
+                      }}
+                    />
+                  ) : null}
+                </View>
+              );
+            })
           ) : draft.schedule.mode === "webhook" ? (
             <>
               <WebhookScheduleDetails
@@ -1117,7 +1229,7 @@ function TaskForm({
                 }
               />
               <FormField
-                label={uiT("Replay key template")}
+                label={uiT("Duplicate request key")}
                 value={draft.schedule.replayKey}
                 placeholder="{{headers.delivery-id}}"
                 disabled={saving}
@@ -1126,6 +1238,9 @@ function TaskForm({
                   setDraft({ ...draft, schedule: { ...draft.schedule, replayKey } })
                 }
               />
+              <Text className="px-4 pb-3 text-sm text-foreground-muted">
+                <UiText message={"Requests with the same key run only once within 7 days."} />
+              </Text>
               <FormField
                 label={uiT("Coalesce key template")}
                 value={draft.schedule.coalesceKey}
@@ -1148,9 +1263,11 @@ function TaskForm({
                 }
               />
               <Text className="px-4 pb-3 text-sm text-foreground-muted">
-                {uiT(
-                  "Replay keys suppress repeats for 7 days. Coalescing runs the latest payload when the window from the first delivery closes. Empty keys run normally.",
-                )}
+                <UiText
+                  message={
+                    "Coalescing runs the latest payload when the window from the first delivery closes. Empty keys run normally."
+                  }
+                />
               </Text>
             </>
           ) : (
@@ -1200,7 +1317,14 @@ function TaskForm({
         tone="primary"
         fullWidth
         loading={saving}
-        disabled={!canOperate || dictationPending || taskMissing || environmentUnavailable}
+        disabled={
+          !canOperate ||
+          dictationPending ||
+          taskMissing ||
+          environmentUnavailable ||
+          // The server refuses an enabled webhook task under this policy.
+          (draft.enabled && draft.schedule.mode === "webhook" && webhookDenial !== undefined)
+        }
         onPress={() => void save()}
         label={saving ? uiT("Saving…") : draft.task ? uiT("Save changes") : uiT("Create task")}
       />
@@ -1311,7 +1435,7 @@ function EnvironmentTasks({
   readonly projectIds: readonly ProjectId[] | null;
   readonly onEdit: (task: ScheduledTask) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const environmentId = environment.environmentId;
   const tasks = useEnvironmentQuery(
@@ -1395,13 +1519,18 @@ function EnvironmentTasks({
                 {task.title}
               </Text>
               <Text className="text-sm text-foreground-muted" numberOfLines={2}>
-                {describeSchedule(task)}
+                {describeSchedule(task, locale)}
                 {!task.enabled
                   ? uiT(" · Paused")
                   : task.nextRunAt
                     ? ` · ${formatNextScheduledTaskRun(task.nextRunAt, now)}`
                     : ""}
               </Text>
+              {task.blockedByPolicy ? (
+                <Text className="text-sm text-foreground-muted" numberOfLines={2}>
+                  {task.blockedByPolicy}
+                </Text>
+              ) : null}
               {task.lastRunError ? (
                 <Text className="text-sm text-danger-foreground" numberOfLines={2}>
                   <UiText message={"Last run failed:{0}"} values={{ "0": task.lastRunError }} />
@@ -1433,7 +1562,7 @@ function EnvironmentTasks({
                   Dialog.alert(uiT("Delete task?"), task.title, [
                     { text: "Cancel", style: "cancel" },
                     {
-                      text: "Delete",
+                      text: uiT("Delete"),
                       style: "destructive",
                       onPress: () => void act(task, "delete"),
                     },

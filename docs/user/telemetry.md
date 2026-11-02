@@ -1,11 +1,15 @@
 # Product usage data
 
-When enabled, the T3 Code server sends product usage events to PostHog, associated with a hashed
-account or installation identifier. Events include the provider, model, reasoning effort,
-permission mode, turn result, duration, and main-agent token totals when available.
+When enabled, this fork sends product usage events to the configured PostHog endpoint,
+associated with a hashed account or installation identifier. To count installations across devices,
+events can include hashed T3 Connect, OpenAI and Claude account identifiers and a random identifier
+for each connected device. Events include the provider, model, reasoning effort,
+permission mode, turn and request results, duration, release channel, and token counts when
+available. Child-agent token counts are reported separately from the main agent's. Model names
+are sent only when they appear in a provider's public model list.
 
 Events do not include prompts, responses, file contents, authentication tokens, conversation IDs,
-raw provider events, or child-agent output. Child-agent token use is excluded from the totals.
+raw provider events, or child-agent output.
 
 Collection is disabled by default in source builds. Release builds can include a
 PostHog project and enable collection by default. Set `T3CODE_TELEMETRY_ENABLED=false`
@@ -16,6 +20,9 @@ To disable product events and relay tracing, set `T3CODE_TELEMETRY_ENABLED=false
 environment before starting it. Relay tracing also stops when `T3CODE_OTEL_SDK_DISABLED` or
 `OTEL_SDK_DISABLED` turns OpenTelemetry export off. The web app in a browser, including one the
 `t3` CLI opens, does not read these variables.
+
+An administrator can turn product events and relay tracing off for every user on a machine with
+a [managed policy](./managed-policy.md#other-capabilities).
 
 The desktop app reads `T3CODE_TELEMETRY_ENABLED` from your shell profile (for example `~/.zshrc`) on macOS and
 Linux, so export it there and restart the app. On Windows, set it as a user environment variable.

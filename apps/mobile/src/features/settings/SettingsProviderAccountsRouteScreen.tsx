@@ -7,6 +7,7 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import {
   AuthProvidersManageScope,
+  isManagedDriverAllowed,
   type ProviderAuthResponse,
   type ServerProvider,
 } from "@t3tools/contracts";
@@ -67,7 +68,7 @@ export function SettingsProviderAccountsRouteScreen() {
                   </View>
                 ) : (
                   <>
-                    {(providersByEnvironment.get(environment.environmentId) ?? [])
+                    {managedProviders(environment, providersByEnvironment)
                       .filter(canManageProvider)
                       .map((provider, index) => (
                         <ProviderAccount
@@ -77,7 +78,7 @@ export function SettingsProviderAccountsRouteScreen() {
                           divider={index > 0}
                         />
                       ))}
-                    {!(providersByEnvironment.get(environment.environmentId) ?? []).some(
+                    {!managedProviders(environment, providersByEnvironment).some(
                       canManageProvider,
                     ) ? (
                       <Text className="p-4 text-foreground-muted">
@@ -94,6 +95,16 @@ export function SettingsProviderAccountsRouteScreen() {
         </ScreenScrollView>
       </SettingsScreen>
     </>
+  );
+}
+
+/** Providers the environment's managed policy allows; the rest cannot run or sign in. */
+function managedProviders(
+  environment: SettingsTarget,
+  providersByEnvironment: ReadonlyMap<string, ReadonlyArray<ServerProvider>>,
+) {
+  return (providersByEnvironment.get(environment.environmentId) ?? []).filter((provider) =>
+    isManagedDriverAllowed(environment.serverConfig.managedPolicy, provider.driver),
   );
 }
 
@@ -211,6 +222,9 @@ function ProviderAccount({
     !active && signedIn && (provider.auth.canLogout ?? provider.setup?.canAuthenticate);
   const showCallback =
     Boolean(url) && (interaction?.type === "browser" ? interaction.acceptsCallback : !interaction);
+  const usesCredentials =
+    provider.driver === "antigravity" &&
+    (provider.auth.type === "gemini-api-key" || provider.auth.type === "agent-platform");
   const status =
     active || state?.phase === "failed" || state?.phase === "cancelled"
       ? state.message
@@ -224,7 +238,9 @@ function ProviderAccount({
               ? "No in-app sign-in advertised. Follow the provider's docs to finish setup."
               : !provider.installed
                 ? "Not installed"
-                : "Not signed in";
+                : usesCredentials
+                  ? "Connect to load models"
+                  : "Not signed in";
   // A provider with several sign-in methods picks one from a menu on the same control.
   const methodActions: MenuAction[] = methods.map((method) => ({
     id: `method:${method.id}`,
@@ -240,9 +256,9 @@ function ProviderAccount({
         "0": environment.label,
       }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: uiT("Cancel"), style: "cancel" },
         {
-          text: "Sign out",
+          text: uiT("Sign out"),
           style: "destructive",
           onPress: () => {
             void run(() => logout(target));
@@ -341,8 +357,8 @@ function ProviderAccount({
   ) : canSignIn && !signedIn ? (
     <ControlPill
       variant="primary"
-      label={uiT("Sign in")}
-      accessibilityLabel={uiT("Sign in to {0}", { "0": name })}
+      label={usesCredentials ? uiT("Connect") : uiT("Sign in")}
+      accessibilityLabel={usesCredentials ? `Connect to ${name}` : `Sign in to ${name}`}
       disabled={signInDisabled}
       onPress={() => startSignIn()}
     />

@@ -52,9 +52,10 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
   const busy = gitState.gitOperationLabel !== null;
 
   const [newBranchName, setNewBranchName] = useState("");
-  const [worktreeBaseBranch, setWorktreeBaseBranch] = useState(
-    currentBranchLabel === "Detached HEAD" ? "main" : currentBranchLabel,
-  );
+  const [worktreeBaseBranchOverride, setWorktreeBaseBranchOverride] = useState<string | null>(null);
+  const worktreeBaseBranch =
+    worktreeBaseBranchOverride ??
+    (currentBranchLabel === "Detached HEAD" ? "main" : currentBranchLabel);
   const [worktreeBranchName, setWorktreeBranchName] = useState("");
 
   const disabledExistingBranchNames: Array<string> = [];
@@ -144,8 +145,8 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
             ) : null}
             <TextInput
               value={worktreeBaseBranch}
-              onChangeText={setWorktreeBaseBranch}
-              placeholder={uiT("main")}
+              onChangeText={setWorktreeBaseBranchOverride}
+              placeholder={"main"}
               accessibilityLabel={uiT("Worktree base branch")}
               className="android:rounded-xl android:bg-sheet-solid ios:rounded-[18px]"
             />

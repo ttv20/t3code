@@ -27,8 +27,8 @@ const SECTIONS = [
   },
 ];
 
-function visible(query: string) {
-  return filterSettingsSections(SECTIONS, query).map((section) => [
+function visible(query: string, locale: "en" | "he" | "ar" | "fa" = "en") {
+  return filterSettingsSections(SECTIONS, query, locale).map((section) => [
     section.title ?? null,
     section.rows.map((row) => row.label),
   ]);
@@ -58,8 +58,21 @@ describe("filterSettingsSections", () => {
     },
     { query: "usage", expected: [[null, ["Usage"]]] },
     { query: "zzzz", expected: [] },
-  ])("$query", ({ query, expected }) => {
-    expect(visible(query)).toEqual(expected);
+    { query: "מראה", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
+    { query: "ממשק", locale: "he" as const, expected: [["Interface", ["Appearance", "Keyboard"]]] },
+    { query: "גודל הגופן", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
+    { query: "appearance", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
+    { query: "المظهر", locale: "ar" as const, expected: [["Interface", ["Appearance"]]] },
+    { query: "ظاهر", locale: "fa" as const, expected: [["Interface", ["Appearance"]]] },
+  ])("$query", ({ query, expected, ...options }) => {
+    expect(visible(query, "locale" in options ? options.locale : "en")).toEqual(expected);
+  });
+
+  it("keeps English search available for rows already translated by the interface", () => {
+    const translated = [{ title: "ממשק", rows: [{ id: "SettingsAppearance", label: "מראה" }] }];
+    expect(filterSettingsSections(translated, "appearance", "he")).toEqual(translated);
+    expect(filterSettingsSections(translated, "interface", "he")).toEqual(translated);
+    expect(filterSettingsSections(translated, "מראה", "he")).toEqual(translated);
   });
 
   it("drops sections that start empty", () => {

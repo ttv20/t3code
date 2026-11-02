@@ -20,13 +20,15 @@ import { describe, expect, it } from "vite-plus/test";
 import { v2Projection } from "./orchestrationV2TestFixtures.ts";
 import {
   formatModelSelectionEffort,
-  presentPendingBackgroundWork,
   deriveReportedModelSelection,
   deriveLatestThreadRun,
   deriveProviderSubagentStatus,
+  deriveResumableRunId,
   deriveRunlessWorkStartedAt,
   deriveThreadActivityRun,
   deriveThreadRuntime,
+  isBackgroundWorkStopPending,
+  presentPendingBackgroundWork,
   presentProviderGoal,
   presentRunStop,
   threadRuntimeHasInterruptibleRun,
@@ -85,6 +87,7 @@ describe("thread execution presentation", () => {
       lastError: "Plan limit reached",
       lastErrorClass: "usage_limit",
     });
+    expect(deriveResumableRunId(projection, deriveThreadRuntime(projection))).toBe(failed.id);
     expect(
       deriveThreadRuntime({
         ...projection,
@@ -155,6 +158,7 @@ describe("thread execution presentation", () => {
       lastError: "Plan limit reached",
       lastErrorClass: "usage_limit",
     });
+    expect(deriveResumableRunId(projection, deriveThreadRuntime(projection))).toBe(failed.id);
     const cancelledQueued = {
       ...run("cancelled-queued", 3, "cancelled"),
       startedAt: null,
@@ -166,12 +170,15 @@ describe("thread execution presentation", () => {
     expect(
       deriveThreadRuntime({ ...projection, runs: [failed, queued, cancelledQueued] }),
     ).toMatchObject({ status: "failed", lastErrorClass: "usage_limit" });
-    expect(
-      deriveThreadRuntime({
-        ...projection,
-        turnItems: [{ ...item, failure: { ...item.failure, class: "provider_error" as const } }],
-      }),
-    ).toMatchObject({ status: "queued", lastErrorClass: null });
+    const providerError = {
+      ...projection,
+      turnItems: [{ ...item, failure: { ...item.failure, class: "provider_error" as const } }],
+    };
+    expect(deriveThreadRuntime(providerError)).toMatchObject({
+      status: "queued",
+      lastErrorClass: null,
+    });
+    expect(deriveResumableRunId(providerError, deriveThreadRuntime(providerError))).toBeNull();
   });
 
   it("keeps live activity attached to an executing run when a newer run is queued", () => {
@@ -232,6 +239,7 @@ describe("thread execution presentation", () => {
       status: "interrupted",
       activeRunId: null,
     });
+    expect(deriveResumableRunId(projection, deriveThreadRuntime(projection))).toBe(interrupted.id);
 
     const resumed = { ...projection, runs: [interrupted, { ...held, queueHeld: false }] };
     expect(deriveThreadRuntime(resumed)).toMatchObject({ status: "queued" });
@@ -486,13 +494,13 @@ describe("presentPendingBackgroundWork", () => {
       "npm run dev",
       "npm test",
     ]);
-    expect(presentPendingBackgroundWork([commands[0]!], "he")?.title).toBe("מריץ: npm run dev");
+    expect(presentPendingBackgroundWork([commands[0]!], "he")?.title).toBe("פעיל · npm run dev");
     expect(
       presentPendingBackgroundWork(
         [{ taskId: "named", kind: "command", description: "Settings" }],
         "he",
       )?.title,
-    ).toBe("מריץ: Settings");
+    ).toBe("פעיל · Settings");
     expect(presentPendingBackgroundWork([{ taskId: "a", kind: "command" }], "he")?.title).toBe(
       "מריץ פקודה",
     );
@@ -541,7 +549,7 @@ describe("presentPendingBackgroundWork", () => {
     ]);
 
     expect(presentation).toEqual({
-      title: "Waiting on subagent Luna Window Properties",
+      title: "Waiting · Luna Window Properties",
       items: [{ taskId: "luna", kind: "subagent", label: "Luna Window Properties", childThreadId }],
       waiting: true,
     });
@@ -567,7 +575,7 @@ describe("presentPendingBackgroundWork", () => {
       presentPendingBackgroundWork([
         { taskId: "a", kind: "subagent", description: "Review src/math.ts" },
       ])?.title,
-    ).toBe("Waiting on subagent Review src/math.ts");
+    ).toBe("Waiting · Review src/math.ts");
     expect(
       presentPendingBackgroundWork([{ taskId: "a", kind: "monitor", awaited: true }])?.title,
     ).toBe("Waiting on a monitor");
@@ -579,7 +587,7 @@ describe("presentPendingBackgroundWork", () => {
       presentPendingBackgroundWork([
         { taskId: "dev", kind: "command", description: "Start the shared dev server" },
       ]),
-    ).toMatchObject({ title: "Running: Start the shared dev server", waiting: false });
+    ).toMatchObject({ title: "Running · Start the shared dev server", waiting: false });
     expect(presentPendingBackgroundWork([{ taskId: "a", kind: "command" }])).toMatchObject({
       title: "Running a command",
       waiting: false,
@@ -767,6 +775,35 @@ describe("presentProviderGoal", () => {
   });
 });
 
+describe("isBackgroundWorkStopPending", () => {
+  const tasks = [{ taskId: "dev-server" }];
+  const sent = { threadKey: "env:thread", taskIds: ["dev-server"], retryAt: null };
+  const accepted = { ...sent, retryAt: 10_000 };
+
+  it("stays pending after acceptance while a stopped task is still listed", () => {
+    expect(isBackgroundWorkStopPending(sent, "env:thread", tasks, false)).toBe(true);
+    expect(isBackgroundWorkStopPending(accepted, "env:thread", tasks, false)).toBe(true);
+  });
+
+  it("ends once the stopped tasks leave, even if new work starts", () => {
+    expect(isBackgroundWorkStopPending(accepted, "env:thread", [], false)).toBe(false);
+    expect(isBackgroundWorkStopPending(accepted, "env:thread", [{ taskId: "next" }], false)).toBe(
+      false,
+    );
+  });
+
+  it("allows retry at the deadline even if a stopped task remains", () => {
+    const request = { ...accepted, retryAt: 10_000 };
+    expect(isBackgroundWorkStopPending(request, "env:thread", tasks, false)).toBe(true);
+    expect(isBackgroundWorkStopPending(request, "env:thread", tasks, true)).toBe(false);
+  });
+
+  it("only applies to the thread that sent the Stop", () => {
+    expect(isBackgroundWorkStopPending(null, "env:thread", tasks, false)).toBe(false);
+    expect(isBackgroundWorkStopPending(sent, "env:other", tasks, false)).toBe(false);
+  });
+});
+
 describe("presentProviderGoal", () => {
   it("rolls token counts that round to 1000k over to 1m", () => {
     const usage = (tokensUsed: number) =>
@@ -789,5 +826,18 @@ describe("presentProviderGoal", () => {
         false,
       ).usage,
     ).toBe("1m / 1m tokens");
+  });
+});
+
+describe("presentPendingBackgroundWork", () => {
+  it("names a command by its script, not the shell that wraps it", () => {
+    const presentation = presentPendingBackgroundWork([
+      {
+        taskId: "call_1",
+        kind: "command",
+        description: `/bin/zsh -lc "mv a.ts b.ts\ncat > b.ts <<'EOF'\nexport {};\nEOF"`,
+      },
+    ]);
+    expect(presentation?.items[0]?.label).toBe("mv a.ts b.ts\ncat > b.ts <<'EOF'\nexport {};\nEOF");
   });
 });

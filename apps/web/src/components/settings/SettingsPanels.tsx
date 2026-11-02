@@ -9,6 +9,8 @@ import {
   type DesktopUpdateChannel,
   IDLE_COMPACTION_MODES,
   globalIdleCompaction,
+  managedUpdatesDenial,
+  managedUpdatesMessage,
   ProviderDriverKind,
   type ProviderInstanceId,
   type SidebarProjectGroupingMode,
@@ -24,6 +26,7 @@ import {
 } from "@t3tools/contracts/settings";
 import { desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
 import { createModelSelection } from "@t3tools/shared/model";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
 import { APP_VERSION, HOSTED_APP_CHANNEL, HOSTED_APP_CHANNEL_LABEL } from "../../branding";
@@ -60,6 +63,7 @@ import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
 import { ThreadTitleInstructionsSettings } from "./ThreadTitleInstructionsSettings";
 import { SnoozePresetsRow } from "./SnoozePresetsSettings";
 import { useDesktopUpdateState } from "../../state/desktopUpdate";
+import { managedTelemetryOffMessage, usePrimaryManagedPolicy } from "../../state/managedPolicy";
 import {
   getCustomModelOptionsByInstance,
   resolveAppModelSelectionState,
@@ -159,6 +163,13 @@ function AboutVersionSection() {
 
   const hasDesktopBridge = typeof window !== "undefined" && Boolean(window.desktopBridge);
   const selectedUpdateChannel = updateState?.channel ?? "latest";
+  // The desktop updates this machine, whose policy the primary environment reports.
+  const primaryPolicy = usePrimaryManagedPolicy();
+  const updatesDenial = hasDesktopBridge ? managedUpdatesDenial(primaryPolicy) : undefined;
+  const nightlyDeniedBy =
+    hasDesktopBridge && primaryPolicy?.limits?.updates?.allowNightly === false
+      ? primaryPolicy.organization
+      : undefined;
   const selectedHostedAppChannel = hasDesktopBridge ? null : HOSTED_APP_CHANNEL;
   // A switch that failed part way leaves this app or a server on the other track.
   // With its updater off, a switch cannot move this app, so it is not counted.
@@ -249,7 +260,9 @@ function AboutVersionSection() {
               type: "error",
               title: uiT("Could not check for updates"),
               description:
-                result.state.message ?? uiT("Automatic updates are not available in this build."),
+                updatesDenial ??
+                result.state.message ??
+                uiT("Automatic updates are not available in this build."),
             }),
           );
         }
@@ -284,7 +297,8 @@ function AboutVersionSection() {
   const description =
     action === "download" || action === "install"
       ? uiT("Update available.")
-      : (getDesktopUpdateDisabledReason(updateState) ?? uiT("Current version of the application."));
+      : (getDesktopUpdateDisabledReason(updateState, updatesDenial) ??
+        uiT("Current version of the application."));
 
   return (
     <>
@@ -292,6 +306,7 @@ function AboutVersionSection() {
         id={searchableSetting("app-version").id}
         title={<AboutVersionTitle />}
         description={description}
+        managed={updatesDenial}
         control={
           <Tooltip>
             <TooltipTrigger
@@ -314,7 +329,13 @@ function AboutVersionSection() {
         <SettingsRow
           {...searchableSetting("update-track")}
           description={
-            unswitchedMachines > 0 ? (
+            nightlyDeniedBy !== undefined ? (
+              `${managedUpdatesMessage(nightlyDeniedBy)} Nightly builds are not available${
+                selectedUpdateChannel === "nightly"
+                  ? "; switch to Stable to keep getting updates."
+                  : "."
+              }`
+            ) : unswitchedMachines > 0 ? (
               <>
                 {unswitchedMachines === 1
                   ? "1 machine still runs"
@@ -334,6 +355,7 @@ function AboutVersionSection() {
               "Switches this app and every connected machine whose database the target release supports."
             )
           }
+          managed={updatesDenial}
           control={
             <Select
               value={selectedUpdateChannel}
@@ -355,7 +377,11 @@ function AboutVersionSection() {
                 <SelectItem hideIndicator value="latest">
                   {uiT("Stable")}
                 </SelectItem>
-                <SelectItem hideIndicator value="nightly">
+                <SelectItem
+                  hideIndicator
+                  value="nightly"
+                  disabled={nightlyDeniedBy !== undefined && selectedUpdateChannel !== "nightly"}
+                >
                   {uiT("Nightly")}
                 </SelectItem>
               </SelectPopup>
@@ -429,7 +455,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       : []),
     ...(settings.glassOpacity !== DEFAULT_UNIFIED_SETTINGS.glassOpacity ? ["Glass opacity"] : []),
     ...(settings.diffColorScheme !== DEFAULT_UNIFIED_SETTINGS.diffColorScheme
-      ? ["Diff colors"]
+      ? [uiT("Diff colors")]
       : []),
     ...(settings.chatWidth !== DEFAULT_UNIFIED_SETTINGS.chatWidth ? ["Chat width"] : []),
     ...(settings.effortDisplay !== DEFAULT_UNIFIED_SETTINGS.effortDisplay
@@ -452,32 +478,32 @@ export function useSettingsRestore(onRestored?: () => void) {
       ? ["Thread notifications"]
       : []),
     ...(settings.inAppNotificationsEnabled !== DEFAULT_UNIFIED_SETTINGS.inAppNotificationsEnabled
-      ? ["In-app notifications"]
+      ? [uiT("In-app notifications")]
       : []),
     ...(settings.sidebarProjectGroupingMode !== DEFAULT_UNIFIED_SETTINGS.sidebarProjectGroupingMode
       ? ["Project Grouping"]
       : []),
     ...(settings.sidebarProjectSortOrder !== DEFAULT_UNIFIED_SETTINGS.sidebarProjectSortOrder
-      ? ["Project order"]
+      ? [uiT("Project order")]
       : []),
     ...(settings.sidebarWorkingShelfEnabled !== DEFAULT_UNIFIED_SETTINGS.sidebarWorkingShelfEnabled
-      ? ["Working section"]
+      ? [uiT("Working section")]
       : []),
     ...(settings.sidebarAutoSettleAfterDays !== DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleAfterDays
-      ? ["Auto-settle inactive threads"]
+      ? [uiT("Auto-settle inactive threads")]
       : []),
     ...(settings.sidebarAutoSettleKeepPullRequests !==
     DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleKeepPullRequests
-      ? ["Keep threads with a PR"]
+      ? [uiT("Keep threads with a PR")]
       : []),
     ...(settings.sidebarAutoSettleOnMerge !== DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleOnMerge
-      ? ["Auto-settle merged threads"]
+      ? [uiT("Auto-settle merged threads")]
       : []),
     ...(settings.autoResumeLimitedThreads !== DEFAULT_UNIFIED_SETTINGS.autoResumeLimitedThreads
-      ? ["Resume after usage limits"]
+      ? [uiT("Resume after usage limits")]
       : []),
     ...(settings.snoozeLimitedThreads !== DEFAULT_UNIFIED_SETTINGS.snoozeLimitedThreads
-      ? ["Snooze until limits reset"]
+      ? [uiT("Snooze until limits reset")]
       : []),
     ...(!Equal.equals(settings.snoozePresets, DEFAULT_UNIFIED_SETTINGS.snoozePresets)
       ? ["Snooze options"]
@@ -489,39 +515,41 @@ export function useSettingsRestore(onRestored?: () => void) {
       : []),
     ...getChangedTypographySettingLabels(settings),
     ...(settings.diffFilesCollapsed !== DEFAULT_UNIFIED_SETTINGS.diffFilesCollapsed
-      ? ["Default diff file state"]
+      ? [uiT("Default diff file state")]
       : []),
     ...(settings.diffIgnoreWhitespace !== DEFAULT_UNIFIED_SETTINGS.diffIgnoreWhitespace
       ? ["Diff whitespace changes"]
       : []),
-    ...(settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout ? ["Diff layout"] : []),
+    ...(settings.diffLayout !== DEFAULT_UNIFIED_SETTINGS.diffLayout ? [uiT("Diff layout")] : []),
     ...(settings.proactivePanelsEnabled !== DEFAULT_UNIFIED_SETTINGS.proactivePanelsEnabled
-      ? ["Proactive panels"]
+      ? ["Open pull requests and changes panels proactively"]
       : []),
     ...(settings.showSkillsInSlashMenu !== DEFAULT_UNIFIED_SETTINGS.showSkillsInSlashMenu
-      ? ["Show skills in slash menu"]
+      ? [uiT("Show skills in slash menu")]
       : []),
     ...(settings.composerRichTextEnabled !== DEFAULT_UNIFIED_SETTINGS.composerRichTextEnabled
-      ? ["Rich text composer"]
+      ? [uiT("Rich text composer")]
       : []),
-    ...(settings.sendShortcut !== DEFAULT_UNIFIED_SETTINGS.sendShortcut ? ["Send shortcut"] : []),
+    ...(settings.sendShortcut !== DEFAULT_UNIFIED_SETTINGS.sendShortcut
+      ? [uiT("Send shortcut")]
+      : []),
     ...(settings.followUpBehavior !== DEFAULT_UNIFIED_SETTINGS.followUpBehavior
-      ? ["Follow-up behavior"]
+      ? [uiT("Follow-up behavior")]
       : []),
     ...(settings.contextWindowMeterEnabled !== DEFAULT_UNIFIED_SETTINGS.contextWindowMeterEnabled
       ? ["Context window indicator"]
       : []),
     ...(settings.responseStreamingMode !== DEFAULT_UNIFIED_SETTINGS.responseStreamingMode
-      ? ["Response streaming"]
+      ? [uiT("Response streaming")]
       : []),
     ...(settings.enableProviderUpdateChecks !== DEFAULT_UNIFIED_SETTINGS.enableProviderUpdateChecks
       ? ["Provider update checks"]
       : []),
     ...(settings.continueThreadsAfterServerUpdate !==
     DEFAULT_UNIFIED_SETTINGS.continueThreadsAfterServerUpdate
-      ? ["Continue threads after restarts"]
+      ? [uiT("Continue threads after restarts")]
       : []),
-    ...(isBackgroundActivityDirty ? ["Background activity"] : []),
+    ...(isBackgroundActivityDirty ? [uiT("Background activity")] : []),
     ...(settings.defaultThreadEnvMode !== DEFAULT_UNIFIED_SETTINGS.defaultThreadEnvMode
       ? ["New thread mode"]
       : []),
@@ -530,7 +558,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       ? ["New worktrees start from remote"]
       : []),
     ...(settings.addProjectBaseDirectory !== DEFAULT_UNIFIED_SETTINGS.addProjectBaseDirectory
-      ? ["Add project base directory"]
+      ? [uiT("Add project base directory")]
       : []),
     ...(settings.confirmThreadUnpin !== DEFAULT_UNIFIED_SETTINGS.confirmThreadUnpin
       ? ["Unpin confirmation"]
@@ -1444,7 +1472,7 @@ export function DiffsSettingsPanel() {
               onCheckedChange={(checked) =>
                 updateSettings({ proactivePanelsEnabled: Boolean(checked) })
               }
-              aria-label={uiT("Proactive panels")}
+              aria-label={uiT("Open pull requests and changes panels proactively")}
             />
           }
         />
@@ -1502,7 +1530,7 @@ function ScopedCompactIdleThreadsRow() {
             <SelectValue>
               {(value: string | null) =>
                 value === null
-                  ? "Mixed"
+                  ? uiT("Mixed")
                   : IDLE_COMPACTION_MODES.find((mode) => mode.value === value)?.label
               }
             </SelectValue>
@@ -1613,6 +1641,7 @@ export function ThreadsSettingsPanel() {
               className="w-full sm:w-72"
               value={mixedAddProjectBaseDirectory ? "" : settings.addProjectBaseDirectory}
               onCommit={(next) => updateSettings({ addProjectBaseDirectory: next })}
+              normalizeDraft={resolvePastedPath}
               placeholder={mixedAddProjectBaseDirectory ? uiT("Mixed") : "~/"}
               spellCheck={false}
               aria-label={uiT("Add project base directory")}
@@ -1634,7 +1663,7 @@ export function ThreadsSettingsPanel() {
           serverScoped
           {...searchableSetting("auto-resume-limited-threads")}
           description={uiT(
-            "Resume usage-limit stops at the reported reset time. Each thread can cancel its scheduled continuation.",
+            "Automatically resume threads when their usage limits reset. You can cancel auto-resume in each thread.",
           )}
           settingKeys={["autoResumeLimitedThreads"]}
           control={
@@ -1652,7 +1681,7 @@ export function ThreadsSettingsPanel() {
           serverScoped
           {...searchableSetting("snooze-limited-threads")}
           description={uiT(
-            "Snooze usage-limit stops until reset. Pair with resume to continue on wake.",
+            "Snooze threads until their usage limits reset. Enable auto-resume to continue the agent after the reset.",
           )}
           settingKeys={["snoozeLimitedThreads"]}
           control={
@@ -1669,7 +1698,7 @@ export function ThreadsSettingsPanel() {
       </SettingsSection>
 
       {hasServerTargets ? (
-        <SettingsSection id="auto-settle" title={uiT("Auto-settle")}>
+        <SettingsSection id={uiT("auto-settle")} title={uiT("Auto-settle")}>
           <SettingsRow
             serverScoped
             settingKeys={["sidebarAutoSettleOnMerge"]}
@@ -1813,7 +1842,7 @@ export function ThreadsSettingsPanel() {
                   instanceEntries={textGenerationModelInstanceEntries}
                   modelOptionsByInstance={textGenerationModelOptionsByInstance}
                   triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-                  {...(mixedTextGenerationModel ? { triggerLabel: "Mixed" } : {})}
+                  {...(mixedTextGenerationModel ? { triggerLabel: uiT("Mixed") } : {})}
                   getModelDisabledReason={textGenerationModelDisabledReason}
                   {...(environmentId
                     ? {
@@ -1922,7 +1951,7 @@ export function ThreadsSettingsPanel() {
                 >
                   <SelectValue>
                     {(value: ResponseStreamingMode | null) =>
-                      value === null ? "Mixed" : RESPONSE_STREAMING_MODE_LABELS[value]
+                      value === null ? uiT("Mixed") : RESPONSE_STREAMING_MODE_LABELS[value]
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -2061,10 +2090,33 @@ export function MaintenanceSettingsPanel() {
 
 export function AboutSettingsPanel() {
   const { t: uiT } = useUiLanguage();
-
+  const primaryPolicy = usePrimaryManagedPolicy();
+  const telemetryOff = managedTelemetryOffMessage(primaryPolicy);
   return (
     <SettingsPageContainer>
       <SettingsSection id="about" title={uiT("App")}>
+        {primaryPolicy ? (
+          <SettingsRow
+            title={uiT("Organization")}
+            description={uiT(
+              "This environment is managed by {0}. Some settings and features follow its policy.",
+              { "0": primaryPolicy.organization },
+            )}
+            control={
+              primaryPolicy.supportUrl ? (
+                <Button
+                  render={
+                    <a href={primaryPolicy.supportUrl} target="_blank" rel="noreferrer noopener" />
+                  }
+                  size="sm"
+                  variant="outline"
+                >
+                  <UiText message={"Get help"} />
+                </Button>
+              ) : null
+            }
+          />
+        ) : null}
         {isElectron || HOSTED_APP_CHANNEL ? (
           <AboutVersionSection />
         ) : (
@@ -2082,9 +2134,11 @@ export function AboutSettingsPanel() {
       <SettingsSection id="legal" title={uiT("Legal")}>
         <SettingsRow
           {...searchableSetting("privacy-policy")}
-          description={uiT(
-            "How we handle your data, including the anonymous usage data T3 Code collects.",
-          )}
+          description={
+            telemetryOff === undefined
+              ? uiT("How we handle your data, including the anonymous usage data T3 Code collects.")
+              : `How we handle your data. ${telemetryOff}`
+          }
           control={
             <Button
               render={<a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer noopener" />}

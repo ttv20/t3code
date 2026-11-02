@@ -129,7 +129,7 @@ function CustomSnoozeDialog() {
               <div className="flex flex-col gap-4">
                 {mode === "date" ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="flex min-w-0 flex-col gap-1.5">
+                    <div className="flex min-w-0 flex-col gap-2">
                       <Label htmlFor={`${id}-date`}>{uiT("Date")}</Label>
                       <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                         <PopoverTrigger
@@ -204,7 +204,7 @@ function CustomSnoozeDialog() {
                       {uiT("Unit")}
                       <Select
                         value={unit}
-                        items={{ minutes: "Minutes", hours: "Hours", days: "Days" }}
+                        items={{ minutes: uiT("Minutes"), hours: uiT("Hours"), days: uiT("Days") }}
                         onValueChange={(value) => {
                           if (value === "minutes" || value === "hours" || value === "days")
                             setUnit(value);

@@ -128,7 +128,7 @@ function SettingsSectionIcon({ to }: { to: SettingsPath }) {
 }
 
 export function SettingsSidebarNav({ pathname }: { pathname: string }) {
-  const { t: uiT, t } = useUiLanguage();
+  const { t: uiT, t, locale } = useUiLanguage();
 
   const navArea = workspaceAreaProps("settings-nav", 0, "Settings sections");
   const navigate = useNavigate();
@@ -148,7 +148,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const [compactSearchOpen, setCompactSearchOpen] = useState(false);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const searchableItems = useAvailableSettingsSearchItems(scopeSearch);
-  const results = searchSettings(query, searchableItems);
+  const results = searchSettings(query, searchableItems, locale);
   const isSearching = query.trim().length > 0;
   const hasResults = results.length > 0;
   const maxResultIndex = Math.max(results.length - 1, 0);
@@ -230,6 +230,7 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   };
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === "Escape" && isSearching) {
       event.preventDefault();
       event.stopPropagation();
@@ -274,10 +275,11 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
               )}
             >
               <SearchIcon className="size-4 shrink-0 text-sidebar-muted-foreground/80" />
+              {/* Native search inputs clear on Escape even during IME composition. */}
               <SidebarInput
                 ref={searchInputRef}
                 nativeInput
-                type="search"
+                type="text"
                 value={query}
                 onChange={(event) => {
                   setQuery(event.currentTarget.value);

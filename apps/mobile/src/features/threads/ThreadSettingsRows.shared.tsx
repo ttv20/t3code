@@ -24,6 +24,7 @@ export type ChoiceRowProps = {
   readonly showOriginalLabel?: boolean;
   readonly description?: string;
   readonly selected: boolean;
+  readonly disabled?: boolean;
   readonly onPress: () => void;
   readonly isLast: boolean;
 };
@@ -156,7 +157,8 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
         props.description ? `${props.label}. ${props.description}` : uiT(props.label)
       }
       accessibilityRole="radio"
-      accessibilityState={{ checked: props.selected }}
+      accessibilityState={{ checked: props.selected, disabled: props.disabled === true }}
+      disabled={props.disabled}
       onPress={props.onPress}
       style={props.minimumHeight === undefined ? undefined : { minHeight: props.minimumHeight }}
       className={cn(
@@ -165,7 +167,7 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
       )}
     >
       {props.leadingSelection}
-      <View className="min-w-0 flex-1 gap-0.5">
+      <View className={cn("min-w-0 flex-1 gap-0.5", props.disabled && "opacity-50")}>
         <View
           className="flex-row items-center justify-between gap-3"
           style={showOriginalLabel ? { direction: "rtl" } : undefined}

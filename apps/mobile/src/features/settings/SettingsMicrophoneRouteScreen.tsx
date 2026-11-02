@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useUiLanguage, UiText } from "../../i18n";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
@@ -19,6 +19,7 @@ import {
   microphoneEntryKey,
   microphoneOrder,
 } from "../../lib/microphonePriority";
+import { getLocalVoiceTranscriber } from "../../native/voiceTranscription";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { ListRowLayout } from "../../components/ui/ListRowLayout";
 import { ThreadSwipeable } from "../home/thread-swipe-actions";
@@ -90,8 +91,38 @@ const KINDS: Record<
 };
 
 export function SettingsMicrophoneRouteScreen() {
-  const { t: uiT } = useUiLanguage();
+  return getLocalVoiceTranscriber() === null ? <VoiceInputUnavailable /> : <MicrophoneSettings />;
+}
 
+function VoiceInputUnavailable() {
+  const { t: uiT } = useUiLanguage();
+  const insets = useSafeAreaInsets();
+  return (
+    <View collapsable={false} className="flex-1 bg-sheet">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        className="flex-1"
+        contentContainerClassName="gap-3 px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+      >
+        <SettingsSection title={uiT("Voice input")}>
+          <ListRowLayout icon="mic" label={uiT("Not available on this device")} />
+        </SettingsSection>
+        <Text className="px-2 text-sm text-foreground-muted">
+          <UiText
+            message={
+              "T3 Code's voice input uses Apple's on-device speech transcription, which needs iOS 26 or later on a device that supports it. Without it, the composer has no microphone button, and allowing microphone access won't add one. Apple keyboard dictation is separate and isn't affected."
+            }
+          />
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+function MicrophoneSettings() {
+  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const preferencesResult = useAtomValue(mobilePreferencesAtom);
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);

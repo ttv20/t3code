@@ -5,6 +5,7 @@ import {
 } from "@t3tools/client-runtime/markdown-direction";
 import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH, type AssistantCitation } from "@t3tools/contracts";
 import { useState, type Ref } from "react";
+import { textDirection } from "~/textDirection";
 
 import { Button } from "../ui/button";
 
@@ -57,7 +58,6 @@ export function AssistantCitationCommentEditor({
         {citation.text}
       </div>
       <textarea
-        dir={resolveMarkdownDirection(countMarkdownDirectionCharacters(comment), direction)}
         ref={inputRef}
         aria-label={uiT("Comment on selected text")}
         aria-description={uiT(
@@ -66,6 +66,7 @@ export function AssistantCitationCommentEditor({
         aria-invalid={commentTooLong || undefined}
         placeholder={uiT("Add an optional comment...")}
         rows={2}
+        dir={textDirection(comment)}
         className="field-sizing-content block max-h-40 min-h-16 w-full resize-none bg-transparent px-1 py-1.5 text-base outline-none placeholder:text-muted-foreground sm:text-sm"
         value={comment}
         onChange={(event) => {

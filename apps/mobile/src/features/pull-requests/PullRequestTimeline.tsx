@@ -15,6 +15,7 @@ import { PullRequestAvatar } from "./PullRequestPresentation";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
 import { PullRequestCommentFooter } from "./PullRequestReactions";
 import { pullRequestDescriptionContent } from "./pullRequestDescriptionContent";
+import { normalizedReviewState } from "./pullRequestStatus";
 import type { PullRequestParams } from "./usePullRequestDiff";
 
 function TimelineEvent(props: {
@@ -82,8 +83,9 @@ function TimelineComment({
     [comment.body],
   );
   const preview = content.preview;
-  const approved = comment.reviewState === "APPROVED";
-  const changes = comment.reviewState === "CHANGES_REQUESTED";
+  const state = normalizedReviewState(comment.reviewState);
+  const approved = state === "APPROVED";
+  const changes = state === "CHANGES_REQUESTED";
   return (
     <TimelineEvent
       icon={approved ? "checkmark" : changes ? "doc.text" : "text.bubble"}
@@ -255,13 +257,15 @@ export function pullRequestTimelineRows(
               <SymbolView name="chevron.right" size={12} tintColorClassName="accent-icon-muted" />
             </View>
             <Text className="text-xs text-foreground-muted">
+              <UiText message={thread.isResolved ? "Resolved" : "Unresolved"} />
+              {thread.isOutdated ? <UiText message=" · Outdated" /> : ""} ·{" "}
               <UiText
-                message={"{0}{1} · {2} comments"}
-                values={{
-                  "0": thread.isResolved ? "Resolved" : "Unresolved",
-                  "1": thread.isOutdated ? " · Outdated" : "",
-                  "2": thread.commentCount ?? thread.comments.length,
-                }}
+                message={
+                  (thread.commentCount ?? thread.comments.length) === 1
+                    ? "1 comment"
+                    : "{0} comments"
+                }
+                values={{ "0": thread.commentCount ?? thread.comments.length }}
               />
             </Text>
           </Pressable>

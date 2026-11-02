@@ -178,7 +178,7 @@ function environmentsRow(count: number): SettingsListRow {
 }
 
 function SettingsList(props: { readonly connections: readonly SettingsListRow[] }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   // UIKit's scroll-edge material takes the scroll view's own color; like the chat list, match
   // the sidebar's surface so the bar doesn't darken over content at rest.
@@ -198,6 +198,7 @@ function SettingsList(props: { readonly connections: readonly SettingsListRow[] 
       ...indexSections,
     ],
     query,
+    locale,
   );
 
   return (

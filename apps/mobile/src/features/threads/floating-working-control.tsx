@@ -17,6 +17,7 @@ import Animated, {
   ReduceMotion,
   type SharedValue,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
@@ -82,6 +83,7 @@ export function FloatingWorkingControl(props: {
   const { direction, t: uiT } = useUiLanguage();
   const horizontalDirection = direction === "rtl" ? -1 : 1;
   const { width: windowWidth } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const [overlayWidth, setOverlayWidth] = useState(windowWidth);
   const [queueWidth, setQueueWidth] = useState(0);
   const [actionWidth, setActionWidth] = useState(0);
@@ -279,8 +281,8 @@ export function FloatingWorkingControl(props: {
       className="absolute left-0 right-0 z-20 items-center"
       style={[{ top: -CONTROL_OVERLAY_OFFSET }, liftStyle]}
       onLayout={(event) => setOverlayWidth(event.nativeEvent.layout.width)}
-      entering={NATIVE_LIQUID_GLASS_SUPPORTED ? undefined : CONTROL_ENTERING}
-      exiting={NATIVE_LIQUID_GLASS_SUPPORTED ? undefined : CONTROL_EXITING}
+      entering={NATIVE_LIQUID_GLASS_SUPPORTED || reducedMotion ? undefined : CONTROL_ENTERING}
+      exiting={NATIVE_LIQUID_GLASS_SUPPORTED || reducedMotion ? undefined : CONTROL_EXITING}
     >
       {hasCapsule && NATIVE_LIQUID_GLASS_SUPPORTED ? (
         <UniwindGlassContainer
@@ -492,7 +494,7 @@ function FloatingStatusLabel(props: {
     return (
       <StatusLabelRow
         key="stop"
-        accessibilityLabel={props.status.label}
+        accessibilityLabel={uiT(props.status.label)}
         className="gap-2"
         onLayout={props.onLayout}
       >
@@ -507,7 +509,7 @@ function FloatingStatusLabel(props: {
           <AppActivityIndicator size="small" colorClassName="accent-icon-muted" />
         )}
         <Text className="shrink font-t3-medium text-xs text-foreground" numberOfLines={1}>
-          {props.status.label}
+          {uiT(props.status.label)}
         </Text>
       </StatusLabelRow>
     );
@@ -568,12 +570,13 @@ function StatusLabelRow(props: {
 }) {
   const { t: uiT } = useUiLanguage();
 
+  const reducedMotion = useReducedMotion();
   const rowClassName = `h-11 flex-row items-center px-4 ${props.className ?? ""}`;
   return (
     <Animated.View
       className="absolute max-w-full"
-      entering={LABEL_ENTERING}
-      exiting={LABEL_EXITING}
+      entering={reducedMotion ? undefined : LABEL_ENTERING}
+      exiting={reducedMotion ? undefined : LABEL_EXITING}
       onLayout={props.onLayout}
     >
       {props.onPress ? (

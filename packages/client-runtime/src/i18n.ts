@@ -46,6 +46,42 @@ const UI_MESSAGES: Readonly<Record<UiLocale, Readonly<Record<string, string>>>> 
   fa: PERSIAN_UI_MESSAGES,
 };
 
+const searchAliasesByLocale = new Map<UiLocale, Map<string, Set<string>>>();
+
+/** Search accepts the visible translation and its English source, including keyword phrases. */
+export function uiSearchTerms(locale: UiLocale, terms: readonly string[]): readonly string[] {
+  if (locale === "en") return terms;
+  let aliases = searchAliasesByLocale.get(locale);
+  if (!aliases) {
+    aliases = new Map();
+    for (const [source, translation] of Object.entries(UI_MESSAGES[locale])) {
+      if (source === translation) continue;
+      for (const [key, value] of [
+        [source, translation],
+        [translation, source],
+      ] as const) {
+        const normalized = key.trim().toLowerCase();
+        const values = aliases.get(normalized) ?? new Set<string>();
+        values.add(value);
+        aliases.set(normalized, values);
+      }
+    }
+    searchAliasesByLocale.set(locale, aliases);
+  }
+  const expanded = new Set(terms);
+  for (const term of terms) {
+    const words = term.trim().toLowerCase().split(/\s+/);
+    const phrases = [term.trim().toLowerCase(), ...words];
+    for (let index = 0; index < words.length - 1; index += 1) {
+      phrases.push(`${words[index]} ${words[index + 1]}`);
+    }
+    for (const phrase of phrases) {
+      for (const alias of aliases.get(phrase) ?? []) expanded.add(alias);
+    }
+  }
+  return [...expanded];
+}
+
 // Scheduling uses Gregorian dates in every language so calendar selections and
 // the server's date values describe the same day, including in Persian.
 export const UI_DATE_LOCALES = {

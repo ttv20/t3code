@@ -300,7 +300,7 @@ export function SourceControlWritingSettingsSection() {
         mixed={mixedReviewGuidesEnabled}
         {...searchableSetting("review-guides")}
         description={uiT(
-          "Adds a Guide tab to pull requests: an agent writes a tour of the change, stop by stop, with the calls a maintainer should make.",
+          "Add a Guide tab to pull requests. An agent explains the changes and points out decisions that need review.",
         )}
         control={
           <Switch
@@ -337,8 +337,8 @@ export function SourceControlWritingSettingsSection() {
                       instanceEntries={instanceEntries}
                       modelOptionsByInstance={reviewGuideModelOptionsByInstance}
                       triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-                      triggerAriaLabel="Review guide model"
-                      {...(mixedReviewGuideModel ? { triggerLabel: "Mixed" } : {})}
+                      triggerAriaLabel={uiT("Review guide model")}
+                      {...(mixedReviewGuideModel ? { triggerLabel: uiT("Mixed") } : {})}
                       getModelDisabledReason={writerModelDisabledReason}
                       onInstanceModelChange={(instanceId, model) => {
                         const reason = writerModelDisabledReason(instanceId, model);
@@ -513,7 +513,7 @@ export function SourceControlWritingSettingsSection() {
           settingKeys={["sourceControlWriterModelSelection"]}
           {...searchableSetting("source-control-writer-model")}
           description={uiT(
-            "Model for source control text and branch or bookmark names. Off uses the environment's text generation model.",
+            "Model for source control text and branch or bookmark names. When disabled, use the text generation model configured for this environment.",
           )}
           control={
             !hasServerTargets ? (
@@ -536,8 +536,8 @@ export function SourceControlWritingSettingsSection() {
                     instanceEntries={instanceEntries}
                     modelOptionsByInstance={modelOptionsByInstance}
                     triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-                    triggerAriaLabel="Source control writer model"
-                    {...(mixedWriterModel ? { triggerLabel: "Mixed" } : {})}
+                    triggerAriaLabel={uiT("Source control writer model")}
+                    {...(mixedWriterModel ? { triggerLabel: uiT("Mixed") } : {})}
                     {...(environmentId
                       ? {
                           onOpenProviderSetup: (instanceId: ProviderInstanceId) => {

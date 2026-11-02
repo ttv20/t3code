@@ -6,6 +6,7 @@ import {
   getCloneDestinationPath,
   getCloneDirectoryName,
 } from "@t3tools/client-runtime/operations/projects";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import {
   type EnvironmentId,
   type ProjectIgnoredFile,
@@ -253,7 +254,7 @@ function AddProjectToMachineDialog({ request }: { request: AddProjectToMachineRe
                 </span>
                 <span>
                   {selectedFiles.size === 0
-                    ? "no files"
+                    ? uiT("no files")
                     : `+ ${selectedFiles.size} ${selectedFiles.size === 1 ? "file" : "files"}`}
                 </span>
               </div>
@@ -323,7 +324,9 @@ function AddProjectToMachineDialog({ request }: { request: AddProjectToMachineRe
               <Input
                 id={`${id}-path`}
                 value={destinationPath}
-                onChange={(event) => setPathOverride(event.target.value)}
+                onChange={(event) =>
+                  setPathOverride(resolvePastedPath(destinationPath, event.target.value))
+                }
                 spellCheck={false}
                 autoComplete="off"
               />
@@ -362,8 +365,8 @@ function AddProjectToMachineDialog({ request }: { request: AddProjectToMachineRe
                 ) : files.length === 0 ? (
                   <p className="text-muted-foreground text-xs">
                     {ignoredFiles.isSuccess
-                      ? "No ignored files to copy."
-                      : "Finding ignored files…"}
+                      ? uiT("No ignored files to copy.")
+                      : uiT("Finding ignored files…")}
                   </p>
                 ) : (
                   <div className="max-h-52 overflow-y-auto rounded-md border">
@@ -439,13 +442,14 @@ function IgnoredFileRow({
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const tooLarge = file.byteLength > COPYABLE_FILE_MAX_BYTES;
   return (
     <label className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-sm not-last:border-b has-disabled:cursor-not-allowed has-disabled:opacity-64">
       <Checkbox checked={checked} disabled={tooLarge} onCheckedChange={onCheckedChange} />
       <span className="min-w-0 flex-1 truncate font-mono text-xs">{file.path}</span>
       <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-        {tooLarge ? "Over 1 MB" : formatBytes(file.byteLength)}
+        {tooLarge ? uiT("Over 1 MB") : formatBytes(file.byteLength)}
       </span>
     </label>
   );

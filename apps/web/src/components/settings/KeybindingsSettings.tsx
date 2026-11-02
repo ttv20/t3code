@@ -21,6 +21,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -78,6 +79,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { useAtomCommand } from "../../state/use-atom-command";
 
 function KeybindingPill({ value }: { value: string }) {
+  const { t: uiT } = useUiLanguage();
   // Keys dedupe repeated parts; a literal "+" in a shortcut splits into empty strings.
   const seenParts = new Map<string, number>();
   const parts = value.split("+").map((part) => {
@@ -92,13 +94,13 @@ function KeybindingPill({ value }: { value: string }) {
           {part === "mod"
             ? navigator.platform.toLowerCase().includes("mac")
               ? "⌘"
-              : "Ctrl"
+              : uiT("Ctrl")
             : part === "shift"
               ? "⇧"
               : part === "alt"
                 ? navigator.platform.toLowerCase().includes("mac")
                   ? "⌥"
-                  : "Alt"
+                  : uiT("Alt")
                 : part === "ctrl"
                   ? "⌃"
                   : part.length === 1
@@ -219,13 +221,14 @@ function WarningTooltipIcon({
   className?: string | undefined;
   children: ReactNode;
 }) {
+  const { t: uiT } = useUiLanguage();
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <span
             tabIndex={focusable ? 0 : undefined}
-            aria-label={label}
+            aria-label={uiT(label)}
             className={cn(
               "inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-warning outline-none transition-colors hover:bg-warning/10 focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-warning/25",
               className,
@@ -341,7 +344,7 @@ function WhenExpressionRemoveButton({
             variant="ghost"
             size="icon-sm"
             className={cn("size-7", className)}
-            aria-label={label}
+            aria-label={uiT(label)}
             onClick={onRemove}
           />
         }
@@ -737,6 +740,7 @@ function useKeybindingRowEditor({
   onSave: (input: ServerUpsertKeybindingInput) => void;
 }) {
   const [draft, setDraft] = useReducer(keybindingRowDraftReducer, row, createKeybindingRowDraft);
+  const pillRef = useRef<HTMLButtonElement>(null);
   const { keyDraft, whenDraft, isRecording, isWhenDraftValid } = draft;
   const whenDraftExpression = whenAstToExpression(whenDraft);
   const isDirty = keyDraft !== row.key || whenDraftExpression !== row.when;
@@ -759,7 +763,13 @@ function useKeybindingRowEditor({
     if (event.key === "Tab" && !isRecording) return;
     event.preventDefault();
     if (event.key === "Escape") {
-      setDraft({ keyDraft: row.key, isRecording: false });
+      // An unhandled Escape closes the settings page.
+      event.stopPropagation();
+      const field = event.currentTarget;
+      flushSync(() => setDraft({ keyDraft: row.key, isRecording: false }));
+      // The field may unmount for the pill; focus would otherwise drop to the page.
+      if (pillRef.current) pillRef.current.focus();
+      else field.blur();
       return;
     }
     const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform, {
@@ -780,6 +790,7 @@ function useKeybindingRowEditor({
     setDraft,
     save,
     captureKeybinding,
+    pillRef,
   };
 }
 
@@ -812,8 +823,16 @@ function KeybindingKeyControl({
 }) {
   const { t: uiT } = useUiLanguage();
 
-  const { keyDraft, isRecording, isDirty, isWhenDraftValid, setDraft, save, captureKeybinding } =
-    editor;
+  const {
+    keyDraft,
+    isRecording,
+    isDirty,
+    isWhenDraftValid,
+    setDraft,
+    save,
+    captureKeybinding,
+    pillRef,
+  } = editor;
   const showPill = !isRecording && keyDraft === row.key && row.key.length > 0 && !isDirty;
 
   return (
@@ -829,6 +848,7 @@ function KeybindingKeyControl({
       ) : null}
       {showPill ? (
         <button
+          ref={pillRef}
           type="button"
           onClick={() => setDraft({ isRecording: true })}
           aria-label={uiT("Edit shortcut for {0}: {1}", {
@@ -1090,7 +1110,10 @@ function useNewKeybindingDraft({
     if (event.key === "Tab" && !isRecording) return;
     event.preventDefault();
     if (event.key === "Escape") {
+      // An unhandled Escape closes the settings page.
+      event.stopPropagation();
       setDraft({ keyDraft: "", isRecording: false });
+      event.currentTarget.blur();
       return;
     }
     const next = keybindingFromKeyboardEvent(event.nativeEvent, navigator.platform, {
