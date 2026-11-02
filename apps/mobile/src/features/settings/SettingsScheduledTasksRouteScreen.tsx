@@ -90,7 +90,10 @@ import {
   scheduledTaskEditorSessionAtom,
 } from "./scheduled-task-editor-state";
 import { appAtomRegistry } from "../../state/atom-registry";
-import { formatNextScheduledTaskRun } from "./scheduledTaskPresentation";
+import {
+  formatScheduledTaskInterval,
+  formatNextScheduledTaskRun,
+} from "./scheduledTaskPresentation";
 
 type ScheduledTaskRoutes = {
   SettingsScheduledTaskNew: undefined;
@@ -115,12 +118,7 @@ function describeSchedule(task: ScheduledTask, locale: UiLocale): string {
   if (task.schedule.type === "once") {
     return t("Once, {0}", { "0": formatUiDateTime(Date.parse(task.schedule.runAt), locale) });
   }
-  if (task.schedule.type === "interval") {
-    const minutes = task.schedule.everyMs / 60_000;
-    return Number.isInteger(minutes)
-      ? t("Every {0} min", { "0": minutes })
-      : t("Every {0} sec", { "0": Math.round(task.schedule.everyMs / 1000) });
-  }
+  if (task.schedule.type === "interval") return formatScheduledTaskInterval(task.schedule.everyMs);
   const weekdays = task.schedule.weekdays ?? [];
   const days =
     weekdays.length === 0
