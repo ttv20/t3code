@@ -379,9 +379,11 @@ jobs:
         env:
           T3CODE_TELEMETRY_CHANNEL: ${{ github.repository == 'pingdotgg/t3code' && inputs.release_channel || 'dev' }}
         run: |
-          # GNU tar from Git Bash treats C: paths as remote hosts. Use Windows' system tar.
-          $env:Path = "$env:SystemRoot\System32;$env:Path"
-          node apps/server/scripts/cli.ts build-exe --verbose --target win-${{ inputs.arch }}
+          $node = node -p 'process.execPath'
+          # Prefer Windows tar without shadowing the Node version selected by Vite+.
+          $env:Path = "$(Split-Path -Parent $node);$env:SystemRoot\System32;$env:Path"
+          & $node --version
+          & $node apps/server/scripts/cli.ts build-exe --verbose --target win-${{ inputs.arch }}
 
       - name: Import macOS signing certificate for the CLI archive
         if: inputs.cli_archive && inputs.platform == 'mac'
