@@ -436,7 +436,7 @@ function SidebarRail({
   onPointerUp,
   ...props
 }: React.ComponentProps<"button">) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
 
   const { open, toggleSidebar, onCollapse } = useSidebar();
   const sidebarInstance = React.use(SidebarInstanceContext);
@@ -457,6 +457,7 @@ function SidebarRail({
     if (!wrapper || !sidebarRoot || !sidebarContainer) return null;
 
     const side = sidebarInstance?.side ?? "left";
+    const physicalSide = direction === "rtl" ? (side === "left" ? "right" : "left") : side;
     let width = clampSidebarWidth(sidebarContainer.getBoundingClientRect().width, options);
     // Write width only to gap/container during drag; inherited --sidebar-width restyles the whole app, so
     // update it at commit.
@@ -476,7 +477,7 @@ function SidebarRail({
 
     return {
       width,
-      edge: side === "left" ? "right" : "left",
+      edge: physicalSide === "left" ? "right" : "left",
       bounds: { min: options.minWidth, max: options.maxWidth },
       resize(nextWidth) {
         const accepted =

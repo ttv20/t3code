@@ -31,7 +31,7 @@ export function FileExplorerPane({
   minWidth?: number;
   resizeLabel?: string;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, direction } = useUiLanguage();
   const [maxWidth, setMaxWidth] = useState(MAX_WIDTH);
   const [responsiveDefaultWidth, setResponsiveDefaultWidth] = useState(defaultWidth);
   const { width, setWidth, handlers } = useResizableWidth({
@@ -39,7 +39,7 @@ export function FileExplorerPane({
     defaultWidth: responsiveDefaultWidth,
     minWidth,
     maxWidth,
-    edge: "left",
+    edge: direction === "rtl" ? "right" : "left",
   });
 
   return (
@@ -90,10 +90,10 @@ export function FileExplorerPane({
             let nextWidth: number;
             switch (event.key) {
               case "ArrowLeft":
-                nextWidth = width + 16;
+                nextWidth = width + (direction === "rtl" ? -16 : 16);
                 break;
               case "ArrowRight":
-                nextWidth = width - 16;
+                nextWidth = width + (direction === "rtl" ? 16 : -16);
                 break;
               case "Home":
                 nextWidth = minWidth;

@@ -2,6 +2,9 @@ import { page, userEvent } from "vite-plus/test/browser";
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { render } from "../../../test/render";
+import { UiLanguageContext } from "~/i18n";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import "~/index.css";
 import { Sidebar, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar } from "./sidebar";
 
 function CollapseFromInside() {
@@ -13,26 +16,71 @@ function CollapseFromInside() {
   );
 }
 
-function Harness(props: { readonly onResize?: (width: number) => void }) {
+function Harness(props: {
+  readonly onResize?: (width: number) => void;
+  readonly direction?: "ltr" | "rtl";
+  readonly side?: "left" | "right";
+}) {
+  const direction = props.direction ?? "ltr";
   return (
-    <SidebarProvider defaultOpen>
-      <Sidebar
-        collapsible="offcanvas"
-        resizable={{
-          minWidth: 200,
-          maxWidth: 600,
-          ...(props.onResize ? { onResize: props.onResize } : {}),
-        }}
-      >
-        <CollapseFromInside />
-        <SidebarRail />
-      </Sidebar>
-      <SidebarTrigger />
-    </SidebarProvider>
+    <UiLanguageContext value={{ locale: "en", direction, t: createUiTranslator("en") }}>
+      <SidebarProvider defaultOpen dir={direction}>
+        <Sidebar
+          side={props.side ?? "left"}
+          collapsible="offcanvas"
+          resizable={{
+            minWidth: 200,
+            maxWidth: 600,
+            ...(props.onResize ? { onResize: props.onResize } : {}),
+          }}
+        >
+          <CollapseFromInside />
+          <SidebarRail />
+        </Sidebar>
+        <SidebarTrigger />
+      </SidebarProvider>
+    </UiLanguageContext>
   );
 }
 
 describe("Sidebar", () => {
+  it.each([
+    { direction: "ltr", side: "left", widthSign: 1 },
+    { direction: "rtl", side: "left", widthSign: -1 },
+    { direction: "ltr", side: "right", widthSign: -1 },
+    { direction: "rtl", side: "right", widthSign: 1 },
+  ] as const)(
+    "follows the pointer on the $side side in $direction",
+    async ({ direction, side, widthSign }) => {
+      await page.viewport(1280, 800);
+      const onResize = vi.fn();
+      // Sidebar dragging has no navigation.
+      await using screen = await render(
+        <Harness direction={direction} side={side} onResize={onResize} />,
+        { router: false },
+      );
+      const rail = screen.container.querySelector<HTMLElement>('[data-sidebar="rail"]')!;
+      const panel = screen.container.querySelector<HTMLElement>('[data-slot="sidebar-container"]')!;
+      const initialWidth = panel.getBoundingClientRect().width;
+      const initialX = rail.getBoundingClientRect().left;
+      using _capture = vi.spyOn(rail, "setPointerCapture").mockImplementation(() => {});
+      const pointer = { bubbles: true, pointerId: 1, button: 0 };
+      for (const delta of [40, -40]) {
+        const from = rail.getBoundingClientRect().left;
+        const beforeWidth = panel.getBoundingClientRect().width;
+        rail.dispatchEvent(new PointerEvent("pointerdown", { ...pointer, clientX: from }));
+        rail.dispatchEvent(new PointerEvent("pointerup", { ...pointer, clientX: from + delta }));
+        await vi.waitFor(() =>
+          expect(panel.getBoundingClientRect().width).toBe(beforeWidth + delta * widthSign),
+        );
+        expect(rail.getBoundingClientRect().left).toBeCloseTo(from + delta);
+        expect(onResize).toHaveBeenLastCalledWith(beforeWidth + delta * widthSign);
+      }
+      expect(panel.getBoundingClientRect().width).toBe(initialWidth);
+      expect(rail.getBoundingClientRect().left).toBeCloseTo(initialX);
+    },
+  );
+
   it("hands focus to the outside trigger when it collapses around the focused control", async () => {
     await page.viewport(1280, 800);
     await using screen = await render(<Harness />, { router: false /* no routes involved */ });
