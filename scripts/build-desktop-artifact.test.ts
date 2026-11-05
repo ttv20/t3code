@@ -418,7 +418,32 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
           manifest.description = "edited during compilation";
           require("node:fs").writeFileSync("${matchingPath}", JSON.stringify(manifest) + "\\n");`,
         );
-        yield* buildDesktopBundles(root, version, false);
+        const runner = path.join(root, "build-without-vp.mjs");
+        yield* fs.writeFileString(
+          runner,
+          `import * as Effect from ${yield* encodeModuleUrl(import.meta.resolve("effect/Effect"))};
+           import * as NodeServices from ${yield* encodeModuleUrl(import.meta.resolve("@effect/platform-node/NodeServices"))};
+           import * as HostProcess from ${yield* encodeModuleUrl(import.meta.resolve("@t3tools/shared/HostProcess"))};
+           import { buildDesktopBundles } from ${yield* encodeModuleUrl(import.meta.resolve("./build-desktop-artifact.ts"))};
+           await Effect.runPromise(buildDesktopBundles(process.argv[2], process.argv[3], false).pipe(
+             Effect.provideService(HostProcess.Platform, "win32"),
+             Effect.scoped, Effect.provide(NodeServices.layer)));`,
+        );
+        const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+        const child = yield* spawner.spawn(
+          ChildProcess.make(process.execPath, [runner, root, version], {
+            env: {
+              ...process.env,
+              PATH: path.dirname(process.execPath),
+              Path: path.dirname(process.execPath),
+            },
+          }),
+        );
+        const [stderr, exitCode] = yield* Effect.all(
+          [child.stderr.pipe(Stream.decodeText, Stream.mkString), child.exitCode],
+          { concurrency: "unbounded" },
+        );
+        assert.equal(Number(exitCode), 0, stderr);
         assert.equal(
           yield* fs.readFileString(path.join(root, "version.txt")),
           [version, version, version, version].join("\n"),
