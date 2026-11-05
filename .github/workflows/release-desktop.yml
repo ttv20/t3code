@@ -348,6 +348,7 @@ jobs:
           key: ${{ steps.target_node_cache.outputs.cache-primary-key }}
 
       - name: Install target Node.js for the CLI executable
+        id: installed_target_node
         if: inputs.cli_archive && inputs.platform == 'win'
         shell: bash
         env:
@@ -360,6 +361,9 @@ jobs:
           mkdir -p "$dest"
           (cd "$dir" && grep " $name.zip\$" SHASUMS256.txt | sha256sum -c -)
           unzip -p "$dir/$name.zip" "$name/node.exe" > "$dest/node.exe"
+          if [[ "$RUNNER_OS" == 'Windows' ]]; then
+            echo "executable=$(cygpath -w "$dest/node.exe")" >> "$GITHUB_OUTPUT"
+          fi
 
       # Setup Vite+ selects the exact engines.node version from package.json.
       # Native builds embed that executable; cross-target builds download the
@@ -377,10 +381,16 @@ jobs:
         if: inputs.cli_archive && runner.os == 'Windows'
         shell: pwsh
         env:
+          T3CODE_CLI_NODE: ${{ steps.installed_target_node.outputs.executable }}
           T3CODE_TELEMETRY_CHANNEL: ${{ github.repository == 'pingdotgg/t3code' && inputs.release_channel || 'dev' }}
         run: |
-          $node = node -p 'process.execPath'
-          # Prefer Windows tar without shadowing the Node version selected by Vite+.
+          $node = $env:T3CODE_CLI_NODE
+          $expectedVersion = (Get-Content package.json -Raw | ConvertFrom-Json).engines.node
+          $actualVersion = & $node -p 'process.versions.node'
+          if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $expectedVersion) {
+            throw "CLI build requires Node $expectedVersion; selected $node reports $actualVersion"
+          }
+          # Prefer Windows tar while keeping the verified Node executable first.
           $env:Path = "$(Split-Path -Parent $node);$env:SystemRoot\System32;$env:Path"
           & $node --version
           & $node apps/server/scripts/cli.ts build-exe --verbose --target win-${{ inputs.arch }}
