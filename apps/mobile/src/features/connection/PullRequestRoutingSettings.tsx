@@ -1,6 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { ListChoiceRow } from "../../components/ui/ListChoiceRow";
-import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
   connectionCatalogDisplayUrl,
@@ -10,9 +7,12 @@ import {
 } from "@t3tools/client-runtime/connection";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import * as Dialog from "../../components/ui/Dialog";
+import { ListChoiceRow } from "../../components/ui/ListChoiceRow";
+import { useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { environmentCatalog } from "../../connection/catalog";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { SettingsSection } from "../settings/components/SettingsSection";

@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../../i18n";
-import type { EnvironmentId, SourceControlSignInPrompt } from "@t3tools/contracts";
 import {
   readHostCredentialSettings,
   sourceControlClients,
   type SourceControlAppSignIn,
   type SourceControlDefinition,
 } from "@t3tools/client-runtime/source-control-clients";
+import type { EnvironmentId, SourceControlSignInPrompt } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as Clipboard from "expo-clipboard";
 import { useRef, useState } from "react";
 import { Alert, Linking } from "react-native";
+import { useUiLanguage } from "../../../i18n";
 
 import { useEnvironmentQuery } from "../../../state/query";
 import { serverEnvironment } from "../../../state/server";
@@ -196,12 +196,12 @@ function AppSignInRow(props: {
       label={props.label}
       value={
         signedIn
-          ? "Signed in"
+          ? uiT("Signed in")
           : pending === "starting"
-            ? "Starting…"
+            ? uiT("Starting…")
             : pending !== null
-              ? `Enter ${pending.userCode}`
-              : "Sign in"
+              ? uiT("Enter {0}", { "0": pending.userCode })
+              : uiT("Sign in")
       }
       disabled={props.disabled}
       onPress={onPress}

@@ -1,13 +1,13 @@
-import { UiLanguageContext } from "./i18n";
-import { useMemo, type ReactNode } from "react";
-import { I18nManager, View } from "react-native";
 import { useAtomValue } from "@effect/atom-react";
-import { AsyncResult } from "effect/reactivity";
 import {
   createUiTranslator,
   resolveUiDirection,
   resolveUiLocale,
 } from "@t3tools/client-runtime/i18n";
+import { AsyncResult } from "effect/reactivity";
+import { useMemo, type ReactNode } from "react";
+import { I18nManager, View } from "react-native";
+import { UiLanguageContext } from "./i18n";
 import { mobilePreferencesAtom } from "./state/preferences";
 
 export function UiLanguageProvider({ children }: { children: ReactNode }) {

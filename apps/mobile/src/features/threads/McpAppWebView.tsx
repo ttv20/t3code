@@ -1,9 +1,5 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import * as Dialog from "../../components/ui/Dialog";
-import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
+import { useNavigation } from "@react-navigation/native";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   makeMcpAppHost,
   McpAppHostRefusal,
@@ -13,8 +9,8 @@ import {
   type McpAppHost,
   type McpAppHostContext,
 } from "@t3tools/client-runtime/mcp-apps";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { CommandId, MessageId } from "@t3tools/contracts";
 import {
   mcpAppAllowAttribute,
@@ -25,11 +21,15 @@ import {
 import * as Predicate from "effect/Predicate";
 import { AsyncResult } from "effect/reactivity";
 import Constants from "expo-constants";
-import { useNavigation } from "@react-navigation/native";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { UiText, useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { shareGeneratedAttachment } from "../../lib/attachmentDownload";
@@ -70,10 +70,15 @@ frame.src=${JSON.stringify(src).replace(/</g, "\\u003c")};})();</script></body><
 const commandFailure = (result: {
   readonly cause: Parameters<typeof squashAtomCommandFailure>[0]["cause"];
 }) => {
+  const uiT = readUiTranslator();
+
   const error = squashAtomCommandFailure(result);
-  return new McpAppHostRefusal(
-    error instanceof Error && error.message.trim() !== "" ? error.message : "Request failed.",
-  );
+  return new McpAppHostRefusal({
+    message:
+      error instanceof Error && error.message.trim() !== ""
+        ? error.message
+        : uiT("Request failed."),
+  });
 };
 
 const confirm = (title: string, message: string, action: string) =>
@@ -324,7 +329,8 @@ export function ThreadMcpApp(props: {
         const { environmentId, input } = scope();
         const info = await latest.current.toolInfo({ environmentId, input: { ...input, name } });
         if (info._tag !== "Success") throw commandFailure(info);
-        if (!info.value.callable) throw new McpAppHostRefusal("This app cannot call that tool.");
+        if (!info.value.callable)
+          throw new McpAppHostRefusal({ message: uiT("This app cannot call that tool.") });
         if (
           !info.value.readOnly &&
           !(await confirm(
@@ -333,7 +339,7 @@ export function ThreadMcpApp(props: {
             "Allow",
           ))
         ) {
-          throw new McpAppHostRefusal("Declined by the user.");
+          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
         }
         const result = await latest.current.callTool({
           environmentId,
@@ -354,17 +360,17 @@ export function ThreadMcpApp(props: {
       openLink: async (url) => {
         // WebViews cannot prove user activation; confirm links to prevent timer-driven navigation out of T3.
         if (!(await confirm(uiT("Open a link from {0}?", { "0": app.server }), url, "Open"))) {
-          throw new McpAppHostRefusal("Declined by the user.");
+          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
         }
         if (!(await tryOpenExternalUrl(url, "mcp-app"))) {
-          throw new McpAppHostRefusal("The link could not be opened.");
+          throw new McpAppHostRefusal({ message: uiT("The link could not be opened.") });
         }
       },
       sendMessage: async (text) => {
         if (
           !(await confirm(uiT("Send this message from {0}?", { "0": app.server }), text, "Send"))
         ) {
-          throw new McpAppHostRefusal("Declined by the user.");
+          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
         }
         await enqueueThreadOutboxMessage({
           environmentId: latest.current.props.environmentId,
@@ -428,7 +434,7 @@ export function ThreadMcpApp(props: {
       downloadFile: async (files) => {
         const names = files.map((file) => file.name).join(", ");
         if (!(await confirm(uiT("Save a file from {0}?", { "0": app.server }), names, "Save"))) {
-          throw new McpAppHostRefusal("Declined by the user.");
+          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
         }
         for (const file of files) {
           let bytes: Uint8Array | undefined;
@@ -447,16 +453,24 @@ export function ThreadMcpApp(props: {
             const declared = (content as { readonly mimeType?: unknown } | undefined)?.mimeType;
             if (typeof declared === "string") mimeType = declared;
           }
-          if (bytes === undefined) throw new McpAppHostRefusal(`${file.name} has no contents.`);
+          if (bytes === undefined)
+            throw new McpAppHostRefusal({
+              message: uiT("{0} has no contents.", { "0": file.name }),
+            });
           if (bytes.byteLength > MAX_DOWNLOAD_BYTES) {
-            throw new McpAppHostRefusal(`${file.name} is too large to save.`);
+            throw new McpAppHostRefusal({
+              message: uiT("{0} is too large to save.", { "0": file.name }),
+            });
           }
           const shared = await shareGeneratedAttachment({
             bytes,
             attachment: { name: file.name, mimeType },
             signal: new AbortController().signal,
           });
-          if (!shared) throw new McpAppHostRefusal("Sharing is not available on this device.");
+          if (!shared)
+            throw new McpAppHostRefusal({
+              message: uiT("Sharing is not available on this device."),
+            });
         }
       },
       onRequestTeardown: () => {

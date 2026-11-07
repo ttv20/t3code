@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../i18n";
 
-import { AppText as Text } from "./ui/AppText";
 import { cn } from "../lib/cn";
+import { AppText as Text } from "./ui/AppText";
 
 export interface StatusTone {
   readonly label: string;

@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type AtomCommandResult,
@@ -15,10 +14,12 @@ import {
 import { Atom } from "effect/reactivity";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
-import { Button } from "../../components/ui/Button";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
 import { useEnvironmentScope } from "../../state/session";
 import { environmentThreadDetails, threadEnvironment } from "../../state/threads";
@@ -47,9 +48,11 @@ export function useThreadGuestShare(threadRef: ScopedThreadRef | null): ThreadGu
 }
 
 function alertOnFailure(failureTitle: string, result: AtomCommandResult<unknown, unknown>) {
+  const uiT = readUiTranslator();
+
   if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
     const error = squashAtomCommandFailure(result);
-    Dialog.alert(failureTitle, error instanceof Error ? error.message : "Try again.");
+    Dialog.alert(failureTitle, error instanceof Error ? error.message : uiT("Try again."));
   }
 }
 
@@ -88,8 +91,8 @@ export function ThreadGuestShareBar(props: {
   const stopSharing = () =>
     Dialog.confirm({
       title: uiT("Stop sharing?"),
-      message: "The guest loses access and the link stops working.",
-      confirmText: "Stop sharing",
+      message: uiT("The guest loses access and the link stops working."),
+      confirmText: uiT("Stop sharing"),
       destructive: true,
       onConfirm: () => {
         if (disabled) return;

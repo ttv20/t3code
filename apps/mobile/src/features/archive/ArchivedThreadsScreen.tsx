@@ -1,37 +1,37 @@
-import { useUiLanguage } from "../../i18n";
-import { NativeScrollView } from "../../native/NativeScrollViewMarker";
-import { Button } from "../../components/ui/Button";
+import { LegendList } from "@legendapp/list/react-native";
+import { useNavigation } from "@react-navigation/native";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
-import { LegendList } from "@legendapp/list/react-native";
 import {
   AuthOrchestrationOperateScope,
+  resolveEnvironmentMachineKind,
   type EnvironmentId,
   type EnvironmentMachineKind,
-  resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
-import { useNavigation } from "@react-navigation/native";
+import { useMemo, useRef, type ComponentProps } from "react";
+import { RefreshControl, useWindowDimensions, View } from "react-native";
+import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppBar } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { useMemo, useRef, type ComponentProps } from "react";
-import { Platform, RefreshControl, useWindowDimensions, View } from "react-native";
-import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
-import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 
-import { AppText as Text } from "../../components/ui/AppText";
-import { EmptyState } from "../../components/ui/EmptyState";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
 import { RelativeTime } from "../../components/RelativeTime";
+import { AppText as Text } from "../../components/ui/AppText";
+import { EmptyState } from "../../components/ui/EmptyState";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import { useServerConfigs } from "../../state/entities";
 import { useEnvironmentScope } from "../../state/session";
 import { ThreadSwipeable } from "../home/thread-swipe-actions";
-import type { ArchivedThreadGroup, ArchivedThreadSortOrder } from "./archivedThreadList";
 import { SettingsScreenContent } from "../settings/components/SettingsScreen";
+import type { ArchivedThreadGroup, ArchivedThreadSortOrder } from "./archivedThreadList";
 
 export interface ArchivedThreadsHeaderEnvironment {
   readonly environmentId: EnvironmentId;
@@ -56,7 +56,6 @@ function ArchivedThreadsHeader(props: {
   return (
     <AppBar
       title={uiT("Archived threads")}
-      sidebar={false}
       onBack={() => navigation.goBack()}
       search={{
         value: props.searchQuery,
@@ -109,15 +108,11 @@ function ArchivedThreadsHeader(props: {
                 },
               ],
             },
-            ...(Platform.OS === "android"
-              ? [
-                  {
-                    id: "refresh",
-                    title: uiT("Refresh archived threads"),
-                    onPress: props.onRefresh,
-                  },
-                ]
-              : []),
+            {
+              id: "refresh",
+              title: uiT("Refresh archived threads"),
+              onPress: props.onRefresh,
+            },
           ],
         },
       ]}
@@ -428,7 +423,7 @@ export function ArchivedThreadsScreen(props: {
       <SettingsScreenContent>
         <GestureDetector gesture={archiveScrollGesture}>
           <LegendList
-            renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
+            renderScrollComponent={NativeScrollView}
             className="flex-1"
             contentContainerStyle={{
               paddingBottom: 32,

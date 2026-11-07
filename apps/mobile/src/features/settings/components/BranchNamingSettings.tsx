@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../../i18n";
 import { BranchNamingMode, type ServerSettingsPatch } from "@t3tools/contracts";
 import { useEffect, useEffectEvent, useRef } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../../i18n";
 
-import { AppText as Text, AppTextInput } from "../../../components/ui/AppText";
+import { AppTextInput, AppText as Text } from "../../../components/ui/AppText";
 import { ListChoiceRow as SettingsChoiceRow } from "../../../components/ui/ListChoiceRow";
 import { SettingsSection } from "./SettingsSection";
 

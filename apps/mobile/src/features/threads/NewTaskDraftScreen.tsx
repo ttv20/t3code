@@ -1,26 +1,19 @@
+import { ThreadId } from "@t3tools/contracts";
+import { AppBar } from "../../components/ui/AppBar";
 import { useUiLanguage } from "../../i18n";
-import { DraftEnvironmentControl } from "./DraftEnvironmentControl";
+import { scopedProjectKey } from "../../lib/scopedEntities";
 import { NativeScrollEdgeEffectsContext } from "../../native/NativeScrollViewMarker";
-import { DraftThreadHeader } from "./DraftThreadHeader";
-import { threadHeaderAppearance } from "./thread-header-appearance";
-import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
 import { useComposerAttachmentActions } from "../../state/use-composer-attachment-actions";
-import { useWorkspaceBackNavigation } from "../workspace/useAndroidWorkspaceNavigation";
+import { connectionTone } from "../connection/connectionTone";
+import { useWorkspaceBackNavigation } from "../layout/workspace/useAndroidWorkspaceNavigation";
+import { draftThreadShell } from "./draft-thread-shell";
+import { DraftEnvironmentControl } from "./DraftEnvironmentControl";
+import { DraftThreadHeader } from "./DraftThreadHeader";
 import { submittedThreadParams } from "./thread-route-state";
 import { ThreadScreenBinding, ThreadScreenFallback } from "./ThreadScreenHost";
-import { draftThreadShell } from "./draft-thread-shell";
 import { useRememberThreadProject } from "./useRememberThreadProject";
-import { scopedProjectKey } from "../../lib/scopedEntities";
-import { connectionTone } from "../connection/connectionTone";
-import { AppBar } from "../../components/ui/AppBar";
-import { ThreadId } from "@t3tools/contracts";
 
-import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
-import * as Cause from "effect/Cause";
-import { AsyncResult } from "effect/reactivity";
-import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   CommonActions,
   StackActions,
@@ -29,10 +22,15 @@ import {
   usePreventRemove,
   useRoute,
 } from "@react-navigation/native";
+import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import * as Cause from "effect/Cause";
+import { AsyncResult } from "effect/reactivity";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { KeyboardController } from "react-native-keyboard-controller";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 
 import {
   AuthOrchestrationOperateScope,
@@ -41,60 +39,60 @@ import {
 } from "@t3tools/contracts";
 
 import { ComposerEditor, type ComposerEditorHandle } from "../../components/ComposerEditor";
-import { composerContextImportsAtom } from "../../state/use-composer-drafts";
-import { abortComposerDraftOperations } from "../../state/composerDraftOperations";
-import { composerContextSendBlockReason } from "../../lib/composerContext";
 import { ComposerInlineControl } from "../../components/ComposerToolbar";
+import { composerContextSendBlockReason } from "../../lib/composerContext";
+import { abortComposerDraftOperations } from "../../state/composerDraftOperations";
+import { composerContextImportsAtom } from "../../state/use-composer-drafts";
 
 import {
-  composerAttachmentUploadBlockReason,
   composerAttachmentsStillUploading,
+  composerAttachmentUploadBlockReason,
   composerAttachmentUploadsAtom,
 } from "../../state/composer-attachment-uploads";
 
+import { threadContextsOutsideEnvironment } from "@t3tools/shared/composerContextReferences";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { threadContextsOutsideEnvironment } from "@t3tools/shared/composerContextReferences";
 
 import { makeTurnCommandMetadata } from "../../lib/commandMetadata";
 
-import {
-  clearComposerDraftContent,
-  getComposerDraftSnapshot,
-  updateComposerDraftSettings,
-  scheduleUnusedComposerAttachmentCleanup,
-} from "../../state/use-composer-drafts";
-import { useEnvironmentServerConfig, useProjects } from "../../state/entities";
-import { useProjectClone } from "../../state/projectClones";
-import { projectEnvironment } from "../../state/projects";
-import { sourceControlEnvironment } from "../../state/sourceControl";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { ProjectCloneBanner } from "./ProjectCloneBanner";
 import {
   describeUnavailableModelSelection,
   isModelSelectionUnavailable,
   resolveSelectableModelSelection,
 } from "../../lib/modelOptions";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useEnvironmentServerConfig, useProjects } from "../../state/entities";
+import { useProjectClone } from "../../state/projectClones";
+import { projectEnvironment } from "../../state/projects";
+import { sourceControlEnvironment } from "../../state/sourceControl";
 import { enqueueThreadOutboxMessage } from "../../state/thread-outbox";
+import { useAtomCommand } from "../../state/use-atom-command";
+import {
+  clearComposerDraftContent,
+  getComposerDraftSnapshot,
+  scheduleUnusedComposerAttachmentCleanup,
+  updateComposerDraftSettings,
+} from "../../state/use-composer-drafts";
 import {
   useRemoteConnections,
   useRemoteEnvironmentRuntime,
 } from "../../state/use-remote-environment-registry";
-import { useNewTaskFlow } from "./new-task-flow-provider";
 import {
   nextEnvironmentId,
   useHardwareKeyboardCommand,
 } from "../keyboard/hardwareKeyboardCommands";
-import { resolveProjectThreadCreationBranch } from "./projectThreadCreationValidation";
-import { resolveDraftProjectSelection } from "./new-task-project-selection";
+import { incomingShareImports, useIncomingShare } from "../sharing/IncomingShareProvider";
+import { idleShareFlagAtom, idleShareImportPhaseAtom } from "./incomingShareImport";
 import {
   resolveNewTaskBranchLabel,
   resolveNewTaskWorkspaceLabel,
 } from "./new-task-context-presentation";
-import { incomingShareImports, useIncomingShare } from "../sharing/IncomingShareProvider";
-import { idleShareFlagAtom, idleShareImportPhaseAtom } from "./incomingShareImport";
+import { useNewTaskFlow } from "./new-task-flow-provider";
 import { newTaskFlowKey } from "./new-task-flow-state";
-import { appAtomRegistry } from "../../state/atom-registry";
+import { resolveDraftProjectSelection } from "./new-task-project-selection";
+import { ProjectCloneBanner } from "./ProjectCloneBanner";
+import { resolveProjectThreadCreationBranch } from "./projectThreadCreationValidation";
 
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 
@@ -851,7 +849,7 @@ export function NewTaskDraftScreen(props: {
 
       <View className="min-w-0 shrink">
         <ComposerInlineControl
-          accessibilityLabel={`${flow.workspaceMode === "worktree" ? "Base branch" : "Branch"}: ${selectedBranchLabel}`}
+          accessibilityLabel={`${flow.workspaceMode === "worktree" ? uiT("Base branch") : uiT("Branch")}: ${selectedBranchLabel}`}
           chevronDirection="right"
           disabled={isComposerInteractionLocked || !flow.isGitRepo}
           icon="arrow.triangle.branch"
@@ -865,21 +863,7 @@ export function NewTaskDraftScreen(props: {
 
   if (!flow.selectedModel) {
     return (
-      <ThreadScreenFallback
-        header={
-          <AppBar
-            title={uiT("New thread")}
-            sidebar={false}
-            onBack={goBack}
-            options={{
-              ...threadHeaderAppearance(NATIVE_LIQUID_GLASS_SUPPORTED),
-              unstable_headerSubtitle: undefined,
-              unstable_headerRightItems: () => [],
-              unstable_headerToolbarItems: () => [],
-            }}
-          />
-        }
-      >
+      <ThreadScreenFallback header={<AppBar title={uiT("New thread")} onBack={goBack} />}>
         <View className="flex-1 justify-end gap-3 p-4">
           {environmentControl}
           <Text className="text-foreground-muted">
@@ -1000,6 +984,7 @@ export function NewTaskDraftScreen(props: {
         onStopThread={() => {}}
         onResumeQueue={null}
         onSendMessage={handleStart}
+        offersSideChat={false}
         onReconnectEnvironment={() => onReconnectEnvironment(selectedProject.environmentId)}
         canSwitchThreadProvider
         onUpdateThreadInteractionMode={flow.planModeEnabled ? flow.setInteractionMode : undefined}

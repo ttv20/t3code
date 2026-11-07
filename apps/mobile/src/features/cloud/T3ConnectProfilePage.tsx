@@ -1,14 +1,15 @@
-import { useUiLanguage } from "../../i18n";
+import type { MenuAction } from "@react-native-menu/menu";
 import { findErrorTraceId } from "@t3tools/client-runtime/errors";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import type { MenuAction } from "@react-native-menu/menu";
 import type { EnvironmentId } from "@t3tools/contracts";
 import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
 import { type ReactNode, useRef, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -38,9 +39,11 @@ function endpointLabel(environment: RelayClientEnvironmentRecord): string {
 }
 
 function confirmDeregister(environment: RelayClientEnvironmentRecord, onConfirm: () => void) {
+  const uiT = readUiTranslator();
+
   const title = "Deregister server?";
   const message = `“${environment.label}” will be removed from this account. T3 Connect access will be revoked, any managed tunnel will be removed, and a host space will become available. Local connections on your devices are not changed.`;
-  Dialog.confirm({ title, message, confirmText: "Deregister", destructive: true, onConfirm });
+  Dialog.confirm({ title, message, confirmText: uiT("Deregister"), destructive: true, onConfirm });
 }
 
 export function T3ConnectProfilePage() {
@@ -102,7 +105,7 @@ export function T3ConnectProfilePage() {
       traceId
         ? [
             {
-              text: "Copy trace ID",
+              text: uiT("Copy trace ID"),
               onPress: () => copyTextWithHaptic(traceId, { target: "connection-trace-id" }),
             },
             { text: "OK", style: "cancel" },

@@ -1,8 +1,8 @@
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { memo, useState } from "react";
 import { Pressable, type ColorValue } from "react-native";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 
 import { useDeadlinePassed } from "../../lib/clock";
 import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";

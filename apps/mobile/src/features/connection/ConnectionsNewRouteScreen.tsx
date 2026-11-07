@@ -1,38 +1,37 @@
-import { useUiLanguage } from "../../i18n";
-import { ListRow } from "../../components/ui/ListRow";
-import * as Dialog from "../../components/ui/Dialog";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAuth } from "@clerk/expo";
-import { CameraView, useCameraPermissions } from "expo-camera";
-import * as Haptics from "expo-haptics";
+import { useAtomValue } from "@effect/atom-react";
 import {
   StackActions,
   useIsFocused,
   useNavigation,
-  useRoute,
   type StaticScreenProps,
 } from "@react-navigation/native";
 import type { EnvironmentId } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Haptics from "expo-haptics";
 import { useState } from "react";
-import { Linking, Platform, Pressable, StyleSheet, View } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppTextInput, AppText as Text, type AppTextInputProps } from "../../components/ui/AppText";
+import * as Dialog from "../../components/ui/Dialog";
+import { FrostedCutout } from "../../components/ui/FrostedCutout";
+import { ListRow } from "../../components/ui/ListRow";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import { useRemoteConnections } from "../../state/use-remote-environment-registry";
+import { hasCloudPublicConfig } from "../cloud/publicConfig";
+import { workspaceHasColumns } from "../layout/workspace/workspace-selection-store";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { SettingsScreen } from "../settings/components/SettingsScreen";
-import { AppText as Text, AppTextInput, type AppTextInputProps } from "../../components/ui/AppText";
-import { FrostedCutout } from "../../components/ui/FrostedCutout";
-import { buildPairingUrl, extractPairingUrlFromQrPayload, parsePairingUrl } from "./pairing";
-import { useRemoteConnections } from "../../state/use-remote-environment-registry";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { hasCloudPublicConfig } from "../cloud/publicConfig";
+import { leaveSettingsPage } from "../settings/settings-navigation";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
 import { autoConnectReport, devAutoConnectAttemptAtom } from "./devAutoConnect";
 import { splitEnvironmentSections } from "./environmentSections";
-import { leaveSettingsPage } from "../settings/settings-navigation";
-import { workspaceHasColumns } from "../workspace/workspace-selection-store";
+import { buildPairingUrl, extractPairingUrlFromQrPayload, parsePairingUrl } from "./pairing";
 
 type ConnectionsNewRouteParams = {
   readonly mode?: string;
@@ -69,7 +68,6 @@ function PairingForm({
   const { connectionPairingUrl, onChangeConnectionPairingUrl, onConnectPress } =
     useRemoteConnections();
   const navigation = useNavigation();
-  const routeName = useRoute().name;
   const insets = useSafeAreaInsets();
   const [initialPairing] = useState(() => parsePairingUrl(routePairingUrl || connectionPairingUrl));
   const [hostInput, setHostInput] = useState(initialPairing.host);
@@ -181,7 +179,6 @@ function PairingForm({
 
   return (
     <SettingsScreen
-      formSheet={Platform.OS === "ios" && routeName === "ConnectionsNew"}
       title={uiT("Add environment")}
       actions={[
         {

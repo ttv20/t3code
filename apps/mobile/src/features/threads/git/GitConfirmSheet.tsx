@@ -1,19 +1,18 @@
-import { useUiLanguage } from "../../../i18n";
-import { resolveDefaultBranchActionDialogCopy } from "@t3tools/client-runtime/state/vcs";
+import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { resolveDefaultBranchActionDialogCopy } from "@t3tools/client-runtime/state/vcs";
 import { resolveAutoFeatureBranchName } from "@t3tools/shared/git";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
-import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useCallback, useMemo } from "react";
 import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
+import { useUiLanguage } from "../../../i18n";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AndroidSheetHeader } from "../../../components/ui/AndroidScreenHeader";
-import { ScreenContent } from "../../../components/ui/ScreenContent";
-import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { AppText as Text } from "../../../components/ui/AppText";
+import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { SheetHeader } from "../../../components/ui/SheetHeader";
 import { useSelectedThreadGitActions } from "../../../state/use-selected-thread-git-actions";
 import { useSelectedThreadGitState } from "../../../state/use-selected-thread-git-state";
 import { useThreadSelection } from "../../../state/use-thread-selection";
@@ -120,27 +119,9 @@ export function GitConfirmSheet(props: GitConfirmSheetProps) {
   return (
     <View
       collapsable={false}
-      className="bg-sheet ios:flex-1"
+      className="bg-sheet ios:flex-1 android:flex-col-reverse"
       style={Platform.OS === "android" ? { maxHeight: windowHeight * 0.92 } : undefined}
     >
-      {Platform.OS === "android" ? (
-        <NativeStackScreenOptions
-          options={{
-            sheetCornerRadius: 28,
-            sheetAllowedDetents: "fitToContents",
-          }}
-        />
-      ) : null}
-      {Platform.OS === "android" ? (
-        <AndroidSheetHeader
-          title={uiT("Confirm action")}
-          onBack={() => navigation.goBack()}
-          hideBottomBorder
-        />
-      ) : (
-        <View className="min-h-4 pt-2" />
-      )}
-
       <ScreenContent fitToContents>
         <ScrollView
           nestedScrollEnabled
@@ -191,6 +172,7 @@ export function GitConfirmSheet(props: GitConfirmSheetProps) {
           </View>
         </ScrollView>
       </ScreenContent>
+      <SheetHeader title={uiT("Confirm action")} onClose={() => navigation.goBack()} />
     </View>
   );
 }

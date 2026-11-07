@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import { useSyncExternalStore } from "react";
+import { useUiLanguage } from "../i18n";
 import { msUntilRelativeTimeChange, relativeTime } from "../lib/time";
 
 // The React Compiler caches inline relativeTime calls on the timestamp alone.

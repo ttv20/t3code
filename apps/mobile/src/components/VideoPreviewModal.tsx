@@ -1,13 +1,11 @@
-import { useUiLanguage } from "../i18n";
 import { videoMimeType } from "@t3tools/shared/video";
 import { Modal, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUiLanguage } from "../i18n";
 
-import { AppActivityIndicator } from "./ui/AppActivityIndicator";
 import { useLocalAttachmentPreview } from "../lib/localAttachmentPreview";
-import { usePreviewPresentation, videoPreviewKey } from "../lib/previewPresentation";
-import { useMediaActions } from "../state/mediaActions";
 import { type MediaActionsSource } from "../lib/mediaActionsSource";
+import { usePreviewPresentation, videoPreviewKey } from "../lib/previewPresentation";
 import {
   mediaVideoPreviewUri,
   mediaVideoThumbnailKey,
@@ -16,12 +14,12 @@ import {
   type VideoPreviewSource,
 } from "../lib/videoPreviewSource";
 import { useAssetUrlState, useRefreshAssetUrl } from "../state/assets";
+import { useMediaActions } from "../state/mediaActions";
 import { usePreparedConnection } from "../state/session";
-import { AppText } from "./ui/AppText";
-import { SymbolView } from "./ui/AppSymbol";
-import { MediaActionsMenu } from "./MediaActionsMenu";
-import { MediaSourceCaption } from "./MediaSourceCaption";
+import { MediaPreviewHeader } from "./MediaPreviewHeader";
 import { MediaVideoPlayer } from "./MediaVideoPlayer";
+import { AppActivityIndicator } from "./ui/AppActivityIndicator";
+import { AppText } from "./ui/AppText";
 
 export type { VideoPreviewSource } from "../lib/videoPreviewSource";
 
@@ -120,21 +118,12 @@ function OpenVideoPreviewModal(props: {
         className="flex-1 bg-black"
         style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       >
-        <View className="min-h-14 flex-row items-center gap-3 pl-4 pr-2">
-          <AppText className="flex-1 font-t3-medium text-base text-white" numberOfLines={2}>
-            {props.name}
-          </AppText>
-          <MediaActionsMenu media={mediaActions} inModal />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={uiT("Close video")}
-            onPress={props.onRequestClose}
-            className="size-12 items-center justify-center"
-          >
-            <SymbolView name="xmark" size={20} tintColor="#ffffff" type="monochrome" />
-          </Pressable>
-        </View>
-        <MediaSourceCaption source={mediaActions.title} />
+        <MediaPreviewHeader
+          title={props.name}
+          media={mediaActions}
+          closeAccessibilityLabel={uiT("Close video")}
+          onClose={props.onRequestClose}
+        />
         {playback.uri === null && !playback.unavailable ? (
           <View className="flex-1 items-center justify-center gap-3 px-6">
             <AppActivityIndicator color="#ffffff" />

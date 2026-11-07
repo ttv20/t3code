@@ -1,7 +1,7 @@
+import { AsyncResult } from "effect/reactivity";
 import type { ReactNode } from "react";
 import { act, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
-import { AsyncResult } from "effect/reactivity";
 import { expect, it, vi } from "vite-plus/test";
 
 interface Snapshot {
@@ -54,7 +54,10 @@ vi.mock("../../components/ui/AppText", () => ({
   AppText: ({ children }: { children: ReactNode }) => <span>{children}</span>,
 }));
 vi.mock("../../components/ui/Dialog", () => ({ alert: vi.fn() }));
-vi.mock("../../native/StackHeader", () => ({ NativeStackScreenOptions: () => null }));
+vi.mock("../../components/ui/AppBar", () => ({ AppBar: () => null }));
+vi.mock("../layout/workspace/useAndroidWorkspaceNavigation", () => ({
+  useWorkspaceBackNavigation: () => () => undefined,
+}));
 vi.mock("./ThreadScreenHost", () => ({
   ThreadScreenFallback: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));

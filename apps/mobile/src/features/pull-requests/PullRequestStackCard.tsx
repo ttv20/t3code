@@ -1,23 +1,23 @@
-import { useUiLanguage } from "../../i18n";
-import { StackActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import { Platform, View } from "react-native";
-import { useSelectWorkspaceDetail } from "../workspace/useSelectWorkspaceDetail";
+import { View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
+import { useUiLanguage } from "../../i18n";
+import { withKnownPullRequestSummary } from "../../state/use-thread-pr";
+import { useOpenWorkspaceDetail } from "../layout/useOpenWorkspaceDetail";
 import { PullRequestCardGroup, PullRequestCardRow } from "./PullRequestControls";
+import { PullRequestGlyph } from "./pullRequestGlyphs";
 import { pullRequestLayerParams } from "./pullRequestStack";
 import { pullRequestStatus } from "./pullRequestStatus";
 import type { PullRequestParams } from "./usePullRequestDiff";
 import type { PullRequestStackState } from "./usePullRequestStack";
-import { PullRequestGlyph } from "./pullRequestGlyphs";
 
 export function PullRequestStackCard(props: {
   readonly params: PullRequestParams;
   readonly state: PullRequestStackState;
 }) {
   const { t: uiT } = useUiLanguage();
-  const navigation = useNavigation();
-  const selectDetail = useSelectWorkspaceDetail();
+
+  const openDetail = useOpenWorkspaceDetail();
   const [expanded, setExpanded] = useState(false);
   const stack = props.state.stack;
   if (!stack) {
@@ -68,16 +68,21 @@ export function PullRequestStackCard(props: {
                   icon={status.icon}
                   tint={status.tint}
                   value={selected ? "Current" : status.label}
-                  detail={`#${layer.number} · ${index + 1} of ${stack.layers.length}`}
+                  detail={uiT("#{0} · {1} of {2}", {
+                    "0": layer.number,
+                    "1": index + 1,
+                    "2": stack.layers.length,
+                  })}
                   onPress={
                     selected
                       ? undefined
-                      : () => {
-                          const params = pullRequestLayerParams(props.params, layer.number);
-                          if (Platform.OS === "android")
-                            selectDetail({ name: "PullRequest", params });
-                          else navigation.dispatch(StackActions.push("PullRequest", params));
-                        }
+                      : () =>
+                          openDetail({
+                            name: "PullRequest",
+                            params: withKnownPullRequestSummary(
+                              pullRequestLayerParams(props.params, layer.number),
+                            ),
+                          })
                   }
                   last={index === stack.layers.length - 1}
                 />

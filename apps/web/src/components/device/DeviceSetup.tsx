@@ -25,9 +25,20 @@ const deviceHubDescription =
 const agentDeviceDescription =
   "Allow new agent sessions in this environment to start and control local and remote devices, with required tools set up automatically.";
 
+/** Platforms whose latest listing on a ready host may be missing devices. */
+export const incompleteListings = (
+  status: DeviceServiceState["hostStatuses"][string] | undefined,
+) =>
+  (["ios", "android"] as const).filter(
+    (platform) =>
+      status?.status === "ready" &&
+      (status.incompletePlatforms?.includes(platform) ||
+        (platform === "android" && status.androidDiscoveryIncomplete === true)),
+  );
+
 export const isAndroidDiscoveryUncertain = (state: DeviceServiceState) =>
-  Object.values(state.hostStatuses).some(
-    (status) => status.status === "ready" && status.androidDiscoveryIncomplete,
+  Object.values(state.hostStatuses).some((status) =>
+    incompleteListings(status).includes("android"),
   );
 
 /**
@@ -104,6 +115,16 @@ export function platformSetupStatus(state: DeviceServiceState, platform: DeviceP
       (host.kind === "local" && state.hostStatus === "ready"),
   );
   if (readyHosts.length > 0 && !hasDevices) {
+    if (
+      readyHosts.some((host) =>
+        state.hostStatuses[host.id]?.incompletePlatforms?.includes(platform),
+      )
+    ) {
+      return {
+        ready: false,
+        message: `No ${platformName(platform)} devices were listed because device discovery reported a problem.`,
+      };
+    }
     return {
       ready: false,
       message:
@@ -290,14 +311,14 @@ export function DeviceHubSetupStatus({
         ? state.hostStatus === "installing"
           ? compact
             ? uiT("Installing…")
-            : "Installing device hub…"
+            : uiT("Installing device hub…")
           : state.hostStatus === "starting"
             ? compact
               ? uiT("Starting…")
-              : "Starting device hub…"
+              : uiT("Starting device hub…")
             : compact
               ? uiT("Updating…")
-              : "Updating device hub…"
+              : uiT("Updating device hub…")
         : uiT("Device hub is ready.")}
     </p>
   );
@@ -338,14 +359,14 @@ export function AgentDeviceSetupStatus(props: {
     const label =
       props.state.hostStatus === "installing"
         ? props.compact
-          ? uiT("Installing…")
+          ? "Installing…"
           : "Installing agent tools…"
         : props.state.hostStatus === "starting"
           ? props.compact
-            ? uiT("Starting…")
+            ? "Starting…"
             : "Starting agent tools…"
           : props.compact
-            ? uiT("Updating…")
+            ? "Updating…"
             : uiT("Updating agent access…");
     return (
       <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">

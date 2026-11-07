@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { Platform } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { useResolveClassNames } from "uniwind";
 import { SymbolView } from "./AppSymbol";

@@ -1,16 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-import { isDraftThreadRoute } from "./thread-route-state";
-import * as Dialog from "../../components/ui/Dialog";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { NavigationRow } from "../../components/ui/NavigationRow";
-import { AppBar } from "../../components/ui/AppBar";
 import {
   StackActions,
   useIsFocused,
   useNavigation,
   type StaticScreenProps,
 } from "@react-navigation/native";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
 import {
@@ -21,19 +14,28 @@ import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { cn } from "../../lib/cn";
-import { ScreenContent } from "../../components/ui/ScreenContent";
-import { Button } from "../../components/ui/Button";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { AppText as Text } from "../../components/ui/AppText";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { AppBar } from "../../components/ui/AppBar";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { NavigationRow } from "../../components/ui/NavigationRow";
+import { ScreenContent } from "../../components/ui/ScreenContent";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
+import { cn } from "../../lib/cn";
 import { useProjects, useServerConfigs } from "../../state/entities";
 import { projectEnvironment } from "../../state/projects";
+import { readUiTranslator } from "../../state/ui-language";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useRemoteConnectionStatus } from "../../state/use-remote-environment-registry";
-import type { WorkspaceState } from "../../state/workspaceModel";
 import { useWorkspaceState } from "../../state/workspace";
+import type { WorkspaceState } from "../../state/workspaceModel";
+import { isDraftThreadRoute } from "./thread-route-state";
 
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
 import { useIncomingShare } from "../sharing/IncomingShareProvider";
 import { useNewTaskFlow } from "./new-task-flow-provider";
 import {
@@ -41,7 +43,6 @@ import {
   getProjectScopeSelectionTarget,
   resolveNewTaskScratchOption,
 } from "./new-task-project-selection";
-import { useSelectWorkspaceDetail } from "../workspace/useSelectWorkspaceDetail";
 
 type NewTaskRouteParams = {
   readonly incomingShareId?: string | string[];
@@ -57,18 +58,20 @@ function deriveProjectEmptyState(catalogState: WorkspaceState): {
   readonly detail: string;
   readonly loading: boolean;
 } {
+  const uiT = readUiTranslator();
+
   if (catalogState.isLoadingConnections) {
     return {
-      title: "Loading environments",
-      detail: "Checking saved environments on this device.",
+      title: uiT("Loading environments"),
+      detail: uiT("Checking saved environments on this device."),
       loading: true,
     };
   }
 
   if (!catalogState.hasConnections) {
     return {
-      title: "No environments connected",
-      detail: "Add an environment before creating a task.",
+      title: uiT("No environments connected"),
+      detail: uiT("Add an environment before creating a task."),
       loading: false,
     };
   }
@@ -83,11 +86,13 @@ function deriveProjectEmptyState(catalogState: WorkspaceState): {
     return {
       title:
         catalogState.connectionState === "unsupported"
-          ? "Client not supported"
-          : "Environment unavailable",
+          ? uiT("Client not supported")
+          : uiT("Environment unavailable"),
       detail:
         catalogState.connectionError ??
-        "The saved environment is offline. Check the URL or start the environment, then retry.",
+        uiT(
+          "The saved environment is offline. Check the URL or start the environment, then retry.",
+        ),
       loading: false,
     };
   }
@@ -98,15 +103,15 @@ function deriveProjectEmptyState(catalogState: WorkspaceState): {
     catalogState.connectionError === null
   ) {
     return {
-      title: "Connecting to environment",
-      detail: "Loading projects from the saved environment.",
+      title: uiT("Connecting to environment"),
+      detail: uiT("Loading projects from the saved environment."),
       loading: true,
     };
   }
 
   return {
-    title: "No projects found",
-    detail: "The connected environment did not report any projects.",
+    title: uiT("No projects found"),
+    detail: uiT("The connected environment did not report any projects."),
     loading: false,
   };
 }
@@ -130,8 +135,6 @@ function NewTaskHeader(props: {
       <AppBar
         title={props.title}
         subtitle={props.subtitle ?? undefined}
-        sidebar={false}
-        options={{ headerBackVisible: true }}
         hideBottomBorder
         onBack={goBack}
         actions={
@@ -409,25 +412,29 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
               </Text>
               {Platform.OS === "android" ? (
                 <>
-                  <Button
-                    label={
-                      catalogState.hasReadyEnvironment
-                        ? uiT("Add new project")
-                        : uiT("Add environment")
-                    }
-                    tone="primary"
-                    onPress={() =>
-                      catalogState.hasReadyEnvironment
-                        ? navigation.dispatch(StackActions.push("AddProject"))
-                        : navigation.navigate("ConnectionsNew")
-                    }
-                  />
-                  {canStartScratch ? (
+                  <View>
                     <Button
-                      label={uiT("Start without a project")}
-                      tone="secondary"
-                      onPress={() => void startScratch()}
+                      label={
+                        catalogState.hasReadyEnvironment
+                          ? uiT("Add new project")
+                          : uiT("Add environment")
+                      }
+                      tone="primary"
+                      onPress={() =>
+                        catalogState.hasReadyEnvironment
+                          ? navigation.dispatch(StackActions.push("AddProject"))
+                          : navigation.navigate("ConnectionsNew")
+                      }
                     />
+                  </View>
+                  {canStartScratch ? (
+                    <View>
+                      <Button
+                        label={uiT("Start without a project")}
+                        tone="secondary"
+                        onPress={() => void startScratch()}
+                      />
+                    </View>
                   ) : null}
                 </>
               ) : !catalogState.hasReadyEnvironment ? (
@@ -448,11 +455,13 @@ export function NewTaskRouteScreen({ route }: StaticScreenProps<NewTaskRoutePara
                     />
                   </View>
                   {canStartScratch ? (
-                    <Button
-                      label={uiT("Start without a project")}
-                      tone="secondary"
-                      onPress={() => void startScratch()}
-                    />
+                    <View>
+                      <Button
+                        label={uiT("Start without a project")}
+                        tone="secondary"
+                        onPress={() => void startScratch()}
+                      />
+                    </View>
                   ) : null}
                 </>
               )}

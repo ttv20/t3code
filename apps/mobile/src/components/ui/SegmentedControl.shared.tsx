@@ -1,12 +1,17 @@
-import { useUiLanguage } from "../../i18n";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useReducedMotion,
+  withTiming,
+} from "react-native-reanimated";
+import { useUiLanguage } from "../../i18n";
 
-import { segmentedControlColors } from "./segmentedControlColors";
 import { AppText } from "./AppText";
-import { useControlTheme } from "./useControlTheme";
 import type { SegmentedControlProps } from "./SegmentedControl.types";
+import { segmentedControlColors } from "./segmentedControlColors";
+import { useControlTheme } from "./useControlTheme";
 
 export type { SegmentedControlProps } from "./SegmentedControl.types";
 
@@ -20,10 +25,15 @@ export function SegmentedControl<Value extends string | number>(
   const reduceMotion = useReducedMotion();
   const selectedIndex = props.options.findIndex((option) => option.value === props.selected);
   const segmentWidth = props.options.length ? Math.max(0, width - 6) / props.options.length : 0;
-  const selectionOffset = selectedIndex * segmentWidth * (direction === "rtl" ? -1 : 1);
+  // The index animates, not the offset, so a resize moves the selection without sliding it.
+  const selectedPosition = useDerivedValue(() =>
+    withTiming(selectedIndex, { duration: reduceMotion ? 0 : 160 }),
+  );
   const selectionStyle = useAnimatedStyle(() => ({
     width: segmentWidth,
-    transform: [{ translateX: withTiming(selectionOffset, { duration: reduceMotion ? 0 : 160 }) }],
+    transform: [
+      { translateX: selectedPosition.value * segmentWidth * (direction === "rtl" ? -1 : 1) },
+    ],
   }));
   const { trackColor, selectedColor, selectedTextColor, mutedColor } = segmentedControlColors(
     colors,

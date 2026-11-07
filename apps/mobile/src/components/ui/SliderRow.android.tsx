@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../i18n";
 import { Slider } from "@expo/ui/jetpack-compose";
 import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import * as Haptics from "expo-haptics";
 import { useRef } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "./AppText";
 import { SymbolView } from "./AppSymbol";
+import { AppText as Text } from "./AppText";
 import { NativeThemeHost } from "./NativeThemeHost.android";
-import { useControlTheme } from "./useControlTheme";
 import type { SliderRowProps } from "./SliderRow.types";
+import { useControlTheme } from "./useControlTheme";
 
 export function SliderRow(props: SliderRowProps) {
   const { t: uiT } = useUiLanguage();

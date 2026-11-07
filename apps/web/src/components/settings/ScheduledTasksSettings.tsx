@@ -22,6 +22,7 @@ import type {
   ScheduledTask,
   ScheduledTaskId,
   ScheduledTaskSchedule,
+  ScheduledTaskThreadMode,
   ScheduledTaskUpsertInput,
   ScheduledTaskWebhookDeliverySummary,
   ThreadId,
@@ -40,6 +41,7 @@ import {
   MIN_SCHEDULED_TASK_INTERVAL_MS,
   ProviderInstanceId,
   resolveEnvironmentMachineKind,
+  scheduledTaskThreadMode,
 } from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
@@ -50,7 +52,7 @@ import { formatRelativeTime } from "../../timestampFormat";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { getCustomModelOptionsByInstance } from "../../modelSelection";
 import { providerInstanceEntriesFor } from "../../providerInstances";
-import { usePrimaryCloudLinkState } from "../../cloud/primaryCloudLinkState";
+import { usePrimaryCloudLinkState } from "../../cloud/cloudLinkState";
 import { requestConfirmDialog } from "../../confirmDialog";
 import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -61,7 +63,8 @@ import {
   useEnvironmentHttpBaseUrl,
   type EnvironmentPresentation,
 } from "../../state/environments";
-import { useProjects, useThreadShell } from "../../state/entities";
+import { useProjects, useQuietThreadShell, useThreadShell } from "../../state/entities";
+import { buildThreadRouteParams } from "../../threadRoutes";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
 import { formatEnvironmentQueryError, useEnvironmentQuery } from "../../state/query";
@@ -151,6 +154,7 @@ const EMPTY_DRAFT: DraftState = {
   weekdays: new Set([1, 2, 3, 4, 5]),
   projectId: "",
   threadId: "",
+  threadMode: "new_thread",
   workspaceMode: "worktree",
   baseRef: "main",
   startFromOrigin: true,
@@ -253,7 +257,7 @@ function WebhookFiltersField({
               <div className="grid min-w-0 flex-1 grid-cols-1">
                 <Input
                   aria-label={uiT("Filter {0} value", { "0": index + 1 })}
-                  placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
+                  placeholder={filter.op === "in" ? "opened, reopened" : uiT("opened")}
                   value={filter.value}
                   onChange={(event) => update(index, { value: event.target.value })}
                 />
@@ -810,6 +814,9 @@ function ScheduledTaskRow({
           {task.lastRunStatus !== "never" ? (
             <Badge variant={statusVariant(task.lastRunStatus)}>{task.lastRunStatus}</Badge>
           ) : null}
+          {task.threadId !== null && scheduledTaskThreadMode(task) !== "new_thread" ? (
+            <ScheduledTaskThreadLink environmentId={environmentId} threadId={task.threadId} />
+          ) : null}
           {task.lastRunError ? <span className="text-destructive">{task.lastRunError}</span> : null}
         </div>
       }
@@ -867,6 +874,26 @@ function ScheduledTaskRow({
         </div>
       }
     />
+  );
+}
+
+function ScheduledTaskThreadLink({
+  environmentId,
+  threadId,
+}: {
+  readonly environmentId: EnvironmentId;
+  readonly threadId: ThreadId;
+}) {
+  const ref = scopeThreadRef(environmentId, threadId);
+  const title = useQuietThreadShell(ref)?.title.trim();
+  return (
+    <Link
+      to="/$environmentId/$threadId"
+      params={buildThreadRouteParams(ref)}
+      className="max-w-64 truncate underline underline-offset-2 hover:text-foreground"
+    >
+      {title || "Open thread"}
+    </Link>
   );
 }
 
@@ -954,9 +981,7 @@ function WebhookDeliveriesDialog({
                 </p>
               ) : null}
               <DeliveryBlock
-                title={
-                  selected.pendingWindow ? uiT("Scheduled run") : uiT("Prompt sent to the agent")
-                }
+                title={selected.pendingWindow ? "Scheduled run" : uiT("Prompt sent to the agent")}
               >
                 {selected.renderedPrompt ??
                   (selected.pendingWindow
@@ -979,7 +1004,7 @@ function WebhookDeliveriesDialog({
               {selected.query ? (
                 <DeliveryBlock title={uiT("Query")}>{selected.query}</DeliveryBlock>
               ) : null}
-              <DeliveryBlock title={selected.bodyTruncated ? uiT("Body (truncated)") : uiT("Body")}>
+              <DeliveryBlock title={selected.bodyTruncated ? "Body (truncated)" : uiT("Body")}>
                 {selected.body || uiT("(empty)")}
               </DeliveryBlock>
             </div>
@@ -1193,12 +1218,23 @@ function ScheduledTaskEditorDialog({
   );
 }
 
+const THREAD_MODE_LABELS: Record<ScheduledTaskThreadMode, string> = {
+  new_thread: "New thread each run",
+  continue: "One thread, continuing the conversation",
+  fresh_session: "One thread, fresh session each run",
+};
+
 function ScheduledTaskDestination({
   environmentId,
   threadId,
+  threadMode,
+  onThreadModeChange,
 }: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId | null;
+  readonly threadMode: ScheduledTaskThreadMode;
+  /** Absent on servers that predate thread modes. */
+  readonly onThreadModeChange: ((mode: ScheduledTaskThreadMode) => void) | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
   const ref = threadId === null ? null : scopeThreadRef(environmentId, threadId);
@@ -1208,24 +1244,47 @@ function ScheduledTaskDestination({
     ref !== null && shell === null ? threadFamilies.familyAtom(environmentId, ref.threadId) : null,
   );
   const thread = shell ?? family.data?.threads.find((row) => row.id === threadId);
+  const bound = ref !== null && threadMode !== "new_thread";
+  const detail =
+    threadMode === "new_thread"
+      ? "Each run starts a new thread with the workspace and model below."
+      : !bound
+        ? threadMode === "continue"
+          ? "The first run starts a thread with the workspace and model below. Later runs continue that conversation."
+          : "The first run starts a thread with the workspace and model below. Later runs post there, each in a fresh session without earlier runs' context."
+        : threadMode === "continue"
+          ? "Each run continues this conversation, in its workspace and with its current model."
+          : "Each run starts a fresh session in this thread, without earlier runs' context.";
   return (
-    <Field label={uiT("Destination")}>
-      {ref === null ? (
-        <p className="text-sm text-muted-foreground">
-          <UiText message={"Each run starts a new thread with the workspace and model below."} />
-        </p>
-      ) : (
-        <div className="space-y-1 text-sm">
+    <Field label={uiT("Destination")} htmlFor="scheduled-task-destination">
+      {onThreadModeChange ? (
+        <Select
+          value={threadMode}
+          onValueChange={(value) => onThreadModeChange(value as ScheduledTaskThreadMode)}
+        >
+          <SelectTrigger size="sm" id="scheduled-task-destination">
+            <SelectValue>{THREAD_MODE_LABELS[threadMode]}</SelectValue>
+          </SelectTrigger>
+          <SelectPopup>
+            {(Object.keys(THREAD_MODE_LABELS) as ScheduledTaskThreadMode[]).map((mode) => (
+              <SelectItem key={mode} value={mode}>
+                {THREAD_MODE_LABELS[mode]}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </Select>
+      ) : null}
+      <div className="space-y-1 text-sm">
+        {bound ? (
           <p className="wrap-anywhere">{thread?.title.trim() || `Thread ${ref.threadId}`}</p>
+        ) : null}
+        <p className="text-muted-foreground">{detail}</p>
+        {threadMode !== "new_thread" ? (
           <p className="text-muted-foreground">
-            <UiText
-              message={
-                "Each run continues this conversation, in its workspace and with its current model."
-              }
-            />
+            <UiText message={"Deleting the thread also deletes this task."} />
           </p>
-        </div>
-      )}
+        ) : null}
+      </div>
     </Field>
   );
 }
@@ -1252,6 +1311,8 @@ function ScheduledTaskEditorForm({
   const offersOnce =
     environment?.serverConfig?.environment.capabilities.oneTimeSchedules === true ||
     task?.schedule.type === "once";
+  const offersThreadModes =
+    environment?.serverConfig?.environment.capabilities.scheduledTaskThreadModes === true;
   const connected =
     environment?.connection.phase === "connected" && environment.serverConfig !== null;
   const tasksQuery = useEnvironmentQuery(
@@ -1415,6 +1476,7 @@ function ScheduledTaskEditorForm({
       schedule,
       projectId: selectedProjectId as ProjectId,
       threadId: draft.threadId ? (draft.threadId as ThreadId) : null,
+      ...(offersThreadModes ? { threadMode: draft.threadMode } : {}),
       workspaceStrategy,
       modelSelection,
       // Tasks have no mode picker; a mode above the administrator's ceiling would fail every run.
@@ -1546,6 +1608,12 @@ function ScheduledTaskEditorForm({
           <ScheduledTaskDestination
             environmentId={environmentId}
             threadId={draft.threadId ? (draft.threadId as ThreadId) : null}
+            threadMode={draft.threadMode}
+            onThreadModeChange={
+              offersThreadModes
+                ? (threadMode) => setDraft((current) => ({ ...current, threadMode }))
+                : undefined
+            }
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1902,7 +1970,7 @@ function ScheduledTaskEditorForm({
                         value={draft.signatureSecret}
                         placeholder={
                           liveTask?.schedule.type === "webhook" && liveTask.webhook?.hasSecret
-                            ? uiT("Unchanged")
+                            ? "Unchanged"
                             : uiT("Shared secret")
                         }
                         onChange={(event) =>

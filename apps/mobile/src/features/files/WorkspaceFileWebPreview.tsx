@@ -1,22 +1,24 @@
-import { useUiLanguage } from "../../i18n";
 import { useState } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUiLanguage } from "../../i18n";
 
+import { PdfPreview } from "../../components/PdfPreview";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppText as Text } from "../../components/ui/AppText";
-import { FilePreviewLoading } from "./FilePreviewFeedback";
-import { LoadingStrip } from "../../components/ui/LoadingStrip";
-import { PdfPreview } from "../../components/PdfPreview";
 import { ControlPill } from "../../components/ui/ControlPill";
+import { LoadingStrip } from "../../components/ui/LoadingStrip";
+import { useContentTopInset } from "../../components/ui/useBarInset";
 import { useHardwareBack } from "../../lib/backHandler";
 import { isPdfPreviewUri } from "../../lib/pdfPreview";
-import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
+import { FilePreviewLoading } from "./FilePreviewFeedback";
 
 export function WorkspaceFileWebPreview(props: { readonly uri: string | null }) {
+  const { t: uiT } = useUiLanguage();
+
   if (props.uri === null) {
-    return <FilePreviewLoading message="Preparing preview..." background="card" />;
+    return <FilePreviewLoading message={uiT("Preparing preview...")} background="card" />;
   }
   return <DocumentWebPreview key={props.uri} uri={props.uri} />;
 }
@@ -24,10 +26,7 @@ export function WorkspaceFileWebPreview(props: { readonly uri: string | null }) 
 function DocumentWebPreview(props: { readonly uri: string }) {
   const { t: uiT } = useUiLanguage();
 
-  const insets = useSafeAreaInsets();
-  const columnMetrics = useNativeColumnLayoutMetrics();
-  // iOS headers float over this column, so content starts below them.
-  const headerInset = Platform.OS === "ios" ? (columnMetrics?.safeArea.top ?? insets.top) : 0;
+  const headerInset = useContentTopInset();
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [linkedPdf, setLinkedPdf] = useState<string | null>(null);

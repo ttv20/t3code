@@ -135,7 +135,7 @@ export function MediaVideoPlayer({
         <span
           role="alert"
           className={cn(
-            "flex aspect-video max-h-full min-h-28 w-full flex-col items-center justify-center gap-3 rounded-lg border border-border/40 bg-muted/40 p-4 text-center text-sm text-muted-foreground",
+            "flex aspect-video max-h-full w-full flex-col items-center justify-center gap-3 rounded-lg border border-border/40 bg-muted/40 p-4 text-center text-sm text-muted-foreground",
             stateClassName,
           )}
         >
@@ -196,7 +196,7 @@ export function MediaVideoPlayer({
       ) : (
         <span
           role="status"
-          aria-label={failed ? uiT("Video preview unavailable") : uiT("Loading video")}
+          aria-label={failed ? "Video preview unavailable" : uiT("Loading video")}
           className={cn("block aspect-video w-full rounded-lg bg-muted/60", stateClassName)}
           style={style}
         />

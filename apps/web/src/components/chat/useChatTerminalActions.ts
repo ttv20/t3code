@@ -221,6 +221,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
     }
     const targetCwd = options?.cwd ?? gitCwd ?? activeProject.workspaceRoot;
     const reusableTerminalId =
+      script.stopOnSettle ||
       options?.preferNewTerminal ||
       !canReuseTerminal ||
       !readEnvironmentScope(environmentId, AuthTerminalReadScope)
@@ -257,6 +258,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
         ? { size: { cols: SCRIPT_TERMINAL_COLS, rows: SCRIPT_TERMINAL_ROWS } }
         : { terminalId: reusableTerminalId }),
       location: { cwd: targetCwd, worktreePath: targetWorktreePath },
+      stopOnSettle: script.stopOnSettle ?? false,
       ...(options?.env ? { extraEnv: options.env } : {}),
     });
     if (!launched) return;
@@ -303,7 +305,8 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
           stackedThreadToast({
             type: "error",
             title: uiT("Could not open preview"),
-            description: error instanceof Error ? error.message : "An unexpected error occurred.",
+            description:
+              error instanceof Error ? error.message : uiT("An unexpected error occurred."),
           }),
         );
       }

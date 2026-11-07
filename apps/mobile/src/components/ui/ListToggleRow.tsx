@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { Pressable } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText } from "./AppText";
 import { ListRowLayout, type ListRowContentProps } from "./ListRowLayout";

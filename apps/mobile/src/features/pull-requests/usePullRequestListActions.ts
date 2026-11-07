@@ -1,29 +1,29 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
-import { useNavigation } from "@react-navigation/native";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   executeAtomQuery,
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, PullRequestAction } from "@t3tools/contracts";
-import { Atom, AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { use, useRef, useState } from "react";
 import { Linking, Platform } from "react-native";
+import * as Dialog from "../../components/ui/Dialog";
 import type { MenuProps } from "../../components/ui/Menu.types";
+import { useUiLanguage } from "../../i18n";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { useOpenWorkspaceDetail } from "../layout/useOpenWorkspaceDetail";
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
 import {
   canPerformPullRequestAction,
   openOnProviderLabel,
   pullRequestActionLabel,
 } from "./pullRequestActions";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { scopedPullRequestListKey, type EnvironmentPullRequestListEntry } from "./pullRequestList";
 import { copyPullRequestLink, sharePullRequestLink } from "./pullRequestLink";
+import { scopedPullRequestListKey, type EnvironmentPullRequestListEntry } from "./pullRequestList";
 import { pullRequestTarget } from "./usePullRequestDiff";
-import { useSelectWorkspaceDetail } from "../workspace/useSelectWorkspaceDetail";
 
 export function usePullRequestListActions(
   environmentIds: readonly EnvironmentId[],
@@ -35,8 +35,8 @@ export function usePullRequestListActions(
   const { t: uiT } = useUiLanguage();
 
   const registry = use(RegistryContext);
-  const navigation = useNavigation();
   const selectDetail = useSelectWorkspaceDetail();
+  const openDetail = useOpenWorkspaceDetail();
   const permissionKey = JSON.stringify(environmentIds);
   const permissionAtom = (() => {
     const ids: readonly EnvironmentId[] = JSON.parse(permissionKey);
@@ -82,12 +82,10 @@ export function usePullRequestListActions(
           !pr.viewerPermissions.requestReviewers
         )
           throw new Error(`Review requests aren't available for this ${terminology.singular}.`);
-        if (Platform.OS === "android") {
-          selectDetail(
-            { name: "PullRequest", params: params(entry) },
-            { name: "PullRequestReviewers", params: params(entry) },
-          );
-        } else navigation.navigate("PullRequestReviewers", params(entry));
+        openDetail(
+          { name: "PullRequest", params: params(entry) },
+          { name: "PullRequestReviewers", params: params(entry) },
+        );
         return;
       }
       if (
@@ -97,6 +95,7 @@ export function usePullRequestListActions(
         throw new Error(`This action isn't available for this ${terminology.singular}.`);
       const result = await run({ ...target, input: { ...target.input, action } });
       if (result._tag === "Failure") throw squashAtomCommandFailure(result);
+      if (result.value !== undefined) return;
       onChanged(
         entry,
         action === "close"

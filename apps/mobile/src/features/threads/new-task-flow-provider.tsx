@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-import { ActiveNewTaskContext } from "../../state/active-new-task";
 import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
-import { useNowMinuteMs } from "../../lib/clock";
-import * as Dialog from "../../components/ui/Dialog";
 import React, { useEffect, useRef, useState } from "react";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
+import { useNowMinuteMs } from "../../lib/clock";
+import { ActiveNewTaskContext } from "../../state/active-new-task";
 
 import type {
   EnvironmentId,
@@ -24,7 +24,14 @@ import { threadContextsOutsideEnvironment } from "@t3tools/shared/composerContex
 import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 
-import { useProjects, useServerConfigs, useThreadShells } from "../../state/entities";
+import { useAtomValue } from "@effect/atom-react";
+import { availableScratchWorkspaceRoot } from "@t3tools/client-runtime/operations/projects";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+import { type VcsRef } from "@t3tools/client-runtime/state/vcs";
 import type { TurnCommandMetadata } from "../../lib/commandMetadata";
 import type { DraftComposerAttachment } from "../../lib/composerImages";
 import type { ModelOption, ProviderGroup } from "../../lib/modelOptions";
@@ -36,17 +43,25 @@ import {
   resolveSelectableModelSelection,
 } from "../../lib/modelOptions";
 import { scopedProjectKey } from "../../lib/scopedEntities";
-import { useAtomValue } from "@effect/atom-react";
 import { appAtomRegistry } from "../../state/atom-registry";
-import { projectEnvironment } from "../../state/projects";
+import { useProjects, useServerConfigs, useThreadShells } from "../../state/entities";
+import {
+  resolvePendingTaskInteractionMode,
+  resolveProviderInteractionMode,
+} from "../../state/legacy-plan-mode";
 import { useLinkedEnvironments } from "../../state/peerLinks";
+import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
+import { projectEnvironment } from "../../state/projects";
+import { useBranches, usePaginatedBranches } from "../../state/queries";
 import { useEnvironmentQuery } from "../../state/query";
+import { useEnvironmentShellReadiness } from "../../state/shell";
+import { type QueuedThreadMessage } from "../../state/thread-outbox";
 import { useAtomCommand } from "../../state/use-atom-command";
 import {
   appendComposerDraftAttachments,
   type ComposerDraftInsertion,
-  type ComposerDraftWorkspaceSelection,
   composerDraftsLoadedAtom,
+  type ComposerDraftWorkspaceSelection,
   createNewTaskDraft,
   getComposerDraftSnapshot,
   isNewTaskDraftKey,
@@ -63,41 +78,23 @@ import {
   rememberModelOptions,
   withRememberedModelOptions,
 } from "../../state/use-model-option-memory";
-import { useBranches, usePaginatedBranches } from "../../state/queries";
-import { vcsEnvironment } from "../../state/vcs";
-import { type QueuedThreadMessage } from "../../state/thread-outbox";
 import {
   setPendingConnectionError,
   useRemoteConnectionStatus,
   useSavedRemoteConnections,
 } from "../../state/use-remote-environment-registry";
-import { availableScratchWorkspaceRoot } from "@t3tools/client-runtime/operations/projects";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import { type VcsRef } from "@t3tools/client-runtime/state/vcs";
+import { vcsEnvironment } from "../../state/vcs";
+import { useConnectionsReady, useWorkspaceEnvironments } from "../../state/workspace";
 import {
   buildHomeProjectScopes,
-  sortHomeProjectScopes,
   type HomeProjectScope,
+  sortHomeProjectScopes,
 } from "../home/homeThreadList";
-import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import {
-  resolvePendingTaskInteractionMode,
-  resolveProviderInteractionMode,
-} from "../../state/legacy-plan-mode";
-import { useLegacyPlanModeState } from "./use-legacy-plan-mode-enabled";
-import {
-  resolveNewTaskDraftWorkspace,
   resolveNewTaskBranchWorktreePath,
+  resolveNewTaskDraftWorkspace,
   resolveNewTaskLocalWorkspaceSelection,
 } from "./new-task-context-presentation";
-import { resolveEnvironmentProjectMatch } from "./new-task-project-selection";
-import { useNewTaskProjectDefaults } from "./use-new-task-project-defaults";
-import { resolveNewThreadRuntimeMode } from "./thread-settings-options";
-import { resolveProjectThreadCreationBranch } from "./projectThreadCreationValidation";
 import {
   INACTIVE_FLOW_KEY,
   type NewTaskFlowState,
@@ -108,8 +105,11 @@ import {
   stampedEnvironmentProjectsLoading,
   updateNewTaskFlowState,
 } from "./new-task-flow-state";
-import { useEnvironmentShellReadiness } from "../../state/shell";
-import { useConnectionsReady, useWorkspaceEnvironments } from "../../state/workspace";
+import { resolveEnvironmentProjectMatch } from "./new-task-project-selection";
+import { resolveProjectThreadCreationBranch } from "./projectThreadCreationValidation";
+import { resolveNewThreadRuntimeMode } from "./thread-settings-options";
+import { useLegacyPlanModeState } from "./use-legacy-plan-mode-enabled";
+import { useNewTaskProjectDefaults } from "./use-new-task-project-defaults";
 
 type WorkspaceMode = "local" | "worktree";
 

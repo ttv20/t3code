@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
 import type { ModelOption } from "../../lib/modelOptions";
 
@@ -71,7 +71,7 @@ export function ModelRowContent(
               className="min-w-0 shrink text-base font-t3-medium text-foreground"
               numberOfLines={props.labelNumberOfLines}
             >
-              {uiT(props.option.label)}
+              {props.option.label}
             </Text>
             {props.option.isDefault ? (
               <View className="rounded-md bg-subtle-strong px-1.5 py-0.5">
@@ -180,7 +180,7 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
               className="shrink-0 text-sm text-foreground-muted"
               style={{ writingDirection: "ltr", textAlign: "left" }}
             >
-              {uiT(props.label)}
+              {props.label}
             </Text>
           ) : null}
         </View>

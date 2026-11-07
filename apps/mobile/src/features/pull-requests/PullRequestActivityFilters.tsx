@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Menu } from "../../components/ui/Menu";
+import { useUiLanguage } from "../../i18n";
 import type { ActivityFilter } from "./pullRequestActivityFilter";
 
 export function PullRequestActivityFilters({

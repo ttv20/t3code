@@ -1,6 +1,4 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { uuidv4 } from "../../lib/uuid";
 import { useNavigation } from "@react-navigation/native";
 import {
   claimThreadOpen,
@@ -13,9 +11,9 @@ import { isListedThreadLineage, THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools
 import {
   foldSearchQuery,
   PALETTE_MESSAGE_LIMIT,
+  pickedQuery,
   rankMessageMatches,
   splitSearchText,
-  pickedQuery,
   threadRecentUse,
 } from "@t3tools/shared/paletteSearch";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -23,26 +21,29 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Pressable,
   Text as NativeText,
+  Pressable,
   TextInput,
   useWindowDimensions,
   View,
   type TextInputInstance,
 } from "react-native";
+import { useUiLanguage } from "../../i18n";
+import { uuidv4 } from "../../lib/uuid";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ProjectFavicon } from "../../components/ProjectFavicon";
+import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { RowPressable } from "../../components/ui/RowPressable";
-import { AppText as Text } from "../../components/ui/AppText";
-import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { cn } from "../../lib/cn";
 import { deriveBottomControlInsets } from "../../lib/reserved-regions";
 import { scopedProjectKey, scopedThreadKey } from "../../lib/scopedEntities";
 import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
 import { T3KeyboardCommands } from "../../native/T3KeyboardCommands";
+import { useActiveNewTask } from "../../state/active-new-task";
 import {
   useProjects,
   useServerConfigs,
@@ -50,18 +51,21 @@ import {
   useVisibleThreadShells,
 } from "../../state/entities";
 import { useThreadSearch } from "../../state/queries";
-import { requestThreadMessageJump } from "../threads/threadMessageJump";
+import { serverEnvironment } from "../../state/server";
 import { threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { serverEnvironment } from "../../state/server";
-import { useWorkspaceEnvironments } from "../../state/workspace";
 import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
+import { useWorkspaceEnvironments } from "../../state/workspace";
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
+import { useSelectWorkspaceTab } from "../layout/workspace/useSelectWorkspaceTab";
+import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
+import { openSettings } from "../settings/settings-navigation";
+import { useNewTaskFlow } from "../threads/new-task-flow-provider";
 import { ThreadSearchMatchExcerpt } from "../threads/thread-search-match";
+import { requestThreadMessageJump } from "../threads/threadMessageJump";
 import { pickTriageEnvironment } from "../triage/triageTarget";
 import { useStartTriage } from "../triage/useStartTriage";
-import { useNewTaskFlow } from "../threads/new-task-flow-provider";
-import { useActiveNewTask } from "../../state/active-new-task";
 import {
   filterCommandPaletteItems,
   nextPaletteIndex,
@@ -70,10 +74,6 @@ import {
 } from "./commandPaletteItems";
 import { parseActiveThreadPath, type HardwareKeyboardCommand } from "./hardwareKeyboardCommands";
 import { threadJumpIndex } from "./threadKeyboardShortcuts";
-import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
-import { openSettings } from "../settings/settings-navigation";
-import { useSelectWorkspaceTab } from "../workspace/useSelectWorkspaceTab";
-import { useSelectWorkspaceDetail } from "../workspace/useSelectWorkspaceDetail";
 
 const PALETTE_COMMANDS: ReadonlyArray<HardwareKeyboardCommand> = [
   "commandPalette",

@@ -2,10 +2,13 @@ import { useUiLanguage, UiText } from "../../i18n";
 import { useAuth } from "@clerk/react";
 import { Link } from "@tanstack/react-router";
 import { managedCapabilityDenial } from "@t3tools/contracts";
+import { ToolCallVisibility } from "@t3tools/contracts/settings";
+import * as Schema from "effect/Schema";
 
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
 import { Button } from "../ui/button";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { ScopedSwitch } from "./ScopedSwitch";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
@@ -24,6 +27,7 @@ export function LabsSettingsPanel() {
       <SettingsSection id="beta" title={uiT("Beta")}>
         <BoringSidebarRow />
         <BoringSidebarMultilineRow />
+        <ToolCallVisibilityRow />
         {/* Clerk is only mounted when this build has T3 Connect. */}
         {hasCloudPublicConfig() ? <GuestLinksRowWithSignIn /> : <GuestLinksRow />}
         <LinkedEnvironmentsRow />
@@ -83,6 +87,61 @@ function BoringSidebarMultilineRow() {
   );
 }
 
+const TOOL_CALL_VISIBILITY_LABELS: Record<ToolCallVisibility, string> = {
+  showAll: "Show all",
+  hideSuccessful: "Hide successful",
+  hideAll: "Hide all",
+  zen: "Zen",
+};
+
+const isToolCallVisibility = Schema.is(ToolCallVisibility);
+
+function ToolCallVisibilityRow() {
+  const { t: uiT } = useUiLanguage();
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  return (
+    <SettingsRow
+      {...searchableSetting("tool-call-visibility")}
+      description={uiT(
+        "Hide the commands, edits, and searches agents run. Hide successful keeps failures. Zen shows only final answers. Approvals, questions, and errors always show.",
+      )}
+      control={
+        <div className="w-full sm:w-40">
+          <Select
+            value={settings.toolCallVisibility}
+            onValueChange={(value) => {
+              if (isToolCallVisibility(value)) updateSettings({ toolCallVisibility: value });
+            }}
+          >
+            <SelectTrigger
+              size="sm"
+              className="w-full min-w-0"
+              aria-label={uiT("Tool calls in chat")}
+            >
+              <SelectValue>{TOOL_CALL_VISIBILITY_LABELS[settings.toolCallVisibility]}</SelectValue>
+            </SelectTrigger>
+            <SelectPopup align="end" alignItemWithTrigger={false}>
+              <SelectItem value="showAll">
+                <UiText message={"Show all"} />
+              </SelectItem>
+              <SelectItem value="hideSuccessful">
+                <UiText message={"Hide successful"} />
+              </SelectItem>
+              <SelectItem value="hideAll">
+                <UiText message={"Hide all"} />
+              </SelectItem>
+              <SelectItem value="zen">
+                <UiText message={"Zen"} />
+              </SelectItem>
+            </SelectPopup>
+          </Select>
+        </div>
+      }
+    />
+  );
+}
+
 /** Signed out of T3 Connect, the row offers to sign in instead of its switch. */
 function GuestLinksRowWithSignIn() {
   const { t: uiT } = useUiLanguage();
@@ -95,7 +154,7 @@ function GuestLinksRowWithSignIn() {
     <SettingsRow
       {...searchableSetting("guest-links")}
       description={uiT(
-        "Share a thread with a guest who watches it live in their browser and sends messages you approve. Sign in to T3 Connect to use guest links.",
+        "Share a thread with a guest who watches it live in a browser and sends messages you approve. Sign in to T3 Connect to use guest links.",
       )}
       control={
         <Button size="sm" variant="outline" onClick={openAuthPrompt}>
@@ -129,13 +188,18 @@ function GuestLinksRow() {
       managed={settings.guestSharingEnabled ? undefined : connectDenial}
       description={
         <>
-          {uiT(
-            "Share a thread with a guest who watches it live in their browser and sends messages you approve. Needs T3 Connect: sign in and link this machine in",
-          )}{" "}
-          <Link to="/settings/access" className="underline underline-offset-2">
-            {uiT("Sharing & access")}
-          </Link>
-          {uiT(". While it is off, every guest link stops working.")}
+          <UiText
+            message={
+              "Share a thread with a guest who watches it live in a browser and sends messages you approve. Needs T3 Connect: sign in and link this machine in  {0} . Turning it off stops every guest link."
+            }
+            values={{
+              0: (
+                <Link to="/settings/access" className="underline underline-offset-2">
+                  {uiT("Sharing & access")}
+                </Link>
+              ),
+            }}
+          />
         </>
       }
       control={
@@ -162,13 +226,19 @@ function LinkedEnvironmentsRow() {
       settingKeys={["linkedEnvironmentsEnabled"]}
       description={
         <>
-          {uiT(
-            "Let agents here work on your other machines, and theirs here. Turn it on for each machine, then link them in",
-          )}{" "}
-          <Link to="/settings/connections" className="underline underline-offset-2">
-            {uiT("Connections")}
-          </Link>
-          {uiT(". While it is off, nothing new starts over a link; tasks already running finish.")}
+          <UiText
+            message={"{0}  {1} . While off, nothing new starts over a link; running tasks finish."}
+            values={{
+              0: uiT(
+                "Let agents here work on your other machines, and theirs here. Turn it on for each machine, then link them in",
+              ),
+              1: (
+                <Link to="/settings/connections" className="underline underline-offset-2">
+                  {uiT("Connections")}
+                </Link>
+              ),
+            }}
+          />
         </>
       }
       control={

@@ -1,9 +1,8 @@
-import { View } from "react-native";
 import type { ReactNode } from "react";
+import { View } from "react-native";
 
 import { AppText as Text } from "./AppText";
 import { Button } from "./Button";
-import { useUiLanguage } from "../../i18n";
 
 export function EmptyState(props: {
   readonly title: string;
@@ -13,19 +12,17 @@ export function EmptyState(props: {
   readonly action?: ReactNode;
   readonly variant?: "card" | "plain";
 }) {
-  const { t: uiT } = useUiLanguage();
-
   if (props.variant === "plain") {
     return (
       <View className="items-center px-8 py-8">
         <Text textRole="title" className="text-center font-t3-bold text-foreground">
-          {uiT(props.title)}
+          {props.title}
         </Text>
         <Text
           textRole="body"
           className="mt-2 text-center font-sans leading-normal text-foreground-muted"
         >
-          {uiT(props.detail)}
+          {props.detail}
         </Text>
         {props.action ? (
           <View className="mt-5">{props.action}</View>
@@ -41,10 +38,10 @@ export function EmptyState(props: {
   return (
     <View className="rounded-[22px] border border-border bg-card p-5">
       <Text textRole="headline" className="font-t3-bold text-foreground">
-        {uiT(props.title)}
+        {props.title}
       </Text>
       <Text textRole="footnote" className="mt-2 font-sans leading-relaxed text-foreground-muted">
-        {uiT(props.detail)}
+        {props.detail}
       </Text>
       {props.action ? (
         <View className="mt-4 self-start">{props.action}</View>

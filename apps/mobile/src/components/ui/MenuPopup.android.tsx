@@ -1,5 +1,3 @@
-import { NativeThemeHost } from "./NativeThemeHost.android";
-import { useUiLanguage } from "../../i18n";
 import {
   Box,
   Column,
@@ -11,12 +9,14 @@ import {
 import { defaultMinSize, padding, size, width } from "@expo/ui/jetpack-compose/modifiers";
 import type { MenuAction } from "@react-native-menu/menu";
 import { Pressable } from "react-native";
+import { useUiLanguage } from "../../i18n";
 import { resolveScaledTextRole } from "../../lib/appearancePreferences";
+import { NativeThemeHost } from "./NativeThemeHost.android";
 
-import { useAndroidControlSizing } from "./useAndroidControlSizing";
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
-import type { MenuPopupProps } from "./MenuPopup";
 import { isAppSymbolName, SymbolView, type AppSymbolName } from "./AppSymbol";
+import type { MenuPopupProps } from "./MenuPopup";
+import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 // The Compose glyph host consumes touches; run the action here and keep accessibility on the row.
 function MenuIcon(props: {

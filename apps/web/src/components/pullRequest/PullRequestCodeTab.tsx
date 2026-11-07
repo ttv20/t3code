@@ -1,5 +1,5 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
+
 import {
   capitalizeTerm,
   sourceControlClients,
@@ -49,7 +49,11 @@ import { useLocalStorage } from "~/hooks/useLocalStorage";
 import { useClientSettings, updateClientSettings } from "~/hooks/useSettings";
 import { useRenderedAppearance } from "~/hooks/useTheme";
 import { areAllDiffFilesCollapsed } from "~/lib/diffCollapse";
-import { pullRequestFindingKey, type PullRequestFinding } from "./pullRequestDetail.logic";
+import {
+  pullRequestFindingKey,
+  type PullRequestChatSubject,
+  type PullRequestFinding,
+} from "./pullRequestDetail.logic";
 import {
   canEditPullRequestComment,
   canResolvePullRequestThread,
@@ -111,6 +115,7 @@ import {
   ReviewThreadCard,
   toViewerSide,
 } from "./PullRequestReviewAnnotation";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import {
   getFileViewedRange,
   isFileDiffCollapsed,
@@ -178,6 +183,76 @@ function parseSlice(slice: DiffSlice, cacheKey: string, ignoreWhitespace: boolea
   return parsed;
 }
 
+type DiffModel = {
+  readonly parsedSlices: ReadonlyArray<RenderablePatch | null>;
+  readonly loadedFiles: ReadonlyArray<Extract<RenderablePatch, { kind: "files" }>["files"][number]>;
+  readonly sourceFileStats: ReadonlyMap<string, ReturnType<typeof getDiffLineStat>>;
+};
+const diffModels = new WeakMap<ReadonlyArray<DiffSlice>, Map<string, DiffModel>>();
+const patchHashes = new WeakMap<DiffSlice, number>();
+
+// Hashing, ordering and counting every file of a huge pull request costs a second, and the tab
+// renders far more often than its slices change, so the model is kept per slice list.
+function diffModel(
+  slices: ReadonlyArray<DiffSlice>,
+  keyPrefix: string,
+  ignoreWhitespace: boolean,
+): DiffModel {
+  let models = diffModels.get(slices);
+  if (models === undefined) diffModels.set(slices, (models = new Map()));
+  const cached = models.get(keyPrefix);
+  if (cached !== undefined) return cached;
+  const parsedSlices = slices.map((slice) => {
+    let hash = patchHashes.get(slice);
+    if (hash === undefined) patchHashes.set(slice, (hash = fnv1a32(slice.patch)));
+    // The cache key carries the theme, which the tokenizer caches against, and the patch's
+    // hash: a refreshed page reuses its cursor, so position alone would return a stale parse.
+    return parseSlice(slice, `${keyPrefix}:${slice.cursor ?? "first"}:${hash}`, ignoreWhitespace);
+  });
+  const model: DiffModel = {
+    parsedSlices,
+    loadedFiles: orderDiffFilesLikeTree(
+      parsedSlices.flatMap((parsed) =>
+        parsed?.kind === "files" ? orderDiffFiles(parsed.files) : [],
+      ),
+    ),
+    sourceFileStats: new Map(
+      parsedSlices.flatMap((parsed) =>
+        parsed?.kind === "files"
+          ? parsed.files.map(
+              (file, index) =>
+                [
+                  buildFileDiffRenderKey(file),
+                  getDiffLineStat([parsed.sourceFiles[index] ?? file]),
+                ] as const,
+            )
+          : [],
+      ),
+    ),
+  };
+  models.set(keyPrefix, model);
+  return model;
+}
+
+const threadsByPathCache = new WeakMap<
+  ReadonlyArray<PullRequestReviewThread>,
+  ReadonlyMap<string, ReadonlyArray<PullRequestReviewThread>>
+>();
+
+function reviewThreadsByPath(threads: ReadonlyArray<PullRequestReviewThread>) {
+  let byPath = threadsByPathCache.get(threads);
+  if (byPath === undefined) {
+    const grouped = new Map<string, PullRequestReviewThread[]>();
+    for (const thread of threads) {
+      const list = grouped.get(thread.path);
+      if (list) list.push(thread);
+      else grouped.set(thread.path, [thread]);
+    }
+    threadsByPathCache.set(threads, (byPath = grouped));
+  }
+  return byPath;
+}
+
 interface FileViewedToggleState {
   readonly enabled: boolean;
   readonly isViewed: (path: string) => boolean;
@@ -212,7 +287,7 @@ function FileViewedToggle({
         onClick={(event) => event.stopPropagation()}
       >
         <Checkbox
-          aria-label={stale ? uiT("Changed") : uiT("Viewed")}
+          aria-label={stale ? "Changed" : uiT("Viewed")}
           checked={viewed}
           onCheckedChange={(next, details) =>
             viewedFiles.setFileViewed(
@@ -271,6 +346,7 @@ function PullRequestCodeTab({
   pendingFinding,
   fixFindingLabel = "Fix in a thread",
   onFixFinding,
+  onAddToChat,
   onAddToAgentSelection,
   onRefresh,
   refreshToken = 0,
@@ -286,6 +362,8 @@ function PullRequestCodeTab({
   pendingFinding?: string | null;
   fixFindingLabel?: string;
   onFixFinding?: (finding: PullRequestFinding) => void;
+  /** Absent where there is no composer beside the panel to add a conversation to. */
+  onAddToChat?: (subject: PullRequestChatSubject) => void;
   onAddToAgentSelection?: (input: PullRequestAgentSelectionInput) => void;
   onRefresh: () => void;
   refreshToken?: number;
@@ -486,6 +564,7 @@ function PullRequestCodeTab({
     commit,
     cacheKey: `pull-request:${referenceKey}:${detail.updatedAt}:${commit ?? "all"}`,
   });
+  const completionScope = pullRequestCompletionScope(detail, environmentId, reference);
   const hostReview = detail.capabilities.review;
   const review = {
     inlineComment: hostReview.inlineComment && detail.viewerPermissions.comment,
@@ -497,20 +576,10 @@ function PullRequestCodeTab({
   // Agent context is local, so it does not require host comment permission.
   const canSelectLines =
     commit === null && (review.inlineComment || onAddToAgentSelection !== undefined);
-  // The cache key carries the theme, which is what the tokenizer caches against, so a theme
-  // change is still a fresh parse. The patch's own hash is part of it too: a refreshed page
-  // reuses its cursor, and a key of position alone would hand back the parse it replaced.
-  const parsedSlices = loadedSlices.map((slice) =>
-    parseSlice(
-      slice,
-      `pull-request:${scopeKey}:${resolvedTheme}:${ignoreWhitespace}:${slice.cursor ?? "first"}:${fnv1a32(slice.patch)}`,
-      ignoreWhitespace,
-    ),
-  );
-  const loadedFiles = orderDiffFilesLikeTree(
-    parsedSlices.flatMap((parsed) =>
-      parsed?.kind === "files" ? orderDiffFiles(parsed.files) : [],
-    ),
+  const { parsedSlices, loadedFiles, sourceFileStats } = diffModel(
+    loadedSlices,
+    `pull-request:${scopeKey}:${resolvedTheme}:${ignoreWhitespace}`,
+    ignoreWhitespace,
   );
   const testFileCount = loadedFiles.filter((file) =>
     isTestChangedFile(resolveFileDiffPath(file)),
@@ -529,33 +598,16 @@ function PullRequestCodeTab({
       slice.omittedFileStats.map((file) => [file.path, file] as const),
     ),
   );
-  const sourceFileStats = new Map(
-    parsedSlices.flatMap((parsed) =>
-      parsed?.kind === "files"
-        ? parsed.files.map(
-            (file, index) =>
-              [
-                buildFileDiffRenderKey(file),
-                getDiffLineStat([parsed.sourceFiles[index] ?? file]),
-              ] as const,
-          )
-        : [],
-    ),
-  );
   const fileTreeEntries = diffFileTreeEntries(files);
+  const threadsByPath = reviewThreadsByPath(detail.reviewThreads);
   // File membership does not guarantee a rendered hunk for the thread.
   const placedThreadIds = (() => {
     const placed = new Set<string>();
     // Commit diffs use different line coordinates; list conversations separately.
     if (commit !== null) return placed;
     for (const file of files) {
-      const path = resolveFileDiffPath(file);
-      for (const thread of detail.reviewThreads) {
-        if (
-          thread.path === path &&
-          thread.line !== null &&
-          isLineInFileDiff(file, thread.side, thread.line)
-        ) {
+      for (const thread of threadsByPath.get(resolveFileDiffPath(file)) ?? []) {
+        if (thread.line !== null && isLineInFileDiff(file, thread.side, thread.line)) {
           placed.add(thread.id);
         }
       }
@@ -582,9 +634,8 @@ function PullRequestCodeTab({
       return created;
     };
 
-    for (const thread of detail.reviewThreads) {
-      if (thread.path !== path || thread.line === null) continue;
-      if (!placedThreadIds.has(thread.id)) continue;
+    for (const thread of threadsByPath.get(path) ?? []) {
+      if (thread.line === null || !placedThreadIds.has(thread.id)) continue;
       groupAt(thread.side, thread.line).threads.push(thread);
     }
     if (commit === null) {
@@ -846,7 +897,7 @@ function PullRequestCodeTab({
         size="icon-micro"
         variant="ghost-muted"
         aria-expanded={!collapsed}
-        aria-label={collapsed ? uiT("Expand diff") : uiT("Collapse diff")}
+        aria-label={collapsed ? "Expand diff" : uiT("Collapse diff")}
         className="mr-1"
         onClick={(event) => {
           event.stopPropagation();
@@ -924,10 +975,14 @@ function PullRequestCodeTab({
       canReact={detail.capabilities.reactions === true}
       environmentId={environmentId}
       reference={reference}
+      completionScope={completionScope}
       pending={threadPending}
       fixPending={pendingFinding === pullRequestFindingKey({ kind: "thread", thread })}
       fixLabel={fixFindingLabel}
       {...(onFixFinding ? { onFix: () => onFixFinding({ kind: "thread", thread }) } : {})}
+      {...(onAddToChat
+        ? { onAddToChat: (loaded) => onAddToChat({ kind: "thread", thread: loaded }) }
+        : {})}
       onLoadMore={async (cursor): Promise<PullRequestThreadCommentsResult | null> => {
         const result = await loadThreadComments({
           environmentId,
@@ -989,9 +1044,13 @@ function PullRequestCodeTab({
       ))}
       {annotation.metadata.draft && draft && canSelectLines ? (
         <DiffCommentAnnotation
+          environmentId={environmentId}
+          projectId={reference.projectId}
+          ownerKey={JSON.stringify([environmentId, reviewKey, draft])}
           kind="draft"
           rangeLabel={`${draft.path}:${getReviewPositionAnchor(draft.position).line}`}
           text=""
+          completionScope={canCommentOnLines ? completionScope : null}
           submitLabel={canCommentOnLines ? "Add to review" : "Add to agent"}
           {...(canCommentOnLines && onAddToAgentSelection
             ? {
@@ -1247,9 +1306,7 @@ function PullRequestCodeTab({
               render={
                 <Toggle
                   aria-label={
-                    ignoreWhitespace
-                      ? uiT("Show whitespace changes")
-                      : uiT("Hide whitespace changes")
+                    ignoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")
                   }
                   variant="ghost"
                   size="sm"
@@ -1288,7 +1345,7 @@ function PullRequestCodeTab({
               render={
                 <Toggle
                   aria-label={
-                    wordWrap ? uiT("Disable diff line wrapping") : uiT("Enable diff line wrapping")
+                    wordWrap ? "Disable diff line wrapping" : uiT("Enable diff line wrapping")
                   }
                   variant="ghost"
                   size="sm"
@@ -1314,9 +1371,7 @@ function PullRequestCodeTab({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={
-                    allFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")
-                  }
+                  aria-label={allFilesCollapsed ? "Expand all files" : uiT("Collapse all files")}
                   onClick={toggleAllFiles}
                 />
               }
@@ -1356,7 +1411,7 @@ function PullRequestCodeTab({
             <TooltipTrigger
               render={
                 <Toggle
-                  aria-label={fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
+                  aria-label={fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
                   variant="ghost"
                   size="sm"
                   pressed={fileTreeOpen}
@@ -1462,7 +1517,7 @@ function PullRequestCodeTab({
                 </span>
                 <span className="sr-only">
                   {orphanThreads.length === 1
-                    ? uiT("1 conversation")
+                    ? "1 conversation"
                     : uiT("{0} conversations", { "0": orphanThreads.length })}
                 </span>
               </CollapsibleTrigger>

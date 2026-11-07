@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import {
@@ -11,14 +10,15 @@ import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { useState } from "react";
 import { FlatList, Platform } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { SelectionRow } from "../../components/ui/SelectionRow";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useDebouncedValue } from "../../state/queries";
-import { pullRequestFilterChoices, pullRequestLabelColors } from "./pullRequestList";
 import { PullRequestLabelDot } from "./PullRequestLabelDot";
+import { pullRequestFilterChoices, pullRequestLabelColors } from "./pullRequestList";
 import { PullRequestSearchSheet } from "./PullRequestSearchSheet";
 import { usePullRequestListControls } from "./usePullRequestListControls";
 
@@ -118,9 +118,12 @@ export function PullRequestFilterSearchScreen({
     <PullRequestSearchSheet
       title={kind === "labels" ? uiT("Filter by label") : uiT("Filter by author")}
       placeholder={placeholder}
-      closeAccessibilityLabel={kind === "labels" ? "Close label filter" : "Close author filter"}
-      clearAccessibilityLabel={kind === "labels" ? "Clear label search" : "Clear author search"}
-      searchTextChangeId="pr-filter-option-search"
+      closeAccessibilityLabel={
+        kind === "labels" ? uiT("Close label filter") : uiT("Close author filter")
+      }
+      clearAccessibilityLabel={
+        kind === "labels" ? uiT("Clear label search") : uiT("Clear author search")
+      }
       query={query}
       onQueryChange={setQuery}
     >

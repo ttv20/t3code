@@ -1,10 +1,11 @@
-import { useUiLanguage } from "../../../i18n";
 import { TextInput, View } from "react-native";
+import { useUiLanguage } from "../../../i18n";
 
-import { AppText as Text } from "../../../components/ui/AppText";
 import type { ComposerEditorSelection } from "../../../components/ComposerEditor";
+import { AppText as Text } from "../../../components/ui/AppText";
 import {
   ComposerDictationCancelAction,
+  ComposerDictationError,
   ComposerDictationPrimaryAction,
   ComposerDictationStartAction,
   ComposerDictationStatus,
@@ -24,7 +25,7 @@ export function ScheduledTaskPromptField(props: {
   const { t: uiT } = useUiLanguage();
   const voice = props.voiceInput;
   const presentation = resolveVoiceComposerPresentation(voice.state, voice.elapsedSeconds);
-  const showsDictation = presentation.statusLabel !== null;
+  const showsDictation = presentation.statusKind === "active";
   const showsIdleTrigger = voice.isAvailable && !showsDictation;
 
   return (
@@ -57,6 +58,10 @@ export function ScheduledTaskPromptField(props: {
           </View>
         ) : null}
       </View>
+      <ComposerDictationError
+        error={voice.state.phase === "error" ? voice.state.error : null}
+        onDismiss={voice.cancel}
+      />
       {showsDictation ? (
         <ComposerDictationToolbar showsDictation>
           <View className="h-11 flex-row items-center">
@@ -66,7 +71,6 @@ export function ScheduledTaskPromptField(props: {
               elapsedSeconds={voice.elapsedSeconds}
               phase={voice.state.phase}
               presentation={presentation}
-              onDismissError={voice.cancel}
             />
             <ComposerDictationPrimaryAction
               state={voice.state}

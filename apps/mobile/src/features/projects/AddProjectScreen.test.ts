@@ -1,17 +1,17 @@
-import * as NodeFS from "node:fs";
-import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
-import * as NodePath from "node:path";
-import * as NodeModule from "node:module";
-import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
-import { workspaceDetailRouter } from "../workspace/workspace-detail-selection";
 import type { NavigationState } from "@react-navigation/native";
+import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
 import { AuthOrchestrationOperateScope, AuthSourceControlWriteScope } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
+import * as NodeFS from "node:fs";
+import * as NodeFSP from "node:fs/promises";
+import * as NodeModule from "node:module";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 import { act, createElement, isValidElement, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { workspaceDetailRouter } from "../layout/workspace/workspace-detail-selection";
 
 const state = vi.hoisted(() => ({
   scopes: new Set<string>(),
@@ -46,8 +46,8 @@ function loadRouters() {
   };
 }
 
-vi.mock("../workspace/useSelectWorkspaceDetail", async () => {
-  const { selectWorkspaceDetail } = await import("../workspace/workspace-detail-selection");
+vi.mock("../layout/workspace/useSelectWorkspaceDetail", async () => {
+  const { selectWorkspaceDetail } = await import("../layout/workspace/workspace-detail-selection");
   return {
     useSelectWorkspaceDetail: () => (detail: Parameters<typeof selectWorkspaceDetail>[0]) =>
       state.dispatch(selectWorkspaceDetail(detail)),
@@ -172,9 +172,9 @@ vi.mock("../../state/use-composer-drafts", () => ({
 }));
 
 import {
-  AddProjectNewScreen,
   AddProjectDestinationScreen,
   AddProjectLocalFolderScreen,
+  AddProjectNewScreen,
   AddProjectSourceScreen,
 } from "./AddProjectScreen";
 import { AddProjectSourceRoute } from "./AddProjectSourceRoute";

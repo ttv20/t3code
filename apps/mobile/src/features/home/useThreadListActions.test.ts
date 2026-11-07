@@ -1,4 +1,3 @@
-import { makeThreadShellFixture } from "../../test-fixtures";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   AuthOrchestrationOperateScope,
@@ -11,6 +10,7 @@ import {
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { makeThreadShellFixture } from "../../test-fixtures";
 
 const state = vi.hoisted(() => ({
   connectedEnvironmentIds: [] as EnvironmentId[],

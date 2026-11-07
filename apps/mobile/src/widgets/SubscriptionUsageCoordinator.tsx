@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 import * as Linking from "expo-linking";
 import { useEffect } from "react";
 import { Platform } from "react-native";
-import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { environmentCatalog } from "../connection/catalog";
+import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
+import { useUiLanguage } from "../i18n";
 import { environmentPresentations } from "../state/presentation";
 import { publishSubscriptionUsage } from "./publishSubscriptionUsage";
 import { buildSubscriptionUsageSnapshot } from "./subscriptionUsageSnapshot";

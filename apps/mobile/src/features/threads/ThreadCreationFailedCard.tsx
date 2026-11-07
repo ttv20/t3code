@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
 import { View } from "react-native";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 

@@ -1,18 +1,19 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { PullRequestEntryRow } from "./PullRequestEntryRow";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
-import IconGitCommit from "@tabler/icons-react-native/IconGitCommit";
-import type { PullRequestActivity, PullRequestComment } from "@t3tools/contracts";
 import { StackActions, type NavigationProp } from "@react-navigation/native";
+import type { PullRequestActivity, PullRequestComment } from "@t3tools/contracts";
+import IconGitCommit from "@tabler/icons-react-native/IconGitCommit";
 import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { parseMarkdownDocument } from "../../lib/markdownDocument";
-import { AppText as Text } from "../../components/ui/AppText";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { UiText, useUiLanguage } from "../../i18n";
+import { parseMarkdownDocument } from "../../lib/markdownDocument";
 import { relativeTime } from "../../lib/time";
-import { PullRequestAvatar } from "./PullRequestPresentation";
+import { readUiTranslator } from "../../state/ui-language";
+import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
+import { PullRequestEntryRow } from "./PullRequestEntryRow";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
+import { PullRequestAvatar } from "./PullRequestPresentation";
 import { PullRequestCommentFooter } from "./PullRequestReactions";
 import { pullRequestDescriptionContent } from "./pullRequestDescriptionContent";
 import { normalizedReviewState } from "./pullRequestStatus";
@@ -207,6 +208,8 @@ export function pullRequestTimelineRows(
   navigation: Pick<NavigationProp<ReactNavigation.RootParamList>, "navigate" | "dispatch">,
   actions: CommentActions,
 ) {
+  const uiT = readUiTranslator();
+
   const discussionIds = new Set(
     activity.reviewThreads.flatMap((thread) => thread.comments.map((comment) => comment.id)),
   );
@@ -227,7 +230,7 @@ export function pullRequestTimelineRows(
             <PullRequestAvatar actor={thread.comments[0]?.author ?? null} size={22} />
             <Text className="flex-1 text-sm">
               <Text className="font-t3-medium">
-                {thread.comments[0]?.author?.login ?? "Unknown author"}
+                {thread.comments[0]?.author?.login ?? uiT("Unknown author")}
               </Text>
               <Text className="text-foreground-muted">
                 {" "}
@@ -242,7 +245,10 @@ export function pullRequestTimelineRows(
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Open ${thread.isResolved ? "resolved" : "unresolved"} discussion in ${thread.path}`}
+            accessibilityLabel={uiT("Open {0} discussion in {1}", {
+              "0": thread.isResolved ? "resolved" : "unresolved",
+              "1": thread.path,
+            })}
             onPress={() =>
               navigation.navigate("PullRequestDiscussion", { ...params, discussionId: thread.id })
             }
@@ -257,13 +263,13 @@ export function pullRequestTimelineRows(
               <SymbolView name="chevron.right" size={12} tintColorClassName="accent-icon-muted" />
             </View>
             <Text className="text-xs text-foreground-muted">
-              <UiText message={thread.isResolved ? "Resolved" : "Unresolved"} />
+              <UiText message={thread.isResolved ? uiT("Resolved") : uiT("Unresolved")} />
               {thread.isOutdated ? <UiText message=" · Outdated" /> : ""} ·{" "}
               <UiText
                 message={
                   (thread.commentCount ?? thread.comments.length) === 1
-                    ? "1 comment"
-                    : "{0} comments"
+                    ? uiT("1 comment")
+                    : uiT("{0} comments")
                 }
                 values={{ "0": thread.commentCount ?? thread.comments.length }}
               />
@@ -279,7 +285,10 @@ export function pullRequestTimelineRows(
         <TimelineEvent icon="commit">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`View commit ${commit.oid.slice(0, 7)}, ${commit.messageHeadline}`}
+            accessibilityLabel={uiT("View commit {0}, {1}", {
+              "0": commit.oid.slice(0, 7),
+              "1": commit.messageHeadline,
+            })}
             onPress={() =>
               navigation.dispatch(
                 StackActions.push("PullRequestFile", { ...params, commit: commit.oid, path: "" }),

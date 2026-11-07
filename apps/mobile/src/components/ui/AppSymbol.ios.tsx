@@ -1,14 +1,14 @@
-import { useUiLanguage } from "../../i18n";
+import IconFileDiff from "@tabler/icons-react-native/IconFileDiff";
 import IconGitBranch from "@tabler/icons-react-native/IconGitBranch";
-import IconGitMerge from "@tabler/icons-react-native/IconGitMerge";
 import IconGitCommit from "@tabler/icons-react-native/IconGitCommit";
+import IconGitMerge from "@tabler/icons-react-native/IconGitMerge";
+import IconGitPullRequest from "@tabler/icons-react-native/IconGitPullRequest";
 import IconGitPullRequestClosed from "@tabler/icons-react-native/IconGitPullRequestClosed";
 import IconGitPullRequestDraft from "@tabler/icons-react-native/IconGitPullRequestDraft";
 import type { SFSymbol } from "expo-symbols";
-import IconGitPullRequest from "@tabler/icons-react-native/IconGitPullRequest";
-import IconFileDiff from "@tabler/icons-react-native/IconFileDiff";
 import { SymbolView as ExpoSymbolView } from "expo-symbols";
 import { withUniwind } from "uniwind";
+import { useUiLanguage } from "../../i18n";
 import type { AppSymbolViewProps } from "./AppSymbol";
 
 export type { SFSymbol } from "expo-symbols";

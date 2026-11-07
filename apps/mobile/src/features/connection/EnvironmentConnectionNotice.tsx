@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { ConnectionTraceId } from "./ConnectionTraceId";
 import {
   type EnvironmentConnectionPhase,
   type EnvironmentConnectionPresentation,
 } from "@t3tools/client-runtime/connection";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { View } from "react-native";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
+import { ConnectionTraceId } from "./ConnectionTraceId";
 
 import { AppText as Text } from "../../components/ui/AppText";
 

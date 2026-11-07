@@ -1,23 +1,17 @@
-import { useUiLanguage } from "../../i18n";
-import { usePullRequestConnected } from "./usePullRequestConnected";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation } from "@react-navigation/native";
-import type { PullRequestAction, PullRequestDetail } from "@t3tools/contracts";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
-import Animated from "react-native-reanimated";
-import { PR_ROW_LAYOUT, PR_DISCLOSURE_ENTER, PR_ROW_EXIT } from "./pullRequestAnimations";
+import type { PullRequestAction, PullRequestDetail } from "@t3tools/contracts";
 import { useState } from "react";
 import { Linking, Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/ui/AppText";
+import Animated from "react-native-reanimated";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Menu } from "../../components/ui/Menu";
-import { PullRequestAvatar } from "./PullRequestPresentation";
-import { PullRequestCardRow } from "./PullRequestControls";
-import { PullRequestAgentRow } from "./PullRequestAgentRow";
-import { PullRequestGlyph } from "./pullRequestGlyphs";
+import { useUiLanguage } from "../../i18n";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
 import {
@@ -25,6 +19,11 @@ import {
   PR_ACTION_ICONS,
   pullRequestActionLabel,
 } from "./pullRequestActions";
+import { PullRequestAgentRow } from "./PullRequestAgentRow";
+import { PR_DISCLOSURE_ENTER, PR_ROW_EXIT, PR_ROW_LAYOUT } from "./pullRequestAnimations";
+import { PullRequestCardRow } from "./PullRequestControls";
+import { PullRequestGlyph } from "./pullRequestGlyphs";
+import { PullRequestAvatar } from "./PullRequestPresentation";
 import {
   checkStatus,
   pullRequestBranchSummary,
@@ -32,9 +31,10 @@ import {
   pullRequestReviewSummary,
   pullRequestStatus,
 } from "./pullRequestStatus";
-import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestAction } from "./usePullRequestAction";
 import { usePullRequestAgentActions } from "./usePullRequestAgentActions";
+import { usePullRequestConnected } from "./usePullRequestConnected";
+import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 
 type RowProps = { readonly pr: PullRequestDetail; readonly params: PullRequestParams };
 const STATUS_ACTIONS: readonly PullRequestAction[] = [
@@ -88,12 +88,7 @@ export function PullRequestStatusMenu(props: RowProps) {
       onPressAction={({ nativeEvent }) => {
         const selected = actions.find((id) => id === nativeEvent.event);
         if (!selected) return;
-        if (selected === "close")
-          action.confirm(
-            selected,
-            uiT(pullRequestActionLabel("close", terminology)),
-            `Close this ${terminology.singular} without merging its changes?`,
-          );
+        if (selected === "close") action.confirmClose();
         else if (selected === "revert")
           action.confirm(
             selected,
@@ -145,7 +140,7 @@ export function PullRequestChecksRow(props: RowProps) {
               onPress={() =>
                 action.confirm(
                   "approve-workflows",
-                  "Approve workflows",
+                  uiT("Approve workflows"),
                   `Allow this ${definition.changeRequest.singular}'s workflows to run? Review the workflow changes first.`,
                 )
               }
@@ -291,7 +286,7 @@ export function PullRequestReviewersRow(props: RowProps) {
           {summary.reviews.map((review) => (
             <View
               key={review.id}
-              accessibilityLabel={`${review.author?.login ?? "Unknown reviewer"}, ${review.reviewState === "APPROVED" ? "Approved" : review.reviewState === "CHANGES_REQUESTED" ? "Changes requested" : "Commented"}`}
+              accessibilityLabel={`${review.author?.login ?? uiT("Unknown reviewer")}, ${review.reviewState === "APPROVED" ? uiT("Approved") : review.reviewState === "CHANGES_REQUESTED" ? uiT("Changes requested") : uiT("Commented")}`}
               className="min-h-14 flex-row items-center gap-3 px-4 py-2"
             >
               <SymbolView

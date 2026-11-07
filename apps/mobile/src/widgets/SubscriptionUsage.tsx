@@ -60,8 +60,8 @@ function SubscriptionUsage(
   const primary = palette?.foreground ?? "primary";
   const secondary = palette?.secondary ?? "secondary";
   const providers = props.providers ?? [
-    { name: "Codex", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
-    { name: "Claude", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
+    { name: "Codex", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
+    { name: "Claude", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
   ];
   const columns = providers.map((provider) => {
     const stale = provider.windows.length > 0 && now >= provider.expiresAt;

@@ -1,20 +1,23 @@
-import { useUiLanguage } from "../i18n";
-import { Button } from "./ui/Button";
-import * as Dialog from "./ui/Dialog";
 import { useEffect, useEffectEvent } from "react";
 import { Modal, View } from "react-native";
 import ImageViewing from "react-native-image-viewing";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUiLanguage } from "../i18n";
+import { Button } from "./ui/Button";
+import * as Dialog from "./ui/Dialog";
 
 import { openAttachmentInViewer } from "../lib/attachmentDownload";
-import type { ResolvedFilePreviewSource } from "./FilePreviewModal.types";
-import { MediaImagePreview } from "./MediaImagePreview";
+import type {
+  ResolvedFilePreviewDocument,
+  ResolvedFilePreviewSource,
+} from "./FilePreviewModal.types";
+import { imageViewingProps, MediaImagePreview } from "./MediaImagePreview";
 import { PdfPreview } from "./PdfPreview";
-import { ControlPill } from "./ui/ControlPill";
 import { AppText as Text } from "./ui/AppText";
+import { SheetHeader } from "./ui/SheetHeader";
 
 function PdfDocumentPreview(props: {
-  readonly source: ResolvedFilePreviewSource;
+  readonly source: ResolvedFilePreviewDocument;
   readonly onRequestClose: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -31,12 +34,11 @@ function PdfDocumentPreview(props: {
         className="flex-1 bg-card"
         style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       >
-        <View className="flex-row items-center gap-3 border-b border-border px-4 py-2">
-          <Text className="flex-1 font-t3-semibold text-foreground" numberOfLines={1}>
-            {props.source.name ?? "PDF"}
-          </Text>
-          <ControlPill label={uiT("Close")} variant="pill" onPress={props.onRequestClose} />
-        </View>
+        <SheetHeader
+          presentation="inline"
+          title={props.source.name ?? uiT("PDF")}
+          onClose={props.onRequestClose}
+        />
         <PdfPreview uri={props.source.uri} />
       </View>
     </Modal>
@@ -44,7 +46,7 @@ function PdfDocumentPreview(props: {
 }
 
 function DocumentPreview(props: {
-  readonly source: ResolvedFilePreviewSource;
+  readonly source: ResolvedFilePreviewDocument;
   readonly onRequestClose: () => void;
   readonly onOpenError?: (error: unknown) => void;
 }) {
@@ -66,7 +68,7 @@ function DocumentPreview(props: {
     const input = {
       uri,
       attachment: {
-        name: name ?? "Document",
+        name: name ?? uiT("Document"),
         mimeType:
           props.source.mimeType ??
           (props.source.kind === "pdf" ? "application/pdf" : "application/octet-stream"),
@@ -82,7 +84,7 @@ function DocumentPreview(props: {
         if (!controller.signal.aborted) onRequestClose();
       });
     return () => controller.abort();
-  }, [uri, name, props.source.mimeType, props.source.kind]);
+  }, [uri, name, props.source.mimeType, props.source.kind, uiT]);
   return (
     <Modal transparent animationType="fade" onRequestClose={props.onRequestClose}>
       <View className="flex-1 items-center justify-center bg-backdrop p-6">
@@ -105,18 +107,14 @@ export function FilePreview(props: {
   readonly onRequestClose: () => void;
   readonly onOpenError?: (error: unknown) => void;
 }) {
-  if (props.source.kind === "pdf") return <PdfDocumentPreview {...props} />;
-  if (props.source.kind !== "image") return <DocumentPreview {...props} />;
-  if (props.source.actionsSource) return <MediaImagePreview {...props} />;
+  const { source } = props;
+  if (source.kind === "pdf") return <PdfDocumentPreview {...props} source={source} />;
+  if (source.kind !== "image") return <DocumentPreview {...props} source={source} />;
+  if (source.images[source.selectedIndex]?.actionsSource)
+    return <MediaImagePreview source={source} onRequestClose={props.onRequestClose} />;
   return (
     <ImageViewing
-      images={
-        props.source.gallery?.map((item) => ({ uri: item.uri })) ?? [{ uri: props.source.uri }]
-      }
-      imageIndex={Math.max(
-        0,
-        props.source.gallery?.findIndex((item) => item.uri === props.source.uri) ?? 0,
-      )}
+      {...imageViewingProps(source)}
       visible
       onRequestClose={props.onRequestClose}
       swipeToCloseEnabled={false}

@@ -1,39 +1,39 @@
-import { useUiLanguage } from "../../i18n";
-import type { ThreadMoveDestination } from "../threads/threadOrder";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import * as ThreadUndo from "@t3tools/client-runtime/state/thread-undo";
-import { showThreadUndoNotice } from "./thread-undo-notice";
 import { canSnooze } from "@t3tools/client-runtime/state/thread-settled";
+import * as ThreadUndo from "@t3tools/client-runtime/state/thread-undo";
 import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import * as Haptics from "expo-haptics";
 import { useRef } from "react";
+import { useUiLanguage } from "../../i18n";
+import type { ThreadMoveDestination } from "../threads/threadOrder";
+import { showThreadUndoNotice } from "./thread-undo-notice";
 
-import { withThreadDismissal } from "./thread-dismissal";
+import { pinOrderKeyBetween } from "@t3tools/client-runtime/state/thread-sort";
 import * as Dialog from "../../components/ui/Dialog";
 import { scopedThreadKey } from "../../lib/scopedEntities";
-import { refreshArchivedThreadsForEnvironment } from "../archive/useArchivedThreadSnapshots";
-import { pinOrderKeyBetween } from "@t3tools/client-runtime/state/thread-sort";
 import { appAtomRegistry } from "../../state/atom-registry";
-import { environmentServerConfigsAtom } from "../../state/server";
 import { connectedEnvironmentIdsAtom } from "../../state/presentation";
+import { environmentServerConfigsAtom } from "../../state/server";
 import { readEnvironmentScope } from "../../state/session";
-import { environmentThreadShells, threadEnvironment } from "../../state/threads";
-import { queuedThreadKeysAtom } from "../../state/use-thread-outbox";
-import { useAtomCommand } from "../../state/use-atom-command";
 import {
   beginPendingThreadOrder,
   getPendingThreadOrder,
   threadDropBusyAtom,
 } from "../../state/thread-order";
+import { environmentThreadShells, threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { queuedThreadKeysAtom } from "../../state/use-thread-outbox";
+import { refreshArchivedThreadsForEnvironment } from "../archive/useArchivedThreadSnapshots";
+import { resolveThreadTitleRename } from "../threads/thread-title-rename";
+import { getThreadListV2OrderedSection } from "../threads/threadListV2";
 import {
   createPendingThreadOrder,
   createThreadMovePlanner,
   threadDropLifecycle,
 } from "../threads/threadOrder";
-import { getThreadListV2OrderedSection } from "../threads/threadListV2";
+import { withThreadDismissal } from "./thread-dismissal";
 import { threadCanArchive } from "./threadArchive";
-import { resolveThreadTitleRename } from "../threads/thread-title-rename";
 
 function environmentConfigLoaded(environmentId: EnvironmentThreadShell["environmentId"]) {
   return appAtomRegistry.get(environmentServerConfigsAtom).has(environmentId);
@@ -311,9 +311,7 @@ export function useThreadListActions(): {
       if (!canSnooze(thread, { now: new Date().toISOString() })) {
         Dialog.alert(
           "Could not snooze thread",
-          thread.hasPendingApprovals ||
-            thread.hasPendingUserInput ||
-            thread.pendingSubagentRequest != null
+          thread.hasPendingApprovals || thread.pendingSubagentRequest != null
             ? "This thread is waiting on you. Respond to the pending request before snoozing it."
             : "This thread is still starting a turn. Try again once it's running.",
         );

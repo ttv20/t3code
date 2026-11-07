@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../i18n";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { View } from "react-native";
+import { useUiLanguage } from "../i18n";
 
-import { AppText as Text } from "./ui/AppText";
 import { T3_CODE_BRAND_MARK_SOURCE } from "./brandAssets";
+import { AppText as Text } from "./ui/AppText";
 
 const appVariant = Constants.expoConfig?.extra?.appVariant;
 const DEFAULT_STAGE_LABEL =
@@ -30,7 +30,7 @@ export function BrandMark(props: { readonly compact?: boolean; readonly stageLab
       <View className="gap-1">
         <View className="flex-row items-center gap-2">
           <Text className="text-lg font-t3-bold tracking-[-0.4px] text-foreground">
-            T3 Code RTL
+            {uiT("T3 Code RTL")}
           </Text>
           <View className="rounded-full bg-subtle px-2 py-1">
             <Text className="text-3xs font-t3-bold tracking-[1.1px] uppercase text-foreground-muted">

@@ -1,11 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import { NavigationRouteContext } from "@react-navigation/native";
 import { Activity, useState, type ReactNode } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText } from "../../components/ui/AppText";
+import { PaneContext } from "../../components/ui/Pane";
 import { useAdaptiveWorkspaceLayout } from "../layout/adaptive-workspace-context";
-import { useAndroidWorkspaceRoot } from "../workspace/AndroidWorkspaceTabsProvider";
+import { useAndroidWorkspaceRoot } from "../layout/workspace/AndroidWorkspaceTabsProvider";
 import { SettingsListScreen } from "./SettingsRouteScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 
@@ -27,13 +28,16 @@ export function SettingsWorkspaceLayout(props: { readonly children: ReactNode })
       {visited ? (
         <Activity mode={split ? "visible" : "hidden"}>
           <View style={{ width: layout.listPaneWidth ?? 0, marginRight: layout.listPaneGap ?? 0 }}>
-            <NavigationRouteContext value={route}>
-              <SettingsListScreen sidebar selected={root?.settingsPage ?? null} />
-            </NavigationRouteContext>
+            <PaneContext value="sidebar">
+              <NavigationRouteContext value={route}>
+                <SettingsListScreen sidebar selected={root?.settingsPage ?? null} />
+              </NavigationRouteContext>
+            </PaneContext>
           </View>
         </Activity>
       ) : null}
-      <View className="flex-1">
+      {/* A push slides the page underneath to the left; keep it out of the list beside it. */}
+      <View className="flex-1 overflow-hidden">
         <View
           className="flex-1"
           pointerEvents={emptyDetail ? "none" : "auto"}

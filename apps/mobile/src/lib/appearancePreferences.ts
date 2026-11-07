@@ -1,4 +1,3 @@
-import { MOBILE_CODE_SURFACE, MOBILE_TYPOGRAPHY } from "./typography";
 import {
   DEFAULT_TERMINAL_FONT_SIZE,
   MAX_TERMINAL_FONT_SIZE,
@@ -6,6 +5,7 @@ import {
   TERMINAL_FONT_SIZE_STEP,
   normalizeTerminalFontSize,
 } from "../features/terminal/terminalPreferences";
+import { MOBILE_CODE_SURFACE, MOBILE_TYPOGRAPHY } from "./typography";
 
 export const DEFAULT_BASE_FONT_SIZE = MOBILE_TYPOGRAPHY.body.fontSize;
 export const MIN_BASE_FONT_SIZE = 11;

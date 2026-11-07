@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { useMemo, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { buildModelOptions, groupByProvider } from "../../lib/modelOptions";

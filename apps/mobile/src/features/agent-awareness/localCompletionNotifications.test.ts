@@ -1,15 +1,15 @@
+import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
 import { EnvironmentId, RunId, type OrchestrationV2ThreadShell } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
-import { makeRawThreadShell } from "../../test-fixtures";
 import { expect, it, vi } from "vite-plus/test";
-import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
+import { makeRawThreadShell } from "../../test-fixtures";
 import {
   createLocalCompletionNotifications,
   localCompletionAllowed,
   localCompletionThread,
   presentLocalCompletionNotification,
-  type LocalCompletionThread,
   type LocalCompletionCurrent,
+  type LocalCompletionThread,
 } from "./localCompletionNotifications";
 
 function setup() {

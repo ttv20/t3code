@@ -44,6 +44,7 @@ import {
   CircleStopIcon,
   ArrowRightLeftIcon,
   ArrowRightIcon,
+  EraserIcon,
   GitForkIcon,
   MessageSquareIcon,
 } from "lucide-react";
@@ -100,13 +101,9 @@ export function V2LifecycleRow(props: {
     const relatedThreadId = item.source.type === "run" ? item.source.threadId : item.targetThreadId;
     return (
       <TimelineSystemDivider
-        label={
-          item.source.type === "run" ? uiT("Forked from conversation") : uiT("Conversation fork")
-        }
+        label={item.source.type === "run" ? "Forked from conversation" : uiT("Conversation fork")}
         icon={GitForkIcon}
-        actionLabel={
-          item.source.type === "run" ? uiT("Open source conversation") : uiT("Open fork")
-        }
+        actionLabel={item.source.type === "run" ? "Open source conversation" : uiT("Open fork")}
         onAction={() => props.onOpenThread(relatedThreadId)}
       />
     );
@@ -613,6 +610,12 @@ function EnvironmentHandoffRow({
   return <HandoffRow {...props} environmentId={environmentId} providers={providers} />;
 }
 
+/** Marks where `/clear` or an automation started a new provider session in this thread. */
+export function FreshSessionRow() {
+  const { t: uiT } = useUiLanguage();
+  return <TimelineSystemDivider label={uiT("New session")} icon={EraserIcon} />;
+}
+
 /** A same-harness model or effort change. Shows only what changed. */
 export function ModelSwitchRow(props: {
   readonly environmentId: EnvironmentId;
@@ -652,7 +655,7 @@ export function HandoffRow(props: {
   const entries = settings ? applyProviderInstanceSettings(derived, settings, null) : derived;
   return (
     <TimelineSystemDivider
-      label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
+      label={props.pending ? "Context handoff pending" : uiT("Context handoff")}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}

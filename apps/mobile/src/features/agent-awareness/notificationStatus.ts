@@ -1,6 +1,6 @@
+import { reportAtomCommandResult, settlePromise } from "@t3tools/client-runtime/state/runtime";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { reportAtomCommandResult, settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { makePermissionStatusAtom } from "../../lib/permissionStatusAtom";
 
 export type NotificationStatus = "checking" | "enabled" | "disabled" | "unsupported";

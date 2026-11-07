@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../../i18n";
-import { useAndroidFloatingTabs } from "../settings/appearance/AppearancePreferencesProvider";
 import { useState } from "react";
-import { useKeyboardState } from "react-native-keyboard-controller";
 import { Platform, View } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../components/ui/Toast";
+import { useUiLanguage } from "../../i18n";
 import {
   useDeviceType,
   useDuoBottomBarInset,
-  useNativeLayoutMetrics,
   useNativeColumnLayoutMetrics,
+  useNativeLayoutMetrics,
 } from "../../native/native-layout-metrics";
-import { workspaceSearchBottomClearance } from "../workspace/workspace-tabs-state";
-import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
+import { workspaceSearchBottomClearance } from "../layout/workspace/workspace-tabs-state";
+import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
+import { useAndroidFloatingTabs } from "../settings/appearance/AppearancePreferencesProvider";
 import {
   dismissThreadUndoNotice,
   readThreadUndoNotice,
@@ -81,7 +81,7 @@ export function ThreadUndoNotice(props: { readonly visible: boolean }) {
       pointerEvents="box-none"
     >
       <Toast
-        message={`${notice.action} thread`}
+        message={uiT("{0} thread", { "0": notice.action })}
         action={{
           label: uiT("Undo"),
           onPress: () => {

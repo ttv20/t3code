@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../../i18n";
 import { useEffectEvent, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useUiLanguage } from "../../../i18n";
 
 import { SymbolView } from "../../../components/ui/AppSymbol";
 

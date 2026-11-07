@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type { TerminalGrid, TerminalOutputState } from "@t3tools/client-runtime/state/terminal";
 import { memo, useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import {
@@ -11,6 +10,7 @@ import {
   type TextInputInstance,
   type ViewProps,
 } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { MOBILE_TYPOGRAPHY } from "../../lib/typography";
@@ -20,13 +20,13 @@ import {
   supportsNativeTerminalOutput,
   type NativeTerminalSurfaceHandle,
 } from "./nativeTerminalModule";
+import { createTerminalOutputWriter } from "./terminalOutputWriter";
 import {
   buildGhosttyThemeConfig,
   getMobileTerminalTheme,
   type TerminalTheme,
 } from "./terminalTheme";
 import { useTerminalSurfaceBuffer } from "./useTerminalSurfaceBuffer";
-import { createTerminalOutputWriter } from "./terminalOutputWriter";
 
 interface TerminalInputEvent {
   readonly data: string;
@@ -40,6 +40,8 @@ interface TerminalResizeEvent {
 export interface TerminalSurfaceHandle {
   /** The text fallback focuses its input; the native view follows `keyboardFocusRequest`. */
   readonly focusKeyboard: () => void;
+  /** Drops the native field's IME context after input that bypassed it. */
+  readonly resetInput: () => void;
 }
 
 interface TerminalSurfaceProps extends ViewProps {
@@ -105,6 +107,7 @@ const FallbackTerminalSurface = memo(function FallbackTerminalSurface({
       inputRef.current?.blur();
       requestAnimationFrame(() => inputRef.current?.focus());
     },
+    resetInput: () => {},
   }));
 
   return (
@@ -203,14 +206,18 @@ export const TerminalSurface = memo(function TerminalSurface(props: TerminalSurf
   return <ReadyTerminalSurface key={props.terminalKey} {...props} buffer={buffer} />;
 });
 
-const ReadyTerminalSurface = memo(function ReadyTerminalSurface(props: ReadyTerminalSurfaceProps) {
+const ReadyTerminalSurface = memo(function ReadyTerminalSurface({
+  ref,
+  grid,
+  ...props
+}: ReadyTerminalSurfaceProps) {
   const fontSize = props.fontSize ?? MOBILE_TYPOGRAPHY.label.fontSize;
   const { themeAppearance, themeId } = useAppearancePreferences();
   const theme = props.theme ?? getMobileTerminalTheme(themeId, themeAppearance);
   const { onInput, onResize } = props;
   const NativeTerminalSurfaceView = resolveNativeTerminalSurfaceView();
-  const gridCols = props.grid?.cols;
-  const gridRows = props.grid?.rows;
+  const gridCols = grid?.cols;
+  const gridRows = grid?.rows;
   const sharedGrid = useMemo(
     () => (gridCols !== undefined && gridRows !== undefined ? [gridCols, gridRows] : []),
     [gridCols, gridRows],
@@ -219,6 +226,16 @@ const ReadyTerminalSurface = memo(function ReadyTerminalSurface(props: ReadyTerm
   const nativeRef = useRef<NativeTerminalSurfaceHandle>(null);
   const writerRef = useRef<ReturnType<typeof createTerminalOutputWriter> | null>(null);
   const [nativeReady, setNativeReady] = useState(false);
+
+  // The fallback surface binds the same ref itself.
+  useImperativeHandle(NativeTerminalSurfaceView ? ref : undefined, () => ({
+    focusKeyboard: () => {},
+    resetInput: () => {
+      void nativeRef.current?.resetInput?.().catch((error: unknown) => {
+        console.error("Terminal input reset failed", error);
+      });
+    },
+  }));
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- creates the output writer for the native terminal view once it is ready and disposes it on cleanup
   useEffect(() => {
@@ -283,5 +300,5 @@ const ReadyTerminalSurface = memo(function ReadyTerminalSurface(props: ReadyTerm
     );
   }
 
-  return <FallbackTerminalSurface {...props} fontSize={fontSize} theme={theme} />;
+  return <FallbackTerminalSurface {...props} ref={ref} fontSize={fontSize} theme={theme} />;
 });

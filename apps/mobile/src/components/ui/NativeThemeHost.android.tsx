@@ -1,8 +1,8 @@
 import { Host } from "@expo/ui/jetpack-compose";
 import { type ComponentProps } from "react";
+import { useUiLanguage } from "../../i18n";
 import { createNativeThemeColors } from "../../lib/nativeTheme";
 import { useControlTheme } from "./useControlTheme";
-import { useUiLanguage } from "../../i18n";
 
 export function NativeThemeHost(
   props: Omit<ComponentProps<typeof Host>, "colorScheme" | "seedColor" | "colorOverrides">,

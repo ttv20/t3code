@@ -1,11 +1,9 @@
-import { useUiLanguage } from "../i18n";
 import { decodeComposerContextFragment } from "@t3tools/shared/composerContextClipboard";
 import {
   collectComposerContextReferences,
   formatComposerContextHref,
   formatComposerContextReference,
 } from "@t3tools/shared/composerContextReferences";
-import { prepareNativeMarkdown } from "../lib/markdownDocument";
 import { isValidElement, useMemo, useState, type ReactNode } from "react";
 import { Platform, Share, StyleSheet, useWindowDimensions, View } from "react-native";
 import {
@@ -14,18 +12,20 @@ import {
   type MarkdownLinkOccurrence,
   type MarkdownStyle,
 } from "react-native-enriched-markdown";
+import { useUiLanguage } from "../i18n";
+import { prepareNativeMarkdown } from "../lib/markdownDocument";
 import type { SelectableMarkdownTextProps } from "./SelectableMarkdownText.types";
 
-import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { Menu } from "../components/ui/Menu";
-import { useEnrichedLinkVariants } from "./useEnrichedLinkVariants";
-import { useRetryingImageSource } from "./useRetryingImageSource";
+import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { copyTextWithHaptic } from "../lib/copyTextWithHaptic";
 import {
   ENRICHED_INLINE_FILE_LINK_REGEX,
-  enrichedSkillLinkRegex,
   enrichedLinkVariantPattern,
+  enrichedSkillLinkRegex,
 } from "../lib/enrichedLinkPresentation";
+import { useEnrichedLinkVariants } from "./useEnrichedLinkVariants";
+import { useRetryingImageSource } from "./useRetryingImageSource";
 
 function enrichedStyle(
   style: SelectableMarkdownTextProps["textStyle"],
@@ -324,7 +324,8 @@ export function MobileEnrichedMarkdownText(props: SelectableMarkdownTextProps) {
             admonitions: true,
             preserveWindowsPaths: true,
           }}
-          enableTaskListItemToggle={false}
+          enableTaskListItemToggle={props.onTaskListItemPress !== undefined}
+          onTaskListItemPress={props.onTaskListItemPress}
           enableCodeBlockWrapToggle
           spoilerOverlay="solid"
           onLinkPress={

@@ -1,21 +1,19 @@
-import { useUiLanguage } from "../../../i18n";
-import { sanitizeFeatureBranchName } from "@t3tools/shared/git";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { sanitizeFeatureBranchName } from "@t3tools/shared/git";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUiLanguage } from "../../../i18n";
 
-import { AndroidSheetHeader } from "../../../components/ui/AndroidScreenHeader";
-import { SheetHeader } from "../../../components/ui/SheetHeader";
-import { ScreenContent } from "../../../components/ui/ScreenContent";
-import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { AppText as Text, AppTextInput as TextInput } from "../../../components/ui/AppText";
+import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { SheetHeader } from "../../../components/ui/SheetHeader";
 import { cn } from "../../../lib/cn";
 import { useEnvironmentQuery } from "../../../state/query";
-import { useThreadSelection } from "../../../state/use-thread-selection";
 import { useSelectedThreadGitActions } from "../../../state/use-selected-thread-git-actions";
 import { useSelectedThreadGitState } from "../../../state/use-selected-thread-git-state";
 import { useSelectedThreadWorktree } from "../../../state/use-selected-thread-worktree";
+import { useThreadSelection } from "../../../state/use-thread-selection";
 import { vcsEnvironment } from "../../../state/vcs";
 import { SheetActionButton } from "./gitSheetComponents";
 
@@ -69,35 +67,14 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
   return (
     <View
       collapsable={false}
-      className="bg-sheet ios:flex-1"
+      className="bg-sheet ios:flex-1 android:flex-col-reverse"
       style={Platform.OS === "android" ? { maxHeight: windowHeight * 0.92 } : undefined}
     >
-      {Platform.OS === "android" ? (
-        <NativeStackScreenOptions
-          options={{
-            sheetCornerRadius: 28,
-            sheetAllowedDetents: "fitToContents",
-          }}
-        />
-      ) : null}
-      {Platform.OS === "android" ? (
-        <AndroidSheetHeader
-          title={uiT("Branches & worktrees")}
-          onBack={() => navigation.goBack()}
-          hideBottomBorder
-        />
-      ) : (
-        <SheetHeader
-          presentation="native"
-          title={uiT("Branches & worktrees")}
-          onClose={() => navigation.goBack()}
-        />
-      )}
       <ScreenContent fitToContents>
         <ScrollView
           nestedScrollEnabled
           className="android:shrink android:grow-0 ios:flex-1"
-          contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
+          contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentInset={{ bottom: Math.max(insets.bottom, 18) + 18 }}
@@ -146,7 +123,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
             <TextInput
               value={worktreeBaseBranch}
               onChangeText={setWorktreeBaseBranchOverride}
-              placeholder={"main"}
+              placeholder={uiT("main")}
               accessibilityLabel={uiT("Worktree base branch")}
               className="android:rounded-xl android:bg-sheet-solid ios:rounded-[18px]"
             />
@@ -241,6 +218,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
           </View>
         </ScrollView>
       </ScreenContent>
+      <SheetHeader title={uiT("Branches & worktrees")} onClose={() => navigation.goBack()} />
     </View>
   );
 }

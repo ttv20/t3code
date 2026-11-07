@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AVAILABLE_CONNECTION_STATE,
-  type ConnectionDiagnosis,
   connectionDiagnosisText,
   connectionRoutes,
   hasRelayRoute,
   presentConnectionDiagnosis,
+  type ConnectionDiagnosis,
   type EnvironmentPresentation,
 } from "@t3tools/client-runtime/connection";
 import type { EnvironmentId } from "@t3tools/contracts";
-import Constants from "expo-constants";
 import { AsyncResult } from "effect/reactivity";
+import Constants from "expo-constants";
 import { Linking, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";

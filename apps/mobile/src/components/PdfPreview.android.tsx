@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { Atom, AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { useState } from "react";
 import { View } from "react-native";
 import Pdf from "react-native-pdf-jsi";
+import { useUiLanguage } from "../i18n";
 
 import { FilePreviewLoading, FilePreviewNotice } from "../features/files/FilePreviewFeedback";
-import { pdfInitialPage, pdfLinkUrl, preparePdfPreview } from "../lib/pdfPreview";
 import { tryOpenExternalUrl } from "../lib/openExternalUrl";
+import { pdfInitialPage, pdfLinkUrl, preparePdfPreview } from "../lib/pdfPreview";
 import { ControlPill } from "./ui/ControlPill";
 
 const preparedPdfAtom = Atom.family((uri: string) =>
@@ -32,7 +32,10 @@ const preparedPdfAtom = Atom.family((uri: string) =>
         },
         catch: (cause) => (cause instanceof Error ? cause.message : "The PDF could not be loaded."),
       }).pipe(
-        Effect.flatMap((file) => (file === null ? Effect.interrupt : Effect.succeed(file))),
+        Effect.filterOrElse(
+          (file) => file !== null,
+          () => Effect.interrupt,
+        ),
         Effect.interruptible,
       ),
       (file) => Effect.sync(file.dispose),
@@ -67,7 +70,8 @@ export function PdfPreview(props: { readonly uri: string }) {
       </View>
     );
   }
-  if (localUri === null) return <FilePreviewLoading message="Loading PDF..." background="card" />;
+  if (localUri === null)
+    return <FilePreviewLoading message={uiT("Loading PDF...")} background="card" />;
 
   return (
     <Pdf

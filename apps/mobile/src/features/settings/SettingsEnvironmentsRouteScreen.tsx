@@ -1,30 +1,28 @@
-import { useUiLanguage } from "../../i18n";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useNavigation } from "@react-navigation/native";
 import { useAtomValue } from "@effect/atom-react";
+import { useNavigation } from "@react-navigation/native";
 import { managedRelaySessionAtom } from "@t3tools/client-runtime/relay";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useRef, useState } from "react";
-import { Platform, RefreshControl } from "react-native";
+import { RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 
-import { SettingsScreen } from "./components/SettingsScreen";
-import { AndroidAnchoredMenu } from "../../components/ui/AndroidAnchoredMenu";
-import { AndroidHeaderIconButton } from "../../components/ui/AndroidScreenHeader";
+import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import { relayEnvironmentDiscovery } from "../../state/relay";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { useRemoteConnections } from "../../state/use-remote-environment-registry";
 import { CloudEnvironmentRows } from "../connection/CloudEnvironmentRows";
 import { LocalEnvironmentList } from "../connection/LocalEnvironmentList";
 import { PullRequestRoutingSettings } from "../connection/PullRequestRoutingSettings";
 import { splitEnvironmentSections } from "../connection/environmentSections";
-import { useUniwindTheme } from "../../lib/useUniwindTheme";
-import { useRemoteConnections } from "../../state/use-remote-environment-registry";
-import { relayEnvironmentDiscovery } from "../../state/relay";
-import { useAtomCommand } from "../../state/use-atom-command";
 import {
   applyShowcaseLocalEnvironmentDisplayUrls,
   resolveShowcaseEnvironmentUpdateDisplayUrl,
   SHOWCASE_AVAILABLE_CLOUD_ENVIRONMENTS,
   SHOWCASE_CONNECTED_CLOUD_ENVIRONMENTS,
 } from "../showcase/showcaseEnvironmentRows";
+import { SettingsScreen } from "./components/SettingsScreen";
 
 const SHOWCASE_ENABLED = process.env.EXPO_PUBLIC_SHOWCASE === "1";
 
@@ -96,30 +94,14 @@ export function SettingsEnvironmentsRouteScreen() {
   return (
     <SettingsScreen
       title={uiT("Environments")}
-      trailing={
-        Platform.OS === "android" && relaySession ? (
-          <AndroidAnchoredMenu
-            title={uiT("Environment options")}
-            actions={[
-              {
-                id: "refresh",
-                title: uiT("Refresh cloud environments"),
-                attributes: { disabled: isRefreshingCloud },
-              },
-            ]}
-            onPressAction={({ nativeEvent }) => {
-              if (nativeEvent.event === "refresh") void refreshCloudEnvironments();
-            }}
-          >
-            {(open) => (
-              <AndroidHeaderIconButton
-                accessibilityLabel={uiT("Environment options")}
-                icon="ellipsis"
-                onPress={open}
-              />
-            )}
-          </AndroidAnchoredMenu>
-        ) : undefined
+      refresh={
+        relaySession
+          ? {
+              accessibilityLabel: uiT("Refresh cloud environments"),
+              disabled: isRefreshingCloud,
+              onPress: () => void refreshCloudEnvironments(),
+            }
+          : undefined
       }
       actions={[
         {

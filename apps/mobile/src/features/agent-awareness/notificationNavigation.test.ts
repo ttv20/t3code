@@ -1,6 +1,6 @@
-import { foregroundNotificationBehavior } from "./foregroundNotificationBehavior";
 import type { Notification, NotificationResponse } from "expo-notifications";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { foregroundNotificationBehavior } from "./foregroundNotificationBehavior";
 
 import { consumeLastAgentNotificationResponse } from "./notificationResponseConsumer";
 

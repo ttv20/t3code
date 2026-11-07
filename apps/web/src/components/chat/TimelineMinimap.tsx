@@ -118,10 +118,10 @@ export function TimelineMinimap({
   return (
     <div
       className={cn(
-        "group/minimap pointer-events-none absolute inset-y-0 left-0 z-40 hidden w-18 [@media(pointer:fine)]:block",
+        "group/minimap pointer-events-none absolute inset-y-0 left-0 z-40 w-18",
         hasPersistentGutter
           ? "opacity-100"
-          : "opacity-0 transition-opacity duration-150 hover:opacity-100 focus-within:opacity-100",
+          : "hidden opacity-0 transition-opacity duration-150 hover:opacity-100 focus-within:opacity-100 [@media(pointer:fine)]:block",
       )}
       data-testid="timeline-minimap"
       data-persistent-gutter={hasPersistentGutter ? "true" : "false"}
@@ -308,7 +308,7 @@ function TimelineMinimapNavigationButton({
   const { t: uiT } = useUiLanguage();
 
   const previous = direction === "previous";
-  const label = previous ? uiT("Previous turn") : uiT("Next turn");
+  const label = previous ? "Previous turn" : uiT("Next turn");
   const Icon = previous ? ChevronUpIcon : ChevronDownIcon;
 
   return (

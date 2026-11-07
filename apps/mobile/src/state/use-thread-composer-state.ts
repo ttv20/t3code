@@ -1,13 +1,10 @@
-import { useUiLanguage } from "../i18n";
-import { useComposerAttachmentActions } from "./use-composer-attachment-actions";
-import * as Dialog from "../components/ui/Dialog";
-import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
-import { readEnvironmentScope } from "./session";
 import { useAtomValue } from "@effect/atom-react";
+import { resolvePendingHandoff } from "@t3tools/client-runtime/handoff";
+import { shouldCompactBeforeSend } from "@t3tools/client-runtime/state/context-window";
 import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/shell";
 import type { ThreadCheckpointSummary } from "@t3tools/client-runtime/state/thread-checkpoints";
-import { resolvePendingHandoff } from "@t3tools/client-runtime/handoff";
 import {
+  deriveProviderExtensionStatuses,
   deriveProviderSubagentStatus,
   deriveResumableRunId,
   deriveRunlessWorkStartedAt,
@@ -15,26 +12,35 @@ import {
   deriveThreadRuntime,
   threadRuntimeHasInterruptibleRun,
 } from "@t3tools/client-runtime/state/thread-execution";
-import { useRef, useState } from "react";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { useEffect, useRef, useState } from "react";
+import * as Dialog from "../components/ui/Dialog";
+import { useUiLanguage } from "../i18n";
+import { readEnvironmentScope } from "./session";
+import { readUiTranslator } from "./ui-language";
+import { useComposerAttachmentActions } from "./use-composer-attachment-actions";
 
 import {
   CommandId,
   DEFAULT_PROVIDER_INTERACTION_MODE,
   MessageId,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
+  orchestrationV2WorktreePending,
   type EnvironmentId,
   type ModelSelection,
   type ProviderInteractionMode,
+  type RuntimeMode,
+  type ScopedThreadRef,
   type ServerProvider,
   type ThreadId,
 } from "@t3tools/contracts";
 
+import { resolveThreadWorkingStartedAt } from "@t3tools/client-runtime/state/models";
 import {
   parseCodexFeedbackCommand,
   submitCodexFeedback,
   type CodexFeedbackSubmission,
 } from "@t3tools/client-runtime/state/threads";
-import { resolveThreadWorkingStartedAt } from "@t3tools/client-runtime/state/models";
 import { upgradeLegacyContextMessage } from "@t3tools/shared/composerContextLegacy";
 import { restoreAttachmentOnlyBootstrapPrompt } from "@t3tools/shared/composerContextReferences";
 import { composerContextSendBlockReason, reidentifyComposerContext } from "../lib/composerContext";
@@ -47,47 +53,33 @@ import {
 } from "../lib/modelOptions";
 import { resolveProviderInteractionMode } from "./legacy-plan-mode";
 
-import type { DraftComposerImageAttachment } from "../lib/composerImages";
-import { scopedThreadKey } from "../lib/scopedEntities";
-import { buildThreadFeed, createThreadFeedCache } from "../lib/threadActivity";
-import { acknowledgedThreadMessagesAtom } from "./acknowledged-thread-messages";
-import {
-  appendPendingThreadMessages,
-  selectPendingAcknowledgedMessages,
-} from "../features/threads/pending-thread-feed";
-import { threadAllowsProviderSwitch } from "./thread-provider-switching";
-import { appAtomRegistry } from "../state/atom-registry";
-import { pendingThreadCreationMessage } from "./pending-thread-creation";
-import {
-  composerAttachmentUploadBlockReason,
-  composerAttachmentUploadsAtom,
-} from "../state/composer-attachment-uploads";
-import {
-  appendComposerDraftAttachments,
-  insertComposerDraftContext,
-  clearComposerDraft,
-  clearComposerDraftContent,
-  composerContextImportsAtom,
-  getComposerDraftSnapshot,
-  mergeComposerDraftContent,
-  removeComposerDraftAttachment,
-  scheduleUnusedComposerAttachmentCleanup,
-  setComposerDraftText,
-  updateComposerDraftSettings,
-  useComposerDraft,
-  useComposerDraftSettings,
-} from "./use-composer-drafts";
 import {
   resolveComposerDispatchMode,
   type ActiveTurnComposerAction,
 } from "@t3tools/client-runtime/state/composer-dispatch";
-import { Atom } from "effect/reactivity";
-import { AsyncResult } from "effect/reactivity";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { isClearComposerCommand, parseSideChatCommand } from "@t3tools/shared/composerTrigger";
+import { AsyncResult, Atom } from "effect/reactivity";
+import {
+  appendPendingThreadMessages,
+  selectPendingAcknowledgedMessages,
+} from "../features/threads/pending-thread-feed";
 import { prepareTurnAttachments } from "../lib/attachmentUpload";
+import type { DraftComposerImageAttachment } from "../lib/composerImages";
 import { DEFAULT_FOLLOW_UP_BEHAVIOR } from "../lib/followUpBehavior";
+import { scopedThreadKey } from "../lib/scopedEntities";
+import { buildThreadFeed, createThreadFeedCache } from "../lib/threadActivity";
+import {
+  acknowledgedThreadMessagesAtom,
+  pruneCaughtUpAcknowledgedThreadMessages,
+} from "./acknowledged-thread-messages";
+import { appAtomRegistry } from "./atom-registry";
+import {
+  composerAttachmentUploadBlockReason,
+  composerAttachmentUploadsAtom,
+} from "./composer-attachment-uploads";
+import { pendingThreadCreationMessage } from "./pending-thread-creation";
 import { mobilePreferencesAtom } from "./preferences";
-import { environmentThreadDetails } from "./threads";
 import {
   endQueuedRunEdit,
   getQueuedRunEdit,
@@ -97,17 +89,35 @@ import {
   startQueuedRunEditSave,
   useQueuedRunEdit,
 } from "./queued-run-edit";
-import { setPendingConnectionError } from "../state/use-remote-environment-registry";
 import { clearThreadComposerError, setThreadComposerError } from "./thread-composer-error";
+import { enqueueThreadOutboxMessage } from "./thread-outbox";
+import { threadAllowsProviderSwitch } from "./thread-provider-switching";
+import { environmentThreadDetails, threadEnvironment } from "./threads";
+import { useAtomCommand } from "./use-atom-command";
+import {
+  appendComposerDraftAttachments,
+  clearComposerDraft,
+  clearComposerDraftContent,
+  composerContextImportsAtom,
+  getComposerDraftSnapshot,
+  insertComposerDraftContext,
+  isFreshSessionPending,
+  mergeComposerDraftContent,
+  removeComposerDraftAttachment,
+  scheduleUnusedComposerAttachmentCleanup,
+  setComposerDraftText,
+  setFreshSessionPending,
+  updateComposerDraftSettings,
+  useComposerDraft,
+  useComposerDraftSettings,
+} from "./use-composer-drafts";
+import { setPendingConnectionError } from "./use-remote-environment-registry";
 import {
   useSelectedThreadProjection,
   useSelectedThreadVisibleTurnItems,
-} from "../state/use-thread-detail";
-import { useThreadSelection } from "../state/use-thread-selection";
-import { enqueueThreadOutboxMessage } from "./thread-outbox";
+} from "./use-thread-detail";
 import { dispatchingQueuedMessageIdAtom, useThreadOutboxMessages } from "./use-thread-outbox";
-import { threadEnvironment } from "./threads";
-import { useAtomCommand } from "./use-atom-command";
+import { useThreadSelection } from "./use-thread-selection";
 
 const EMPTY_QUEUE_WORKFLOW_ATOM = Atom.make<null>(null).pipe(
   Atom.withLabel("mobile-thread-queue-workflow:empty"),
@@ -121,6 +131,8 @@ export function appendReviewCommentToDraft(input: {
   readonly text: string;
   readonly attachments?: ReadonlyArray<DraftComposerImageAttachment>;
 }): void {
+  const uiT = readUiTranslator();
+
   const threadKey = scopedThreadKey(input.environmentId, input.threadId);
   const upgraded = upgradeLegacyContextMessage(input.text);
   if (
@@ -129,7 +141,10 @@ export function appendReviewCommentToDraft(input: {
       reidentifyComposerContext(upgraded.text, upgraded.records, uuidv4),
     )
   ) {
-    Dialog.alert("Too many context items", "Remove some context from the draft and try again.");
+    Dialog.alert(
+      uiT("Too many context items"),
+      uiT("Remove some context from the draft and try again."),
+    );
     return;
   }
   if (input.attachments && input.attachments.length > 0) {
@@ -186,7 +201,14 @@ export function updateThreadDraftModelSelection(
   });
 }
 
-export function useThreadComposerState() {
+export function useThreadComposerState(input: {
+  /** Forks the thread into a side chat that gets `prompt`; resolves false when it did not start. */
+  readonly startSideChat: (
+    source: ScopedThreadRef,
+    prompt: string,
+    settings: { readonly runtimeMode: RuntimeMode; readonly modelSelection: ModelSelection },
+  ) => Promise<boolean>;
+}) {
   const { t: uiT } = useUiLanguage();
 
   const {
@@ -212,6 +234,7 @@ export function useThreadComposerState() {
   });
   const [isSavingQueuedEdit, setIsSavingQueuedEdit] = useState(false);
   const savingQueuedEditRef = useRef(false);
+  const startingSideChatRef = useRef(false);
 
   const selectedThreadKey = selectedThreadShell
     ? scopedThreadKey(selectedThreadShell.environmentId, selectedThreadShell.id)
@@ -239,6 +262,14 @@ export function useThreadComposerState() {
       ? EMPTY_THREAD_SEQUENCE_ATOM
       : environmentThreadDetails.sequenceAtom(selectedThreadDetailRef),
   );
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- prunes the app-wide acknowledged atom when the mounted thread catches up
+  useEffect(() => {
+    if (selectedThreadKey === null || acknowledgedMessages.length === 0) return;
+    pruneCaughtUpAcknowledgedThreadMessages(selectedThreadKey, {
+      sequence: selectedThreadSequence,
+      messages: selectedThreadMessages,
+    });
+  }, [acknowledgedMessages, selectedThreadKey, selectedThreadSequence, selectedThreadMessages]);
   const checkpointSummaries = useAtomValue(
     selectedThreadDetailRef === null
       ? EMPTY_CHECKPOINT_SUMMARIES_ATOM
@@ -417,7 +448,7 @@ export function useThreadComposerState() {
       edit.existingAttachments.length === 0 &&
       draft.attachments.length === 0
     ) {
-      Dialog.alert("Add a message", "A queued message cannot be left empty.");
+      Dialog.alert(uiT("Add a message"), uiT("A queued message cannot be left empty."));
       return;
     }
     if (
@@ -425,8 +456,10 @@ export function useThreadComposerState() {
       PROVIDER_SEND_TURN_MAX_ATTACHMENTS
     ) {
       Dialog.alert(
-        "Too many attachments",
-        `Remove attachments until there are at most ${PROVIDER_SEND_TURN_MAX_ATTACHMENTS}.`,
+        uiT("Too many attachments"),
+        uiT("Remove attachments until there are at most {0}.", {
+          "0": PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
+        }),
       );
       return;
     }
@@ -448,8 +481,8 @@ export function useThreadComposerState() {
       finishSave(false);
       const error = squashAtomCommandFailure(prepared);
       Dialog.alert(
-        "Could not save the queued message",
-        error instanceof Error ? error.message : "Your edit is still in the composer.",
+        uiT("Could not save the queued message"),
+        error instanceof Error ? error.message : uiT("Your edit is still in the composer."),
       );
       return;
     }
@@ -484,8 +517,8 @@ export function useThreadComposerState() {
       // The run left the queue during the save; its exit already told the composer what happened.
       if (!finishSave(false)) return;
       Dialog.alert(
-        "Could not save the queued message",
-        "It may have already started. Your edit is still in the composer.",
+        uiT("Could not save the queued message"),
+        uiT("It may have already started. Your edit is still in the composer."),
       );
       return;
     }
@@ -504,6 +537,7 @@ export function useThreadComposerState() {
       text: string,
       hasAttachmentsOrContext: boolean,
     ) => Promise<boolean | "responded">,
+    onWillEnqueue?: () => void,
   ) => {
     if (
       selectedThreadShell &&
@@ -544,33 +578,95 @@ export function useThreadComposerState() {
     if (text.length === 0 && attachments.length === 0) {
       return null;
     }
-    // Recovery preserves over-cap attachments; require trimming or outbox delivery would reject indefinitely.
-    if (attachments.length > PROVIDER_SEND_TURN_MAX_ATTACHMENTS) {
-      Dialog.alert(
-        "Too many attachments",
-        `Remove attachments until there are at most ${PROVIDER_SEND_TURN_MAX_ATTACHMENTS}.`,
-      );
-      return null;
-    }
-
-    const contextBlockReason = composerContextSendBlockReason(draft.context);
-    if (contextBlockReason) {
-      Dialog.alert("Too much context", contextBlockReason);
-      return null;
-    }
-
     const modelSelection = draft.modelSelection ?? thread.modelSelection;
     const serverConfig = selectedEnvironmentRuntime?.serverConfig;
-    if (
+    const modelUnavailable =
       selectedEnvironmentRuntime?.connectionState === "connected" &&
-      isModelSelectionUnavailable(serverConfig, modelSelection, thread.projectId)
-    ) {
+      isModelSelectionUnavailable(serverConfig, modelSelection, thread.projectId);
+    const alertModelUnavailable = () => {
       const { title, detail } = describeUnavailableModelSelection(
         serverConfig,
         modelSelection,
         thread.projectId,
       );
       Dialog.alert(title, detail);
+    };
+    // A redirect's text answers its approval, so `/side` there is that text, not the command.
+    const sideChatCommand = beforeDispatch === undefined ? parseSideChatCommand(text) : null;
+    if (sideChatCommand) {
+      if (sideChatUnavailableReason !== null) {
+        Dialog.alert(uiT("Side chat not started"), sideChatUnavailableReason);
+      } else if (attachments.length > 0 || (draft.context?.records.length ?? 0) > 0) {
+        Dialog.alert(
+          uiT("Side chats take text only"),
+          uiT("Remove the attachments and context, then send it again."),
+        );
+      } else if (sideChatCommand.prompt.length === 0) {
+        Dialog.alert(
+          uiT("Ask a side question"),
+          uiT("Type the question after /side, then send it."),
+        );
+      } else if (modelUnavailable) {
+        alertModelUnavailable();
+      } else if (!startingSideChatRef.current) {
+        startingSideChatRef.current = true;
+        const started = await input
+          .startSideChat(
+            { environmentId: thread.environmentId, threadId: thread.id },
+            sideChatCommand.prompt,
+            {
+              runtimeMode: draft.runtimeMode ?? thread.runtimeMode,
+              modelSelection,
+            },
+          )
+          .finally(() => {
+            startingSideChatRef.current = false;
+          });
+        // Clear only what was sent; the draft may have changed while the side chat started.
+        const current = getComposerDraftSnapshot(threadKey);
+        if (
+          started &&
+          current.text === draft.text &&
+          current.attachments.length === 0 &&
+          (current.context?.records.length ?? 0) === 0
+        ) {
+          clearComposerDraftContent(threadKey);
+        }
+      }
+      return null;
+    }
+    // A redirect's text answers its approval, so /clear there is that text, not the command.
+    if (
+      beforeDispatch === undefined &&
+      selectedEnvironmentRuntime?.serverConfig?.environment.capabilities.freshContext === true &&
+      thread.latestRun != null &&
+      attachments.length === 0 &&
+      draft.context === undefined &&
+      isClearComposerCommand(text)
+    ) {
+      setFreshSessionPending(threadKey, true);
+      clearComposerDraftContent(threadKey);
+      return null;
+    }
+    // Recovery preserves over-cap attachments; require trimming or outbox delivery would reject indefinitely.
+    if (attachments.length > PROVIDER_SEND_TURN_MAX_ATTACHMENTS) {
+      Dialog.alert(
+        uiT("Too many attachments"),
+        uiT("Remove attachments until there are at most {0}.", {
+          "0": PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
+        }),
+      );
+      return null;
+    }
+
+    const contextBlockReason = composerContextSendBlockReason(draft.context);
+    if (contextBlockReason) {
+      Dialog.alert(uiT("Too much context"), contextBlockReason);
+      return null;
+    }
+
+    if (modelUnavailable) {
+      alertModelUnavailable();
       return null;
     }
     const provider = serverConfig?.providers.find(
@@ -584,7 +680,10 @@ export function useThreadComposerState() {
       if (!readEnvironmentScope(selectedThreadShell.environmentId, AuthOrchestrationOperateScope))
         return null;
       if (thread.activeProviderThreadId === null) {
-        Dialog.alert("Start a Codex thread first", "Send a message before you submit feedback.");
+        Dialog.alert(
+          uiT("Start a Codex thread first"),
+          uiT("Send a message before you submit feedback."),
+        );
         return null;
       }
       const metadata = makeQueuedMessageMetadata();
@@ -662,8 +761,32 @@ export function useThreadComposerState() {
           ? "queue"
           : "auto";
 
+    // A redirect belongs to the approval it answers; the armed session waits for the next message.
+    const freshContext = beforeDispatch === undefined && isFreshSessionPending(threadKey);
     const metadata = makeQueuedMessageMetadata();
+    // A fresh session drops the context a compaction would summarize.
+    const compactBeforeSend =
+      !freshContext &&
+      followUpDispatchMode === null &&
+      selectedEnvironmentRuntime?.connectionState === "connected" &&
+      selectedThreadProjection !== null &&
+      serverConfig != null &&
+      shouldCompactBeforeSend({
+        projection: selectedThreadProjection.projection,
+        visibleTurnItems: selectedThreadVisibleTurnItems,
+        selection: modelSelection,
+        providers: serverConfig.providers,
+        settings: serverConfig.settings,
+        text,
+        threadIdle:
+          !activeThreadBusy &&
+          !runlessWorkActive &&
+          !isCompacting &&
+          selectedThreadQueuedMessages.length === 0,
+        now: metadata.createdAt,
+      });
     const messageId = MessageId.make(metadata.messageId);
+    onWillEnqueue?.();
     clearThreadComposerError(threadKey);
     const enqueuePromise = enqueueThreadOutboxMessage({
       environmentId: selectedThreadShell.environmentId,
@@ -679,10 +802,16 @@ export function useThreadComposerState() {
         provider,
         draft.interactionMode ?? thread.interactionMode,
       ),
-      ...(followUpDispatchMode === null ? {} : { dispatchMode: followUpDispatchMode }),
+      ...(compactBeforeSend
+        ? { compactBeforeSend, dispatchMode: "queue" as const }
+        : followUpDispatchMode === null
+          ? {}
+          : { dispatchMode: followUpDispatchMode }),
+      ...(freshContext ? { freshContext: true } : {}),
       createdAt: metadata.createdAt,
     });
     clearComposerDraftContent(threadKey, { deferAttachmentCleanup: true });
+    if (freshContext) setFreshSessionPending(threadKey, false);
     enqueuePromise.then(
       () => scheduleUnusedComposerAttachmentCleanup(attachments),
       (error: unknown) => {
@@ -693,6 +822,7 @@ export function useThreadComposerState() {
           attachments: [],
         });
         appendComposerDraftAttachments(threadKey, attachments, { allowOverflow: true });
+        if (freshContext) setFreshSessionPending(threadKey, true);
         setThreadComposerError(
           threadKey,
           error instanceof Error ? error.message : "Failed to save the queued message.",
@@ -701,6 +831,32 @@ export function useThreadComposerState() {
     );
     return messageId;
   };
+
+  // Side chats do not nest or start from subagents, and need a server that forks them.
+  const sideChatUnavailableReason = (() => {
+    const serverConfig = selectedEnvironmentRuntime?.serverConfig;
+    if (selectedThreadShell?.lineage.sideChat === true)
+      return "Side chats cannot start side chats.";
+    if (selectedThreadShell?.lineage.relationshipToParent === "subagent") {
+      return "Subagent threads cannot start side chats.";
+    }
+    if (!selectedThreadShell || !serverConfig) {
+      return "Side chats are not ready yet. Try again in a moment.";
+    }
+    if (serverConfig.environment.capabilities.sideChats !== true) {
+      return "Update this environment's T3 Code server to use side chats.";
+    }
+    if (selectedThreadCreation !== null) return "Side chats start after the first message.";
+    if (
+      orchestrationV2WorktreePending(
+        selectedThreadShell.worktreePath ?? null,
+        selectedThreadProjection?.projection.runs ?? [],
+      )
+    ) {
+      return "Available once the thread's worktree is set up.";
+    }
+    return null;
+  })();
 
   const onChangeDraftMessage = (value: string) => {
     if (!selectedThreadShell) {
@@ -750,6 +906,9 @@ export function useThreadComposerState() {
     dispatchingQueuedMessageId,
     activeWorkStartedAt,
     runlessWorkActive,
+    extensionStatuses: deriveProviderExtensionStatuses(
+      selectedThreadProjection?.projection ?? null,
+    ),
     providerSubagentStatus,
     isCompacting,
     composerDraftKey,
@@ -776,5 +935,6 @@ export function useThreadComposerState() {
     onRemoveDraftImage,
     onSendMessage,
     onUpdateInteractionMode,
+    sideChatUnavailableReason,
   };
 }

@@ -1,76 +1,81 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
+import { useAtomMount } from "@effect/atom-react";
+import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { type KnownTerminalSession } from "@t3tools/client-runtime/state/terminal";
 import {
-  AuthTerminalReadScope,
   AuthTerminalOperateScope,
+  AuthTerminalReadScope,
   DEFAULT_TERMINAL_ID,
   EnvironmentId,
   ThreadId,
   sessionGrantsScope,
 } from "@t3tools/contracts";
-import { type KnownTerminalSession } from "@t3tools/client-runtime/state/terminal";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { AppBar } from "../../components/ui/AppBar";
-import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
-import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { useAtomMount } from "@effect/atom-react";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Platform, Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppText as Text } from "../../components/ui/AppText";
-import { TerminalContextSheet } from "./TerminalContextSheet";
-import { hasNativeTerminalSurface, supportsNativeTerminalOutput } from "./nativeTerminalModule";
-import * as Clipboard from "expo-clipboard";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/reactivity";
+import * as Clipboard from "expo-clipboard";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Platform, Pressable, View } from "react-native";
 import {
   KeyboardController,
-  KeyboardEvents,
   KeyboardStickyView,
   useKeyboardState,
 } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppBar } from "../../components/ui/AppBar";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import * as Dialog from "../../components/ui/Dialog";
+import { useContentTopInset } from "../../components/ui/useBarInset";
+import { useUiLanguage } from "../../i18n";
+import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
+import { TerminalContextSheet } from "./TerminalContextSheet";
+import { hasNativeTerminalSurface, supportsNativeTerminalOutput } from "./nativeTerminalModule";
 
 import {
   ComposerToolbarButton,
   ComposerToolbarRow,
   ComposerToolbarScroller,
 } from "../../components/ComposerToolbar";
+import { LoadingScreen } from "../../components/LoadingScreen";
+import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { GlassSurface } from "../../components/ui/GlassSurface";
-import { LoadingScreen } from "../../components/LoadingScreen";
-import { ScreenContent } from "../../components/ui/ScreenContent";
-import { Button } from "../../components/ui/Button";
 import { IconButton } from "../../components/ui/IconButton";
+import { ScreenContent } from "../../components/ui/ScreenContent";
 import { environmentCatalog } from "../../connection/catalog";
-import { useEnvironmentPresentation } from "../../state/presentation";
-import { terminalEnvironment } from "../../state/terminal";
-import { environmentSession, readEnvironmentScope } from "../../state/session";
-import { useEnvironmentQuery } from "../../state/query";
-import { appAtomRegistry } from "../../state/atom-registry";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { uuidv4 } from "../../lib/uuid";
-import { useServerConfigs } from "../../state/entities";
-import { useConnectionsReady } from "../../state/workspace";
 import {
   MAX_TERMINAL_FONT_SIZE,
   MIN_TERMINAL_FONT_SIZE,
   TERMINAL_FONT_SIZE_STEP,
   stepTerminalFontSize,
 } from "../../lib/appearancePreferences";
-import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
+import { uuidv4 } from "../../lib/uuid";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useServerConfigs } from "../../state/entities";
+import { useEnvironmentPresentation } from "../../state/presentation";
+import { useEnvironmentQuery } from "../../state/query";
+import { environmentSession, readEnvironmentScope } from "../../state/session";
+import { terminalEnvironment } from "../../state/terminal";
+import { useAtomCommand } from "../../state/use-atom-command";
 import {
   useAttachedTerminalSession,
   useKnownTerminalSessions,
 } from "../../state/use-terminal-session";
-import { useThreadSelection } from "../../state/use-thread-selection";
 import { useSelectedThreadProjection } from "../../state/use-thread-detail";
+import { useThreadSelection } from "../../state/use-thread-selection";
+import { useConnectionsReady } from "../../state/workspace";
 import { EnvironmentConnectionNotice } from "../connection/EnvironmentConnectionNotice";
+import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { TerminalSurface, type TerminalSurfaceHandle } from "./NativeTerminalSurface";
-import { getMobileTerminalTheme } from "./terminalTheme";
-import { useTerminalExitNavigation } from "./useTerminalExitNavigation";
 import {
-  useInitialTerminalLaunchLocation,
+  hostPlatformFromOs,
+  resolveModifiedTerminalInput,
+  type HostPlatform,
+  type PendingModifier,
+} from "./terminalInput";
+import { getKeyboardShowEpoch, subscribeKeyboardShowing } from "./terminalKeyboardShowing";
+import {
   takePendingTerminalLaunch,
+  useInitialTerminalLaunchLocation,
   type PendingTerminalLaunch,
 } from "./terminalLaunchContext";
 import {
@@ -82,14 +87,10 @@ import {
   resolveTerminalSessionLabel,
   type TerminalMenuSession,
 } from "./terminalMenu";
-import {
-  hostPlatformFromOs,
-  resolveModifiedTerminalInput,
-  type HostPlatform,
-  type PendingModifier,
-} from "./terminalInput";
 import { createTerminalPasteSession } from "./terminalPaste";
+import { getMobileTerminalTheme } from "./terminalTheme";
 import { cacheTerminalGridSize, getCachedTerminalGridSize } from "./terminalUiState";
+import { useTerminalExitNavigation } from "./useTerminalExitNavigation";
 
 function TerminalHeader(props: {
   readonly subtitle: string;
@@ -369,26 +370,6 @@ function readLiveTerminalSessions(
     }));
 }
 
-// `useKeyboardState` only flips on willShow and didHide; the accessory must
-// leave as soon as the keyboard starts hiding, so it follows the will-events.
-let keyboardShowing = KeyboardController.isVisible();
-function subscribeKeyboardShowing(onChange: () => void) {
-  keyboardShowing = KeyboardController.isVisible();
-  const willShow = KeyboardEvents.addListener("keyboardWillShow", () => {
-    keyboardShowing = true;
-    onChange();
-  });
-  const willHide = KeyboardEvents.addListener("keyboardWillHide", () => {
-    keyboardShowing = false;
-    onChange();
-  });
-  return () => {
-    willShow.remove();
-    willHide.remove();
-  };
-}
-const getKeyboardShowing = () => keyboardShowing;
-
 function ThreadTerminal(props: {
   readonly params: ThreadTerminalRouteScreenProps["route"]["params"];
   readonly routeEnvironmentId: EnvironmentId | null;
@@ -416,6 +397,7 @@ function ThreadTerminal(props: {
   } = props.knownSessions;
   const insets = useSafeAreaInsets();
   const nativeColumnMetrics = useNativeColumnLayoutMetrics();
+  const contentTopInset = useContentTopInset();
   const navigation = useNavigation();
   const writeTerminal = useAtomCommand(terminalEnvironment.write, "terminal write");
   const clearTerminal = useAtomCommand(terminalEnvironment.clear, "terminal clear");
@@ -524,6 +506,7 @@ function ThreadTerminal(props: {
             cols: initialAttachGridSize.cols,
             rows: initialAttachGridSize.rows,
             ...(pendingLaunch?.env ? { env: pendingLaunch.env } : {}),
+            ...(pendingLaunch ? { stopOnSettle: pendingLaunch.stopOnSettle ?? false } : {}),
             ...(pendingLaunch ? { restartIfNotRunning: true } : {}),
           }
         : null,
@@ -581,10 +564,10 @@ function ThreadTerminal(props: {
       hostPlatform === "mac"
         ? [
             { kind: "modifier", key: "cmd", label: uiT("cmd"), modifier: "meta" },
-            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
+            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
           ]
         : [
-            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
+            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
             { kind: "modifier", key: "alt", label: uiT("alt"), modifier: "meta" },
           ];
 
@@ -604,28 +587,25 @@ function ThreadTerminal(props: {
       { kind: "send", key: "dash", label: "-", data: "-" },
     ];
   }, [hostPlatform, uiT]);
-  const keyboardState = useKeyboardState((state) => ({
-    height: state.height,
-    isVisible: state.isVisible,
-  }));
-  const keyboardShowing = useSyncExternalStore(subscribeKeyboardShowing, getKeyboardShowing);
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
+  const keyboardHeight = useKeyboardState((state) => state.height);
+  const keyboardShowEpoch = useSyncExternalStore(subscribeKeyboardShowing, getKeyboardShowEpoch);
   // The accessory follows the keyboard, except that the dismiss and show
   // buttons flip it ahead of the keyboard animation.
-  const [accessory, setAccessory] = useState({ keyboardShowing, dismissed: false });
-  if (accessory.keyboardShowing !== keyboardShowing) {
-    setAccessory({ keyboardShowing, dismissed: !keyboardShowing });
+  const [accessory, setAccessory] = useState({ keyboardShowEpoch, dismissed: false });
+  if (accessory.keyboardShowEpoch !== keyboardShowEpoch) {
+    setAccessory({ keyboardShowEpoch, dismissed: keyboardShowEpoch === 0 });
   }
   const isAccessoryDismissed = accessory.dismissed;
-  const isAccessoryVisible = canOperateTerminal && keyboardState.isVisible && !isAccessoryDismissed;
+  const isAccessoryVisible = canOperateTerminal && isKeyboardVisible && !isAccessoryDismissed;
   // Android's terminal owns an EditText; turning off autoFocus also clears its native focus.
   const terminalAutoFocus =
     Platform.OS === "android"
       ? !isAccessoryDismissed &&
-        (!SHOWCASE_ENABLED || keyboardFocusRequest > 0 || keyboardState.isVisible)
+        (!SHOWCASE_ENABLED || keyboardFocusRequest > 0 || isKeyboardVisible)
       : !SHOWCASE_ENABLED;
   const terminalBottomInset =
-    (keyboardState.isVisible ? keyboardState.height : 0) +
-    (isAccessoryVisible ? TERMINAL_ACCESSORY_HEIGHT : 0);
+    (isKeyboardVisible ? keyboardHeight : 0) + (isAccessoryVisible ? TERMINAL_ACCESSORY_HEIGHT : 0);
 
   const terminalMenuSessions: ReadonlyArray<TerminalMenuSession> = buildTerminalMenuSessions({
     knownSessions: knownSessions ?? [],
@@ -787,6 +767,9 @@ function ThreadTerminal(props: {
       return;
     }
 
+    // Toolbar input bypasses the native field, so a syllable it holds must not be recomposed.
+    surfaceRef.current?.resetInput();
+
     if (action.kind === "clear") {
       handleClearTerminal();
       return;
@@ -879,10 +862,8 @@ function ThreadTerminal(props: {
                 ? themeVariables["--color-card-alt"]
                 : terminalTheme.background,
             // Measured top reservation is zero when UIKit already inset the body or moved the bar.
-            paddingTop:
-              Platform.OS === "ios" ? (nativeColumnMetrics?.safeArea.top ?? insets.top) : 0,
-            paddingBottom:
-              Platform.OS === "android" && !keyboardState.isVisible ? insets.bottom : 0,
+            paddingTop: contentTopInset,
+            paddingBottom: Platform.OS === "android" && !isKeyboardVisible ? insets.bottom : 0,
           }}
         >
           {!isEnvironmentReady ? (
@@ -986,7 +967,7 @@ function ThreadTerminal(props: {
                 />
               </View>
 
-              {Platform.OS === "android" && !keyboardState.isVisible ? (
+              {Platform.OS === "android" && !isKeyboardVisible ? (
                 <View className="min-h-14 flex-row items-center gap-2 bg-card-alt px-2">
                   {hasNativeTerminalSurface() ? (
                     <Button label={uiT("Attach output")} tone="text" onPress={requestCapture} />
@@ -1010,7 +991,7 @@ function ThreadTerminal(props: {
                   style={{
                     paddingBottom:
                       8 +
-                      (keyboardState.isVisible
+                      (isKeyboardVisible
                         ? 0
                         : (nativeColumnMetrics?.safeArea.bottom ?? insets.bottom)),
                   }}
@@ -1070,7 +1051,7 @@ function ThreadTerminal(props: {
                     </ComposerToolbarRow>
                   </View>
                 </KeyboardStickyView>
-              ) : canOperateTerminal && !keyboardState.isVisible && Platform.OS !== "android" ? (
+              ) : canOperateTerminal && !isKeyboardVisible && Platform.OS !== "android" ? (
                 <Pressable
                   accessibilityLabel={uiT("Show keyboard")}
                   accessibilityRole="button"

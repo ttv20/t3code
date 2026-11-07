@@ -215,7 +215,7 @@ function NoticeCard({
             {item.actions}
             {item.onDismiss ? (
               <ComposerBanner.Dismiss
-                aria-label={item.dismissLabel ?? uiT("Dismiss warning")}
+                aria-label={item.dismissLabel ? uiT(item.dismissLabel) : uiT("Dismiss warning")}
                 onClick={item.onDismiss}
               />
             ) : null}

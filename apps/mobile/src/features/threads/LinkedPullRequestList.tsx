@@ -1,9 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   pullRequestListLines,
   resolveThreadPullRequestChains,
@@ -12,17 +11,16 @@ import {
 } from "@t3tools/client-runtime/thread-pull-requests";
 import { memo, useMemo } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
+import { RelativeTime } from "../../components/RelativeTime";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
 import { Menu } from "../../components/ui/Menu";
 import { cn } from "../../lib/cn";
-import { RelativeTime } from "../../components/RelativeTime";
 import type { EnvironmentRuntimeState } from "../../state/remote-runtime-types";
-import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
-import type { LinkedPullRequestActions } from "./useLinkedPullRequestActions";
 import { pullRequestListReviewStatus } from "../pull-requests/pullRequestList";
 import {
   PullRequestAvatar,
@@ -34,6 +32,8 @@ import {
   pullRequestConflict,
   pullRequestStatus,
 } from "../pull-requests/pullRequestStatus";
+import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
+import type { LinkedPullRequestActions } from "./useLinkedPullRequestActions";
 
 export function useLinkedPullRequestLines(
   thread: EnvironmentThreadShell | null,
@@ -90,7 +90,7 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
   const row = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${uiT(capitalizeTerm(singular))} ${link.number}, ${snapshot?.title ?? "waiting for host state"}${status ? `, ${status.label}` : ""}${conflict ? `, ${conflict.label.toLowerCase()}` : ""}, ${link.repository}${stack ? `, stack of ${stack.size}` : ""}${watching ? ", watching" : ""}${checks ? `, checks ${snapshot?.checksState}` : ""}${review ? `, ${review.accessibleLabel}` : ""}`}
+      accessibilityLabel={`${uiT(capitalizeTerm(singular))} ${link.number}, ${snapshot?.title ?? uiT("waiting for host state")}${status ? `, ${status.label}` : ""}${conflict ? `, ${conflict.label.toLowerCase()}` : ""}, ${link.repository}${stack ? uiT(", stack of {0}", { "0": stack.size }) : ""}${watching ? uiT(", watching") : ""}${checks ? uiT(", checks {0}", { "0": snapshot?.checksState }) : ""}${review ? `, ${review.accessibleLabel}` : ""}`}
       accessibilityHint={props.actions ? uiT("Touch and hold for actions.") : undefined}
       onPress={() => {
         void props.openPullRequest(link.url).then((opened) => {

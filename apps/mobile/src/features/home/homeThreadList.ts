@@ -1,5 +1,5 @@
-import { buildProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
 import { translateUiText, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { buildProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,

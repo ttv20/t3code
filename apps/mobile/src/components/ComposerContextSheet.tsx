@@ -1,10 +1,5 @@
-import { UiText } from "../i18n";
-import { useUiLanguage } from "../i18n";
-import { Button } from "./ui/Button";
-import * as Dialog from "./ui/Dialog";
-import { useOpenPullRequest } from "../native/useOpenPullRequest";
-import { SourceFileSurface } from "../features/files/SourceFileSurface";
-import { filePreviewKind } from "@t3tools/shared/filePreview";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type {
   ComposerContextRecord,
   ElementContextSource,
@@ -12,26 +7,30 @@ import type {
   ProjectId,
   ScopedThreadRef,
 } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { filePreviewKind } from "@t3tools/shared/filePreview";
 import { videoMimeType } from "@t3tools/shared/video";
-import { Platform, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { REVIEW_MONO_FONT_FAMILY } from "../features/review/reviewDiffRendering";
+import { SourceFileSurface } from "../features/files/SourceFileSurface";
 import { ReviewCommentCard, useReviewCommentColors } from "../features/review/ReviewCommentCard";
+import { REVIEW_MONO_FONT_FAMILY } from "../features/review/reviewDiffRendering";
+import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
+import { getMobileTerminalTheme } from "../features/terminal/terminalTheme";
+import { UiText, useUiLanguage } from "../i18n";
 import {
   composerAttachmentInlineUri,
   isFileBackedComposerAttachment,
   type DraftComposerAttachment,
 } from "../lib/composerImages";
 import { contextImageGallery } from "../lib/contextImageGallery";
-import { FilePreviewModal } from "./FilePreviewModal";
-import { VideoPreviewModal } from "./VideoPreviewModal";
+import { useOpenPullRequest } from "../native/useOpenPullRequest";
 import { ComposerContextAttachment } from "./ComposerContextAttachment";
+import { FilePreviewModal } from "./FilePreviewModal";
 import { AppText as Text } from "./ui/AppText";
+import { Button } from "./ui/Button";
+import * as Dialog from "./ui/Dialog";
 import { Sheet } from "./ui/Sheet";
-import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
-import { getMobileTerminalTheme } from "../features/terminal/terminalTheme";
+import { VideoPreviewModal } from "./VideoPreviewModal";
 
 function ContextField(props: { label: string; value: string | null | undefined; code?: boolean }) {
   const { t: uiT } = useUiLanguage();
@@ -201,7 +200,7 @@ export function ComposerContextSheet(props: {
       <ScrollView
         nestedScrollEnabled
         className="flex-1"
-        contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 12,
@@ -260,7 +259,7 @@ export function ComposerContextSheet(props: {
               <>
                 {record.pullRequest ? (
                   <ContextField
-                    label={`#${record.pullRequest.number} · ${record.pullRequest.isDraft ? "draft" : record.pullRequest.state}`}
+                    label={`#${record.pullRequest.number} · ${record.pullRequest.isDraft ? uiT("draft") : record.pullRequest.state}`}
                     value={`${record.pullRequest.title}\n${record.pullRequest.headBranch} → ${record.pullRequest.baseBranch}`}
                   />
                 ) : null}

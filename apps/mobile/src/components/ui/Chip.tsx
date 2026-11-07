@@ -1,12 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import { GlassView } from "expo-glass-effect";
 import { Pressable, View } from "react-native";
 import { withUniwind } from "uniwind";
 
 import { cn } from "../../lib/cn";
 import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
-import { AppText } from "./AppText";
 import { SymbolView, type AppSymbolName } from "./AppSymbol";
+import { AppText } from "./AppText";
 
 const ChipGlass = withUniwind(GlassView, {
   style: { fromClassName: "className" },
@@ -25,8 +24,6 @@ export function Chip(props: {
   readonly accessibilityLabel?: string;
   readonly disabled?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const small = props.size === "small";
   const layout = cn(
     "flex-row items-center gap-1.5 rounded-2xl px-3",
@@ -48,7 +45,7 @@ export function Chip(props: {
           props.selected ? "text-primary-foreground" : "text-foreground-muted",
         )}
       >
-        {uiT(props.label)}
+        {props.label}
       </AppText>
       {props.trailingIcon ? (
         <SymbolView name={props.trailingIcon} size={11} tintColorClassName={iconColor} />

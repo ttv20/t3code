@@ -1,25 +1,23 @@
-import { useUiLanguage } from "../../i18n";
-import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import {
   BasicAlertDialog,
   Column,
   DateTimePicker,
-  Host,
   FilledTonalIconButton,
-  Row,
+  Host,
   RNHostView,
+  Row,
   Shape,
   Surface,
   Text,
   TextButton,
 } from "@expo/ui/jetpack-compose";
 import {
+  fillMaxWidth,
   padding,
   size,
-  width,
-  fillMaxWidth,
   testID,
   verticalScroll,
+  width,
 } from "@expo/ui/jetpack-compose/modifiers";
 import {
   localSnoozeDate,
@@ -30,6 +28,8 @@ import {
 import { requireNativeModule } from "expo";
 import { useEffect, useState } from "react";
 import { AppState, useWindowDimensions } from "react-native";
+import { SegmentedControl } from "../../components/ui/SegmentedControl";
+import { useUiLanguage } from "../../i18n";
 
 import { OverlayPortal } from "../../components/ui/OverlayPortal";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";

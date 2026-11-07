@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import type { MenuAction } from "@react-native-menu/menu";
 import { Pressable } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
-import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { Menu } from "../../components/ui/Menu";
+import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
 
 const ATTACHMENT_MENU_ACTIONS: MenuAction[] = [
   { id: "photos", title: "Photo Library", image: "photo" },

@@ -1,17 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { type EnvironmentMachineKind, resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { useMemo } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { ENVIRONMENT_MACHINE_SYMBOLS } from "../../components/EnvironmentMachineSymbol";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
+import { formatBytes } from "../../lib/formatBytes";
 import {
   clearClientCacheAtom,
   clientCacheSummaryAtom,
@@ -19,9 +21,8 @@ import {
 } from "../../state/client-cache-state";
 import { useServerConfigs } from "../../state/entities";
 import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
-import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
-import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
+import { SettingsSection } from "./components/SettingsSection";
 
 export function SettingsClientStorageRouteScreen() {
   const { t: uiT } = useUiLanguage();
@@ -50,9 +51,10 @@ export function SettingsClientStorageRouteScreen() {
       environment.environmentId;
     Dialog.confirm({
       title: uiT("Clear cache for {0}?", { "0": label }),
-      message:
+      message: uiT(
         "This removes offline threads, server metadata, and cached branches for this environment. The saved connection and credentials stay intact.",
-      confirmText: "Clear Cache",
+      ),
+      confirmText: uiT("Clear Cache"),
       destructive: true,
       onConfirm: () =>
         clearCache({ type: "environment", environmentId: environment.environmentId }),
@@ -62,9 +64,10 @@ export function SettingsClientStorageRouteScreen() {
   const confirmClearAll = () => {
     Dialog.confirm({
       title: uiT("Clear all client caches?"),
-      message:
+      message: uiT(
         "This removes offline data for every environment. Connections, credentials, account data, and app preferences stay intact.",
-      confirmText: "Clear All Caches",
+      ),
+      confirmText: uiT("Clear All Caches"),
       destructive: true,
       onConfirm: () => clearCache({ type: "all" }),
     });
@@ -194,10 +197,4 @@ function CacheEnvironmentRow(props: {
       />
     </View>
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
 }

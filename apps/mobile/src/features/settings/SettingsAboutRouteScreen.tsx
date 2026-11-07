@@ -1,14 +1,14 @@
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import Constants from "expo-constants";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import Constants from "expo-constants";
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { useDeadlinePassed } from "../../lib/clock";
 import {
   type AppUpdateCheckState,
@@ -17,8 +17,8 @@ import {
   runAppUpdateCheck,
 } from "../updates/app-updates";
 import { SettingsRow } from "./components/SettingsRow";
-import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
+import { SettingsSection } from "./components/SettingsSection";
 
 export function SettingsAboutRouteScreen() {
   const { t: uiT } = useUiLanguage();

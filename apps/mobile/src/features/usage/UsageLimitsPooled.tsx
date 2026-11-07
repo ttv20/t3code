@@ -1,12 +1,10 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { EnvironmentId } from "@t3tools/contracts";
 import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
+import { EnvironmentId } from "@t3tools/contracts";
 import {
-  collectLimitAccounts,
   collectExternalUsageLinks,
+  collectLimitAccounts,
   collectLimitNotices,
   collectLimitPools,
   cursorUsageWindowDetails,
@@ -17,17 +15,19 @@ import {
   type LimitAccount,
   type LimitPoolWindow,
 } from "@t3tools/shared/usageLimits";
-import { Fragment, type ReactNode, useId, useState } from "react";
+import { Fragment, useId, useState, type ReactNode } from "react";
 import { Linking, Pressable, View } from "react-native";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { Defs, Path, Pattern, Rect, Svg } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Defs, Path, Pattern, Rect, Svg } from "react-native-svg";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { UiText, useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
+import { ProviderIcon } from "../../components/ProviderIcon";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { ProviderIcon } from "../../components/ProviderIcon";
-import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { environmentPresentations } from "../../state/presentation";
+import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { ResetCredits } from "./UsageLimitsSection";
 import { usageProviderKind, useProviderColors } from "./usageProviders";
 
@@ -40,9 +40,11 @@ const DRIVER_LABEL: Partial<Record<string, string>> = {
 const PACE_LABEL = { ahead: "Ahead of pace", on: "On pace", under: "Under pace" } as const;
 
 function accountName(account: LimitAccount) {
+  const uiT = readUiTranslator();
+
   if (account.displayName) return account.displayName;
   if (!account.email) return DRIVER_LABEL[account.driver] ?? String(account.driver);
-  return emailInitials(account.email) || "Account";
+  return emailInitials(account.email) || uiT("Account");
 }
 
 function emailInitials(email: string) {
@@ -423,13 +425,11 @@ export function UsageLimitsSection({
   now,
   failedLabels,
   selectedEnvironmentIds,
-  cursorPrompt,
   wide = false,
 }: {
   readonly now: number;
   readonly failedLabels: readonly string[];
   readonly selectedEnvironmentIds: ReadonlySet<EnvironmentId> | null;
-  readonly cursorPrompt?: ReactNode;
   readonly wide?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -443,17 +443,11 @@ export function UsageLimitsSection({
   const notices = collectLimitNotices(selected);
   const externalLinks = collectExternalUsageLinks(selected);
   const colors = useProviderColors();
-  const cursorPromptAt =
-    Math.max(
-      pools.findIndex((pool) => pool.driver === "codex"),
-      pools.findIndex((pool) => pool.driver === "claudeAgent"),
-    ) + 1;
   return (
     <View className="gap-6">
       {pools.length === 0 &&
       notices.length === 0 &&
       failedLabels.length === 0 &&
-      !cursorPrompt &&
       externalLinks.length === 0 ? (
         <Text className="py-12 text-center text-base text-foreground-muted">
           {selected.size === 0
@@ -461,11 +455,10 @@ export function UsageLimitsSection({
             : uiT("No provider on the selected environments reports subscription limits.")}
         </Text>
       ) : null}
-      {pools.map((pool, index) => {
+      {pools.map((pool) => {
         const windows = displayLimitWindows(pool);
         return (
           <Fragment key={pool.driver}>
-            {index === cursorPromptAt ? cursorPrompt : null}
             <View className="gap-3">
               <View className="flex-row items-center gap-2 px-1">
                 <ProviderIcon provider={pool.driver} size={18} />
@@ -495,7 +488,6 @@ export function UsageLimitsSection({
           </Fragment>
         );
       })}
-      {cursorPromptAt === pools.length ? cursorPrompt : null}
       {externalLinks.map((link) => (
         <View key={link.url} className="gap-3 rounded-xl border border-border-subtle p-4">
           <Text className="text-base font-t3-medium text-foreground">{link.label}</Text>

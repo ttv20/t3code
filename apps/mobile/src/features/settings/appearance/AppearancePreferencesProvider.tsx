@@ -8,7 +8,7 @@ import {
 } from "../../../lib/androidNavigationStyle";
 
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { Atom, AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 
 import { ScopedTheme, ScopedVariables, Uniwind } from "uniwind";
 
@@ -17,16 +17,12 @@ import {
   resolveAppearancePreferences,
   type ResolvedAppearance,
 } from "../../../lib/appearancePreferences";
-import { appAtomRegistry } from "../../../state/atom-registry";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../../state/preferences";
-import type { Preferences } from "../../../persistence/mobile-preferences";
 import {
   isSystemColorsAvailable,
   readSystemColorPalettes,
   type MaterialYouPalettes,
 } from "../../../lib/materialYouPalette";
 import { materialYouPaletteToMobileThemeVariables } from "../../../lib/materialYouTheme";
-import { getMobileThemeRuntimeVariables } from "../../../lib/mobileThemeVariables";
 import type { MobileThemeVariables } from "../../../lib/mobileTheme";
 import {
   createMobileThemePairPatch,
@@ -43,6 +39,10 @@ import {
   getMobileUniwindThemeName,
   type MobileThemeRuntimeState,
 } from "../../../lib/mobileThemeRuntime";
+import { getMobileThemeRuntimeVariables } from "../../../lib/mobileThemeVariables";
+import type { Preferences } from "../../../persistence/mobile-preferences";
+import { appAtomRegistry } from "../../../state/atom-registry";
+import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../../state/preferences";
 
 interface AppearancePreferencesContextValue {
   readonly appearance: ResolvedAppearance;

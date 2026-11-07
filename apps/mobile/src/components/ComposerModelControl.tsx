@@ -1,14 +1,14 @@
-import { useUiLanguage } from "../i18n";
-import type { ModelSelection, ProviderDriverKind } from "@t3tools/contracts";
 import {
   buildTraitsTriggerDisplay,
   getPromptControlledTraits,
 } from "@t3tools/client-runtime/model-traits";
+import type { ModelSelection, ProviderDriverKind } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 import type { ModelOption } from "../lib/modelOptions";
 import { resolveProviderOptionDescriptors } from "../lib/providerOptions";
-import { AppText as Text } from "./ui/AppText";
 import { ComposerInlineControl } from "./ComposerToolbar";
 import { ProviderIcon, ProviderInstanceIcon } from "./ProviderIcon";
+import { AppText as Text } from "./ui/AppText";
 
 export function ComposerModelControl(props: {
   readonly modelOption: ModelOption | null;

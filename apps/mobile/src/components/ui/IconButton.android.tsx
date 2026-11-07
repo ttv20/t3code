@@ -1,17 +1,17 @@
-import { useUiLanguage } from "../../i18n";
-import type { IconButtonProps } from "./IconButton.types";
-import { NativeThemeHost } from "./NativeThemeHost.android";
 import {
+  IconButton as ComposeIconButton,
   FilledIconButton,
   FilledTonalIconButton,
-  IconButton as ComposeIconButton,
 } from "@expo/ui/jetpack-compose";
 import { size } from "@expo/ui/jetpack-compose/modifiers";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
+import type { IconButtonProps } from "./IconButton.types";
+import { NativeThemeHost } from "./NativeThemeHost.android";
 
-import { useControlTheme } from "./useControlTheme";
-import { useAndroidControlSizing } from "./useAndroidControlSizing";
 import { SymbolView } from "./AppSymbol";
+import { useAndroidControlSizing } from "./useAndroidControlSizing";
+import { useControlTheme } from "./useControlTheme";
 
 export function IconButton(props: IconButtonProps) {
   const { t: uiT } = useUiLanguage();

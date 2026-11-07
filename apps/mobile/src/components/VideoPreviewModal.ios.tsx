@@ -1,22 +1,22 @@
-import { useUiLanguage } from "../i18n";
-import * as Dialog from "./ui/Dialog";
-import { requireNativeModule } from "expo";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
+import { requireNativeModule } from "expo";
 import { useEffect, useEffectEvent, useId } from "react";
+import { useUiLanguage } from "../i18n";
+import * as Dialog from "./ui/Dialog";
 
-import { loadLocalAttachmentPreview } from "../lib/localAttachmentPreview";
-import { usePreviewPresentation, videoPreviewKey } from "../lib/previewPresentation";
-import { fullscreenVideoClosed, fullscreenVideoOpened } from "../lib/videoAudioSession";
-import { mediaVideoPreviewUri, type VideoPreviewSource } from "../lib/videoPreviewSource";
-import { refreshAssetUrl } from "../state/assets";
-import { usePreparedConnection } from "../state/session";
 import {
   acquireAudioSession,
   activateAudioSession,
   isAudioSessionOwner,
   releaseAudioSession,
 } from "../lib/audioSession";
+import { loadLocalAttachmentPreview } from "../lib/localAttachmentPreview";
+import { usePreviewPresentation, videoPreviewKey } from "../lib/previewPresentation";
+import { fullscreenVideoClosed, fullscreenVideoOpened } from "../lib/videoAudioSession";
+import { mediaVideoPreviewUri, type VideoPreviewSource } from "../lib/videoPreviewSource";
+import { refreshAssetUrl } from "../state/assets";
+import { usePreparedConnection } from "../state/session";
 
 export type { VideoPreviewSource } from "../lib/videoPreviewSource";
 
@@ -51,7 +51,7 @@ function NativeVideoPreview(props: {
   // Mints a fresh URL for each presentation: AVKit retains the URL and offers no retry,
   // so a cached link that expired while the app was suspended would fail to play.
   const resolvePlaybackUrl = useEffectEvent(async (): Promise<string> => {
-    if (source.type !== "media") throw new Error("Could not load this video.");
+    if (source.type !== "media") throw new Error(uiT("Could not load this video."));
     if (!("resource" in source)) return source.uri;
     const url = await refreshAssetUrl(source.environmentId, source.resource);
     const playbackUrl = mediaVideoPreviewUri(source, url);

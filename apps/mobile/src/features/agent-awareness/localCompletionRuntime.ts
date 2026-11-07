@@ -13,6 +13,7 @@ import { serverEnvironment } from "../../state/server";
 import { environmentShell } from "../../state/shell";
 import { environmentThreadShells } from "../../state/threads";
 import { readUiTranslator } from "../../state/ui-language";
+import { scheduleAndroidNotificationGrace } from "./androidNotifications";
 import {
   createLocalCompletionNotifications,
   localCompletionAllowed,
@@ -21,7 +22,6 @@ import {
   type LocalCompletionThread,
 } from "./localCompletionNotifications";
 import { hasAgentAwarenessPushRegistration } from "./remoteRegistration";
-import { scheduleAndroidNotificationGrace } from "./androidNotifications";
 
 export function installLocalCompletionNotifications(): () => void {
   if (Platform.OS !== "android") return () => undefined;

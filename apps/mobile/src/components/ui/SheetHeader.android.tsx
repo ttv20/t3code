@@ -1,7 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
-import { AndroidScreenHeader } from "./AndroidScreenHeader";
+import { NativeStackScreenOptions } from "../../native/StackHeader";
+import { AppBar } from "./AppBar";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import type { SheetCloseButtonProps, SheetHeaderProps } from "./SheetHeader.types";
@@ -23,8 +24,6 @@ export function SheetCloseButton(props: SheetCloseButtonProps) {
 }
 
 export function SheetHeader(props: SheetHeaderProps) {
-  const { t: uiT } = useUiLanguage();
-
   const confirmation = props.confirm;
   const trailing =
     props.trailing || confirmation ? (
@@ -43,19 +42,28 @@ export function SheetHeader(props: SheetHeaderProps) {
     ) : undefined;
 
   return (
-    <AndroidScreenHeader
-      embedded={props.presentation === "inline"}
-      title={props.title}
-      subtitle={props.subtitle}
-      leading={
-        <SheetCloseButton
-          {...(props.onCancel ? { onCancel: props.onCancel } : { onClose: props.onClose })}
-          accessibilityLabel={uiT(props.accessibilityLabel)}
-          disabled={props.dismissDisabled}
-        />
-      }
-      trailing={trailing}
-      hideBottomBorder
-    />
+    <>
+      {props.dismissDisabled === undefined ? null : (
+        // A sheet that can't be closed with its button can't be swiped away either.
+        <NativeStackScreenOptions options={{ gestureEnabled: !props.dismissDisabled }} />
+      )}
+      <AppBar
+        embedded
+        sheet={props.presentation === "inline"}
+        title={props.title}
+        subtitle={props.subtitle}
+        actions={props.actions}
+        menus={props.menus}
+        leading={
+          <SheetCloseButton
+            {...(props.onCancel ? { onCancel: props.onCancel } : { onClose: props.onClose })}
+            accessibilityLabel={props.accessibilityLabel}
+            disabled={props.dismissDisabled}
+          />
+        }
+        trailing={trailing}
+        hideBottomBorder
+      />
+    </>
   );
 }

@@ -556,6 +556,7 @@ export function useThreadActions() {
       deletedThreadId: threadRef.threadId,
       deletedThreadIds,
       sortOrder: sidebarThreadSortOrder,
+      now: new Date().toISOString(),
     });
     const deleteResult = await deleteThreadMutation({
       environmentId: threadRef.environmentId,
@@ -608,7 +609,7 @@ export function useThreadActions() {
       : AsyncResult.failure(
           Cause.fail(
             new EnvironmentAuthorizationError({
-              message: "This connection can no longer remove worktrees.",
+              message: uiT("This connection can no longer remove worktrees."),
               requiredScope: AuthSourceControlWriteScope,
             }),
           ),
@@ -640,8 +641,8 @@ export function useThreadActions() {
         stackedThreadToast({
           type: "error",
           title: removalFailed
-            ? "Failed to delete worktree"
-            : "Worktree deleted, but Git status refresh failed",
+            ? uiT("Failed to delete worktree")
+            : uiT("Worktree deleted, but Git status refresh failed"),
           description: removalFailed
             ? `Could not remove ${displayWorktreePath ?? orphanedWorktreePath}. ${message}`
             : message,
@@ -922,14 +923,14 @@ export function useThreadActions() {
       (result) => result._tag === "Success",
     );
 
-  const confirmAndDeleteThread = async (target: ScopedThreadRef) => {
+  const confirmAndDeleteThread = async (target: ScopedThreadRef, knownTitle?: string) => {
     const permissionFailure = threadOperationFailure(target);
     if (permissionFailure) return permissionFailure;
     const localApi = readLocalApi();
     const resolved = resolveThreadTarget(target);
 
     if (confirmThreadDelete && localApi) {
-      const title = resolved?.thread.title ?? "this thread";
+      const title = resolved?.thread.title ?? knownTitle ?? "this thread";
       const confirmationResult = await settlePromise(() =>
         localApi.dialogs.confirm(
           [

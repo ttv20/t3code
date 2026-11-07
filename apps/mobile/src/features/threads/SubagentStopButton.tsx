@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId, OrchestrationV2Subagent } from "@t3tools/contracts";
 import { useState } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import * as Dialog from "../../components/ui/Dialog";
 import { IconButton } from "../../components/ui/IconButton";
@@ -41,7 +41,7 @@ export function SubagentStopButton(props: {
         : interruptTurn({ environmentId: props.environmentId, input: target.input })
     ).finally(() => setStopping(false));
     if (result._tag === "Failure") {
-      Dialog.alert(workflow ? "Could not stop workflow" : "Could not stop agent");
+      Dialog.alert(workflow ? uiT("Could not stop workflow") : uiT("Could not stop agent"));
     }
   };
 
@@ -50,12 +50,14 @@ export function SubagentStopButton(props: {
       <IconButton
         icon="stop.fill"
         variant="danger"
-        accessibilityLabel={`${stopping ? "Stopping" : "Stop"} ${workflow ? "workflow" : "agent"} ${label}`}
+        accessibilityLabel={`${stopping ? uiT("Stopping") : uiT("Stop")} ${workflow ? uiT("workflow") : uiT("agent")} ${label}`}
         disabled={stopping}
         onPress={() =>
           Dialog.confirm({
             title: workflow ? uiT("Stop workflow?") : uiT("Stop agent?"),
-            message: workflow ? `Every running agent in ${label} stops.` : `Stop ${label}?`,
+            message: workflow
+              ? uiT("Every running agent in {0} stops.", { "0": label })
+              : uiT("Stop {0}?", { "0": label }),
             confirmText: uiT("Stop"),
             destructive: true,
             onConfirm: () => void stop(),

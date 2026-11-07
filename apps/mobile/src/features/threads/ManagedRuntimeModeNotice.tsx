@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   clampManagedRuntimeMode,
   managedRuntimeModeDenial,
@@ -6,6 +5,7 @@ import {
   type RuntimeMode,
 } from "@t3tools/contracts";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";

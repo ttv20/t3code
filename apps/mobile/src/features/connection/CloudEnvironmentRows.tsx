@@ -1,12 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { ConnectionTraceId } from "./ConnectionTraceId";
 import { useAuth } from "@clerk/expo";
-import { SymbolView } from "../../components/ui/AppSymbol";
+import { useAtomValue } from "@effect/atom-react";
 import {
-  hasSavedBearerRoute,
   type EnvironmentConnectionPhase,
+  hasSavedBearerRoute,
 } from "@t3tools/client-runtime/connection";
 import {
   type EnvironmentId,
@@ -14,22 +10,26 @@ import {
   type ExecutionEnvironmentDescriptor,
   resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
 import { useState } from "react";
 import { Pressable, type TextLayoutEvent, View } from "react-native";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
+import { ConnectionTraceId } from "./ConnectionTraceId";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
 import { cn } from "../../lib/cn";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
+import { environmentPresentations } from "../../state/presentation";
 import type { ConnectedEnvironmentSummary } from "../../state/remote-runtime-types";
 import { serverEnvironment } from "../../state/server";
-import { environmentPresentations } from "../../state/presentation";
 import { availableCloudEnvironmentPresentation } from "../cloud/cloudEnvironmentPresentation";
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
-import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { useConnectionDiagnosis } from "./ConnectionDiagnosisDetails";
+import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { environmentStatusText } from "./environmentStatusText";
 import { type RelayEnvironmentView, useConnectionController } from "./useConnectionController";
 

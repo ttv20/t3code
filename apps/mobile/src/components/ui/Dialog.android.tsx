@@ -1,23 +1,24 @@
-import { useUiLanguage } from "../../i18n";
-import { NativeThemeHost } from "./NativeThemeHost.android";
 import {
   AlertDialog,
   Button,
-  OutlinedButton,
-  Icon,
-  FlowRow,
   Column,
+  FlowRow,
+  Icon,
+  OutlinedButton,
   OutlinedTextField,
   Text,
   useNativeState,
 } from "@expo/ui/jetpack-compose";
+import { verticalScroll } from "@expo/ui/jetpack-compose/modifiers";
+import { useUiLanguage } from "../../i18n";
+import { NativeThemeHost } from "./NativeThemeHost.android";
 
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
 import { useScaledTextRole } from "../../features/settings/appearance/useScaledTextRole";
 
 import { useSyncExternalStore } from "react";
-import { themeColorWithContrast } from "../../lib/mobileTheme";
 import type { Alert, AlertButton } from "react-native";
+import { themeColorWithContrast } from "../../lib/mobileTheme";
 import type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";
 
 export type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";
@@ -254,7 +255,9 @@ function DialogPresentation(props: DialogPresentationProps) {
           </AlertDialog.Text>
         ) : props.request.message ? (
           <AlertDialog.Text>
-            <Text style={bodyTypography}>{uiT(props.request.message)}</Text>
+            <Text modifiers={[verticalScroll()]} style={bodyTypography}>
+              {uiT(props.request.message)}
+            </Text>
           </AlertDialog.Text>
         ) : null}
         {actions.length > 1 ? (

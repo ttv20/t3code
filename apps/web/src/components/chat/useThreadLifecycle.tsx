@@ -99,6 +99,8 @@ interface ThreadLifecycleInput {
   readonly threadDetailRef: ScopedThreadRef | null;
   readonly activeThreadKey: string | null;
   readonly activeThreadShell: EnvironmentThreadShell | null;
+  /** The usage-limit recovery banner shows this snooze and its Wake now. */
+  readonly limitRecoveryHoldsSnooze: boolean;
   readonly activeLatestRun: EnvironmentThreadShell["latestRun"];
   readonly activeProjectCwd: string | null;
   readonly serverConfig: EnvironmentServerConfig | null;
@@ -153,6 +155,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     activeThreadKey,
     activeThreadShell,
     activeLatestRun,
+    limitRecoveryHoldsSnooze,
     activeProjectCwd,
     serverConfig,
     runtimeMode,
@@ -616,18 +619,16 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
     ? snoozeWakeLabel(snoozedUntil, { now: `${nowMinute}:00.000Z` })
     : null;
   const threadStatusLine = activeThreadSnoozed ? (
-    <ThreadStatusLine
-      icon={<AlarmClockIcon />}
-      label={
-        snoozeWake && snoozeWake !== "now"
-          ? uiT("Snoozed, {0} left", { "0": snoozeWake })
-          : uiT("Snoozed")
-      }
-      clockMinute={nowMinute}
-      actionLabel={isUnsnoozing ? uiT("Waking...") : uiT("Wake now")}
-      actionDisabled={!canOperateThread || isUnsnoozing}
-      onAction={() => void handleUnsnoozeActiveThreadStable()}
-    />
+    limitRecoveryHoldsSnooze ? null : (
+      <ThreadStatusLine
+        icon={<AlarmClockIcon />}
+        label={snoozeWake && snoozeWake !== "now" ? `Snoozed, ${snoozeWake} left` : uiT("Snoozed")}
+        clockMinute={nowMinute}
+        actionLabel={isUnsnoozing ? "Waking..." : uiT("Wake now")}
+        actionDisabled={!canOperateThread || isUnsnoozing}
+        onAction={() => void handleUnsnoozeActiveThreadStable()}
+      />
+    )
   ) : activeThreadSettled ? (
     <ThreadStatusLine
       icon={<CheckCircle2Icon />}
@@ -637,7 +638,7 @@ export function useThreadLifecycle(input: ThreadLifecycleInput) {
           : uiT("Settled")
       }
       clockMinute={nowMinute}
-      actionLabel={isUnsettling ? uiT("Un-settling...") : uiT("Un-settle")}
+      actionLabel={isUnsettling ? "Un-settling..." : uiT("Un-settle")}
       actionDisabled={!canOperateThread || isUnsettling}
       onAction={() => void handleUnsettleActiveThreadStable()}
     />

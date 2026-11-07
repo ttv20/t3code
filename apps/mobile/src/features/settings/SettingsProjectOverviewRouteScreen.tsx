@@ -1,57 +1,55 @@
-import { useUiLanguage } from "../../i18n";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { AppText as Text, AppTextInput } from "../../components/ui/AppText";
-import { Button } from "../../components/ui/Button";
-import { ProjectFavicon } from "../../components/ProjectFavicon";
-import * as Dialog from "../../components/ui/Dialog";
-import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { useNavigation } from "@react-navigation/native";
+import {
+  deriveProjectGroupLabel,
+  type ProjectGroup,
+} from "@t3tools/client-runtime/state/project-grouping";
 import { planProjectRemoval } from "@t3tools/client-runtime/state/projects";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  deriveProjectGroupLabel,
-  type ProjectGroup,
-} from "@t3tools/client-runtime/state/project-grouping";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import { useNavigation } from "@react-navigation/native";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import { useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ProjectFavicon } from "../../components/ProjectFavicon";
+import { AppTextInput, AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 
-import { projectEnvironment } from "../../state/projects";
-import { useThreadShells } from "../../state/entities";
+import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { appAtomRegistry } from "../../state/atom-registry";
-import {
-  clearComposerDraft,
-  composerDraftsAtom,
-  findNewTaskDraftKeys,
-  waitForComposerDraftsLoaded,
-} from "../../state/use-composer-drafts";
+import { useThreadShells } from "../../state/entities";
+import { readUnloadedThreadCount } from "../../state/olderSettledShelf";
+import { projectEnvironment } from "../../state/projects";
 import {
   readEnvironmentScope,
   useEnvironmentScope,
   useEnvironmentsWithScope,
 } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
+import {
+  clearComposerDraft,
+  composerDraftsAtom,
+  findNewTaskDraftKeys,
+  waitForComposerDraftsLoaded,
+} from "../../state/use-composer-drafts";
+import { workspaceHasColumns } from "../layout/workspace/workspace-selection-store";
+import { DEFAULT_SETTINGS_PAGE } from "../layout/workspace/workspace-tab-navigation";
+import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
-import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
-import {
-  AndroidSettingsEnvironmentFilter,
-  SettingsEnvironmentFilterHeader,
-} from "./components/SettingsEnvironmentFilterHeader";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 import { leaveSettingsPage } from "./settings-navigation";
-import { workspaceHasColumns } from "../workspace/workspace-selection-store";
-import { DEFAULT_SETTINGS_PAGE } from "../workspace/workspace-tab-navigation";
-import { readUnloadedThreadCount } from "../../state/olderSettledShelf";
 
 export function SettingsProjectOverviewRouteScreen() {
   const { t: uiT } = useUiLanguage();
 
+  const environmentMenu = useSettingsEnvironmentMenu();
   const insets = useSafeAreaInsets();
   const [isRemoving, setIsRemoving] = useState(false);
   const removalPending = useRef(false);
@@ -89,47 +87,44 @@ export function SettingsProjectOverviewRouteScreen() {
       .filter((project) => selectedEnvironmentIds.has(project.environmentId)) ?? [];
 
   return (
-    <>
-      <SettingsEnvironmentFilterHeader />
-      <SettingsScreen title={uiT("Projects")} trailing={<AndroidSettingsEnvironmentFilter />}>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-          className="flex-1"
-          contentContainerClassName="gap-6 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
-        >
-          {selectedProjectKey === null ? (
-            <Text className="px-2 text-base text-foreground-muted">
-              {uiT(
-                "Choose a project with the filter above to manage its name, checkouts and removal.",
-              )}
-            </Text>
-          ) : !group || members.length === 0 ? (
-            <Text className="px-2 text-base text-foreground-muted">
-              {uiT(
-                "This project has no checkout on the selected connected environments. Change the filter above.",
-              )}
-            </Text>
-          ) : (
-            <ProjectOverviewContent
-              key={`${selectedProjectKey}:${members.map((member) => member.id).join(",")}`}
-              members={members}
-              group={group}
-              connectedTargets={availableTargets}
-              environments={selectedTargets}
-              hasOtherMembers={members.length < (group?.members.length ?? 0)}
-              isRemoving={isRemoving}
-              setIsRemoving={setIsRemoving}
-              startRemoval={startRemoval}
-              finishRemoval={finishRemoval}
-              projectKey={selectedProjectKey}
-              onProjectRemoved={finishProjectRemoval}
-            />
-          )}
-        </ScrollView>
-      </SettingsScreen>
-    </>
+    <SettingsScreen title={uiT("Projects")} menus={[environmentMenu]}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        className="flex-1"
+        contentContainerClassName="gap-6 px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
+      >
+        {selectedProjectKey === null ? (
+          <Text className="px-2 text-base text-foreground-muted">
+            {uiT(
+              "Choose a project with the filter above to manage its name, checkouts and removal.",
+            )}
+          </Text>
+        ) : !group || members.length === 0 ? (
+          <Text className="px-2 text-base text-foreground-muted">
+            {uiT(
+              "This project has no checkout on the selected connected environments. Change the filter above.",
+            )}
+          </Text>
+        ) : (
+          <ProjectOverviewContent
+            key={`${selectedProjectKey}:${members.map((member) => member.id).join(",")}`}
+            members={members}
+            group={group}
+            connectedTargets={availableTargets}
+            environments={selectedTargets}
+            hasOtherMembers={members.length < (group?.members.length ?? 0)}
+            isRemoving={isRemoving}
+            setIsRemoving={setIsRemoving}
+            startRemoval={startRemoval}
+            finishRemoval={finishRemoval}
+            projectKey={selectedProjectKey}
+            onProjectRemoved={finishProjectRemoval}
+          />
+        )}
+      </ScrollView>
+    </SettingsScreen>
   );
 }
 
@@ -191,7 +186,10 @@ function ProjectOverviewContent(props: {
     setIsOrganizing(true);
     for (const member of allMembers) {
       if (!readEnvironmentScope(member.environmentId, AuthOrchestrationOperateScope)) {
-        Dialog.alert("Failed to update project", "This connection can no longer change it.");
+        Dialog.alert(
+          uiT("Failed to update project"),
+          uiT("This connection can no longer change it."),
+        );
         break;
       }
       const result = await organizeProject({
@@ -202,8 +200,8 @@ function ProjectOverviewContent(props: {
         if (!isAtomCommandInterrupted(result)) {
           const error = squashAtomCommandFailure(result);
           Dialog.alert(
-            `Failed to update "${member.title}"`,
-            error instanceof Error ? error.message : "An error occurred.",
+            uiT('Failed to update "{0}"', { "0": member.title }),
+            error instanceof Error ? error.message : uiT("An error occurred."),
           );
         }
         break;
@@ -368,8 +366,8 @@ function ProjectOverviewContent(props: {
             label={uiT("Pin")}
             subtitle={
               offline
-                ? "Connect every machine with this project to change this."
-                : "Pinned projects come first in project pickers."
+                ? uiT("Connect every machine with this project to change this.")
+                : uiT("Pinned projects come first in project pickers.")
             }
             value={props.group.pinned}
             disabled={isOrganizing || offline}
@@ -377,11 +375,11 @@ function ProjectOverviewContent(props: {
           />
           <SettingsActionRow
             icon="archivebox"
-            label={props.group.archived ? "Unarchive project" : "Archive project"}
+            label={props.group.archived ? uiT("Unarchive project") : uiT("Archive project")}
             description={
               props.group.archived
-                ? "Hidden from project pickers. Threads and files are kept."
-                : "Hides the project from project pickers. Threads and files are kept."
+                ? uiT("Hidden from project pickers. Threads and files are kept.")
+                : uiT("Hides the project from project pickers. Threads and files are kept.")
             }
             disabled={isOrganizing || offline}
             onPress={() => void organize({ archived: !props.group.archived })}

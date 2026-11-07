@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText } from "./AppText";
 import { IconButton } from "./IconButton";

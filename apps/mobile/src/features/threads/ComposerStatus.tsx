@@ -14,8 +14,8 @@ import type { EnvironmentId, ServerProvider, ThreadId } from "@t3tools/contracts
 import { useMemo } from "react";
 import { Pressable, View } from "react-native";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { environmentThreadDetails } from "../../state/threads";

@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { Button, HStack, Picker, Popover, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
   accessibilityLabel,
@@ -16,10 +15,11 @@ import {
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { NativeThemeHost } from "./NativeThemeHost";
-import { useControlTheme } from "./useControlTheme";
 import type { NumberFieldProps } from "./NumberField.types";
+import { useControlTheme } from "./useControlTheme";
 
 export function NumberField(props: NumberFieldProps) {
   const { t: uiT } = useUiLanguage();

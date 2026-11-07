@@ -1,17 +1,17 @@
-import { useUiLanguage } from "../../i18n";
+import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
+import { AnimatedLegendList } from "@legendapp/list/reanimated";
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+  type StaticScreenProps,
+} from "@react-navigation/native";
+import { type NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   getPromptControlledTraits,
   getTraitSelectChange,
 } from "@t3tools/client-runtime/model-traits";
-import { SheetHeader } from "../../components/ui/SheetHeader";
-import { Toolbar } from "../../components/ui/Toolbar";
-import * as Dialog from "../../components/ui/Dialog";
-import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
-import {
-  modelPreferencesMigrationPatch,
-  resolveModelPreferences,
-} from "@t3tools/shared/serverSettings";
 import type {
   EnvironmentId,
   ModelSelection,
@@ -23,23 +23,18 @@ import type {
   ServerSettings,
   ThreadId,
 } from "@t3tools/contracts";
-import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { RegistryContext, useAtomValue } from "@effect/atom-react";
-import { AnimatedLegendList } from "@legendapp/list/reanimated";
+import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
 import {
   getProviderOptionCurrentLabel,
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
 } from "@t3tools/shared/model";
 import {
-  useNavigation,
-  useRoute,
-  type RouteProp,
-  type StaticScreenProps,
-} from "@react-navigation/native";
-import { type NativeStackNavigationProp } from "@react-navigation/native-stack";
-import * as Haptics from "expo-haptics";
+  modelPreferencesMigrationPatch,
+  resolveModelPreferences,
+} from "@t3tools/shared/serverSettings";
 import { AsyncResult } from "effect/reactivity";
+import * as Haptics from "expo-haptics";
 import {
   createContext,
   use,
@@ -49,7 +44,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from "react-native";
+import { Platform, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -57,69 +52,67 @@ import Animated, {
   useReducedMotion,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
+import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
+import { useSheetStackOptions } from "../layout/nested-stacks";
 
+import { formatProviderUpdateRequiredNotice } from "@t3tools/client-runtime/providerUpdateRequiredModels";
+import { ProviderIcon } from "../../components/ProviderIcon";
+import type { AppBarSearch } from "../../components/ui/AppBar";
+import { AppBar } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { AndroidScreenHeader } from "../../components/ui/AndroidScreenHeader";
-import { AndroidAnchoredMenu } from "../../components/ui/AndroidAnchoredMenu";
-import { IconButton } from "../../components/ui/IconButton";
-import { ProviderIcon } from "../../components/ProviderIcon";
+import { ScreenContent } from "../../components/ui/ScreenContent";
 import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
-import { cn } from "../../lib/cn";
+import { useSearchToolbarInset } from "../../components/ui/useBarInset";
+import { environmentCatalog } from "../../connection/catalog";
 import { useReduceMotionEnabled } from "../../lib/appState";
+import { cn } from "../../lib/cn";
 import {
   buildModelOptions,
   groupByProvider,
   type ModelOption,
   type ProviderGroup,
 } from "../../lib/modelOptions";
-import { applyProviderOptionSelection } from "../../lib/providerOptions";
-import { resolveProviderOptionDescriptors } from "../../lib/providerOptions";
-import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import {
-  rememberModelOptions,
-  withRememberedModelOptions,
-} from "../../state/use-model-option-memory";
-import { NativeStackScreenOptions, nativeHeaderScrollEdgeEffects } from "../../native/StackHeader";
-import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
-import { ChatGptSharingStatus } from "./ChatGptSharingStatus";
-import { environmentCatalog } from "../../connection/catalog";
-import { useEnvironmentQuery } from "../../state/query";
+  applyProviderOptionSelection,
+  resolveProviderOptionDescriptors,
+} from "../../lib/providerOptions";
 import { scopedThreadKey } from "../../lib/scopedEntities";
 import { useThreadReportedModelSelection } from "../../state/entities";
+import { mobilePreferencesAtom } from "../../state/preferences";
+import { useEnvironmentQuery } from "../../state/query";
+import { activeComposerDraftKey, useQueuedRunEdit } from "../../state/queued-run-edit";
+import { environmentServerConfigsAtom, serverEnvironment } from "../../state/server";
+import { threadAllowsProviderSwitch } from "../../state/thread-provider-switching";
+import { useAtomCommand } from "../../state/use-atom-command";
 import {
   setComposerDraftText,
   updateComposerDraftSettings,
   useComposerDraft,
   useComposerDraftSettings,
 } from "../../state/use-composer-drafts";
-import { useQuietThreadStructure } from "../../state/use-thread-detail";
-import { activeComposerDraftKey, useQueuedRunEdit } from "../../state/queued-run-edit";
+import {
+  rememberModelOptions,
+  withRememberedModelOptions,
+} from "../../state/use-model-option-memory";
 import { updateThreadDraftModelSelection } from "../../state/use-thread-composer-state";
+import { useQuietThreadStructure } from "../../state/use-thread-detail";
 import { useThreadSelection } from "../../state/use-thread-selection";
-import { threadAllowsProviderSwitch } from "../../state/thread-provider-switching";
-import { environmentServerConfigsAtom, serverEnvironment } from "../../state/server";
-import { mobilePreferencesAtom } from "../../state/preferences";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { ChatGptSharingStatus } from "./ChatGptSharingStatus";
+import { ChoiceRow, ModelRow } from "./ThreadSettingsRows";
 import { useNewTaskFlow } from "./new-task-flow-provider";
-import { ScreenContent } from "../../components/ui/ScreenContent";
 import {
   createProviderCatalogRefreshRunner,
   providerCatalogRefreshError,
 } from "./provider-catalog-refresh";
 import {
-  createNativeMailSearchToolbarItem,
-  NATIVE_MAIL_SEARCH_TOOLBAR_CONTENT_INSET,
-} from "../layout/native-mail-search-toolbar";
-import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
-import { useNativeMailSearchToolbar } from "../../native/use-native-mail-search-toolbar";
-import { ModelRow, ChoiceRow } from "./ThreadSettingsRows";
-import {
   compatibleRuntimeModeForChoices,
   runtimeModeChoicesForSupportedModes,
+  selectableChoices,
   withManagedRuntimeModeLimits,
   type RuntimeModeChoice,
-  selectableChoices,
 } from "./thread-settings-options";
 import {
   canCommitPendingModel,
@@ -129,7 +122,6 @@ import {
   pendingModelAfterPress,
   providerSectionIsCollapsed,
 } from "./thread-settings-sheet-state";
-import { formatProviderUpdateRequiredNotice } from "@t3tools/client-runtime/providerUpdateRequiredModels";
 
 const PRIMARY_PROVIDER_DRIVERS: ReadonlySet<string> = new Set([
   "claudeAgent",
@@ -147,10 +139,6 @@ const THREAD_SETTINGS_CATALOG_EXIT_TRANSITION = FadeOut.duration(120);
 const THREAD_SETTINGS_OPTIONS_LAYOUT_TRANSITION = LinearTransition.duration(180);
 const THREAD_SETTINGS_OPTION_ENTER_TRANSITION = FadeIn.duration(140);
 const THREAD_SETTINGS_OPTION_EXIT_TRANSITION = FadeOut.duration(100);
-const THREAD_SETTINGS_HEADER_SCROLL_EDGE_EFFECTS = nativeHeaderScrollEdgeEffects(
-  Platform.OS,
-  Platform.Version,
-);
 const EMPTY_MODEL_FAVORITES: ReadonlyArray<{
   readonly provider: ProviderInstanceId;
   readonly model: string;
@@ -838,6 +826,7 @@ function buildThreadSettingsCatalogItems(
 
 function ThreadSettingsOptionsItem(props: {
   readonly animationsReady: boolean;
+  readonly bottomInset: number;
   readonly onOpenSubmenu: (submenu: ThreadSettingsSubmenuPage) => void;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -850,11 +839,9 @@ function ThreadSettingsOptionsItem(props: {
         .get(session.environmentId)
         ?.providers.find((provider) => provider.instanceId === session.providerInstanceId) ?? null)
     : null;
-  // Both iOS search layouts float a bottom toolbar over the list's last rows.
-  const bottomToolbarInset = Platform.OS === "ios" ? NATIVE_MAIL_SEARCH_TOOLBAR_CONTENT_INSET : 0;
 
   return (
-    <View style={{ paddingBottom: insets.bottom + bottomToolbarInset + 12 }}>
+    <View style={{ paddingBottom: insets.bottom + props.bottomInset + 12 }}>
       <ChatGptSharingStatus provider={selectedProvider} />
       <Text className="px-5 pb-2 pt-2 text-sm font-t3-medium text-foreground-muted">
         {uiT("Options")}
@@ -927,22 +914,15 @@ function ThreadSettingsOptionsItem(props: {
           label={uiT("Manage hidden models")}
           value={session.manageHidden}
           onValueChange={session.setManageHidden}
-          isLast={Platform.OS === "ios" || !session.hasLegacyModels}
+          isLast
         />
-        {Platform.OS !== "ios" && session.hasLegacyModels ? (
-          <SwitchRow
-            isLast
-            label={uiT("Legacy models")}
-            onValueChange={session.setShowLegacy}
-            value={session.showLegacy}
-          />
-        ) : null}
       </View>
     </View>
   );
 }
 
 function ThreadSettingsMainContent(props: {
+  readonly bottomInset: number;
   readonly onOpenSubmenu: (submenu: ThreadSettingsSubmenuPage) => void;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -1007,6 +987,7 @@ function ThreadSettingsMainContent(props: {
       content = (
         <ThreadSettingsOptionsItem
           animationsReady={animationsReady}
+          bottomInset={props.bottomInset}
           onOpenSubmenu={props.onOpenSubmenu}
         />
       );
@@ -1045,47 +1026,6 @@ function ThreadSettingsMainContent(props: {
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       maintainVisibleContentPosition={THREAD_SETTINGS_MAINTAIN_VISIBLE_CONTENT_POSITION}
-      ListHeaderComponent={
-        <>
-          {Platform.OS === "android" ? (
-            <View className="px-4 pb-2 pt-3">
-              <View
-                className="flex-row items-center rounded-full bg-input px-2"
-                style={{ minHeight: 56 }}
-              >
-                <View pointerEvents="none" className="px-2">
-                  <SymbolView
-                    name="magnifyingglass"
-                    size={24}
-                    tintColorClassName="accent-icon-subtle"
-                  />
-                </View>
-                <TextInput
-                  accessibilityLabel={uiT("Find a model")}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  className="min-w-0 flex-1 px-2 py-0 text-base text-foreground"
-                  style={{ minHeight: 56, includeFontPadding: false, textAlignVertical: "center" }}
-                  onChangeText={session.setSearchQuery}
-                  placeholder={uiT("Find a model")}
-                  placeholderTextColorClassName="accent-placeholder"
-                  selectionColorClassName="accent-focus/32"
-                  cursorColorClassName="accent-focus"
-                  selectionHandleColorClassName="accent-focus"
-                  value={session.searchQuery}
-                />
-                {session.searchQuery.length > 0 ? (
-                  <IconButton
-                    accessibilityLabel={uiT("Clear model search")}
-                    icon="xmark"
-                    onPress={() => session.setSearchQuery("")}
-                  />
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-        </>
-      }
       recycleItems
       refreshControl={
         session.environmentId ? (
@@ -1230,24 +1170,26 @@ function useThreadSettingsPickerPresentation() {
   return value;
 }
 
-// With a Duo vertical bar, filter and search join cancel and confirm in the rail.
-function useThreadSettingsMailSearchToolbar() {
-  const metrics = useNativeLayoutMetrics();
-  return useNativeMailSearchToolbar() && (metrics?.verticalBarEdge ?? "none") === "none";
-}
-
 function ThreadSettingsModelsScreen() {
   const { t: uiT } = useUiLanguage();
 
   const session = useThreadSettingsSession();
   const presentation = useThreadSettingsPickerPresentation();
   const navigation = useNavigation<NativeStackNavigationProp<ThreadSettingsPickerStackParams>>();
-  const usesNativeMailSearchToolbar = useThreadSettingsMailSearchToolbar();
   const hasCustomCatalogFilter = session.providerFilter !== null || session.showLegacy;
   const commitAndClose = useEffectEvent(() => {
     if (!session.commitPendingModel()) return;
     presentation.onClose();
   });
+  const search: AppBarSearch = {
+    value: session.searchQuery,
+    onChangeText: session.setSearchQuery,
+    placeholder: uiT("Find a model"),
+    clearAccessibilityLabel: uiT("Clear model search"),
+    mode: "inline",
+    compactToolbar: true,
+  };
+  const searchToolbarInset = useSearchToolbarInset(search);
   const providerFilters = [
     { id: "all-providers", title: uiT("All providers"), value: null },
     { id: "favorites", title: uiT("Favorites"), value: FAVORITES_PROVIDER_FILTER },
@@ -1257,126 +1199,59 @@ function ThreadSettingsModelsScreen() {
       value: group.providerKey,
     })),
   ];
-  const filterMenu = {
-    title: uiT("Model filters"),
-    items: [
-      {
-        type: "submenu" as const,
-        title: uiT("Provider"),
-        items: providerFilters.map((filter) => ({
-          type: "action" as const,
-          title: filter.title,
-          state: session.providerFilter === filter.value ? ("on" as const) : ("off" as const),
-          onPress: () => session.setProviderFilter(filter.value),
-        })),
-      },
-      ...(session.hasLegacyModels
-        ? [
-            {
-              type: "action" as const,
-              title: uiT("Show legacy models"),
-              state: session.showLegacy ? ("on" as const) : ("off" as const),
-              onPress: () => session.setShowLegacy(!session.showLegacy),
-            },
-          ]
-        : []),
-    ],
-  };
 
   return (
     <>
-      {Platform.OS === "android" ? (
-        <SheetHeader
-          trailing={
-            <View className="flex-row items-center">
-              <AndroidAnchoredMenu
-                title={uiT("Model filters")}
-                actions={[
-                  {
-                    title: uiT("Provider"),
-                    subactions: providerFilters.map((filter) => ({
-                      id: filter.id,
-                      title: filter.title,
-                      state: session.providerFilter === filter.value ? "on" : "off",
-                    })),
-                  },
-                  ...(session.hasLegacyModels
-                    ? [
-                        {
-                          id: "show-legacy",
-                          title: uiT("Show legacy models"),
-                          state: session.showLegacy ? ("on" as const) : ("off" as const),
-                        },
-                      ]
-                    : []),
-                ]}
-                onPressAction={({ nativeEvent }) => {
-                  if (nativeEvent.event === "show-legacy") {
-                    session.setShowLegacy(!session.showLegacy);
-                  } else {
-                    const filter = providerFilters.find((item) => item.id === nativeEvent.event);
-                    if (filter) session.setProviderFilter(filter.value);
-                  }
-                }}
-              >
-                {(open) => (
-                  <IconButton
-                    accessibilityLabel={uiT("Filter models")}
-                    icon="line.3.horizontal.decrease"
-                    selected={hasCustomCatalogFilter}
-                    variant={hasCustomCatalogFilter ? "tonal" : "standard"}
-                    onPress={open}
-                  />
-                )}
-              </AndroidAnchoredMenu>
-            </View>
-          }
-          onCancel={presentation.onClose}
-          title={uiT("Thread settings")}
-          confirm={
-            session.pendingModel ? { label: uiT("Save"), onPress: commitAndClose } : undefined
-          }
-        />
-      ) : null}
-      <NativeStackScreenOptions
+      <AppBar
+        title={uiT("Thread settings")}
+        onClose={presentation.onClose}
+        closeAccessibilityLabel={uiT("Cancel thread settings")}
+        search={search}
+        menus={[
+          {
+            title: uiT("Model filters"),
+            icon: hasCustomCatalogFilter
+              ? "line.3.horizontal.decrease.circle.fill"
+              : "line.3.horizontal.decrease",
+            items: [
+              {
+                id: "provider",
+                title: uiT("Provider"),
+                items: providerFilters.map((filter) => ({
+                  id: filter.id,
+                  title: filter.title,
+                  selected: session.providerFilter === filter.value,
+                  onPress: () => session.setProviderFilter(filter.value),
+                })),
+              },
+              ...(session.hasLegacyModels
+                ? [
+                    {
+                      id: "show-legacy",
+                      title: uiT("Show legacy models"),
+                      selected: session.showLegacy,
+                      onPress: () => session.setShowLegacy(!session.showLegacy),
+                    },
+                  ]
+                : []),
+            ],
+          },
+        ]}
         optionsVersion={[
           session.providerFilter,
           session.providerGroups.map((group) => group.providerKey),
           session.showLegacy,
+          session.hasLegacyModels,
         ]}
-        options={{
-          unstable_headerToolbarItems: usesNativeMailSearchToolbar
-            ? () => [
-                createNativeMailSearchToolbarItem({
-                  filterButtonId: "thread-settings-model-filter",
-                  filterMenu,
-                  filterSystemImageName: hasCustomCatalogFilter
-                    ? "line.3.horizontal.decrease.circle.fill"
-                    : "line.3.horizontal.decrease",
-                  onSearchTextChange: session.setSearchQuery,
-                  placeholder: uiT("Find a model"),
-                  searchTextChangeId: "thread-settings-model-search-text",
-                  showsSearchDismissButton: true,
-                }),
-              ]
-            : undefined,
-          headerShown: Platform.OS !== "android",
-          headerSearchBarOptions:
-            Platform.OS === "ios" && !usesNativeMailSearchToolbar
-              ? {
-                  allowToolbarIntegration: true,
-                  autoCapitalize: "none",
-                  hideNavigationBar: false,
-                  obscureBackground: false,
-                  onCancelButtonPress: () => session.setSearchQuery(""),
-                  onChangeText: (event) => session.setSearchQuery(event.nativeEvent.text),
-                  placeholder: uiT("Find a model"),
-                }
-              : undefined,
+        confirm={{
+          label: session.pendingModel ? uiT("Save thread settings") : uiT("Done"),
+          onPress: commitAndClose,
         }}
+        hideBottomBorder
       />
       <ScreenContent>
         <ThreadSettingsMainContent
+          bottomInset={searchToolbarInset}
           onOpenSubmenu={(submenu) => {
             const title =
               submenu.kind === "runtime"
@@ -1390,64 +1265,6 @@ function ThreadSettingsModelsScreen() {
           }}
         />
       </ScreenContent>
-      {Platform.OS === "ios" ? (
-        <SheetHeader
-          title={uiT("Thread settings")}
-          onCancel={presentation.onClose}
-          accessibilityLabel={uiT("Cancel thread settings")}
-          confirm={{
-            label: session.pendingModel ? uiT("Save thread settings") : uiT("Done"),
-            onPress: commitAndClose,
-          }}
-        />
-      ) : null}
-      {Platform.OS === "ios" && !usesNativeMailSearchToolbar ? (
-        <Toolbar placement="bottom">
-          <Toolbar.Menu
-            accessibilityLabel={uiT("Filter models")}
-            icon={
-              hasCustomCatalogFilter
-                ? "line.3.horizontal.decrease.circle.fill"
-                : "line.3.horizontal.decrease.circle"
-            }
-            title={uiT("Model filters")}
-          >
-            <Toolbar.Menu title={uiT("Provider")}>
-              <Toolbar.Label>{uiT("Provider")}</Toolbar.Label>
-              <Toolbar.MenuAction
-                isOn={session.providerFilter === null}
-                onPress={() => session.setProviderFilter(null)}
-              >
-                {uiT("All providers")}
-              </Toolbar.MenuAction>
-              <Toolbar.MenuAction
-                isOn={session.providerFilter === FAVORITES_PROVIDER_FILTER}
-                onPress={() => session.setProviderFilter(FAVORITES_PROVIDER_FILTER)}
-              >
-                {uiT("Favorites")}
-              </Toolbar.MenuAction>
-              {session.providerGroups.map((group) => (
-                <Toolbar.MenuAction
-                  key={group.providerKey}
-                  isOn={session.providerFilter === group.providerKey}
-                  onPress={() => session.setProviderFilter(group.providerKey)}
-                >
-                  {group.providerLabel}
-                </Toolbar.MenuAction>
-              ))}
-            </Toolbar.Menu>
-            {session.hasLegacyModels ? (
-              <Toolbar.MenuAction
-                isOn={session.showLegacy}
-                onPress={() => session.setShowLegacy(!session.showLegacy)}
-              >
-                {uiT("Show legacy models")}
-              </Toolbar.MenuAction>
-            ) : null}
-          </Toolbar.Menu>
-          <Toolbar.SearchBarSlot />
-        </Toolbar>
-      ) : null}
     </>
   );
 }
@@ -1458,14 +1275,7 @@ function ThreadSettingsChoiceScreen() {
 
   return (
     <>
-      <NativeStackScreenOptions options={{ headerShown: Platform.OS !== "android" }} />
-      {Platform.OS === "android" ? (
-        <AndroidScreenHeader
-          title={route.params.title}
-          onBack={() => navigation.goBack()}
-          hideBottomBorder
-        />
-      ) : null}
+      <AppBar title={route.params.title} onBack={() => navigation.goBack()} hideBottomBorder />
       <ScreenContent>
         <ThreadSettingsChoiceContent
           submenu={route.params}
@@ -1479,9 +1289,7 @@ function ThreadSettingsChoiceScreen() {
 function ThreadSettingsPickerNavigator(props: ThreadSettingsPickerPresentation) {
   const { t: uiT } = useUiLanguage();
 
-  const theme = useUniwindTheme();
-  const solidSheetBackground = theme["--color-sheet-solid"];
-  const foreground = theme["--color-foreground"];
+  const screenOptions = useSheetStackOptions();
   const presentation = {
     onClose: props.onClose,
   };
@@ -1490,24 +1298,7 @@ function ThreadSettingsPickerNavigator(props: ThreadSettingsPickerPresentation) 
     <ThreadSettingsPickerPresentationContext.Provider value={presentation}>
       <ThreadSettingsPickerStack.Navigator
         initialRouteName="ThreadSettingsModels"
-        screenOptions={{
-          animation: Platform.OS === "android" ? "default" : "slide_from_right",
-          contentStyle: { backgroundColor: solidSheetBackground },
-          gestureEnabled: true,
-          headerBackButtonDisplayMode: "minimal",
-          headerBackTitle: "",
-          headerShown: Platform.OS !== "android",
-          headerShadowVisible: false,
-          headerStyle: {
-            backgroundColor: NATIVE_LIQUID_GLASS_SUPPORTED ? "transparent" : solidSheetBackground,
-          },
-          headerTransparent: NATIVE_LIQUID_GLASS_SUPPORTED,
-          headerTintColor: foreground,
-          headerTitleStyle: { fontSize: 17, fontWeight: "700" },
-          scrollEdgeEffects: NATIVE_LIQUID_GLASS_SUPPORTED
-            ? THREAD_SETTINGS_HEADER_SCROLL_EDGE_EFFECTS
-            : undefined,
-        }}
+        screenOptions={screenOptions}
       >
         <ThreadSettingsPickerStack.Screen
           name="ThreadSettingsModels"

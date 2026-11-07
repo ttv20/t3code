@@ -1,27 +1,24 @@
-import { useUiLanguage } from "../../i18n";
-import { SymbolView } from "./AppSymbol";
-import { NativeThemeHost } from "./NativeThemeHost.android";
 import {
   Box,
   Button as ComposeButton,
-  LoadingIndicator,
   FilledTonalButton,
-  Row,
+  LoadingIndicator,
   RNHostView,
+  Row,
   Text,
   TextButton,
 } from "@expo/ui/jetpack-compose";
 import { defaultMinSize, fillMaxWidth, size } from "@expo/ui/jetpack-compose/modifiers";
 import { View } from "react-native";
+import { SymbolView } from "./AppSymbol";
+import { NativeThemeHost } from "./NativeThemeHost.android";
 
-import { useControlTheme } from "./useControlTheme";
 import { useScaledTextRole } from "../../features/settings/appearance/useScaledTextRole";
 import type { ButtonProps } from "./Button";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
+import { useControlTheme } from "./useControlTheme";
 
 export function Button(props: ButtonProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { colors } = useControlTheme();
   const typography = useScaledTextRole("footnote");
   const { scale, mediumIconSize } = useAndroidControlSizing();
@@ -109,7 +106,7 @@ export function Button(props: ButtonProps) {
                   <Box modifiers={[size(8 * scale, 1)]} />
                 </>
               ) : null}
-              <Text style={{ ...typography, fontWeight: "500" }}>{uiT(props.label)}</Text>
+              <Text style={{ ...typography, fontWeight: "500" }}>{props.label}</Text>
             </Row>
           </Component>
         </NativeThemeHost>

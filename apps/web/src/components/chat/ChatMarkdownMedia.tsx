@@ -6,6 +6,7 @@ import { TriangleAlertIcon } from "lucide-react";
 import {
   createContext,
   memo,
+  use,
   useState,
   type ComponentProps,
   type CSSProperties,
@@ -72,6 +73,8 @@ const CHAT_MARKDOWN_WORKSPACE_IMAGE_CLASS_NAME = cn(
   CHAT_MARKDOWN_MEDIA_FRAME_CLASS_NAME,
 );
 export const MarkdownLinkContext = createContext(false);
+/** The thread's workspace mutation id, so a host image the agent rewrites gets a fresh URL. */
+export const WorkspaceMutationIdContext = createContext<string | null | undefined>(undefined);
 
 function expandableMarkdownImageProps(
   onImageExpand: ((preview: ExpandedImagePreview) => void) | undefined,
@@ -106,9 +109,9 @@ function ChatMarkdownMediaUnavailableLabel(props: {
 
   const label =
     props.kind === "audio"
-      ? uiT("Audio unavailable")
+      ? "Audio unavailable"
       : props.kind === "video"
-        ? uiT("Video unavailable")
+        ? "Video unavailable"
         : uiT("Image unavailable");
   return (
     <span data-thread-find-ignore className="inline-flex items-center gap-1.5">
@@ -344,13 +347,15 @@ export const ChatMarkdownAssetImage = memo(function ChatMarkdownAssetImage(props
   readonly onImageExpand?: ((preview: ExpandedImagePreview) => void) | undefined;
 }) {
   const resource = props.resource;
+  const threadWorkspaceMutationId = use(WorkspaceMutationIdContext);
+  const workspaceMutationId = props.workspaceMutationId ?? threadWorkspaceMutationId;
   const assetUrl = useAssetUrlState(
     props.environmentId,
     resource,
-    props.workspaceMutationId !== undefined &&
+    workspaceMutationId !== undefined &&
       props.kind !== "video" &&
       (resource._tag === "media-file" || resource._tag === "workspace-file")
-      ? props.workspaceMutationId
+      ? workspaceMutationId
       : undefined,
   );
   const refreshAssetUrl = useAssetUrlRefresh(props.environmentId, resource);

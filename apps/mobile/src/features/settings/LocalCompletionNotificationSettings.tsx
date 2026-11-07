@@ -1,7 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
-import { Linking, Platform } from "react-native";
 import { useState } from "react";
+import { Linking, Platform } from "react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { runtime } from "../../lib/runtime";

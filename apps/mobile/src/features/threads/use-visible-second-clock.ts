@@ -1,7 +1,8 @@
 import { useIsFocused } from "@react-navigation/native";
-import { secondTick, minuteTick } from "@t3tools/client-runtime/clock";
+import { minuteTick, secondTick } from "@t3tools/client-runtime/clock";
 import { useSyncExternalStore } from "react";
 
+import { usePaneRole } from "../../components/ui/Pane";
 import { useAppActive } from "../../lib/appState";
 
 const subscribeNever = () => () => undefined;
@@ -12,8 +13,10 @@ const subscribeNever = () => () => undefined;
  */
 export function useVisibleSecondClock(enabled: boolean, periodMs = 1000): number {
   const focused = useIsFocused();
+  // The sidebar's route stays unfocused under the page beside it.
+  const inSidebar = usePaneRole() === "sidebar";
   const appActive = useAppActive();
-  const ticking = enabled && focused && appActive;
+  const ticking = enabled && (focused || inSidebar) && appActive;
   // While paused the snapshot still reads the shared tick, so resuming shows
   // the current second rather than the one the clock stopped on.
   const clock = periodMs >= 60_000 ? minuteTick : secondTick;

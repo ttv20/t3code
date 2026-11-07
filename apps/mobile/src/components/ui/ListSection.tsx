@@ -1,7 +1,6 @@
-import { useUiLanguage } from "../../i18n";
-import { MOBILE_SHAPE } from "../../lib/designTokens";
 import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
+import { MOBILE_SHAPE } from "../../lib/designTokens";
 
 import { AppText as Text } from "./AppText";
 
@@ -12,7 +11,6 @@ export function ListSection(props: {
   readonly children: ReactNode;
   readonly footer?: string;
 }) {
-  const { t } = useUiLanguage();
   return (
     <View className="gap-2">
       {props.title ? (
@@ -26,7 +24,7 @@ export function ListSection(props: {
           >
             {props.titleIcon}
             <Text textRole="footnote" className="shrink font-t3-medium text-foreground-muted">
-              {t(props.title)}
+              {props.title}
             </Text>
           </View>
           {props.trailing}
@@ -43,7 +41,7 @@ export function ListSection(props: {
       </View>
       {props.footer ? (
         <Text textRole="footnote" className="px-4 text-foreground-muted">
-          {t(props.footer)}
+          {props.footer}
         </Text>
       ) : null}
     </View>

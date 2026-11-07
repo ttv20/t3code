@@ -1,19 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
+import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
 import {
   worktreeSetupStageLabel,
   type WorktreeSetupSnapshot,
   type WorktreeSetupStage,
 } from "@t3tools/contracts";
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
-import { WorktreeSetupSheet } from "./worktree-setup-sheet";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { Sheet } from "../../components/ui/Sheet";
+import { useUiLanguage } from "../../i18n";
 import { ShimmeringWorkContent } from "./thread-work-log";
 import { useVisibleSecondClock } from "./use-visible-second-clock";
 
@@ -87,7 +87,9 @@ export function WorktreeSetupCard(props: WorktreeSetupCardProps) {
           accessibilityRole="button"
           accessibilityLabel={
             backgroundSetup
-              ? `Background setup is still running: ${scriptName}. Show setup progress.`
+              ? uiT("Background setup is still running: {0}. Show setup progress.", {
+                  "0": scriptName,
+                })
               : uiT("Worktree setup details")
           }
           accessibilityState={{ expanded: detailsOpen }}
@@ -208,14 +210,12 @@ function SetupDetailsSheet({
   const { t: uiT } = useUiLanguage();
 
   const insets = useSafeAreaInsets();
-  const [bodyHeight, setBodyHeight] = useState(0);
   const canCancel = snapshot.phase === "running" && !turnStarted;
   return (
-    <WorktreeSetupSheet height={bodyHeight} onClose={onClose}>
+    <Sheet title={uiT("Worktree setup")} onClose={onClose}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         bounces={false}
-        onContentSizeChange={(_width, height) => setBodyHeight(height)}
         contentContainerStyle={{
           paddingHorizontal: 20,
           paddingTop: 12,
@@ -262,7 +262,7 @@ function SetupDetailsSheet({
           </View>
         ) : null}
       </ScrollView>
-    </WorktreeSetupSheet>
+    </Sheet>
   );
 }
 

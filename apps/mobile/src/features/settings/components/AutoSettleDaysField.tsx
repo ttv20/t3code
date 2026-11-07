@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../../i18n";
 import {
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
 } from "@t3tools/contracts";
 import type { ComponentProps } from "react";
 import { NumberField } from "../../../components/ui/NumberField";
+import { useUiLanguage } from "../../../i18n";
 
 export type AutoSettleDaysFieldProps = Pick<
   ComponentProps<typeof NumberField>,

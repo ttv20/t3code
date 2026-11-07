@@ -1,19 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-import { ComposerStatus } from "./ComposerStatus";
-import { useSidebarWorkspaceTabs } from "../workspace/useSystemWorkspaceTabBar";
-import { Button } from "../../components/ui/Button";
-import * as Dialog from "../../components/ui/Dialog";
-import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
-import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
-import {
-  useAppearancePreferences,
-  useAndroidFloatingTabs,
-} from "../settings/appearance/AppearancePreferencesProvider";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { AsyncResult } from "effect/reactivity";
 import { useAtomValue } from "@effect/atom-react";
+import { StackActions, useFocusEffect, useNavigation } from "@react-navigation/native";
+import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { clampFileAttachmentUploadBytes } from "@t3tools/client-runtime/state/attachments";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { pastedTextDisposition, replaceTextSelection } from "@t3tools/client-runtime/text-paste";
 import {
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
@@ -31,84 +21,86 @@ import {
   hasProviderUsageLimits,
   isUsageLimitsCommand,
 } from "@t3tools/shared/usageLimits";
-import { StackActions, useFocusEffect, useNavigation } from "@react-navigation/native";
+import { AsyncResult } from "effect/reactivity";
 import type { ReactNode } from "react";
 import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
 import { Keyboard, Platform, View, useWindowDimensions, type ViewStyle } from "react-native";
-import { composerImageGallery } from "../../lib/composerImageGallery";
-import { filePreviewGallery } from "../../lib/filePreviewGallery";
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
-import {
-  composerAttachmentUploadBlockReason,
-  composerAttachmentsStillUploading,
-  composerAttachmentUploadsAtom,
-} from "../../state/composer-attachment-uploads";
 import Animated, {
   FadeIn,
   FadeOut,
-  type LayoutAnimationFunction,
   ReduceMotion,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withTiming,
+  type LayoutAnimationFunction,
 } from "react-native-reanimated";
-import { useUniwindTheme } from "../../lib/useUniwindTheme";
-import { themeColorWithAlpha } from "../../lib/mobileTheme";
-import { armAgentAwarenessLiveActivityForLocalWork } from "../agent-awareness/remoteRegistration";
-import { scopedThreadKey } from "../../lib/scopedEntities";
-import {
-  getComposerDraftSnapshot,
-  composerDraftsAtom,
-  setComposerDraftText,
-  composerContextImportsAtom,
-  countComposerDraftAttachmentsAfterSelection,
-  useComposerDraft,
-} from "../../state/use-composer-drafts";
-import { appAtomRegistry } from "../../state/atom-registry";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 import type { ComposerDocumentAttachment } from "../../lib/composerContext";
+import { composerImageGallery } from "../../lib/composerImageGallery";
+import { filePreviewGallery } from "../../lib/filePreviewGallery";
+import { themeColorWithAlpha } from "../../lib/mobileTheme";
+import { scopedThreadKey } from "../../lib/scopedEntities";
+import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import type { ComposerTextPaste } from "../../native/T3ComposerEditor.types";
+import { useDeviceType } from "../../native/native-layout-metrics";
+import { appAtomRegistry } from "../../state/atom-registry";
+import {
+  composerAttachmentUploadBlockReason,
+  composerAttachmentUploadsAtom,
+  composerAttachmentsStillUploading,
+} from "../../state/composer-attachment-uploads";
 import { useProject, useVisibleThreadShells } from "../../state/entities";
 import { useMentionableEnvironments } from "../../state/environments";
 import { useLinkedEnvironments } from "../../state/peerLinks";
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import {
+  composerContextImportsAtom,
+  composerDraftsAtom,
+  countComposerDraftAttachmentsAfterSelection,
+  getComposerDraftSnapshot,
+  setComposerDraftText,
+  useComposerDraft,
+} from "../../state/use-composer-drafts";
+import { armAgentAwarenessLiveActivityForLocalWork } from "../agent-awareness/remoteRegistration";
+import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
+import { useSidebarWorkspaceTabs } from "../layout/workspace/useSystemWorkspaceTabBar";
+import {
+  useAndroidFloatingTabs,
+  useAppearancePreferences,
+} from "../settings/appearance/AppearancePreferencesProvider";
+import { ComposerStatus } from "./ComposerStatus";
 
-import { AppText as Text } from "../../components/ui/AppText";
-import { ComposerAttachmentButton } from "./ComposerAttachmentButton";
+import type { ComposerEnvironmentCandidate } from "@t3tools/client-runtime/composerThreadItems";
+import { offersLinkedEnvironments } from "@t3tools/client-runtime/link-request";
+import type { ActiveTurnComposerAction } from "@t3tools/client-runtime/state/composer-dispatch";
 import {
   ComposerAttachmentStrip,
   ComposerAttachmentThumbnail,
 } from "../../components/ComposerAttachmentStrip";
-import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
-import { GlassSurface } from "../../components/ui/GlassSurface";
 import { ComposerEditor, type ComposerEditorHandle } from "../../components/ComposerEditor";
-import { fileRoutePathSegments } from "../files/filePath";
-import { ComposerActionButton, ComposerToolbarRow } from "../../components/ComposerToolbar";
 import { ComposerModelControl } from "../../components/ComposerModelControl";
+import { ComposerActionButton, ComposerToolbarRow } from "../../components/ComposerToolbar";
+import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
+import { AppText as Text } from "../../components/ui/AppText";
+import { GlassSurface } from "../../components/ui/GlassSurface";
+import { Menu } from "../../components/ui/Menu";
 import {
   composerStripAttachments,
   type DraftComposerFileAttachment,
 } from "../../lib/composerImages";
-import { buildModelOptions, isModelSelectionUnavailable } from "../../lib/modelOptions";
-import { useScaledTextRole, type ScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import type { RemoteClientConnectionState } from "../../lib/connection";
-import { MOBILE_TYPOGRAPHY } from "../../lib/typography";
-import { Menu } from "../../components/ui/Menu";
-import type { ActiveTurnComposerAction } from "@t3tools/client-runtime/state/composer-dispatch";
 import type { FollowUpBehavior } from "../../lib/followUpBehavior";
-import {
-  resolveComposerSendPresentation,
-  type ComposerSendPresentation,
-} from "./composerSendPresentation";
-import { compactEditorInsets } from "./compactEditorInsets";
-import { ComposerCommandPopover } from "./ComposerCommandPopover";
-import { ComposerPopoverAnchor } from "./ComposerPopoverAnchor";
-import { ComposerQueuedEditAttachments } from "./ComposerQueuedEdit";
-import { useComposerCommandMenu } from "./use-composer-command-menu";
-import type { ComposerEnvironmentCandidate } from "@t3tools/client-runtime/composerThreadItems";
-import { offersLinkedEnvironments } from "@t3tools/client-runtime/link-request";
+import { buildModelOptions, isModelSelectionUnavailable } from "../../lib/modelOptions";
+import { MOBILE_TYPOGRAPHY } from "../../lib/typography";
+import { fileRoutePathSegments } from "../files/filePath";
+import { useScaledTextRole, type ScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import {
   ComposerDictationCancelAction,
   ComposerDictationDraftContent,
+  ComposerDictationError,
   ComposerDictationPrimaryAction,
   ComposerDictationStartAction,
   ComposerDictationStatus,
@@ -116,7 +108,17 @@ import {
 } from "../voice-input/ComposerDictationControl";
 import { useVoiceInputController } from "../voice-input/useVoiceInputController";
 import { resolveVoiceComposerPresentation } from "../voice-input/voiceInputPresentation";
+import { ComposerAttachmentButton } from "./ComposerAttachmentButton";
+import { ComposerCommandPopover } from "./ComposerCommandPopover";
+import { ComposerPopoverAnchor } from "./ComposerPopoverAnchor";
+import { ComposerQueuedEditAttachments } from "./ComposerQueuedEdit";
 import type { ExistingThreadSettingsRouteParams } from "./ThreadSettingsSheet";
+import { compactEditorInsets } from "./compactEditorInsets";
+import {
+  resolveComposerSendPresentation,
+  type ComposerSendPresentation,
+} from "./composerSendPresentation";
+import { useComposerCommandMenu } from "./use-composer-command-menu";
 import {
   useThreadSettingsSheetPresentation,
   type NavigationWithFinishTransitioning,
@@ -233,6 +235,9 @@ export interface ThreadComposerProps {
   readonly selectedThread: EnvironmentThreadShell;
   readonly reportedModelSelection?: ModelSelection | null;
   readonly hasCompactableConversation: boolean;
+  /** Arms a fresh session for the next message; absent where `/clear` is unavailable. */
+  readonly onFreshSession?: () => void;
+  readonly offersSideChat?: boolean;
   readonly serverConfig: T3ServerConfig | null;
   readonly queueCount: number;
   readonly activeThreadBusy: boolean;
@@ -586,6 +591,8 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     offersUsageLimits: usageLimitsOffered,
     onUsageLimits:
       usageLimitsOffered && draftAttachments.length === 0 ? openUsageLimits : undefined,
+    ...(props.onFreshSession === undefined ? {} : { onFreshSession: props.onFreshSession }),
+    offersSideChat: props.offersSideChat === true,
   });
   const voiceInput = useVoiceInputController({
     ownerKey: composerDraftKey,
@@ -602,12 +609,13 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     voiceInput.state,
     voiceInput.elapsedSeconds,
   );
-  const isVoiceInputPresented = voicePresentation.statusLabel !== null;
+  const isVoiceInputPresented = voicePresentation.statusKind === "active";
   const isExpanded = isFocused || settingsSheetPresentation.keepsComposerExpanded;
   const { layout, setComposerEditing } = useAdaptiveWorkspaceLayout();
   const floatingSidebarComposer = useAndroidFloatingTabs() && layout.usesSplitView;
-  const usesLargeControls =
-    useSidebarWorkspaceTabs() === "picker" || (Platform.OS === "ios" && Platform.isPad);
+  const sidebarWorkspaceTabs = useSidebarWorkspaceTabs();
+  const deviceType = useDeviceType();
+  const usesLargeControls = sidebarWorkspaceTabs === "picker" || deviceType === "pad";
   const surfacePaddingVertical = usesLargeControls ? 9 : floatingSidebarComposer ? 6 : 2;
   const [compactRowWidth, setCompactRowWidth] = useState(0);
   const compactAttachmentLimit = compactRowWidth >= 500 ? 3 : 1;
@@ -706,6 +714,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     const threadKey = scopedThreadKey(props.environmentId, props.selectedThread.id);
     if (inFlightThreadIdsRef.current.has(threadKey)) return;
     inFlightThreadIdsRef.current.add(threadKey);
+    await inputRef.current?.flushPendingInput();
     const draftAtSend = getComposerDraftSnapshot(composerDraftKey);
     const stillSendable = () => {
       const draft = getComposerDraftSnapshot(composerDraftKey);
@@ -912,6 +921,10 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
             paddingVertical: surfacePaddingVertical,
           }}
         >
+          <ComposerDictationError
+            error={voiceInput.state.phase === "error" ? voiceInput.state.error : null}
+            onDismiss={voiceInput.cancel}
+          />
           {isExpanded ? editingAttachments : null}
           <View
             style={usesCard ? compactEditor.containerStyle : undefined}
@@ -1182,7 +1195,6 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
                     elapsedSeconds={voiceInput.elapsedSeconds}
                     phase={voiceInput.state.phase}
                     presentation={voicePresentation}
-                    onDismissError={voiceInput.cancel}
                   />
                 ) : (
                   <View className="min-w-0 flex-1 flex-row items-center justify-between">

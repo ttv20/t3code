@@ -1,4 +1,3 @@
-import { UiText } from "../../i18n";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   isActiveSubagentStatus,
@@ -14,9 +13,10 @@ import {
 import { deriveSubagentElapsedMs, formatDuration } from "@t3tools/shared/orchestrationTiming";
 import { useState, type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Chip } from "../../components/ui/Chip";
 import { ListRowLayout } from "../../components/ui/ListRowLayout";
 import { ListSection } from "../../components/ui/ListSection";
@@ -49,6 +49,8 @@ export function ThreadWorkflowGroup(props: {
   readonly group: SubagentWorkflowGroup;
   readonly onOpen: (threadId: ThreadId) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const { group } = props;
   const provider = useEnvironmentServerConfig(props.environmentId)?.providers.find(
     (candidate) => candidate.instanceId === props.subagent.providerInstanceId,
@@ -65,7 +67,7 @@ export function ThreadWorkflowGroup(props: {
         <View className="flex-row items-center">
           <RowPressable
             accessibilityRole="button"
-            accessibilityLabel={`${label} workflow, ${statusLabel}`}
+            accessibilityLabel={uiT("{0} workflow, {1}", { "0": label, "1": statusLabel })}
             accessibilityHint={open ? "Collapses the workflow" : "Opens the current phase"}
             accessibilityState={{ expanded: open !== undefined }}
             disabled={rail.length === 0}
@@ -110,7 +112,11 @@ export function ThreadWorkflowGroup(props: {
                   icon={RAIL_ICON[item.tone]}
                   label={count ? `${count} ${item.title}` : item.title}
                   selected={item.key === selected}
-                  accessibilityLabel={`${item.title} phase, ${item.tone}${count ? `, ${count} completed` : ""}`}
+                  accessibilityLabel={uiT("{0} phase, {1}{2}", {
+                    "0": item.title,
+                    "1": item.tone,
+                    "2": count ? `, ${count} completed` : "",
+                  })}
                   onPress={() => setSelected(nextWorkflowSelection(rail, selected, item.key))}
                 />
               );

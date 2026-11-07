@@ -1,17 +1,14 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
+import { RegistryContext, useAtomMount, useAtomValue } from "@effect/atom-react";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   formatUiUsageReset,
   formatUiUsageWindowLabel,
 } from "@t3tools/client-runtime/usage-localization";
-import * as Dialog from "../../components/ui/Dialog";
-import { RegistryContext, useAtomMount, useAtomValue } from "@effect/atom-react";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   AuthProvidersManageScope,
   type EnvironmentId,
-  type ProviderConsumeResetCreditOutcome,
   type ProviderConsumeResetCreditInput,
+  type ProviderConsumeResetCreditOutcome,
   type ServerProvider,
   type ServerProviderResetCredits,
   type ServerProviderUsageWindow,
@@ -23,17 +20,19 @@ import {
   paceRemainingPercent,
   remainingPercent,
 } from "@t3tools/shared/usageLimits";
-import { type ReactNode, useContext, useRef, useState } from "react";
 import { Atom } from "effect/reactivity";
+import { type ReactNode, useContext, useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
+import * as Dialog from "../../components/ui/Dialog";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { ProviderIcon } from "../../components/ProviderIcon";
+import { AppText as Text } from "../../components/ui/AppText";
+import { useNowMinuteMs } from "../../lib/clock";
 import { environmentPresentations } from "../../state/presentation";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { useNowMinuteMs } from "../../lib/clock";
 import {
   environmentIdsKey,
   limitsAutoRefreshSetAtom,
@@ -364,18 +363,16 @@ export function useRefreshLimits(
     .filter(([environmentId]) => failedIds.has(environmentId))
     .map(([, presentation]) => presentation.entry.target.label);
 
-  const refresh = (afterPending: boolean) =>
+  const refresh = () =>
     Promise.all(
-      connectedIds.map((environmentId) =>
-        refreshEnvironmentLimits(registry, environmentId, { afterPending }),
-      ),
+      connectedIds.map((environmentId) => refreshEnvironmentLimits(registry, environmentId)),
     );
   // Android RefreshControl needs a true-to-false cycle to stop, even with nothing to probe.
   const refreshManually = async () => {
     if (refreshingRef.current) return;
     refreshingRef.current = true;
     setRefreshing(true);
-    await refresh(false).finally(() => {
+    await refresh().finally(() => {
       refreshingRef.current = false;
       setRefreshing(false);
     });
@@ -385,6 +382,5 @@ export function useRefreshLimits(
     refreshing,
     failedLabels,
     refresh: refreshManually,
-    refreshAfterEnable: () => refresh(true),
   };
 }

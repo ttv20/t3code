@@ -1,18 +1,15 @@
-import { useUiLanguage } from "../i18n";
-import { SymbolView } from "./ui/AppSymbol";
-import { AppText } from "./ui/AppText";
-import { Image } from "expo-image";
-import { memo, useLayoutEffect, useState } from "react";
-import { View } from "react-native";
+import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId, ProjectIconOverride } from "@t3tools/contracts";
 import {
   getProjectFaviconCacheKey,
   getProjectFaviconResourceKey,
   isProjectFaviconFallbackUrl,
 } from "@t3tools/shared/projectFavicon";
-import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
-import { projectFaviconUrlAtom } from "../state/assets";
+import { Image } from "expo-image";
+import { memo, useLayoutEffect, useState } from "react";
+import { View } from "react-native";
+import { useUiLanguage } from "../i18n";
 import {
   countGlyphs,
   projectAutoMonogram,
@@ -21,6 +18,9 @@ import {
   resolveProjectIconSymbol,
   type ProjectIconGlyph,
 } from "../lib/projectIcon";
+import { projectFaviconUrlAtom } from "../state/assets";
+import { SymbolView } from "./ui/AppSymbol";
+import { AppText } from "./ui/AppText";
 
 import {
   beginProjectFaviconRequest,

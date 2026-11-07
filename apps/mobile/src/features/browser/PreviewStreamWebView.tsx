@@ -1,8 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import * as Dialog from "../../components/ui/Dialog";
-import previewStreamScript from "@t3tools/mobile-preview-stream";
 import {
   previewStreamControlLabel,
   previewStreamHostSetupMessage,
@@ -12,6 +7,8 @@ import {
   type PreviewStreamInput,
 } from "@t3tools/client-runtime/preview/server-browser-stream";
 import type { EnvironmentId, PreviewStreamHostSetup } from "@t3tools/contracts";
+import previewStreamScript from "@t3tools/mobile-preview-stream";
+import * as Clipboard from "expo-clipboard";
 import {
   useEffectEvent,
   useImperativeHandle,
@@ -22,10 +19,14 @@ import {
 } from "react";
 import { Platform, Pressable, TextInput, View } from "react-native";
 import { WebView } from "react-native-webview";
-import * as Clipboard from "expo-clipboard";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
-import { AppText } from "../../components/ui/AppText";
 import { PdfPreview } from "../../components/PdfPreview";
+import { AppText } from "../../components/ui/AppText";
 import { downloadAndShareAttachment } from "../../lib/attachmentDownload";
 import { beginForegroundHandoff } from "../../lib/foreground-handoff";
 import { usePreviewStreamAccess } from "../../state/preview";
@@ -91,7 +92,9 @@ async function sendFilesToPage(chooser: PreviewStreamFileChooser, pick: boolean)
 }
 
 function offerDownload(download: PreviewStreamDownload) {
-  Dialog.alert(`Downloaded ${download.fileName}`, undefined, [
+  const uiT = readUiTranslator();
+
+  Dialog.alert(uiT("Downloaded {0}", { "0": download.fileName }), undefined, [
     { text: "Not now", style: "cancel" },
     {
       text: "Save or share",
@@ -102,7 +105,7 @@ function offerDownload(download: PreviewStreamDownload) {
           signal: new AbortController().signal,
         }).catch((cause: unknown) =>
           Dialog.alert(
-            "Could not save the download",
+            uiT("Could not save the download"),
             cause instanceof Error ? cause.message : undefined,
           ),
         ),

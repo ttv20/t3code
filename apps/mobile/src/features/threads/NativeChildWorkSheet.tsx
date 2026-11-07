@@ -1,4 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type {
   EnvironmentId,
   OrchestrationV2GetNativeChildWorkResult,
@@ -7,6 +6,7 @@ import type {
 } from "@t3tools/contracts";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";

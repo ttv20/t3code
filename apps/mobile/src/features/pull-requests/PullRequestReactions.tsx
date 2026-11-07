@@ -1,12 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import { useNavigation } from "@react-navigation/native";
 import {
   applyPendingPullRequestReactions,
   PULL_REQUEST_REACTION_ORDER,
   pullRequestReactionEmoji,
   pullRequestReactionName,
-  pullRequestReactionTooltip,
   pullRequestReactionsSignature,
+  pullRequestReactionTooltip,
 } from "@t3tools/client-runtime/pull-request-reactions";
 import type {
   PullRequestComment,
@@ -20,6 +19,7 @@ import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
 import { Menu } from "../../components/ui/Menu";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";

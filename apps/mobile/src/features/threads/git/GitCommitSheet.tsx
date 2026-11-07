@@ -1,22 +1,21 @@
-import { useUiLanguage } from "../../../i18n";
-import { ScreenContent } from "../../../components/ui/ScreenContent";
-import { SheetHeader } from "../../../components/ui/SheetHeader";
-import { Button } from "../../../components/ui/Button";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { useState } from "react";
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from "react-native";
-import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "../../../components/ui/Button";
+import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { SheetHeader } from "../../../components/ui/SheetHeader";
+import { useUiLanguage } from "../../../i18n";
 
 import { SymbolView } from "../../../components/ui/AppSymbol";
-import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { AppText as Text, AppTextInput as TextInput } from "../../../components/ui/AppText";
 import { cn } from "../../../lib/cn";
 import { useEnvironmentQuery } from "../../../state/query";
-import { useThreadSelection } from "../../../state/use-thread-selection";
 import { useSelectedThreadGitActions } from "../../../state/use-selected-thread-git-actions";
 import { useSelectedThreadGitState } from "../../../state/use-selected-thread-git-state";
 import { useSelectedThreadWorktree } from "../../../state/use-selected-thread-worktree";
+import { useThreadSelection } from "../../../state/use-thread-selection";
 import { vcsEnvironment } from "../../../state/vcs";
 
 type GitCommitSheetProps = StaticScreenProps<{
@@ -73,7 +72,6 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
   const android = Platform.OS === "android";
   const header = (
     <SheetHeader
-      presentation={android ? "inline" : "native"}
       title={uiT("Commit changes")}
       subtitle={gitStatus.data?.refName ?? uiT("(detached HEAD)")}
       onCancel={() => navigation.goBack()}
@@ -89,12 +87,6 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
       className="bg-sheet ios:flex-1 android:flex-col-reverse"
       style={android ? { maxHeight: windowHeight * 0.92 } : undefined}
     >
-      {android ? (
-        <NativeStackScreenOptions
-          options={{ sheetCornerRadius: 28, sheetAllowedDetents: "fitToContents" }}
-        />
-      ) : null}
-      {android ? null : header}
       <ScreenContent fitToContents>
         <ScrollView
           nestedScrollEnabled
@@ -240,7 +232,7 @@ export function GitCommitSheet(_props: GitCommitSheetProps) {
           </View>
         </ScrollView>
       </ScreenContent>
-      {android ? header : null}
+      {header}
     </View>
   );
 }

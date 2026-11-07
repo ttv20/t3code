@@ -1,19 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
-import { NativeThemeHost } from "./NativeThemeHost.android";
 import {
   Box,
-  ExtendedFloatingActionButton,
   FloatingActionButton as ComposeFloatingActionButton,
+  ExtendedFloatingActionButton,
   LargeFloatingActionButton,
   Text,
 } from "@expo/ui/jetpack-compose";
 import { defaultMinSize, height, size, width } from "@expo/ui/jetpack-compose/modifiers";
 import { View } from "react-native";
-import { useAndroidControlSizing } from "./useAndroidControlSizing";
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
 import { useScaledTextRole } from "../../features/settings/appearance/useScaledTextRole";
+import { useUiLanguage } from "../../i18n";
 import { SymbolView } from "./AppSymbol";
+import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
+import { NativeThemeHost } from "./NativeThemeHost.android";
+import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function FloatingActionButton(props: FloatingActionButtonProps) {
   const { t: uiT } = useUiLanguage();

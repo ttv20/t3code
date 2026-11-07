@@ -37,6 +37,8 @@ interface ComposerPrimaryActionsProps {
   alternateShortcutLabel?: string | null;
   showPlanFollowUpPrompt: boolean;
   promptHasText: boolean;
+  /** Dictation is running; Send finishes it and submits once the transcript lands. */
+  voiceInputActive?: boolean;
   isSendBusy: boolean;
   sendDisabledReason: string | null;
   isEnvironmentUnavailable: boolean;
@@ -91,6 +93,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   alternateShortcutLabel = null,
   showPlanFollowUpPrompt,
   promptHasText,
+  voiceInputActive = false,
   isSendBusy,
   sendDisabledReason,
   isEnvironmentUnavailable,
@@ -189,8 +192,12 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
           disabled={
             !canOperateThread ||
             isEnvironmentUnavailable ||
+            isSendDisabled ||
             pendingAction.isResponding ||
-            (pendingAction.isLastQuestion ? !pendingAction.isComplete : !pendingAction.canAdvance)
+            (!voiceInputActive &&
+              (pendingAction.isLastQuestion
+                ? !pendingAction.isComplete
+                : !pendingAction.canAdvance))
           }
         >
           {formatPendingPrimaryActionLabel({
@@ -275,15 +282,15 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   const compactsBeforeSend = compactTokens !== null && !keepFullHistory;
 
   const submitLabel = showResume
-    ? uiT("Resume thread")
+    ? "Resume thread"
     : isEditingQueuedMessage
-      ? uiT("Update queued message")
+      ? "Update queued message"
       : compactsBeforeSend
-        ? uiT("Compact and send")
+        ? "Compact and send"
         : isQueuing
-          ? uiT("Queue message")
+          ? "Queue message"
           : isRunning
-            ? uiT("Steer message")
+            ? "Steer message"
             : uiT("Submit message");
   const submitStatus = isEnvironmentUnavailable
     ? "Environment disconnected"

@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../../../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../../../../i18n";
 
 import { ListChoiceRow as SettingsChoiceRow } from "../../../../components/ui/ListChoiceRow";
 import { SettingsSection } from "../../components/SettingsSection";

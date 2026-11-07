@@ -1,27 +1,24 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import { ThreadSubagentGroup } from "./thread-subagent-group";
-import { ProposedPlanCard } from "./ProposedPlanCard";
-import {
-  WorkLogLabel,
-  WorkLogBlock,
-  WorkLogRows,
-  WorkLogIconSlot,
-  WorkLogPressable,
-} from "./work-log-layout";
-import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
-import { ThreadCommandOutput, useCommandOutputStreaming } from "./thread-command-output";
-import {
-  getQuestionAnswerPreview,
-  hasQuestionAnswer,
-} from "@t3tools/client-runtime/work-log/user-input";
-import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
-import { type AppSymbolName, SymbolView } from "../../components/ui/AppSymbol";
+import { useAtomValue } from "@effect/atom-react";
 import { MaskedView } from "@expo/ui/community/masked-view";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import { useIsFocused } from "@react-navigation/native";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import {
+  getQuestionAnswerPreview,
+  hasQuestionAnswer,
+} from "@t3tools/client-runtime/work-log/user-input";
+import {
+  ORCHESTRATION_V2_WORKSPACE_PREPARATION_FAILURE_CODE,
+  type EnvironmentId,
+  type RunId,
+  type ThreadId,
+  type ToolActivityIcon,
+} from "@t3tools/contracts";
+import { toolActivityFaviconUrl } from "@t3tools/shared/favicon";
+import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import {
   useEffect,
   useEffectEvent,
@@ -34,64 +31,46 @@ import {
 } from "react";
 import {
   Animated as NativeAnimated,
-  type ColorValue,
-  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
   useAnimatedValue,
   View,
+  type ColorValue,
 } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import {
-  ORCHESTRATION_V2_WORKSPACE_PREPARATION_FAILURE_CODE,
-  type EnvironmentId,
-  type RunId,
-  type ThreadId,
-  type ToolActivityIcon,
-} from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
 import { environmentThreadDetails, threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { toolActivityFaviconUrl } from "@t3tools/shared/favicon";
-import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
 import { useMarkdownCodeHighlight } from "./markdownCodeHighlightState";
+import { ProposedPlanCard } from "./ProposedPlanCard";
+import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
+import { ThreadCommandOutput, useCommandOutputStreaming } from "./thread-command-output";
+import { ThreadSubagentGroup } from "./thread-subagent-group";
+import {
+  WorkLogBlock,
+  WorkLogIconSlot,
+  WorkLogLabel,
+  WorkLogPressable,
+  WorkLogRows,
+} from "./work-log-layout";
 
-import { AppText as Text } from "../../components/ui/AppText";
-import { T3Wordmark } from "../../components/T3Wordmark";
-import { BrowserAppIcon } from "./BrowserAppIcon";
-import { useAppActive, useReduceMotionEnabled } from "../../lib/appState";
-import { cn } from "../../lib/cn";
-import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
+import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
 import {
-  formatItemFullDetail,
-  type ThreadFeedActivity,
-  workEntryRowLabel,
-} from "../../lib/threadActivity";
-import {
+  isJsonToolText,
   toolCallLines,
   turnItemOutputImages,
   turnItemOutputText,
 } from "@t3tools/client-runtime/work-log/item-detail";
-import { useTurnItemDetail } from "../../state/queries";
-import {
-  resolveThreadWorkGroupInitialScroll,
-  shouldFollowThreadWorkGroupAppend,
-  type ThreadWorkGroupScrollPosition,
-} from "./thread-feed-live-follow";
 import {
   resolveWorkEntryToolPresentation,
   toolGroupAction,
-  type ToolGroupSummaryKind,
   workEntryViewedImagePath,
+  type ToolGroupSummaryKind,
 } from "@t3tools/client-runtime/work-log/presentation";
 import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
-import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
-import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText";
-import type { FilePreviewSource } from "../../components/FilePreviewModal";
-import { FilePreviewGallery } from "../../components/FilePreviewGallery";
-import { ThreadMarkdownImage } from "./ThreadMarkdownImage";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -102,13 +81,33 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { FilePreviewGallery } from "../../components/FilePreviewGallery";
+import type { FilePreviewSource } from "../../components/FilePreviewModal";
+import { T3Wordmark } from "../../components/T3Wordmark";
+import { AppText as Text } from "../../components/ui/AppText";
+import { useAppActive, useReduceMotionEnabled } from "../../lib/appState";
+import { cn } from "../../lib/cn";
+import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
+import {
+  formatItemFullDetail,
+  workEntryRowLabel,
+  type ThreadFeedActivity,
+} from "../../lib/threadActivity";
+import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText";
 import { useAssetUrl } from "../../state/assets";
+import { useTurnItemDetail } from "../../state/queries";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
+import { BrowserAppIcon } from "./BrowserAppIcon";
+import {
+  resolveThreadWorkGroupInitialScroll,
+  shouldFollowThreadWorkGroupAppend,
+  type ThreadWorkGroupScrollPosition,
+} from "./thread-feed-live-follow";
+import { ThreadMarkdownImage } from "./ThreadMarkdownImage";
 import { useOpenLinkedThread } from "./useOpenLinkedThread";
+import { startShimmerSteps } from "./work-shimmer-steps";
 
 const SHIMMER_WIDTH = 72;
-const SHIMMER_SWEEP_MS = 1_350;
-const SHIMMER_PAUSE_MS = 1_450;
 const SHIMMER_ICON_AND_GAP_WIDTH = 30;
 export const THREAD_DISCLOSURE_TRANSITION_MS = 180;
 const WORK_LOG_LAYOUT_TRANSITION = LinearTransition.duration(THREAD_DISCLOSURE_TRANSITION_MS);
@@ -273,46 +272,39 @@ export function ShimmeringWorkContent(props: {
   const appIsActive = useAppActive();
   const reducedMotion = useReduceMotionEnabled();
   const screenIsFocused = useIsFocused();
-  const progress = useAnimatedValue(0);
+  // Native from creation, so each setValue updates the view without a React render.
+  const progress = useAnimatedValue(0, { useNativeDriver: true });
   const gradientId = `work-shimmer-${useId().replaceAll(":", "")}`;
   const contentWidth = Math.min(
     availableWidth,
     (props.showIcon ? SHIMMER_ICON_AND_GAP_WIDTH : 0) + Math.ceil(textWidth),
   );
 
-  // Runs on React Native's native driver instead of Reanimated, whose
-  // per-frame commits starve React's while commit pausing is disabled
-  // (package.json). See docs/internals/performance-regressions.md.
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- starts the native-driver shimmer loop while visible and active, and stops it on cleanup
+  // Uses a native Animated value instead of Reanimated, whose per-frame commits
+  // starve React's while commit pausing is disabled (package.json). See
+  // docs/internals/performance-regressions.md.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- steps the native shimmer value on timers while visible and active, and stops them on cleanup
   useEffect(() => {
     progress.setValue(0);
     if (contentWidth <= 0 || reducedMotion || !appIsActive || !screenIsFocused) return;
-
-    const loop = NativeAnimated.loop(
-      NativeAnimated.timing(progress, {
-        toValue: 1,
-        duration: SHIMMER_SWEEP_MS + SHIMMER_PAUSE_MS,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
+    return startShimmerSteps(progress);
   }, [appIsActive, contentWidth, progress, reducedMotion, screenIsFocused]);
 
-  // One timing covers the sweep and the pause, so the native driver can loop it.
   // The React Compiler memoizes these, so re-renders don't rebuild the native
   // animation nodes.
-  const inputRange = [0, SHIMMER_SWEEP_MS / (SHIMMER_SWEEP_MS + SHIMMER_PAUSE_MS), 1];
-  const sweepStart = direction === "rtl" ? SHIMMER_WIDTH : -SHIMMER_WIDTH;
-  const sweepEnd = direction === "rtl" ? -contentWidth : contentWidth;
   const sweepTranslateX = progress.interpolate({
-    inputRange,
-    outputRange: [sweepStart, sweepEnd, sweepEnd],
+    inputRange: [0, 1],
+    outputRange: [
+      direction === "rtl" ? SHIMMER_WIDTH : -SHIMMER_WIDTH,
+      direction === "rtl" ? -contentWidth : contentWidth,
+    ],
   });
   const counterSweepTranslateX = progress.interpolate({
-    inputRange,
-    outputRange: [-sweepStart, -sweepEnd, -sweepEnd],
+    inputRange: [0, 1],
+    outputRange: [
+      direction === "rtl" ? -SHIMMER_WIDTH : SHIMMER_WIDTH,
+      direction === "rtl" ? contentWidth : -contentWidth,
+    ],
   });
 
   return (
@@ -889,14 +881,16 @@ function WorkspacePreparationRetryButton(props: {
   );
 }
 
-function ReplCodeText({
+function ToolCodeText({
   code,
+  language,
   theme,
 }: {
   readonly code: string;
+  readonly language: "typescript" | "html" | "json";
   readonly theme: "light" | "dark";
 }) {
-  const lines = useMarkdownCodeHighlight({ code, language: "typescript", theme, enabled: true });
+  const lines = useMarkdownCodeHighlight({ code, language, theme, enabled: true });
   let offset = 0;
   const highlighted = lines?.flatMap((line, lineIndex) => {
     const separator = lineIndex > 0 ? "\n" : "";
@@ -954,13 +948,14 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
     const warning = failureItem.failure.class === "usage_limit";
     const timestamp = new Date(row.createdAt);
     const resetAt = failureItem.failure.resetAt;
+    // The reset time is the viewer's local time; naming the zone keeps it unambiguous.
     const resetTime = resetAt
-      ? new Date(resetAt).toLocaleString(undefined, {
+      ? `${new Date(resetAt).toLocaleString(undefined, {
           month: "short",
           day: "numeric",
           hour: "numeric",
           minute: "2-digit",
-        })
+        })} (${new Intl.DateTimeFormat().resolvedOptions().timeZone})`
       : null;
     const label = warning
       ? uiT("Usage limit reached.{0}", { "0": resetTime ? ` Retry after ${resetTime}.` : "" })
@@ -1276,20 +1271,32 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
             ) : call ? (
               [
                 call.command,
-                ...(call.args ?? []).map(([key, value]) =>
-                  key === "code" &&
-                  shownItem.type === "dynamic_tool" &&
-                  isJavaScriptReplTool(shownItem.toolName) ? (
+                ...(call.args ?? []).map(([key, value]) => {
+                  const language =
+                    key === "html"
+                      ? "html"
+                      : key === "code" &&
+                          shownItem.type === "dynamic_tool" &&
+                          isJavaScriptReplTool(shownItem.toolName)
+                        ? "typescript"
+                        : isJsonToolText(value)
+                          ? "json"
+                          : null;
+                  return language ? (
                     <View key={key}>
                       <Text className="font-mono text-2xs leading-normal text-foreground-muted">
                         {key}
                       </Text>
-                      <ReplCodeText code={value} theme={props.themeAppearance} />
+                      <ToolCodeText
+                        code={value}
+                        language={language}
+                        theme={props.themeAppearance}
+                      />
                     </View>
                   ) : (
                     `${key} ${value}`
-                  ),
-                ),
+                  );
+                }),
                 call.argsText,
               ]
                 .filter((line) => Boolean(line))
@@ -1302,7 +1309,11 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
                         selectable
                         className="font-mono text-2xs leading-normal text-foreground"
                       >
-                        {line}
+                        {isJsonToolText(line) ? (
+                          <ToolCodeText code={line} language="json" theme={props.themeAppearance} />
+                        ) : (
+                          line
+                        )}
                       </Text>
                     ) : (
                       line
@@ -1310,7 +1321,11 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
                 )
             ) : fullDetail ? (
               <Text selectable className="font-mono text-2xs leading-normal text-foreground-muted">
-                {fullDetail}
+                {isJsonToolText(fullDetail) ? (
+                  <ToolCodeText code={fullDetail} language="json" theme={props.themeAppearance} />
+                ) : (
+                  fullDetail
+                )}
               </Text>
             ) : null}
             {fetchedOutput ? (
@@ -1321,7 +1336,15 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
                   (!call || call.command || call.args || call.argsText) && "mt-1.5",
                 )}
               >
-                {fetchedOutput}
+                {isJsonToolText(fetchedOutput) ? (
+                  <ToolCodeText
+                    code={fetchedOutput}
+                    language="json"
+                    theme={props.themeAppearance}
+                  />
+                ) : (
+                  fetchedOutput
+                )}
               </Text>
             ) : null}
             {streamsOutput ? null : exitLine}
@@ -1454,13 +1477,15 @@ export function ThreadWorkGroupToggle(props: {
 export function ThreadThinkingRow(props: {
   readonly rowSizing: ReturnType<typeof deriveThreadWorkLogSizing>;
   readonly iconSubtleColor: ColorValue;
+  readonly label?: string;
 }) {
   const { t: uiT } = useUiLanguage();
 
+  const label = props.label ?? uiT("Thinking");
   return (
     <View
       accessible
-      accessibilityLabel={uiT("Thinking")}
+      accessibilityLabel={label}
       className="-mx-1 min-h-8 flex-row items-center px-1.5 py-0"
       style={{ minHeight: props.rowSizing.estimatedRowHeight }}
     >
@@ -1468,7 +1493,7 @@ export function ThreadThinkingRow(props: {
         key={props.rowSizing.textSizeKey}
         icon="brain"
         iconSubtleColor={props.iconSubtleColor}
-        label={uiT("Thinking")}
+        label={label}
         showIcon
       />
     </View>

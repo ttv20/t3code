@@ -1,24 +1,23 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
+import { useAuth } from "@clerk/expo";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useNavigation } from "@react-navigation/native";
 import {
   AuthRelayWriteScope,
   managedCapabilityDenial,
   type EnvironmentId,
 } from "@t3tools/contracts";
-import { readEnvironmentScope } from "../../state/session";
-import { appAtomRegistry } from "../../state/atom-registry";
-import { serverEnvironment } from "../../state/server";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useAuth } from "@clerk/expo";
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import { useNavigation } from "@react-navigation/native";
 import * as Effect from "effect/Effect";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { Linking, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { serverEnvironment } from "../../state/server";
+import { readEnvironmentScope } from "../../state/session";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import {
   isAtomCommandInterrupted,
   reportAtomCommandResult,
@@ -26,13 +25,18 @@ import {
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { supportsAgentAwarenessPush } from "../agent-awareness/capabilities";
+import { AppText as Text } from "../../components/ui/AppText";
+import { runtime } from "../../lib/runtime";
+import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
 import {
   openAndroidLiveUpdateSettings,
   supportsAndroidLiveUpdateSettings,
 } from "../agent-awareness/androidNotifications";
+import { supportsAgentAwarenessPush } from "../agent-awareness/capabilities";
 import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPreferences";
 import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
+import { notificationStatusAtom } from "../agent-awareness/notificationStatus";
 import {
   getAgentAwarenessRegistrationStatus,
   refreshAgentAwarenessRegistration,
@@ -40,15 +44,11 @@ import {
 } from "../agent-awareness/remoteRegistration";
 import { refreshManagedRelayEnvironments } from "../cloud/managedRelayState";
 import { hasCloudPublicConfig, resolveRelayClerkTokenOptions } from "../cloud/publicConfig";
-import { notificationStatusAtom } from "../agent-awareness/notificationStatus";
-import { LocalCompletionNotificationSettings } from "./LocalCompletionNotificationSettings";
-import { runtime } from "../../lib/runtime";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
-import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
 import { SettingsRow } from "./components/SettingsRow";
+import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
 import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
-import { SettingsScreen } from "./components/SettingsScreen";
+import { LocalCompletionNotificationSettings } from "./LocalCompletionNotificationSettings";
 import { resolveAgentAwarenessPlatformPresentation } from "./SettingsRouteScreen.logic";
 
 /**

@@ -1,10 +1,10 @@
-import { createContext, useContext, Fragment, type ReactNode } from "react";
 import {
   createUiTranslator,
   splitUiTextSlots,
   type UiDirection,
   type UiLocale,
 } from "@t3tools/client-runtime/i18n";
+import { createContext, Fragment, useContext, type ReactNode } from "react";
 
 export const UiLanguageContext = createContext({
   locale: "en" as UiLocale,

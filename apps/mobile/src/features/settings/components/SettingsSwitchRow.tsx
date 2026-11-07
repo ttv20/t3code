@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../../i18n";
 import type { ComponentProps } from "react";
+import { useUiLanguage } from "../../../i18n";
 
 import { ListToggleRow } from "../../../components/ui/ListToggleRow";
 

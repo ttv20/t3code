@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import { Pressable } from "react-native";
-import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
-import { AppText } from "./AppText";
-import { SymbolView } from "./AppSymbol";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
+import { SymbolView } from "./AppSymbol";
+import { AppText } from "./AppText";
+import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
 
 export function FloatingActionButton(props: FloatingActionButtonProps) {
   const { t: uiT } = useUiLanguage();

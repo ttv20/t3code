@@ -1,35 +1,38 @@
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import { AsyncResult } from "effect/reactivity";
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
-import { TextInputWrapper } from "expo-paste-input";
-import { AppTextInput as TextInput } from "../../components/ui/AppText";
-import { useNativePaste } from "../../lib/useNativePaste";
-import { convertPastedImagesToAttachments } from "../../lib/composerImages";
-import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS, type UserInputQuestion } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
-import { View } from "react-native";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ComposerAttachmentButton } from "./ComposerAttachmentButton";
-import { ComposerAttachmentStrip } from "../../components/ComposerAttachmentStrip";
-import { pickComposerFiles, pickComposerMedia } from "../../lib/composerImages";
-import { useThreadSelection } from "../../state/use-thread-selection";
 import { useNavigation } from "@react-navigation/native";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { PROVIDER_SEND_TURN_MAX_ATTACHMENTS, type UserInputQuestion } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
+import { TextInputWrapper } from "expo-paste-input";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { View, type TextInputInstance } from "react-native";
+import { ComposerAttachmentStrip } from "../../components/ComposerAttachmentStrip";
 import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
+import { AppTextInput as TextInput } from "../../components/ui/AppText";
+import * as Dialog from "../../components/ui/Dialog";
 import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
-import { useServerConfigs } from "../../state/entities";
-import { appAtomRegistry } from "../../state/atom-registry";
+import { useUiLanguage } from "../../i18n";
 import {
-  appendComposerDraftAttachments,
-  composerDraftsAtom,
-  removeComposerDraftAttachment,
-  releaseUnusedComposerAttachmentFiles,
-} from "../../state/use-composer-drafts";
+  convertPastedImagesToAttachments,
+  pickComposerFiles,
+  pickComposerMedia,
+} from "../../lib/composerImages";
+import { useNativePaste } from "../../lib/useNativePaste";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useServerConfigs } from "../../state/entities";
 import {
   changeQuestionAttachmentPreparation,
   questionAttachmentDraftKey,
   questionAttachmentPreparationAtom,
 } from "../../state/question-attachments";
+import {
+  appendComposerDraftAttachments,
+  composerDraftsAtom,
+  releaseUnusedComposerAttachmentFiles,
+  removeComposerDraftAttachment,
+} from "../../state/use-composer-drafts";
+import { useThreadSelection } from "../../state/use-thread-selection";
+import { ComposerAttachmentButton } from "./ComposerAttachmentButton";
 
 export function QuestionAttachments(props: {
   requestId: string;
@@ -66,6 +69,18 @@ export function QuestionAttachments(props: {
   });
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- releases keyboard ownership on unmount, since an unmounted native input never emits blur
   useEffect(() => () => releaseFocus(), []);
+  // A controlled value makes Fabric rebuild the native text on every keystroke, which discards
+  // iOS's pending autocorrection. The input owns its text; the only outside write is an option
+  // selection clearing the draft.
+  const inputRef = useRef<TextInputInstance>(null);
+  const [initialText] = useState(props.value);
+  const nativeText = useRef(props.value);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- pushes an option selection's cleared draft into the uncontrolled native input
+  useEffect(() => {
+    if (props.value !== "" || nativeText.current === "") return;
+    nativeText.current = "";
+    inputRef.current?.clear();
+  }, [props.value]);
   const append = (
     key: string,
     attachments: Parameters<typeof appendComposerDraftAttachments>[1],
@@ -200,11 +215,15 @@ export function QuestionAttachments(props: {
       <VideoPreviewModal source={previewVideo} onRequestClose={() => setPreviewVideo(null)} />
       <TextInputWrapper onPaste={paste}>
         <TextInput
-          value={props.value}
+          ref={inputRef}
+          defaultValue={initialText}
           multiline={props.question.initialAnswer !== undefined}
           submitBehavior={props.question.initialAnswer !== undefined ? "newline" : undefined}
           editable={!props.disabled}
-          onChangeText={props.onChangeText}
+          onChangeText={(text) => {
+            nativeText.current = text;
+            props.onChangeText(text);
+          }}
           onFocus={() => {
             focusedRef.current = true;
             onInputFocusChange?.(true);

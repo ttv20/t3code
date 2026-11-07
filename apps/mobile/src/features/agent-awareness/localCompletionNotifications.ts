@@ -1,7 +1,7 @@
 import { presentThreadShell } from "@t3tools/client-runtime/state/models";
+import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
 import type { EnvironmentId, OrchestrationV2ThreadShell } from "@t3tools/contracts";
 import { resolveThreadListV2Status } from "../threads/threadListV2";
-import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
 
 export interface LocalCompletionThread {
   readonly id: string;

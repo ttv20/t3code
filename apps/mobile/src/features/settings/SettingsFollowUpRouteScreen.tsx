@@ -1,16 +1,15 @@
-import { useUiLanguage } from "../../i18n";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
-import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
+import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 import { DEFAULT_FOLLOW_UP_BEHAVIOR, type FollowUpBehavior } from "../../lib/followUpBehavior";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
-import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
-import { SettingsSection } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
+import { SettingsSection } from "./components/SettingsSection";
 
 const FOLLOW_UP_OPTIONS: ReadonlyArray<{
   readonly behavior: FollowUpBehavior;
@@ -69,11 +68,5 @@ export function SettingsFollowUpRouteScreen() {
     </ScrollView>
   );
 
-  return Platform.OS === "android" ? (
-    <SettingsScreen title={uiT("Chat")}>{content}</SettingsScreen>
-  ) : (
-    <View collapsable={false} className="flex-1 bg-sheet">
-      {content}
-    </View>
-  );
+  return <SettingsScreen title={uiT("Chat")}>{content}</SettingsScreen>;
 }

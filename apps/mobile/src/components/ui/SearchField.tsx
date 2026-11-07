@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import type { RefObject } from "react";
 import { Pressable, TextInput, type TextInputInstance, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "./AppSymbol";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";

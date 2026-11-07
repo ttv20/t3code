@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { AppText as Text } from "../../components/ui/AppText";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 

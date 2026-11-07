@@ -1,20 +1,20 @@
+import { SliderRow } from "../../../../components/ui/SliderRow";
 import { useUiLanguage } from "../../../../i18n";
 import {
   BASE_FONT_SIZE_STEP,
   MAX_BASE_FONT_SIZE,
+  MAX_CHAT_LINE_HEIGHT,
   MIN_BASE_FONT_SIZE,
   MIN_CHAT_LINE_HEIGHT,
-  MAX_CHAT_LINE_HEIGHT,
 } from "../../../../lib/appearancePreferences";
 import { SettingsSection } from "../../components/SettingsSection";
+import { SettingsSwitchRow } from "../../components/SettingsSwitchRow";
 import { useAppearancePreferences } from "../AppearancePreferencesProvider";
 import {
   AppearancePreviewSeparator,
   TextAppearancePreview,
 } from "../components/AppearancePreviews";
 import { FontSizeSliderRow } from "../components/FontSizeSliderRow";
-import { SettingsSwitchRow } from "../../components/SettingsSwitchRow";
-import { SliderRow } from "../../../../components/ui/SliderRow";
 
 export function TextAppearanceSection() {
   const { t: uiT } = useUiLanguage();

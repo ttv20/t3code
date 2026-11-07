@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
@@ -24,11 +22,13 @@ import type {
 import { Atom } from "effect/reactivity";
 import { useMemo } from "react";
 import { Pressable, View, type ColorValue } from "react-native";
-import { AppText as Text } from "../../components/ui/AppText";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { ProviderIcon, ProviderInstanceIcon } from "../../components/ProviderIcon";
-import { environmentThreadDetails } from "../../state/threads";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 import { serverEnvironment } from "../../state/server";
+import { environmentThreadDetails } from "../../state/threads";
 import { ThreadContextDivider } from "./thread-context-divider";
 
 type HandoffProvider = ServerProvider & {

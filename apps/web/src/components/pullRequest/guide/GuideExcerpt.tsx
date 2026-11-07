@@ -38,6 +38,7 @@ import {
   fileDiffRows,
   rowsToPatch,
 } from "@t3tools/client-runtime/review-guide-tour";
+import type { PullRequestCompletionScope } from "../PullRequestMarkdownTextarea";
 import { GuideNoteMarker } from "./GuideNotes";
 import { GuideProse } from "./GuideProse";
 
@@ -56,6 +57,7 @@ export interface ExcerptCommenting {
   readonly canComment: boolean;
   /** The host anchors a comment to a range of lines rather than to its last one. */
   readonly rangeComments: boolean;
+  readonly completionScope: PullRequestCompletionScope | null;
   readonly pending: ReadonlyArray<PendingReviewComment>;
   readonly onComment: (comment: {
     readonly path: string;
@@ -329,10 +331,9 @@ function ExcerptDiff({
                 kind="draft"
                 rangeLabel={`${excerpt.path}:${getReviewPositionAnchor(draft.position).line}`}
                 text=""
+                completionScope={commenting.canComment ? commenting.completionScope : null}
                 placeholder={
-                  commenting.canComment
-                    ? uiT("Add a comment…")
-                    : uiT("Ask the agent about these lines…")
+                  commenting.canComment ? "Add a comment…" : uiT("Ask the agent about these lines…")
                 }
                 submitLabel={commenting.canComment ? "Add to review" : "Ask agent"}
                 {...(commenting.canComment && onAskAgent !== null

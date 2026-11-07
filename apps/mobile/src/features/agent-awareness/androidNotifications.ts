@@ -1,5 +1,5 @@
-import Constants from "expo-constants";
 import { requireOptionalNativeModule } from "expo";
+import Constants from "expo-constants";
 import { Linking, Platform } from "react-native";
 
 interface AndroidAgentNotifications {

@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
-import { EnvironmentId } from "@t3tools/contracts";
 import {
   readHostCredentialSettings,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
+import { EnvironmentId } from "@t3tools/contracts";
 import { Linking, Pressable, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { useEnvironmentPresentation } from "../../state/presentation";

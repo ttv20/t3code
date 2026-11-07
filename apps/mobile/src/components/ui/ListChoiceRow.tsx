@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import type { ReactNode } from "react";
 import { Platform, View } from "react-native";
 import { useResolveClassNames } from "uniwind";
 
@@ -10,19 +10,20 @@ import { RowPressable } from "./RowPressable";
 
 export function ListChoiceRow(props: {
   readonly label: string;
+  readonly leading?: ReactNode;
   readonly description?: string;
+  readonly meta?: ReactNode;
   readonly selected: boolean;
   readonly separated?: boolean;
   readonly disabled?: boolean;
   readonly onPress: () => void;
 }) {
-  const { t } = useUiLanguage();
   const rippleStyle = useResolveClassNames("bg-subtle-strong");
   return (
     <RowPressable
       accessibilityRole="radio"
-      accessibilityLabel={t(props.label)}
-      accessibilityHint={props.description ? t(props.description) : undefined}
+      accessibilityLabel={props.label}
+      accessibilityHint={props.description}
       accessibilityState={{ checked: props.selected, disabled: Boolean(props.disabled) }}
       disabled={props.disabled}
       onPress={props.onPress}
@@ -32,8 +33,10 @@ export function ListChoiceRow(props: {
       className={cn("bg-grouped-card", props.separated && "border-t border-border-subtle")}
     >
       <ListRowLayout
-        label={t(props.label)}
-        description={props.description ? t(props.description) : undefined}
+        label={props.label}
+        leading={props.leading}
+        description={props.description}
+        meta={props.meta}
         disabled={props.disabled}
         accessory={
           <View

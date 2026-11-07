@@ -1,49 +1,51 @@
-import { useUiLanguage } from "../../i18n";
-import { SheetCloseButton } from "../../components/ui/SheetHeader";
-import { Button } from "../../components/ui/Button";
-import * as Dialog from "../../components/ui/Dialog";
+import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import {
-  deviceToolVersionLabels,
   deviceToolUpdateOwnership,
   deviceToolUpdatePolicy,
+  deviceToolVersionLabels,
 } from "@t3tools/client-runtime/state/device";
-import { useIsFocused, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
-import { useEffect, useRef, useState, type RefObject } from "react";
 import * as Haptics from "expo-haptics";
 import { Accelerometer } from "expo-sensors";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Pressable, StatusBar, View } from "react-native";
 import Animated, { FadeIn, FadeOut, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { SheetCloseButton } from "../../components/ui/SheetHeader";
+import { useUiLanguage } from "../../i18n";
 
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { AppBar } from "../../components/ui/AppBar";
+import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText } from "../../components/ui/AppText";
 import { ControlPill } from "../../components/ui/ControlPill";
-import { Menu } from "../../components/ui/Menu";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import {
   androidHeaderMenuActions,
   findHeaderMenuAction,
 } from "../../components/ui/headerMenu.android";
-import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
+import { Menu } from "../../components/ui/Menu";
+import { useBarOverlap } from "../../components/ui/useBarInset";
 import { useAppForeground } from "../../lib/appState";
 import { useHardwareBack } from "../../lib/backHandler";
 import { deriveBottomControlInsets } from "../../lib/reserved-regions";
-import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { uuidv4 } from "../../lib/uuid";
+import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { deviceEnvironment, useDeviceHubAccess } from "../../state/device";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { DeviceStreamWebView, type DeviceStreamRef } from "./DeviceStreamWebView";
+import { createShakeDetector } from "./shakeDetector";
 import {
   selectedThreadDevicePreview,
   threadDevicePreviews,
   type ThreadDevicePreview,
 } from "./threadDevicePreviews";
-import { createShakeDetector } from "./shakeDetector";
 
 const OVERLAY_ENTERING = FadeIn.duration(160).reduceMotion(ReduceMotion.System);
 const OVERLAY_EXITING = FadeOut.duration(120).reduceMotion(ReduceMotion.System);
@@ -91,7 +93,9 @@ export function DevicePreviewScreen({
 
   const embedded = onMaximize !== undefined;
   const insets = useSafeAreaInsets();
-  // NativeColumnContent already insets the sides, so only a book fold moves the reveal handle.
+  // In a pane the stream sits below the pane's bar, which content otherwise slides under.
+  const barOverlap = useBarOverlap();
+  // NativeColumnContent already insets the sides, so only a book fold moves the hidden-controls pill.
   const handleBounds = deriveBottomControlInsets(useNativeColumnLayoutMetrics());
   const { themeVariables } = useAppearancePreferences();
   const focused = useIsFocused();
@@ -109,7 +113,7 @@ export function DevicePreviewScreen({
   const preview = selectedThreadDevicePreview(previews, selectedKey);
   const onInputConnected = async (connected: boolean) => {
     setInputConnected(connected);
-    if (connected && !embedded) setControlsVisible(false);
+    if (!connected) setControlsVisible(true);
   };
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- closes the focused route through the navigator once the thread has no device previews
   useEffect(() => {
@@ -268,20 +272,19 @@ export function DevicePreviewScreen({
     <View className="flex-1" style={{ backgroundColor: themeVariables["--color-sheet-solid"] }}>
       {!embedded ? <StatusBar hidden animated /> : null}
       {embedded ? (
-        <View
-          className="flex-row items-center gap-1 px-2 pb-2"
-          style={{ paddingTop: Math.max(insets.top, 8) }}
-        >
-          <SheetCloseButton accessibilityLabel={uiT("Close device preview")} onClose={onClose} />
-          <AppText numberOfLines={1} className="min-w-0 flex-1 font-t3-medium text-sm">
-            {preview?.name ?? "Devices"}
-          </AppText>
-          <ControlPill
-            accessibilityLabel={uiT("Maximize device")}
-            icon="arrow.up.left.and.arrow.down.right"
-            onPress={() => onMaximize(preview?.key ?? null)}
+        <>
+          <AppBar
+            title={preview?.name ?? uiT("Devices")}
+            actions={[
+              {
+                accessibilityLabel: uiT("Maximize device"),
+                icon: "arrow.up.left.and.arrow.down.right",
+                onPress: () => onMaximize(preview?.key ?? null),
+              },
+            ]}
           />
-        </View>
+          <View style={{ height: barOverlap }} />
+        </>
       ) : null}
       {preview && focused && foreground ? (
         <OpenDevicePreview
@@ -354,20 +357,23 @@ export function DevicePreviewScreen({
           </View>
         </Animated.View>
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={uiT("Show device controls")}
-          accessibilityHint={uiT("Shaking the phone also shows them")}
-          hitSlop={12}
-          className="absolute h-11 w-16 items-center justify-center self-center"
+        <View
+          pointerEvents="box-none"
+          className="absolute self-center"
           style={{
             top: Math.max(insets.top, 12),
             transform: [{ translateX: (handleBounds.left - handleBounds.right) / 2 }],
           }}
-          onPress={() => setControlsVisible(true)}
         >
-          <View className="h-1.5 w-10 rounded-full bg-white/40" />
-        </Pressable>
+          <GlassSurface className="flex-row items-center gap-1 p-1">
+            <SheetCloseButton accessibilityLabel={uiT("Close device preview")} onClose={onClose} />
+            <ControlPill
+              accessibilityLabel={uiT("Show device controls")}
+              icon="chevron.down"
+              onPress={() => setControlsVisible(true)}
+            />
+          </GlassSurface>
+        </View>
       )}
     </View>
   );

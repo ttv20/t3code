@@ -2,18 +2,18 @@ import {
   Platform,
   Text as RNText,
   TextInput as RNTextInput,
-  type TextInputInstance,
   type TextInputProps as RNTextInputProps,
   type TextProps as RNTextProps,
+  type TextInputInstance,
 } from "react-native";
 
 import { MOBILE_TEXT_CLASSES } from "../../lib/typography";
 
-import { cn } from "../../lib/cn";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
+import { cn } from "../../lib/cn";
 
 export type AppTextProps = RNTextProps & {
   readonly className?: string;

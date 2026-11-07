@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import type {
   NativeStackHeaderItem,
   NativeStackHeaderItemMenu,
@@ -7,22 +6,23 @@ import type {
 import { isValidElement, useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { KeyboardController, useKeyboardState } from "react-native-keyboard-controller";
-import { isDuoDevice } from "../lib/device-type";
-import { useMobileNavigationTheme } from "../lib/useMobileNavigationTheme";
-import { useDeviceType, useNativeLayoutMetrics } from "../native/native-layout-metrics";
-import { HeaderItemsWidthContext } from "./header-items-width";
 import {
   SearchBar,
   Stack,
+  type HeaderBarButtonItemWithMenu,
   type HeaderBarButtonMailSearchToolbarItem,
+  type HeaderBarButtonSearchBarPlacementItem,
   type SearchBarCommands,
   type StackHeaderConfigProps,
-  type StackHeaderMinimizationBehaviorIOS,
   type StackHeaderMenuElementIOS,
   type StackHeaderMenuIOS,
-  type HeaderBarButtonItemWithMenu,
-  type HeaderBarButtonSearchBarPlacementItem,
+  type StackHeaderMinimizationBehaviorIOS,
 } from "react-native-screens";
+import { useUiLanguage } from "../i18n";
+import { isDuoDevice } from "../lib/device-type";
+import { useMobileNavigationTheme } from "../lib/useMobileNavigationTheme";
+import { HeaderItemsWidthContext } from "./header-items-width";
+import { useDeviceType, useNativeLayoutMetrics } from "./native-layout-metrics";
 
 // UIKit's bar margins, and the width of a glass bar button.
 const BAR_MARGINS = 32;
@@ -270,7 +270,7 @@ export function V5StackHeader(props: {
     leading.push({ type: "item", id: "custom-left", render: () => left });
   if (!options.unstable_headerRightItems && isValidElement(right))
     trailing.push({ type: "item", id: "custom-right", render: () => right });
-  const title = uiT(typeof options.headerTitle === "string" ? options.headerTitle : options.title);
+  const title = typeof options.headerTitle === "string" ? options.headerTitle : options.title;
   const titleElement =
     typeof options.headerTitle === "function"
       ? options.headerTitle({ children: title ?? "", tintColor: options.headerTintColor })
@@ -323,7 +323,7 @@ export function V5StackHeader(props: {
       <Stack.HeaderConfig
         hidden={options.headerShown === false}
         transparent={options.headerTransparent}
-        title={uiT(title)}
+        title={title}
         subtitle={options.unstable_headerSubtitle ?? options.headerSubtitle}
         backButtonHidden={options.headerBackVisible === false}
         ios={{

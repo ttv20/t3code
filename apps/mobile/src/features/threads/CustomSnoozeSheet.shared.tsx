@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
 import {
   localSnoozeDate,
@@ -18,7 +16,9 @@ import {
   View,
 } from "react-native";
 import { AppText } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
+import { useUiLanguage } from "../../i18n";
 
 export function CustomSnoozeSheet(props: {
   readonly onClose: () => void;

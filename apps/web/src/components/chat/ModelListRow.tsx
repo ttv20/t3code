@@ -82,6 +82,7 @@ export const ModelListRow = memo(function ModelListRow(props: {
           {/* The logo is decorative, so name the provider for screen readers. */}
           <span className="sr-only">, {props.providerDisplayName}</span>
         </div>
+        {props.isSelected ? <CheckIcon className="size-3.5 shrink-0" aria-hidden="true" /> : null}
         {props.subProvider ? (
           <span className="min-w-0 shrink truncate text-xs text-muted-foreground/70">
             {props.subProvider}
@@ -103,14 +104,12 @@ export const ModelListRow = memo(function ModelListRow(props: {
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {props.jumpLabel ? <Kbd>{props.jumpLabel}</Kbd> : null}
         <Tooltip>
           <TooltipTrigger
             render={
               <Button
                 size="icon-xs"
                 variant="ghost-muted"
-                className="-mr-1 shrink-0"
                 onClick={(event) => {
                   event.stopPropagation();
                   props.onToggleFavorite(props.instanceId, props.slug);
@@ -119,9 +118,7 @@ export const ModelListRow = memo(function ModelListRow(props: {
                   event.stopPropagation();
                 }}
                 disabled={Boolean(props.disabledReason)}
-                aria-label={
-                  props.isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")
-                }
+                aria-label={props.isFavorite ? "Remove from favorites" : uiT("Add to favorites")}
               >
                 <StarIcon
                   className={cn(
@@ -138,11 +135,7 @@ export const ModelListRow = memo(function ModelListRow(props: {
             {props.isFavorite ? uiT("Remove from favorites") : uiT("Add to favorites")}
           </TooltipPopup>
         </Tooltip>
-        {/* Last, and always reserved, so stars and the check keep fixed columns. */}
-        <CheckIcon
-          className={cn("size-3.5", !props.isSelected && "invisible")}
-          aria-hidden="true"
-        />
+        {props.jumpLabel ? <Kbd>{props.jumpLabel}</Kbd> : null}
       </div>
     </ComboboxItem>
   );

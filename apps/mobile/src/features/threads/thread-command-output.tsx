@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { TERMINAL_PALETTES, terminalOutputSpans } from "@t3tools/shared/terminalOutput";
 import type React from "react";
 import { useMemo, useRef } from "react";
 import { ScrollView, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { useServerConfigs } from "../../state/entities";

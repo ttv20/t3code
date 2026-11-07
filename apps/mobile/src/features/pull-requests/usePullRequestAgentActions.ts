@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import type { PullRequestDetail } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 import {
   pullRequestAgentActions,
   pullRequestAgentThread,
   type PullRequestAgentTask,
 } from "./pullRequestAgentTasks";
-import type { PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestConnected } from "./usePullRequestConnected";
+import type { PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestThreads } from "./usePullRequestThreads";
 
 export function usePullRequestAgentActions(

@@ -1,16 +1,13 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { NativeScrollView } from "../../native/NativeScrollViewMarker";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestChangeBreakdown } from "@t3tools/contracts";
 import { useState } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import Animated from "react-native-reanimated";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { IconButton } from "../../components/ui/IconButton";
@@ -18,11 +15,14 @@ import { Menu } from "../../components/ui/Menu";
 import { RowPressable } from "../../components/ui/RowPressable";
 import { ScreenContent } from "../../components/ui/ScreenContent";
 import { SheetHeader } from "../../components/ui/SheetHeader";
-import { Toolbar } from "../../components/ui/Toolbar";
+import { UiText, useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
+import { readUiTranslator } from "../../state/ui-language";
 import type { ReviewParsedDiff, ReviewRenderableFile } from "../review/reviewModel";
 import { PR_ROW_ENTER, PR_ROW_EXIT, PR_ROW_LAYOUT } from "./pullRequestAnimations";
+import { pullRequestFileJumpScope, requestPullRequestFileJump } from "./pullRequestFileJump";
 import { PullRequestDiffStats, PullRequestReadStatus } from "./PullRequestPresentation";
 import { PullRequestSectionHeading } from "./PullRequestSectionHeading";
 import {
@@ -33,7 +33,6 @@ import {
 } from "./usePullRequestDiff";
 import { usePullRequestFileFilter } from "./usePullRequestFileFilter";
 import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
-import { pullRequestFileJumpScope, requestPullRequestFileJump } from "./pullRequestFileJump";
 
 const BREAKDOWN_LABELS = {
   code: "Code",
@@ -80,7 +79,9 @@ function describeFiles(
   parsed: Extract<ReviewParsedDiff, { readonly kind: "files" }>,
   { filter, viewed }: ChangedFiles,
 ) {
-  const noun = (count: number) => (count === 1 ? "file" : "files");
+  const uiT = readUiTranslator();
+
+  const noun = (count: number) => (count === 1 ? uiT("file") : uiT("files"));
   return [
     `${parsed.fileCount} ${filter.hiddenCount ? "visible" : "changed"} ${noun(parsed.fileCount)}`,
     viewed.supported
@@ -436,31 +437,28 @@ export function PullRequestFilesSheet({ route }: StaticScreenProps<PullRequestDi
   return (
     <View collapsable={false} className="flex-1 bg-sheet">
       <SheetHeader
-        presentation={Platform.OS === "android" ? "inline" : "native"}
         title={uiT("Changed files")}
         subtitle={`#${params.number} · ${params.commit?.slice(0, 7) ?? params.repository}`}
         onClose={() => navigation.goBack()}
-        // iOS gets the native menu below; SheetHeader would render this as a custom bar item.
-        trailing={Platform.OS === "android" ? <FileFilterMenu filter={filter} /> : undefined}
+        menus={[
+          {
+            title: uiT("Filter review files"),
+            icon: "line.3.horizontal.decrease",
+            items: [
+              {
+                id: "hide-tests",
+                title: uiT("Hide test files"),
+                icon: "line.3.horizontal.decrease",
+                selected: filter.hideTestFiles,
+                onPress: filter.toggle,
+              },
+            ],
+          },
+        ]}
       />
-      <Toolbar placement="right">
-        <Toolbar.Menu
-          title={uiT("Review files")}
-          accessibilityLabel={uiT("Filter review files")}
-          icon="line.3.horizontal.decrease"
-        >
-          <Toolbar.MenuAction
-            icon="line.3.horizontal.decrease"
-            isOn={filter.hideTestFiles}
-            onPress={filter.toggle}
-          >
-            <Toolbar.Label>{uiT("Hide test files")}</Toolbar.Label>
-          </Toolbar.MenuAction>
-        </Toolbar.Menu>
-      </Toolbar>
       <ScreenContent>
         <AnimatedLegendList
-          renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
+          renderScrollComponent={NativeScrollView}
           className="flex-1"
           data={parsed.kind === "files" ? groupByDirectory(parsed.files, collapsed) : []}
           keyExtractor={(item) => item.key}

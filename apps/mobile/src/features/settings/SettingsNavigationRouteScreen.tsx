@@ -1,30 +1,30 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
-import { useAdaptiveWorkspaceLayout } from "../layout/adaptive-workspace-context";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { IconButton } from "../../components/ui/IconButton";
+import { ScreenScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
+import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { useAdaptiveWorkspaceLayout } from "../layout/adaptive-workspace-context";
 import {
   moveNavigationTab,
   navigationCustomizationAvailable,
   toggleNavigationTabVisibility,
-} from "../workspace/navigation-tab-order";
-import { AppText as Text } from "../../components/ui/AppText";
-import { IconButton } from "../../components/ui/IconButton";
-import { Button } from "../../components/ui/Button";
-import { ScreenScrollView } from "../../components/ui/ScreenScrollView";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+} from "../layout/workspace/navigation-tab-order";
 import {
   NAVIGATION_TAB_ICONS,
   WORKSPACE_TAB_LABELS,
-  useNavigationTabOrder,
-  useHiddenNavigationTabs,
   useEnabledNavigationTabs,
-} from "../workspace/navigation-tabs";
+  useHiddenNavigationTabs,
+  useNavigationTabOrder,
+} from "../layout/workspace/navigation-tabs";
+import { resolveWorkspaceTabOrder } from "../layout/workspace/workspace-tabs-state";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
-import { resolveWorkspaceTabOrder } from "../workspace/workspace-tabs-state";
 
 export function SettingsNavigationRouteScreen() {
   const { t: uiT } = useUiLanguage();
@@ -71,7 +71,7 @@ export function SettingsNavigationRouteScreen() {
               </View>
               <IconButton
                 icon={hidden.includes(tab) ? "eye.slash" : "eye"}
-                accessibilityLabel={`${hidden.includes(tab) ? "Show" : "Hide"} ${WORKSPACE_TAB_LABELS[tab]}`}
+                accessibilityLabel={`${hidden.includes(tab) ? uiT("Show") : uiT("Hide")} ${WORKSPACE_TAB_LABELS[tab]}`}
                 disabled={!ready}
                 onPress={() =>
                   save({

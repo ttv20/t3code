@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText, AppTextInput, type AppTextInputProps } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";

@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { INTERFACE_DIRECTIONS, INTERFACE_LANGUAGES } from "@t3tools/client-runtime/i18n";
 import { AsyncResult } from "effect/reactivity";
 import { View } from "react-native";
-import { INTERFACE_DIRECTIONS, INTERFACE_LANGUAGES } from "@t3tools/client-runtime/i18n";
+import { useUiLanguage } from "../../i18n";
 
+import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { SettingsSection } from "./components/SettingsSection";
-import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 
 export function LanguageSettingsSection() {
   const { t: uiT } = useUiLanguage();

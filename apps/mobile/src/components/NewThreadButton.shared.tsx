@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../i18n";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
+import { useUiLanguage } from "../i18n";
 
 import { cn } from "../lib/cn";
-import { AppText } from "./ui/AppText";
 import { SymbolView } from "./ui/AppSymbol";
+import { AppText } from "./ui/AppText";
 
 export function NewThreadButton(props: {
   readonly onPress: () => void;

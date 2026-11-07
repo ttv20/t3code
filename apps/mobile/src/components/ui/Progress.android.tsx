@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import { LinearProgressIndicator } from "@expo/ui/jetpack-compose";
 import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import { View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
+import { useUiLanguage } from "../../i18n";
 import { NativeThemeHost } from "./NativeThemeHost.android";
-import { useControlTheme } from "./useControlTheme";
 import { clampProgress, type ProgressProps } from "./Progress.types";
+import { useControlTheme } from "./useControlTheme";
 
 export function Progress(props: ProgressProps) {
   const { t: uiT } = useUiLanguage();

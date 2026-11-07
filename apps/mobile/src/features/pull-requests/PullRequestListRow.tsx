@@ -1,26 +1,27 @@
-import { useUiLanguage } from "../../i18n";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
 import { memo } from "react";
 import { Pressable, View } from "react-native";
-import { AppText as Text } from "../../components/ui/AppText";
+import { RelativeTime } from "../../components/RelativeTime";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Menu } from "../../components/ui/Menu";
 import type { MenuProps } from "../../components/ui/Menu.types";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
-import { RelativeTime } from "../../components/RelativeTime";
 import {
   selectedThreadRowColors,
-  THREAD_LIST_V2_SIDEBAR_ROW_STYLE,
   THREAD_LIST_V2_SIDEBAR_ROW_CONTAINER_STYLE,
+  THREAD_LIST_V2_SIDEBAR_ROW_STYLE,
 } from "../threads/thread-list-v2-row-appearance";
 import {
   PullRequestAvatar,
   PullRequestConflictBadge,
   PullRequestDiffStats,
 } from "./PullRequestPresentation";
+import { PullRequestGlyph } from "./pullRequestGlyphs";
 import {
   pullRequestLabelColor,
   pullRequestListReviewStatus,
@@ -32,7 +33,6 @@ import {
   pullRequestConflict,
   pullRequestStatus,
 } from "./pullRequestStatus";
-import { PullRequestGlyph } from "./pullRequestGlyphs";
 
 export const PullRequestListRow = memo(
   function PullRequestListRow(props: {

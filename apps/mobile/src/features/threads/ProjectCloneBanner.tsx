@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
 import {
   projectCloneDisplayName,
   projectCloneProgressSummary,
   type ProjectCloneSnapshot,
 } from "@t3tools/contracts";
 import { View } from "react-native";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
 
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { cn } from "../../lib/cn";
 import { AppText as Text } from "../../components/ui/AppText";
+import { cn } from "../../lib/cn";
 
 export function ProjectCloneBanner(props: {
   readonly clone: ProjectCloneSnapshot;

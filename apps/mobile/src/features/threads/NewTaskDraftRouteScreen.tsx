@@ -1,41 +1,42 @@
-import { readUiTranslator } from "../../state/ui-language";
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import {
   CommonActions,
-  useRoute,
   usePreventRemove,
   usePreventRemoveContext,
+  useRoute,
   type StaticScreenProps,
 } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { View } from "react-native";
-import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
   runAtomCommand,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult, Atom } from "effect/reactivity";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
+import { AppBar } from "../../components/ui/AppBar";
 import { AppText as Text } from "../../components/ui/AppText";
-import { useProjects } from "../../state/entities";
-import { appAtomRegistry } from "../../state/atom-registry";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 import { rootNavigationRef } from "../../lib/rootNavigation";
-import { threadSelectionDeferral } from "../layout/deferred-navigation";
-import { useWorkspaceState } from "../../state/workspace";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useProjects } from "../../state/entities";
+import { readUiTranslator } from "../../state/ui-language";
 import { vcsEnvironment } from "../../state/vcs";
+import { useWorkspaceState } from "../../state/workspace";
+import { threadSelectionDeferral } from "../layout/deferred-navigation";
+import { useWorkspaceBackNavigation } from "../layout/workspace/useAndroidWorkspaceNavigation";
 import { checkoutNewTaskBranch } from "./checkout-new-task-branch";
-import { resolveNewTaskBranchWorktreePath } from "./new-task-context-presentation";
 import {
-  type BranchCheckoutResult,
   branchCheckoutRequestKey,
   makeNewTaskBranchCheckouts,
+  type BranchCheckoutResult,
 } from "./new-task-branch-checkout";
+import { resolveNewTaskBranchWorktreePath } from "./new-task-context-presentation";
 import { liveNewTaskFlowKeys, newTaskFlowKey } from "./new-task-flow-state";
-import { NativeStackScreenOptions } from "../../native/StackHeader";
 
-import { ThreadScreenFallback } from "./ThreadScreenHost";
 import { NewTaskDraftScreen } from "./NewTaskDraftScreen";
+import { ThreadScreenFallback } from "./ThreadScreenHost";
 
 import type { NewTaskDraftRouteParams } from "./thread-route-state";
 export type { NewTaskDraftRouteParams } from "./thread-route-state";
@@ -94,6 +95,7 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
   const { t: uiT } = useUiLanguage();
 
   const currentRoute = useRoute();
+  const goBack = useWorkspaceBackNavigation("threads");
   const params = route.params ?? {};
   const draftId = Array.isArray(params.draftId) ? params.draftId[0] : params.draftId;
   const projects = useProjects();
@@ -202,8 +204,7 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
   return (
     <>
       {preparingBranch ? (
-        <ThreadScreenFallback>
-          <NativeStackScreenOptions options={{ title: uiT("New thread") }} />
+        <ThreadScreenFallback header={<AppBar title={uiT("New thread")} onBack={goBack} />}>
           <View className="flex-1 items-center justify-center bg-screen">
             <Text className="text-foreground">{uiT("Switching branch...")}</Text>
           </View>

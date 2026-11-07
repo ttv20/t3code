@@ -1,59 +1,59 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { SheetHeader } from "../../components/ui/SheetHeader";
-import { AsyncResult } from "effect/reactivity";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { usePullRequestConnected } from "./usePullRequestConnected";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import {
+  hostReviewerQuery,
+  reviewerCandidateView,
+  type ReviewerTruncation,
+} from "@t3tools/client-runtime/pull-request-reviewers";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { PullRequestReviewerCandidate } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
-import {
-  FlatList,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-  type ScrollViewProps,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeScrollViewMarker";
-import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { Button } from "../../components/ui/Button";
+import { FlatList, Pressable, ScrollView, View } from "react-native";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { AppBar, type AppBarSearch } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { NativeStackScreenOptions } from "../../native/StackHeader";
-import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
+import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { useContentTopInset, useSearchToolbarInset } from "../../components/ui/useBarInset";
+import { UiText, useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 import { composerPullRequests } from "../../state/pull-requests";
+import { useDebouncedValue } from "../../state/queries";
 import { useEnvironmentQuery } from "../../state/query";
+import { readUiTranslator } from "../../state/ui-language";
 import { useAtomCommand } from "../../state/use-atom-command";
-import {
-  createNativeMailSearchToolbarItem,
-  NATIVE_MAIL_SEARCH_TOOLBAR_SUPPORTED,
-} from "../layout/native-mail-search-toolbar";
 import { PullRequestAvatar } from "./PullRequestPresentation";
+import { usePullRequestConnected } from "./usePullRequestConnected";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 
-function ReviewerScrollView(props: ScrollViewProps) {
-  return (
-    <ScrollViewMarker style={{ flex: 1 }}>
-      <ScrollView {...props} contentInsetAdjustmentBehavior="automatic" />
-    </ScrollViewMarker>
-  );
-}
+const TRUNCATED_LABELS: Record<ReviewerTruncation, (error: string | null) => string> = {
+  unsearchable: () =>
+    readUiTranslator()(
+      "The provider has more reviewers than it returned. Find additional reviewers on the provider.",
+    ),
+  searchable: () =>
+    readUiTranslator()(
+      "The provider has more reviewers than are listed here. Search to find them.",
+    ),
+  "search-failed": (error) =>
+    readUiTranslator()("Only listed reviewers are matched: the provider search failed. {0}", {
+      "0": error ?? "",
+    }),
+  "search-truncated": () =>
+    readUiTranslator()(
+      "More reviewers match than the provider returned. Keep typing to narrow it down.",
+    ),
+};
 
 export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequestParams>) {
   const { t: uiT } = useUiLanguage();
 
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const contentTopInset = useContentTopInset();
   const listRef = useRef<FlatList<PullRequestReviewerCandidate>>(null);
-  const nativeMetrics = useNativeLayoutMetrics();
-  const integratedSearch =
-    NATIVE_MAIL_SEARCH_TOOLBAR_SUPPORTED &&
-    (!nativeMetrics || nativeMetrics.verticalBarEdge === "none");
   const target = pullRequestTarget(route.params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(target));
   const pr = detail.data;
@@ -80,21 +80,35 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
-  const candidates = (() => {
-    const needle = query.trim().toLowerCase();
-    return [...(result.data?.candidates ?? [])]
-      .filter((candidate) =>
-        `${candidate.login} ${candidate.name ?? ""}`.toLowerCase().includes(needle),
-      )
-      .sort(
-        (a, b) => Number(b.isRequested) - Number(a.isRequested) || a.login.localeCompare(b.login),
-      );
-  })();
+  const debouncedQuery = useDebouncedValue(query.trim(), 250);
+  const searchInput = {
+    loaded: result.data,
+    searchable: pr?.capabilities.reviewers.searchCandidates === true,
+    query,
+    debouncedQuery,
+  };
+  const hostQuery = hostReviewerQuery(searchInput);
+  const searchResult = useEnvironmentQuery(
+    hostQuery !== null
+      ? composerPullRequests.reviewerSearch({
+          ...target,
+          input: { ...target.input, query: hostQuery },
+        })
+      : null,
+  );
+  const view = reviewerCandidateView({
+    ...searchInput,
+    search: searchResult,
+  });
+  const candidates = [...view.candidates].sort(
+    (a, b) => Number(b.isRequested) - Number(a.isRequested) || a.login.localeCompare(b.login),
+  );
+  const queryError = result.error ?? view.searchError;
   // A new search shows its best matches from the top.
   const search = (next: string) => {
     setQuery(next);
     listRef.current?.scrollToOffset({
-      offset: Platform.OS === "ios" ? -insets.top : 0,
+      offset: -contentTopInset,
       animated: false,
     });
   };
@@ -122,60 +136,43 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
       );
       return;
     }
+    if (hostQuery !== null) searchResult.refresh();
     if (!pr?.capabilities.reviewers.listCandidates) {
       search("");
       detail.refresh();
     }
   };
   const listCandidates = pr?.capabilities.reviewers.listCandidates === true;
-  const searchOptions = {
-    placeholder: uiT("Search reviewers"),
-    autoCapitalize: "none" as const,
-    onChangeText: (event: { nativeEvent: { text: string } }) => search(event.nativeEvent.text),
-    onCancelButtonPress: () => search(""),
-    hideNavigationBar: false,
-    hideWhenScrolling: false,
-    obscureBackground: false,
-    allowToolbarIntegration: integratedSearch,
-    placement: integratedSearch ? ("automatic" as const) : ("stacked" as const),
-  };
+  const reviewerSearch: AppBarSearch | undefined = listCandidates
+    ? {
+        mode: "inline",
+        compactToolbar: true,
+        value: query,
+        onChangeText: search,
+        placeholder: uiT("Search reviewers"),
+      }
+    : undefined;
+  const searchToolbarInset = useSearchToolbarInset(reviewerSearch);
   return (
     <View className="flex-1 bg-sheet">
-      <SheetHeader
+      <AppBar
         title={uiT("Request review")}
         subtitle={`#${route.params.number} · ${route.params.repository}`}
         onClose={() => navigation.goBack()}
-        accessibilityLabel={uiT("Close request review")}
-      />
-      <NativeStackScreenOptions
-        options={{
-          headerSearchBarOptions: listCandidates ? searchOptions : undefined,
-          unstable_headerToolbarItems: () =>
-            listCandidates && integratedSearch
-              ? [
-                  createNativeMailSearchToolbarItem({
-                    placeholder: uiT("Search reviewers"),
-                    onSearchTextChange: search,
-                    showsSearchDismissButton: true,
-                    searchTextChangeId: "pr-reviewer-search",
-                  }),
-                ]
-              : [],
-        }}
+        closeAccessibilityLabel={uiT("Close request review")}
+        search={reviewerSearch}
       />
       {listCandidates ? (
         <FlatList
           ref={listRef}
           data={candidates}
           keyExtractor={(candidate) => `${candidate.kind}:${candidate.id}`}
-          renderScrollComponent={
-            Platform.OS === "ios" ? (props) => <ReviewerScrollView {...props} /> : undefined
-          }
-          contentInsetAdjustmentBehavior="never"
+          renderScrollComponent={NativeScrollView}
+          contentInsetAdjustmentBehavior="automatic"
           automaticallyAdjustKeyboardInsets
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 24 + searchToolbarInset }}
           ListHeaderComponent={
             <View className="gap-3 px-4 py-4">
               <Text className="text-xs text-foreground-muted">
@@ -183,17 +180,6 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
                   "Tap someone to request a review. Tap a requested reviewer to remove the request.",
                 )}
               </Text>
-              {Platform.OS === "android" ? (
-                <TextInput
-                  accessibilityLabel={uiT("Search reviewers")}
-                  placeholder={uiT("Search reviewers")}
-                  placeholderTextColorClassName="accent-foreground-muted"
-                  value={query}
-                  onChangeText={search}
-                  autoCapitalize="none"
-                  className="min-h-11 rounded-xl bg-grouped-card px-3 text-sm"
-                />
-              ) : null}
               {!allowed ? (
                 <Text className="text-xs text-foreground-muted">
                   <UiText
@@ -214,7 +200,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
             return (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${item.isRequested ? "Remove review request from" : "Request review from"} ${item.login}${item.kind === "team" ? " team" : ""}`}
+                accessibilityLabel={`${item.isRequested ? uiT("Remove review request from") : uiT("Request review from")} ${item.login}${item.kind === "team" ? uiT(" team") : ""}`}
                 accessibilityState={{ disabled: !allowed || pending !== null }}
                 disabled={!allowed || pending !== null}
                 onPress={() => void update(item)}
@@ -244,33 +230,36 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
             );
           }}
           ListEmptyComponent={
-            result.isPending && !result.data ? (
+            (result.isPending && !result.data) || view.searchPending ? (
               <AppActivityIndicator className="my-8" />
             ) : (
               <View className="px-4 py-6">
                 <EmptyState
                   title={
-                    result.error
+                    queryError
                       ? uiT("Couldn't load reviewers")
                       : query.trim()
                         ? uiT("No matching reviewers")
                         : uiT("No reviewers available")
                   }
                   detail={
-                    result.error ?? uiT("Search people and teams with access to this repository.")
+                    queryError ?? uiT("Search people and teams with access to this repository.")
                   }
                   variant="plain"
                 />
-                {result.error ? <Button label={uiT("Retry")} onPress={result.refresh} /> : null}
+                {queryError ? (
+                  <Button
+                    label={uiT("Retry")}
+                    onPress={result.error ? result.refresh : searchResult.refresh}
+                  />
+                ) : null}
               </View>
             )
           }
           ListFooterComponent={
-            result.data?.truncated ? (
+            view.truncation ? (
               <Text className="px-4 py-4 text-xs text-foreground-muted">
-                {uiT(
-                  "The provider has more reviewers than it returned. Find additional reviewers on the provider.",
-                )}
+                {TRUNCATED_LABELS[view.truncation](view.searchError)}
               </Text>
             ) : undefined
           }

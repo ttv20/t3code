@@ -1,21 +1,21 @@
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
 import {
-  ComposerContextId,
   COMPOSER_CONTEXT_TERMINAL_TEXT_MAX_CHARS,
+  ComposerContextId,
   type EnvironmentId,
   type ThreadId,
 } from "@t3tools/contracts";
 import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
 import { useState } from "react";
-import { Platform, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { REVIEW_MONO_FONT_FAMILY } from "../review/reviewDiffRendering";
 import { AppText as Text } from "../../components/ui/AppText";
-import { Sheet } from "../../components/ui/Sheet";
 import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { Sheet } from "../../components/ui/Sheet";
+import { useUiLanguage } from "../../i18n";
 import { uuidv4 } from "../../lib/uuid";
 import { insertComposerDraftContext } from "../../state/use-composer-drafts";
+import { REVIEW_MONO_FONT_FAMILY } from "../review/reviewDiffRendering";
 
 export function TerminalContextSheet(props: {
   text: string;
@@ -69,7 +69,7 @@ export function TerminalContextSheet(props: {
       <ScrollView
         nestedScrollEnabled
         className="flex-1"
-        contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 }}
       >
         <Text className="pb-4 text-sm text-foreground-muted">

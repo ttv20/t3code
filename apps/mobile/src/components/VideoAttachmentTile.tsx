@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../i18n";
 import { Platform, Pressable, View, type StyleProp, type ViewStyle } from "react-native";
+import { useUiLanguage } from "../i18n";
 
 import { cn } from "../lib/cn";
 import type { DraftComposerFileAttachment } from "../lib/composerImages";
-import { useMediaActions } from "../state/mediaActions";
 import { type MediaActionsSource } from "../lib/mediaActionsSource";
+import { useMediaActions } from "../state/mediaActions";
+import { MediaActionsMenu } from "./MediaActionsMenu";
 import { SymbolView } from "./ui/AppSymbol";
 import { AppText } from "./ui/AppText";
-import { MediaActionsMenu } from "./MediaActionsMenu";
 import { PresentationSource } from "./ui/NativePresentation";
 import { VideoThumbnailImage } from "./VideoThumbnailImage";
 

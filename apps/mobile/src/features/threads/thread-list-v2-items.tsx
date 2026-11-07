@@ -1,87 +1,88 @@
-import { useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
-import type { ThreadRowProviderInstance } from "./thread-provider-instance";
+import type { MenuAction } from "@react-native-menu/menu";
 import {
-  THREAD_LIST_V2_MONO_FONT as MONO_FONT,
-  THREAD_LIST_V2_ROW_CONTENT_CLASS_NAME,
-  THREAD_LIST_V2_ROW_DIVIDERS,
-  selectedThreadRowColors,
-  getThreadListV2NewBranchMenuTitle,
-  getThreadListV2RowAppearance,
-} from "./thread-list-v2-row-appearance";
-import { RowPressable } from "../../components/ui/RowPressable";
-import { CustomSnoozeSheet } from "./CustomSnoozeSheet";
-import { appAtomRegistry } from "../../state/atom-registry";
-import { threadArrangementOpenAtom } from "../../state/thread-order";
-import { threadEnvironment } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { useVisibleSecondClock } from "./use-visible-second-clock";
-import type { ThreadMoveDestination } from "./threadOrder";
+  formatWorkingDurationLabel,
+  resolveThreadWorkingStartedAt,
+} from "@t3tools/client-runtime/state/models";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
 import type { EnvironmentThreadSearchMatch } from "@t3tools/client-runtime/state/thread-search";
-import {
-  formatWorkingDurationLabel,
-  resolveThreadWorkingStartedAt,
-} from "@t3tools/client-runtime/state/models";
-import { AuthOrchestrationOperateScope, type EnvironmentMachineKind } from "@t3tools/contracts";
-import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { canSnooze } from "@t3tools/client-runtime/state/thread-settled";
 import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
-import type { MenuAction } from "@react-native-menu/menu";
+import { AuthOrchestrationOperateScope, type EnvironmentMachineKind } from "@t3tools/contracts";
+import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { memo, useCallback, useMemo, useState, type ComponentProps } from "react";
-import { Platform, Pressable, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, View, useWindowDimensions } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import * as Dialog from "../../components/ui/Dialog";
+import { RowPressable } from "../../components/ui/RowPressable";
+import { useUiLanguage } from "../../i18n";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { threadArrangementOpenAtom } from "../../state/thread-order";
+import { threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { CustomSnoozeSheet } from "./CustomSnoozeSheet";
+import {
+  THREAD_LIST_V2_MONO_FONT as MONO_FONT,
+  THREAD_LIST_V2_ROW_CONTENT_CLASS_NAME,
+  THREAD_LIST_V2_ROW_DIVIDERS,
+  getThreadListV2NewBranchMenuTitle,
+  getThreadListV2RowAppearance,
+  selectedThreadRowColors,
+} from "./thread-list-v2-row-appearance";
+import type { ThreadRowProviderInstance } from "./thread-provider-instance";
+import type { ThreadMoveDestination } from "./threadOrder";
+import { useVisibleSecondClock } from "./use-visible-second-clock";
 
-import type { ThreadListProvider } from "../../state/thread-list-environments";
-import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
-import { AppText as Text, ContentText } from "../../components/ui/AppText";
-import { Menu } from "../../components/ui/Menu";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
 import { ProviderIcon, ProviderInstanceIcon } from "../../components/ProviderIcon";
+import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { ContentText, AppText as Text } from "../../components/ui/AppText";
+import { Menu } from "../../components/ui/Menu";
 import { useNowAfter } from "../../lib/clock";
 import { cn } from "../../lib/cn";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 import { copyThreadReference } from "../../lib/copyThreadReference";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
-import { useEnvironmentScope } from "../../state/session";
-import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import {
   pendingDraftBranchNeedsRefs,
   resolvePendingDraftBranch,
 } from "../../state/pending-new-tasks-model";
 import { useBranches } from "../../state/queries";
-import { useNewTaskProjectDefaults } from "./use-new-task-project-defaults";
+import { useEnvironmentScope } from "../../state/session";
+import type { ThreadListProvider } from "../../state/thread-list-environments";
 import {
   resolveThreadPrBadgeAction,
   type ThreadPrPresentation,
 } from "../../state/thread-pr-presentation";
+import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import { useThreadPr } from "../../state/use-thread-pr";
 import { useSwipeRowDormant } from "../home/swipe-row-activation";
 import { ThreadSwipeable } from "../home/thread-swipe-actions";
-import { buildThreadTitleRegenerationMenuItems } from "./thread-title-regeneration-menu";
-import { canTurnThreadIntoProject, turnThreadIntoProject } from "./turnThreadIntoProject";
 import { threadCanArchive } from "../home/threadArchive";
-import {
-  THREAD_LIST_V2_SETTLED_PAGE_COUNT,
-  resolveThreadListV2SnoozeGateExpiryMs,
-  resolveThreadListV2SnoozeMenuSelection,
-  resolveThreadListV2SnoozePresets,
-  threadHasUnseenCompletion,
-  resolveThreadListV2Status,
-  resolveThreadListV2ProviderDrivers,
-  resolveThreadListV2SwipeActions,
-  type ThreadListV2Status,
-} from "./threadListV2";
+import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
+import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
+import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import { QueuedMessageIcon } from "./queued-message-icon";
 import { shouldRecedeThreadRow } from "./thread-row-emphasis";
 import { ThreadSearchMatchExcerpt } from "./thread-search-match";
-import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
-import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
-import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
+import { buildThreadTitleRegenerationMenuItems } from "./thread-title-regeneration-menu";
+import {
+  THREAD_LIST_V2_SETTLED_PAGE_COUNT,
+  layoutThreadListV2RowMenuActions,
+  resolveThreadListV2ProviderDrivers,
+  resolveThreadListV2SnoozeGateExpiryMs,
+  resolveThreadListV2SnoozeMenuSelection,
+  resolveThreadListV2SnoozePresets,
+  resolveThreadListV2Status,
+  resolveThreadListV2SwipeActions,
+  threadHasUnseenCompletion,
+  type ThreadListV2Status,
+} from "./threadListV2";
+import { canTurnThreadIntoProject, turnThreadIntoProject } from "./turnThreadIntoProject";
+import { useNewTaskProjectDefaults } from "./use-new-task-project-defaults";
 
 interface StatusLabel {
   readonly label: string;
@@ -258,7 +259,7 @@ function ThreadListV2ShelfHeader(
         expanded: props.expanded,
         disabled: props.disabled,
         onToggle: props.onToggle,
-        accessibilityLabel: `${props.count} ${props.kind} ${props.count === 1 ? "thread" : "threads"}`,
+        accessibilityLabel: `${props.count} ${props.kind} ${props.count === 1 ? uiT("thread") : uiT("threads")}`,
         accessibilityHint: uiT("{0} the {1} threads.", {
           "0": uiT(props.expanded ? "Collapses" : "Expands"),
           "1": uiT(props.kind),
@@ -836,9 +837,9 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     ],
     [snoozePresets, uiT],
   );
-  const arrangementMenuItems = useMemo<MenuAction[]>(
-    () => [
-      ...(props.reorderSupported === true
+  const reorderMenuItems = useMemo<MenuAction[]>(
+    () =>
+      props.reorderSupported === true
         ? [
             { id: "arrange", title: uiT("Arrange threads…"), image: "line.3.horizontal" },
             {
@@ -854,23 +855,19 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               attributes: { disabled: props.canMoveDown !== true },
             } satisfies MenuAction,
           ]
-        : []),
-      ...(props.pinningSupported
+        : [],
+    [props.canMoveDown, props.canMoveUp, props.reorderSupported, uiT],
+  );
+  const pinMenuItems = useMemo<MenuAction[]>(
+    () =>
+      props.pinningSupported
         ? [
             thread.pinnedAt != null
               ? { id: "unpin", title: uiT("Unpin"), image: "pin.slash" }
               : { id: "pin", title: uiT("Pin"), image: "pin" },
           ]
-        : []),
-    ],
-    [
-      uiT,
-      props.canMoveDown,
-      props.canMoveUp,
-      props.reorderSupported,
-      props.pinningSupported,
-      thread.pinnedAt,
-    ],
+        : [],
+    [props.pinningSupported, thread.pinnedAt, uiT],
   );
   const autoSettleMenuItems = useMemo<MenuAction[]>(
     () =>
@@ -939,73 +936,99 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       uiT,
     ],
   );
-  const snoozableCardMenuActions = useMemo<MenuAction[]>(
-    () => [
-      { id: "settle", title: uiT("Settle"), image: "checkmark" },
-      {
-        id: "snooze",
-        title: uiT("Snooze"),
-        image: "clock",
-        subactions: snoozePresetActions,
-      },
-      ...arrangementMenuItems,
-      ...titleMenuItems,
-      ...autoSettleMenuItems,
-      sharedMenuActions.archive,
-      { id: "delete", title: uiT("Delete"), image: "trash", attributes: { destructive: true } },
-    ],
-    [
-      arrangementMenuItems,
-      autoSettleMenuItems,
-      sharedMenuActions,
-      snoozePresetActions,
-      titleMenuItems,
-      uiT,
-    ],
-  );
-  const cardMenuActions = useMemo<MenuAction[]>(
-    () => [
-      sharedMenuActions.settle,
-      ...arrangementMenuItems,
-      ...titleMenuItems,
-      ...autoSettleMenuItems,
-      sharedMenuActions.archive,
-      sharedMenuActions.delete,
-    ],
-    [arrangementMenuItems, autoSettleMenuItems, sharedMenuActions, titleMenuItems],
-  );
-  const slimMenuActions = useMemo<MenuAction[]>(
-    () => [
-      sharedMenuActions.unsettle,
-      ...arrangementMenuItems.filter(
-        (action) => action.id !== "move-up" && action.id !== "move-down",
-      ),
-      ...titleMenuItems,
-      ...autoSettleMenuItems,
-      sharedMenuActions.archive,
-      sharedMenuActions.delete,
-    ],
-    [arrangementMenuItems, autoSettleMenuItems, sharedMenuActions, titleMenuItems],
-  );
-  const snoozedMenuActions = useMemo<MenuAction[]>(
-    () => [
-      sharedMenuActions.unsnooze,
-      ...titleMenuItems,
-      ...autoSettleMenuItems,
-      sharedMenuActions.archive,
-      sharedMenuActions.delete,
-    ],
-    [autoSettleMenuItems, sharedMenuActions, titleMenuItems],
-  );
-  const legacyMenuActions = useMemo<MenuAction[]>(
-    () => [
-      sharedMenuActions.archive,
-      ...arrangementMenuItems,
-      ...titleMenuItems,
-      sharedMenuActions.delete,
-    ],
-    [arrangementMenuItems, sharedMenuActions, titleMenuItems],
-  );
+  const menuActions = useMemo<MenuAction[]>(() => {
+    const nested = Platform.OS === "ios";
+    const direct: MenuAction[] = [
+      ...(thread.branch
+        ? [
+            {
+              id: "new-thread-on-branch",
+              title: getThreadListV2NewBranchMenuTitle(thread.branch, uiT),
+              image: "square.and.pencil",
+            },
+          ]
+        : []),
+      { id: "copy-thread", title: uiT("Copy thread"), image: "text.bubble" },
+      { id: "copy-thread-id", title: uiT("Copy thread ID"), image: "doc.on.doc" },
+    ];
+    if (snoozedRow) {
+      return layoutThreadListV2RowMenuActions({
+        nested,
+        direct: [...direct, sharedMenuActions.unsnooze],
+        reorder: [],
+        pin: [],
+        secondary: [
+          ...titleMenuItems,
+          ...autoSettleMenuItems,
+          sharedMenuActions.archive,
+          sharedMenuActions.delete,
+        ],
+      });
+    }
+    if (!props.settlementSupported) {
+      return layoutThreadListV2RowMenuActions({
+        nested,
+        direct: [...direct, sharedMenuActions.archive],
+        reorder: reorderMenuItems,
+        pin: pinMenuItems,
+        secondary: [...titleMenuItems, sharedMenuActions.delete],
+      });
+    }
+    if (canUnsettle) {
+      return layoutThreadListV2RowMenuActions({
+        nested,
+        direct: [...direct, sharedMenuActions.unsettle],
+        reorder: reorderMenuItems.filter(
+          (action) => action.id !== "move-up" && action.id !== "move-down",
+        ),
+        pin: pinMenuItems,
+        secondary: [
+          ...titleMenuItems,
+          ...autoSettleMenuItems,
+          sharedMenuActions.archive,
+          sharedMenuActions.delete,
+        ],
+      });
+    }
+    return layoutThreadListV2RowMenuActions({
+      nested,
+      direct: [
+        ...direct,
+        sharedMenuActions.settle,
+        ...(swipeActions.secondary === "snooze"
+          ? [
+              {
+                id: "snooze",
+                title: uiT("Snooze"),
+                image: "clock",
+                subactions: snoozePresetActions,
+              },
+            ]
+          : []),
+      ],
+      reorder: reorderMenuItems,
+      pin: pinMenuItems,
+      secondary: [
+        ...titleMenuItems,
+        ...autoSettleMenuItems,
+        sharedMenuActions.archive,
+        sharedMenuActions.delete,
+      ],
+    });
+  }, [
+    autoSettleMenuItems,
+    canUnsettle,
+    pinMenuItems,
+    props.settlementSupported,
+    reorderMenuItems,
+    snoozePresetActions,
+    snoozedRow,
+    swipeActions.secondary,
+    thread.branch,
+    titleMenuItems,
+    sharedMenuActions,
+    uiT,
+  ]);
   const handleMenuAction = useCallback(
     ({ nativeEvent }: { readonly nativeEvent: { readonly event: string } }) => {
       if (nativeEvent.event === "new-thread-on-branch") onNewThreadOnBranch(thread);
@@ -1526,32 +1549,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         threadTitle={thread.title}
       >
         {(close) => (
-          <Menu
-            actions={[
-              ...(thread.branch
-                ? [
-                    {
-                      id: "new-thread-on-branch",
-                      title: getThreadListV2NewBranchMenuTitle(thread.branch, uiT),
-                      image: "square.and.pencil",
-                    },
-                  ]
-                : []),
-              { id: "copy-thread", title: uiT("Copy thread"), image: "text.bubble" },
-              { id: "copy-thread-id", title: uiT("Copy thread ID"), image: "doc.on.doc" },
-              ...(snoozedRow
-                ? snoozedMenuActions
-                : !props.settlementSupported
-                  ? legacyMenuActions
-                  : canUnsettle
-                    ? slimMenuActions
-                    : swipeActions.secondary === "snooze"
-                      ? snoozableCardMenuActions
-                      : cardMenuActions),
-            ]}
-            onPressAction={handleMenuAction}
-            shouldOpenOnLongPress
-          >
+          <Menu actions={menuActions} onPressAction={handleMenuAction} shouldOpenOnLongPress>
             {rowContent(close)}
           </Menu>
         )}

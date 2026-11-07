@@ -1,18 +1,17 @@
-import { useUiLanguage } from "../../i18n";
-import { NativeScrollView } from "../../native/NativeScrollViewMarker";
-import { Button } from "../../components/ui/Button";
 import { LegendList } from "@legendapp/list/react-native";
 import type { ProjectEntry } from "@t3tools/contracts";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, RefreshControl, View } from "react-native";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { useEffect, useRef, useState } from "react";
-import { Platform, Pressable, RefreshControl, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
+import { AppText as Text } from "../../components/ui/AppText";
+import { useContentTopInset } from "../../components/ui/useBarInset";
 import { cn } from "../../lib/cn";
-import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import {
   buildFileTree,
   flattenFileTree,
@@ -130,9 +129,7 @@ export function FileTreeBrowser(props: {
     readonly path: string;
     readonly selectedPathAtPress: string | null;
   } | null>(null);
-  const insets = useSafeAreaInsets();
-  const columnMetrics = useNativeColumnLayoutMetrics();
-  const headerInset = Platform.OS === "ios" ? (columnMetrics?.safeArea.top ?? insets.top) : 0;
+  const headerInset = useContentTopInset();
   const {
     onLoadDirectory,
     onPreviewFile,
@@ -224,14 +221,14 @@ export function FileTreeBrowser(props: {
   // Keep the list as direct screen content so UIKit can apply header insets.
   return (
     <LegendList
-      renderScrollComponent={Platform.OS === "ios" ? NativeScrollView : undefined}
+      renderScrollComponent={NativeScrollView}
       contentInsetStartAdjustment={headerInset}
       alwaysBounceVertical
       className="flex-1"
       data={visibleNodes}
       keyExtractor={(item) => item.node.path}
-      contentInsetAdjustmentBehavior={Platform.OS === "ios" ? "automatic" : "never"}
-      automaticallyAdjustsScrollIndicatorInsets={Platform.OS === "ios"}
+      contentInsetAdjustmentBehavior="automatic"
+      automaticallyAdjustsScrollIndicatorInsets
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
       estimatedItemSize={42}

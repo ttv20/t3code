@@ -1,4 +1,6 @@
 import { useUiLanguage } from "../../i18n";
+import { isClearComposerCommand, parseSideChatCommand } from "@t3tools/shared/composerTrigger";
+import { armFreshSession, disarmFreshSession, readFreshSessionArm } from "./freshSessionArms";
 import {
   mergeDirectPreviewAnnotation,
   resolveBackgroundDraftWorkspaceOptions,
@@ -55,7 +57,6 @@ import {
 import {
   type ComposerSubmissionIntent,
   collapseExpandedComposerCursor,
-  parseSideChatCommand,
   parseStandaloneComposerSlashCommand,
 } from "../../composer-logic";
 import { resolvePlanFollowUpSubmission } from "../../proposedPlan";
@@ -208,6 +209,8 @@ interface ComposerSendInput {
   readonly panelAnimationsActive: boolean;
   readonly panelAnimationDurationMs: number;
   readonly keepFullHistory: boolean;
+  /** `/clear` can arm a fresh session on this thread. */
+  readonly freshSessionAvailable: boolean;
   readonly resumeCompactionTokens: number | null;
   readonly showPlanFollowUpPrompt: boolean;
   readonly usageLimitsKey: string | null;
@@ -305,6 +308,7 @@ export function useComposerSend(input: ComposerSendInput) {
     panelAnimationsActive,
     panelAnimationDurationMs,
     keepFullHistory,
+    freshSessionAvailable,
     resumeCompactionTokens,
     showPlanFollowUpPrompt,
     usageLimitsKey,
@@ -500,7 +504,7 @@ export function useComposerSend(input: ComposerSendInput) {
       toastManager.add(
         stackedThreadToast({
           type: "warning",
-          title: "Side chat not started",
+          title: uiT("Side chat not started"),
           description: sideChatDisabledReason,
         }),
       );
@@ -519,8 +523,8 @@ export function useComposerSend(input: ComposerSendInput) {
         toastManager.add(
           stackedThreadToast({
             type: "warning",
-            title: "Side chats take text only",
-            description: "Remove the attachments and context, then send it again.",
+            title: uiT("Side chats take text only"),
+            description: uiT("Remove the attachments and context, then send it again."),
           }),
         );
         return;
@@ -626,7 +630,7 @@ export function useComposerSend(input: ComposerSendInput) {
       toastManager.add(
         stackedThreadToast({
           type: "warning",
-          title: "Attached thread is on another machine",
+          title: uiT("Attached thread is on another machine"),
           description: `This machine's agent can't read "${strandedThread.title}". Remove it, or switch back to ${owner} to send.`,
         }),
       );
@@ -722,8 +726,26 @@ export function useComposerSend(input: ComposerSendInput) {
 
       return;
     }
+    const composerHoldsOnlyText =
+      composerImages.length === 0 &&
+      composerFiles.length === 0 &&
+      sendableComposerTerminalContexts.length === 0 &&
+      composerPreviewAnnotations.length === 0 &&
+      composerReviewComments.length === 0 &&
+      composerThreadContexts.length === 0 &&
+      composerEnvironmentContexts.length === 0;
+    if (freshSessionAvailable && composerHoldsOnlyText && isClearComposerCommand(trimmed)) {
+      armFreshSession(routeThreadKey);
+      promptRef.current = "";
+      clearComposerDraftContent(composerDraftTarget);
+      composerRef.current?.resetCursorState();
+      return;
+    }
+    // Read once: an arm made while this send is in flight belongs to the next message.
+    const freshArm = freshSessionAvailable ? readFreshSessionArm(routeThreadKey) : undefined;
     if (
       !directAnnotation &&
+      freshArm === undefined &&
       sendInteractionModeEnabled &&
       showPlanFollowUpPrompt &&
       activeProposedPlan &&
@@ -804,14 +826,7 @@ export function useComposerSend(input: ComposerSendInput) {
       return;
     }
     const standaloneSlashCommand =
-      sendInteractionModeEnabled &&
-      composerImages.length === 0 &&
-      composerFiles.length === 0 &&
-      sendableComposerTerminalContexts.length === 0 &&
-      composerPreviewAnnotations.length === 0 &&
-      composerReviewComments.length === 0 &&
-      composerThreadContexts.length === 0 &&
-      composerEnvironmentContexts.length === 0
+      sendInteractionModeEnabled && composerHoldsOnlyText
         ? parseStandaloneComposerSlashCommand(trimmed)
         : null;
     if (standaloneSlashCommand && multipleModelSelections === null) {
@@ -887,6 +902,7 @@ export function useComposerSend(input: ComposerSendInput) {
       keepFullHistory,
       phase,
       dispatchMode,
+      freshContext: freshArm !== undefined,
     });
     if (missingWorktreeBaseBranch) {
       setThreadError(threadIdForSend, "Select a base branch before sending in New worktree mode.");
@@ -1152,7 +1168,7 @@ export function useComposerSend(input: ComposerSendInput) {
           toastManager.add({
             type: "info",
             title: notice,
-            description: "Send again when it's ready.",
+            description: uiT("Send again when it's ready."),
           });
         }
         return;
@@ -1370,6 +1386,7 @@ export function useComposerSend(input: ComposerSendInput) {
           runtimeMode,
           interactionMode: sendInteractionMode,
           dispatchMode: turnDispatchMode,
+          ...(freshArm === undefined ? {} : { freshContext: true }),
           ...(bootstrap ? { bootstrap } : {}),
           createdAt: messageCreatedAt,
         },
@@ -1403,6 +1420,7 @@ export function useComposerSend(input: ComposerSendInput) {
       } else {
         turnStartSucceeded = true;
         setKeepFullHistory(routeThreadKey, false);
+        if (freshArm !== undefined) disarmFreshSession(routeThreadKey, freshArm);
         clearUsageLimitsFor(routeThreadKey);
         if (turnUsesAttachmentUploads) {
           releaseDraftAttachments(composerAttachmentsSnapshot);
@@ -1495,9 +1513,9 @@ export function useComposerSend(input: ComposerSendInput) {
               type: "error",
               title:
                 submissionIntent === "background"
-                  ? "Background task failed"
-                  : "Could not start thread",
-              description: error instanceof Error ? error.message : "Failed to send message.",
+                  ? uiT("Background task failed")
+                  : uiT("Could not start thread"),
+              description: error instanceof Error ? error.message : uiT("Failed to send message."),
               actionProps: {
                 children: "Open draft",
                 onClick: () => {

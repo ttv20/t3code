@@ -1,5 +1,5 @@
-import { readUiTranslator } from "../../state/ui-language";
 import { Alert } from "react-native";
+import { readUiTranslator } from "../../state/ui-language";
 import type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";
 
 export type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";

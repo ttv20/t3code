@@ -1,26 +1,31 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { AsyncResult } from "effect/reactivity";
 import { useAtomRefresh } from "@effect/atom-react";
-import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import {
+  StackActions,
+  useFocusEffect,
+  useNavigation,
+  type StaticScreenProps,
+} from "@react-navigation/native";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { PullRequestReviewVerdict } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
 import { Platform, Pressable, View } from "react-native";
-import { clearSubmittedReview } from "./pullRequestReviewDrafts";
-import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
-import { reviewPositionLabel } from "./pullRequestDiffComments";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
+import { UiText, useUiLanguage } from "../../i18n";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { PullRequestCompletionSuggestions } from "./PullRequestCompletionSuggestions";
+import { reviewPositionLabel } from "./pullRequestDiffComments";
+import { clearSubmittedReview } from "./pullRequestReviewDrafts";
 import { PullRequestSheetContent as SheetContent } from "./PullRequestSheetContent";
+import { usePullRequestCompletions } from "./usePullRequestCompletions";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
+import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
 
 function useActionSubmission(params: PullRequestParams) {
   const navigation = useNavigation();
@@ -85,6 +90,13 @@ export function PullRequestReviewSheet({
       ...draft,
       ...(params.mode === "review" ? { summary: body } : { comment: body }),
     }));
+  const completions = usePullRequestCompletions({
+    environmentId: params.environmentId,
+    projectId: params.projectId,
+    value: body,
+    onChangeValue: setBody,
+    support: result.data?.capabilities ?? null,
+  });
   const stale = store.draft.comments.some((comment) => comment.headSha !== result.data?.headSha);
   const [requestedVerdict, setRequestedVerdict] = useState<PullRequestReviewVerdict>("comment");
   const offered = VERDICTS.filter((option) => permissions.verdicts.includes(option.value));
@@ -137,7 +149,7 @@ export function PullRequestReviewSheet({
   return (
     <SheetContent
       title={reviewing ? uiT("Submit review") : uiT("Add comment")}
-      subtitle={`#${params.number}${reviewing && result.data?.headSha ? ` · reviewing ${result.data.headSha.slice(0, 7)}` : ` · ${params.repository}`}`}
+      subtitle={`#${params.number}${reviewing && result.data?.headSha ? uiT(" · reviewing {0}", { "0": result.data.headSha.slice(0, 7) }) : ` · ${params.repository}`}`}
       busy={submission.busy}
       footer={
         <Button
@@ -173,8 +185,12 @@ export function PullRequestReviewSheet({
       <Text className="px-4 text-xs text-foreground-muted">
         {reviewing ? uiT("Summary") : uiT("Comment")}
       </Text>
+      <PullRequestCompletionSuggestions completions={completions} />
       <TextInput
         multiline
+        selection={completions.selection}
+        onSelectionChange={completions.onSelectionChange}
+        onBlur={completions.onBlur}
         accessibilityLabel={reviewing ? uiT("Review summary") : uiT("Comment")}
         placeholder={
           reviewing
@@ -198,7 +214,7 @@ export function PullRequestReviewSheet({
               message={"{0}  pending line {1}"}
               values={{
                 "0": store.draft.comments.length,
-                "1": store.draft.comments.length === 1 ? uiT("comment") : uiT("comments"),
+                "1": store.draft.comments.length === 1 ? "comment" : uiT("comments"),
               }}
             />
           </Text>

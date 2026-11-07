@@ -1,17 +1,13 @@
-import { useUiLanguage } from "../../i18n";
 import { useIsFocused } from "@react-navigation/native";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { useAudioPlayerStatus } from "expo-audio";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AppState, Pressable, View } from "react-native";
 import type { FilePreviewSource } from "../../components/FilePreviewModal";
-import { filePreviewKey } from "../../lib/filePreviewGallery";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { useFullscreenVideoOpen, useMediaAudioSessionHold } from "../../lib/videoAudioSession";
-import { useRefreshAssetUrl } from "../../state/assets";
-import { ThreadMediaVisibleContext } from "./ThreadMarkdownVideo";
+import { AppText as Text } from "../../components/ui/AppText";
+import { useUiLanguage } from "../../i18n";
 import {
   acquireAudioSession,
   activateAudioSession,
@@ -19,7 +15,11 @@ import {
   pauseAudioPlayer,
   releaseAudioSession,
 } from "../../lib/audioSession";
+import { filePreviewKey } from "../../lib/filePreviewGallery";
+import { useFullscreenVideoOpen, useMediaAudioSessionHold } from "../../lib/videoAudioSession";
+import { useRefreshAssetUrl } from "../../state/assets";
 import { usePlaybackAudioPlayer } from "../voice-input/usePlaybackAudioPlayer";
+import { ThreadMediaVisibleContext } from "./ThreadMarkdownVideo";
 
 type PreviewProps = {
   readonly source: FilePreviewSource;

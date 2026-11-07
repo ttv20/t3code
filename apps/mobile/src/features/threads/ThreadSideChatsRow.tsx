@@ -1,9 +1,9 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { Pressable, ScrollView, View } from "react-native";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { AppText as Text, ContentText } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { ContentText, AppText as Text } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
 import { useSideChats } from "../../state/entities";
 import { useOpenLinkedThread } from "./useOpenLinkedThread";

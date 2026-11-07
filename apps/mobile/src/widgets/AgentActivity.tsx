@@ -1,5 +1,4 @@
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
-import type { ComponentProps } from "react";
 import {
   accessibilityElement,
   accessibilityLabel,
@@ -19,6 +18,7 @@ import {
   type LiveActivityComponent,
   type LiveActivityLayout,
 } from "expo-widgets";
+import type { ComponentProps } from "react";
 
 type LiveActivityEnvironment = Parameters<LiveActivityComponent<AgentActivityProps>>[1];
 
@@ -108,7 +108,7 @@ function AgentActivity(
     ? props.activities.map((row) =>
         row.phase === "completed" || row.phase === "failed"
           ? row
-          : { ...row, phase: "stale", status: "Out of date" },
+          : { ...row, phase: "stale", status: uiT("Out of date") },
       )
     : props.activities;
   const ordered = [...activities].sort((a, b) => phasePriority(a.phase) - phasePriority(b.phase));
@@ -354,7 +354,7 @@ function AgentActivity(
             ? (props.messages?.["Approval"] ?? "Approval")
             : (props.messages?.["Input"] ?? "Input")
           : failedRow
-            ? "Failed"
+            ? uiT("Failed")
             : activeLabel}
       </Text>
     ),

@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../../i18n";
 import { View } from "react-native";
+import { useUiLanguage } from "../../../i18n";
 
-import { Button } from "../../../components/ui/Button";
 import { AppText as Text } from "../../../components/ui/AppText";
+import { Button } from "../../../components/ui/Button";
 import { SettingsSection } from "./SettingsSection";
 
 export function SettingsProjectOverridesSection(props: {

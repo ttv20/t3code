@@ -1,11 +1,10 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { Pressable } from "react-native";
-import type { EnvironmentMachineKind } from "@t3tools/contracts";
 import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
+import type { EnvironmentMachineKind } from "@t3tools/contracts";
+import { Pressable } from "react-native";
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
-import { AppText as Text } from "../../components/ui/AppText";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { ConnectionStatusDot } from "../connection/ConnectionStatusDot";
 

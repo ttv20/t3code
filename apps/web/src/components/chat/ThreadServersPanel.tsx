@@ -11,6 +11,7 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import { ChevronDown, ChevronUp } from "lucide";
 import { GlobeIcon, LoaderCircleIcon, SquareIcon } from "lucide-react";
 import { type MouseEvent, useState } from "react";
 
@@ -22,6 +23,7 @@ import { useEnvironment } from "../../state/environments";
 import { previewEnvironment } from "../../state/preview";
 import { useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { MorphIcon } from "../MorphIcon";
 import { openDiscoveredPort } from "../preview/openDiscoveredPort";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -29,15 +31,22 @@ import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { THREAD_DETAILS_PANEL_ICON_CLASS } from "./threadDetailsPanelStyles";
 
+const SERVER_PAGE_COUNT = 4;
+
 const serverKey = (server: DiscoveredLocalServer) => `${server.pid}:${server.port}`;
 
-/** Local servers the thread's terminals and agent started. Hidden while none run. */
-export function ThreadServersPanel(props: {
+interface ThreadServersPanelProps {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
-}) {
-  const { t: uiT } = useUiLanguage();
+}
 
+/** Local servers the thread's terminals and agent started. Hidden while none run. */
+export function ThreadServersPanel(props: ThreadServersPanelProps) {
+  return <ThreadServersList key={`${props.environmentId}:${props.threadId}`} {...props} />;
+}
+
+function ThreadServersList(props: ThreadServersPanelProps) {
+  const { t: uiT } = useUiLanguage();
   const servers = useThreadDiscoveredPorts(props);
   const canOpen = useEnvironmentScope(props.environmentId, AuthPreviewOperateScope);
   const canStop = useAtomValue(
@@ -51,10 +60,12 @@ export function ThreadServersPanel(props: {
     label: uiT("thread server stop"),
   });
   const [stoppingKey, setStoppingKey] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(SERVER_PAGE_COUNT);
 
   if (servers.length === 0) return null;
-  const externalClickLabel = isMacPlatform(navigator.platform) ? uiT("⌘-click") : uiT("Ctrl-click");
+  const externalClickLabel = isMacPlatform(navigator.platform) ? "⌘-click" : uiT("Ctrl-click");
   const threadRef = scopeThreadRef(props.environmentId, props.threadId);
+  const hiddenCount = Math.max(0, servers.length - visibleCount);
 
   const reportFailure = (title: string, error: unknown) => {
     toastManager.add(
@@ -99,11 +110,15 @@ export function ThreadServersPanel(props: {
   return (
     <ThreadDetailsSection headingId="thread-details-servers-heading" title={uiT("Servers")}>
       <ul className="m-0 list-none p-0">
-        {servers.map((server) => {
+        {servers.slice(0, visibleCount).map((server, index) => {
           const key = serverKey(server);
           const stoppable = canStop && supportsStop && server.pid !== null;
           return (
-            <li key={key} className="group relative flex items-center rounded-lg">
+            <li
+              key={key}
+              data-thread-details-server-overflow={index >= SERVER_PAGE_COUNT || undefined}
+              className="group relative flex items-center rounded-lg"
+            >
               <Tooltip>
                 <TooltipTrigger
                   delay={200}
@@ -168,6 +183,27 @@ export function ThreadServersPanel(props: {
           );
         })}
       </ul>
+      {servers.length > SERVER_PAGE_COUNT ? (
+        <ThreadDetailsControl
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            setVisibleCount(hiddenCount > 0 ? visibleCount + SERVER_PAGE_COUNT : SERVER_PAGE_COUNT)
+          }
+          part="row"
+          tone="muted"
+          className="w-full active:scale-100"
+        >
+          <MorphIcon
+            aria-hidden
+            className="size-4 shrink-0"
+            icon={hiddenCount > 0 ? ChevronDown : ChevronUp}
+          />
+          {hiddenCount > 0
+            ? `Show ${Math.min(hiddenCount, SERVER_PAGE_COUNT)} more`
+            : uiT("Show less")}
+        </ThreadDetailsControl>
+      ) : null}
     </ThreadDetailsSection>
   );
 }

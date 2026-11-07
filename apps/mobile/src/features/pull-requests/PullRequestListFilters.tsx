@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { sortProjectsByGroupOrder } from "@t3tools/client-runtime/state/project-grouping";
 import type { ScopedProjectRef, SidebarProjectGroupingMode } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 import { Platform, ScrollView } from "react-native";
 import type { MenuProps } from "../../components/ui/Menu.types";
-import { ListFilterMenu } from "../workspace/ListFilterMenu";
+import { useUiLanguage } from "../../i18n";
+import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import { environmentProjects } from "../../state/projects";
 import { environmentThreadShells } from "../../state/threads";
-import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import { buildHomeProjectScopes, sortHomeProjectScopes } from "../home/homeThreadList";
+import { ListFilterMenu } from "../layout/workspace/ListFilterMenu";
 import { DEFAULT_PR_LIST_CONTROLS, type PullRequestListControls } from "./pullRequestList";
 
 const STATES = {
@@ -352,7 +352,7 @@ export function usePullRequestListFilters(props: {
     environmentLabel:
       props.environments.length > 1
         ? (props.environments.find((environment) => environment.id === props.environmentId)
-            ?.label ?? "All environments")
+            ?.label ?? uiT("All environments"))
         : null,
     environmentActions,
     state: value.state,
@@ -378,6 +378,7 @@ export function PullRequestListFilters(props: {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={{ overflow: "visible" }}
       // In the Android sidebar the first pill lines up with the rows' content instead
       // (8dp row margin + 12dp padding).
       contentContainerStyle={

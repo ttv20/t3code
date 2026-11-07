@@ -1,4 +1,5 @@
 import { useUiLanguage, UiText } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import { AuthProvidersManageScope, ProviderDriverKind } from "@t3tools/contracts";
 import { readPreparedConnection, useEnvironmentScope } from "../../state/session";
 import {
@@ -296,6 +297,10 @@ function ManagedCodexSetup({
   const completeAuth = useAtomCommand(serverEnvironment.completeProviderAuth, options);
   const cancelAuth = useAtomCommand(serverEnvironment.cancelProviderAuth, options);
   const logoutAuth = useAtomCommand(serverEnvironment.logoutProviderAuth, options);
+  const removeAuthMethod = useAtomCommand(serverEnvironment.removeProviderAuthMethod, options);
+  const canRemoveAuthMethod = useAtomValue(
+    serverEnvironment.removeProviderAuthMethod.permissionAtom(environmentId),
+  );
   const startInstall = useAtomCommand(serverEnvironment.startProviderInstall, options);
   const cancelInstall = useAtomCommand(serverEnvironment.cancelProviderInstall, options);
   const reconnectProfile = useAtomCommand(serverEnvironment.chatGptReconnectProfile, options);
@@ -611,9 +616,9 @@ function ManagedCodexSetup({
               : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)}`,
         })
       : installation?.phase === "extracting"
-        ? uiT("Installing Codex.")
+        ? "Installing Codex."
         : installation?.phase === "verifying"
-          ? uiT("Checking Codex.")
+          ? "Checking Codex."
           : installed
             ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by T3 Code"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
             : (installation?.message ?? uiT("T3 Code downloads and manages Codex for you."));
@@ -784,6 +789,12 @@ function ManagedCodexSetup({
       open={accountPickerOpen}
       methods={auth?.methods ?? []}
       onClose={() => setAccountPickerOpen(false)}
+      disabled={unavailable || busy}
+      canRemove={canRemoveAuthMethod}
+      error={error}
+      onRemove={(methodId) => {
+        void run(() => removeAuthMethod({ environmentId, input: { instanceId, methodId } }));
+      }}
       onSelect={(methodId) => {
         setAccountPickerOpen(false);
         void setup(
@@ -1091,7 +1102,7 @@ export function CodexManagedRuntimeFields({
               value={executablePath}
               title={executablePath}
               placeholder={
-                installation.error ? uiT("Could not read runtime path") : uiT("Not installed")
+                installation.error ? "Could not read runtime path" : uiT("Not installed")
               }
               disabled
             />
@@ -1117,7 +1128,7 @@ export function CodexManagedRuntimeFields({
         title={uiT("Shadow home path")}
         description={
           provider?.runtimePaths?.shadowHomePath
-            ? uiT("Account-specific home sharing the Codex state above.")
+            ? "Account-specific home sharing the Codex state above."
             : uiT("This instance uses the shared Codex home directly.")
         }
         control={
@@ -1126,7 +1137,7 @@ export function CodexManagedRuntimeFields({
               aria-label={uiT("Codex shadow home path")}
               value={provider?.runtimePaths?.shadowHomePath ?? ""}
               title={provider?.runtimePaths?.shadowHomePath ?? undefined}
-              placeholder={provider?.runtimePaths ? uiT("Not used") : uiT("Unavailable")}
+              placeholder={provider?.runtimePaths ? "Not used" : uiT("Unavailable")}
               disabled
             />
           </div>

@@ -1,19 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import { AppActivityIndicator } from "./AppActivityIndicator";
-import { Column, Row, Text as NativeText, RNHostView } from "@expo/ui/jetpack-compose";
+import { Column, Text as NativeText, RNHostView, Row } from "@expo/ui/jetpack-compose";
 import { weight } from "@expo/ui/jetpack-compose/modifiers";
 import { use, useState, type ReactNode } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
+import { AppActivityIndicator } from "./AppActivityIndicator";
 
-import type { AppSymbolName } from "./AppSymbol";
-import { NativeAppBar } from "./NativeAppBar.android";
-import { IconButton } from "./IconButton";
-import { AndroidAnchoredMenu } from "./AndroidAnchoredMenu";
-import { splitAndroidHeaderActions } from "./headerMenu.android";
 import { useScaledTextRole } from "../../features/settings/appearance/useScaledTextRole";
-import { useToolbarLayout } from "./useToolbarLayout";
-import { useControlTheme } from "./useControlTheme";
+import { AndroidAnchoredMenu } from "./AndroidAnchoredMenu";
+import type { AppSymbolName } from "./AppSymbol";
+import { splitAndroidHeaderActions } from "./headerMenu.android";
+import { IconButton } from "./IconButton";
+import { NativeAppBar } from "./NativeAppBar.android";
 import { RoutedFormSheetContext } from "./RoutedFormSheetContext";
+import { useControlTheme } from "./useControlTheme";
+import { useToolbarLayout } from "./useToolbarLayout";
 
 export interface AndroidHeaderAction {
   readonly accessibilityLabel: string;
@@ -210,10 +210,4 @@ export function AndroidScreenHeader(props: {
       />
     </View>
   );
-}
-
-export function AndroidSheetHeader(
-  props: Omit<Parameters<typeof AndroidScreenHeader>[0], "embedded">,
-) {
-  return <AndroidScreenHeader {...props} embedded />;
 }

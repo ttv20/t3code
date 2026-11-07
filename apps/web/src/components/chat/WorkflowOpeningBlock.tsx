@@ -2,6 +2,7 @@ import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isTerminalSubagentStatus,
+  workflowMemberModelSelection,
   workflowOpeningHeadline,
   type RuntimeSubagent,
   type WorkflowOpening,
@@ -188,6 +189,7 @@ function WorkflowMemberRow(props: {
             model={member.model}
             providerInstanceId={props.providerInstanceId}
             origin="provider_native"
+            modelSelection={workflowMemberModelSelection(member, props.providerInstanceId)}
             provider={props.providers.find(
               (provider) => provider.instanceId === props.providerInstanceId,
             )}
@@ -236,7 +238,7 @@ function WorkflowScript(props: { readonly script: string }) {
             data-scroll-anchor-ignore
             onClick={() => setExpanded((value) => !value)}
           >
-            {expanded ? uiT("Show less") : "Show full script"}
+            {expanded ? uiT("Show less") : uiT("Show full script")}
           </Button>
         </div>
       ) : null}

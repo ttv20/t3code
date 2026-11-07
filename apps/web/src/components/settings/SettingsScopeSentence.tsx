@@ -50,7 +50,7 @@ export const SETTINGS_DEVICE_ONLY_PATHS: ReadonlySet<string> = new Set([
   "/settings/diffs",
   "/settings/snap-shot",
   "/settings/connections",
-  // Network access and authorized clients belong to the environment serving this app.
+  // Access picks its environment on the page itself.
   "/settings/access",
   "/settings/about",
 ]);
@@ -272,9 +272,9 @@ function EnvironmentScopeMenu({
         selected
           ? settingsScopeEnvironmentLabel(selected, environments)
           : environmentValue !== ALL_ENVIRONMENTS_VALUE
-            ? uiT("Unavailable environment")
+            ? "Unavailable environment"
             : singleEnvironment
-              ? uiT("No environments")
+              ? "No environments"
               : uiT("All environments")
       }
       value={environmentValue}
@@ -324,9 +324,7 @@ function ProjectScopeMenu({ value, groups, environments, onChange }: SettingsSco
     <ScopeMenu
       ariaLabel={uiT("Project scope")}
       icon={selected ? <ProjectFavicon project={selected} className="size-3.5 shrink-0" /> : null}
-      label={
-        selected?.displayName ?? (value.project ? uiT("Unavailable project") : uiT("All projects"))
-      }
+      label={selected?.displayName ?? (value.project ? "Unavailable project" : uiT("All projects"))}
       value={projectAxisValue(value)}
       onChange={(next) => onChange(selectProjectAxis(value, next))}
       searchLabel="Search projects"

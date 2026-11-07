@@ -1,8 +1,8 @@
+import type { ServerConfig } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { act, type ComponentProps, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, onTestFinished, vi } from "vite-plus/test";
-import type { ServerConfig } from "@t3tools/contracts";
 
 import type { ZipTreeRow } from "./zipTree";
 
@@ -102,31 +102,32 @@ vi.mock("@react-navigation/native", () => ({
     navigation.remove = enabled ? remove : null;
   },
 }));
-vi.mock("react-native-safe-area-context", () => ({
-  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
-}));
 vi.mock("../../native/NativeScrollViewMarker", () => ({ NativeScrollView: () => null }));
-vi.mock("../../native/StackHeader", () => ({ NativeStackScreenOptions: () => null }));
-vi.mock("../../components/ui/Toolbar", () => {
-  const Slot = (props: { readonly children?: ReactNode }) => <div>{props.children}</div>;
-  return {
-    Toolbar: Object.assign(Slot, {
-      Button: () => null,
-      Menu: Slot,
-      MenuAction: (props: {
-        readonly children?: ReactNode;
-        readonly disabled?: boolean;
-        readonly onPress?: () => void;
-      }) => (
-        <button disabled={props.disabled} onClick={props.onPress}>
-          {props.children}
+vi.mock("../../components/ui/AppBar", () => {
+  interface Item {
+    readonly id: string;
+    readonly title?: string;
+    readonly disabled?: boolean;
+    readonly onPress?: () => void;
+    readonly items?: ReadonlyArray<Item>;
+  }
+  const renderItems = (items: ReadonlyArray<Item>): ReactNode =>
+    items.map((item) =>
+      item.items ? (
+        renderItems(item.items)
+      ) : (
+        <button key={item.id} disabled={item.disabled} onClick={item.onPress}>
+          {item.title}
         </button>
       ),
-    }),
+    );
+  return {
+    AppBar: (props: {
+      readonly menus?: ReadonlyArray<{ readonly items: ReadonlyArray<Item> }>;
+    }) => <div>{props.menus?.map((menu) => renderItems(menu.items))}</div>,
   };
 });
-vi.mock("../../components/ui/AndroidScreenHeader", () => ({ AndroidScreenHeader: () => null }));
-vi.mock("../../components/ui/Menu", () => ({ Menu: () => null }));
+vi.mock("../../components/ui/useBarInset", () => ({ useContentTopInset: () => 0 }));
 vi.mock("../../components/ui/AppSymbol", () => ({ SymbolView: () => null }));
 vi.mock("../../components/ui/Progress", () => ({ Progress: () => null }));
 vi.mock("../../components/PierreEntryIcon", () => ({ PierreEntryIcon: () => null }));
@@ -147,10 +148,10 @@ vi.mock("../settings/appearance/AppearancePreferencesProvider", () => ({
   }),
 }));
 
-import { ZipArchiveView } from "./ZipArchiveView";
-import { AttachmentFileScreen } from "./AttachmentFileScreen";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { composerDraftsAtom } from "../../state/use-composer-drafts";
+import { AttachmentFileScreen } from "./AttachmentFileScreen";
+import { ZipArchiveView } from "./ZipArchiveView";
 
 function setup() {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -181,7 +182,6 @@ function setup() {
   const props: ComponentProps<typeof ZipArchiveView> = {
     name: "archive.zip",
     subtitle: "ZIP",
-    tintColor: "#000000",
     sizeBytes: 0,
     uri: "file:///first.zip",
     isLocal: true,

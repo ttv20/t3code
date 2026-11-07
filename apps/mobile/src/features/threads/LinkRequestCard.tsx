@@ -1,16 +1,14 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
 import { useAtomValue } from "@effect/atom-react";
 import {
-  type LinkableMachine,
   linkRequestAnswerInput,
   linkRequestDefaultAccess,
   linkRequestDisplay,
   linkRequestFailureMessage,
   linkRequestInitialMachine,
-  type LinkRequestItem,
   linkRequestTargetName,
   rankMachinesByHint,
+  type LinkableMachine,
+  type LinkRequestItem,
 } from "@t3tools/client-runtime/link-request";
 import {
   isAtomCommandInterrupted,
@@ -22,22 +20,25 @@ import {
   type EnvironmentId,
   type OrchestrationV2ProjectedTurnItem,
 } from "@t3tools/contracts";
+import { pipe } from "effect/Function";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { useMemo, useRef, useState } from "react";
-import { Modal, Platform, Pressable, ScrollView, View, type ColorValue } from "react-native";
+import { Pressable, ScrollView, View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUiLanguage } from "../../i18n";
 
+import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
-import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
+import { Button } from "../../components/ui/Button";
+import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
+import { Sheet } from "../../components/ui/Sheet";
 import { peerLinkEnvironment, useLinkableMachines } from "../../state/peerLinks";
 import { mintPairingCodeOn } from "../../state/peerPairingCode";
 import { useEnvironmentScope, usePreparedConnection } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 import { SettingsSection } from "../settings/components/SettingsSection";
-import { Button } from "../../components/ui/Button";
 import { RUNTIME_MODE_CHOICES } from "./thread-settings-options";
 
 /** The same five levels as web's access picker: read-only, then the runtime modes. */
@@ -321,24 +322,20 @@ function LinkRequestSheet(props: {
   };
 
   return (
-    <Modal
-      animationType="slide"
-      presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}
+    <Sheet
+      title={pickMachine ? uiT("Link a machine") : uiT("Link {0}", { "0": targetName })}
+      onClose={props.onClose}
       // An answer that lands after a close would still link, and would close a reopened sheet.
-      onRequestClose={() => {
-        if (!busy) props.onClose();
-      }}
+      dismissDisabled={busy}
     >
       <ScrollView
         className="flex-1 bg-sheet-solid"
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="gap-5 p-5"
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         keyboardShouldPersistTaps="handled"
       >
         <View className="gap-1">
-          <Text className="font-t3-bold text-lg text-foreground">
-            {pickMachine ? "Link a machine" : `Link ${targetName}`}
-          </Text>
           <Text className="font-sans text-sm leading-5 text-foreground-muted">
             {uiT(
               "Agents here can then launch, message and wait on threads there. It appears in that machine's Connections, where it can be revoked.",
@@ -474,7 +471,7 @@ function LinkRequestSheet(props: {
           fullWidth
         />
       </ScrollView>
-    </Modal>
+    </Sheet>
   );
 }
 

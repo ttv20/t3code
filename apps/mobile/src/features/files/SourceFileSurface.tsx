@@ -1,44 +1,44 @@
-import { useUiLanguage } from "../../i18n";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { useAtomValue } from "@effect/atom-react";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { SourceText } from "@t3tools/mobile-source-text";
 import { AsyncResult } from "effect/reactivity";
 import type { ComponentType } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   FlatList,
+  Text as NativeText,
   Platform,
   RefreshControl,
   ScrollView,
-  Text as NativeText,
   useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText as Text } from "../../components/ui/AppText";
 import { LoadingStrip } from "../../components/ui/LoadingStrip";
+import { useUiLanguage } from "../../i18n";
+import type { ResolvedMobileCodeSurface } from "../../lib/appearancePreferences";
+import { cn } from "../../lib/cn";
+import type { HighlightedToken } from "../../lib/highlights";
+import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import {
   type NativeReviewDiffViewProps,
   resolveNativeReviewDiffView,
 } from "../diffs/nativeReviewDiffSurface";
 import { createNativeReviewDiffTheme } from "../review/nativeReviewDiffAdapter";
-import { REVIEW_MONO_FONT_FAMILY, renderVisibleWhitespace } from "../review/reviewDiffRendering";
-import type { HighlightedToken } from "../../lib/highlights";
-import { cn } from "../../lib/cn";
-import type { ResolvedMobileCodeSurface } from "../../lib/appearancePreferences";
-import { useAppearanceCodeSurface } from "../settings/appearance/useAppearanceCodeSurface";
+import { renderVisibleWhitespace, REVIEW_MONO_FONT_FAMILY } from "../review/reviewDiffRendering";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
-import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import { useAppearanceCodeSurface } from "../settings/appearance/useAppearanceCodeSurface";
 import {
   buildNativeSourceTokens,
   NATIVE_SOURCE_CONTENT_WIDTH,
   nativeSourceRowId,
 } from "./nativeSourceFileAdapter";
-import { SourceText } from "@t3tools/mobile-source-text";
 
 import { boundedSelectableSourceTokens, prepareSourceFileDocument } from "./source-file-document";
-import { sourceHighlightAtom } from "./sourceHighlightingState";
 import { createSourceLineScroll } from "./source-file-scroll";
+import { sourceHighlightAtom } from "./sourceHighlightingState";
 
 interface SourceFileSurfaceProps {
   readonly contents: string;

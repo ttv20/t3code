@@ -1,33 +1,9 @@
-import { createUiTranslator, formatUiDateTime, type UiLocale } from "@t3tools/client-runtime/i18n";
-import { UiText, useUiLanguage } from "../../i18n";
-import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
-import {
-  AuthOrchestrationOperateScope,
-  clampManagedRuntimeMode,
-  managedCapabilityDenial,
-  resolveProjectProviderInstanceEnabled,
-} from "@t3tools/contracts";
-import { readEnvironmentScope } from "../../state/session";
-import type {
-  EnvironmentId,
-  ProjectId,
-  ScheduledTask,
-  ScheduledTaskUpsertInput,
-} from "@t3tools/contracts";
-import {
-  MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
-  MAX_WEBHOOK_FILTERS,
-  resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
-import type { MenuAction } from "@react-native-menu/menu";
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
-import { resolvePastedPath } from "@t3tools/shared/path";
+import type { MenuAction } from "@react-native-menu/menu";
+import { useFocusEffect, useNavigation, usePreventRemove } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { createUiTranslator, formatUiDateTime, type UiLocale } from "@t3tools/client-runtime/i18n";
 import {
   DEFAULT_WEBHOOK_PROMPT,
   emptyWebhookFilterDraft,
@@ -37,44 +13,71 @@ import {
   WEBHOOK_FILTER_OPS,
   type WebhookFilterDraft,
 } from "@t3tools/client-runtime/scheduled-task-webhook";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+  type AtomCommandResult,
+} from "@t3tools/client-runtime/state/runtime";
+import type {
+  EnvironmentId,
+  ProjectId,
+  ScheduledTask,
+  ScheduledTaskThreadMode,
+  ScheduledTaskUpsertInput,
+} from "@t3tools/contracts";
+import {
+  AuthOrchestrationOperateScope,
+  clampManagedRuntimeMode,
+  managedCapabilityDenial,
+  MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
+  MAX_WEBHOOK_FILTERS,
+  resolveEnvironmentMachineKind,
+  resolveProjectProviderInstanceEnabled,
+  scheduledTaskThreadMode,
+} from "@t3tools/contracts";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import { useRef, useState, type ReactNode } from "react";
-import { useFocusEffect, useNavigation, usePreventRemove } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AppState, Platform, Pressable, TextInput as RNTextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Dialog from "../../components/ui/Dialog";
+import { UiText, useUiLanguage } from "../../i18n";
+import { readEnvironmentScope } from "../../state/session";
+import { readUiTranslator } from "../../state/ui-language";
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
 
-import { Button } from "../../components/ui/Button";
-import { AppText as Text } from "../../components/ui/AppText";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import {
-  EnvironmentMachineSymbol,
-  ENVIRONMENT_MACHINE_SYMBOLS,
-} from "../../components/EnvironmentMachineSymbol";
-import { Menu } from "../../components/ui/Menu";
+import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
 import type { ComposerEditorSelection } from "../../components/ComposerEditor";
+import {
+  ENVIRONMENT_MACHINE_SYMBOLS,
+  EnvironmentMachineSymbol,
+} from "../../components/EnvironmentMachineSymbol";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { Menu } from "../../components/ui/Menu";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
 import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
-import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
 import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
-import { usePreparedConnection } from "../../state/session";
 import { buildModelOptions } from "../../lib/modelOptions";
-import { NativeStackScreenOptions } from "../../native/StackHeader";
-import { useProjects, useEnvironmentServerConfig } from "../../state/entities";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useEnvironmentServerConfig, useProjects } from "../../state/entities";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
+import { usePreparedConnection } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { withNativeGlassHeaderItem } from "../layout/native-glass-header-items";
 import { resolveNewTaskBranchLabel } from "../threads/new-task-context-presentation";
 import { useVoiceInputController } from "../voice-input/useVoiceInputController";
 import { ScheduledTaskPromptField } from "./components/ScheduledTaskPromptField";
-import {
-  AndroidSettingsEnvironmentFilter,
-  SettingsEnvironmentFilterHeader,
-} from "./components/SettingsEnvironmentFilterHeader";
+import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
-import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
+import { useScheduledTaskEditor } from "./scheduled-task-editor";
+import {
+  discardScheduledTaskEditor,
+  markScheduledTaskEditorSaved,
+  scheduledTaskEditorSessionAtom,
+} from "./scheduled-task-editor-state";
 import {
   editDraft,
   parseIntervalMinutes,
@@ -82,18 +85,12 @@ import {
   scheduleFromDraft,
   type ScheduledTaskDraft as Draft,
 } from "./scheduledTaskDraft";
-import { settingsTargetsForProject } from "./settings-environment-filter.logic";
-import { useScheduledTaskEditor } from "./scheduled-task-editor";
 import {
-  discardScheduledTaskEditor,
-  markScheduledTaskEditorSaved,
-  scheduledTaskEditorSessionAtom,
-} from "./scheduled-task-editor-state";
-import { appAtomRegistry } from "../../state/atom-registry";
-import {
-  formatScheduledTaskInterval,
   formatNextScheduledTaskRun,
+  formatScheduledTaskInterval,
 } from "./scheduledTaskPresentation";
+import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
+import { settingsTargetsForProject } from "./settings-environment-filter.logic";
 
 type ScheduledTaskRoutes = {
   SettingsScheduledTaskNew: undefined;
@@ -112,8 +109,15 @@ const DAYS = [
   { index: 0, label: "Sun" },
 ] as const;
 
+const THREAD_MODE_LABELS: Record<ScheduledTaskThreadMode, string> = {
+  new_thread: "New thread each run",
+  continue: "One thread, same conversation",
+  fresh_session: "One thread, fresh session",
+};
+
 function describeSchedule(task: ScheduledTask, locale: UiLocale): string {
   const t = createUiTranslator(locale);
+
   if (task.schedule.type === "webhook") return t("On webhook");
   if (task.schedule.type === "once") {
     return t("Once, {0}", { "0": formatUiDateTime(Date.parse(task.schedule.runAt), locale) });
@@ -160,9 +164,11 @@ function timePickerValue(value: string): Date {
 }
 
 function repeatLabel(weekdays: ReadonlyArray<number>): string {
+  const uiT = readUiTranslator();
+
   const days = new Set(weekdays);
-  if (days.size === 7) return "Every day";
-  if (days.size === 5 && [1, 2, 3, 4, 5].every((day) => days.has(day))) return "Weekdays";
+  if (days.size === 7) return uiT("Every day");
+  if (days.size === 5 && [1, 2, 3, 4, 5].every((day) => days.has(day))) return uiT("Weekdays");
   return (
     DAYS.filter((day) => days.has(day.index))
       .map((day) => day.label)
@@ -302,7 +308,7 @@ function WebhookFilterRows(props: {
           <FormField
             label={uiT("Path")}
             value={filter.path}
-            placeholder="body.action"
+            placeholder={"body.action"}
             disabled={props.disabled}
             onChange={(path) => update(index, { path })}
           />
@@ -421,6 +427,7 @@ export function SettingsScheduledTasksRouteScreen() {
   const { startEditor, resetEditor } = useScheduledTaskEditor();
   const navigation = useNavigation<NativeStackNavigationProp<ScheduledTaskRoutes>>();
   const insets = useSafeAreaInsets();
+  const environmentMenu = useSettingsEnvironmentMenu();
   const newTask = () => {
     if (visibleEnvironments.length === 0) return;
     resetEditor();
@@ -428,81 +435,61 @@ export function SettingsScheduledTasksRouteScreen() {
   };
 
   return (
-    <>
-      <SettingsEnvironmentFilterHeader
-        trailingItems={[
-          withNativeGlassHeaderItem({
-            type: "button",
-            label: "",
-            accessibilityLabel: uiT("New task"),
-            icon: { type: "sfSymbol", name: "plus" } as const,
-            disabled: visibleEnvironments.length === 0,
-            onPress: newTask,
-          }),
-        ]}
-      />
-      <SettingsScreen
-        title={uiT("Scheduled tasks")}
-        trailing={
-          <View className="flex-row items-center">
-            <AndroidSettingsEnvironmentFilter />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={uiT("New task")}
-              accessibilityState={{ disabled: visibleEnvironments.length === 0 }}
-              disabled={visibleEnvironments.length === 0}
-              onPress={newTask}
-              className="size-11 items-center justify-center rounded-full disabled:opacity-50"
-            >
-              <SymbolView name="plus" size={22} tintColorClassName="accent-icon" />
-            </Pressable>
-          </View>
-        }
+    <SettingsScreen
+      title={uiT("Scheduled tasks")}
+      actions={[
+        {
+          accessibilityLabel: uiT("New task"),
+          icon: "plus",
+          disabled: visibleEnvironments.length === 0,
+          onPress: newTask,
+        },
+      ]}
+      menus={[environmentMenu]}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        className="flex-1"
+        contentContainerClassName="gap-5 px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-          className="flex-1"
-          contentContainerClassName="gap-5 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
-        >
-          {visibleEnvironments.length > 0 ? (
-            visibleEnvironments.map((environment) => (
-              <EnvironmentTasks
-                key={environment.environmentId}
-                environment={environment}
-                now={now}
-                projectIds={
-                  selectedProjectKey === null
-                    ? null
-                    : (selectedGroup?.members
-                        .filter(
-                          (member) => member.project.environmentId === environment.environmentId,
-                        )
-                        .map((member) => member.project.id) ?? [])
-                }
-                onEdit={(task) => {
-                  startEditor({
-                    environmentId: environment.environmentId,
-                    environmentLabel: environment.label,
-                    draft: editDraft(task),
-                  });
-                  navigation.navigate("SettingsScheduledTaskEdit");
-                }}
-              />
-            ))
-          ) : (
-            <Text className="px-2 text-base text-foreground-muted">
-              {availableTargets.length === 0
-                ? uiT("Connect an environment to view and create scheduled tasks.")
-                : uiT("No environments match these filters. Change the filter above.")}
-            </Text>
-          )}
-        </ScrollView>
-      </SettingsScreen>
-    </>
+        {visibleEnvironments.length > 0 ? (
+          visibleEnvironments.map((environment) => (
+            <EnvironmentTasks
+              key={environment.environmentId}
+              environment={environment}
+              now={now}
+              projectIds={
+                selectedProjectKey === null
+                  ? null
+                  : (selectedGroup?.members
+                      .filter(
+                        (member) => member.project.environmentId === environment.environmentId,
+                      )
+                      .map((member) => member.project.id) ?? [])
+              }
+              onEdit={(task) => {
+                startEditor({
+                  environmentId: environment.environmentId,
+                  environmentLabel: environment.label,
+                  draft: editDraft(task),
+                });
+                navigation.navigate("SettingsScheduledTaskEdit");
+              }}
+            />
+          ))
+        ) : (
+          <Text className="px-2 text-base text-foreground-muted">
+            {availableTargets.length === 0
+              ? uiT("Connect an environment to view and create scheduled tasks.")
+              : uiT("No environments match these filters. Change the filter above.")}
+          </Text>
+        )}
+      </ScrollView>
+    </SettingsScreen>
   );
 }
 
@@ -593,25 +580,11 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
     ]);
   });
   return (
-    <SettingsScreen title={title}>
-      {Platform.OS === "ios" ? (
-        <NativeStackScreenOptions
-          options={{
-            headerBackVisible: false,
-            gestureEnabled: !preventRemove,
-            // Native Back pops before removal guards; a bar action lets the guard run first.
-            unstable_headerLeftItems: () => [
-              withNativeGlassHeaderItem({
-                type: "button",
-                label: "",
-                accessibilityLabel: uiT("Back"),
-                icon: { type: "sfSymbol", name: "chevron.backward" },
-                onPress: () => navigation.goBack(),
-              }),
-            ],
-          }}
-        />
-      ) : null}
+    <SettingsScreen
+      title={title}
+      // Native Back pops before removal guards; a bar action lets the guard run first.
+      guardBack={preventRemove}
+    >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -753,6 +726,7 @@ function TaskForm({
   const offersOnce =
     config?.environment.capabilities.oneTimeSchedules === true ||
     draft.task?.schedule.type === "once";
+  const offersThreadModes = config?.environment.capabilities.scheduledTaskThreadModes === true;
   const save = async () => {
     if (
       !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope) ||
@@ -784,8 +758,10 @@ function TaskForm({
     }
     if (draft.schedule.mode === "once" && !offersOnce) {
       Dialog.alert(
-        "Once is not available here",
-        "This environment runs an older T3 Code. Update it to schedule a one-time task, or pick another schedule.",
+        uiT("Once is not available here"),
+        uiT(
+          "This environment runs an older T3 Code. Update it to schedule a one-time task, or pick another schedule.",
+        ),
       );
       return;
     }
@@ -830,6 +806,7 @@ function TaskForm({
       schedule,
       enabled: draft.enabled,
       threadId: draft.task?.threadId ?? null,
+      ...(offersThreadModes ? { threadMode: draft.threadMode } : {}),
       workspaceStrategy:
         draft.workspace === "root"
           ? { type: "root" }
@@ -968,6 +945,38 @@ function TaskForm({
             disabled={saving || dictationPending || environmentUnavailable}
           />
         </SettingsSection>
+
+        {offersThreadModes ? (
+          <SettingsSection
+            title={uiT("Destination")}
+            footer={
+              draft.threadMode === "new_thread"
+                ? uiT("Each run starts a new thread.")
+                : uiT("{0} The first run starts the thread. Deleting it also deletes this task.", {
+                    "0":
+                      draft.threadMode === "continue"
+                        ? "Runs continue one conversation."
+                        : "Runs share one thread, each in a fresh session without earlier runs' context.",
+                  })
+            }
+          >
+            <SelectRow
+              label={uiT("Runs go to")}
+              value={uiT(THREAD_MODE_LABELS[draft.threadMode])}
+              actions={(Object.keys(THREAD_MODE_LABELS) as ScheduledTaskThreadMode[]).map(
+                (mode) => ({
+                  id: mode,
+                  title: uiT(THREAD_MODE_LABELS[mode]),
+                  state: draft.threadMode === mode ? "on" : undefined,
+                }),
+              )}
+              onSelect={(id) => {
+                if (id === "new_thread" || id === "continue" || id === "fresh_session")
+                  setDraft({ ...draft, threadMode: id });
+              }}
+            />
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection title={uiT("Workspace")}>
           <SelectRow
@@ -1156,7 +1165,7 @@ function TaskForm({
                 <View key={field}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${field === "date" ? "Date" : uiT("Time")}, ${label}`}
+                    accessibilityLabel={`${field === "date" ? uiT("Date") : uiT("Time")}, ${label}`}
                     onPress={() => setRunAtPicker((open) => (open === field ? null : field))}
                     className="min-h-14 flex-row items-center gap-3 border-t border-border-subtle px-4 py-3 active:opacity-70"
                   >
@@ -1229,7 +1238,7 @@ function TaskForm({
               <FormField
                 label={uiT("Duplicate request key")}
                 value={draft.schedule.replayKey}
-                placeholder="{{headers.delivery-id}}"
+                placeholder={"{{headers.delivery-id}}"}
                 disabled={saving}
                 borderTop
                 onChange={(replayKey) =>
@@ -1242,7 +1251,7 @@ function TaskForm({
               <FormField
                 label={uiT("Coalesce key template")}
                 value={draft.schedule.coalesceKey}
-                placeholder="{{body.id}}"
+                placeholder={"{{body.id}}"}
                 disabled={saving}
                 borderTop
                 onChange={(coalesceKey) =>
@@ -1457,6 +1466,7 @@ function EnvironmentTasks({
     label: uiT("scheduled task delete"),
     reportFailure: false,
   });
+  const selectDetail = useSelectWorkspaceDetail();
   const failure = (title: string, result: AtomCommandResult<unknown, unknown>) => {
     if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
       Dialog.alert(title, String(squashAtomCommandFailure(result)));
@@ -1538,6 +1548,9 @@ function EnvironmentTasks({
             <Menu
               actions={[
                 { id: "edit", title: uiT("Edit") },
+                ...(task.threadId !== null && scheduledTaskThreadMode(task) !== "new_thread"
+                  ? [{ id: "thread", title: uiT("Open thread") }]
+                  : []),
                 {
                   id: "toggle",
                   title: task.enabled ? uiT("Pause") : uiT("Resume"),
@@ -1556,6 +1569,14 @@ function EnvironmentTasks({
                 const action = nativeEvent.event;
                 if (action === "edit") {
                   onEdit(task);
+                } else if (action === "thread" && task.threadId !== null) {
+                  selectDetail({
+                    name: "Thread",
+                    params: {
+                      environmentId: String(environmentId),
+                      threadId: String(task.threadId),
+                    },
+                  });
                 } else if (action === "delete") {
                   Dialog.alert(uiT("Delete task?"), task.title, [
                     { text: "Cancel", style: "cancel" },

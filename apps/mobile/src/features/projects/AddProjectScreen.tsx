@@ -1,12 +1,14 @@
-import { useUiLanguage } from "../../i18n";
+import {
+  StackActions,
+  useNavigation,
+  type NavigationState,
+  type ParamListBase,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSelectWorkspaceDetail } from "../workspace/useSelectWorkspaceDetail";
-import * as Dialog from "../../components/ui/Dialog";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { NavigationRow } from "../../components/ui/NavigationRow";
-import { SettingsScreen } from "../settings/components/SettingsScreen";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { Button } from "../../components/ui/Button";
+import {
+  connectionStatusText,
+  type EnvironmentConnectionPhase,
+} from "@t3tools/client-runtime/connection";
 import {
   addProjectRemoteSourceLabel,
   addProjectRemoteSourcePathHint,
@@ -14,28 +16,26 @@ import {
   buildAddProjectRemoteSourceReadiness,
   buildProjectCreateCommand,
   canCreateProjectInEnvironment,
+  defaultHostCloneUrl,
   findExistingAddProject,
   getAddProjectInitialQuery,
   getCloneDestinationBrowsePath,
   getCloneDestinationPath,
   getCloneDirectoryName,
+  getCloneDirectoryPath,
   getDefaultCloneUrl,
   getNewProjectPathPreview,
   getNewProjectPublishTarget,
   getNewProjectPublishTargets,
   getNewProjectRepository,
   githubIncompleteOwnerRepositoryMessage,
-  defaultHostCloneUrl,
   normalizePastedCloneUrl,
   parseAddProjectRemoteSource,
   resolveAddProjectPath,
   sortAddProjectProviderSources,
   type AddProjectRemoteSource,
 } from "@t3tools/client-runtime/operations/projects";
-import {
-  connectionStatusText,
-  type EnvironmentConnectionPhase,
-} from "@t3tools/client-runtime/connection";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   canPreloadBrowsePath,
   createBrowseNavigationCoordinator,
@@ -48,61 +48,65 @@ import {
   inferProjectTitleFromPath,
   isWindowsPlatform,
 } from "@t3tools/client-runtime/state/projects";
-import { resolvePastedPath } from "@t3tools/shared/path";
 import {
+  AuthFilesystemReadScope,
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
-  AuthFilesystemReadScope,
   CommandId,
-  type EnvironmentId,
-  type EnvironmentMachineKind,
   ProjectId,
   resolveEnvironmentMachineKind,
   SourceControlProviderKind,
+  type EnvironmentId,
+  type EnvironmentMachineKind,
 } from "@t3tools/contracts";
-import {
-  StackActions,
-  useNavigation,
-  type NavigationState,
-  type ParamListBase,
-} from "@react-navigation/native";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Platform, Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { resolvePastedPath } from "@t3tools/shared/path";
 import * as Arr from "effect/Array";
 import * as Cause from "effect/Cause";
 import * as Order from "effect/Order";
 import { AsyncResult } from "effect/reactivity";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Platform, Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { ErrorBanner } from "../../components/ui/ErrorBanner";
+import { NavigationRow } from "../../components/ui/NavigationRow";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/cn";
+import { uuidv4 } from "../../lib/uuid";
 import { useProjects, useServerConfigs, waitForProject } from "../../state/entities";
 import { filesystemEnvironment } from "../../state/filesystem";
+import { useEnvironmentPresentation } from "../../state/presentation";
 import { projectEnvironment } from "../../state/projects";
 import { useEnvironmentQuery } from "../../state/query";
-import { environmentSession, useEnvironmentScope, readEnvironmentScope } from "../../state/session";
-import { useEnvironmentPresentation } from "../../state/presentation";
+import { environmentSession, readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { sourceControlEnvironment } from "../../state/sourceControl";
-import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
-import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
-import { ErrorBanner } from "../../components/ui/ErrorBanner";
-import { SourceControlIcon } from "./SourceControlIcon";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
-import { uuidv4 } from "../../lib/uuid";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { suggestAppAccessForRemote } from "./suggestAppAccess";
 import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
-import {
-  useRemoteConnectionStatus,
-  useRemoteEnvironmentRuntime,
-  useSavedRemoteConnections,
-} from "../../state/use-remote-environment-registry";
-import { resolveAddProjectEnvironment } from "./AddProjectScreen.logic";
 import {
   createNewTaskDraft,
   setComposerDraftText,
   waitForComposerDraftsLoaded,
 } from "../../state/use-composer-drafts";
+import {
+  useRemoteConnectionStatus,
+  useRemoteEnvironmentRuntime,
+  useSavedRemoteConnections,
+} from "../../state/use-remote-environment-registry";
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
+import { SettingsScreen } from "../settings/components/SettingsScreen";
+import {
+  isMissingCloneParentBrowseFailure,
+  resolveAddProjectEnvironment,
+} from "./AddProjectScreen.logic";
+import { SourceControlIcon } from "./SourceControlIcon";
+import { suggestAppAccessForRemote } from "./suggestAppAccess";
 
 interface EnvironmentOption {
   readonly environmentId: EnvironmentId;
@@ -114,6 +118,7 @@ interface EnvironmentOption {
   readonly connectionState: EnvironmentConnectionPhase;
   readonly connectionError: string | null;
   readonly connectionErrorTraceId: string | null;
+  readonly ghqCloneLayout: boolean;
 }
 
 const environmentOptionOrder = Order.mapInput(
@@ -277,8 +282,6 @@ function ProjectPathInput(props: {
   readonly onChangeText: (value: string) => void;
   readonly onSubmit: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <TextInput
       className="h-12 min-h-12 rounded-[24px] px-4 py-0 text-base leading-snug"
@@ -286,20 +289,24 @@ function ProjectPathInput(props: {
       onChangeText={(text) => props.onChangeText(resolvePastedPath(props.value, text))}
       autoCapitalize="none"
       autoCorrect={false}
-      placeholder={uiT("~/projects/my-app")}
+      placeholder="~/projects/my-app"
       returnKeyType="done"
       onSubmitEditing={props.onSubmit}
     />
   );
 }
 
-function useBrowsePathInput(environment: EnvironmentOption | null, pinnedDirectoryName = "") {
+function useBrowsePathInput(
+  environment: EnvironmentOption | null,
+  pinnedDirectoryName = "",
+  cloneDirectoryPath = pinnedDirectoryName,
+) {
   const environmentId = environment?.environmentId ?? null;
   const environmentBaseDirectory = environment?.baseDirectory ?? null;
   const clonePathCaseSensitive = !isWindowsPlatform(environment?.platform ?? "");
   const seedPath = getCloneDestinationPath(
     getAddProjectInitialQuery(environmentBaseDirectory),
-    pinnedDirectoryName,
+    cloneDirectoryPath,
   );
   // Each host keeps the path last typed or browsed for it, and shows its own default until then,
   // so switching hosts and back loses nothing. With no host selected (one dropping out briefly),
@@ -406,6 +413,7 @@ function useEnvironmentOptions(
         connectionState: runtime?.connectionState ?? "available",
         connectionError: runtime?.connectionError ?? null,
         connectionErrorTraceId: runtime?.connectionErrorTraceId ?? null,
+        ghqCloneLayout: config?.settings.ghqCloneLayout === true,
       };
     });
     return Arr.sort(
@@ -764,8 +772,10 @@ function useCreateProject(environment: EnvironmentOption | null) {
           })
         )._tag === "Success";
       Dialog.alert(
-        "Project already exists",
-        unarchived ? existing.title : `${existing.title} is still archived. Try again later.`,
+        uiT("Project already exists"),
+        unarchived
+          ? existing.title
+          : uiT("{0} is still archived. Try again later.", { "0": existing.title }),
       );
       openNewTaskDraft(
         {
@@ -935,6 +945,7 @@ function FolderBrowser(props: {
     readonly selectedDirectoryName?: string;
   }) => Promise<boolean>;
   readonly pinnedDirectoryName?: string;
+  readonly cloning?: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -974,9 +985,20 @@ function FolderBrowser(props: {
     <>
       <SectionTitle>{uiT("Browse folders")}</SectionTitle>
       {!canReadFiles && !fileAccess.isPending ? (
-        <ErrorBanner message={fileAccess.error ?? "This connection cannot browse host folders."} />
+        <ErrorBanner
+          message={fileAccess.error ?? uiT("This connection cannot browse host folders.")}
+        />
       ) : null}
-      {browseState.error ? <ErrorBanner message={browseState.error} /> : null}
+      {browseState.error === null ? null : isMissingCloneParentBrowseFailure({
+          cloning: props.cloning === true,
+          failure: browseState.failure,
+        }) ? (
+        <Text className="text-sm text-foreground-muted">
+          {uiT("This folder does not exist yet. Cloning creates it.")}
+        </Text>
+      ) : (
+        <ErrorBanner message={browseState.error} />
+      )}
       <ListSection>
         {fileAccess.isPending || (browseState.isPending && browseState.data === null) ? (
           <View className="items-center py-5">
@@ -1167,7 +1189,9 @@ export function AddProjectNewScreen(props: { readonly environmentId?: string | s
     if (project === null) {
       setName("");
       setError(
-        "The project was created but has not reached this device yet. It will appear in the project list once the connection catches up.",
+        uiT(
+          "The project was created but has not reached this device yet. It will appear in the project list once the connection catches up.",
+        ),
       );
       return;
     }
@@ -1400,9 +1424,15 @@ export function AddProjectDestinationScreen(props: {
   const repositoryTitle = stringParam(props.repositoryTitle);
   const prompt = stringParam(props.prompt);
   const repositoryName = stringParam(props.repositoryName)?.trim() ?? "";
+  const ghqDirectoryPath =
+    remoteUrl && environment?.ghqCloneLayout
+      ? getCloneDirectoryPath(remoteUrl, true, repositoryName)
+      : null;
+  const cloneDirectoryName = ghqDirectoryPath?.split("/").at(-1) ?? repositoryName;
   const { isBrowseNavigating, navigateToBrowsePath, pathInput, setPathInput } = useBrowsePathInput(
     environment,
-    repositoryName,
+    cloneDirectoryName,
+    ghqDirectoryPath ?? repositoryName,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1454,7 +1484,9 @@ export function AddProjectDestinationScreen(props: {
       );
       if (project === null) {
         setError(
-          "The project was created but has not reached this device yet. It will appear in the project list once the connection catches up.",
+          uiT(
+            "The project was created but has not reached this device yet. It will appear in the project list once the connection catches up.",
+          ),
         );
       } else {
         openNewTaskDraft(
@@ -1507,7 +1539,8 @@ export function AddProjectDestinationScreen(props: {
             navigateToBrowsePath={navigateToBrowsePath}
             pathInput={pathInput}
             setPathInput={setPathInput}
-            pinnedDirectoryName={repositoryName}
+            pinnedDirectoryName={cloneDirectoryName}
+            cloning={Boolean(remoteUrl)}
           />
         </>
       ) : (

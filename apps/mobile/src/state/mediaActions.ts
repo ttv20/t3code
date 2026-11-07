@@ -1,29 +1,29 @@
-import { useUiLanguage } from "../i18n";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import * as Dialog from "../components/ui/Dialog";
-import type { MediaActionsSource } from "../lib/mediaActionsSource";
 import { useNavigation } from "@react-navigation/native";
 import {
   formatFilePathForClipboard,
   type MediaActionId,
 } from "@t3tools/client-runtime/media-actions";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AuthFilesystemReadScope,
-  type EnvironmentId,
   sessionGrantsScope,
+  type EnvironmentId,
   type SessionGrantInput,
 } from "@t3tools/contracts";
-import { normalizeNativeMarkdownUrl } from "../lib/markdownLinks";
 import { AsyncResult } from "effect/reactivity";
 import { useEffect, useRef, useState } from "react";
+import * as Dialog from "../components/ui/Dialog";
+import { useUiLanguage } from "../i18n";
+import { normalizeNativeMarkdownUrl } from "../lib/markdownLinks";
+import type { MediaActionsSource } from "../lib/mediaActionsSource";
 
+import { downloadAndShareAttachment, shareLocalAttachment } from "../lib/attachmentDownload";
+import { copyTextWithHaptic } from "../lib/copyTextWithHaptic";
+import { loadLocalAttachmentPreview } from "../lib/localAttachmentPreview";
 import { useRefreshAssetUrl } from "./assets";
 import { appAtomRegistry } from "./atom-registry";
 import { useEnvironmentQuery } from "./query";
 import { environmentSession } from "./session";
-import { downloadAndShareAttachment, shareLocalAttachment } from "../lib/attachmentDownload";
-import { copyTextWithHaptic } from "../lib/copyTextWithHaptic";
-import { loadLocalAttachmentPreview } from "../lib/localAttachmentPreview";
 
 function allowsHostMedia(session: SessionGrantInput | null) {
   return session === null || sessionGrantsScope(session, AuthFilesystemReadScope);

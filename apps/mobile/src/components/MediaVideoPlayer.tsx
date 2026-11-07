@@ -1,21 +1,21 @@
-import { useUiLanguage } from "../i18n";
+import { useIsFocused } from "@react-navigation/native";
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { useIsFocused } from "@react-navigation/native";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
+import { useUiLanguage } from "../i18n";
 
-import { AppActivityIndicator } from "./ui/AppActivityIndicator";
-import { AppText } from "./ui/AppText";
-import { SymbolView } from "./ui/AppSymbol";
-import { VideoThumbnailImage } from "./VideoThumbnailImage";
-import { useMediaActions } from "../state/mediaActions";
-import { fitVideoFrame } from "../lib/videoFrameFit";
-import { loadVideoThumbnail } from "../lib/videoThumbnails";
+import { createAudioPlaybackSession } from "../lib/audioSession";
 import { type MediaActionsSource } from "../lib/mediaActionsSource";
 import { useMediaVideoPlayback } from "../lib/useMediaVideoPlayback";
+import { fitVideoFrame } from "../lib/videoFrameFit";
+import { loadVideoThumbnail } from "../lib/videoThumbnails";
+import { useMediaActions } from "../state/mediaActions";
 import { MediaActionsMenu } from "./MediaActionsMenu";
-import { createAudioPlaybackSession } from "../lib/audioSession";
+import { AppActivityIndicator } from "./ui/AppActivityIndicator";
+import { SymbolView } from "./ui/AppSymbol";
+import { AppText } from "./ui/AppText";
+import { VideoThumbnailImage } from "./VideoThumbnailImage";
 
 function LoadedMediaVideo(props: {
   readonly uri: string;
@@ -74,7 +74,7 @@ function LoadedMediaVideo(props: {
     const playIfUninterrupted = createPlayRequest();
     const uri = props.resolvePlaybackUri ? await props.resolvePlaybackUri() : props.uri;
     if (signal.aborted) return;
-    if (uri === null) throw new Error("Video unavailable");
+    if (uri === null) throw new Error(uiT("Video unavailable"));
     playback.pause();
     previousPlaybackRequested.current = false;
     await player.replaceAsync({ uri, contentType: "progressive" });

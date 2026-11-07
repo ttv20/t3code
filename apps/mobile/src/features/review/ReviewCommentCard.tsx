@@ -1,24 +1,24 @@
-import { memo, useMemo, useState } from "react";
 import { getFiletypeFromFileName } from "@pierre/diffs/utils/getFiletypeFromFileName";
-import { ScrollView, StyleSheet, Text as NativeText, View, type ColorValue } from "react-native";
-import { SelectableMarkdownText } from "../../native/SelectableMarkdownText";
-import { useMarkdownPreviewStyles } from "../files/FileMarkdownPreview";
-import { AppText as Text } from "../../components/ui/AppText";
+import { memo, useMemo, useState } from "react";
+import { Text as NativeText, ScrollView, StyleSheet, View, type ColorValue } from "react-native";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import { SelectableMarkdownText } from "../../native/SelectableMarkdownText";
+import { resolveNativeReviewDiffView } from "../diffs/nativeReviewDiffSurface";
+import { useMarkdownPreviewStyles } from "../files/FileMarkdownPreview";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { useAppearanceCodeSurface } from "../settings/appearance/useAppearanceCodeSurface";
-import { resolveNativeReviewDiffView } from "../diffs/nativeReviewDiffSurface";
+import { useMarkdownCodeHighlight } from "../threads/markdownCodeHighlightState";
 import {
   buildNativeReviewDiffData,
   buildNativeReviewSnippetRows,
   createNativeReviewDiffTheme,
   NATIVE_REVIEW_DIFF_CONTENT_WIDTH,
 } from "./nativeReviewDiffAdapter";
-import { buildReviewParsedDiff } from "./reviewModel";
-import { REVIEW_MONO_FONT_FAMILY } from "./reviewDiffRendering";
 import type { ReviewInlineComment } from "./reviewCommentSelection";
-import { useMarkdownCodeHighlight } from "../threads/markdownCodeHighlightState";
+import { REVIEW_MONO_FONT_FAMILY } from "./reviewDiffRendering";
+import { buildReviewParsedDiff } from "./reviewModel";
 
 export interface ReviewCommentColors {
   readonly background: ColorValue;

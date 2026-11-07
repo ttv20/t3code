@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { StaticScreenProps } from "@react-navigation/native";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -11,6 +10,7 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { SelectionRow } from "../../components/ui/SelectionRow";
+import { useUiLanguage } from "../../i18n";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -76,9 +76,8 @@ export function PullRequestLabelsScreen({ route }: StaticScreenProps<PullRequest
     <PullRequestSearchSheet
       title={uiT("Labels")}
       placeholder={uiT("Search labels")}
-      closeAccessibilityLabel="Close labels"
-      clearAccessibilityLabel="Clear label search"
-      searchTextChangeId="pr-label-search"
+      closeAccessibilityLabel={uiT("Close labels")}
+      clearAccessibilityLabel={uiT("Clear label search")}
       query={query}
       onQueryChange={setQuery}
     >

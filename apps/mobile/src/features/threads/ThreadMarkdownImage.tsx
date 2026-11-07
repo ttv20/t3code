@@ -1,39 +1,42 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { MISSING_FILE_ACCESS_MESSAGE } from "@t3tools/client-runtime/state/assets";
 import type { AssetResource, EnvironmentId } from "@t3tools/contracts";
-import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { Image } from "expo-image";
-import { createContext, useContext, useId, useState } from "react";
 import { fetch } from "expo/fetch";
-import { parse, SvgAst, type JsxAST } from "react-native-svg";
+import { createContext, useContext, useId, useState } from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
+import { parse, SvgAst, type JsxAST } from "react-native-svg";
+import { useUiLanguage } from "../../i18n";
 
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { useFilePreviewGallery } from "../../components/FilePreviewGallery";
-import { AppText as Text } from "../../components/ui/AppText";
 import type { FilePreviewSource } from "../../components/FilePreviewModal";
 import { MediaActionsMenu } from "../../components/MediaActionsMenu";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { AppText as Text } from "../../components/ui/AppText";
 import { PresentationSource } from "../../components/ui/NativePresentation";
-import { useMediaActions } from "../../state/mediaActions";
+import { assetImageCacheKey } from "../../lib/assetImageSource";
 import type { MediaActionsSource } from "../../lib/mediaActionsSource";
 import { useAssetUrlState } from "../../state/assets";
-import { assetImageCacheKey } from "../../lib/assetImageSource";
+import { useMediaActions } from "../../state/mediaActions";
 import {
   MARKDOWN_IMAGE_MAX_WIDTH,
-  type MarkdownImageDisplaySize,
   resolveMarkdownImageDisplaySize,
   resolveSvgImageSize,
+  type MarkdownImageDisplaySize,
 } from "./markdownImageSize";
+import { WorkspaceMutationIdContext } from "./workspaceMutationIdContext";
 
 /** Use known feed width immediately; later image measurement would move already-positioned rows. */
 export const MarkdownImageAvailableWidthContext = createContext(0);
 
 type ImageSize = { readonly width: number; readonly height: number };
 
-class SvgLoadError extends Data.TaggedError("SvgLoadError")<{ readonly cause: unknown }> {}
+class SvgLoadError extends Schema.TaggedError<SvgLoadError>()("SvgLoadError", {
+  cause: Schema.Defect(),
+}) {}
 
 async function readSvgXml(uri: string, signal: AbortSignal): Promise<string> {
   if (uri.startsWith("data:image/svg+xml")) {
@@ -72,7 +75,9 @@ const svgDocumentAtom = Atom.family((uri: string) =>
     if (cached !== null) return Effect.succeed(cached);
     return Effect.tryPromise({
       try: async (signal): Promise<SvgDocument> => {
-        const ast = parse(await readSvgXml(uri, signal));
+        const xml = await readSvgXml(uri, signal);
+        signal.throwIfAborted();
+        const ast = parse(xml);
         if (!ast) throw new Error("SVG has no root element");
         return { ast, size: resolveSvgImageSize(ast.props) };
       },
@@ -283,7 +288,12 @@ export function ThreadMarkdownImage(props: {
   readonly onPressPreview: (source: FilePreviewSource) => void;
 }) {
   const withGallery = useFilePreviewGallery();
-  const assetUrl = useAssetUrlState(props.environmentId, props.resource);
+  const workspaceMutationId = useContext(WorkspaceMutationIdContext);
+  const assetUrl = useAssetUrlState(
+    props.environmentId,
+    props.resource,
+    props.resource._tag === "media-file" ? workspaceMutationId : undefined,
+  );
   const resourceKey =
     props.resource._tag === "attachment"
       ? `attachment:${props.resource.attachmentId}`

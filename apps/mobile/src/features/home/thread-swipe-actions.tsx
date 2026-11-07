@@ -1,6 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { Menu } from "../../components/ui/Menu";
 import type { MenuAction } from "@react-native-menu/menu";
 import * as Haptics from "expo-haptics";
 import {
@@ -30,16 +27,20 @@ import Animated, {
   cancelAnimation,
   Easing,
   Extrapolation,
-  ReduceMotion,
   interpolate,
+  ReduceMotion,
   runOnJS,
   runOnUI,
-  type SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from "react-native-reanimated";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { Menu } from "../../components/ui/Menu";
+import { useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { SwipeRowActivationContext, type SwipeRowActivation } from "./swipe-row-activation";
@@ -86,13 +87,15 @@ function resolveSecondaryAction(input: {
   readonly secondaryAction: ThreadSwipeAction | null | undefined;
   readonly threadTitle: string;
 }): ThreadSwipeSecondaryAction | null {
+  const uiT = readUiTranslator();
+
   if (input.secondaryAction === null) return null;
   if (input.secondaryAction === undefined) {
     return {
-      accessibilityLabel: `Delete ${input.threadTitle}`,
+      accessibilityLabel: uiT("Delete {0}", { "0": input.threadTitle }),
       tone: "danger",
       icon: "trash",
-      label: "Delete",
+      label: uiT("Delete"),
       onPress: () => {
         input.close();
         input.onDelete();

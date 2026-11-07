@@ -1,6 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
-import * as Dialog from "../../components/ui/Dialog";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type ConnectionRoute,
@@ -18,21 +15,24 @@ import {
   AUTH_SCOPE_OPTIONS,
   sessionPermissionsUnavailableMessage,
 } from "@t3tools/shared/authScopeOptions";
-import { AsyncResult } from "effect/reactivity";
 import * as Option from "effect/Option";
+import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import Reanimated, { ReduceMotion, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 
+import { StatusPill } from "../../components/StatusPill";
 import { type AppSymbolName, SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { StatusPill } from "../../components/StatusPill";
+import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { environmentCatalog } from "../../connection/catalog";
 import { cn } from "../../lib/cn";
 import { environmentSession } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { connectionTone } from "../connection/connectionTone";
-import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { SettingsDragHandle } from "./components/SettingsDragHandle";
 import { SettingsSection } from "./components/SettingsSection";
 
@@ -288,7 +288,7 @@ function RouteRow(props: {
           label,
           address,
           isLearned(route) ? "Found automatically" : null,
-          props.inUse ? "In use" : null,
+          props.inUse ? uiT("In use") : null,
           `Route ${props.position} of ${props.count}`,
         ]
           .filter((part) => part !== null)

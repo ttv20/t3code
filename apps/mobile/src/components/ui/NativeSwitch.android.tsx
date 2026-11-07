@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { NativeThemeHost } from "./NativeThemeHost.android";
 import { Switch as ComposeSwitch } from "@expo/ui/jetpack-compose";
 import { Pressable, View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 import type { ThemedSwitchProps } from "./NativeSwitch.types";
+import { NativeThemeHost } from "./NativeThemeHost.android";
 
 import { useControlTheme } from "./useControlTheme";
 

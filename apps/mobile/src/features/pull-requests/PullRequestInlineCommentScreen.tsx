@@ -1,21 +1,23 @@
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import { AsyncResult } from "effect/reactivity";
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import type { PullRequestReviewPosition } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
 import { View } from "react-native";
-import type { PullRequestReviewPosition } from "@t3tools/contracts";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
 import { uuidv4 } from "../../lib/uuid";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
-import { PullRequestSheetContent } from "./PullRequestSheetContent";
-import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
+import { PullRequestCompletionSuggestions } from "./PullRequestCompletionSuggestions";
 import { reviewPositionLabel } from "./pullRequestDiffComments";
+import { PullRequestSheetContent } from "./PullRequestSheetContent";
+import { usePullRequestCompletions } from "./usePullRequestCompletions";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
+import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
 
 export type InlineCommentParams = PullRequestParams & {
   readonly draftId?: string;
@@ -35,6 +37,13 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
   const body = editedBody ?? saved?.body ?? "";
   const detail = useEnvironmentQuery(composerPullRequests.detail(pullRequestTarget(params)));
   const { refresh: refreshDetail } = detail;
+  const completions = usePullRequestCompletions({
+    environmentId: params.environmentId,
+    projectId: params.projectId,
+    value: body,
+    onChangeValue: setBody,
+    support: detail.data?.capabilities ?? null,
+  });
   useFocusEffect(refreshDetail);
   const permissions = usePullRequestPermissions(params, detail.data);
   const stale = detail.data && detail.data.headSha !== params.headSha;
@@ -103,8 +112,12 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
           {params.code}
         </Text>
       </View>
+      <PullRequestCompletionSuggestions completions={completions} />
       <TextInput
         multiline
+        selection={completions.selection}
+        onSelectionChange={completions.onSelectionChange}
+        onBlur={completions.onBlur}
         editable={store.ready && !busy}
         autoFocus
         accessibilityLabel={uiT("Inline review comment")}

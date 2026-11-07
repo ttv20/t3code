@@ -1,34 +1,34 @@
-import { useUiLanguage } from "../i18n";
-import { FilePreviewGallery, useFilePreviewGallery } from "./FilePreviewGallery";
-import { composerImageGallery } from "../lib/composerImageGallery";
-import { SymbolView } from "./ui/AppSymbol";
+import { useAtomValue } from "@effect/atom-react";
 import { imageMimeType } from "@t3tools/shared/image";
 import { videoMimeType } from "@t3tools/shared/video";
-import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { Paths } from "expo-file-system";
 import { Image, Pressable, ScrollView, View } from "react-native";
+import { useUiLanguage } from "../i18n";
+import { composerImageGallery } from "../lib/composerImageGallery";
+import { FilePreviewGallery, useFilePreviewGallery } from "./FilePreviewGallery";
+import { SymbolView } from "./ui/AppSymbol";
 
-import { AppText as Text } from "./ui/AppText";
+import type { EnvironmentId } from "@t3tools/contracts";
+import { resolveOwnedComposerAttachmentFileUri } from "../lib/composerAttachmentFiles";
 import { MaterializedPreviewKey, materializedPreviewAtom } from "../lib/composerImagePreview";
-import { PierreEntryIcon } from "./PierreEntryIcon";
 import {
   isFileBackedComposerAttachment,
   type DraftComposerAttachment,
   type DraftComposerFileAttachment,
   type DraftComposerImageAttachment,
 } from "../lib/composerImages";
-import { resolveOwnedComposerAttachmentFileUri } from "../lib/composerAttachmentFiles";
-import { VideoAttachmentTile } from "./VideoAttachmentTile";
-import { type MediaActionsSource } from "../lib/mediaActionsSource";
-import { PresentationSource } from "./ui/NativePresentation";
-import type { FilePreviewSource } from "./FilePreviewModal";
 import { isPdfFile } from "../lib/filePreview";
-import type { EnvironmentId } from "@t3tools/contracts";
+import { type MediaActionsSource } from "../lib/mediaActionsSource";
 import {
   retryComposerAttachmentUpload,
   useComposerAttachmentUploadState,
 } from "../state/composer-attachment-uploads";
+import type { FilePreviewSource } from "./FilePreviewModal";
+import { PierreEntryIcon } from "./PierreEntryIcon";
+import { AppText as Text } from "./ui/AppText";
+import { PresentationSource } from "./ui/NativePresentation";
+import { VideoAttachmentTile } from "./VideoAttachmentTile";
 
 export interface ComposerAttachmentStripProps {
   readonly environmentId?: EnvironmentId;

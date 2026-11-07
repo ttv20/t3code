@@ -1,7 +1,7 @@
-import * as Dialog from "../../components/ui/Dialog";
+import { CommonActions } from "@react-navigation/native";
+import { EnvironmentId, PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@t3tools/contracts";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
-import { EnvironmentId, PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@t3tools/contracts";
 import {
   clearSharedPayloads,
   getResolvedSharedPayloadsAsync,
@@ -11,25 +11,13 @@ import {
 } from "expo-sharing";
 import { useSyncExternalStore } from "react";
 import { Platform } from "react-native";
-import { CommonActions } from "@react-navigation/native";
+import * as Dialog from "../../components/ui/Dialog";
+import { readUiTranslator } from "../../state/ui-language";
 
-import {
-  buildIncomingShareDraft,
-  isShareFileUriUnderOwnedRoots,
-  selectIncomingShareAttachmentsForServer,
-  type IncomingShareDestination,
-  type IncomingShareDraft,
-} from "./incoming-share-model";
-import { createIncomingSharePayloadReader } from "./incoming-share-native";
-import { IncomingShareInbox } from "./incoming-share-inbox";
-import { persistComposerAttachmentFile } from "../../lib/composerImages";
 import { subscribeAppActive } from "../../lib/appState";
 import { coalescedRun } from "../../lib/coalescedRun";
+import { persistComposerAttachmentFile } from "../../lib/composerImages";
 import { rootNavigationRef } from "../../lib/rootNavigation";
-import { selectWorkspaceDetail } from "../workspace/workspace-detail-selection";
-import { isDraftThreadRoute } from "../threads/thread-route-state";
-import { makeIncomingShareImports } from "../threads/incomingShareImport";
-import { liveNewTaskFlowKeys } from "../threads/new-task-flow-state";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { serverEnvironment } from "../../state/server";
 import {
@@ -38,6 +26,19 @@ import {
   scheduleUnusedComposerAttachmentCleanup,
   undoComposerDraftMerge,
 } from "../../state/use-composer-drafts";
+import { selectWorkspaceDetail } from "../layout/workspace/workspace-detail-selection";
+import { makeIncomingShareImports } from "../threads/incomingShareImport";
+import { liveNewTaskFlowKeys } from "../threads/new-task-flow-state";
+import { isDraftThreadRoute } from "../threads/thread-route-state";
+import { IncomingShareInbox } from "./incoming-share-inbox";
+import {
+  buildIncomingShareDraft,
+  isShareFileUriUnderOwnedRoots,
+  selectIncomingShareAttachmentsForServer,
+  type IncomingShareDestination,
+  type IncomingShareDraft,
+} from "./incoming-share-model";
+import { createIncomingSharePayloadReader } from "./incoming-share-native";
 import {
   EMPTY_INCOMING_SHARE_PRESENTATION_STATE,
   transitionIncomingSharePresentation,
@@ -229,13 +230,15 @@ function getIncomingShareSnapshot() {
 }
 
 function reportRefreshFailure(cause: unknown) {
+  const uiT = readUiTranslator();
+
   console.warn(
     "[incoming-share] refresh failed",
     cause,
     cause instanceof Error ? cause.cause : null,
   );
   const error = cause instanceof Error ? cause : new Error("Could not import shared content.");
-  Dialog.alert("Could not import shared content", error.message, [
+  Dialog.alert(uiT("Could not import shared content"), error.message, [
     { text: "Dismiss", style: "cancel" },
     { text: "Retry", onPress: () => void refreshIncomingShares() },
   ]);
@@ -318,12 +321,16 @@ export const incomingShareImports = makeIncomingShareImports({
     }),
   releaseUnusedAttachments: scheduleUnusedComposerAttachmentCleanup,
   onWarnings: (warnings) => {
-    Dialog.alert("Some shared content was skipped", warnings.join("\n"));
+    const uiT = readUiTranslator();
+
+    Dialog.alert(uiT("Some shared content was skipped"), warnings.join("\n"));
   },
   onImportFailure: (target, error) => {
+    const uiT = readUiTranslator();
+
     Dialog.alert(
-      "Could not import shared content",
-      error instanceof Error ? error.message : "The shared content could not be saved.",
+      uiT("Could not import shared content"),
+      error instanceof Error ? error.message : uiT("The shared content could not be saved."),
       [
         {
           text: "Cancel import",
@@ -336,9 +343,13 @@ export const incomingShareImports = makeIncomingShareImports({
     );
   },
   onCancelFailure: (target, error) => {
+    const uiT = readUiTranslator();
+
     Dialog.alert(
-      "Could not cancel import",
-      error instanceof Error ? error.message : "The shared content could not be restored safely.",
+      uiT("Could not cancel import"),
+      error instanceof Error
+        ? error.message
+        : uiT("The shared content could not be restored safely."),
       [
         { text: "Retry import", onPress: () => incomingShareImports.retry(target) },
         { text: "Retry cancel", onPress: () => void incomingShareImports.cancel(target) },

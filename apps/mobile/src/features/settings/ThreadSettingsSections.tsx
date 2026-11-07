@@ -1,29 +1,31 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import {
   AuthSettingsWriteScope,
   isManagedSettingPath,
   type ServerSettingsPatch,
 } from "@t3tools/contracts";
-import { useEnvironmentsWithScope } from "../../state/session";
-import { AutoSettleDaysField } from "./components/AutoSettleDaysField";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "../../components/ui/Button";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { useUiLanguage } from "../../i18n";
+import { useEnvironmentsWithScope } from "../../state/session";
+import { AutoSettleDaysField } from "./components/AutoSettleDaysField";
 
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
 import { supportsSharedSettingsSync } from "@t3tools/client-runtime/state/shared-settings";
+import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
+import type { ToolCallVisibility } from "@t3tools/contracts/settings";
 import { AppText as Text } from "../../components/ui/AppText";
+import { ListChoiceRow } from "../../components/ui/ListChoiceRow";
 import { useEnvironments } from "../../state/environments";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { planAutoSettleSettingsSync, type AutoSettleSettings } from "./autoSettleSettingsSync";
+import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
 import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
-import { SettingsScreen } from "./components/SettingsScreen";
-import { planAutoSettleSettingsSync, type AutoSettleSettings } from "./autoSettleSettingsSync";
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
 import {
   managedSettingReason,
@@ -45,6 +47,7 @@ export function SettingsLabsRouteScreen() {
         contentContainerClassName="gap-6 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
+        <ToolCallVisibilitySection />
         <BetaSettingsSection />
         <LegacySettingsSection />
       </ScrollView>
@@ -52,7 +55,7 @@ export function SettingsLabsRouteScreen() {
   );
 }
 
-const AUTO_SETTLE_DEFAULT_DAYS = DEFAULT_SERVER_SETTINGS.sidebarAutoSettleAfterDays ?? 3;
+const AUTO_SETTLE_DEFAULT_DAYS = DEFAULT_SERVER_SETTINGS.sidebarAutoSettleAfterDays ?? 7;
 
 /**
  * Usage-limit and auto-settle rows. The Threads page owns their writes, so they share its queue
@@ -284,7 +287,49 @@ function BetaSettingsSection() {
       </SettingsSection>
       <Text className="px-2 text-sm text-foreground-muted">
         {uiT(
-          "Let agents on a machine work on your other machines, and theirs on it. Turn it on for each machine. While it is off, nothing new starts over a link; tasks already running finish.",
+          "Let agents on a machine work on your other machines, and theirs on it. Turn it on for each machine. While off, nothing new starts over a link; running tasks finish.",
+        )}
+      </Text>
+    </View>
+  );
+}
+
+const TOOL_CALL_VISIBILITY_OPTIONS: ReadonlyArray<{
+  readonly value: ToolCallVisibility;
+  readonly label: string;
+}> = [
+  { value: "showAll", label: "Show all" },
+  { value: "hideSuccessful", label: "Hide successful" },
+  { value: "hideAll", label: "Hide all" },
+  { value: "zen", label: "Zen" },
+];
+
+function ToolCallVisibilitySection() {
+  const { t: uiT } = useUiLanguage();
+
+  const savePreferences = useAtomSet(updateMobilePreferencesAtom);
+  const preferences = useAtomValue(mobilePreferencesAtom);
+  const selected = AsyncResult.isSuccess(preferences)
+    ? (preferences.value.toolCallVisibility ?? "showAll")
+    : null;
+
+  return (
+    <View className="gap-3">
+      <SettingsSection title={uiT("Beta: Tool calls in chat")}>
+        {TOOL_CALL_VISIBILITY_OPTIONS.map((option, index) => (
+          <ListChoiceRow
+            key={option.value}
+            label={uiT(option.label)}
+            selected={selected === option.value}
+            separated={index > 0}
+            disabled={selected === null}
+            onPress={() => savePreferences({ toolCallVisibility: option.value })}
+          />
+        ))}
+      </SettingsSection>
+      <Text className="px-2 text-sm text-foreground-muted">
+        {uiT(
+          "Hide the commands, edits, and searches agents run. Hide successful keeps failures. Zen shows only final answers. Approvals, questions, and errors always show.",
         )}
       </Text>
     </View>

@@ -1,38 +1,37 @@
-import { useUiLanguage } from "../../../i18n";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { Toolbar } from "../../../components/ui/Toolbar";
-import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import type { FileDiffMetadata } from "@pierre/diffs";
+import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import { StackActions, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { useEffect } from "react";
-import { Platform, Pressable, View } from "react-native";
-import { AndroidScreenHeader } from "../../../components/ui/AndroidScreenHeader";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   letterStopNotes,
   stepTourPosition,
   stopFilePaths,
 } from "@t3tools/client-runtime/review-guide-tour";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { useEffect } from "react";
+import { Pressable, View } from "react-native";
+import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppBar } from "../../../components/ui/AppBar";
 import { SymbolView } from "../../../components/ui/AppSymbol";
-import { GuideOutline } from "./GuideOutline";
 import { AppText as Text } from "../../../components/ui/AppText";
 import { ScreenScrollView } from "../../../components/ui/ScreenScrollView";
-import { Menu } from "../../../components/ui/Menu";
-import { IconButton } from "../../../components/ui/IconButton";
+import { useUiLanguage } from "../../../i18n";
+import { composerPullRequests } from "../../../state/pull-requests";
+import { useEnvironmentQuery } from "../../../state/query";
 import { useAppearancePreferences } from "../../settings/appearance/AppearancePreferencesProvider";
-import { NativeStackScreenOptions } from "../../../native/StackHeader";
+import { PR_ROW_ENTER, PR_ROW_EXIT, PR_ROW_LAYOUT } from "../pullRequestAnimations";
 import { PullRequestCardGroup, PullRequestCardRow } from "../PullRequestControls";
 import { PullRequestMarkdown, PullRequestMarkdownRepository } from "../PullRequestMarkdown";
-import { usePullRequestDiff, type PullRequestParams } from "../usePullRequestDiff";
+import {
+  pullRequestTarget,
+  usePullRequestDiff,
+  type PullRequestParams,
+} from "../usePullRequestDiff";
+import { usePullRequestPermissions } from "../usePullRequestPermissions";
+import { GuideNotice } from "./GuideNotice";
+import { GuideOutline } from "./GuideOutline";
 import { ReviewGuideExcerpt } from "./ReviewGuideExcerpt";
 import { reviewGuideState } from "./reviewGuideState";
-import { GuideNotice } from "./GuideNotice";
-import Animated from "react-native-reanimated";
-import { PR_ROW_ENTER, PR_ROW_EXIT, PR_ROW_LAYOUT } from "../pullRequestAnimations";
-import { useEnvironmentQuery } from "../../../state/query";
-import { composerPullRequests } from "../../../state/pull-requests";
-import { usePullRequestPermissions } from "../usePullRequestPermissions";
-import { pullRequestTarget } from "../usePullRequestDiff";
 import { useReviewGuide } from "./useReviewGuide";
 
 export type GuideStopParams = PullRequestParams & {
@@ -135,50 +134,28 @@ export function PullRequestGuideStopScreen({ route }: StaticScreenProps<GuideSto
   const notes = stop ? letterStopNotes(stop).lettered : [];
   return (
     <View className="flex-1 bg-screen">
-      <NativeStackScreenOptions
-        options={{
-          title: uiT("Stop {0}", { "0": route.params.position + 1 }),
-          headerTitle: `Stop ${route.params.position + 1} of ${guide?.stops.length ?? "…"}`,
-        }}
+      <AppBar
+        title={uiT("Stop {0} of {1}", {
+          "0": route.params.position + 1,
+          "1": guide?.stops.length ?? "…",
+        })}
+        onBack={() => navigation.goBack()}
+        menus={[
+          {
+            title: uiT("Guide options"),
+            icon: "ellipsis",
+            items: [
+              {
+                id: "word-wrap",
+                title: uiT("Word wrap"),
+                icon: "text.alignleft",
+                selected: appearance.codeWordBreak,
+                onPress: () => setCodeWordBreak(!appearance.codeWordBreak),
+              },
+            ],
+          },
+        ]}
       />
-      {Platform.OS === "android" ? (
-        <AndroidScreenHeader
-          title={uiT("Stop {0}", { "0": route.params.position + 1 })}
-          onBack={() => navigation.goBack()}
-          trailing={
-            <Menu
-              actions={[
-                {
-                  id: "word-wrap",
-                  title: uiT("Word wrap"),
-                  image: "text.alignleft",
-                  state: appearance.codeWordBreak ? "on" : "off",
-                },
-              ]}
-              onPressAction={() => setCodeWordBreak(!appearance.codeWordBreak)}
-            >
-              <View pointerEvents="none">
-                <IconButton icon="ellipsis" accessibilityLabel={uiT("Guide options")} />
-              </View>
-            </Menu>
-          }
-        />
-      ) : null}
-      <Toolbar placement="right">
-        <Toolbar.Menu
-          title={uiT("Guide options")}
-          accessibilityLabel={uiT("Guide options")}
-          icon="ellipsis"
-        >
-          <Toolbar.MenuAction
-            icon="text.alignleft"
-            isOn={appearance.codeWordBreak}
-            onPress={() => setCodeWordBreak(!appearance.codeWordBreak)}
-          >
-            <Toolbar.Label>{uiT("Word wrap")}</Toolbar.Label>
-          </Toolbar.MenuAction>
-        </Toolbar.Menu>
-      </Toolbar>
       <PullRequestMarkdownRepository params={route.params} changeRequest={detail.data}>
         <ScreenScrollView
           contentInsetAdjustmentBehavior="automatic"

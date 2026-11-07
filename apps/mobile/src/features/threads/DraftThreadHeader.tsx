@@ -1,21 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import { uuidv4 } from "../../lib/uuid";
-import * as Dialog from "../../components/ui/Dialog";
 import { useNavigation } from "@react-navigation/native";
-import { AsyncResult } from "effect/reactivity";
-import * as Cause from "effect/Cause";
-import { AuthFilesystemReadScope, AuthSourceControlWriteScope } from "@t3tools/contracts";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
-import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
-import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
+import { AuthFilesystemReadScope, AuthSourceControlWriteScope } from "@t3tools/contracts";
+import * as Cause from "effect/Cause";
+import { AsyncResult } from "effect/reactivity";
+import * as Dialog from "../../components/ui/Dialog";
+import { useUiLanguage } from "../../i18n";
+import { uuidv4 } from "../../lib/uuid";
 import { useEnvironmentQuery } from "../../state/query";
 import { useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { vcsActionManager, vcsEnvironment } from "../../state/vcs";
 import { useVcsActionState } from "../../state/use-vcs-action-state";
+import { vcsActionManager, vcsEnvironment } from "../../state/vcs";
 import { ThreadHeader } from "./ThreadHeader";
 
 export function DraftThreadHeader(props: {
@@ -26,7 +24,6 @@ export function DraftThreadHeader(props: {
   const { t: uiT } = useUiLanguage();
 
   const navigation = useNavigation();
-  const { themeVariables } = useAppearancePreferences();
   const environmentId = props.thread.environmentId;
   const canReadFiles = useEnvironmentScope(environmentId, AuthFilesystemReadScope);
   const canWriteGit = useEnvironmentScope(environmentId, AuthSourceControlWriteScope);
@@ -57,15 +54,11 @@ export function DraftThreadHeader(props: {
       draft
       title={uiT("New thread")}
       subtitle=""
-      headerColor={themeVariables["--color-header"]}
-      usesNativeHeaderGlass={NATIVE_LIQUID_GLASS_SUPPORTED}
       hasThreadCwd={props.cwd !== null}
-      hasWorkspaceRoot={Boolean(props.project.workspaceRoot)}
       fileInspectorSupported={false}
       inspectorMode={null}
       onToggleInspector={openFiles}
       onOpenFilesInspector={openFiles}
-      onOpenGitInspector={requiresThread}
       gitControls={{
         environmentId,
         threadId: props.thread.id,

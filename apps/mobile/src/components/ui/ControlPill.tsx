@@ -1,11 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { type ComponentProps, type ReactNode, useRef } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { cn } from "../../lib/cn";
 import { SymbolView } from "./AppSymbol";
 import { AppText as Text } from "./AppText";
-import { IconButton } from "./IconButton";
 import { Button } from "./Button";
+import { IconButton } from "./IconButton";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function ControlPill(props: {
@@ -19,8 +18,6 @@ export function ControlPill(props: {
   readonly disabled?: boolean;
   readonly className?: string;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const variant = props.variant ?? "circle";
   const { smallIconSize } = useAndroidControlSizing();
   const activatedOnPressInRef = useRef(false);
@@ -92,7 +89,7 @@ export function ControlPill(props: {
   ) {
     return (
       <Button
-        label={uiT(props.label)}
+        label={props.label}
         onPress={props.onPress}
         disabled={props.disabled}
         tone={variant === "primary" ? "primary" : "secondary"}
@@ -111,7 +108,7 @@ export function ControlPill(props: {
   ) {
     return (
       <IconButton
-        accessibilityLabel={uiT(props.accessibilityLabel)}
+        accessibilityLabel={props.accessibilityLabel}
         icon={props.icon}
         onPress={props.onPress}
         disabled={props.disabled}
@@ -140,7 +137,7 @@ export function ControlPill(props: {
           type="monochrome"
         />
       ) : null}
-      {props.label ? <Text className={labelClassName}>{uiT(props.label)}</Text> : null}
+      {props.label ? <Text className={labelClassName}>{props.label}</Text> : null}
     </Pressable>
   );
 }

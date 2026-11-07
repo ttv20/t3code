@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   formatProviderSubagentStatus,
   type ProviderSubagentStatus,
@@ -6,9 +5,10 @@ import {
 import { isOrchestrationV2WorkActive, type EnvironmentId, type ThreadId } from "@t3tools/contracts";
 import { useState } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
-import { AppText as Text } from "../../components/ui/AppText";
 import { ProviderIcon } from "../../components/ProviderIcon";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { NativeChildWorkSheet } from "./NativeChildWorkSheet";
 import { useVisibleSecondClock } from "./use-visible-second-clock";

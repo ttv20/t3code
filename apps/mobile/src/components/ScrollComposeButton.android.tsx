@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../i18n";
-import { NativeThemeHost } from "./ui/NativeThemeHost.android";
 import { Box, ExtendedFloatingActionButton, Icon, Text } from "@expo/ui/jetpack-compose";
 import {
   defaultMinSize,
@@ -10,21 +8,25 @@ import {
 } from "@expo/ui/jetpack-compose/modifiers";
 import { useState } from "react";
 import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
-import { useAndroidControlSizing } from "./ui/useAndroidControlSizing";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
+import { useUiLanguage } from "../i18n";
 import { resolveScaledTextRole } from "../lib/appearancePreferences";
+import { NativeThemeHost } from "./ui/NativeThemeHost.android";
+import { useAndroidControlSizing } from "./ui/useAndroidControlSizing";
 
 /** Keep the animated width and icon positioning entirely inside Compose, not Yoga. */
 export function ScrollComposeButton(props: {
   readonly expanded: boolean;
   readonly onPress: () => void;
+  readonly size?: number;
   readonly className?: string;
   readonly style?: StyleProp<ViewStyle>;
 }) {
   const { direction, t: uiT } = useUiLanguage();
   const { appearance, themeVariables: colors } = useAppearancePreferences();
   const typography = resolveScaledTextRole("footnote", appearance.baseFontSize);
-  const { iconSize, fabSize } = useAndroidControlSizing();
+  const { iconSize, fabSize: scaledFabSize } = useAndroidControlSizing();
+  const fabSize = props.size ?? scaledFabSize;
   const nativeSize = Math.max(56, fabSize);
   const scale = fabSize / nativeSize;
   const nativeIconSize = Math.round(iconSize / scale);

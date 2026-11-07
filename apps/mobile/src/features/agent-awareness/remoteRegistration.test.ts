@@ -2,26 +2,29 @@
 
 import * as NodeCrypto from "node:crypto";
 
-import { beforeEach, vi } from "vite-plus/test";
 import { describe, expect, it } from "@effect/vitest";
-import Constants from "expo-constants";
+import { ManagedRelay } from "@t3tools/client-runtime/relay";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import { Cookies, FetchHttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
-import { ManagedRelay } from "@t3tools/client-runtime/relay";
+import Constants from "expo-constants";
+import { beforeEach, vi } from "vite-plus/test";
 
 import { verifyDpopProof } from "@t3tools/shared/dpop";
-import * as Dpop from "../cloud/dpop";
-import * as ManagedRelayLayer from "../cloud/managedRelayLayer";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 import {
   clearAgentAwarenessRegistrationRecord,
   loadAgentAwarenessRegistrationRecord,
   loadOrCreateAgentAwarenessDeviceId,
   saveAgentAwarenessRegistrationRecord,
 } from "../../persistence/imperative";
+import * as Dpop from "../cloud/dpop";
+import * as ManagedRelayLayer from "../cloud/managedRelayLayer";
+import { configureAndroidAgentNotifications } from "./androidNotifications";
 import { makeRelayDeviceRegistrationRequest } from "./registrationPayload";
 import {
   __resetAgentAwarenessRemoteRegistrationForTest,
@@ -32,10 +35,13 @@ import {
   releaseAgentAwarenessRelayTokenProvider,
   setAgentAwarenessRelayTokenProvider,
   updateAgentAwarenessRegistrationPreferences,
+  type AgentAwarenessRegistrationError,
 } from "./remoteRegistration";
-import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
-import { configureAndroidAgentNotifications } from "./androidNotifications";
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});
 
 vi.mock("./androidNotifications", () => ({
   supportsAndroidAgentNotifications: vi.fn(() => true),
@@ -217,7 +223,11 @@ const runBackgroundOperations = Effect.fn("TestRemoteRegistration.runBackgroundO
       }
       idlePasses = 0;
       const exit = yield* Effect.exit(
-        pending.operation as Effect.Effect<unknown, unknown, ManagedRelay.ManagedRelayClient>,
+        pending.operation as Effect.Effect<
+          unknown,
+          AgentAwarenessRegistrationError,
+          ManagedRelay.ManagedRelayClient
+        >,
       );
       yield* Effect.sync(() => {
         pending.resolve(exit);
@@ -395,7 +405,11 @@ describe("makeRelayDeviceRegistrationRequest", () => {
       // activity lock, or, without one, at its device-id lookup.
       const rotatedRegistration = yield* Effect.forkChild(
         Effect.exit(
-          rotated.operation as Effect.Effect<unknown, unknown, ManagedRelay.ManagedRelayClient>,
+          rotated.operation as Effect.Effect<
+            unknown,
+            AgentAwarenessRegistrationError,
+            ManagedRelay.ManagedRelayClient
+          >,
         ),
         { startImmediately: true },
       );

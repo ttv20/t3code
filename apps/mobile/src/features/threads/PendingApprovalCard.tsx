@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../../i18n";
-import { Button } from "../../components/ui/Button";
+import {
+  FULL_ACCESS_OVERRIDE_QUESTION,
+  fullAccessOverrideExplanation,
+} from "@t3tools/client-runtime/state/thread-requests";
 import type {
   ProviderApprovalDecision,
   ProviderApprovalOption,
   RuntimeRequestId,
 } from "@t3tools/contracts";
-import {
-  FULL_ACCESS_OVERRIDE_QUESTION,
-  fullAccessOverrideExplanation,
-} from "@t3tools/client-runtime/state/thread-requests";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import { Button } from "../../components/ui/Button";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import type { PendingApproval } from "../../lib/threadActivity";
@@ -84,7 +84,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
       {warning ? (
         <Text className="font-sans text-xs leading-normal text-warning-foreground">{warning}</Text>
       ) : null}
-      <View className="flex-row flex-wrap gap-2.5">
+      <View className="gap-2">
         {options.map((option) => (
           <Button
             key={option.decision}
@@ -98,6 +98,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
             }
             disabled={disabled || !props.canOperateThread}
             onPress={() => void props.onRespond(props.approval.requestId, option.decision)}
+            fullWidth
           />
         ))}
       </View>

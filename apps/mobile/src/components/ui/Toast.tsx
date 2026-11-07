@@ -1,7 +1,5 @@
-import { useUiLanguage } from "../../i18n";
-import { MOBILE_MOTION, MOBILE_SHAPE } from "../../lib/designTokens";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { AccessibilityInfo, Platform, StyleSheet, View, useWindowDimensions } from "react-native";
+import { AccessibilityInfo, Platform, StyleSheet, useWindowDimensions, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Animated, {
   cancelAnimation,
@@ -14,14 +12,17 @@ import Animated, {
   withTiming,
   type EntryAnimationsValues,
 } from "react-native-reanimated";
+import { useUiLanguage } from "../../i18n";
+import { cn } from "../../lib/cn";
+import { MOBILE_MOTION, MOBILE_SHAPE } from "../../lib/designTokens";
 
+import { AppActivityIndicator } from "./AppActivityIndicator";
+import { SymbolView } from "./AppSymbol";
 import { AppText } from "./AppText";
 import { Button } from "./Button";
 import { GlassSurface } from "./GlassSurface";
-import { useControlTheme } from "./useControlTheme";
 import { IconButton } from "./IconButton";
-import { AppActivityIndicator } from "./AppActivityIndicator";
-import { SymbolView } from "./AppSymbol";
+import { useControlTheme } from "./useControlTheme";
 
 export type ToastProps = {
   readonly message: string;
@@ -47,7 +48,7 @@ function ToastContent(props: ToastProps & { readonly glassReady?: boolean }) {
   const { t: uiT } = useUiLanguage();
   const { fontScale } = useWindowDimensions();
   const { colorScheme } = useControlTheme();
-  const borderRadius = Platform.OS === "ios" ? 31 : MOBILE_SHAPE.toast;
+  const borderRadius = Platform.OS === "ios" ? 28 : MOBILE_SHAPE.toast;
   // Explicit single-line notices reserve the action's width and truncate the text.
   const inlineAction = props.singleLine || (!props.description && fontScale < 1.5);
   const message =
@@ -55,7 +56,11 @@ function ToastContent(props: ToastProps & { readonly glassReady?: boolean }) {
       ? `${props.message}: ${props.description}`
       : props.message;
   const action = props.action ? (
-    <Button label={props.action.label} onPress={props.action.onPress} />
+    <Button
+      label={props.action.label}
+      onPress={props.action.onPress}
+      size={Platform.OS === "ios" ? "compact" : "default"}
+    />
   ) : null;
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- announces the toast message to VoiceOver through AccessibilityInfo
   useEffect(() => {
@@ -66,10 +71,16 @@ function ToastContent(props: ToastProps & { readonly glassReady?: boolean }) {
       key={props.glassReady === false ? "entering" : "settled"}
       chrome={Platform.OS === "ios" && colorScheme === "dark" ? "none" : undefined}
       tintColor={Platform.OS === "ios" ? null : undefined}
-      className={Platform.OS === "ios" ? "bg-transparent p-3" : "p-3"}
+      className={Platform.OS === "ios" ? "bg-transparent p-2" : "p-3"}
       style={{ borderRadius }}
     >
-      <View className="flex-row items-center gap-3">
+      <View
+        className={cn(
+          "flex-row items-center gap-3",
+          // Match the leading inset to the action label's, which sits inside the button's padding.
+          Platform.OS === "ios" && inlineAction && action && "pl-5",
+        )}
+      >
         {props.busy ? (
           <AppActivityIndicator />
         ) : (

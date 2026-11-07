@@ -1,5 +1,5 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
+
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
 import {
@@ -81,7 +81,7 @@ function ConfiguredConnectOnboardingDialog() {
   const sessionScopesKnown =
     primaryEnvironmentId === null ? environmentsReady : primarySessionState._tag !== "Initial";
 
-  const controller = useCloudLinkController();
+  const controller = useCloudLinkController(primaryEnvironmentId);
   const accountPage = useT3ConnectAccountPage();
   const showPublishStep = canManageRelay && controller.linkState.target !== null;
   const steps: ReadonlyArray<OnboardingStep> = showPublishStep

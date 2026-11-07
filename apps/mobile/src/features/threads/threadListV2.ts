@@ -1,4 +1,18 @@
+import type { MenuAction } from "@react-native-menu/menu";
 import type { UiLocale } from "@t3tools/client-runtime/i18n";
+import { resolveThreadProviderStack } from "@t3tools/client-runtime/state/models";
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+import {
+  createInboxReturnTracker,
+  isThreadWorking,
+  sortInboxThreadsByReturn,
+  sortWorkingThreadsBySend,
+} from "@t3tools/client-runtime/state/thread-inbox";
+import {
+  threadSearchMatchKey,
+  threadSearchSubject,
+} from "@t3tools/client-runtime/state/thread-search";
+import type { SnoozePreset } from "@t3tools/client-runtime/state/thread-settled";
 import {
   canSnooze,
   effectiveSnoozed,
@@ -9,28 +23,16 @@ import {
   snoozeWakeLabel,
   threadWokeAt,
 } from "@t3tools/client-runtime/state/thread-settled";
-import type { SnoozePreset } from "@t3tools/client-runtime/state/thread-settled";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import { resolveThreadProviderStack } from "@t3tools/client-runtime/state/models";
 import {
-  threadSearchMatchKey,
-  threadSearchSubject,
-} from "@t3tools/client-runtime/state/thread-search";
-import { foldSearchQuery, rankSearchItems, scoreThreadSearch } from "@t3tools/shared/paletteSearch";
-import {
-  createInboxReturnTracker,
-  isThreadWorking,
-  sortInboxThreadsByReturn,
-  sortWorkingThreadsBySend,
-} from "@t3tools/client-runtime/state/thread-inbox";
-import {
-  sortActiveThreadsByOrderKey,
   resolveSettledThreadTimestamp,
+  resolveThreadActivityTimestamp,
+  sortActiveThreadsByOrderKey,
   sortPinnedThreadsByOrderKey,
   sortSettledThreads,
 } from "@t3tools/client-runtime/state/thread-sort";
 import { isListedThreadLineage, type EnvironmentId, type ProjectId } from "@t3tools/contracts";
 import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
+import { foldSearchQuery, rankSearchItems, scoreThreadSearch } from "@t3tools/shared/paletteSearch";
 
 import type { ThreadListProvider } from "../../state/thread-list-environments";
 import type { ThreadMoveAvailability } from "./threadOrder";
@@ -137,6 +139,42 @@ export function resolveThreadListV2SwipeActions(input: {
   };
 }
 
+// Nested keeps iOS menus short: UIKit scrolls a taller menu, and that scroll
+// cancels press-drag-release selection.
+export function layoutThreadListV2RowMenuActions(input: {
+  readonly nested: boolean;
+  readonly direct: readonly MenuAction[];
+  readonly reorder: readonly MenuAction[];
+  readonly pin: readonly MenuAction[];
+  readonly secondary: readonly MenuAction[];
+}): MenuAction[] {
+  if (!input.nested) {
+    return [...input.direct, ...input.reorder, ...input.pin, ...input.secondary];
+  }
+  return [
+    ...input.direct,
+    ...input.pin,
+    {
+      id: "more",
+      title: "More",
+      image: "ellipsis.circle",
+      subactions: [
+        ...(input.reorder.length > 1
+          ? [
+              {
+                id: "arrange-menu",
+                title: "Arrange",
+                image: "arrow.up.arrow.down",
+                subactions: [...input.reorder],
+              },
+            ]
+          : input.reorder),
+        ...input.secondary,
+      ],
+    },
+  ];
+}
+
 export function resolveThreadListV2SnoozeGateExpiryMs(
   thread: Pick<
     EnvironmentThreadShell,
@@ -149,7 +187,7 @@ export function resolveThreadListV2SnoozeGateExpiryMs(
   >,
   options: { readonly now: string },
 ): number | null {
-  if (thread.hasPendingApprovals || thread.hasPendingUserInput) return null;
+  if (thread.hasPendingApprovals) return null;
   if (thread.pendingSubagentRequest != null) return null;
   if (!hasQueuedTurnStart(thread, options)) return null;
   const messageAtMs = Date.parse(thread.latestUserMessageAt ?? "");
@@ -479,7 +517,7 @@ function resolveThreadListV2ItemTimeLabel(
   const settledTimestamp =
     variant === "slim" && !snoozed ? resolveSettledThreadTimestamp(thread) : null;
   return relativeTime(
-    settledTimestamp ?? thread.latestUserMessageAt ?? thread.updatedAt ?? thread.createdAt,
+    settledTimestamp ?? resolveThreadActivityTimestamp(thread) ?? thread.createdAt,
   );
 }
 

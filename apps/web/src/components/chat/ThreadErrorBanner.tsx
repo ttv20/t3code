@@ -15,7 +15,7 @@ import { OpenAI } from "../Icons";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { ExpandableText } from "../settings/ExpandableText";
 
-function copyAdminRequest(t: (message: string) => string) {
+export function copyAdminRequest(t: (message: string) => string) {
   void writeTextToClipboard(t(CHATGPT_WORKSPACE_ADMIN_REQUEST), "admin request").then(
     () =>
       toastManager.add({
@@ -99,13 +99,13 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
           {chatGptLimit ? (
             <div className="space-y-1">
               <p className="font-medium">{uiT("ChatGPT usage limit reached")}</p>
-              <p>
-                {workspaceLimit
-                  ? uiT(
-                      "You've reached your workspace's limit for using your ChatGPT plan in other apps. Copy a request to ask your workspace admin for increased usage limits.",
-                    )
-                  : uiT("Review your usage settings in ChatGPT.")}
-              </p>
+              {workspaceLimit ? (
+                <p>
+                  {uiT(
+                    "You've reached your workspace's limit for using your ChatGPT plan in other apps. Copy a request to ask your workspace admin for increased usage limits.",
+                  )}
+                </p>
+              ) : null}
             </div>
           ) : (
             <ExpandableText text={error} collapsedText={getThreadErrorBannerMessage(error)} />

@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../i18n";
 import { useState } from "react";
 import { View } from "react-native";
 import { WebView } from "react-native-webview";
+import { useUiLanguage } from "../i18n";
 
 import { FilePreviewLoading, FilePreviewNotice } from "../features/files/FilePreviewFeedback";
 
@@ -26,7 +26,9 @@ export function PdfPreview(props: { readonly uri: string }) {
         onHttpError={(event) =>
           setError(`The server returned HTTP ${event.nativeEvent.statusCode}.`)
         }
-        renderLoading={() => <FilePreviewLoading message="Loading PDF..." background="card" />}
+        renderLoading={() => (
+          <FilePreviewLoading message={uiT("Loading PDF...")} background="card" />
+        )}
         style={{ flex: 1, backgroundColor: "transparent" }}
       />
     </View>

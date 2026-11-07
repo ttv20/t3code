@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vite-plus/test";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
 import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
+import remarkGfm from "remark-gfm";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import { describe, expect, it } from "vite-plus/test";
+import { ENRICHED_INLINE_FILE_LINK_REGEX } from "./enrichedLinkPresentation";
 import {
   markdownForDisplay,
   markdownForNativeRendering,
   prepareNativeMarkdown,
   type MarkdownNode,
 } from "./markdownDocument";
-import { ENRICHED_INLINE_FILE_LINK_REGEX } from "./enrichedLinkPresentation";
 
 describe("native direction before file presentation", () => {
   const prose = "alpha beta gamma delta epsilon zeta eta א ב ג";

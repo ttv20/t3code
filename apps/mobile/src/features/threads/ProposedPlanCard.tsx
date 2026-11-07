@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
@@ -8,6 +7,7 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import { proposedPlanTitle, stripDisplayedPlanMarkdown } from "@t3tools/shared/proposedPlanText";
 import { useRef, useState, type ReactNode } from "react";
 import { View } from "react-native";
+import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
@@ -35,7 +35,7 @@ export function ProposedPlanCard(props: {
     const relativePath = path.trim();
     if (!canWrite || !props.workspaceRoot || inFlight.current) return;
     if (!relativePath) {
-      Dialog.alert("Enter a workspace path");
+      Dialog.alert(uiT("Enter a workspace path"));
       return;
     }
     inFlight.current = true;
@@ -49,10 +49,13 @@ export function ProposedPlanCard(props: {
       setSaving(false);
     });
     if (result._tag === "Success") {
-      Dialog.alert("Plan saved to workspace", result.value.relativePath);
+      Dialog.alert(uiT("Plan saved to workspace"), result.value.relativePath);
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      Dialog.alert("Could not save plan", error instanceof Error ? error.message : String(error));
+      Dialog.alert(
+        uiT("Could not save plan"),
+        error instanceof Error ? error.message : String(error),
+      );
     }
   };
 
@@ -74,10 +77,11 @@ export function ProposedPlanCard(props: {
             Dialog.prompt({
               title: uiT("Save plan to workspace"),
               // The write replaces an existing file, and the RPC has no create-only mode.
-              message:
+              message: uiT(
                 "Enter a path relative to the thread's workspace. A file already at that path is replaced.",
+              ),
               initialValue: lastPath,
-              confirmText: "Save",
+              confirmText: uiT("Save"),
               onConfirm: (path) => void save(path),
             })
           }

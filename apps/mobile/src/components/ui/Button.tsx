@@ -1,9 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { SymbolView, type AppSymbolName } from "./AppSymbol";
 import { Pressable } from "react-native";
-import { AppActivityIndicator } from "./AppActivityIndicator";
-import { AppText } from "./AppText";
 import { cn } from "../../lib/cn";
+import { AppActivityIndicator } from "./AppActivityIndicator";
+import { SymbolView, type AppSymbolName } from "./AppSymbol";
+import { AppText } from "./AppText";
 
 export interface ButtonProps {
   readonly label: string;
@@ -15,6 +14,7 @@ export interface ButtonProps {
   readonly loading?: boolean;
   readonly tone?: "primary" | "secondary" | "danger" | "text" | "contrast";
   readonly fullWidth?: boolean;
+  readonly size?: "default" | "compact";
 }
 
 const TONE_CLASS_NAMES = {
@@ -26,7 +26,6 @@ const TONE_CLASS_NAMES = {
 } as const;
 
 export function Button(props: ButtonProps) {
-  const { t: uiT } = useUiLanguage();
   const [containerClassName, labelClassName] = TONE_CLASS_NAMES[props.tone ?? "secondary"];
   const disabled = Boolean(props.disabled || props.loading);
   return (
@@ -38,7 +37,8 @@ export function Button(props: ButtonProps) {
       disabled={disabled}
       onPress={props.onPress}
       className={cn(
-        "min-h-12 flex-row items-center justify-center gap-2 rounded-full px-6 active:opacity-70",
+        "flex-row items-center justify-center gap-2 rounded-full active:opacity-70",
+        props.size === "compact" ? "min-h-10 px-5" : "min-h-12 px-6",
         props.fullWidth ? "w-full" : "self-start",
         disabled ? "bg-subtle-strong" : containerClassName,
       )}
@@ -60,7 +60,7 @@ export function Button(props: ButtonProps) {
           disabled ? "text-foreground-muted" : labelClassName,
         )}
       >
-        {uiT(props.label)}
+        {props.label}
       </AppText>
     </Pressable>
   );
