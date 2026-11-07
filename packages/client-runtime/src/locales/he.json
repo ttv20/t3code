@@ -10260,7 +10260,6 @@
   "Microphone processing failed": "עיבוד המיקרופון נכשל",
   "Microphone disconnected": "המיקרופון נותק",
   "After you stop, {0} sends your recording and vocabulary hints, including project names, to OpenAI.": "לאחר העצירה, {0} שולח את ההקלטה ורמזי אוצר המילים שלך, כולל שמות פרויקטים, אל OpenAI.",
-  "After you stop, {0} sends your recording and vocabulary hints, including project names, to Grok Voice Transcribe.": "לאחר העצירה, {0} שולח את ההקלטה ורמזי אוצר המילים שלך, כולל שמות פרויקטים, אל Grok Voice Transcribe.",
   "Edit navigation tabs": "עריכת כרטיסיות הניווט",
   "Enter {0}": "הזנת {0}",
   "AirPods, headsets, and cars not listed here": "AirPods, אוזניות ורכבים שאינם מופיעים כאן",
@@ -10329,5 +10328,6 @@
   "Guest Request": "בקשת אורח",
   "{0}% error": "{0}% שגיאות",
   "Shows the full Pi status": "מציג את המצב המלא של Pi",
-  "{0} of {1} selected": "נבחרו {0} מתוך {1}"
+  "{0} of {1} selected": "נבחרו {0} מתוך {1}",
+  "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.": "לאחר העצירה, {0} שולח את ההקלטה ורמזי אוצר המילים שלך, כולל שמות פרויקטים, אל xAI."
 }
