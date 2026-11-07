@@ -128,6 +128,7 @@ const languageNames =
 const languageLabel = (code: string) => languageNames?.of(code) ?? code.toUpperCase();
 
 function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly language: string }) {
+  const { t: uiT } = useUiLanguage();
   const { model, language } = props;
   const data = model.benchmark;
   const code = !data
@@ -144,7 +145,7 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
             <>
               {languageLabel(code)}{" "}
               <Text className="font-t3-medium text-foreground">{score.grade}</Text> (
-              {score.errorPercent}% error)
+              {uiT("{0}% error", { "0": score.errorPercent })})
             </>,
           ],
         ] as const)
@@ -154,7 +155,11 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
           [
             "speed",
             <>
-              <Text className="font-t3-medium text-foreground">{data.secondsPer30s} s</Text> / 30 s
+              <Text className="font-t3-medium text-foreground">
+                {uiT("{0} s", { "0": data.secondsPer30s })}
+              </Text>
+              {" / "}
+              {uiT("{0} s", { "0": 30 })}
             </>,
           ],
         ] as const)

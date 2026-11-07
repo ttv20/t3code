@@ -724,7 +724,12 @@ const RootStackConfig = createWorkspaceStackNavigator({
     ConnectionsNew: createNativeStackScreen({
       screen: ConnectionsNewRouteScreen,
       linking: "connections/new",
-      options: sheetRoute({ title: "Add Environment", detent: 0.55, maxDetent: 0.7 }),
+      options: sheetRoute({
+        title: "Add Environment",
+        detent: 0.55,
+        maxDetent: 0.7,
+        android: "card",
+      }),
     }),
     NotFound: createNativeStackScreen({
       screen: NotFoundScreen,

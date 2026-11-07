@@ -61,7 +61,11 @@ describe("filterSettingsSections", () => {
     { query: "usage", expected: [[null, ["Usage"]]] },
     { query: "zzzz", expected: [] },
     { query: "מראה", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
-    { query: "ממשק", locale: "he" as const, expected: [["Interface", ["Appearance", "Keyboard"]]] },
+    {
+      query: "ממשק",
+      locale: "he" as const,
+      expected: [["Interface", ["Appearance", "Keyboard", "Voice"]]],
+    },
     { query: "גודל הגופן", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
     { query: "appearance", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
     { query: "المظهر", locale: "ar" as const, expected: [["Interface", ["Appearance"]]] },

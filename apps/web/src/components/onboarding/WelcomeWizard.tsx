@@ -1500,8 +1500,7 @@ function ImportStep({
       {candidates.length > 0 ? (
         <div className="mt-5 flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <span role="status">
-            {selected.length} {uiT("of")}
-            {candidates.length} {uiT("selected")}
+            {uiT("{0} of {1} selected", { "0": selected.length, "1": candidates.length })}
           </span>
           <div className="flex items-center gap-1">
             <Button

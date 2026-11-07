@@ -2097,7 +2097,7 @@
   "Couldn't load reviewers": "לא ניתן לטעון סוקרים",
   "Couldn't load the": "לא ניתן היה לטעון את",
   "Couldn't load the WSL backend state.": "לא ניתן לטעון את מצב השרת של WSL.",
-  "Couldn't load the {0}": "לא ניתן לטעון את ה-{0}",
+  "Couldn't load the {0}": "לא ניתן לטעון את {0}",
   "Couldn't load this pull request": "לא ניתן היה לטעון את בקשת המיזוג הזו",
   "Couldn't load this pull request.": "לא ניתן היה לטעון את בקשת המיזוג הזו.",
   "Couldn't load this {0}": "לא ניתן לטעון את {0}",
@@ -10326,5 +10326,8 @@
   "It really helps T3 Code grow.": "זה עוזר ל־T3 Code לצמוח.",
   "Enjoying T3 Code?": "נהנה מ־T3 Code?",
   "Give us a star on GitHub to let us know!": "תן לנו כוכב ב־GitHub כדי שנדע!",
-  "Guest Request": "בקשת אורח"
+  "Guest Request": "בקשת אורח",
+  "{0}% error": "{0}% שגיאות",
+  "Shows the full Pi status": "מציג את המצב המלא של Pi",
+  "{0} of {1} selected": "נבחרו {0} מתוך {1}"
 }
