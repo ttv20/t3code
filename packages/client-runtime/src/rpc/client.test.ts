@@ -8,12 +8,12 @@ import { describe, expect, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
-import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import * as Stream from "effect/Stream";
+import * as TestClock from "effect/testing/TestClock";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { RpcClientError } from "effect/rpc";
 
@@ -346,56 +346,86 @@ describe("environment RPC", () => {
     }),
   );
 
-  it.effect.each(["input", "stream"] as const)(
-    "does not classify %s subscription defects as expected failures",
-    (where) =>
+  it.effect.each([
+    { where: "input", recovery: "session" },
+    { where: "stream", recovery: "session" },
+    { where: "input", recovery: "resubscribe" },
+    { where: "stream", recovery: "resubscribe" },
+  ] as const)(
+    "reports $where subscription defects and recovers on $recovery",
+    ({ where, recovery }) =>
       Effect.gen(function* () {
         const defect = new Error("subscription invariant failed");
         let expectedFailureCount = 0;
         let inputs = 0;
         let streams = 0;
         const observedDefects: unknown[] = [];
-        const client = {
+        const defectObserved = yield* Deferred.make<void>();
+        const resubscribed = yield* Deferred.make<void>();
+        const resubscribe = yield* Queue.unbounded<void>();
+        let failed = false;
+        const firstClient = {
           [WS_METHODS.subscribeTerminalMetadata]: () => {
             streams += 1;
-            return where === "stream" ? Stream.die(defect) : Stream.never;
+            return where === "stream" && !failed ? Stream.die(defect) : Stream.succeed([]);
           },
+        } as unknown as WsRpcProtocolClient;
+        const secondClient = {
+          [WS_METHODS.subscribeTerminalMetadata]: () => Stream.succeed([]),
         } as unknown as WsRpcProtocolClient;
         const { activeSession, supervisor } = yield* makeHarness();
 
-        yield* SubscriptionRef.set(activeSession, Option.some(session(client)));
-        const exit = yield* subscribeDynamicWithSession(
+        yield* SubscriptionRef.set(activeSession, Option.some(session(firstClient)));
+        const subscriptionFiber = yield* subscribeDynamicWithSession(
           WS_METHODS.subscribeTerminalMetadata,
           () =>
-            Effect.sync(() => {
+            Effect.suspend(() => {
               inputs += 1;
-            }).pipe(Effect.andThen(where === "input" ? Effect.die(defect) : Effect.succeed({}))),
+              return where === "input" && inputs === 1 ? Effect.die(defect) : Effect.succeed({});
+            }),
           {
             onDefect: (cause) =>
               Effect.sync(() => {
                 observedDefects.push(Cause.squash(cause));
+                failed = true;
+                Deferred.doneUnsafe(defectObserved, Effect.void);
               }),
             onExpectedFailure: () =>
               Effect.sync(() => {
                 expectedFailureCount += 1;
               }),
             retryExpectedFailureAfter: "250 millis",
+            resubscribe: Stream.fromQueue(resubscribe),
           },
         ).pipe(
-          Stream.runDrain,
+          Stream.runForEach(([, value]) =>
+            Effect.gen(function* () {
+              expect(value).toEqual([]);
+              yield* Deferred.succeed(resubscribed, undefined);
+            }),
+          ),
           Effect.provideService(EnvironmentSupervisor.EnvironmentSupervisor, supervisor),
-          Effect.exit,
+          Effect.forkChild,
         );
+        yield* Deferred.await(defectObserved);
 
-        expect(Exit.isFailure(exit)).toBe(true);
-        if (Exit.isFailure(exit)) {
-          expect(Cause.hasDies(exit.cause)).toBe(true);
-          expect(Cause.squash(exit.cause)).toBe(defect);
-        }
         expect(inputs).toBe(1);
         expect(streams).toBe(where === "input" ? 0 : 1);
         expect(expectedFailureCount).toBe(0);
         expect(observedDefects).toEqual([defect]);
+
+        // Let the defect settle before the next session arrives, as it does on a real device.
+        yield* TestClock.adjust("1 second");
+        expect(subscriptionFiber.pollUnsafe()).toBeUndefined();
+        if (recovery === "session") {
+          yield* SubscriptionRef.set(activeSession, Option.some(session(secondClient)));
+        } else {
+          yield* Queue.offer(resubscribe, undefined);
+        }
+        yield* Deferred.await(resubscribed);
+        yield* Fiber.interrupt(subscriptionFiber);
+
+        expect(inputs).toBe(2);
       }),
   );
 });
