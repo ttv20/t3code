@@ -242,28 +242,52 @@ type ThreadListV2ShelfHeaderProps = {
   readonly pane?: "screen" | "sidebar";
 };
 
-const SHELF_LABEL = { working: "Working", snoozed: "Snoozed", settled: "Settled" } as const;
+const SHELF_MESSAGES = {
+  working: {
+    title: "Working",
+    collapsed: "Working ({0})",
+    singular: "1 working thread",
+    plural: "{0} working threads",
+    collapse: "Collapses the working threads.",
+    expand: "Expands the working threads.",
+  },
+  snoozed: {
+    title: "Snoozed",
+    collapsed: "Snoozed ({0})",
+    singular: "1 snoozed thread",
+    plural: "{0} snoozed threads",
+    collapse: "Collapses the snoozed threads.",
+    expand: "Expands the snoozed threads.",
+  },
+  settled: {
+    title: "Settled",
+    collapsed: "Settled ({0})",
+    singular: "1 settled thread",
+    plural: "{0} settled threads",
+    collapse: "Collapses the settled threads.",
+    expand: "Expands the settled threads.",
+  },
+} as const;
 
 function ThreadListV2ShelfHeader(
-  props: ThreadListV2ShelfHeaderProps & { readonly kind: keyof typeof SHELF_LABEL },
+  props: ThreadListV2ShelfHeaderProps & { readonly kind: keyof typeof SHELF_MESSAGES },
 ) {
   const { t: uiT } = useUiLanguage();
 
-  const label = SHELF_LABEL[props.kind];
+  const messages = SHELF_MESSAGES[props.kind];
   return (
     <ThreadListV2Section
-      label={props.expanded ? label : `${label} (${props.count})`}
+      label={uiT(props.expanded ? messages.title : messages.collapsed, { "0": props.count })}
       pane={props.pane}
       tone={props.kind === "snoozed" ? "snoozed" : "default"}
       disclosure={{
         expanded: props.expanded,
         disabled: props.disabled,
         onToggle: props.onToggle,
-        accessibilityLabel: `${props.count} ${props.kind} ${props.count === 1 ? uiT("thread") : uiT("threads")}`,
-        accessibilityHint: uiT("{0} the {1} threads.", {
-          "0": uiT(props.expanded ? "Collapses" : "Expands"),
-          "1": uiT(props.kind),
+        accessibilityLabel: uiT(props.count === 1 ? messages.singular : messages.plural, {
+          "0": props.count,
         }),
+        accessibilityHint: uiT(props.expanded ? messages.collapse : messages.expand),
       }}
     />
   );
@@ -751,7 +775,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       : workingLabel) ?? (isUnread ? DONE_STATUS_LABEL : undefined);
   const recede = shouldRecedeThreadRow({ status, selected });
   const isRegeneratingTitle = thread.titleRegeneration != null;
-  const rowAccessibilityLabel = `${thread.title}${props.hasQueuedMessages ? ", messages queued to send" : ""}${isRegeneratingTitle ? ", regenerating title" : ""}`;
+  const rowAccessibilityLabel = `${thread.title}${props.hasQueuedMessages ? uiT(", messages queued to send") : ""}${isRegeneratingTitle ? uiT(", regenerating title") : ""}`;
   const timeLabel = props.timeLabel;
 
   const visitThread = useAtomCommand(threadEnvironment.visit, { reportFailure: false });
@@ -1264,7 +1288,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                   selected ? selectedThreadRowColors.foregroundClassName : statusLabel.className,
                 )}
               >
-                {statusLabel.label}
+                {uiT(statusLabel.label)}
                 {status === "working" ? (
                   <ThreadListV2Duration startedAt={resolveThreadWorkingStartedAt(thread)} />
                 ) : status === "waiting" ? (

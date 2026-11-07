@@ -10329,5 +10329,17 @@
   "{0}% error": "{0}% שגיאות",
   "Shows the full Pi status": "מציג את המצב המלא של Pi",
   "{0} of {1} selected": "נבחרו {0} מתוך {1}",
-  "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.": "לאחר העצירה, {0} שולח את ההקלטה ורמזי אוצר המילים שלך, כולל שמות פרויקטים, אל xAI."
+  "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.": "לאחר העצירה, {0} שולח את ההקלטה ורמזי אוצר המילים שלך, כולל שמות פרויקטים, אל xAI.",
+  "{0} working threads": "{0} שיחות בעבודה",
+  "{0} snoozed threads": "{0} שיחות בהשהיה",
+  "{0} settled threads": "{0} שיחות שהושלמו",
+  "Collapses the working threads.": "מכווץ את השיחות שבעבודה.",
+  "Expands the working threads.": "מרחיב את השיחות שבעבודה.",
+  "Collapses the snoozed threads.": "מכווץ את השיחות שבהשהיה.",
+  "Expands the snoozed threads.": "מרחיב את השיחות שבהשהיה.",
+  "Collapses the settled threads.": "מכווץ את השיחות שהושלמו.",
+  "Expands the settled threads.": "מרחיב את השיחות שהושלמו.",
+  "1 working thread": "שיחה אחת בעבודה",
+  "1 snoozed thread": "שיחה אחת בהשהיה",
+  "1 settled thread": "שיחה אחת שהושלמה"
 }

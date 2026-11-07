@@ -10329,5 +10329,17 @@
   "{0}% error": "{0}% error",
   "Shows the full Pi status": "Shows the full Pi status",
   "{0} of {1} selected": "{0} of {1} selected",
-  "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.": "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI."
+  "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.": "After you stop, {0} sends your recording and vocabulary hints, including project names, to xAI.",
+  "{0} working threads": "{0} working threads",
+  "{0} snoozed threads": "{0} snoozed threads",
+  "{0} settled threads": "{0} settled threads",
+  "Collapses the working threads.": "Collapses the working threads.",
+  "Expands the working threads.": "Expands the working threads.",
+  "Collapses the snoozed threads.": "Collapses the snoozed threads.",
+  "Expands the snoozed threads.": "Expands the snoozed threads.",
+  "Collapses the settled threads.": "Collapses the settled threads.",
+  "Expands the settled threads.": "Expands the settled threads.",
+  "1 working thread": "1 working thread",
+  "1 snoozed thread": "1 snoozed thread",
+  "1 settled thread": "1 settled thread"
 }
