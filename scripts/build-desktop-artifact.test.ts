@@ -917,6 +917,13 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const fixture = yield* makeWindowsPayloadFixture({ copyUnpackedNatives: true });
+        // The release with native transcription contains 84 loose files.
+        for (let index = 0; index < 79; index += 1) {
+          yield* fs.writeFileString(
+            path.join(fixture.packagedAppDir, `runtime-${index}.dll`),
+            "MZ",
+          );
+        }
         const result = yield* validateWindowsPackagedPayload({
           stageDistDir: fixture.stageDistDir,
           appExecutableName: fixture.appExecutableName,
@@ -936,6 +943,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         ]);
 
         assert.equal(result.packagedAppDir, fixture.packagedAppDir);
+        assert.equal(result.fileCount, 84);
         assert.deepStrictEqual(result.unpackedFiles, ["node_modules/native/addon.node"]);
         assert.isBelow(result.fileCount, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT);
         assert.deepStrictEqual(secondAsar, firstAsar);
@@ -1324,6 +1332,8 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
   it.effect("rejects a Windows payload that regresses above the file-count budget", () =>
     Effect.scoped(
       Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
         const fixture = yield* makeWindowsPayloadFixture({ copyUnpackedNatives: true });
         const error = yield* validateWindowsPackagedPayload({
           stageDistDir: fixture.stageDistDir,
@@ -1336,6 +1346,24 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         assert.instanceOf(error, WindowsPackagedPayloadValidationError);
         assert.equal(error.reason, "file-limit-exceeded");
         assert.isAbove(error.fileCount ?? 0, 2);
+
+        for (let index = 0; index < WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT; index += 1) {
+          yield* fs.writeFileString(
+            path.join(fixture.packagedAppDir, `extra-${index}.txt`),
+            "extra",
+          );
+        }
+        const defaultLimitError = yield* validateWindowsPackagedPayload({
+          stageDistDir: fixture.stageDistDir,
+          appExecutableName: fixture.appExecutableName,
+          targetArch: "x64",
+          appVersion: WINDOWS_PAYLOAD_FIXTURE_VERSION,
+        }).pipe(Effect.flip);
+
+        assert.instanceOf(defaultLimitError, WindowsPackagedPayloadValidationError);
+        assert.equal(defaultLimitError.reason, "file-limit-exceeded");
+        assert.equal(defaultLimitError.fileLimit, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT);
+        assert.isAbove(defaultLimitError.fileCount ?? 0, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT);
       }),
     ),
   );
