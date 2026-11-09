@@ -43,6 +43,7 @@ export function AndroidHomeFabLayout(props: ComponentProps<typeof SharedAndroidH
   const workspace = useWorkspaceTabs();
   const bottomClearance = insets.bottom + FLOATING_TABS.bottom + FLOATING_TABS.edge + size;
   const context = floatingTabsEnabled && workspace ? { ...workspace, bottomClearance } : workspace;
+  const position = androidHomeFabPosition(insets.bottom, props.sidebar);
   const scrollState = useRef({ anchor: 0, expanded: true });
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -78,7 +79,7 @@ export function AndroidHomeFabLayout(props: ComponentProps<typeof SharedAndroidH
                   right: FLOATING_TABS.edge,
                   bottom: insets.bottom + FLOATING_TABS.bottom,
                 }
-              : androidHomeFabPosition(insets.bottom, props.sidebar)
+              : { ...position, bottom: position.bottom + (props.bottomInset ?? 0) }
           }
         />
       ) : null}

@@ -1,6 +1,7 @@
 import { AsyncResult, Atom } from "effect/reactivity";
 import { stickyWorkingShelfAtom } from "../../state/sticky-working-shelf";
 import { StickyWorkingShelf } from "./StickyWorkingShelf";
+import { useAndroidFloatingTabs } from "../settings/appearance/AppearancePreferencesProvider";
 import { useAtomValue } from "@effect/atom-react";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
@@ -18,6 +19,7 @@ import {
   useWindowDimensions,
   View,
   type GestureResponderEvent,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ScrollViewProps,
@@ -98,6 +100,7 @@ import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-sw
 import { ThreadListFilters } from "./ThreadListFilters";
 
 interface HomeScreenProps {
+  readonly onStickyShelfHeightChange?: (height: number) => void;
   readonly projects: ReadonlyArray<EnvironmentProject>;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly pendingTasks: ReadonlyArray<PendingNewTask>;
@@ -262,6 +265,7 @@ export function HomeScreen(props: HomeScreenProps) {
   const stickyPreference = useAtomValue(homeStickyWorkingShelfAtom);
   const [stickyHeight, setStickyHeight] = useState(0);
   const [listViewportHeight, setListViewportHeight] = useState(0);
+  const floatingTabsEnabled = useAndroidFloatingTabs();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const workspace = useWorkspaceTabs();
   const [initialScrollOffset] = useState(() => workspace?.getScrollOffset("threads") ?? 0);
@@ -523,6 +527,10 @@ export function HomeScreen(props: HomeScreenProps) {
   );
   const bottomClearance = workspace?.bottomClearance ?? Math.max(insets.bottom, 16) + fabClearance;
   const hasStickyShelf = stickyItems.length > 0;
+  const measureListViewport =
+    Platform.OS === "android"
+      ? (event: LayoutChangeEvent) => setListViewportHeight(event.nativeEvent.layout.height)
+      : undefined;
   // Called as `props.onSelectThread(...)`, the compiler would cache this handler on the whole
   // props object, which is new on every render of Home's parent.
   const { onSelectThread } = props;
@@ -713,12 +721,44 @@ export function HomeScreen(props: HomeScreenProps) {
     catalogState: props.catalogState,
     projectCount: props.projects.length,
   });
+  // Scroll padding includes the FAB reserve; the pinned shelf follows the pane edge instead.
+  const pinnedShelf =
+    Platform.OS === "android" ? (
+      <View
+        pointerEvents="box-none"
+        className="absolute left-0 right-0 z-20"
+        style={{ bottom: floatingTabsEnabled ? bottomClearance : insets.bottom }}
+        onLayout={(event) => {
+          const height = event.nativeEvent.layout.height;
+          setStickyHeight(height);
+          props.onStickyShelfHeightChange?.(floatingTabsEnabled ? 0 : height);
+        }}
+      >
+        {hasStickyShelf && listViewportHeight > 0 ? (
+          <StickyWorkingShelf
+            items={stickyItems}
+            maxHeight={Math.max(0, (listViewportHeight - bottomClearance) / 2)}
+            paddingLeft={
+              (contentSideInsets?.left ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
+            }
+            paddingRight={
+              (contentSideInsets?.right ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
+            }
+            estimatedItemSize={ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT}
+            extraData={v2ExtraData}
+            renderItem={(item, gesture) => renderV2Item({ item }, gesture)}
+            onScrollBeginDrag={handleScrollBeginDrag}
+          />
+        ) : null}
+      </View>
+    ) : null;
 
   if (!hasAnyThreads) {
     return (
       <View className={containerClassName}>
         <ScreenContent surface={sidebarSurface ? "drawer" : "screen"}>
           <View
+            onLayout={measureListViewport}
             className={cn(
               "flex-1 items-center justify-center px-8",
               Platform.OS !== "android" && contentBackground,
@@ -761,6 +801,7 @@ export function HomeScreen(props: HomeScreenProps) {
               ) : null}
             </View>
           </View>
+          {pinnedShelf}
         </ScreenContent>
       </View>
     );
@@ -833,11 +874,7 @@ export function HomeScreen(props: HomeScreenProps) {
       <ScreenContent surface="screen">
         <View
           className={cn("flex-1", Platform.OS !== "android" && contentBackground)}
-          onLayout={
-            Platform.OS === "android"
-              ? (event) => setListViewportHeight(event.nativeEvent.layout.height)
-              : undefined
-          }
+          onLayout={measureListViewport}
         >
           <SwipeableScrollGateProvider enabled={swipeEnabled} activation={swipeRowActivation}>
             <GestureDetector gesture={homeScrollGesture}>
@@ -903,24 +940,7 @@ export function HomeScreen(props: HomeScreenProps) {
               />
             </GestureDetector>
           </SwipeableScrollGateProvider>
-          {hasStickyShelf && listViewportHeight > 0 ? (
-            <StickyWorkingShelf
-              items={stickyItems}
-              bottom={bottomClearance}
-              maxHeight={Math.max(0, (listViewportHeight - bottomClearance) / 2)}
-              paddingLeft={
-                (contentSideInsets?.left ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
-              }
-              paddingRight={
-                (contentSideInsets?.right ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
-              }
-              estimatedItemSize={ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT}
-              extraData={v2ExtraData}
-              renderItem={(item, gesture) => renderV2Item({ item }, gesture)}
-              onScrollBeginDrag={handleScrollBeginDrag}
-              onLayout={(event) => setStickyHeight(event.nativeEvent.layout.height)}
-            />
-          ) : null}
+          {pinnedShelf}
         </View>
       </ScreenContent>
     </View>

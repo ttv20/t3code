@@ -56,6 +56,7 @@ export function HomeRouteScreen() {
   const selectTab = useSelectWorkspaceTab();
   const workspace = useWorkspaceTabs();
   const [localSearchQuery, setLocalSearchQuery] = useState("");
+  const [stickyShelfHeight, setStickyShelfHeight] = useState(0);
   const searchQuery =
     Platform.OS === "android"
       ? primarySidebarSearchQuery
@@ -166,7 +167,7 @@ export function HomeRouteScreen() {
   }
 
   return (
-    <AndroidHomeFabLayout onStartNewTask={startNewTask}>
+    <AndroidHomeFabLayout onStartNewTask={startNewTask} bottomInset={stickyShelfHeight}>
       <>
         <WorkspaceListHeader
           accessibilityLabel={uiT("T3 Code, Threads")}
@@ -191,6 +192,7 @@ export function HomeRouteScreen() {
         />
 
         <HomeScreen
+          onStickyShelfHeightChange={setStickyShelfHeight}
           catalogState={catalogState}
           environments={environments}
           onAddConnection={() => openSettings(navigation, "SettingsEnvironmentNew")}

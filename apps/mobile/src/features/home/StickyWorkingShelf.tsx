@@ -1,13 +1,12 @@
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import { useState, type ReactElement } from "react";
-import { View, type LayoutChangeEvent } from "react-native";
+import { View } from "react-native";
 import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
 import { threadListV2ListItemsAreEqual, type ThreadListV2ListItem } from "../threads/threadListV2";
 import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-swipe-actions";
 
 export function StickyWorkingShelf(props: {
   readonly items: ReadonlyArray<ThreadListV2ListItem>;
-  readonly bottom: number;
   readonly maxHeight: number;
   readonly paddingLeft: number;
   readonly paddingRight: number;
@@ -18,7 +17,6 @@ export function StickyWorkingShelf(props: {
     gesture: ReturnType<typeof useNativeGesture>,
   ) => ReactElement;
   readonly onScrollBeginDrag: () => void;
-  readonly onLayout: (event: LayoutChangeEvent) => void;
 }) {
   const gesture = useNativeGesture();
   const { swipeEnabled, scrollGateHandlers } = useSwipeableScrollGate({
@@ -31,10 +29,8 @@ export function StickyWorkingShelf(props: {
   return (
     <View
       testID="sticky-working-shelf"
-      onLayout={props.onLayout}
-      className="absolute left-0 right-0 z-20 border-t border-border bg-screen"
+      className="border-t border-border bg-screen"
       style={{
-        bottom: props.bottom,
         maxHeight: props.maxHeight,
         paddingLeft: props.paddingLeft,
         paddingRight: props.paddingRight,

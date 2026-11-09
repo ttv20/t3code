@@ -70,6 +70,8 @@ Translation scope and the reasons behind these choices are recorded in [Translat
 
 ## Sticky Working shelf
 
+- On Android's standard navigation layout the shelf anchors to the pane's bottom edge, and New thread stays above it. The scroll-content reserve is not used as the shelf's bottom inset. Floating navigation retains its own bar clearance.
+
 - A pinned shelf stays clear of the sidebar's bottom fade, collapses all its rows including the open thread, and keeps its header visible with count 0 when no scoped threads are working. This applies to web, desktop and Android while the sticky option and Working section are enabled.
 
 - Android **Settings → General → Sidebar → Keep working threads visible** docks the same Working header and thread actions above the scrolling Home list. Long shelves use a bounded virtualized list, with safe-area/FAB clearance; search retains the ordinary results list. The toggle is off by default and stored in Expo SecureStore, without a SQLite preference field or migration.
