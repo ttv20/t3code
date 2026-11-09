@@ -176,6 +176,21 @@ describe("routeAgentNotificationResponseOnce", () => {
     });
 
     expect(navigations).toEqual(["/threads/env/thread"]);
+    for (const runId of ["run-1", "run-1", "run-2", "run-2"]) {
+      routeAgentNotificationResponseOnce({
+        handledResponseIds,
+        response: responseWithData(
+          { localCompletion: true, environmentId: "env", threadId: "thread", runId },
+          "local-thread",
+        ),
+        navigate: (deepLink) => navigations.push(deepLink),
+      });
+    }
+    expect(navigations).toEqual([
+      "/threads/env/thread",
+      "/threads/env/thread",
+      "/threads/env/thread",
+    ]);
   });
 });
 

@@ -17,8 +17,10 @@ import { scheduleAndroidNotificationGrace } from "./androidNotifications";
 import {
   createLocalCompletionNotifications,
   localCompletionAllowed,
+  localCompletionNotificationRequest,
   localCompletionThread,
   presentLocalCompletionNotification,
+  supersededLocalCompletionNotificationIds,
   type LocalCompletionThread,
 } from "./localCompletionNotifications";
 import { hasAgentAwarenessPushRegistration } from "./remoteRegistration";
@@ -68,23 +70,21 @@ export function installLocalCompletionNotifications(): () => void {
           name: readUiTranslator()("Agent alerts"),
           importance: Notifications.AndroidImportance.HIGH,
         });
+        const superseded = supersededLocalCompletionNotificationIds(
+          await Notifications.getPresentedNotificationsAsync(),
+          environmentId,
+          thread,
+        );
+        await Promise.all(superseded.map((id) => Notifications.dismissNotificationAsync(id)));
       },
       schedule: async (latest) => {
-        await Notifications.scheduleNotificationAsync({
-          identifier: JSON.stringify(["local-completion", environmentId, latest.id, latest.runId]),
-          content: {
-            title: readUiTranslator()("Thread completed"),
-            body: latest.title,
-            sound: "default",
-            data: {
-              localCompletion: true,
-              environmentId,
-              threadId: latest.id,
-              deepLink: `/threads/${encodeURIComponent(environmentId)}/${encodeURIComponent(latest.id)}`,
-            },
-          },
-          trigger: { channelId: "agent-alerts" },
-        });
+        await Notifications.scheduleNotificationAsync(
+          localCompletionNotificationRequest(
+            environmentId,
+            latest,
+            readUiTranslator()("Thread completed"),
+          ),
+        );
       },
     });
   };

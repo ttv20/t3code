@@ -31,7 +31,11 @@ function identifierFromNotificationResponse(response: unknown): string | null {
     return null;
   }
   const identifier = (request as { readonly identifier?: unknown }).identifier;
-  return typeof identifier === "string" ? identifier : null;
+  if (typeof identifier !== "string") return null;
+  const data = dataFromNotificationResponse(response);
+  return data?.localCompletion === true && typeof data.runId === "string"
+    ? JSON.stringify([identifier, data.runId])
+    : identifier;
 }
 
 function encodeThreadDeepLink(input: {

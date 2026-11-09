@@ -6,8 +6,10 @@ import { makeRawThreadShell } from "../../test-fixtures";
 import {
   createLocalCompletionNotifications,
   localCompletionAllowed,
+  localCompletionNotificationRequest,
   localCompletionThread,
   presentLocalCompletionNotification,
+  supersededLocalCompletionNotificationIds,
   type LocalCompletionCurrent,
   type LocalCompletionThread,
 } from "./localCompletionNotifications";
@@ -118,6 +120,72 @@ it("notifies once for a live completion after the continuation grace, scoped by 
     ["machine-a", "run-2"],
     ["machine-b", "run-1"],
   ]);
+  for (let run = 3; run <= 20; run++) {
+    h.observe("machine-a", [h.thread(false, `run-${run}`)]);
+    h.observe("machine-a", [{ ...h.thread(true, `run-${run}`), title: `Latest ${run} שלום` }]);
+    vi.advanceTimersByTime(WORKING_EXIT_GRACE_MS);
+  }
+  const displayed = new Map(
+    h.notifications.map(({ environmentId, thread }) => {
+      const request = localCompletionNotificationRequest(environmentId, thread, "השיחה הושלמה");
+      return [request.identifier, request] as const;
+    }),
+  );
+  expect(displayed.size).toBe(2);
+  expect([...displayed.values()].map(({ content }) => content.body)).toEqual([
+    "Latest 20 שלום",
+    "Original title שלום",
+  ]);
+});
+
+it("replaces legacy completions only for the same environment and thread", () => {
+  const thread: LocalCompletionThread = {
+    id: "thread",
+    runId: "latest",
+    completed: true,
+    quiet: false,
+    title: "שלום",
+  };
+  const request = localCompletionNotificationRequest("env", thread, "השיחה הושלמה");
+  const presented = [
+    ...Array.from({ length: 20 }, (_, run) => ({
+      request: { ...request, identifier: `legacy-${run}` },
+    })),
+    { request },
+    {
+      request: {
+        ...request,
+        identifier: "other-env",
+        content: { data: { ...request.content.data, environmentId: "other" } },
+      },
+    },
+    {
+      request: {
+        ...request,
+        identifier: "other-thread",
+        content: { data: { ...request.content.data, threadId: "other" } },
+      },
+    },
+    {
+      request: {
+        ...request,
+        identifier: "cloud",
+        content: { data: { ...request.content.data, localCompletion: false } },
+      },
+    },
+    { request: { identifier: "unrelated", content: {} } },
+  ];
+  expect(supersededLocalCompletionNotificationIds(presented, "env", thread)).toEqual(
+    Array.from({ length: 20 }, (_, run) => `legacy-${run}`),
+  );
+  expect(request.content.data.runId).toBe("latest");
+  expect(request.content.data.deepLink).toBe("/threads/env/thread");
+  expect(
+    localCompletionNotificationRequest("env", { ...thread, id: "other" }, "").identifier,
+  ).not.toBe(request.identifier);
+  expect(localCompletionNotificationRequest("other", thread, "").identifier).not.toBe(
+    request.identifier,
+  );
 });
 
 it("does not replay snapshots, reconnects, newly discovered threads, or a disabled-period completion", () => {

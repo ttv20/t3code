@@ -1,3 +1,4 @@
+import type { NotificationRequestInput } from "expo-notifications";
 import { presentThreadShell } from "@t3tools/client-runtime/state/models";
 import { WORKING_EXIT_GRACE_MS } from "@t3tools/client-runtime/state/thread-inbox";
 import type { EnvironmentId, OrchestrationV2ThreadShell } from "@t3tools/contracts";
@@ -10,6 +11,54 @@ export interface LocalCompletionThread {
   readonly quiet: boolean;
   readonly title: string;
 }
+const localCompletionNotificationId = (environmentId: string, threadId: string) =>
+  JSON.stringify(["local-completion", environmentId, threadId]);
+
+export function localCompletionNotificationRequest(
+  environmentId: string,
+  thread: LocalCompletionThread,
+  title: string,
+) {
+  return {
+    identifier: localCompletionNotificationId(environmentId, thread.id),
+    content: {
+      title,
+      body: thread.title,
+      sound: "default",
+      data: {
+        localCompletion: true,
+        environmentId,
+        threadId: thread.id,
+        runId: thread.runId,
+        deepLink: `/threads/${encodeURIComponent(environmentId)}/${encodeURIComponent(thread.id)}`,
+      },
+    },
+    trigger: { channelId: "agent-alerts" },
+  } satisfies NotificationRequestInput;
+}
+
+export function supersededLocalCompletionNotificationIds(
+  presented: ReadonlyArray<{
+    readonly request: {
+      readonly identifier: string;
+      readonly content: { readonly data?: Readonly<Record<string, unknown>> };
+    };
+  }>,
+  environmentId: string,
+  thread: LocalCompletionThread,
+): string[] {
+  const identifier = localCompletionNotificationId(environmentId, thread.id);
+  return presented.flatMap(({ request }) => {
+    const data = request.content.data;
+    return request.identifier !== identifier &&
+      data?.localCompletion === true &&
+      data.environmentId === environmentId &&
+      data.threadId === thread.id
+      ? [request.identifier]
+      : [];
+  });
+}
+
 export interface LocalCompletionSnapshot {
   readonly generation: number;
   readonly live: boolean;
