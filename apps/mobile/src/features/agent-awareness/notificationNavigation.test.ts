@@ -10,6 +10,7 @@ import {
 import {
   extractAgentNotificationDeepLink,
   routeAgentNotificationResponseOnce,
+  threadDeepLinkOnScreen,
 } from "./notificationPayload";
 
 function responseWithData(data: Record<string, unknown>, identifier = "notification-1") {
@@ -33,26 +34,39 @@ describe("dismissLocalCompletionNotificationsOnScreen", () => {
   const notification = (identifier: string, data: Record<string, unknown>) =>
     responseWithData(data, identifier).notification as Notification;
 
-  it("removes current and legacy local alerts only for the opened environment and thread", async () => {
-    const data = { localCompletion: true, environmentId: "env 1", threadId: "thread/2" };
-    const presented = [
-      notification("current", data),
-      notification("legacy", { ...data, runId: "old" }),
-      notification("other-environment", { ...data, environmentId: "other" }),
-      notification("other-thread", { ...data, threadId: "other" }),
-      notification("push", { ...data, localCompletion: false }),
-      notification("unrelated", {}),
-    ];
-    const dismissed: string[] = [];
-    await dismissLocalCompletionNotificationsOnScreen({
-      threadOnScreen: () => "/threads/env%201/thread%2F2",
-      getPresented: () => Promise.resolve(presented),
-      dismiss: async (id) => {
-        dismissed.push(id);
-      },
-    });
-    expect(dismissed).toEqual(["current", "legacy"]);
-  });
+  it.each([
+    { environmentId: "env 1", threadId: "thread/2", pathname: "/threads/env%201/thread%2F2" },
+    { environmentId: "env", threadId: "mcp:thread", pathname: "/threads/env/mcp:thread" },
+    { environmentId: "env", threadId: "mcp:thread/2", pathname: "/threads/env/mcp:thread%2f2" },
+    {
+      environmentId: "env",
+      threadId: "literal%3Athread",
+      pathname: "/threads/env/literal%253Athread",
+    },
+    { environmentId: "env", threadId: "שיחה:2", pathname: "/threads/env/שיחה:2" },
+  ])(
+    "removes only the opened environment/thread alerts for $threadId",
+    async ({ environmentId, threadId, pathname }) => {
+      const data = { localCompletion: true, environmentId, threadId };
+      const presented = [
+        notification("current", data),
+        notification("legacy", { ...data, runId: "old" }),
+        notification("other-environment", { ...data, environmentId: "other" }),
+        notification("other-thread", { ...data, threadId: "other" }),
+        notification("push", { ...data, localCompletion: false }),
+        notification("unrelated", {}),
+      ];
+      const dismissed: string[] = [];
+      await dismissLocalCompletionNotificationsOnScreen({
+        threadOnScreen: () => threadDeepLinkOnScreen(pathname),
+        getPresented: () => Promise.resolve(presented),
+        dismiss: async (id) => {
+          dismissed.push(id);
+        },
+      });
+      expect(dismissed).toEqual(["current", "legacy"]);
+    },
+  );
 
   it.each([null, "/threads/env/other"])(
     "rechecks the visible thread after reading alerts when it changes to %s",

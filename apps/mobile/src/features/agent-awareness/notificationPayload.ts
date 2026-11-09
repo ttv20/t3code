@@ -82,7 +82,7 @@ export function threadDeepLinkOnScreen(pathname: string): string | null {
   if (!match?.[1] || !match[2]) {
     return null;
   }
-  return `/threads/${match[1]}/${match[2]}`;
+  return normalizeThreadDeepLink(`/threads/${match[1]}/${match[2]}`);
 }
 
 export function extractAgentNotificationDeepLink(response: unknown): string | null {
