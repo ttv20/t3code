@@ -1,3 +1,4 @@
+import { useStickyWorkingShelf } from "../../hooks/useStickyWorkingShelf";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type DesktopUpdateChannel,
@@ -443,6 +444,7 @@ function AboutVersionSection() {
 }
 
 export function useSettingsRestore(onRestored?: () => void) {
+  const [stickyWorkingShelf, setStickyWorkingShelf] = useStickyWorkingShelf();
   const { t: uiT } = useUiLanguage();
 
   const {
@@ -464,6 +466,7 @@ export function useSettingsRestore(onRestored?: () => void) {
   const isBackgroundActivityDirty = hasChangedBackgroundActivitySettings(settings);
 
   const changedSettingLabels = [
+    ...(stickyWorkingShelf ? [uiT("Keep working threads visible")] : []),
     ...(theme !== "system" ? ["Theme"] : []),
     ...(!followSystem ? ["Follow system"] : []),
     ...(themeHalves !== null ? ["Theme mix"] : []),
@@ -721,6 +724,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       pullRequestLinksOpenInApp: DEFAULT_UNIFIED_SETTINGS.pullRequestLinksOpenInApp,
       enableAgentBrowserAccess: DEFAULT_UNIFIED_SETTINGS.enableAgentBrowserAccess,
     });
+    setStickyWorkingShelf(false);
     onRestored?.();
   };
 
@@ -774,6 +778,7 @@ function AutoSettleDaysInput({
 }
 
 export function GeneralSettingsPanel() {
+  const [stickyWorkingShelf, setStickyWorkingShelf] = useStickyWorkingShelf();
   const { t: uiT } = useUiLanguage();
 
   const settings = useScopedSettings();
@@ -902,6 +907,27 @@ export function GeneralSettingsPanel() {
                 updateSettings({ sidebarWorkingShelfEnabled: Boolean(checked) })
               }
               aria-label={uiT("Working section")}
+            />
+          }
+        />
+        <SettingsRow
+          {...searchableSetting("sticky-working-shelf")}
+          description={uiT(
+            "Keep the Working section at the bottom of the sidebar while other threads scroll behind it. Saved only on this device.",
+          )}
+          resetAction={
+            stickyWorkingShelf ? (
+              <SettingResetButton
+                label={uiT("Keep working threads visible")}
+                onClick={() => setStickyWorkingShelf(false)}
+              />
+            ) : null
+          }
+          control={
+            <Switch
+              checked={stickyWorkingShelf}
+              onCheckedChange={setStickyWorkingShelf}
+              aria-label={uiT("Keep working threads visible")}
             />
           }
         />

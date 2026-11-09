@@ -65,6 +65,12 @@ Translation scope and the reasons behind these choices are recorded in [Translat
 - Timeline navigation previews resolve the user message and assistant answer directions separately and apply the same sentence-boundary correction as rendered Markdown.
 - In RTL prose, adjacent Latin words or numbers separated by sentence punctuation or a colon receive a display-only RLM before the next segment. This also works across emphasis and link labels; code and link destinations remain unchanged. The shared sentence-boundary helper also runs in native mobile Markdown. The web layout and preview fixes above do not imply identical native mobile layouts.
 
+## Sticky Working shelf
+
+- Web and desktop **Settings → General → Sidebar → Keep working threads visible** can keep the Working shelf at the bottom above the scrolling thread list. It is off by default and retains the existing expand/collapse control and thread actions.
+- The expanded shelf has its own bounded scroll area when it contains many threads. Turning the option off restores upstream's normal shelf layout.
+- This is a per-client local-storage preference. It adds no database field, migration, thread mutation, server setting, RPC, polling, or cross-device sync. Settings search includes its English and translated title; its reset action and restoring defaults turn it off.
+
 ## Finished-thread entry position
 
 - Opening a web chat whose latest turn is no longer running positions the viewport at the latest user message instead of the end of the assistant answer. A 24px top offset keeps the message below the top overlay.

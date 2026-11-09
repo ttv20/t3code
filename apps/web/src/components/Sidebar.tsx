@@ -1,3 +1,4 @@
+import { useStickyWorkingShelf } from "../hooks/useStickyWorkingShelf";
 import {
   DndContext,
   useSensor,
@@ -900,6 +901,7 @@ function readRouteThreadKey(router: AnyRouter): string | null {
 
 export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReveal }) {
   const { t: uiT } = useUiLanguage();
+  const [stickyWorkingShelf] = useStickyWorkingShelf();
 
   const {
     projects,
@@ -1953,7 +1955,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     const activeRows = rowsOf(activeThreads, "active");
     items.push({ kind: "marker", marker: "active-placeholder" });
     items.push(...activeRows);
-    if (workingThreads.length > 0) {
+    if (workingThreads.length > 0 && !stickyWorkingShelf) {
       items.push({ kind: "marker", marker: "working-header" });
       items.push(...rowsOf(visibleWorkingThreads, "working"));
     }
@@ -1965,6 +1967,10 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     const settledRows = rowsOf(renderedSettledThreads, "settled");
     items.push({ kind: "marker", marker: "settled-placeholder" });
     items.push(...settledRows);
+    if (stickyWorkingShelf && workingThreads.length > 0) {
+      items.push({ kind: "marker", marker: "working-header" });
+      items.push(...rowsOf(visibleWorkingThreads, "working"));
+    }
     return items;
   })();
   // Preserve the list while streamed updates leave order unchanged to retain row memoization.
@@ -3489,11 +3495,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           onDraftContextMenu={handleDraftContextMenu}
                         />,
                       ];
+                      const workingItems: ReactNode[] = [];
                       for (const item of sidebarListItems) {
                         if (item.kind === "thread") {
                           // Folders draw active rows in their own place below.
                           if (projectFolders !== null && item.section === "active") continue;
-                          items.push(renderThreadRow(threadByKey.get(item.key)!, item.section));
+                          const target =
+                            stickyWorkingShelf && item.section === "working" ? workingItems : items;
+                          target.push(renderThreadRow(threadByKey.get(item.key)!, item.section));
                           continue;
                         }
                         if (projectFolders !== null && item.marker === "active-placeholder") {
@@ -3563,11 +3572,13 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             );
                             break;
                           case "working-header":
-                            items.push(
+                            (stickyWorkingShelf ? workingItems : items).push(
                               <SidebarSectionHeader
                                 key="working-shelf-header"
                                 marker="working-header"
-                                className="mt-auto"
+                                className={
+                                  stickyWorkingShelf ? "sticky top-0 z-10 bg-sidebar" : "mt-auto"
+                                }
                                 label={uiT("Working")}
                                 count={workingThreads.length}
                                 toggle={{
@@ -3631,33 +3642,51 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             break;
                         }
                       }
+                      if (settledShelfExpanded && hiddenSettledCount > 0) {
+                        items.push(
+                          <li key="settled-more" className="list-none">
+                            <button
+                              type="button"
+                              data-sidebar-row="settled:more"
+                              data-sidebar-parent="shelf:settled"
+                              disabled={olderSettledShelf.loading}
+                              onClick={() => {
+                                olderSettledShelf.retry();
+                                showMoreSettled();
+                              }}
+                              className="flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground disabled:cursor-default"
+                            >
+                              {/* Plus means "add", so revealing more uses a chevron. */}
+                              <ChevronDownIcon aria-hidden className="size-4 shrink-0" />
+                              {olderSettledShelf.loading
+                                ? uiT("Loading")
+                                : olderSettledShelf.failed
+                                  ? uiT("Could not load older threads. Retry")
+                                  : uiT("Show {0} more", {
+                                      "0": Math.min(hiddenSettledCount, SETTLED_TAIL_PAGE_COUNT),
+                                    })}
+                            </button>
+                          </li>,
+                        );
+                      }
+                      if (stickyWorkingShelf && workingItems.length > 0) {
+                        items.push(
+                          <li
+                            key="sticky-working-shelf"
+                            data-testid="sticky-working-shelf"
+                            className="sticky bottom-0 z-20 mt-auto list-none border-t border-sidebar-border bg-sidebar"
+                          >
+                            <ul
+                              role="presentation"
+                              className="flex max-h-[min(50dvh,24rem)] flex-col gap-px overflow-y-auto overscroll-y-contain [scrollbar-width:thin]"
+                            >
+                              {workingItems}
+                            </ul>
+                          </li>,
+                        );
+                      }
                       return items;
                     })()}
-                    {settledShelfExpanded && hiddenSettledCount > 0 ? (
-                      <li className="list-none">
-                        <button
-                          type="button"
-                          data-sidebar-row="settled:more"
-                          data-sidebar-parent="shelf:settled"
-                          disabled={olderSettledShelf.loading}
-                          onClick={() => {
-                            olderSettledShelf.retry();
-                            showMoreSettled();
-                          }}
-                          className="flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground disabled:cursor-default"
-                        >
-                          {/* Plus means "add", so revealing more uses a chevron. */}
-                          <ChevronDownIcon aria-hidden className="size-4 shrink-0" />
-                          {olderSettledShelf.loading
-                            ? uiT("Loading")
-                            : olderSettledShelf.failed
-                              ? uiT("Could not load older threads. Retry")
-                              : uiT("Show {0} more", {
-                                  "0": Math.min(hiddenSettledCount, SETTLED_TAIL_PAGE_COUNT),
-                                })}
-                        </button>
-                      </li>
-                    ) : null}
                   </ul>
                 </SortableContext>
               </DndContext>

@@ -147,6 +147,10 @@ choice.
 While this is on, the active list is ordered by when each thread last came back to you, so you
 cannot drag or move threads within it. Your saved order returns when you turn it off.
 
+On web and desktop, turn on **Settings → General → Sidebar → Keep working threads visible**
+to keep Working at the bottom while the rest of the list scrolls behind it. A long Working
+section scrolls within its own area. This is off by default and saved only on this client.
+
 ### Group threads by project (beta)
 
 Turn on **Settings → Labs → Boring sidebar (group by project)** on web and desktop to put active

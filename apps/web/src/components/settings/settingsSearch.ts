@@ -471,6 +471,12 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["usage quota rate limit reset recover continue"],
   },
   {
+    id: "sticky-working-shelf",
+    title: "Keep working threads visible",
+    to: "/settings/general",
+    searchTerms: ["sticky fixed bottom running working threads sidebar shelf scroll"],
+  },
+  {
     id: "working-shelf",
     title: "Working section",
     to: "/settings/general",
