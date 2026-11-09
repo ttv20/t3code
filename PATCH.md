@@ -37,6 +37,7 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 ## Android local completion notifications
 
 - Completion alerts replace the previous alert for the same environment and thread. The next completion removes older per-run local alerts for that thread, and tapping a later run still opens it once. Other threads, environments, and cloud alerts retain their own identity.
+- Opening a thread through any navigation path dismisses its local completion alerts. Returning to that thread from the background also clears them, without dismissing other threads' alerts.
 
 - Settings → Notifications can enable local completion alerts without signing in or configuring T3 Connect or Firebase. Notifications require Android's permission.
 - Android's app battery settings may also need to allow background activity so the connection stays active. See [Mobile notifications](docs/user/mobile-notifications.md#local-completion-alerts-on-android).

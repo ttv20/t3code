@@ -1,5 +1,26 @@
-import type { NotificationResponse } from "expo-notifications";
+import type { Notification, NotificationResponse } from "expo-notifications";
 import * as Schema from "effect/Schema";
+import { extractAgentNotificationDeepLink } from "./notificationPayload";
+
+export async function dismissLocalCompletionNotificationsOnScreen(input: {
+  readonly threadOnScreen: () => string | null;
+  readonly getPresented: () => Promise<ReadonlyArray<Notification>>;
+  readonly dismiss: (identifier: string) => Promise<void>;
+}): Promise<void> {
+  const path = input.threadOnScreen();
+  if (path === null) return;
+  const presented = await input.getPresented();
+  if (input.threadOnScreen() !== path) return;
+  await Promise.all(
+    presented
+      .filter(
+        (notification) =>
+          notification.request.content.data?.localCompletion === true &&
+          extractAgentNotificationDeepLink({ notification }) === path,
+      )
+      .map((notification) => input.dismiss(notification.request.identifier)),
+  );
+}
 
 export class NotificationNavigationError extends Schema.TaggedError<NotificationNavigationError>()(
   "NotificationNavigationError",

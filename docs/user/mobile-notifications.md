@@ -18,6 +18,6 @@ Notification permission and Android notification channels are controlled in syst
 
 ## Local completion alerts on Android
 
-Enable **Local completion notifications** in **Settings → Notifications** and allow Android notification permission to receive completion alerts through an active connection. This works with direct and Tailscale connections without signing in to T3 Connect. Tap an alert to open its thread.
+Enable **Local completion notifications** in **Settings → Notifications** and allow Android notification permission to receive completion alerts through an active connection. This works with direct and Tailscale connections without signing in to T3 Connect. Tap an alert to open its thread. Opening the thread from the app also clears its alert, including when returning to the thread from the background.
 
 The app must remain connected in the background. If Android blocks background network access, allow background battery usage in Android's settings for T3 Code. Depending on the device, this may be called **Unrestricted** or **Don't optimize**. Alerts stop when Android suspends the app or its connection; reconnecting does not replay earlier completions.

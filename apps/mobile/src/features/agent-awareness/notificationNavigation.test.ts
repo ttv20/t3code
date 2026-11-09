@@ -2,7 +2,10 @@ import type { Notification, NotificationResponse } from "expo-notifications";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { foregroundNotificationBehavior } from "./foregroundNotificationBehavior";
 
-import { consumeLastAgentNotificationResponse } from "./notificationResponseConsumer";
+import {
+  consumeLastAgentNotificationResponse,
+  dismissLocalCompletionNotificationsOnScreen,
+} from "./notificationResponseConsumer";
 
 import {
   extractAgentNotificationDeepLink,
@@ -24,6 +27,57 @@ function responseWithData(data: Record<string, unknown>, identifier = "notificat
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("dismissLocalCompletionNotificationsOnScreen", () => {
+  const notification = (identifier: string, data: Record<string, unknown>) =>
+    responseWithData(data, identifier).notification as Notification;
+
+  it("removes current and legacy local alerts only for the opened environment and thread", async () => {
+    const data = { localCompletion: true, environmentId: "env 1", threadId: "thread/2" };
+    const presented = [
+      notification("current", data),
+      notification("legacy", { ...data, runId: "old" }),
+      notification("other-environment", { ...data, environmentId: "other" }),
+      notification("other-thread", { ...data, threadId: "other" }),
+      notification("push", { ...data, localCompletion: false }),
+      notification("unrelated", {}),
+    ];
+    const dismissed: string[] = [];
+    await dismissLocalCompletionNotificationsOnScreen({
+      threadOnScreen: () => "/threads/env%201/thread%2F2",
+      getPresented: () => Promise.resolve(presented),
+      dismiss: async (id) => {
+        dismissed.push(id);
+      },
+    });
+    expect(dismissed).toEqual(["current", "legacy"]);
+  });
+
+  it.each([null, "/threads/env/other"])(
+    "rechecks the visible thread after reading alerts when it changes to %s",
+    async (nextPath) => {
+      let onScreen: string | null = "/threads/env/thread";
+      let resolve!: (notifications: Notification[]) => void;
+      const presented = new Promise<Notification[]>((done) => {
+        resolve = done;
+      });
+      const dismissed: string[] = [];
+      const pending = dismissLocalCompletionNotificationsOnScreen({
+        threadOnScreen: () => onScreen,
+        getPresented: () => presented,
+        dismiss: async (id) => {
+          dismissed.push(id);
+        },
+      });
+      onScreen = nextPath;
+      resolve([
+        notification("alert", { localCompletion: true, environmentId: "env", threadId: "thread" }),
+      ]);
+      await pending;
+      expect(dismissed).toEqual([]);
+    },
+  );
 });
 
 describe("consumeLastAgentNotificationResponse", () => {
