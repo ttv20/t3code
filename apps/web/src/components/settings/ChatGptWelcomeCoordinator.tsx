@@ -1,17 +1,17 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 import { environmentPresentations } from "../../state/presentation";
 import { OpenAI } from "../Icons";
 import { Button } from "../ui/button";
 import {
   Dialog,
-  DialogPopup,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogPopup,
+  DialogTitle,
 } from "../ui/dialog";
 import { ChatGptUsageButton } from "./ChatGptUsageButton";
 

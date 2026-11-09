@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
-import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 import type { ServerProvider } from "@t3tools/contracts";
+import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
 import { useId } from "react";
+import { useUiLanguage } from "../../i18n";
 import { OpenAI } from "../Icons";
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";

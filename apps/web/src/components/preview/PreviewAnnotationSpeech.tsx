@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import type {
   DesktopPreviewAnnotationVoiceConfig,
@@ -7,6 +6,7 @@ import type {
 } from "@t3tools/contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { resolveSpeechPresentation } from "~/components/chat/ComposerSpeechButton";
 import { VoiceInputSetup } from "~/components/chat/VoiceInputSetup";

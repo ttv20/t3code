@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { parseThreadLinkPrompt, withoutPromptLinkParams } from "@t3tools/shared/promptLinks";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { isThreadRoutePathname } from "../../threadRoutes";
 import { stackedThreadToast, toastManager } from "../ui/toast";

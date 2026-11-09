@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../../i18n";
 import {
   FULL_ACCESS_OVERRIDE_QUESTION,
   fullAccessOverrideExplanation,
 } from "@t3tools/client-runtime/state/thread-requests";
 import { ShieldIcon } from "lucide-react";
 import { memo, use } from "react";
+import { useUiLanguage } from "../../i18n";
 import { type PendingApproval } from "../../session-logic";
 import { InlineButton } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { ComposerPendingApprovalActions } from "./ComposerPendingApprovalActions";
-import { ToolActivityIconView, type WorkEntryIconName } from "./TimelineToolActivityIcon";
 import { TimelineRowCtx } from "./timelineRowContext";
+import { ToolActivityIconView, type WorkEntryIconName } from "./TimelineToolActivityIcon";
 import { WorkLogRow } from "./WorkLog";
 
 const APPROVAL_PRESENTATION = {

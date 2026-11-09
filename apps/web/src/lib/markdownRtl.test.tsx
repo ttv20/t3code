@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vite-plus/test";
-import { renderToStaticMarkup } from "react-dom/server";
-import ReactMarkdown from "react-markdown";
+import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
 import {
   CHAT_MARKDOWN_REHYPE_PLUGINS,
   CHAT_MARKDOWN_REMARK_PLUGINS,
   CHAT_MARKDOWN_REMARK_PLUGINS_WITH_BREAKS,
 } from "@t3tools/shared/markdownPipeline";
-import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
+import { renderToStaticMarkup } from "react-dom/server";
+import ReactMarkdown from "react-markdown";
+import { describe, expect, it } from "vite-plus/test";
 import { createIncrementalMarkdownPlugin } from "../markdown-incremental";
 
 describe("rendered RTL sentence boundaries", () => {

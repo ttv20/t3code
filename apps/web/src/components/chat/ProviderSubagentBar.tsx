@@ -1,5 +1,3 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
 import {
   formatProviderSubagentStatus,
   type ProviderSubagentStatus,
@@ -7,6 +5,7 @@ import {
 import { isOrchestrationV2WorkActive } from "@t3tools/contracts";
 import { ArrowUpLeftIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { tickTextContent } from "~/lib/tickTextContent";
 import type { ProviderInstanceEntry } from "../../providerInstances";

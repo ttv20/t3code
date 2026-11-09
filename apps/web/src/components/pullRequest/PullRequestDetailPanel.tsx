@@ -1,26 +1,25 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { projectChangeRequestUrl } from "@t3tools/client-runtime/change-request-links";
-import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
 import { useAtomValue } from "@effect/atom-react";
-import { usePullRequestStack } from "~/state/usePullRequestStack";
+import { projectChangeRequestUrl } from "@t3tools/client-runtime/change-request-links";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   type EnvironmentId,
   type PullRequestAction,
   type PullRequestDetail,
-  type PullRequestMergeMethod,
   type PullRequestListEntry,
-  type PullRequestUpdateMethod,
+  type PullRequestMergeMethod,
   type PullRequestRef,
   type PullRequestReviewGuideStop,
   type PullRequestSummary,
+  type PullRequestUpdateMethod,
   resolveEnvironmentMachineKind,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
@@ -42,77 +41,81 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePullRequestStack } from "~/state/usePullRequestStack";
 
-import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
-import { type PullRequestDetailTab, useRightPanelStore } from "~/rightPanelStore";
-import { useEnvironmentSettings } from "~/hooks/useSettings";
-import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
-import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
-import { isCommandPaletteOpen } from "~/commandPaletteBus";
-import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
-import { primaryServerKeybindingsAtom } from "~/state/server";
-import {
-  usePullRequestDefaultMergeMethodResolver,
-  writeHandoffToComposer,
-} from "./usePullRequestActions";
-import { offHeadPullRequestCheckoutToast } from "./pullRequestCheckoutToast";
-import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
-import { cn } from "~/lib/utils";
-import { readLocalApi } from "~/localApi";
-import type { ReviewCommentContext } from "~/reviewCommentContext";
-import { useProjects, useServerConfigs } from "~/state/entities";
-import { useEnvironments } from "~/state/environments";
-import { useEnvironmentQuery } from "~/state/query";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useLiveRefresh } from "~/hooks/useLiveRefresh";
-import { pullRequestEnvironment, usePullRequestTurnRefresh } from "~/state/pullRequests";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { PullRequestStackMenu } from "./PullRequestStackMenu";
-import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
-import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
-import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
-import { vcsEnvironment } from "~/state/vcs";
+import { isCommandPaletteOpen } from "~/commandPaletteBus";
 import { RelativeTime } from "~/components/RelativeTime";
+import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
+import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
+import { useLiveRefresh } from "~/hooks/useLiveRefresh";
+import { useEnvironmentSettings } from "~/hooks/useSettings";
+import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
+import { cn } from "~/lib/utils";
+import { readLocalApi } from "~/localApi";
+import type { ReviewCommentContext } from "~/reviewCommentContext";
+import { type PullRequestDetailTab, useRightPanelStore } from "~/rightPanelStore";
+import { useProjects, useServerConfigs } from "~/state/entities";
+import { useEnvironments } from "~/state/environments";
+import { pullRequestEnvironment, usePullRequestTurnRefresh } from "~/state/pullRequests";
+import { useEnvironmentQuery } from "~/state/query";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { vcsEnvironment } from "~/state/vcs";
 import { useUiStateStore } from "~/uiStateStore";
+import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
+import { PullRequestStackMenu } from "./PullRequestStackMenu";
+import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
+import { offHeadPullRequestCheckoutToast } from "./pullRequestCheckoutToast";
+import {
+  usePullRequestDefaultMergeMethodResolver,
+  writeHandoffToComposer,
+} from "./usePullRequestActions";
 
+import { DiffPanelLoadingState } from "../DiffPanelShell";
+import { SourceControlAppAccessNotice } from "../SourceControlAppAccessNotice";
 import { Button } from "../ui/button";
+import { MiddleTruncate } from "../ui/middle-truncate";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { MiddleTruncate } from "../ui/middle-truncate";
-import {
-  PullRequestChecksStatusLine,
-  PullRequestDetailHeaderBody,
-  PullRequestDetailTabBar,
-} from "./PullRequestDetailLayout";
-import { PullRequestDetailGhost, PullRequestTimelineGhost } from "./PullRequestGhosts";
-import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
-import { pullRequestRefKey, usePullRequestDetail } from "./usePullRequestDetail";
 import { PullRequestActionsMenu } from "./PullRequestActionsMenu";
+import { PullRequestActivityUnavailableState } from "./PullRequestActivityUnavailableState";
+import { PullRequestBaseBranch } from "./PullRequestBaseBranch";
+import { PullRequestChecksPopover } from "./PullRequestChecksPopover";
+import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
+import { PullRequestComposer } from "./PullRequestComposer";
+import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
 import {
   PullRequestApproveWorkflowsButton,
   PullRequestCheckoutMenu,
   PullRequestPrimaryAction,
   PullRequestResolveConflictsButton,
 } from "./PullRequestDetailActions";
-import { PullRequestBaseBranch } from "./PullRequestBaseBranch";
 import { PullRequestDetailCrumbs } from "./PullRequestDetailCrumbs";
-import { PullRequestTitleEditor } from "./PullRequestTitleEditor";
-import { PullRequestActivityUnavailableState } from "./PullRequestActivityUnavailableState";
-import { SourceControlAppAccessNotice } from "../SourceControlAppAccessNotice";
-import { DiffPanelLoadingState } from "../DiffPanelShell";
-import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
-import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
-import { openOnHostLabel } from "./pullRequestLinkContextMenu";
+import {
+  PullRequestChecksStatusLine,
+  PullRequestDetailHeaderBody,
+  PullRequestDetailTabBar,
+} from "./PullRequestDetailLayout";
+import { PullRequestDetailGhost, PullRequestTimelineGhost } from "./PullRequestGhosts";
+import { PullRequestGuideTab } from "./PullRequestGuideTab";
 import { PullRequestMarkdownContext } from "./PullRequestMarkdown";
-import { pullRequestMarkdownPlugins } from "./pullRequestMarkdown.logic";
-import { PullRequestComposer } from "./PullRequestComposer";
 import { PullRequestSummaryTab } from "./PullRequestSummaryTab";
 import { PullRequestTimelineTab } from "./PullRequestTimelineTab";
+import { PullRequestTitleEditor } from "./PullRequestTitleEditor";
+import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+import { guideRunKey, useGuideRunStore } from "./guide/guideRunStore";
+import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
 import {
+  allowedPullRequestMergeMethods,
+  allowsSinglePullRequestMerge,
   buildAddSelectionToAgentHandoff,
   buildAskAboutGuideStopHandoff,
   buildAskAboutPullRequestHandoff,
@@ -122,44 +125,41 @@ import {
   buildPullRequestCommentContext,
   buildPullRequestContext,
   buildResolveConflictsPrompt,
-  latestPullRequestReviewOutcomes,
-  loadingPullRequestCheckoutCommand,
+  canDeletePullRequestBranch,
+  checkoutFailureDescription,
+  isPullRequestConflicting,
   isPullRequestNotFound,
   isStackedPullRequestBase,
+  latestPullRequestReviewOutcomes,
+  loadingPullRequestCheckoutCommand,
+  PULL_REQUEST_MERGE_METHOD_LABELS,
   pullRequestActionNeedsHostRefresh,
+  type PullRequestChatSubject,
   pullRequestCheckoutCommand,
+  type PullRequestFinding,
   pullRequestFindingKey,
   pullRequestHandoffLabels,
-  PULL_REQUEST_MERGE_METHOD_LABELS,
-  checkoutFailureDescription,
   readableFailure,
-  resolvePullRequestReferenceHost,
-  resolvePullRequestPrimaryControl,
-  allowedPullRequestMergeMethods,
-  allowsSinglePullRequestMerge,
-  canDeletePullRequestBranch,
-  isPullRequestConflicting,
   resolveBaseFreshness,
   resolvePullRequestMergeMethod,
-  type PullRequestChatSubject,
-  type PullRequestFinding,
+  resolvePullRequestPrimaryControl,
+  resolvePullRequestReferenceHost,
   shouldRefreshPullRequestActivity,
 } from "./pullRequestDetail.logic";
-import { resolvePickableEnvironments } from "./pullRequestProjectAssignment.logic";
-import { PullRequestChecksPopover } from "./PullRequestChecksPopover";
+import { openOnHostLabel } from "./pullRequestLinkContextMenu";
+import { pullRequestMarkdownPlugins } from "./pullRequestMarkdown.logic";
 import {
   PullRequestActorLabel,
-  PullRequestMetaLine,
-  PullRequestReviewOutcomeIcon,
   pullRequestChecksState,
   pullRequestChecksStatePresentation,
+  PullRequestMetaLine,
+  PullRequestReviewOutcomeIcon,
   pullRequestReviewOutcomeToneClassName,
   resolvePullRequestState,
   summarizePullRequestChecks,
 } from "./pullRequestPresentation";
-import { PullRequestGuideTab } from "./PullRequestGuideTab";
-import { guideRunKey, useGuideRunStore } from "./guide/guideRunStore";
-import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
+import { resolvePickableEnvironments } from "./pullRequestProjectAssignment.logic";
+import { pullRequestRefKey, usePullRequestDetail } from "./usePullRequestDetail";
 
 const actionFailureLabels = (term: string): Record<PullRequestAction, string> => ({
   merge: `Could not merge this ${term}`,

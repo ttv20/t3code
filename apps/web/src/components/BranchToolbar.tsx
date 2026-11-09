@@ -1,26 +1,29 @@
-import { useUiLanguage } from "../i18n";
-import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
-import { readLocalApi } from "../localApi";
-import { stackedThreadToast, toastManager } from "./ui/toast";
-import { ComposerContextLabel } from "./ComposerContextLabel";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import type { EnvironmentId, ProjectId, ThreadId } from "@t3tools/contracts";
 import { FolderGit2Icon, FolderGitIcon, FolderIcon, PlusIcon, ScaleIcon } from "lucide-react";
 import {
-  type Ref,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type Ref,
   memo,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
+import { useUiLanguage } from "../i18n";
+import { readLocalApi } from "../localApi";
+import { ComposerContextLabel } from "./ComposerContextLabel";
+import { stackedThreadToast, toastManager } from "./ui/toast";
 
-import { useComposerDraftStore, type DraftId } from "../composerDraftStore";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
+import { observeResize } from "~/lib/observeResize";
+import { cn } from "~/lib/utils";
+import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
+import { type AddProjectTarget, useAddProjectTargets } from "../hooks/useAddProjectTargets";
 import { useProject, useThreadShellsForProjectRefs } from "../state/entities";
+import { openAddProjectToMachine } from "./AddProjectToMachineDialog";
 import {
   ADD_TO_MACHINE_LABEL_CLASS,
   type EnvMode,
@@ -37,17 +40,18 @@ import {
   BranchToolbarBranchSelector,
   type BranchToolbarBranchSelectorHandle,
 } from "./BranchToolbarBranchSelector";
-import { BranchToolbarEnvironmentSelector } from "./BranchToolbarEnvironmentSelector";
-import { openAddProjectToMachine } from "./AddProjectToMachineDialog";
-import { type AddProjectTarget, useAddProjectTargets } from "../hooks/useAddProjectTargets";
 import { BranchToolbarEnvModeSelector } from "./BranchToolbarEnvModeSelector";
+import { BranchToolbarEnvironmentSelector } from "./BranchToolbarEnvironmentSelector";
+import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 import { PreviousWorktreeItemContent } from "./PreviousWorktreeItemContent";
+import { ComposerControl } from "./chat/ComposerControl";
+import { ComposerSurface } from "./chat/ComposerSurface";
 import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
+import { useComposerMenuProps } from "./chat/composerEventScope";
 import {
   THREAD_DETAILS_PANEL_ICON_CLASS,
   THREAD_DETAILS_PANEL_LOCKED_ROW_CLASS,
 } from "./chat/threadDetailsPanelStyles";
-import { ComposerControl } from "./chat/ComposerControl";
 import {
   Menu,
   MenuGroup,
@@ -62,13 +66,9 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "./ui/menu";
+import { MiddleTruncate } from "./ui/middle-truncate";
 import { Separator } from "./ui/separator";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { MiddleTruncate } from "./ui/middle-truncate";
-import { ComposerSurface } from "./chat/ComposerSurface";
-import { useComposerMenuProps } from "./chat/composerEventScope";
-import { cn } from "~/lib/utils";
-import { observeResize } from "~/lib/observeResize";
 
 export interface BranchToolbarHandle {
   openBranchPicker: () => void;

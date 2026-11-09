@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
 import {
+  updateClientSettings,
   useClientSettings,
   useClientSettingsHydrated,
-  updateClientSettings,
 } from "~/hooks/useSettings";
 import type { EnvironmentPresentation } from "~/state/environments";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";

@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
+import { toHtml } from "hast-util-to-html";
 import { Check, Copy } from "lucide";
 import { PlayIcon, WrapTextIcon } from "lucide-react";
-import { toHtml } from "hast-util-to-html";
 import React, { use, useEffect, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { getClientSettings } from "../../hooks/useSettings";
@@ -22,12 +22,12 @@ import { MorphIcon } from "../MorphIcon";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { HighlightedCodeLines } from "./HighlightedCodeLines";
+import { reportMarkdownActionFailure } from "./markdownActionFailure";
 import {
   createHighlightCacheKey,
   estimateHighlightedSize,
   extractFenceLanguage,
 } from "./MarkdownCodeBlock.logic";
-import { reportMarkdownActionFailure } from "./markdownActionFailure";
 import { PierreEntryIcon } from "./PierreEntryIcon";
 
 const MAX_HIGHLIGHT_CACHE_ENTRIES = 500;

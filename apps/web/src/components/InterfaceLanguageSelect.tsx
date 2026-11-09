@@ -1,6 +1,6 @@
 import { INTERFACE_LANGUAGES } from "@t3tools/client-runtime/i18n";
 
-import { useClientSettings, updateClientSettings } from "../hooks/useSettings";
+import { updateClientSettings, useClientSettings } from "../hooks/useSettings";
 import { useUiLanguage } from "../i18n";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "./ui/select";
 

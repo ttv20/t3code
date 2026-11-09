@@ -1,6 +1,6 @@
+import { DEFAULT_CLIENT_SETTINGS, type ClientSettings } from "@t3tools/contracts/settings";
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { DEFAULT_CLIENT_SETTINGS, type ClientSettings } from "@t3tools/contracts/settings";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { act, render } from "../test/render";
 
@@ -25,7 +25,7 @@ vi.mock("./hooks/useSettings", () => ({
 }));
 
 import { UiLanguageProvider } from "./UiLanguageProvider";
-import { useUiLanguage, UiText } from "./i18n";
+import { UiText, useUiLanguage } from "./i18n";
 
 function PortalLabel() {
   const { t } = useUiLanguage();

@@ -14,21 +14,20 @@ import Animated, { FadeIn, FadeOut, ReduceMotion } from "react-native-reanimated
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
+import { Menu } from "../../components/ui/Menu";
 import { SheetCloseButton } from "../../components/ui/SheetHeader";
 import { useUiLanguage } from "../../i18n";
 
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppBar } from "../../components/ui/AppBar";
 import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
-import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText } from "../../components/ui/AppText";
 import { ControlPill } from "../../components/ui/ControlPill";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import {
-  androidHeaderMenuActions,
-  findHeaderMenuAction,
-} from "../../components/ui/headerMenu.android";
-import { Menu } from "../../components/ui/Menu";
+  findAppBarMenuItem,
+  menuActionsFromAppBarItems,
+} from "../../components/ui/menuActionItems";
 import { useBarOverlap } from "../../components/ui/useBarInset";
 import { useAppForeground } from "../../lib/appState";
 import { useHardwareBack } from "../../lib/backHandler";
@@ -384,21 +383,15 @@ function DeviceOptionsMenu({ items }: { readonly items: ReadonlyArray<AppBarMenu
 
   return (
     <Menu
-      actions={androidHeaderMenuActions(items)}
+      actions={menuActionsFromAppBarItems(items)}
       isAnchoredToRight
       title={uiT("Device options")}
       onPressAction={({ nativeEvent }) => {
-        const action = findHeaderMenuAction(items, nativeEvent.event);
+        const action = findAppBarMenuItem(items, nativeEvent.event);
         if (action && !action.disabled) action.onPress();
       }}
     >
-      <Pressable
-        accessibilityLabel={uiT("Device options")}
-        accessibilityRole="button"
-        className="size-11 items-center justify-center rounded-full bg-subtle"
-      >
-        <SymbolView name="ellipsis" size={18} tintColorClassName="accent-icon" />
-      </Pressable>
+      <ControlPill icon="ellipsis" accessibilityLabel={uiT("Device options")} />
     </Menu>
   );
 }

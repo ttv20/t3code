@@ -1,15 +1,15 @@
 import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
-import { UiText, useUiLanguage } from "../../i18n";
 import type { VoiceInputState } from "@t3tools/client-runtime/voice-input";
 import { CheckIcon, MicIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { VoiceInputErrorPill } from "./VoiceInputErrorPill";
-import { VoiceInputPill, VoiceWaveform } from "./VoiceInputPill";
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { VoiceInputErrorPill } from "./VoiceInputErrorPill";
+import { VoiceInputPill, VoiceWaveform } from "./VoiceInputPill";
 
 type SpeechPresentation = {
   status: string | null;

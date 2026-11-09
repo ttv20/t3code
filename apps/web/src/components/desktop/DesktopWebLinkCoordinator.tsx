@@ -1,11 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { promptLinkAppPath } from "@t3tools/shared/promptLinks";
 import { readPairingAppLink, resolveRemotePairingTarget } from "@t3tools/shared/remote";
 import { useRouter } from "@tanstack/react-router";
@@ -13,20 +12,20 @@ import * as Effect from "effect/Effect";
 import { AtomRegistry } from "effect/reactivity";
 import * as Stream from "effect/Stream";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { openFileInPreview, openUrlInPreview } from "../../browser/openFileInPreview";
 import { isPreviewAvailableFor } from "../../browser/previewRuntime";
+import { useComposerDraftStore } from "../../composerDraftStore";
 import { requestConfirmDialog } from "../../confirmDialog";
 import { connectPairing } from "../../connection/onboarding";
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
-import { useComposerDraftStore } from "../../composerDraftStore";
 import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useScratchProject } from "../../hooks/useScratchProject";
 import { useClientSettings } from "../../hooks/useSettings";
 import { useOpenChangeRequestLink } from "../../lib/openPullRequestLink";
+import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { selectActiveRightPanelSurface, useRightPanelStore } from "../../rightPanelStore";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
-import { resolveThreadRouteTarget } from "../../threadRoutes";
 import { assetEnvironment } from "../../state/assets";
 import { readProject, readThreadShell } from "../../state/entities";
 import { useEnvironmentHttpBaseUrl, usePrimaryEnvironment } from "../../state/environments";
@@ -34,6 +33,7 @@ import { previewEnvironment } from "../../state/preview";
 import { allReachableShellsLiveAtom } from "../../state/shell";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
+import { resolveThreadRouteTarget } from "../../threadRoutes";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 
 /** A link handed over by the OS is a plain click: nothing about it asks for the browser. */

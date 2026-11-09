@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import {
   hasDesktopNotifications,

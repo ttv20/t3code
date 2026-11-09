@@ -3,21 +3,21 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   closeFinishedUpdateRun,
-  collectUpdateEverythingResult,
-  getUpdateEverythingToastView,
-  resolveUpdateRunMachineStatus,
   collectChannelSwitchTargets,
   collectRestartingMachines,
-  localSwitchBlockReason,
   collectServerUpdateTargets,
+  collectUpdateEverythingResult,
   describeUpdateCapsule,
   describeUpdateEverything,
+  getUpdateEverythingToastView,
+  localSwitchBlockReason,
+  resolveUpdateRunMachineStatus,
   runUpdateEverything,
+  UPDATE_SLOW_AFTER_MS,
   type UpdateEverythingMachine,
   type UpdateEverythingRun,
   type UpdateRunMachine,
   type UpdateRunMachineStatus,
-  UPDATE_SLOW_AFTER_MS,
 } from "./updateEverything.logic";
 
 const runMachine = (overrides: Partial<UpdateRunMachine> = {}): UpdateRunMachine => ({

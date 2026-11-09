@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import {
   type TerminalContextDraft,
   formatTerminalContextLabel,
   isTerminalContextExpired,
 } from "~/lib/terminalContext";
+import { useUiLanguage } from "../../i18n";
 import type { ContextPresentationCapability } from "../contextPresentationRegistry";
 import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
 

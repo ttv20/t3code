@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import type { ProviderAuthResponse } from "@t3tools/contracts";
 import { useEffect, useRef, useState } from "react";
-import { GhosttyTerminalSurface } from "../../terminal/ghostty/surface";
-import { ensureLocalApi } from "../../localApi";
 import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
+import { ensureLocalApi } from "../../localApi";
+import { GhosttyTerminalSurface } from "../../terminal/ghostty/surface";
 import { terminalThemeFromApp } from "../ThreadTerminalDrawer";
 
 export default function ProviderAuthTerminal({

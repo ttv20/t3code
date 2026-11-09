@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   CheckIcon,
   CopyIcon,
@@ -13,21 +12,22 @@ import {
 import { useState, type ReactElement } from "react";
 import { useEnvironmentThemeDefinitions } from "../../hooks/useEnvironmentTheme";
 import { readThemeHalvesRaw } from "../../hooks/useTheme";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
 import {
-  getThemeDefinition,
-  singleAppearanceOf,
-  getThemeModes,
-  removeCustomThemes,
-  serializeThemeFile,
-  type ThemeAppearance,
-  type ThemeDefinition,
-  type ThemeHalves,
-  T3_CHAT_THEME,
   EMBER_THEME,
+  getThemeDefinition,
+  getThemeModes,
   GROVE_THEME,
   IRIS_THEME,
   OCEAN_THEME,
+  removeCustomThemes,
+  serializeThemeFile,
+  singleAppearanceOf,
+  T3_CHAT_THEME,
+  type ThemeAppearance,
+  type ThemeDefinition,
+  type ThemeHalves,
 } from "../../themePalette";
 import {
   AlertDialog,
@@ -41,15 +41,15 @@ import {
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { ThemeImportDialog } from "./ThemeImportDialog";
 import { searchableSetting } from "./settingsSearch";
 import { useThemeEditorStore } from "./themeEditorStore";
+import { ThemeImportDialog } from "./ThemeImportDialog";
 import {
-  STANDARD_THEME_CARDS,
   getThemeCardDefinition,
   previewColorsOf,
-  ThemePreviewCircles,
+  STANDARD_THEME_CARDS,
   ThemePreviewCircle,
+  ThemePreviewCircles,
   type ThemeCardDefinition,
   type ThemeMode,
 } from "./ThemePreviewCircles";

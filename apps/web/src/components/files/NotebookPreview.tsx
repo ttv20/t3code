@@ -1,14 +1,14 @@
 import { useUiLanguage } from "../../i18n";
 /* oxlint-disable react/no-array-index-key -- Notebook cells and outputs retain their saved source order. */
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { useEffect, useRef, useState } from "react";
 import type { Root, RootContent } from "mdast";
+import { useEffect, useRef, useState } from "react";
 import ChatMarkdown from "~/components/ChatMarkdown";
 import { Button } from "~/components/ui/button";
-import ReadOnlySourcePreview from "./ReadOnlySourcePreview";
 import DocumentPages from "./DocumentPages";
 import { FileSurfaceNotice } from "./fileSurfaceChrome";
 import type { OfficeWorkerResult } from "./officePreviewProtocol";
+import ReadOnlySourcePreview from "./ReadOnlySourcePreview";
 
 // Saved notebooks must not load URLs or turn authored links into app actions.
 function inertNotebookMarkdown() {

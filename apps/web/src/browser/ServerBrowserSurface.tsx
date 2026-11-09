@@ -1,19 +1,18 @@
-import { useUiLanguage } from "../i18n";
 import {
-  createPreviewFramePainter,
-  createPreviewStreamClient,
-  previewStreamControlLabel,
-  previewStreamModifiers,
   type PreviewStreamClient,
   type PreviewStreamControl,
   type PreviewStreamDownload,
   type PreviewStreamFileChooser,
-  uploadPreviewStreamFiles,
   type PreviewStreamInput,
   type PreviewStreamMouseButton,
   type PreviewStreamPointer,
   type PreviewStreamViewport,
+  createPreviewFramePainter,
+  createPreviewStreamClient,
+  previewStreamControlLabel,
   previewStreamHostSetupMessage,
+  previewStreamModifiers,
+  uploadPreviewStreamFiles,
 } from "@t3tools/client-runtime/preview/server-browser-stream";
 import type {
   EnvironmentId,
@@ -33,15 +32,16 @@ import {
   useRef,
   useState,
 } from "react";
+import { useUiLanguage } from "../i18n";
 
-import { AgentCursorMark } from "~/components/preview/AgentBrowserCursor";
 import { CommandBlock } from "~/components/CommandBlock";
+import { AgentCursorMark } from "~/components/preview/AgentBrowserCursor";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { toastManager } from "~/components/ui/toast";
+import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { refreshPreviewStreamAccess, usePreviewStreamAccess } from "~/state/previewStream";
-import { observeResize } from "~/lib/observeResize";
 
 export interface ServerBrowserHandle {
   readonly navigate: (url: string) => void;

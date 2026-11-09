@@ -129,7 +129,7 @@ function EnvironmentPickerRow(props: {
           {state.retryAt ? (
             <Text className="text-sm text-foreground-muted">
               <UiText
-                message={"Next reconnect at {0}"}
+                message={uiT("Next reconnect at {0}")}
                 values={{ "0": new Date(state.retryAt).toLocaleTimeString() }}
               />
             </Text>

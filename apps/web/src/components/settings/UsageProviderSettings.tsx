@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, UnifiedSettings } from "@t3tools/contracts";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import {
@@ -15,8 +15,8 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { AddUsageLimitSourceDialog } from "./AddUsageLimitSourceDialog";
-import { searchableSetting } from "./settingsSearch";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
+import { searchableSetting } from "./settingsSearch";
 
 export function UsageProviderSettings({
   environmentId,

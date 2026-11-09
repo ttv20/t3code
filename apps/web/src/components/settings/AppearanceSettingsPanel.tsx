@@ -1,11 +1,7 @@
-import { LanguageSettings } from "./LanguageSettings";
-import { useUiLanguage } from "../../i18n";
-import type { CSSProperties } from "react";
-import { useState } from "react";
 import {
+  type ChatWidth,
   DEFAULT_ENVIRONMENT_IDENTIFICATION_MODE,
   DEFAULT_UNIFIED_SETTINGS,
-  type ChatWidth,
   type EffortDisplay,
   type EnvironmentIdentificationMode,
   MAX_APPEARANCE_CONTRAST,
@@ -15,18 +11,25 @@ import {
   MIN_GLASS_OPACITY,
   MIN_PANEL_ANIMATION_DURATION_MS,
 } from "@t3tools/contracts/settings";
+import type { CSSProperties } from "react";
+import { useState } from "react";
+import { useCustomThemes } from "../../hooks/useCustomThemes";
+import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
+import { useTheme } from "../../hooks/useTheme";
+import { useUiLanguage } from "../../i18n";
 import {
   resolveSidebarStageBackdropVariant,
   type SidebarStageBackdropVariant,
   useEnvironmentStageLabel,
 } from "../SidebarStageBackdrop";
-import { useCustomThemes } from "../../hooks/useCustomThemes";
-import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
-import { useTheme } from "../../hooks/useTheme";
-import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
+import { AdvancedSettings } from "./AdvancedSettings";
+import { LanguageSettings } from "./LanguageSettings";
+import { PanelAnimationsPreview } from "./PanelAnimationsPreview";
 import { ThemeLibrary } from "./ThemeSettings";
+import { ThreadDetailsItemsRow } from "./ThreadDetailsItemsRow";
+import { TypographySection } from "./TypographySettings";
 import {
   SettingResetButton,
   SettingsPageContainer,
@@ -34,10 +37,7 @@ import {
   SettingsSection,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
-import { AdvancedSettings } from "./AdvancedSettings";
-import { PanelAnimationsPreview } from "./PanelAnimationsPreview";
-import { TypographySection } from "./TypographySettings";
-import { ThreadDetailsItemsRow } from "./ThreadDetailsItemsRow";
+import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 
 const ENVIRONMENT_IDENTIFICATION_LABELS: Record<EnvironmentIdentificationMode, string> = {
   artwork: "Artwork",

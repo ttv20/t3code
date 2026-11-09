@@ -1,4 +1,3 @@
-import { useUiLanguage, UiText } from "../../../i18n";
 import type { FileDiffContentsLoader, FileDiffMetadata } from "@pierre/diffs";
 import type {
   PullRequestReviewGuideAttention,
@@ -15,21 +14,22 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../../i18n";
 
 import { getDiffLineStat } from "~/lib/diffRendering";
 import { cn } from "~/lib/utils";
 
+import { letterStopNotes } from "@t3tools/client-runtime/review-guide-tour";
 import { DiffWorkerPoolProvider } from "../../DiffWorkerPoolProvider";
 import { Alert, AlertDescription, AlertTitle } from "../../ui/alert";
 import { Button } from "../../ui/button";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
 import { Kbd } from "../../ui/kbd";
 import { PullRequestDiffStat } from "../pullRequestPresentation";
-import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../../ui/collapsible";
 import { GuideExcerpt, type ExcerptCommenting } from "./GuideExcerpt";
 import { GuideFileDiff } from "./GuideFileDiff";
 import { GuideNotes } from "./GuideNotes";
 import { GuideProse } from "./GuideProse";
-import { letterStopNotes } from "@t3tools/client-runtime/review-guide-tour";
 
 const ATTENTION_LABELS = {
   tradeoff: "A tradeoff to weigh",

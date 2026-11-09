@@ -33,6 +33,7 @@ import {
 import { isListedThreadLineage, type EnvironmentId, type ProjectId } from "@t3tools/contracts";
 import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { foldSearchQuery, rankSearchItems, scoreThreadSearch } from "@t3tools/shared/paletteSearch";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 import type { ThreadListProvider } from "../../state/thread-list-environments";
 import type { ThreadMoveAvailability } from "./threadOrder";
@@ -141,13 +142,16 @@ export function resolveThreadListV2SwipeActions(input: {
 
 // Nested keeps iOS menus short: UIKit scrolls a taller menu, and that scroll
 // cancels press-drag-release selection.
-export function layoutThreadListV2RowMenuActions(input: {
-  readonly nested: boolean;
-  readonly direct: readonly MenuAction[];
-  readonly reorder: readonly MenuAction[];
-  readonly pin: readonly MenuAction[];
-  readonly secondary: readonly MenuAction[];
-}): MenuAction[] {
+export function layoutThreadListV2RowMenuActions(
+  input: {
+    readonly nested: boolean;
+    readonly direct: readonly MenuAction[];
+    readonly reorder: readonly MenuAction[];
+    readonly pin: readonly MenuAction[];
+    readonly secondary: readonly MenuAction[];
+  },
+  uiT = createUiTranslator("en"),
+): MenuAction[] {
   if (!input.nested) {
     return [...input.direct, ...input.reorder, ...input.pin, ...input.secondary];
   }
@@ -156,14 +160,14 @@ export function layoutThreadListV2RowMenuActions(input: {
     ...input.pin,
     {
       id: "more",
-      title: "More",
+      title: uiT("More"),
       image: "ellipsis.circle",
       subactions: [
         ...(input.reorder.length > 1
           ? [
               {
                 id: "arrange-menu",
-                title: "Arrange",
+                title: uiT("Arrange"),
                 image: "arrow.up.arrow.down",
                 subactions: [...input.reorder],
               },

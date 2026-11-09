@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type {
   AtomCommandFailure,
@@ -7,8 +6,8 @@ import type {
 } from "@t3tools/client-runtime/state/runtime";
 import {
   VcsActionUnavailableError,
-  type VcsActionOperation,
   type RunVcsStackedActionInput,
+  type VcsActionOperation,
 } from "@t3tools/client-runtime/state/vcs";
 import {
   AuthOrchestrationOperateScope,
@@ -23,7 +22,9 @@ import {
 } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
+import { useUiLanguage } from "../i18n";
 
+import { suggestAppAccessForRemote } from "../components/sourceControlAppAccessToast";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { gitEnvironment } from "./git";
 import { useEnvironmentQuery } from "./query";
@@ -31,7 +32,6 @@ import { readEnvironmentScope, useEnvironmentScope } from "./session";
 import { sourceControlEnvironment } from "./sourceControl";
 import { useAtomCommand } from "./use-atom-command";
 import { vcsActionManager, vcsEnvironment } from "./vcs";
-import { suggestAppAccessForRemote } from "../components/sourceControlAppAccessToast";
 
 export type SourceControlActionKind =
   | "init"
@@ -82,6 +82,7 @@ function useAction<
   readonly onSuccess?: () => void;
   readonly managedExternally?: boolean;
 }): SourceControlActionState<TArgs, R> {
+  const { t: uiT } = useUiLanguage();
   const isAllowed = useEnvironmentScope(input.scope.environmentId, AuthSourceControlWriteScope);
   const operation = ACTION_OPERATION[input.kind];
   const state = useAtomValue(vcsActionManager.stateAtom(input.scope));
@@ -100,7 +101,7 @@ function useAction<
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthSourceControlWriteScope,
-            message: "This connection cannot change source control.",
+            message: uiT("This connection cannot change source control."),
           }),
         ),
       );
@@ -348,7 +349,7 @@ export function usePreparePullRequestThreadAction(scope: SourceControlActionScop
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthOrchestrationOperateScope,
-            message: "This connection cannot change threads.",
+            message: uiT("This connection cannot change threads."),
           }),
         ),
       );

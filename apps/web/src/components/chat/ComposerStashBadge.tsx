@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { BookmarkIcon } from "lucide-react";
 import { memo } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { ComposerBanner } from "./ComposerBanner";

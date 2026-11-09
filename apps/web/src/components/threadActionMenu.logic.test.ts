@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vite-plus/test";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { describe, expect, it } from "vite-plus/test";
 
 import { buildThreadActionMenuItems, type ThreadActionMenuState } from "./threadActionMenu.logic";
 

@@ -6,8 +6,8 @@ import { Paths } from "expo-file-system";
 import { Image, Pressable, ScrollView, View } from "react-native";
 import { useUiLanguage } from "../i18n";
 import { composerImageGallery } from "../lib/composerImageGallery";
-import { FilePreviewGallery, useFilePreviewGallery } from "./FilePreviewGallery";
 import { SymbolView } from "./ui/AppSymbol";
+import { FilePreviewGallery, useFilePreviewGallery } from "./ui/FilePreviewGallery";
 
 import type { EnvironmentId } from "@t3tools/contracts";
 import { resolveOwnedComposerAttachmentFileUri } from "../lib/composerAttachmentFiles";
@@ -24,9 +24,9 @@ import {
   retryComposerAttachmentUpload,
   useComposerAttachmentUploadState,
 } from "../state/composer-attachment-uploads";
-import type { FilePreviewSource } from "./FilePreviewModal";
 import { PierreEntryIcon } from "./PierreEntryIcon";
 import { AppText as Text } from "./ui/AppText";
+import type { FilePreviewSource } from "./ui/FilePreviewModal";
 import { PresentationSource } from "./ui/NativePresentation";
 import { VideoAttachmentTile } from "./VideoAttachmentTile";
 

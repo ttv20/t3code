@@ -1,12 +1,4 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
-import { ChevronsLeftRightEllipsisIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
-import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import {
-  type DesktopDiscoveredSshHost,
-  type DesktopSshEnvironmentTarget,
-} from "@t3tools/contracts";
 import {
   RelayConnectionRegistration,
   RelayConnectionTarget,
@@ -15,12 +7,35 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import {
+  type DesktopDiscoveredSshHost,
+  type DesktopSshEnvironmentTarget,
+} from "@t3tools/contracts";
+import { pipe } from "effect/Function";
 import * as Option from "effect/Option";
+import { ChevronsLeftRightEllipsisIcon, PlusIcon, TerminalIcon } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import { environmentCatalog } from "~/connection/catalog";
+import {
+  connectPairing as connectPairingAtom,
+  connectSshEnvironment as connectSshEnvironmentAtom,
+} from "~/connection/onboarding";
+import { desktopSshHostsStateAtom, filterDiscoveredSshHosts } from "~/state/desktopSshHosts";
+import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
+import { useEnvironmentQuery } from "~/state/query";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import {
+  resolveShortcutCommand,
+  shortcutLabelForCommand,
+  threadJumpCommandForIndex,
+  threadJumpIndexFromCommand,
+} from "../../keybindings";
 import { cn } from "../../lib/utils";
-import { formatDesktopSshTarget } from "./EnvironmentRow";
-import { Input } from "../ui/input";
-import { CommandShortcut } from "../ui/command";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { AnimatedHeight } from "../AnimatedHeight";
+import { Alert, AlertDescription } from "../ui/alert";
 import {
   Autocomplete,
   AutocompleteEmpty,
@@ -29,6 +44,8 @@ import {
   AutocompleteList,
   AutocompletePopup,
 } from "../ui/autocomplete";
+import { Button } from "../ui/button";
+import { CommandShortcut } from "../ui/command";
 import {
   Dialog,
   DialogDescription,
@@ -38,33 +55,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
+import { Input } from "../ui/input";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Alert, AlertDescription } from "../ui/alert";
-import { Button } from "../ui/button";
-import { AnimatedHeight } from "../AnimatedHeight";
-import { environmentCatalog } from "~/connection/catalog";
 import {
-  connectPairing as connectPairingAtom,
-  connectSshEnvironment as connectSshEnvironmentAtom,
-} from "~/connection/onboarding";
-import { useEnvironmentQuery } from "~/state/query";
-import { desktopSshHostsStateAtom, filterDiscoveredSshHosts } from "~/state/desktopSshHosts";
-import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { primaryServerKeybindingsAtom } from "~/state/server";
-import {
-  resolveShortcutCommand,
-  shortcutLabelForCommand,
-  threadJumpCommandForIndex,
-  threadJumpIndexFromCommand,
-} from "../../keybindings";
-import {
+  formatDesktopSshConnectionError,
   parseManualDesktopSshTarget,
   parsePairingUrlFields,
   parseRemotePairingFields,
-  formatDesktopSshConnectionError,
 } from "./ConnectionsSettings.logic";
+import { formatDesktopSshTarget } from "./EnvironmentRow";
 
 const EMPTY_DISCOVERED_SSH_HOSTS: ReadonlyArray<DesktopDiscoveredSshHost> = [];
 

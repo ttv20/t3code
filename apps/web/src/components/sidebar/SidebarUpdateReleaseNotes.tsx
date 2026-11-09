@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import type { DesktopBridge, DesktopUpdateState } from "@t3tools/contracts";
 import { ExternalLinkIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
+import { formatRelativeTimeLabel } from "../../timestampFormat";
 import {
   getDesktopUpdateReleaseHistoryUrl,
   getDesktopUpdateReleaseUrl,
 } from "../desktopUpdate.logic";
-import { formatRelativeTimeLabel } from "../../timestampFormat";
 import { openDesktopUpdateReleaseNotes } from "../desktopUpdate.toast";
 
 type DesktopUpdateShell = Pick<DesktopBridge, "openExternal">;

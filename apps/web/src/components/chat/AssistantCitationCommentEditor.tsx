@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
 import { ASSISTANT_CITATION_MAX_COMMENT_LENGTH, type AssistantCitation } from "@t3tools/contracts";
 import { use, useEffect, useRef, useState, type RefObject } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { TextFieldSpeechControls, useTextFieldSpeech } from "~/speech/useTextFieldSpeech";
 import { textDirection } from "~/textDirection";

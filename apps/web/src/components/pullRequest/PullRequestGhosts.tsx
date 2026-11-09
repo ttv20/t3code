@@ -1,5 +1,8 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+  type ChangeRequestTerminology,
+} from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestListEntry, PullRequestSummary } from "@t3tools/contracts";
 import {
   ArrowLeftIcon,
@@ -12,15 +15,11 @@ import {
   UsersIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import {
-  capitalizeTerm,
-  sourceControlClients,
-  type ChangeRequestTerminology,
-} from "@t3tools/client-runtime/source-control-clients";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { readLocalApi } from "~/localApi";
-import { cn } from "~/lib/utils";
 import { RelativeTime } from "~/components/RelativeTime";
+import { cn } from "~/lib/utils";
+import { readLocalApi } from "~/localApi";
 
 import { Button, InlineButton } from "../ui/button";
 import { MiddleTruncate } from "../ui/middle-truncate";

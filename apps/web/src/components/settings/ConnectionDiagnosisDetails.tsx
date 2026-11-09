@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AVAILABLE_CONNECTION_STATE,
@@ -11,6 +10,7 @@ import {
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/reactivity";
 import { ChevronRightIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { APP_VERSION } from "~/branding";
 import { environmentCatalog } from "~/connection/catalog";
@@ -70,8 +70,9 @@ function RetryCountdown({ retryAt }: { readonly retryAt: number }) {
 }
 
 function RetryCountdownTicker({ retryAt }: { readonly retryAt: number }) {
+  const { t: uiT } = useUiLanguage();
   const seconds = Math.ceil((retryAt - useNowSecond()) / 1_000);
-  return <>{seconds > 0 ? `retrying in ${seconds}s` : "retrying"}</>;
+  return <>{seconds > 0 ? `retrying in ${seconds}s` : uiT("retrying")}</>;
 }
 
 /** The collapsed failure: the full headline, then the retry state and a Details toggle. */

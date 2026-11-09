@@ -1,13 +1,13 @@
-import { render } from "../../../test/render";
 import { createRef, useLayoutEffect, useState } from "react";
 import { expect, it, vi } from "vite-plus/test";
+import "~/index.css";
+import { render } from "../../../test/render";
+import { observeResize } from "../../lib/observeResize";
 import {
   ComposerPromptEditorTiptap as ComposerPromptEditor,
   type ComposerPromptEditorHandle,
 } from "../ComposerPromptEditorTiptap";
-import { observeResize } from "../../lib/observeResize";
 import { ComposerPromptRow } from "./ComposerPromptRow";
-import "~/index.css";
 
 function Composer({
   direction,

@@ -165,9 +165,9 @@ export function PendingUserInputCard(props: PendingUserInputCardProps) {
         </Text>
         <Text className="font-sans text-xs text-foreground-muted">
           {questionCount === 1 ? (
-            <UiText message={"{0}  question"} values={{ "0": questionCount }} />
+            <UiText message={uiT("{0}  question")} values={{ "0": questionCount }} />
           ) : (
-            <UiText message={"{0}  questions"} values={{ "0": questionCount }} />
+            <UiText message={uiT("{0}  questions")} values={{ "0": questionCount }} />
           )}
         </Text>
         <View className="flex-1" />

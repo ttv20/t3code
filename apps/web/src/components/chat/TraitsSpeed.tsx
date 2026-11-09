@@ -1,13 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import type { ProviderDriverKind, ProviderOptionDescriptor } from "@t3tools/contracts";
 import { getProviderOptionCurrentValue } from "@t3tools/shared/model";
 import { ZapIcon } from "lucide-react";
-import { UltrafastIcon } from "../Icons";
 import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
+import { UltrafastIcon } from "../Icons";
 import { ComposerControlIcon, type ComposerControlSize } from "./ComposerControl";
 
 export function getTraitsSpeedDisplay(
-  provider: ProviderDriverKind,
   descriptor: ProviderOptionDescriptor,
 ): { label: string; speedIcon: "fast" | "ultrafast" | null } | null {
   if (descriptor.id === "fastMode" && descriptor.type === "boolean") {
@@ -16,7 +15,7 @@ export function getTraitsSpeedDisplay(
       speedIcon: descriptor.currentValue === true ? "fast" : null,
     };
   }
-  if (provider !== "codex" || descriptor.id !== "serviceTier" || descriptor.type !== "select") {
+  if (descriptor.id !== "serviceTier" || descriptor.type !== "select") {
     return null;
   }
   const currentValue = getProviderOptionCurrentValue(descriptor);

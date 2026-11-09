@@ -1,8 +1,8 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import type { ReactNode } from "react";
 import type { DeviceToolVersions as ToolVersions } from "@t3tools/contracts";
+import type { ReactNode } from "react";
 import { InlineButton } from "~/components/ui/button";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "~/components/ui/popover";
+import { UiText, useUiLanguage } from "../../i18n";
 
 export function DeviceToolVersions({
   tools,

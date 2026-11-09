@@ -1,25 +1,24 @@
-import { useUiLanguage } from "../../i18n";
+import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import {
   type AuthMcpApprovalDecision,
   type AuthMcpApprovalDetails,
   AuthMcpApprovalError,
-  AuthMcpClientAccess,
   AuthMcpAuthorizationRequest,
+  AuthMcpClientAccess,
   isRuntimeModeAbove,
   managedRuntimeModeCeilingMessage,
 } from "@t3tools/contracts";
-import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { isLoopbackHost } from "@t3tools/shared/preview";
-import { EyeIcon, type LucideIcon } from "lucide-react";
 import type * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import { EyeIcon, type LucideIcon } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { PrimaryEnvironmentHttpClient } from "~/environments/primary/httpClient";
 import { runPrimaryHttp } from "~/lib/runtime";
 import { cn } from "~/lib/utils";
-import { resolveMcpAccess } from "./ConnectAgentSurface.logic";
 import { runtimeModeConfig } from "../chat/runtimeModeConfig";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -27,6 +26,7 @@ import { Input } from "../ui/input";
 import { RadioGroup } from "../ui/radio-group";
 import { Spinner } from "../ui/spinner";
 import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
+import { resolveMcpAccess } from "./ConnectAgentSurface.logic";
 
 export const accessConfig: Record<
   AuthMcpClientAccess,

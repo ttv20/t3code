@@ -1,29 +1,30 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { linkRequestFailureMessage } from "@t3tools/client-runtime/link-request";
+import { peerLinkHealth } from "@t3tools/client-runtime/state/peerLinks";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   AuthAccessWriteScope,
   type AuthMcpClientAccess,
   type EnvironmentId,
   type PeerLinkSummary,
 } from "@t3tools/contracts";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import { peerLinkHealth } from "@t3tools/client-runtime/state/peerLinks";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { PlusIcon } from "lucide-react";
 import { useId, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { requestConfirmDialog } from "~/confirmDialog";
-import { mintPairingCodeOn } from "~/state/peerPairingCode";
 import { peerLinkEnvironment, useLinkableMachines } from "~/state/peerLinks";
+import { mintPairingCodeOn } from "~/state/peerPairingCode";
 import { useEnvironmentQuery } from "~/state/query";
 import { useEnvironmentScope, usePreparedConnection } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { useNowMinute } from "../../hooks/useNowMinute";
 import { accessConfig } from "../auth/ConnectAgentSurface";
 import { ConnectionStatusDot } from "../ConnectionStatusDot";
 import { Button } from "../ui/button";
@@ -44,7 +45,6 @@ import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
 import { LinkAccessPicker } from "./LinkAccessPicker";
 import { ANOTHER_ADDRESS, LinkMachineSelect } from "./LinkMachineSelect";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
-import { useNowMinute } from "../../hooks/useNowMinute";
 import { searchableSetting } from "./settingsSearch";
 
 const failureToast = (title: string, description: string) =>
@@ -164,7 +164,7 @@ function LinkedEnvironmentRow({
               disabled={busy}
               onClick={() => void forget()}
             >
-              {busy ? "Forgetting…" : "Forget"}
+              {busy ? uiT("Forgetting…") : uiT("Forget")}
             </Button>
           </div>
         ) : null}
@@ -361,7 +361,7 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
             {uiT("Cancel")}
           </DialogClose>
           <Button form={formId} type="submit" disabled={busy || !ready}>
-            {busy ? "Linking…" : "Link"}
+            {busy ? uiT("Linking…") : uiT("Link")}
           </Button>
         </DialogFooter>
       </DialogPopup>

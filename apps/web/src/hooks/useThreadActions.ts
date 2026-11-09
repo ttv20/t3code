@@ -1,13 +1,12 @@
-import { useUiLanguage } from "../i18n";
 import {
   parseScopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
   scopedThreadKey,
 } from "@t3tools/client-runtime/environment";
+import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { canSnooze, threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
-import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
@@ -18,25 +17,25 @@ import {
   sessionGrantsScope,
 } from "@t3tools/contracts";
 import { resolveWorktreeCleanup } from "@t3tools/shared/projectSettings";
+import { useRouter } from "@tanstack/react-router";
 import * as Cause from "effect/Cause";
 import * as Schema from "effect/Schema";
 import { AsyncResult } from "effect/reactivity";
-import { useRouter } from "@tanstack/react-router";
+import { useUiLanguage } from "../i18n";
 
-import { getFallbackThreadIdAfterDelete, pinOrderKeyBetween } from "../components/Sidebar.logic";
-import { useComposerDraftStore } from "../composerDraftStore";
-import { environmentSession, readEnvironmentScope } from "../state/session";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { environmentServerConfigsAtom } from "../state/server";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
-import { orchestrationEnvironment } from "../state/orchestration";
-import { projectEnvironment } from "../state/projects";
-import { threadEnvironment } from "../state/threads";
-import { vcsEnvironment } from "../state/vcs";
-import { useNewThreadHandler } from "./useHandleNewThread";
+import * as ThreadUndo from "@t3tools/client-runtime/state/thread-undo";
+import { getFallbackThreadIdAfterDelete, pinOrderKeyBetween } from "../components/Sidebar.logic";
+import { stackedThreadToast, toastManager } from "../components/ui/toast";
+import { useComposerDraftStore } from "../composerDraftStore";
+import { useDiffPanelStore } from "../diffPanelStore";
 import { refreshArchivedThreadsForEnvironment } from "../lib/archivedThreadsState";
 import { releaseComposerDraftUploads } from "../lib/composerDraftUploads";
 import { readLocalApi } from "../localApi";
+import { usePreviewMiniPlayerStore } from "../previewMiniPlayerStore";
+import { clearThreadPreviewState } from "../previewStateStore";
+import { useRightPanelStore } from "../rightPanelStore";
+import { appAtomRegistry } from "../rpc/atomRegistry";
 import {
   readEnvironmentServerConfigLoaded,
   readEnvironmentSupportsAutoSettleOptOut,
@@ -45,21 +44,22 @@ import {
   readThreadShell,
   readThreadShells,
 } from "../state/entities";
-import { useUiStateStore } from "../uiStateStore";
-import { useDiffPanelStore } from "../diffPanelStore";
-import { usePreviewMiniPlayerStore } from "../previewMiniPlayerStore";
-import { clearThreadPreviewState } from "../previewStateStore";
-import { useRightPanelStore } from "../rightPanelStore";
+import { orchestrationEnvironment } from "../state/orchestration";
+import { projectEnvironment } from "../state/projects";
+import { environmentServerConfigsAtom } from "../state/server";
+import { environmentSession, readEnvironmentScope } from "../state/session";
+import { threadEnvironment } from "../state/threads";
+import { useAtomCommand } from "../state/use-atom-command";
+import { useAtomQueryRunner } from "../state/use-atom-query-runner";
+import { useOrchestrationCommand } from "../state/use-orchestration-command";
+import { vcsEnvironment } from "../state/vcs";
 import { useTerminalUiStateStore } from "../terminalUiStateStore";
 import { buildThreadRouteParams, resolveThreadRouteRef } from "../threadRoutes";
+import { useUiStateStore } from "../uiStateStore";
 import { formatWorktreePathForDisplay, getOrphanedWorktreePathForThread } from "../worktreeCleanup";
-import { stackedThreadToast, toastManager } from "../components/ui/toast";
-import { useClientSettings } from "./useSettings";
-import * as ThreadUndo from "@t3tools/client-runtime/state/thread-undo";
 import { showThreadUndoNotice } from "./showThreadUndoNotice";
-import { useAtomCommand } from "../state/use-atom-command";
-import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { useAtomQueryRunner } from "../state/use-atom-query-runner";
+import { useNewThreadHandler } from "./useHandleNewThread";
+import { useClientSettings } from "./useSettings";
 
 export class ThreadArchiveBlockedError extends Schema.TaggedError<ThreadArchiveBlockedError>()(
   "ThreadArchiveBlockedError",

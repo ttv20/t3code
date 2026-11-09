@@ -1,12 +1,11 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/shell";
-import { resolveLatestMergeBackRun } from "@t3tools/client-runtime/state/thread-workflows";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/shell";
+import { resolveLatestMergeBackRun } from "@t3tools/client-runtime/state/thread-workflows";
 import {
   AuthOrchestrationOperateScope,
   type ScopedThreadRef,
@@ -14,6 +13,7 @@ import {
 } from "@t3tools/contracts";
 import { Trash2Icon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { ComposerHandleContext } from "../../composerHandleContext";
 import { useClientSettings } from "../../hooks/useSettings";

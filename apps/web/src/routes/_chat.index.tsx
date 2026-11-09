@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../i18n";
-import { workspaceAreaProps } from "../lib/workspaceFocus";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { useUiLanguage } from "../i18n";
+import { workspaceAreaProps } from "../lib/workspaceFocus";
 
-import { isElectron } from "../env";
+import { HostedEmptyState } from "../components/HostedEmptyState";
 import { NoProjectsHero } from "../components/NoProjectsHero";
 import { sortScopedProjectsForSidebar } from "../components/Sidebar.logic";
 import { Button } from "../components/ui/button";
-import { HostedEmptyState } from "../components/HostedEmptyState";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../components/ui/empty";
 import { SidebarInset } from "../components/ui/sidebar";
 import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
+import { isElectron } from "../env";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import {
   readProject,

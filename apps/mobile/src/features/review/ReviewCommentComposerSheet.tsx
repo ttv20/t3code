@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
 import { KeyboardAvoidingView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { useUiLanguage } from "../../i18n";
 
 import { ComposerAttachmentStrip } from "../../components/ComposerAttachmentStrip";

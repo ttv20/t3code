@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import type { DeviceHostSummary, DevicePlatform } from "@t3tools/contracts";
+import { Moon, Sun } from "lucide";
 import {
+  Box,
   Camera,
   ChevronLeft,
   Home,
   Keyboard,
-  Box,
   Maximize,
   MoreHorizontal,
   PictureInPicture2,
@@ -17,21 +17,21 @@ import {
   Type,
   X,
 } from "lucide-react";
-import { Moon, Sun } from "lucide";
 import type { ReactNode } from "react";
-import { Button } from "~/components/ui/button";
 import { MorphIcon } from "~/components/MorphIcon";
+import { Button } from "~/components/ui/button";
 import {
   Menu,
   MenuItem,
   MenuPopup,
-  MenuSeparator,
-  MenuTrigger,
   MenuRadioGroup,
   MenuRadioItem,
   MenuRadioItemIndicator,
+  MenuSeparator,
+  MenuTrigger,
 } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { useUiLanguage } from "../../i18n";
 import type { DeviceStreamHandle, DeviceViewControls } from "./DeviceStreamView";
 import type { DeviceControls } from "./useDeviceControls";
 

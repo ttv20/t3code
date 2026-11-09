@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   useId,
   useRef,
@@ -7,6 +6,7 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import type { HsvColor } from "../../lib/color";
 import { cn } from "../../lib/utils";

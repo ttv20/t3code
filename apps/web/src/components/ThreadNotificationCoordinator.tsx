@@ -1,15 +1,15 @@
 import { currentUiTranslator } from "../currentUiTranslator";
 
+import { threadKey } from "@t3tools/client-runtime/state/entities";
 import {
   type EnvironmentThreadShell,
   type PendingSubagentRequest,
   presentThreadShell,
 } from "@t3tools/client-runtime/state/models";
 import { isShownUnderParent } from "@t3tools/client-runtime/state/threads";
-import type { AnyRouter } from "@tanstack/react-router";
-import { threadKey } from "@t3tools/client-runtime/state/entities";
 import type { EnvironmentId, OrchestrationV2ThreadShell, ThreadId } from "@t3tools/contracts";
 import type { ClientSettings } from "@t3tools/contracts/settings";
+import type { AnyRouter } from "@tanstack/react-router";
 import * as Option from "effect/Option";
 import type { AtomRegistry } from "effect/reactivity";
 import {

@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { readLocalApi } from "~/localApi";

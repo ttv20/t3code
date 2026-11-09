@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { TerminalIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
-import type { ContextPresentationCapability } from "../contextPresentationRegistry";
 import { ContextChipPopover, ContextChipShell } from "../contextChipParts";
+import type { ContextPresentationCapability } from "../contextPresentationRegistry";
 
 interface TerminalContextInlineChipProps {
   label: string;

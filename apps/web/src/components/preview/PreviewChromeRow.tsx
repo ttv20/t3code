@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,6 +13,8 @@ import {
   type RefObject,
   useState,
 } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { useUiLanguage } from "../../i18n";
 
 import { Button } from "~/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "~/components/ui/input-group";

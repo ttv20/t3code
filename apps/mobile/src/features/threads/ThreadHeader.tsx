@@ -1,7 +1,6 @@
 import { AppBar } from "../../components/ui/AppBar";
 import type { AppBarAction, AppBarMenu } from "../../components/ui/AppBar.types";
 import { ContentText } from "../../components/ui/AppText";
-import { ScreenHeaderButton } from "../../components/ui/ScreenHeaderButton";
 import { useUiLanguage } from "../../i18n";
 import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
 import { useWorkspaceBackNavigation } from "../layout/workspace/useAndroidWorkspaceNavigation";
@@ -19,9 +18,7 @@ export function ThreadHeader(props: {
   readonly onReturnToThread?: () => void;
   readonly draft?: boolean;
   readonly hasThreadCwd: boolean;
-  readonly fileInspectorSupported: boolean;
   readonly inspectorMode: ThreadInspectorMode | null;
-  readonly onToggleInspector: () => void;
   readonly onOpenFilesInspector: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -32,7 +29,6 @@ export function ThreadHeader(props: {
   const gitMenu = useThreadGitMenuDefinition(props.gitControls);
   const terminalMenu = threadTerminalMenu(props.gitControls);
   const filesVisible = props.inspectorMode === "files" && panes.auxiliaryPaneVisible;
-  const inspectorVisible = props.inspectorMode !== null && panes.auxiliaryPaneVisible;
   const actions: AppBarAction[] = props.hasThreadCwd
     ? [
         {
@@ -69,16 +65,6 @@ export function ThreadHeader(props: {
       }
       actions={actions}
       menus={menus}
-      trailing={
-        props.fileInspectorSupported && props.hasThreadCwd ? (
-          <ScreenHeaderButton
-            accessibilityLabel={inspectorVisible ? uiT("Hide inspector") : uiT("Show inspector")}
-            icon="sidebar.right"
-            selected={inspectorVisible}
-            onPress={props.onToggleInspector}
-          />
-        ) : null
-      }
       hideBottomBorder
       compact={composerKeyboardActive}
     />

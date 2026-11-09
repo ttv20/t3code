@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type { AssistantCitation } from "@t3tools/contracts";
 import {
   assistantCitationLabel,
@@ -17,22 +16,23 @@ import {
   findAssistantCitationSourceAnchor,
   type AssistantCitationSourceAnchor,
 } from "~/lib/assistantTextSelection";
+import { observeResize } from "~/lib/observeResize";
+import { cn } from "~/lib/utils";
+import { textDirection } from "~/textDirection";
+import { useUiLanguage } from "../../i18n";
 import {
   assistantCitationHash,
   assistantCitationNavigation,
 } from "../../lib/assistantCitationNavigation";
-import { cn } from "~/lib/utils";
 import { ContextChip, ContextChipAction, ContextChipLabel } from "../ContextChip";
 import { ContextChipPopover } from "../contextChipParts";
 import { Button } from "../ui/button";
 import { Popover, PopoverClose, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
-import { AssistantCitationCommentEditor } from "./AssistantCitationCommentEditor";
 import { resolveAssistantCitationCommentDismissal } from "./assistantCitationCommentDismissal";
+import { AssistantCitationCommentEditor } from "./AssistantCitationCommentEditor";
 import { observeAssistantCitationCommentSource } from "./AssistantCitationSource";
 import { composerFloatingLayerProps } from "./composerEventScope";
-import { observeResize } from "~/lib/observeResize";
-import { textDirection } from "~/textDirection";
 
 export function AssistantCitationChip({
   citation,

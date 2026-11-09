@@ -1,10 +1,10 @@
-import { page, userEvent } from "vite-plus/test/browser";
 import { describe, expect, it, vi } from "vite-plus/test";
+import { page, userEvent } from "vite-plus/test/browser";
 
-import { render } from "../../../test/render";
-import { UiLanguageContext } from "~/i18n";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { UiLanguageContext } from "~/i18n";
 import "~/index.css";
+import { render } from "../../../test/render";
 import { Sidebar, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar } from "./sidebar";
 
 function CollapseFromInside() {

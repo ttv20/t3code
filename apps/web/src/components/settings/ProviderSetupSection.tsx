@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   isAtomCommandInterrupted,
   settlePromise,
@@ -12,8 +11,9 @@ import {
   type ProviderInstanceId,
   type ServerProvider,
 } from "@t3tools/contracts";
-import { useRef, useState } from "react";
 import { Trash2Icon } from "lucide-react";
+import { useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { ensureLocalApi } from "../../localApi";
 import { useEnvironmentQuery } from "../../state/query";
@@ -21,8 +21,8 @@ import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { SettingsRow } from "./settingsLayout";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
+import { SettingsRow } from "./settingsLayout";
 
 interface ProviderSetupSectionProps {
   readonly environmentId: EnvironmentId;
@@ -284,7 +284,7 @@ function ProviderSetupActions({
                       ? installation.version &&
                         installation.version !== installation.installedVersion
                         ? uiT("Update Antigravity")
-                        : "Reinstall Antigravity"
+                        : uiT("Reinstall Antigravity")
                       : installation?.phase === "failed" || installation?.phase === "cancelled"
                         ? uiT("Retry installation")
                         : installed

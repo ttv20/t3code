@@ -1,32 +1,29 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
+import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { FILL_PREVIEW_VIEWPORT, type ScopedThreadRef } from "@t3tools/contracts";
 import { previewPdfAssetUrl } from "@t3tools/shared/preview";
-import { useEnvironmentHttpBaseUrl } from "~/state/environments";
 import { PanelRightIcon, PictureInPicture2, XIcon } from "lucide-react";
 import {
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type PointerEvent as ReactPointerEvent,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { create } from "zustand";
-import { useAtomValue } from "@effect/atom-react";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import { useEnvironmentHttpBaseUrl } from "~/state/environments";
+import { useUiLanguage } from "../../i18n";
 
-import { useChatCanvas } from "../chat/ChatCanvasContext";
-import type { ChatCanvasPreview } from "../chat/chatCanvasLayout";
 import { BrowserSurfaceSlot } from "~/browser/BrowserSurfaceSlot";
+import { type ServerBrowserHandle, ServerBrowserSurface } from "~/browser/ServerBrowserSurface";
 import {
   findActiveBrowserRecordingRuntimeTabId,
   useActiveBrowserRecordingTabIds,
 } from "~/browser/browserRecording";
 import { useBrowserSurfaceStore } from "~/browser/browserSurfaceStore";
 import type { BrowserViewportResizeDirection } from "~/browser/browserViewportLayout";
-import { previewRuntimeTabId } from "~/browser/previewRuntimeTabId";
 import { rendersServerTabNatively } from "~/browser/previewRuntime";
-import { primaryEnvironmentIdAtom } from "~/state/primaryEnvironment";
-import { type ServerBrowserHandle, ServerBrowserSurface } from "~/browser/ServerBrowserSurface";
+import { previewRuntimeTabId } from "~/browser/previewRuntimeTabId";
 import {
   closeServerPictureInPicture,
   openServerPictureInPicture,
@@ -39,25 +36,27 @@ import { Button } from "~/components/ui/button";
 import { toastManager } from "~/components/ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
-import { useThreadPreviewState } from "~/previewStateStore";
 import {
+  browserMiniPlayerSource,
   type PreviewMiniPlayerSize,
   type PreviewMiniPlayerSource,
-  type PreviewMiniPlayerState,
-  browserMiniPlayerSource,
   previewMiniPlayerSourceKey,
+  type PreviewMiniPlayerState,
   usePreviewMiniPlayerStore,
 } from "~/previewMiniPlayerStore";
+import { useThreadPreviewState } from "~/previewStateStore";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { useDeviceState } from "~/state/device";
+import { primaryEnvironmentIdAtom } from "~/state/primaryEnvironment";
+import { useChatCanvas } from "../chat/ChatCanvasContext";
+import type { ChatCanvasPreview } from "../chat/chatCanvasLayout";
 
-import { DeviceStreamView } from "../device/DeviceStreamView";
 import type { DeviceScreenSize } from "@t3tools/client-runtime/device/stream";
-import { Atom } from "effect/reactivity";
-import { deviceScreenKey, deviceStreamScreenAtom } from "../device/deviceStreamSession";
 import type { PreviewStreamViewport } from "@t3tools/client-runtime/preview/server-browser-stream";
+import { Atom } from "effect/reactivity";
+import { DeviceStreamView } from "../device/DeviceStreamView";
+import { deviceScreenKey, deviceStreamScreenAtom } from "../device/deviceStreamSession";
 import { previewBridge } from "./previewBridge";
-import { showPreviewPopup } from "./showPreviewPopup";
 import {
   clampPreviewMiniPlayerPosition,
   PREVIEW_MINI_PLAYER_CORNER_RADIUS,
@@ -68,6 +67,7 @@ import {
   resolveDeviceMiniPlayerSourceSize,
   resolvePreviewMiniPlayerSourceSize,
 } from "./previewMiniPlayerLayout";
+import { showPreviewPopup } from "./showPreviewPopup";
 
 interface PointerGesture {
   readonly pointerId: number;

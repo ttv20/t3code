@@ -1,7 +1,7 @@
-import { UiText } from "../i18n";
 import type { ManagedPolicySummary } from "@t3tools/contracts";
 import { BuildingIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { UiText } from "../i18n";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 

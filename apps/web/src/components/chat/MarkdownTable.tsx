@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { Check, Copy } from "lucide";
 import { useRef, type ComponentProps } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import {

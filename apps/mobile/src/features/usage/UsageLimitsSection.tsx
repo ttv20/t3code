@@ -96,7 +96,7 @@ function WindowRow(props: {
           {formatUiUsageWindowLabel(window.label, locale)}
         </Text>
         <Text className="text-sm font-t3-medium tabular-nums text-foreground">
-          <UiText message={"{0}% left"} values={{ "0": remaining }} />
+          <UiText message={uiT("{0}% left")} values={{ "0": remaining }} />
         </Text>
       </View>
       <View

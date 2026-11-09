@@ -1,9 +1,12 @@
+import { FolderGit2Icon, FolderGitIcon, FolderIcon } from "lucide-react";
+import { memo, type MouseEvent as ReactMouseEvent } from "react";
 import { useUiLanguage } from "../i18n";
 import { ComposerSelectControl } from "./chat/ComposerControl";
 import { ComposerContextLabel } from "./ComposerContextLabel";
-import { FolderGit2Icon, FolderGitIcon, FolderIcon } from "lucide-react";
-import { memo, type MouseEvent as ReactMouseEvent } from "react";
 
+import { useAtomValue } from "@effect/atom-react";
+import { shortcutLabelForCommand } from "../keybindings";
+import { primaryServerKeybindingsAtom } from "../state/server";
 import {
   resolveCurrentWorkspaceLabel,
   resolveEnvModeLabel,
@@ -21,9 +24,6 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { useAtomValue } from "@effect/atom-react";
-import { shortcutLabelForCommand } from "../keybindings";
-import { primaryServerKeybindingsAtom } from "../state/server";
 
 const PREVIOUS_WORKTREE_SELECT_VALUE = "previous-worktree";
 

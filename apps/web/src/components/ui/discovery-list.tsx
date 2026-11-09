@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { ComponentProps, ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 export function DiscoveryList({ children }: { readonly children: ReactNode }) {
   return (

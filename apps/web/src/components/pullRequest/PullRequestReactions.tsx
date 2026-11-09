@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { useAtomCommand } from "~/state/use-atom-command";
 import type {
   EnvironmentId,
   PullRequestReaction,
@@ -8,21 +6,23 @@ import type {
 } from "@t3tools/contracts";
 import { SmilePlusIcon } from "lucide-react";
 import { useState } from "react";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   applyPendingPullRequestReactions,
   PULL_REQUEST_REACTION_ORDER,
   pullRequestReactionEmoji,
   pullRequestReactionName,
-  pullRequestReactionTooltip,
   pullRequestReactionsSignature,
+  pullRequestReactionTooltip,
 } from "@t3tools/client-runtime/pull-request-reactions";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const PILL_CLASS =
   "inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";

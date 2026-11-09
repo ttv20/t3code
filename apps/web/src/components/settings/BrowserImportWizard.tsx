@@ -1,10 +1,10 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
-import { usePermissionStatus } from "../permissions/usePermissionStatus";
 import type { BrowserImportSource } from "@t3tools/contracts";
 import { BROWSER_IMPORT_FAILURE_COPY } from "@t3tools/contracts";
 import { ArrowDownIcon, ArrowRightIcon, CheckIcon, HardDriveIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
+import { usePermissionStatus } from "../permissions/usePermissionStatus";
 
 import { cn, randomUUID } from "~/lib/utils";
 
@@ -21,21 +21,21 @@ import {
 } from "../ui/dialog";
 import { Spinner } from "../ui/spinner";
 import {
-  initialWizardStep,
-  initialTargetSelection,
   canCloseWizard,
-  isRetryableReason,
   formatSkippedDomains,
   fullDiskAccessRecheckStep,
+  initialTargetSelection,
+  initialWizardStep,
+  isRetryableReason,
   outcomeToStep,
   refreshedSourceProfileDirectory,
   refreshedSourceStep,
   resolveWizardTarget,
   type ImportOutcome,
+  type WizardStep,
   type WizardTarget,
   type WizardTargetProfile,
   type WizardTargetSelection,
-  type WizardStep,
 } from "./browserImportWizard.logic";
 
 export type { WizardTarget } from "./browserImportWizard.logic";

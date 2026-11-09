@@ -6,20 +6,20 @@ import { maskMarkdownFrontmatter } from "@t3tools/shared/markdownFrontmatter";
 import { useState } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { useUiLanguage } from "../../i18n";
+import { markdownFileEmbedLabel, resolveMarkdownMediaPreview } from "../../lib/markdownMedia";
 import { resolveMobileMarkdownMediaSource } from "../../lib/markdownMediaSource";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
+import { useUniwindTheme } from "../../lib/useUniwindTheme";
 
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { AppText as Text } from "../../components/ui/AppText";
-import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
+import { VideoPreviewModal, type VideoPreviewSource } from "../../components/ui/VideoPreviewModal";
 import { resolveNativeMarkdownTypography } from "../../lib/appearancePreferences";
 import { FONT_FAMILIES } from "../../lib/fontFamilies";
 import {
   normalizeNativeMarkdownUrl,
   resolveMarkdownLinkPresentation,
 } from "../../lib/markdownLinks";
-import { markdownFileEmbedLabel, resolveMarkdownMediaPreview } from "../../lib/markdownMedia";
-import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
-import { useUniwindTheme } from "../../lib/useUniwindTheme";
 import {
   SelectableMarkdownText,
   type MarkdownImageRenderer,

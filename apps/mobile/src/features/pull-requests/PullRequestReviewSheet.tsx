@@ -211,7 +211,7 @@ export function PullRequestReviewSheet({
         <View className="gap-2">
           <Text className="text-sm font-t3-medium">
             <UiText
-              message={"{0}  pending line {1}"}
+              message={uiT("{0}  pending line {1}")}
               values={{
                 "0": store.draft.comments.length,
                 "1": store.draft.comments.length === 1 ? "comment" : uiT("comments"),
@@ -269,9 +269,9 @@ export function PullRequestReviewSheet({
       {reviewing && !canSubmitComments ? (
         <Text className="text-sm text-danger-foreground">
           <UiText
-            message={
-              "You can no longer submit line comments on this {0}. Your drafts are kept here."
-            }
+            message={uiT(
+              "You can no longer submit line comments on this {0}. Your drafts are kept here.",
+            )}
             values={{
               "0": (
                 <UiText

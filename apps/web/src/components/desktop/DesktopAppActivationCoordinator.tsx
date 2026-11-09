@@ -1,14 +1,15 @@
-import { useUiLanguage } from "../../i18n";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { DesktopAppActivationRequest } from "@t3tools/contracts";
 import { useEffect, useEffectEvent, useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { handleDesktopAppActivationRequest } from "../../desktopAppActivation";
-import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import {
   findProjectByPath,
   inferProjectTitleFromPath,
 } from "@t3tools/client-runtime/state/projects";
+import { handleDesktopAppActivationRequest } from "../../desktopAppActivation";
+import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
+import { reportProjectFailure } from "../../hooks/useProjectGroupUpdate";
 import { newProjectId } from "../../lib/utils";
 import { readProjects, waitForProject } from "../../state/entities";
 import { usePrimaryEnvironment } from "../../state/environments";
@@ -16,7 +17,6 @@ import { projectEnvironment } from "../../state/projects";
 import { useEnvironmentShellHasSnapshot } from "../../state/shell";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { reportProjectFailure } from "../../hooks/useProjectGroupUpdate";
 
 export function DesktopAppActivationCoordinator() {
   const { t: uiT } = useUiLanguage();

@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { useAtomCommand } from "~/state/use-atom-command";
 import type { EnvironmentId, PullRequestDetailView, PullRequestRef } from "@t3tools/contracts";
 import { SendIcon } from "lucide-react";
 import { useEffect, useState, type RefObject } from "react";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../../i18n";
 
 import { TextFieldSpeechControls, useTextFieldSpeech } from "~/speech/useTextFieldSpeech";
 import { pullRequestEnvironment } from "~/state/pullRequests";

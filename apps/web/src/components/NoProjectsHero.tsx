@@ -1,6 +1,6 @@
+import { MessageSquareDashedIcon, PlusIcon } from "lucide-react";
 import { useUiLanguage } from "../i18n";
 import { workspaceAreaProps } from "../lib/workspaceFocus";
-import { MessageSquareDashedIcon, PlusIcon } from "lucide-react";
 
 import { openCommandPalette } from "../commandPaletteBus";
 import { isElectron } from "../env";

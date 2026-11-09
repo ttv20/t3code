@@ -1,27 +1,27 @@
 import { UiText, useUiLanguage } from "../../i18n";
 
-import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
-import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
-import { Atom } from "effect/reactivity";
-import {
-  USAGE_CONTRACT_VERSION,
-  type EnvironmentId,
-  type UsageProviderKind,
-  type UsageSummaryInput,
-} from "@t3tools/contracts";
-import { CircleAlertIcon, ChevronDownIcon, InfoIcon, SlidersHorizontalIcon } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Cause from "effect/Cause";
 import { refreshUsageLimits } from "@t3tools/client-runtime/state/usage";
 import {
   updatingProvidersLabel,
   usageEnvironmentProgress,
   usageLoadingState,
 } from "@t3tools/client-runtime/state/usage-progress";
+import {
+  USAGE_CONTRACT_VERSION,
+  type EnvironmentId,
+  type UsageProviderKind,
+  type UsageSummaryInput,
+} from "@t3tools/contracts";
+import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
+import * as Cause from "effect/Cause";
+import { Atom } from "effect/reactivity";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
+import { ChevronDownIcon, CircleAlertIcon, InfoIcon, SlidersHorizontalIcon } from "lucide-react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 
 import {
   isCompatibleUsageContractVersion,
@@ -31,17 +31,6 @@ import {
   type MergedUsage,
 } from "@t3tools/shared/usageMerge";
 
-import { cn } from "../../lib/utils";
-import { usePrimarySettings } from "../../hooks/useSettings";
-import { resolveHour12 } from "../../timestampFormat";
-import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { environmentPresentations } from "../../state/presentation";
-import { primaryServerKeybindingsAtom, serverEnvironment } from "../../state/server";
-import { isCommandPaletteOpen } from "../../commandPaletteBus";
-import { isModelPickerOpen } from "../../modelPickerVisibility";
-import { shortcutLabelForCommand } from "../../keybindings";
-import { useUsage, type EnvironmentUsageStatus } from "../../state/usage";
-import { useAtomCommand } from "../../state/use-atom-command";
 import {
   enumerateDays,
   enumerateHourStarts,
@@ -56,8 +45,20 @@ import {
   makeWindow,
   usageSourceMessages,
 } from "@t3tools/shared/usageFormat";
-import { Button, InlineButton } from "../ui/button";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { isCommandPaletteOpen } from "../../commandPaletteBus";
+import { usePrimarySettings } from "../../hooks/useSettings";
+import { shortcutLabelForCommand } from "../../keybindings";
+import { cn } from "../../lib/utils";
+import { isModelPickerOpen } from "../../modelPickerVisibility";
+import { environmentPresentations } from "../../state/presentation";
+import { primaryServerKeybindingsAtom, serverEnvironment } from "../../state/server";
+import { useUsage, type EnvironmentUsageStatus } from "../../state/usage";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { resolveHour12 } from "../../timestampFormat";
+import { AppRouteModal, AppRouteModalClose } from "../AppRouteModal";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { Button, InlineButton } from "../ui/button";
 import {
   Menu,
   MenuCheckboxItem,
@@ -66,12 +67,11 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "../ui/menu";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { ScrollArea } from "../ui/scroll-area";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { AppRouteModal, AppRouteModalClose } from "../AppRouteModal";
 import { Skeleton } from "../ui/skeleton";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
@@ -79,11 +79,6 @@ import {
   WorkspaceBreadcrumbText,
 } from "../WorkspaceBreadcrumb";
 import { WorkspacePageContainer } from "../WorkspacePageContainer";
-import { UsageLimitsSection } from "./UsageLimits";
-import { UsagePriceOverrides } from "./UsagePriceOverrides";
-import { UsageProviderChart } from "./UsageProviderChart";
-import { SpeedPremium, UsageModelDialog } from "./UsageModelDialog";
-import { UsageShareBar } from "./UsageShareBar";
 import {
   costTypeSegments,
   modelShare,
@@ -91,23 +86,28 @@ import {
   speedCostSegments,
   tokenTypeSegments,
 } from "./usageBreakdown";
+import { UsageLimitsSection } from "./UsageLimits";
+import { SpeedPremium, UsageModelDialog } from "./UsageModelDialog";
 import {
-  METRIC_OPTIONS,
-  WINDOW_OPTIONS,
-  resolveUsageShortcut,
-  type UsageMetric,
-} from "./usageShortcuts";
+  readUsagePagePreferences,
+  saveUsagePagePreferences,
+  type UsagePagePreferences,
+} from "./usagePagePreferences";
+import { UsagePriceOverrides } from "./UsagePriceOverrides";
+import { UsageProviderChart } from "./UsageProviderChart";
 import {
   PROVIDER_ORDER,
   PROVIDER_PRESENTATION,
   providersWithUsage,
   rankProvidersByMetric,
 } from "./usageProviders";
+import { UsageShareBar } from "./UsageShareBar";
 import {
-  readUsagePagePreferences,
-  saveUsagePagePreferences,
-  type UsagePagePreferences,
-} from "./usagePagePreferences";
+  METRIC_OPTIONS,
+  WINDOW_OPTIONS,
+  resolveUsageShortcut,
+  type UsageMetric,
+} from "./usageShortcuts";
 
 function isUsageMetric(value: string | null | undefined): value is UsageMetric {
   return METRIC_OPTIONS.some((option) => option.value === value);

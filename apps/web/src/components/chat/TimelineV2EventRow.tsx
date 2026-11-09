@@ -1,20 +1,20 @@
-import { WorkLogBlock } from "./WorkLog";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { useAtomValue } from "@effect/atom-react";
-import { environmentThreadDetails } from "../../state/threads";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   subagentGroupSummary,
   summarizeSubagentStatuses,
 } from "@t3tools/client-runtime/state/subagent-display";
-import { memo, use, useState } from "react";
 import { ChevronDownIcon } from "lucide-react";
+import { memo, use, useState } from "react";
 import { cn } from "~/lib/utils";
-import { Collapsible, CollapsibleTrigger, CollapsiblePanel } from "../ui/collapsible";
-import { EnvironmentSubagentAvatar, SubagentElapsed, V2LifecycleRow } from "./V2LifecycleRow";
+import { environmentThreadDetails } from "../../state/threads";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { LinkRequestCard } from "./LinkRequestCard";
 import { SecretRequestCard } from "./SecretRequestCard";
 import { TimelineRowCtx, type TimelineRow } from "./timelineRowContext";
 import { subagentGroupTiming } from "./TimelineV2EventRow.logic";
+import { EnvironmentSubagentAvatar, SubagentElapsed, V2LifecycleRow } from "./V2LifecycleRow";
+import { WorkLogBlock } from "./WorkLog";
 
 export function V2EventTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "event" }> }) {
   const ctx = use(TimelineRowCtx);

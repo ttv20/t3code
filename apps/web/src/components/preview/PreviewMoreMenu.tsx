@@ -1,16 +1,16 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { DesktopPreviewColorScheme } from "@t3tools/contracts";
 import { Minus, MoreVertical, Plus as PlusIcon, RotateCcw } from "lucide-react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { Button } from "~/components/ui/button";
 import {
   Menu,
+  MenuGroup,
+  MenuGroupLabel,
   MenuItem,
   MenuPopup,
   MenuRadioGroup,
   MenuRadioItem,
-  MenuGroup,
-  MenuGroupLabel,
   MenuSeparator,
   MenuSub,
   MenuSubPopup,

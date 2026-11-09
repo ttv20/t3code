@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { FolderPlusIcon, SearchIcon, SquarePenIcon, XIcon } from "lucide-react";
 import {
   type ComponentProps,
@@ -7,6 +6,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";

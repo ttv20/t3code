@@ -9,14 +9,16 @@ import {
 } from "@react-navigation/native";
 import { DEFAULT_HOSTED_APP_URL } from "@t3tools/shared/connectAuth";
 import { pipe } from "effect/Function";
+import { requireNativeModule } from "expo";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { StatusBar } from "react-native";
+import { Platform, StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { installLocalCompletionNotifications } from "./features/agent-awareness/localCompletionRuntime";
+import { CloudAuthProvider } from "./features/cloud/CloudAuthProvider";
 import { installPermissionUpdateNotice } from "./features/connection/permissionUpdateNotice";
 import { useUiLanguage } from "./i18n";
 import { installComposerAttachmentUploads } from "./state/composer-attachment-uploads";
@@ -30,7 +32,6 @@ import {
   installAgentNotificationNavigation,
   setAgentNotificationPathname,
 } from "./features/agent-awareness/notificationNavigation";
-import { CloudAuthProvider } from "./features/cloud/CloudAuthProvider";
 import { hasCloudPublicConfig } from "./features/cloud/publicConfig";
 import {
   pairingFormLinkAction,
@@ -93,7 +94,7 @@ import { ProjectChipIconRasterizer } from "./native/ProjectChipIconImages";
 import { RootStack, rootPathnameFromState, workspaceLocationFromState } from "./Stack";
 import { appAtomRegistry } from "./state/atom-registry";
 import { environmentShell } from "./state/shell";
-import { environmentThreadShells } from "./state/threads";
+import { environmentThreadShells, threadEnvironment } from "./state/threads";
 import { subscribeComposerDraftModelReconciliation } from "./state/use-composer-drafts";
 import { SubscriptionUsageCoordinator } from "./widgets/SubscriptionUsageCoordinator";
 import { installSubscriptionUsageRefresh } from "./widgets/useSubscriptionUsage";
@@ -189,6 +190,7 @@ const appServiceDisposers = [
     threadShellAtom: environmentThreadShells.threadShellAtom,
     threadRefsAtom: environmentThreadShells.threadRefsAtom,
     shellStateAtom: environmentShell.stateAtom,
+    pendingThreadIdsAtom: threadEnvironment.pendingThreadIdsAtom,
   }),
   installAppearanceRuntime(),
   installSubscriptionUsageRefresh(),
@@ -235,6 +237,14 @@ function AppContent() {
   const { direction } = useUiLanguage();
   const { themeAppearance } = useAppearancePreferences();
   const navigationTheme = useMobileNavigationTheme();
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- matches the Android navigation bar to the app theme, as StatusBar does for the status bar
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    void requireNativeModule<{ setNavigationBarStyle(light: boolean): Promise<void> }>(
+      "T3NativeControls",
+    ).setNavigationBarStyle(themeAppearance === "light");
+  }, [themeAppearance]);
 
   return (
     <>

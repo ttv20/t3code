@@ -1,40 +1,40 @@
-import { useUiLanguage } from "../../i18n";
-import type { ToolCallDiffTarget } from "../../diffPanelStore";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import type { ThreadPreviewState } from "../../previewStateStore";
-import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
-import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
-import { resolveExplicitDiffOpenOnActivate } from "../ChatView.logic";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { type ScopedThreadRef, type RunId } from "@t3tools/contracts";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { useEffect } from "react";
+import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+import { type RunId, type ScopedThreadRef } from "@t3tools/contracts";
+import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
+import { useEffect } from "react";
+import { isBrowserSettingsReadError } from "../../browser/openFileInPreview";
+import type { ToolCallDiffTarget } from "../../diffPanelStore";
 import { useDiffPanelStore } from "../../diffPanelStore";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
+import { focusActivePanelTerminal, focusTerminal } from "../../lib/terminalFocus";
+import { requestWorkspaceContentFocus, requestWorkspaceFocus } from "../../lib/workspaceFocus";
+import { browserMiniPlayerSource, usePreviewMiniPlayerStore } from "../../previewMiniPlayerStore";
+import type { ThreadPreviewState } from "../../previewStateStore";
+import { setActivePreviewTab } from "../../previewStateStore";
 import { type ThreadPanelPresentation } from "../../rightPanelLayout";
 import {
   selectActiveRightPanel,
   selectThreadPanelOpen,
-  type RightPanelSurface,
   useRightPanelStore,
+  type RightPanelSurface,
 } from "../../rightPanelStore";
-import { requestWorkspaceContentFocus, requestWorkspaceFocus } from "../../lib/workspaceFocus";
-import { setActivePreviewTab } from "../../previewStateStore";
-import { isBrowserSettingsReadError } from "../../browser/openFileInPreview";
-import { addBrowserSurface } from "../preview/addBrowserSurface";
-import { focusActivePanelTerminal, focusTerminal } from "../../lib/terminalFocus";
-import { subscribePreviewAction } from "../preview/previewActionBus";
-import { floatDeviceSurface } from "../preview/agentOpenedPreviews";
-import { browserMiniPlayerSource, usePreviewMiniPlayerStore } from "../../previewMiniPlayerStore";
-import type { threadPullRequestPanelTarget } from "../pullRequest/pullRequestDetail.logic";
 import type { useDeviceState } from "../../state/device";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { openDeviceSetupDialog } from "./ChatOverlayHosts";
 import { previewEnvironment } from "../../state/preview";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { resolveExplicitDiffOpenOnActivate } from "../ChatView.logic";
+import { addBrowserSurface } from "../preview/addBrowserSurface";
+import { floatDeviceSurface } from "../preview/agentOpenedPreviews";
+import { subscribePreviewAction } from "../preview/previewActionBus";
+import type { threadPullRequestPanelTarget } from "../pullRequest/pullRequestDetail.logic";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { openDeviceSetupDialog } from "./ChatOverlayHosts";
 import type { ChatShortcutCommands } from "./useChatShortcuts";
 interface RightPanelActionsInput {
   readonly activeThreadRef: ScopedThreadRef | null;

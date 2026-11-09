@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type {
   EnvironmentId,
   ProjectId,
@@ -19,6 +18,7 @@ import {
 import { CircleCheckIcon, CircleDotIcon } from "lucide-react";
 import { useId, useState, type Ref } from "react";
 import { flushSync } from "react-dom";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { usePullRequestFilterOptions } from "~/state/pullRequests";

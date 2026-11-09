@@ -1,5 +1,5 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { Button } from "~/components/ui/button";
 

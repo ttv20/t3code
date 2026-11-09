@@ -1,17 +1,19 @@
-import { useUiLanguage } from "../../i18n";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { visibleLinkedThreads } from "@t3tools/client-runtime/state/threads";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { visibleLinkedThreads } from "@t3tools/client-runtime/state/threads";
+import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import type { EnvironmentId, PullRequestRef, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
 import { CheckIcon, MessageSquareIcon } from "lucide-react";
 import { useState } from "react";
-import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { usePullRequestLinking } from "~/hooks/usePullRequestLinking";
+import { useUiLanguage } from "../../i18n";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
+import { openCommandPalette } from "~/commandPaletteBus";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
 import {
   useAnyEnvironmentHiding,
   useEnvironmentThreadRefs,
@@ -21,11 +23,9 @@ import {
   useVisibleThreadShells,
 } from "~/state/entities";
 import { pullRequestEnvironment } from "~/state/pullRequests";
-import { environmentThreadShells } from "~/state/threads";
-import { useEnvironmentQuery } from "~/state/query";
 import { useThreadSearch } from "~/state/queries";
-import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { openCommandPalette } from "~/commandPaletteBus";
+import { useEnvironmentQuery } from "~/state/query";
+import { environmentThreadShells } from "~/state/threads";
 import { Button } from "../ui/button";
 import { Command, CommandInput, CommandItem, CommandList } from "../ui/command";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";

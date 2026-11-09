@@ -1,21 +1,21 @@
-import { useUiLanguage } from "../../i18n";
-import type { ServerProviderSkill } from "@t3tools/contracts";
-import { preloadPatchFile } from "@pierre/diffs/ssr";
 import { useAtomValue } from "@effect/atom-react";
+import { preloadPatchFile } from "@pierre/diffs/ssr";
+import type { ServerProviderSkill } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { useEffect, useRef, useState } from "react";
+import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
+import { DEFAULT_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
+import { useRenderedAppearance, useTheme } from "../../hooks/useTheme";
+import { useUiLanguage } from "../../i18n";
+import { resolveDiffThemeName, type DiffThemeName } from "../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
+import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../composerContextPresentation";
 import {
   ComposerPromptEditorTiptap as ComposerPromptEditor,
   type ComposerPromptEditorHandle,
 } from "../ComposerPromptEditorTiptap";
-import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../composerContextPresentation";
 import { terminalThemeFromApp } from "../ThreadTerminalDrawer";
-import { useRenderedAppearance, useTheme } from "../../hooks/useTheme";
-import { DEFAULT_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { resolveDiffThemeName, type DiffThemeName } from "../../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
 
 const PREVIEW_SKILLS: ReadonlyArray<ServerProviderSkill> = [
   { name: "frontend-design", path: ".agents/skills/frontend-design/SKILL.md", enabled: true },

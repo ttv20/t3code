@@ -1,7 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { useState, type ReactNode } from "react";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
 import {
   acceptsSecretReference,
   isSecretReference,
@@ -13,23 +9,27 @@ import {
   type ProviderSettingsFormSchemaAnnotation,
   type SecretReference,
 } from "@t3tools/contracts";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { PlusIcon, XIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import type { ProviderClientDefinition } from "@t3tools/provider-core/client";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { DraftInput } from "../ui/draft-input";
 import { Input } from "../ui/input";
-import { SecretInput } from "./SecretInput";
-import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
-import type { ProviderClientDefinition } from "@t3tools/provider-core/client";
+import { SecretInput } from "./SecretInput";
+import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
+import { SettingsRow } from "./settingsLayout";
 
 export type SettingsFormDefinition = Pick<ProviderClientDefinition, "settingsSchema"> & {
   readonly driverKind?: ProviderClientDefinition["driverKind"];
 };
-import { SettingsRow } from "./settingsLayout";
 
 export interface ProviderSettingsFieldModel {
   readonly key: string;

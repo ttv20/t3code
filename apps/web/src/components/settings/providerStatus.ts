@@ -1,7 +1,7 @@
 import type {
   ServerProvider,
-  ServerProviderVersionAdvisory,
   ServerProviderCompatibilityAdvisory,
+  ServerProviderVersionAdvisory,
 } from "@t3tools/contracts";
 
 export const PROVIDER_STATUS_STYLES = {

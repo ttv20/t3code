@@ -1,39 +1,39 @@
-import { useUiLanguage } from "../../../i18n";
-import * as Schema from "effect/Schema";
-import { observeResize } from "~/lib/observeResize";
-import { useEffect, useRef, useState } from "react";
 import {
   cellAtPoint,
-  normalizeRange,
-  selectionAt,
-  selectionKeyReducer,
   extendTo,
   hyperlinkAtCell,
-  safeExternalHyperlink,
+  normalizeRange,
   parseHyperlinkLocation,
-  type Selection,
+  safeExternalHyperlink,
+  selectionAt,
+  selectionKeyReducer,
   type CellAddr,
+  type Selection,
 } from "@betteroffice/xlsx/headless";
+import * as Schema from "effect/Schema";
+import { useEffect, useRef, useState } from "react";
+import { observeResize } from "~/lib/observeResize";
+import { useUiLanguage } from "../../../i18n";
 import { FileSurfaceLoading, FileSurfaceNotice } from "../fileSurfaceChrome";
-import { createWorkerClient, SupersededError } from "./worker-rpc";
-import type { SheetLayout, SheetMethods, SheetFrameRequest, SheetTab } from "./sheet-protocol";
+import { externalUrl } from "./links";
 import {
-  coverMerges,
+  columnName,
   contains,
+  coverMerges,
   lastCell,
   settleMerges,
   skipHidden,
-  columnName,
 } from "./sheet-cells";
 import {
+  headerHeight,
   paintCells,
   paintHeaders,
   paintSelection,
   shiftGrid,
-  headerHeight,
   type Painted,
 } from "./sheet-paint";
-import { externalUrl } from "./links";
+import type { SheetFrameRequest, SheetLayout, SheetMethods, SheetTab } from "./sheet-protocol";
+import { createWorkerClient, SupersededError } from "./worker-rpc";
 
 const isSupersededError = Schema.is(SupersededError);
 

@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import { useRelativeTimeState } from "../hooks/useRelativeTimeState";
+import { useUiLanguage } from "../i18n";
 
 // Use a live clock because the compiler caches inline formatting on the timestamp.
 export function RelativeTime(props: { timestamp: string }) {

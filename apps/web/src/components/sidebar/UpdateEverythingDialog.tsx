@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 import { ChevronRightIcon } from "lucide-react";
 import { Fragment, type RefObject, useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { environmentThreadShells } from "~/state/threads";
 import {

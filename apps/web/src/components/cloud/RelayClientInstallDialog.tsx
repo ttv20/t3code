@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
+import type { RelayClientInstallProgressStage } from "@t3tools/contracts";
 import { DownloadIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import type { RelayClientInstallProgressStage } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
 import {
   completeRelayClientInstallDialogClose,

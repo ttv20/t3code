@@ -129,7 +129,7 @@ function FileRow(props: {
         ) : null}
         {file.previousPath ? (
           <Text textRole="caption" className="text-foreground-muted" numberOfLines={1}>
-            <UiText message={"Renamed from{0}"} values={{ "0": file.previousPath }} />
+            <UiText message={uiT("Renamed from{0}")} values={{ "0": file.previousPath }} />
           </Text>
         ) : null}
       </View>

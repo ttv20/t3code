@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { HtmlRenderDocument } from "../files/BrowserDocumentFrame";
 import { Button } from "../ui/button";

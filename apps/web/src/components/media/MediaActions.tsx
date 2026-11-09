@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   formatFilePathForClipboard,
   type MediaActionId,
@@ -11,14 +10,15 @@ import { resolveAssetUrl } from "@t3tools/client-runtime/state/assets";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AuthFilesystemReadScope,
+  sessionGrantsScope,
   type AssetResource,
   type ContextMenuItem,
   type EnvironmentId,
-  sessionGrantsScope,
   type SessionGrantInput,
 } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState, type ReactElement } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { readLocalApi } from "../../localApi";

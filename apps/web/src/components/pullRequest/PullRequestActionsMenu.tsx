@@ -1,4 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   canEditPullRequestMaintainerEdits,
@@ -28,6 +27,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useId, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { shortcutLabelForCommand } from "~/keybindings";
 import { readLocalApi } from "~/localApi";
@@ -49,12 +49,12 @@ import {
 import { RefreshIcon } from "../ui/refresh-icon";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { ActOnEnvironmentPicker, type PerformPullRequestAction } from "./PullRequestDetailActions";
 import {
   PULL_REQUEST_MERGE_METHOD_LABELS,
   pullRequestActionMenuHasGroup,
   readableFailure,
 } from "./pullRequestDetail.logic";
+import { ActOnEnvironmentPicker, type PerformPullRequestAction } from "./PullRequestDetailActions";
 import { PullRequestGlyph } from "./pullRequestIcons";
 import type { PickableEnvironment } from "./pullRequestProjectAssignment.logic";
 import { PullRequestThreadLinks } from "./PullRequestThreadLinks";

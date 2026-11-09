@@ -25,12 +25,12 @@ import {
 import { contextImageGallery } from "../lib/contextImageGallery";
 import { useOpenPullRequest } from "../native/useOpenPullRequest";
 import { ComposerContextAttachment } from "./ComposerContextAttachment";
-import { FilePreviewModal } from "./FilePreviewModal";
 import { AppText as Text } from "./ui/AppText";
 import { Button } from "./ui/Button";
 import * as Dialog from "./ui/Dialog";
+import { FilePreviewModal } from "./ui/FilePreviewModal";
 import { Sheet } from "./ui/Sheet";
-import { VideoPreviewModal } from "./VideoPreviewModal";
+import { VideoPreviewModal } from "./ui/VideoPreviewModal";
 
 function ContextField(props: { label: string; value: string | null | undefined; code?: boolean }) {
   const { t: uiT } = useUiLanguage();
@@ -211,7 +211,7 @@ export function ComposerContextSheet(props: {
         {terminal ? (
           <Text className="text-sm text-foreground-muted">
             <UiText
-              message={"Lines{0}–{1}"}
+              message={uiT("Lines{0}–{1}")}
               values={{ "0": terminal.lineStart, "1": terminal.lineEnd }}
             />
           </Text>
@@ -395,7 +395,7 @@ export function ComposerContextSheet(props: {
           >
             <Text className="text-foreground">
               <UiText
-                message={"Open {0}"}
+                message={uiT("Open {0}")}
                 values={{ "0": <UiText message={changeRequestTerm} /> }}
               />
             </Text>

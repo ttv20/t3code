@@ -525,7 +525,7 @@ export function UsageLimitsSection({
             {failedLabels.length > 0 ? (
               <Text className="text-sm font-t3-medium text-warning-foreground">
                 <UiText
-                  message={"{0} could not refresh limits. Showing the last known values."}
+                  message={uiT("{0} could not refresh limits. Showing the last known values.")}
                   values={{ "0": failedLabels.join(", ") }}
                 />
               </Text>
@@ -609,12 +609,12 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
             <View className="gap-3 rounded-[24px] border-continuous bg-grouped-card p-4">
               <Text className="text-sm font-t3-medium text-foreground">{uiT(window.label)}</Text>
               <Text className="text-3xl font-t3-bold tabular-nums text-foreground">
-                <UiText message={"{0}% left"} values={{ "0": remainingPercent(window) }} />
+                <UiText message={uiT("{0}% left")} values={{ "0": remainingPercent(window) }} />
               </Text>
               {window.resetsAt ? (
                 <Text selectable className="text-sm text-foreground-muted">
                   <UiText
-                    message={"Resets {0}"}
+                    message={uiT("Resets {0}")}
                     values={{
                       "0": new Date(window.resetsAt).toLocaleString(undefined, {
                         dateStyle: "medium",
@@ -626,13 +626,13 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               ) : null}
               {evenPace !== null ? (
                 <Text className="text-sm text-foreground-muted">
-                  <UiText message={"Even pace:{0}% left by now"} values={{ "0": evenPace }} />
+                  <UiText message={uiT("Even pace:{0}% left by now")} values={{ "0": evenPace }} />
                 </Text>
               ) : null}
               {reset && reset.restoresPercent > 0 ? (
                 <Text className="text-sm text-foreground-muted">
                   <UiText
-                    message={"Restores{0}% of the pool"}
+                    message={uiT("Restores{0}% of the pool")}
                     values={{ "0": reset.restoresPercent }}
                   />
                 </Text>

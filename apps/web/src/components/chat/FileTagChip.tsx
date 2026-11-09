@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 import { ContextChipLabel } from "../ContextChip";
 import { WorkspaceEntryIcon } from "./WorkspaceEntryIcon";
 

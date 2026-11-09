@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type {
   ChatAttachment,
   ChatFileAttachment,
@@ -6,15 +6,17 @@ import type {
   ScopedThreadRef,
   SnapShotSource,
 } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { CircleAlertIcon, PaperclipIcon, PlayIcon, XIcon } from "lucide-react";
 import { type ComponentProps, useLayoutEffect, useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { cn } from "~/lib/utils";
 import {
   type ComposerFileAttachment,
+  composerFileNeedsReattach,
   type ComposerImageAttachment,
   type DraftId,
-  composerFileNeedsReattach,
 } from "../../composerDraftStore";
 import { retryAttachmentUpload, useAttachmentUploadStore } from "../../lib/attachmentUploadQueue";
 import { formatAttachmentUploadProgress } from "../../lib/attachmentUploadState";
@@ -25,17 +27,14 @@ import {
   setSnapShotAnimationDestination,
   shouldAnimateSnapShotArrival,
 } from "../../lib/snapShotAnimation";
-import { cn } from "~/lib/utils";
+import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
 import { getRestingComposerImagePreviewCounts } from "../composerFooterLayout";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
 import { AttachmentImage } from "../media/AttachmentImage";
 import { Button } from "../ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ComposerImageThumbnail } from "./ComposerImageThumbnail";
-import { composerFloatingLayerProps } from "./composerEventScope";
-import type { PreparingComposerImage } from "./preparingComposerImages";
 import {
   attachVideoThumbnail,
   buildExpandedImagePreview,
@@ -46,7 +45,8 @@ import {
   SNAP_SHOT_ATTACHMENT_FRAME_CLASS,
   SnapShotAttachmentDetails,
 } from "./SnapShotAttachmentDetails";
-import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
+import { composerFloatingLayerProps } from "./composerEventScope";
+import type { PreparingComposerImage } from "./preparingComposerImages";
 
 function ComposerVideoThumbnail({ file }: { file: File }) {
   const setVideo = (video: HTMLVideoElement | null) => {

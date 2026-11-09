@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, PullRequestRef, PullRequestReviewGuideStop } from "@t3tools/contracts";
 import { SparklesIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect, useEffectEvent } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import type { ReviewCommentContext } from "~/reviewCommentContext";
 
@@ -12,13 +12,13 @@ import type { ExcerptCommenting } from "./guide/GuideExcerpt";
 import { GuideProseContext } from "./guide/GuideProse";
 import { GuideTour } from "./guide/GuideTour";
 import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
+import type { PullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import {
   nextPendingReviewCommentId,
   pullRequestReviewKey,
   usePendingReviewComments,
   usePullRequestReviewStore,
 } from "./pullRequestReviewStore";
-import type { PullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 
 export function PullRequestGuideTab({
   environmentId,

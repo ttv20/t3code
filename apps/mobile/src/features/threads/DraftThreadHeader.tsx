@@ -55,9 +55,7 @@ export function DraftThreadHeader(props: {
       title={uiT("New thread")}
       subtitle=""
       hasThreadCwd={props.cwd !== null}
-      fileInspectorSupported={false}
       inspectorMode={null}
-      onToggleInspector={openFiles}
       onOpenFilesInspector={openFiles}
       gitControls={{
         environmentId,

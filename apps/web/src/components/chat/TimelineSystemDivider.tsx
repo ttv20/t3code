@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { cn } from "~/lib/utils";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { cn } from "~/lib/utils";
 
 export function TimelineSystemDivider(props: {
   readonly label: string;

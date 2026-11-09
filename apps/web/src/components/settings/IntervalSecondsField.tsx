@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 import {
   NumberField,
   NumberFieldDecrement,

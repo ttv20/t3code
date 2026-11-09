@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { type CSSProperties, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 

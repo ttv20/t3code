@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   type DesktopBridge,
   type DesktopPendingSnapShot,
@@ -8,6 +7,7 @@ import {
   type ScopedThreadRef,
 } from "@t3tools/contracts";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import {
   type DraftId,
@@ -15,10 +15,10 @@ import {
   useComposerDraftStore,
 } from "../../composerDraftStore";
 import { useHandleNewThread } from "../../hooks/useHandleNewThread";
-import { useStableCallback } from "../../hooks/useStableCallback";
 import { getClientSettings, useClientSettings } from "../../hooks/useSettings";
-import { readThreadShell } from "../../state/entities";
+import { useStableCallback } from "../../hooks/useStableCallback";
 import { resolveThreadActionProjectRef } from "../../lib/chatThreadActions";
+import { dispatchSnapShotComposerFocus, getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
 import {
   beginSnapShotAnimation,
   dismissAllSnapShotAnimations,
@@ -28,13 +28,13 @@ import {
   updateSnapShotAnimationSource,
   waitForSnapShotAnimationDestination,
 } from "../../lib/snapShotAnimation";
-import { resizeSnapShotSource } from "../../lib/snapShotSource";
 import { playSnapShotSound } from "../../lib/snapShotSound";
-import { dispatchSnapShotComposerFocus, getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
+import { resizeSnapShotSource } from "../../lib/snapShotSource";
 import {
   countQuestionRequestAttachments,
   openQuestionAttachmentDraft,
 } from "../../questionAttachments";
+import { readThreadShell } from "../../state/entities";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 
 type CaptureTarget = DraftId | ScopedThreadRef;

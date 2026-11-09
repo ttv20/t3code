@@ -1,8 +1,8 @@
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { AuthSessionState } from "@t3tools/contracts";
+import React, { startTransition, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useUiLanguage } from "../../i18n";
 import { Alert, AlertDescription } from "../ui/alert";
-import type { AuthSessionState } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import React, { startTransition, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { connectPairing } from "../../connection/onboarding";
 import {
@@ -11,10 +11,10 @@ import {
   submitServerAuthCredential,
 } from "../../environments/primary";
 import { readHostedPairingRequest } from "../../hostedPairing";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
-import { useAtomCommand } from "../../state/use-atom-command";
 
 export function PairingPendingSurface() {
   const { t: uiT } = useUiLanguage();

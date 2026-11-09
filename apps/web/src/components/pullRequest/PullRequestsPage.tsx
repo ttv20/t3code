@@ -1,14 +1,9 @@
 import { UiText, useUiLanguage } from "../../i18n";
 
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { useAtomValue } from "@effect/atom-react";
 import { applyPullRequestDraftFilterChange } from "@t3tools/client-runtime/pull-request-query";
-import { Spinner } from "~/components/ui/spinner";
-import type { PullRequestSpeedActionResult } from "~/components/pullRequest/PullRequestSpeedActions";
-import { usePullRequestCloseBatch } from "~/components/pullRequest/usePullRequestActions";
-import { SidebarPointerSensor } from "~/components/Sidebar.pointer";
-import { resolveSidebarSweepKeys } from "~/components/Sidebar.logic";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { sortProjectsByGroupOrder } from "@t3tools/client-runtime/state/project-grouping";
-import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import type {
   EnvironmentId,
   ProjectId,
@@ -20,80 +15,26 @@ import type {
   PullRequestListState,
   PullRequestSummary,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
+import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowDownUpIcon, LayersIcon, Plug2Icon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
+import type { PullRequestSpeedActionResult } from "~/components/pullRequest/PullRequestSpeedActions";
+import { usePullRequestCloseBatch } from "~/components/pullRequest/usePullRequestActions";
+import { resolveSidebarSweepKeys } from "~/components/Sidebar.logic";
+import { SidebarPointerSensor } from "~/components/Sidebar.pointer";
+import { Spinner } from "~/components/ui/spinner";
 
-import {
-  collectPullRequestListFacets,
-  narrowPullRequestsToFilters,
-  mergePullRequestDiffStats,
-  pullRequestDiffStatKey,
-  pullRequestEntryKey,
-  rankPullRequestMatches,
-  pullRequestStatsRefreshBatches,
-  pullRequestStatsRequestBatches,
-  retainVisiblePullRequestStatsBatches,
-  type EnvironmentPullRequestEntry,
-  type MergedPullRequestList,
-  type PullRequestDiffStats,
-  type PullRequestStatsBatch,
-  type PullRequestStatsPolicy,
-  type PullRequestStatsScope,
-  type PullRequestPartitionsSnapshot,
-  type PullRequestListOverride,
-  pullRequestOverrideAfterAction,
-  reusePullRequestEntries,
-  settlePullRequestOverrides,
-  comparePullRequestsByRecency,
-  largestPullRequestReadCount,
-} from "./pullRequestList.logic";
-import {
-  pullRequestListPreferences,
-  type PullRequestListPreferencePatch,
-  writePullRequestListPreferences,
-} from "./pullRequestListPreferences";
-import { environmentMachineIcon } from "../EnvironmentMachineIcon";
-import { PullRequestDetailPanel } from "./PullRequestDetailPanel";
-import {
-  PullRequestFiltersMenu,
-  PullRequestSearchInput,
-  pullRequestHostLabel,
-  pullRequestProjectKey,
-  type PullRequestFilterOption,
-} from "./PullRequestListFilters";
-import { PullRequestCompactFilterMenu } from "./PullRequestCompactFilterMenu";
-import { INVOLVEMENT_TABS, SORT_OPTIONS, STATE_TABS } from "./pullRequestListOptions";
-import { PullRequestsColumn } from "./PullRequestsColumn";
-import { PullRequestListGroups } from "./PullRequestListGroups";
-import { pullRequestPanelReference } from "./usePullRequestDetail";
-import { usePullRequestIntentPrefetch } from "./usePullRequestIntentPrefetch";
-import {
-  usePullRequestDisplayGroups,
-  usePullRequestQueryFilters,
-  usePullRequestScope,
-  type PullRequestsSearch,
-} from "./usePullRequestListView";
-import { pullRequestGroups, pullRequestListEntryId } from "./pullRequestListGroups.logic";
-import { PullRequestListEmptyState } from "./PullRequestListEmptyState";
-import { PullRequestListGhost } from "./PullRequestGhosts";
-import { type PullRequestRowTarget } from "./PullRequestRow";
-import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
-import { RightPanelTabs } from "../RightPanelTabs";
 import { isCommandPaletteOpen } from "~/commandPaletteBus";
 import { isElectron } from "~/env";
-import { resolveShortcutCommand, shortcutLabelForCommand } from "~/keybindings";
-import { registerCommands } from "~/shortcuts/dispatcher";
-import { isTerminalFocused } from "~/lib/terminalFocus";
-import { PanelLayoutControls, RightPanelMaximizeControl } from "../chat/PanelLayoutControls";
-import { Button } from "../ui/button";
-import { SidebarInset } from "../ui/sidebar";
-import { useLiveRefresh } from "~/hooks/useLiveRefresh";
-import { useStableCallback } from "~/hooks/useStableCallback";
-import { useOpenPanelPullRequestUrl } from "~/hooks/useOpenPanelPullRequestUrl";
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
-import { toastManager } from "../ui/toast";
+import { useLiveRefresh } from "~/hooks/useLiveRefresh";
+import { useOpenPanelPullRequestUrl } from "~/hooks/useOpenPanelPullRequestUrl";
+import { useSidebarProjectGroups } from "~/hooks/useSidebarProjectGroups";
+import { useStableCallback } from "~/hooks/useStableCallback";
+import { resolveShortcutCommand, shortcutLabelForCommand } from "~/keybindings";
+import { isTerminalFocused } from "~/lib/terminalFocus";
+import { cn } from "~/lib/utils";
 import { usePanelAnimationSettings, usePanelPresence } from "~/panelAnimations";
 import {
   PULL_REQUESTS_PANEL_REF,
@@ -103,20 +44,79 @@ import {
   useRightPanelStore,
   type PullRequestSurface,
 } from "~/rightPanelStore";
-import { useSidebarProjectGroups } from "~/hooks/useSidebarProjectGroups";
+import { registerCommands } from "~/shortcuts/dispatcher";
+import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
 import {
   pullRequestEnvironment,
+  restoredPullRequestList,
   usePullRequestList,
   usePullRequestListStats,
-  restoredPullRequestList,
   usePullRequestTurnRefreshes,
   useSharedPullRequestSummary,
   type EnvironmentQueryTarget,
 } from "~/state/pullRequests";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { cn } from "~/lib/utils";
 import { primaryServerKeybindingsAtom } from "~/state/server";
-import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { PanelLayoutControls, RightPanelMaximizeControl } from "../chat/PanelLayoutControls";
+import { environmentMachineIcon } from "../EnvironmentMachineIcon";
+import { RightPanelTabs } from "../RightPanelTabs";
+import { Button } from "../ui/button";
+import { SidebarInset } from "../ui/sidebar";
+import { toastManager } from "../ui/toast";
+import { PullRequestCompactFilterMenu } from "./PullRequestCompactFilterMenu";
+import { PullRequestDetailPanel } from "./PullRequestDetailPanel";
+import { PullRequestListGhost } from "./PullRequestGhosts";
+import {
+  collectPullRequestListFacets,
+  comparePullRequestsByRecency,
+  largestPullRequestReadCount,
+  mergePullRequestDiffStats,
+  narrowPullRequestsToFilters,
+  pullRequestDiffStatKey,
+  pullRequestEntryKey,
+  pullRequestOverrideAfterAction,
+  pullRequestStatsRefreshBatches,
+  pullRequestStatsRequestBatches,
+  rankPullRequestMatches,
+  retainVisiblePullRequestStatsBatches,
+  reusePullRequestEntries,
+  settlePullRequestOverrides,
+  type EnvironmentPullRequestEntry,
+  type MergedPullRequestList,
+  type PullRequestDiffStats,
+  type PullRequestListOverride,
+  type PullRequestPartitionsSnapshot,
+  type PullRequestStatsBatch,
+  type PullRequestStatsPolicy,
+  type PullRequestStatsScope,
+} from "./pullRequestList.logic";
+import { PullRequestListEmptyState } from "./PullRequestListEmptyState";
+import {
+  PullRequestFiltersMenu,
+  PullRequestSearchInput,
+  pullRequestHostLabel,
+  pullRequestProjectKey,
+  type PullRequestFilterOption,
+} from "./PullRequestListFilters";
+import { PullRequestListGroups } from "./PullRequestListGroups";
+import { pullRequestGroups, pullRequestListEntryId } from "./pullRequestListGroups.logic";
+import { INVOLVEMENT_TABS, SORT_OPTIONS, STATE_TABS } from "./pullRequestListOptions";
+import {
+  pullRequestListPreferences,
+  writePullRequestListPreferences,
+  type PullRequestListPreferencePatch,
+} from "./pullRequestListPreferences";
+import { type PullRequestRowTarget } from "./PullRequestRow";
+import { PullRequestsColumn } from "./PullRequestsColumn";
+import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+import { pullRequestPanelReference } from "./usePullRequestDetail";
+import { usePullRequestIntentPrefetch } from "./usePullRequestIntentPrefetch";
+import {
+  usePullRequestDisplayGroups,
+  usePullRequestQueryFilters,
+  usePullRequestScope,
+  type PullRequestsSearch,
+} from "./usePullRequestListView";
 
 function getShortcutContext() {
   return {

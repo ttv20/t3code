@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
-import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 import { useClientSettings } from "~/hooks/useSettings";
+import { useUiLanguage } from "../../i18n";
 import { FileSurfaceFailure, FileSurfaceLoading, FileSurfaceNotice } from "./fileSurfaceChrome";
 import { PREVIEW_PAGE_ROWS, type TextPreviewResult } from "./largeTextProtocol";
 import VirtualTablePreview from "./VirtualTablePreview";
@@ -220,11 +220,11 @@ export default function LargeTextViewer(props: {
         role="status"
       >
         {Math.max(0, meta.count - (props.delimiter && meta.count ? 1 : 0)).toLocaleString()}{" "}
-        {props.delimiter ? "rows" : "lines"}
+        {props.delimiter ? uiT("rows") : uiT("lines")}
         {props.delimiter ? ` · ${meta.count ? meta.columns.toLocaleString() : 0} columns` : ""}
         {meta.complete && meta.sizeBytes !== undefined
           ? ` · ${meta.sizeBytes === 0 ? "0 bytes" : formatAttachmentSize(meta.sizeBytes)}`
-          : " · Indexing…"}
+          : uiT(" · Indexing…")}
       </div>
       {!meta.complete ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20">

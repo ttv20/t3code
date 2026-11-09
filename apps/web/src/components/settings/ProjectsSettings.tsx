@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { EnvironmentId } from "@t3tools/contracts";
 import { LayersIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { Button } from "../ui/button";
 import { ProjectSettingsPanel } from "./ProjectSettingsPanel";

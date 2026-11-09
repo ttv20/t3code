@@ -1,20 +1,20 @@
 import { useUiLanguage } from "../../../i18n";
 /* oxlint-disable react/no-unstable-nested-components -- These callbacks return overlays, and are invoked as render functions. */
-import { useEffect, useRef, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
+  FILE_SURFACE_SUBHEADER_CLASS,
   FileSurfaceAction,
   FileSurfaceLoading,
-  FILE_SURFACE_SUBHEADER_CLASS,
 } from "../fileSurfaceChrome";
 import { OfficePages, type PaintPage } from "./OfficePages";
-import { createWorkerClient } from "./worker-rpc";
 import {
   maxImageSide,
   type SlideMethods,
   type SlideSummary,
   type VectorRequest,
 } from "./slide-protocol";
+import { createWorkerClient } from "./worker-rpc";
 
 type Opened = { slides: readonly SlideSummary[]; paint: PaintPage };
 export default function Presentation(props: {

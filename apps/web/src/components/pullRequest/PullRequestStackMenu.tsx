@@ -1,34 +1,34 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentId,
+  PullRequestMergeMethod,
   PullRequestRef,
   PullRequestStack,
-  PullRequestMergeMethod,
 } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { RefreshCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
-import { useAtomCommand } from "~/state/use-atom-command";
+import type { ChangeRequestTerminology } from "~/sourceControlPresentation";
 import { pullRequestEnvironment } from "~/state/pullRequests";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { UiText, useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
-import { Menu, MenuPopup, MenuTrigger, MenuItem, MenuGroup, MenuSeparator } from "../ui/menu";
 import {
   Dialog,
-  DialogPopup,
-  DialogTitle,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogPanel,
-  DialogFooter,
+  DialogPopup,
+  DialogTitle,
 } from "../ui/dialog";
+import { Menu, MenuGroup, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { toastManager } from "../ui/toast";
-import type { ChangeRequestTerminology } from "~/sourceControlPresentation";
-import { PullRequestStackLayers } from "./PullRequestStackLayers";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { PullRequestStackHeader } from "./PullRequestStackHeader";
 import { PullRequestStackLayerContent } from "./PullRequestStackLayerContent";
-import { PullRequestGlyph } from "./pullRequestIcons";
+import { PullRequestStackLayers } from "./PullRequestStackLayers";
 import { readableFailure } from "./pullRequestDetail.logic";
+import { PullRequestGlyph } from "./pullRequestIcons";
 
 export function PullRequestStackMenu({
   hostLabel,

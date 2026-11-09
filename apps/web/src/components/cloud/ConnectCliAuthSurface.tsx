@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../../i18n";
 import { useAuth, useClerk } from "@clerk/react";
 import { readConnectAuthorizeRequest } from "@t3tools/shared/connectAuth";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import {
   buildConnectCliClerkAuthorizeUrl,
   connectCliSignInRedirectUrl,
 } from "../../cloud/connectCliAuth";
 import { isElectron } from "../../env";
-import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 import { resolveClerkSignInProps } from "../clerk/authRedirect";
 import { Button } from "../ui/button";
+import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 
 const invalidLinkMessage = {
   context: "Authorization request",

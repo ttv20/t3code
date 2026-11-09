@@ -208,7 +208,6 @@ class TerminalClipboardReadError extends Schema.TaggedError<TerminalClipboardRea
 type TerminalToolbarAction =
   | { readonly kind: "send"; readonly key: string; readonly label: string; readonly data: string }
   | { readonly kind: "clear"; readonly key: string; readonly label: string }
-  | { readonly kind: "paste"; readonly key: string; readonly label: string }
   | {
       readonly kind: "modifier";
       readonly key: string;
@@ -564,10 +563,10 @@ function ThreadTerminal(props: {
       hostPlatform === "mac"
         ? [
             { kind: "modifier", key: "cmd", label: uiT("cmd"), modifier: "meta" },
-            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
+            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
           ]
         : [
-            { kind: "modifier", key: "ctrl", label: "ctrl", modifier: "ctrl" },
+            { kind: "modifier", key: "ctrl", label: uiT("ctrl"), modifier: "ctrl" },
             { kind: "modifier", key: "alt", label: uiT("alt"), modifier: "meta" },
           ];
 
@@ -579,7 +578,6 @@ function ThreadTerminal(props: {
       { kind: "send", key: "esc", label: uiT("esc"), data: "\u001b" },
       ...modifierActions,
       { kind: "send", key: "tab", label: uiT("tab"), data: "\t" },
-      { kind: "paste", key: "paste", label: uiT("paste") },
       { kind: "clear", key: "clear", label: uiT("clear") },
       { kind: "send", key: "tilde", label: "~", data: "~" },
       { kind: "send", key: "pipe", label: "|", data: "|" },
@@ -639,9 +637,9 @@ function ThreadTerminal(props: {
     return result._tag === "Success";
   };
 
-  const pasteFromClipboard = async () => {
+  const pasteText = async (readText: () => Promise<string>) => {
     await pasteSession.paste({
-      readText: Clipboard.getStringAsync,
+      readText,
       write: writeInput,
       onReadError: (cause) => {
         console.error(new TerminalClipboardReadError({ terminalId, cause }));
@@ -662,7 +660,7 @@ function ThreadTerminal(props: {
       hostPlatform,
     });
     if (resolved.kind === "paste") {
-      void pasteFromClipboard();
+      void pasteText(Clipboard.getStringAsync);
       return;
     }
     void writeInput(resolved.data);
@@ -775,13 +773,14 @@ function ThreadTerminal(props: {
       return;
     }
 
-    if (action.kind === "paste") {
-      setPendingModifier(null);
-      void pasteFromClipboard();
-      return;
-    }
-
     writeModifiedInput(action.data);
+  };
+
+  const handlePaste = (readText: () => Promise<string>) => {
+    // Pasted text bypasses the native field, so a syllable it holds must not be recomposed.
+    surfaceRef.current?.resetInput();
+    setPendingModifier(null);
+    void pasteText(readText);
   };
 
   const handleDismissKeyboard = () => {
@@ -960,6 +959,7 @@ function ThreadTerminal(props: {
                       );
                   }}
                   onInput={handleInput}
+                  onPaste={(text) => handlePaste(async () => text)}
                   onResize={handleResize}
                   style={{ flex: 1 }}
                   terminalKey={terminalKey}
@@ -1042,6 +1042,12 @@ function ThreadTerminal(props: {
                           );
                         })}
                       </ComposerToolbarScroller>
+                      <ComposerToolbarButton
+                        accessibilityLabel={uiT("Paste")}
+                        icon={{ ios: "doc.on.clipboard", android: "content_paste" }}
+                        onPress={() => handlePaste(Clipboard.getStringAsync)}
+                        showChevron={false}
+                      />
                       <ComposerToolbarButton
                         accessibilityLabel={uiT("Dismiss keyboard")}
                         icon={{ ios: "keyboard.chevron.compact.down", android: "keyboard_hide" }}

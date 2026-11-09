@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../../i18n";
-import { MoonIcon, SunIcon } from "lucide-react";
-import type { CSSProperties } from "react";
 import {
   STANDARD_THEME_PREVIEW_COLORS as SHARED_STANDARD_THEME_PREVIEW_COLORS,
   THEME_PREVIEW_RENDER_SPECS,
 } from "@t3tools/shared/themePreview";
+import { MoonIcon, SunIcon } from "lucide-react";
+import type { CSSProperties } from "react";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   getThemeColorsForMode,
   getThemeModes,
   type ThemeAppearance,
   type ThemeDefinition,
 } from "../../themePalette";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const THEME_PREVIEW_ROLES = [
   "sidebar",

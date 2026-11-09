@@ -1,160 +1,104 @@
-import { useUiLanguage } from "../i18n";
-import { ChildThreadApprovals } from "./chat/ChildThreadApprovals";
-import { workspaceAreaProps } from "../lib/workspaceFocus";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
-import { queuedRunEditBlockedReason } from "@t3tools/client-runtime/queued-run-edit";
-import { ScrollToEndButton, WorkspaceFileDropOverlay } from "./chat/TimelineOverlays";
-import { usePasteToFocusComposer } from "./chat/usePasteToFocusComposer";
-import { configuredHostedAppUrl } from "../hostedPairing";
-import { announcedRun, isDetailBehindShell } from "./chat/threadActivityAnnouncement";
-import {
-  deriveAvailableRevertTurnCounts,
-  deriveThreadPendingBackgroundTasks,
-  presentThreadShellFromProjection,
-} from "./ChatView.logic";
-import { usePullRequestDraftThread } from "./chat/usePullRequestDraftThread";
-import { useComposerSelection } from "./chat/useComposerSelection";
-import { useProjectCloneBanner } from "./chat/useProjectCloneBanner";
-import { useAttachmentPreviewHandoff } from "./chat/useAttachmentPreviewHandoff";
-import {
-  applyOptimisticUserMessagesAction,
-  createOptimisticBlobPreviews,
-  emptyOptimisticUserMessages,
-  reconcileOptimisticUserMessages,
-} from "./chat/optimisticUserMessages";
-import { useTimelineRewind } from "./chat/useTimelineRewind";
-import { useThreadLifecycle } from "./chat/useThreadLifecycle";
-import { useRightPanelActions } from "./chat/useRightPanelActions";
-import { type TerminalLaunchContext, useChatTerminalActions } from "./chat/useChatTerminalActions";
-import { useComposerSend } from "./chat/useComposerSend";
-import { useComposerResume } from "./chat/useComposerResume";
-import { useImplementPlanInNewThread } from "./chat/useProposedPlanSend";
-import { ThreadFind, ThreadFindCanvas } from "./chat/ThreadFindProvider";
-import { closeThreadFind, openThreadFind, useThreadFindOpen } from "./chat/threadFindStore";
-import { THREAD_FIND_BAR_RESERVED_HEIGHT } from "./chat/ThreadFindBar";
-import { usageLimitRecoveryBannerItem } from "./chat/UsageLimitRecoveryBanner";
-import { resolveDraftHeroState } from "./ChatView.logic";
-import { useQueuedRunEdit } from "./chat/useQueuedRunEdit";
-import { recallCheckoutIsRepo, rememberCheckoutIsRepo } from "./ChatView.logic";
-import { useLogicalProjectEnvironments } from "../hooks/useLogicalProjectEnvironments";
-import { useStableCallback } from "../hooks/useStableCallback";
-import { useProjectScriptEditing } from "./chat/useProjectScriptEditing";
-import { RightPanelSurfaceContent } from "./chat/RightPanelSurfaceContent";
-import { usePendingThreadRequests } from "./chat/usePendingThreadRequests";
-import { isScratchProject } from "@t3tools/client-runtime/state/projects";
-import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
-import type { UsageLimitSourceSnapshots } from "@t3tools/contracts";
-import { feedbackBannerItem } from "./chat/ComposerFeedback";
-import { freshSessionBannerItem } from "./chat/ComposerFreshSession";
-import { armFreshSession, disarmFreshSession, useFreshSessionArmed } from "./chat/freshSessionArms";
-import { useUsageLimitsPanel } from "./chat/useUsageLimitsPanel";
-import { useWorktreeSetup } from "./chat/useWorktreeSetup";
-import { useChatShortcuts } from "./chat/useChatShortcuts";
-import { ChatBannerLane } from "./chat/ChatBannerLane";
-import * as Schema from "effect/Schema";
-import {
-  AuthOrchestrationOperateScope,
-  AuthSourceControlWriteScope,
-  AuthPreviewOperateScope,
-  AuthTerminalOperateScope,
-  type AssistantCitation,
-  type ChatFileAttachment,
-  isProviderNativeSubagentThread,
-  orchestrationV2WorktreePending,
-  type EnvironmentId,
-  type MessageId,
-  type ModelSelection,
-  type PreviewAnnotationPayload,
-  ProviderInstanceId,
-  type ServerProvider,
-  type ScopedThreadRef,
-  type ThreadId,
-  ProviderInteractionMode,
-  resolveIdleCompaction,
-  RuntimeMode,
-} from "@t3tools/contracts";
-import {
-  deriveProviderSubagentStatus,
-  deriveProviderExtensionStatuses,
-  deriveReportedModelSelection,
-  deriveResumableRunId,
-  formatModelSelectionEffort,
-  deriveRunlessWorkStartedAt,
-  deriveThreadActivityRun,
-  deriveLatestThreadRun,
-  deriveThreadStructureRuntime,
-  limitRecoveryOwnsSnooze,
-} from "@t3tools/client-runtime/state/thread-execution";
-import {
-  resolveWorkflowOpening,
-  workflowOpeningParentThreadId,
-} from "@t3tools/client-runtime/state/subagentRuntime";
-import {
-  getUserQueuedThreadRuns,
-  threadSupportsProviderHandoff,
-} from "@t3tools/client-runtime/state/thread-workflows";
-import { resolvePendingHandoff } from "@t3tools/client-runtime/handoff";
-import { HandoffRow } from "./chat/V2LifecycleRow";
-import {
-  codexFeedbackMessage,
-  deriveWorkspaceMutationId,
-  isCompleteTurnItemRow,
-  shouldShowLoadEarlierControl,
-  type CodexFeedbackSubmission,
-} from "@t3tools/client-runtime/state/threads";
+import { useAtomValue } from "@effect/atom-react";
+import { type LegendListRef } from "@legendapp/list/react";
 import {
   parseScopedThreadKey,
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
-import { formatModelSlugName, resolveSelectableModel } from "@t3tools/shared/model";
-import { projectScriptCwd, resolveProjectScripts } from "@t3tools/shared/projectScripts";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
-import { resolveThreadReferenceCopyTarget } from "@t3tools/client-runtime/thread-reference";
-import { resolveTerminalSessionLabel } from "@t3tools/shared/terminalLabels";
-import { useAtomValue } from "@effect/atom-react";
-import { type SetStateAction, use, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BackgroundThreadContext } from "./chat/backgroundThread";
-import { WorkspaceMutationIdContext } from "./chat/ChatMarkdownMedia";
-import { useLocation, useNavigate } from "@tanstack/react-router";
-import { assistantCitationFromLocation } from "../lib/assistantCitationNavigation";
-import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
-import { useStore } from "zustand";
-import { shallow } from "zustand/vanilla/shallow";
-import { useShallow } from "zustand/react/shallow";
+import { resolvePendingHandoff } from "@t3tools/client-runtime/handoff";
+import { queuedRunEditBlockedReason } from "@t3tools/client-runtime/queued-run-edit";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { isScratchProject } from "@t3tools/client-runtime/state/projects";
 import {
+  type AtomCommandResult,
   isAtomCommandInterrupted,
   mapAtomCommandResult,
   squashAtomCommandFailure,
-  type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
-import { AsyncResult } from "effect/reactivity";
-import { isElectron } from "../env";
-import { useDiffPanelStore } from "../diffPanelStore";
-import { useActiveThreadRef } from "../hooks/useActiveThreadRef";
-import { composerRequiresModifier } from "../composer-logic";
 import {
-  derivePhase,
-  deriveActiveWorkStartedAt,
-  deriveCanInterruptRunningThread,
-  findLatestProposedPlan,
-  findRevertCheckpoint,
-  hasActionableProposedPlan,
-  isLatestRunSettled,
-} from "../session-logic";
-import { type LegendListRef } from "@legendapp/list/react";
-import { useWorkspaceMutationRefresh } from "../hooks/useWorkspaceMutationRefresh";
-import { DEFAULT_INTERACTION_MODE, type ChatMessage } from "../types";
-import { buildThreadRouteParams } from "../threadRoutes";
+  resolveWorkflowOpening,
+  workflowOpeningParentThreadId,
+} from "@t3tools/client-runtime/state/subagentRuntime";
+import {
+  deriveLatestThreadRun,
+  deriveProviderExtensionStatuses,
+  deriveProviderSubagentStatus,
+  deriveReportedModelSelection,
+  deriveResumableRunId,
+  deriveRunlessWorkStartedAt,
+  deriveThreadActivityRun,
+  deriveThreadStructureRuntime,
+  formatModelSelectionEffort,
+  limitRecoveryOwnsSnooze,
+} from "@t3tools/client-runtime/state/thread-execution";
+import {
+  getUserQueuedThreadRuns,
+  threadSupportsProviderHandoff,
+} from "@t3tools/client-runtime/state/thread-workflows";
+import {
+  codexFeedbackMessage,
+  type CodexFeedbackSubmission,
+  deriveWorkspaceMutationId,
+  isCompleteTurnItemRow,
+  shouldShowLoadEarlierControl,
+} from "@t3tools/client-runtime/state/threads";
+import { resolveThreadReferenceCopyTarget } from "@t3tools/client-runtime/thread-reference";
+import type { UsageLimitSourceSnapshots } from "@t3tools/contracts";
+import {
+  type AssistantCitation,
+  AuthOrchestrationOperateScope,
+  AuthPreviewOperateScope,
+  AuthSourceControlWriteScope,
+  AuthTerminalOperateScope,
+  type ChatFileAttachment,
+  type EnvironmentId,
+  isProviderNativeSubagentThread,
+  type MessageId,
+  type ModelSelection,
+  orchestrationV2WorktreePending,
+  type PreviewAnnotationPayload,
+  ProviderInstanceId,
+  ProviderInteractionMode,
+  resolveIdleCompaction,
+  RuntimeMode,
+  type ScopedThreadRef,
+  type ServerProvider,
+  type ThreadId,
+} from "@t3tools/contracts";
+import { formatModelSlugName, resolveSelectableModel } from "@t3tools/shared/model";
+import { projectScriptCwd, resolveProjectScripts } from "@t3tools/shared/projectScripts";
+import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { resolveTerminalSessionLabel } from "@t3tools/shared/terminalLabels";
+import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
+import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import { AsyncResult } from "effect/reactivity";
+import * as Schema from "effect/Schema";
+import { type SetStateAction, use, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
+import { shallow } from "zustand/vanilla/shallow";
+import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
+import { previewRuntimeTabId } from "../browser/previewRuntimeTabId";
+import { composerRequiresModifier } from "../composer-logic";
+import { useDiffPanelStore } from "../diffPanelStore";
+import { isElectron } from "../env";
+import { FileMetadataThreadProvider } from "../hooks/FileMetadataThreadProvider";
+import { useActiveThreadRef } from "../hooks/useActiveThreadRef";
+import { useLogicalProjectEnvironments } from "../hooks/useLogicalProjectEnvironments";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useStableCallback } from "../hooks/useStableCallback";
 import { useTheme } from "../hooks/useTheme";
+import { useWorkspaceMutationRefresh } from "../hooks/useWorkspaceMutationRefresh";
+import { configuredHostedAppUrl } from "../hostedPairing";
+import { useUiLanguage } from "../i18n";
+import { assistantCitationFromLocation } from "../lib/assistantCitationNavigation";
 import { copyThreadReference } from "../lib/copyThreadReference";
 import { subscribeSnapShotComposerFocus } from "../lib/desktopSnapShot";
-import { useMediaQuery } from "../hooks/useMediaQuery";
-import { FileMetadataThreadProvider } from "../hooks/FileMetadataThreadProvider";
+import { workspaceAreaProps } from "../lib/workspaceFocus";
+import { isPreviewSupportedInRuntime, useThreadPreviewState } from "../previewStateStore";
 import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../rightPanelLayout";
-import { PopoverCreateHandle } from "./ui/popover";
 import {
   selectActiveRightPanel,
   selectActiveRightPanelSurface,
@@ -162,85 +106,153 @@ import {
   selectThreadRightPanelState,
   useRightPanelStore,
 } from "../rightPanelStore";
-import { isPreviewSupportedInRuntime, useThreadPreviewState } from "../previewStateStore";
-import { previewRuntimeTabId } from "../browser/previewRuntimeTabId";
+import {
+  deriveActiveWorkStartedAt,
+  deriveCanInterruptRunningThread,
+  derivePhase,
+  findRevertCheckpoint,
+  isLatestRunSettled,
+} from "../session-logic";
+import { buildThreadRouteParams } from "../threadRoutes";
+import { type ChatMessage, DEFAULT_INTERACTION_MODE } from "../types";
+import { BackgroundThreadContext } from "./chat/backgroundThread";
+import { createChatCanvasStore, resolveChatCanvasModel } from "./chat/canvasStore";
+import { ChatBannerLane } from "./chat/ChatBannerLane";
+import { WorkspaceMutationIdContext } from "./chat/ChatMarkdownMedia";
+import { ChildThreadApprovals } from "./chat/ChildThreadApprovals";
+import { feedbackBannerItem } from "./chat/ComposerFeedback";
+import { freshSessionBannerItem } from "./chat/ComposerFreshSession";
+import { armFreshSession, disarmFreshSession, useFreshSessionArmed } from "./chat/freshSessionArms";
+import {
+  applyOptimisticUserMessagesAction,
+  createOptimisticBlobPreviews,
+  emptyOptimisticUserMessages,
+  reconcileOptimisticUserMessages,
+} from "./chat/optimisticUserMessages";
+import { RightPanelSurfaceContent } from "./chat/RightPanelSurfaceContent";
+import { announcedRun, isDetailBehindShell } from "./chat/threadActivityAnnouncement";
+import { THREAD_FIND_BAR_RESERVED_HEIGHT } from "./chat/ThreadFindBar";
+import { ThreadFind, ThreadFindCanvas } from "./chat/ThreadFindProvider";
+import { closeThreadFind, openThreadFind, useThreadFindOpen } from "./chat/threadFindStore";
+import { ScrollToEndButton, WorkspaceFileDropOverlay } from "./chat/TimelineOverlays";
+import { usageLimitRecoveryBannerItem } from "./chat/UsageLimitRecoveryBanner";
+import { useAttachmentPreviewHandoff } from "./chat/useAttachmentPreviewHandoff";
+import { useChatShortcuts } from "./chat/useChatShortcuts";
+import { type TerminalLaunchContext, useChatTerminalActions } from "./chat/useChatTerminalActions";
+import { useComposerResume } from "./chat/useComposerResume";
+import { useComposerSelection } from "./chat/useComposerSelection";
+import { useComposerSend } from "./chat/useComposerSend";
+import { usePasteToFocusComposer } from "./chat/usePasteToFocusComposer";
+import { usePendingThreadRequests } from "./chat/usePendingThreadRequests";
+import { useProjectCloneBanner } from "./chat/useProjectCloneBanner";
+import { useProjectScriptEditing } from "./chat/useProjectScriptEditing";
+import { usePullRequestDraftThread } from "./chat/usePullRequestDraftThread";
+import { useQueuedRunEdit } from "./chat/useQueuedRunEdit";
+import { useRightPanelActions } from "./chat/useRightPanelActions";
+import { useThreadLifecycle } from "./chat/useThreadLifecycle";
+import { useTimelineRewind } from "./chat/useTimelineRewind";
+import { useUsageLimitsPanel } from "./chat/useUsageLimitsPanel";
+import { useWorktreeSetup } from "./chat/useWorktreeSetup";
+import { HandoffRow } from "./chat/V2LifecycleRow";
+import {
+  deriveAvailableRevertTurnCounts,
+  deriveThreadPendingBackgroundTasks,
+  presentThreadShellFromProjection,
+  recallCheckoutIsRepo,
+  rememberCheckoutIsRepo,
+  resolveDraftHeroState,
+} from "./ChatView.logic";
+import { getConfiguredPreviewUrls } from "./preview/previewEmptyStateLogic";
 import {
   ThreadPreviewMiniPlayer,
   useThreadPreviewCanvasSource,
 } from "./preview/ThreadPreviewMiniPlayer";
-import { createChatCanvasStore, resolveChatCanvasModel } from "./chat/canvasStore";
 import { usePreviewSession } from "./preview/usePreviewSession";
-import { getConfiguredPreviewUrls } from "./preview/previewEmptyStateLogic";
+import { PopoverCreateHandle } from "./ui/popover";
 
+import { resolveProviderSkillsForCwd } from "@t3tools/client-runtime/providerSkills";
+import { clampFileAttachmentUploadBytes } from "@t3tools/client-runtime/state/attachments";
+import {
+  deriveLatestContextWindowSnapshot,
+  hasDismissedResumeCompaction,
+  latestProviderTurnTokenUsage,
+  shouldOfferResumeCompaction,
+} from "@t3tools/client-runtime/state/context-window";
+import {
+  deriveLogicalProjectKeyFromSettings,
+  selectProjectGroupingSettings,
+} from "@t3tools/client-runtime/state/project-grouping";
+import type { ThreadStructure } from "@t3tools/client-runtime/state/shell";
+import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+import { useLocalStorage } from "~/hooks/useLocalStorage";
+import { observeResize } from "~/lib/observeResize";
+import { isInSideChatPane, type SideChatParentPanel } from "~/lib/sideChatPane";
+import { cn, newMessageId } from "~/lib/utils";
+import { projectScriptIdFromCommand } from "~/projectScripts";
+import { useRemoteOpenState } from "~/remoteOpen";
+import { useDeviceState } from "~/state/device";
+import { useEnvironmentScope } from "~/state/session";
+import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "~/workspaceTitlebar";
+import {
+  composerDraftHasUserContent,
+  type ComposerFileAttachment,
+  type ComposerImageAttachment,
+  DraftId,
+  type DraftThreadEnvMode,
+  useComposerDraftStore,
+} from "../composerDraftStore";
+import { useComposerHandleContext } from "../composerHandleContext";
+import { useDelayedStatus } from "../hooks/useDelayedStatus";
+import { useNewThreadHandler } from "../hooks/useHandleNewThread";
+import { useIncrementalTimelineEntries } from "../hooks/useIncrementalTimelineEntries";
+import { useNowMinute } from "../hooks/useNowMinute";
+import { useOpenPanelPullRequestUrl } from "../hooks/useOpenPanelPullRequestUrl";
+import { useProactivePanels } from "../hooks/useProactivePanels";
+import { useRightPanelSurfaceClose } from "../hooks/useRightPanelSurfaceClose";
+import {
+  useClientSettings,
+  useClientSettingsHydrated,
+  useEnvironmentSettings,
+} from "../hooks/useSettings";
+import { shortcutLabelForCommand } from "../keybindings";
+import { collectInlineContextIds } from "../lib/composerContextReferences";
+import { isEditableFocused } from "../lib/editableFocus";
+import { isPreviewFocused } from "../lib/previewFocus";
+import { type TerminalContextDraft } from "../lib/terminalContext";
+import { focusTerminalOnThreadEnter, getTerminalFocusOwner } from "../lib/terminalFocus";
+import { isModelPickerOpen } from "../modelPickerVisibility";
+import { usePanelAnimationSettings, usePanelPresence } from "../panelAnimations";
 import {
   previewMiniPlayerSourceKey,
   selectThreadPreviewMiniPlayer,
   usePreviewMiniPlayerStore,
 } from "../previewMiniPlayerStore";
-import { threadPullRequestPanelTarget } from "./pullRequest/pullRequestDetail.logic";
-import { LinkPullRequestDialogHost } from "./pullRequest/LinkPullRequestDialog";
-import { GuestPendingMessages } from "./chat/GuestShareControls";
-import { useDeviceState } from "~/state/device";
-import { BranchToolbar, type BranchToolbarHandle } from "./BranchToolbar";
-import { ComposerContextPermissions } from "./ComposerContextPermissions";
-import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
-import { isEditableFocused } from "../lib/editableFocus";
-import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
-import { shortcutLabelForCommand } from "../keybindings";
-import { cn } from "~/lib/utils";
-import { isModelPickerOpen } from "../modelPickerVisibility";
-import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "~/workspaceTitlebar";
-import { toastManager } from "./ui/toast";
-import { projectScriptIdFromCommand } from "~/projectScripts";
-import { newMessageId } from "~/lib/utils";
-import { isInSideChatPane, type SideChatParentPanel } from "~/lib/sideChatPane";
 import {
   NO_PROVIDER_MODEL_SELECTION,
   providerInstanceEntriesFor,
   resolveProjectDefaultProviderModelSelection,
   shouldShowInstanceBadge,
 } from "../providerInstances";
-import {
-  useClientSettings,
-  useClientSettingsHydrated,
-  useEnvironmentSettings,
-} from "../hooks/useSettings";
-import { useNowMinute } from "../hooks/useNowMinute";
-import { usePanelAnimationSettings, usePanelPresence } from "../panelAnimations";
-import { useNewThreadHandler } from "../hooks/useHandleNewThread";
-import { useOpenPanelPullRequestUrl } from "../hooks/useOpenPanelPullRequestUrl";
-import { isPreviewFocused } from "../lib/previewFocus";
-import { focusTerminalOnThreadEnter, getTerminalFocusOwner } from "../lib/terminalFocus";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  selectProjectGroupingSettings,
-} from "@t3tools/client-runtime/state/project-grouping";
+import { appAtomRegistry } from "../rpc/atomRegistry";
 import {
   isSameSidebarThreadRef,
   useSidebarPendingFileDropStore,
 } from "../sidebarPendingFileDropStore";
+import { assetEnvironment } from "../state/assets";
 import {
-  composerDraftHasUserContent,
-  type ComposerFileAttachment,
-  type ComposerImageAttachment,
-  type DraftThreadEnvMode,
-  useComposerDraftStore,
-  DraftId,
-} from "../composerDraftStore";
-import { type TerminalContextDraft } from "../lib/terminalContext";
-import { collectInlineContextIds } from "../lib/composerContextReferences";
-import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
-import { useKnownTerminalSessions, useThreadRunningTerminalIds } from "../state/terminalSessions";
-import { useEnvironmentQuery } from "../state/query";
-import { useEnvironmentScope } from "~/state/session";
-import {
-  primaryServerAvailableEditorsAtom,
-  primaryServerKeybindingsAtom,
-  serverEnvironment,
-} from "../state/server";
-import { threadEnvironment } from "../state/threads";
-import { resolveProviderSkillsForCwd } from "@t3tools/client-runtime/providerSkills";
-import { vcsEnvironment } from "../state/vcs";
+  resolveThreadDetailRef,
+  useEnvironmentSupportsServerBrowser,
+  useProject,
+  useQuietThreadProjection,
+  useQuietThreadShell,
+  useQuietThreadVisibleTurnItems,
+  useThreadCheckpointSummaries,
+  useThreadHistory,
+  useThreadLastVisitedAt,
+  useThreadStatus,
+  useThreadUpdatedAt,
+} from "../state/entities";
 import {
   type EnvironmentPresentation,
   useEnvironment,
@@ -248,23 +260,32 @@ import {
   useEnvironments,
   usePrimaryEnvironment,
 } from "../state/environments";
+import { useEnvironmentQuery } from "../state/query";
 import {
-  resolveThreadDetailRef,
-  useEnvironmentSupportsServerBrowser,
-  useProject,
-  useQuietThreadProjection,
-  useThreadUpdatedAt,
-  useThreadLastVisitedAt,
-  useQuietThreadVisibleTurnItems,
-  useThreadStatus,
-  useThreadHistory,
-  useQuietThreadShell,
-  useThreadCheckpointSummaries,
-} from "../state/entities";
+  primaryServerAvailableEditorsAtom,
+  primaryServerKeybindingsAtom,
+  serverEnvironment,
+} from "../state/server";
+import { readEnvironmentScope, readPreparedConnection } from "../state/session";
 import { useEnvironmentShellHasSnapshot } from "../state/shell";
+import { useKnownTerminalSessions, useThreadRunningTerminalIds } from "../state/terminalSessions";
+import { threadEnvironment } from "../state/threads";
+import { useAtomCommand } from "../state/use-atom-command";
+import { useAtomQueryRunner } from "../state/use-atom-query-runner";
+import { useOrchestrationCommand } from "../state/use-orchestration-command";
+import { vcsEnvironment } from "../state/vcs";
+import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
+import { resolveThreadSyncPhase } from "../threadSync";
+import { BranchToolbar, type BranchToolbarHandle } from "./BranchToolbar";
+import {
+  resolveEffectiveEnvMode,
+  resolveLocalCheckoutBranchMismatch,
+  shouldShowComposerContextStrip,
+  shouldShowEnvironmentIndicator,
+} from "./BranchToolbar.logic";
+import type { AssistantCitationRequest } from "./chat/AssistantCitationSource";
 import { ChatComposer, type ChatComposerHandle } from "./chat/ChatComposer";
-import { DraftHeroHeadline } from "./chat/DraftHeroHeadline";
-import { ExpandedImageDialogHost, openExpandedImagePreview } from "./chat/ExpandedImageDialog";
+import { ChatHeader } from "./chat/ChatHeader";
 import {
   BranchRestoreConfirmHost,
   DeviceSetupDialogHost,
@@ -272,17 +293,24 @@ import {
   PullRequestThreadDialogHost,
   RevertConfirmHost,
 } from "./chat/ChatOverlayHosts";
-import type { AssistantCitationRequest } from "./chat/AssistantCitationSource";
+import { ChatRightPanel } from "./chat/ChatRightPanel";
+import { ChatTerminalDrawers } from "./chat/ChatTerminalDrawers";
+import { draftFanoutSelectionsAtom, draftSendState } from "./chat/chatViewSend";
 import { useCitedHistory } from "./chat/citationProcedure";
+import { hasAvailableCompactionProvider } from "./chat/compaction.logic";
+import { ComposerBannerStack, type ComposerBannerStackItem } from "./chat/ComposerBannerStack";
+import { ComposerSurface } from "./chat/ComposerSurface";
+import { modelFallbackBannerItem } from "./chat/ComposerUsageLimits";
+import { DraftHeroHeadline } from "./chat/DraftHeroHeadline";
+import {
+  MOBILE_COMPOSER_VIEW_TRANSITION_NAME,
+  MOBILE_DRAFT_HEADLINE_VIEW_TRANSITION_NAME,
+} from "./chat/draftHeroTransition";
+import { ExpandedImageDialogHost, openExpandedImagePreview } from "./chat/ExpandedImageDialog";
+import type { ExpandedImagePreview } from "./chat/ExpandedImagePreview";
+import { GuestPendingMessages } from "./chat/GuestShareControls";
 import type { MessagesTimelineHistoryControls } from "./chat/MessagesTimeline";
-import { ThreadTimeline } from "./chat/ThreadTimeline";
 import { NativeChildWorkDialog } from "./chat/NativeChildWorkDialog";
-import { ProviderSubagentBar } from "./chat/ProviderSubagentBar";
-import { getTriggerDisplayModelName } from "./chat/providerIconUtils";
-import { resolveScrollToEndClearance } from "./composerFooterLayout";
-import { ChatHeader } from "./chat/ChatHeader";
-import { useSideChat } from "./chat/useSideChat";
-import { useRemoteOpenState } from "~/remoteOpen";
 import { shouldShowOpenInPicker } from "./chat/OpenInPicker.logic";
 import { useOpenFavoriteEditorShortcut } from "./chat/OpenInPickerShortcut";
 import {
@@ -292,96 +320,61 @@ import {
   ThreadPanelHeaderControl,
   WorkspaceTitlebarControls,
 } from "./chat/PanelLayoutControls";
-import type { ExpandedImagePreview } from "./chat/ExpandedImagePreview";
-import { ThreadDetailsPanel } from "./chat/ThreadDetailsPanel";
-import { NoActiveThreadState } from "./NoActiveThreadState";
-import {
-  resolveEffectiveEnvMode,
-  resolveLocalCheckoutBranchMismatch,
-  shouldShowComposerContextStrip,
-  shouldShowEnvironmentIndicator,
-} from "./BranchToolbar.logic";
+import { getTriggerDisplayModelName } from "./chat/providerIconUtils";
 import {
   getProviderStatusBannerKey,
   shouldShowProviderStatusBanner,
 } from "./chat/ProviderStatusBanner";
+import { ProviderSubagentBar } from "./chat/ProviderSubagentBar";
+import { QueuedRunsControl, type QueuedRunsControlHandle } from "./chat/QueuedRunsControl";
+import { branchMismatchBannerItem, extensionStatusBannerItem } from "./chat/ThreadActivityBanners";
+import { ThreadDetailsPanel } from "./chat/ThreadDetailsPanel";
 import {
   getThreadErrorBannerKey,
   isThreadErrorBannerDismissedForSession,
   shouldShowThreadErrorBanner,
 } from "./chat/ThreadErrorBanner";
-import { QueuedRunsControl, type QueuedRunsControlHandle } from "./chat/QueuedRunsControl";
-import { useThreadLinkedPullRequest } from "./pullRequest/useThreadLinkedPullRequest";
-import { useProactivePanels } from "../hooks/useProactivePanels";
-import { useIncrementalTimelineEntries } from "../hooks/useIncrementalTimelineEntries";
-import { useRightPanelSurfaceClose } from "../hooks/useRightPanelSurfaceClose";
-import { ComposerBannerStack, type ComposerBannerStackItem } from "./chat/ComposerBannerStack";
-import { modelFallbackBannerItem } from "./chat/ComposerUsageLimits";
-import { ComposerSurface } from "./chat/ComposerSurface";
-import { resolveThreadSyncPhase } from "../threadSync";
-import { hasAvailableCompactionProvider } from "./chat/ContextWindowMeter.logic";
-import {
-  deriveLatestContextWindowSnapshot,
-  hasDismissedResumeCompaction,
-  latestProviderTurnTokenUsage,
-  shouldOfferResumeCompaction,
-} from "@t3tools/client-runtime/state/context-window";
-import {
-  MOBILE_COMPOSER_VIEW_TRANSITION_NAME,
-  MOBILE_DRAFT_HEADLINE_VIEW_TRANSITION_NAME,
-} from "./chat/draftHeroTransition";
-import {
-  buildLocalDraftThread,
-  deriveCommittedServerUserMessageIds,
-  dismissBranchMismatchForSession,
-  shouldShowPlanFollowUpPrompt,
-  shouldRenderPreviewMiniPlayer,
-  deriveLockedProvider,
-  resolveFileAttachmentUrl,
-  resolveComposerInteractionMode,
-  resolveComposerProviderSelection,
-  resolveThreadMetadataUpdateForNextTurn,
-  resolveSendEnvMode,
-  startNewThreadForProject,
-  codexArtifactTemplatePromptToAppend,
-  shouldRefocusComposerOnWindowFocus,
-} from "./ChatView.logic";
-import { useLocalStorage } from "~/hooks/useLocalStorage";
-import { useComposerHandleContext } from "../composerHandleContext";
-import { clampFileAttachmentUploadBytes } from "@t3tools/client-runtime/state/attachments";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { assetEnvironment } from "../state/assets";
-import { readEnvironmentScope, readPreparedConnection } from "../state/session";
-import { useAtomCommand } from "../state/use-atom-command";
-import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { observeResize } from "~/lib/observeResize";
-import { ThreadVisitWatermark } from "./chat/ThreadVisitWatermark";
-import { ChatTerminalDrawers } from "./chat/ChatTerminalDrawers";
-import { ChatRightPanel } from "./chat/ChatRightPanel";
-import { useDraftEnvironmentRouting } from "./chat/useDraftEnvironmentRouting";
-import { branchMismatchBannerItem, extensionStatusBannerItem } from "./chat/ThreadActivityBanners";
 import { ThreadNow } from "./chat/ThreadNow";
-import type { ThreadStructure } from "@t3tools/client-runtime/state/shell";
-import { useDelayedStatus } from "../hooks/useDelayedStatus";
-import { useTimelineFollow } from "./chat/useTimelineFollow";
+import { ThreadTimeline } from "./chat/ThreadTimeline";
+import { ThreadVisitWatermark } from "./chat/ThreadVisitWatermark";
+import { useDraftEnvironmentRouting } from "./chat/useDraftEnvironmentRouting";
+import { useDraftHeroLayoutTransition } from "./chat/useDraftHeroLayoutTransition";
+import { useLocalDispatchState } from "./chat/useLocalDispatchState";
+import { useSideChat } from "./chat/useSideChat";
 import {
   type EnvironmentUnavailableState,
   useSystemComposerBanners,
 } from "./chat/useSystemComposerBanners";
-import { useDraftHeroLayoutTransition } from "./chat/useDraftHeroLayoutTransition";
-import { useLocalDispatchState } from "./chat/useLocalDispatchState";
-import { draftFanoutSelectionsAtom, draftSendState } from "./chat/chatViewSend";
+import { useTimelineFollow } from "./chat/useTimelineFollow";
+import { makeWorkspaceFileDropHandlers } from "./chat/workspaceFileDrop";
 import {
+  buildLocalDraftThread,
+  codexArtifactTemplatePromptToAppend,
+  deriveCommittedServerUserMessageIds,
+  deriveLockedProvider,
+  dismissBranchMismatchForSession,
   isCompactCommandMessage,
   type LocalThreadErrorEntry,
   makeThreadErrorSetter,
+  resolveComposerProviderSelection,
+  resolveFileAttachmentUrl,
+  resolveSendEnvMode,
+  resolveThreadMetadataUpdateForNextTurn,
+  shouldRefocusComposerOnWindowFocus,
+  shouldRenderPreviewMiniPlayer,
+  startNewThreadForProject,
 } from "./ChatView.logic";
+import { ComposerContextPermissions } from "./ComposerContextPermissions";
+import { resolveScrollToEndClearance } from "./composerFooterLayout";
+import { NoActiveThreadState } from "./NoActiveThreadState";
+import { LinkPullRequestDialogHost } from "./pullRequest/LinkPullRequestDialog";
+import { threadPullRequestPanelTarget } from "./pullRequest/pullRequestDetail.logic";
+import { useThreadLinkedPullRequest } from "./pullRequest/useThreadLinkedPullRequest";
+import { toastManager } from "./ui/toast";
 
 const EMPTY_PROVIDERS: ServerProvider[] = [];
 const EMPTY_PROVIDER_MODELS: ServerProvider["models"] = [];
 const EMPTY_USAGE_LIMIT_SOURCES: UsageLimitSourceSnapshots = [];
-import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
 
 const EMPTY_FEEDBACK_SUBMISSIONS: ReadonlyArray<CodexFeedbackSubmission> = [];
 const EMPTY_PROVIDER_SKILLS: ServerProvider["skills"] = [];
@@ -585,9 +578,6 @@ export default function ChatView(props: ChatViewProps) {
   const { resolvedTheme } = useTheme();
   const composerRuntimeMode = useComposerDraftStore(
     (store) => store.getComposerDraft(composerDraftTarget)?.runtimeMode ?? null,
-  );
-  const composerInteractionMode = useComposerDraftStore(
-    (store) => store.getComposerDraft(composerDraftTarget)?.interactionMode ?? null,
   );
   const composerActiveProvider = useComposerDraftStore(
     (store) => store.getComposerDraft(composerDraftTarget)?.activeProvider ?? null,
@@ -1318,12 +1308,6 @@ export default function ChatView(props: ChatViewProps) {
   const selectedProvider = selectedProviderEntry?.driverKind ?? requestedDriverKind;
   const activeProviderInstanceId = selectedProviderEntry?.instanceId ?? null;
   const activeProviderStatus = selectedProviderEntry?.snapshot ?? null;
-  const { enabled: interactionModeEnabled, interactionMode } = resolveComposerInteractionMode({
-    planModeEnabled: settings.planModeEnabled,
-    provider: activeProviderStatus,
-    interactionMode:
-      composerInteractionMode ?? activeThread?.interactionMode ?? DEFAULT_INTERACTION_MODE,
-  });
   const conversationProviderStatus =
     providerStatuses.find((status) => status.instanceId === activeRuntime?.providerInstanceId) ??
     activeProviderStatus;
@@ -1379,19 +1363,6 @@ export default function ChatView(props: ChatViewProps) {
   );
   const onHeldRequestIdsChange = useStableCallback((requestIds: ReadonlySet<string>) => {
     setHeldApprovalRequestIds((current) => (shallow(current, requestIds) ? current : requestIds));
-  });
-  const activeProposedPlan = (() => {
-    if (!latestRunSettled) {
-      return null;
-    }
-    return findLatestProposedPlan(serverProjection, activeLatestRun?.runId ?? null);
-  })();
-  const showPlanFollowUpPrompt = shouldShowPlanFollowUpPrompt({
-    pendingUserInputCount: pendingUserInputs.length,
-    interactionMode,
-    latestTurnSettled: latestRunSettled,
-    hasActionableProposedPlan: hasActionableProposedPlan(activeProposedPlan),
-    hasComposerAttachments: composerHasAttachments,
   });
   // Answering an approval or question on any client resumes quota spending, so include it in the key.
   const usageLimitsKey =
@@ -1881,7 +1852,7 @@ export default function ChatView(props: ChatViewProps) {
         threadId: activeThreadId,
         message: { messageId: newMessageId(), role: "user", text, attachments: [] },
         runtimeMode,
-        interactionMode,
+        interactionMode: DEFAULT_INTERACTION_MODE,
         dispatchMode: "queue",
       },
     });
@@ -2484,18 +2455,8 @@ export default function ChatView(props: ChatViewProps) {
     activeEnvironmentUnavailable ||
     feedbackUploading ||
     pendingApprovals.length > 0 ||
-    pendingUserInputs.length > 0 ||
-    showPlanFollowUpPrompt;
+    pendingUserInputs.length > 0;
   const compactDisabled = compactThreadUnavailable;
-  const compactDisabledReason = compactDisabled
-    ? !canOperateThread
-      ? "This connection cannot change threads."
-      : !activeProject
-        ? "Choose a project before compacting"
-        : !manualCompactionProviderAvailable
-          ? "Compaction is unavailable for this provider"
-          : "Compacting is unavailable right now"
-    : null;
   const resumeCompactionTokens =
     activeContextWindow &&
     resolveIdleCompaction(
@@ -2864,14 +2825,11 @@ export default function ChatView(props: ChatViewProps) {
 
   const {
     getModelDisabledReason,
-    handleInteractionModeChange,
-    handleInteractionModeChangeStable,
     handleRuntimeModeChangeStable,
     onEnvModeChangeStable,
     onProviderModelSelectStable,
     onStartFromOriginChange,
     openProviderSetupStable,
-    toggleInteractionModeStable,
   } = useComposerSelection({
     environmentId,
     composerDraftTarget,
@@ -2885,8 +2843,6 @@ export default function ChatView(props: ChatViewProps) {
     supportsProviderSwitchingViaHandoff,
     multipleModelSelections,
     runtimeMode,
-    interactionMode,
-    interactionModeEnabled,
     isLocalDraftThread,
     canOverrideServerThreadEnvMode,
     setPendingServerThreadEnvModeEntry,
@@ -2905,28 +2861,12 @@ export default function ChatView(props: ChatViewProps) {
     threadDetailLoading,
     activeEnvironmentUnavailable,
     runtimeMode,
-    interactionMode,
     localCheckoutBranchMismatch,
     composerRef,
     persistThreadSettingsForNextTurn,
     clearUsageLimitsFor,
     scrollToEnd,
     setThreadError,
-  });
-  const onImplementPlanInNewThread = useImplementPlanInNewThread({
-    environmentId,
-    routeThreadKey,
-    activeThread,
-    activeThreadBranch,
-    activeProposedPlan,
-    isServerThread,
-    isSendBusy,
-    composerRef,
-    beginLocalDispatch,
-    resetLocalDispatch,
-    activeProject,
-    activeEnvironmentUnavailable,
-    defaultRuntimeMode,
   });
   const { onSend } = useComposerSend({
     environmentId,
@@ -2939,7 +2879,6 @@ export default function ChatView(props: ChatViewProps) {
     activeThreadBranch,
     activeProject,
     activeProjectDefaultModelSelection,
-    activeProposedPlan,
     activeMessageCount,
     isServerThread,
     isLocalDraftThread,
@@ -2970,7 +2909,6 @@ export default function ChatView(props: ChatViewProps) {
     keepFullHistory,
     freshSessionAvailable: freshSessionCommandAvailable,
     resumeCompactionTokens,
-    showPlanFollowUpPrompt,
     usageLimitsKey,
     usageLimitsOffered,
     openUsageLimits,
@@ -2999,13 +2937,11 @@ export default function ChatView(props: ChatViewProps) {
     setKeepFullHistory,
     anchorNewTurn,
     acknowledgeActiveThreadWoke,
-    handleInteractionModeChange,
     onSideChat: sideChat.available ? sendSideChatStable : undefined,
     sideChatDisabledReason,
     handleNewThreadInActiveProject,
     persistThreadSettingsForNextTurn,
   });
-  const onImplementPlanInNewThreadStable = useStableCallback(onImplementPlanInNewThread);
 
   const onWorktreeSetupWorkLocally = () => {
     if (!worktreeSetup || worktreeSetup.phase !== "running" || !draftId) {
@@ -3644,7 +3580,6 @@ export default function ChatView(props: ChatViewProps) {
                                 draftId={draftId}
                                 activeThreadId={activeThreadId}
                                 activeThread={activeThread}
-                                activeThreadShell={activeThreadShell}
                                 promptHistoryEntries={timelineEntries}
                                 forceExpandedOnMobile={
                                   forceExpandedMobileComposer && isDraftHeroState
@@ -3711,14 +3646,8 @@ export default function ChatView(props: ChatViewProps) {
                                 activePendingDraftAnswers={activePendingDraftAnswers}
                                 activePendingQuestionIndex={activePendingQuestionIndex}
                                 respondingRequestIds={respondingRequestIds}
-                                showPlanFollowUpPrompt={showPlanFollowUpPrompt}
-                                activeProposedPlan={activeProposedPlan}
-                                threadSyncPhase={
-                                  activeEnvironmentUnavailable ? null : threadSyncPhase
-                                }
                                 runtimeMode={runtimeMode}
                                 defaultRuntimeMode={defaultRuntimeMode}
-                                interactionMode={interactionMode}
                                 lockedProvider={modelPickerLockedProvider}
                                 providerStatuses={providerStatuses as ServerProvider[]}
                                 providerCatalogKnown={serverConfig !== null}
@@ -3728,12 +3657,8 @@ export default function ChatView(props: ChatViewProps) {
                                 activeThreadModelSelection={activeThread?.modelSelection}
                                 activeProjectId={activeProject?.id ?? null}
                                 projectName={activeProject?.title}
-                                contextWindowEntries={serverVisibleTurnItems}
-                                contextWindowLiveUsage={activeThreadLiveTokenUsage}
-                                contextWindowProviderThread={activeProviderThread}
                                 compactThreadUnavailable={compactThreadUnavailable}
                                 compactDisabled={compactDisabled}
-                                compactDisabledReason={compactDisabledReason}
                                 resolvedTheme={resolvedTheme}
                                 settings={settings}
                                 keybindings={keybindings}
@@ -3763,7 +3688,6 @@ export default function ChatView(props: ChatViewProps) {
                                 onSend={onComposerSendStable}
                                 onResume={onComposerResumeStable}
                                 onInterrupt={onInterruptStable}
-                                onImplementPlanInNewThread={onImplementPlanInNewThreadStable}
                                 onSelectActivePendingUserInputOption={
                                   onSelectActivePendingUserInputOptionStable
                                 }
@@ -3780,9 +3704,7 @@ export default function ChatView(props: ChatViewProps) {
                                 onProviderModelSelect={onProviderModelSelectStable}
                                 onOpenProviderSetup={openProviderSetupStable}
                                 getModelDisabledReason={getModelDisabledReason}
-                                toggleInteractionMode={toggleInteractionModeStable}
                                 handleRuntimeModeChange={handleRuntimeModeChangeStable}
-                                handleInteractionModeChange={handleInteractionModeChangeStable}
                                 focusComposer={focusComposerStable}
                                 scheduleComposerFocus={scheduleComposerFocusStable}
                                 setThreadError={setThreadError}

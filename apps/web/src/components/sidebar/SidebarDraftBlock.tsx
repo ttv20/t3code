@@ -1,5 +1,4 @@
-import { useUiLanguage } from "../../i18n";
-import { discardComposerDraft } from "../../lib/discardComposerDraft";
+import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
 import { SquarePenIcon, XIcon } from "lucide-react";
 import {
@@ -8,12 +7,8 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "~/lib/utils";
-import { resolveSidebarRowAccessibility } from "../Sidebar.logic";
-import { ProjectFavicon, type ProjectFaviconProject } from "../ProjectFavicon";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   composerDraftHasUserContent,
   DraftId,
@@ -21,6 +16,11 @@ import {
   type ComposerThreadDraftState,
   type DraftSessionState,
 } from "../../composerDraftStore";
+import { useUiLanguage } from "../../i18n";
+import { discardComposerDraft } from "../../lib/discardComposerDraft";
+import { ProjectFavicon, type ProjectFaviconProject } from "../ProjectFavicon";
+import { resolveSidebarRowAccessibility } from "../Sidebar.logic";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { draftPenClassName, draftSurfaceClassName } from "./SidebarThreadRow";
 
 const SidebarDraftRow = memo(function SidebarDraftRow(props: {

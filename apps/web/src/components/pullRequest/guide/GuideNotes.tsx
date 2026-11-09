@@ -1,5 +1,5 @@
-import { useUiLanguage, UiText } from "../../../i18n";
 import type { PullRequestReviewGuideNote } from "@t3tools/contracts";
+import { UiText, useUiLanguage } from "../../../i18n";
 
 import { cn } from "~/lib/utils";
 

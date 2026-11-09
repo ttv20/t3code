@@ -1,19 +1,18 @@
-import { UiText, useUiLanguage } from "../../i18n";
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { connectionStatusTitle } from "@t3tools/client-runtime/connection";
-import { AsyncResult } from "effect/reactivity";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import {
-  Clock3Icon,
-  CopyIcon,
-  InboxIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  PlayIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+  DEFAULT_WEBHOOK_PROMPT,
+  WEBHOOK_FILTER_OPS,
+  emptyWebhookFilterDraft,
+  parseWebhookFilterDrafts,
+  removeWebhookFilterDraft,
+  type WebhookFilterDraft,
+} from "@t3tools/client-runtime/scheduled-task-webhook";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentId,
   ModelSelection,
@@ -28,14 +27,6 @@ import type {
   ThreadId,
 } from "@t3tools/contracts";
 import {
-  DEFAULT_WEBHOOK_PROMPT,
-  emptyWebhookFilterDraft,
-  parseWebhookFilterDrafts,
-  removeWebhookFilterDraft,
-  WEBHOOK_FILTER_OPS,
-  type WebhookFilterDraft,
-} from "@t3tools/client-runtime/scheduled-task-webhook";
-import {
   MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
   MAX_WEBHOOK_FILTERS,
   MIN_SCHEDULED_TASK_INTERVAL_MS,
@@ -43,71 +34,74 @@ import {
   resolveEnvironmentMachineKind,
   scheduledTaskThreadMode,
 } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+  ChevronDownIcon,
+  Clock3Icon,
+  CopyIcon,
+  InboxIcon,
+  MessageSquareIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PlayIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { formatRelativeTime } from "../../timestampFormat";
-import { useEnvironmentSettings } from "../../hooks/useSettings";
-import { getCustomModelOptionsByInstance } from "../../modelSelection";
-import { providerInstanceEntriesFor } from "../../providerInstances";
-import { usePrimaryCloudLinkState } from "../../cloud/cloudLinkState";
-import { requestConfirmDialog } from "../../confirmDialog";
-import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { useNowMinute } from "../../hooks/useNowMinute";
-import {
-  useEnvironment,
-  useEnvironmentHttpBaseUrl,
-  type EnvironmentPresentation,
-} from "../../state/environments";
-import { useProjects, useQuietThreadShell, useThreadShell } from "../../state/entities";
-import { buildThreadRouteParams } from "../../threadRoutes";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
-import { formatEnvironmentQueryError, useEnvironmentQuery } from "../../state/query";
-import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
-import { threadFamilies } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { WorktreeBaseBranchPicker } from "../WorktreeBaseBranchPicker";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { ConnectionStatusDot, connectionPhaseDotClassName } from "../ConnectionStatusDot";
+import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
 import {
   AuthOrchestrationOperateScope,
   clampManagedRuntimeMode,
   managedCapabilityDenial,
 } from "@t3tools/contracts";
 import { resolvePastedPath } from "@t3tools/shared/path";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useManagedPolicy } from "~/state/managedPolicy";
-import { ManagedNotice } from "../ManagedPolicy";
 import { readEnvironmentScope } from "~/state/session";
-import { useSettingsScope } from "./SettingsScopeContext";
-import { EnvironmentRow, useEnvironmentTransportLabel } from "./EnvironmentRow";
-import { SettingsGroup } from "./SettingsGroup";
-import { settingsScopeEnvironmentLabel, settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+import { usePrimaryCloudLinkState } from "../../cloud/cloudLinkState";
+import { requestConfirmDialog } from "../../confirmDialog";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { useNowMinute } from "../../hooks/useNowMinute";
+import { useEnvironmentSettings } from "../../hooks/useSettings";
+import { getCustomModelOptionsByInstance } from "../../modelSelection";
+import { providerInstanceEntriesFor } from "../../providerInstances";
 import {
-  WEBHOOK_SIGNATURE_DEFAULTS,
-  scheduleDraftErrors,
-  toDateTimeLocalValue,
-  webhookDeliveryLabel,
-  defaultScheduledTaskProjectId,
-  matchesScheduledTaskScope,
-  scheduleFromDraft,
-  scheduledTaskDefaultModel,
-  taskToDraft,
-  type DraftState,
-  type ScheduleMode,
-  type WorkspaceMode,
-} from "./scheduledTasksSettings.logic";
-import { Label } from "../ui/label";
-import { Menu, MenuTrigger, MenuPopup, MenuItem, MenuSeparator } from "../ui/menu";
-import { ToggleGroup, Toggle } from "../ui/toggle-group";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from "../ui/empty";
+  useProjects,
+  useQuietThreadShell,
+  useThreadShell,
+  useVisibleThreadShells,
+} from "../../state/entities";
+import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
+import {
+  useEnvironment,
+  useEnvironmentHttpBaseUrl,
+  type EnvironmentPresentation,
+} from "../../state/environments";
+import { useThreadSearch } from "../../state/queries";
+import { formatEnvironmentQueryError, useEnvironmentQuery } from "../../state/query";
+import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
+import { threadFamilies } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { buildThreadRouteParams } from "../../threadRoutes";
+import { formatRelativeTime } from "../../timestampFormat";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
+import { ConnectionStatusDot, connectionPhaseDotClassName } from "../ConnectionStatusDot";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { ManagedNotice } from "../ManagedPolicy";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+  Combobox,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxSearchInput,
+  ComboboxTrigger,
+} from "../ui/combobox";
 import {
   Dialog,
   DialogClose,
@@ -118,22 +112,52 @@ import {
   DialogPopup,
   DialogTitle,
 } from "../ui/dialog";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { WorktreeBaseBranchPicker } from "../WorktreeBaseBranchPicker";
+import { EnvironmentRow, useEnvironmentTransportLabel } from "./EnvironmentRow";
 import {
+  WEBHOOK_SIGNATURE_DEFAULTS,
+  changeDraftProject,
+  defaultScheduledTaskProjectId,
+  matchesScheduledTaskScope,
+  moveDraftToThread,
+  scheduleDraftErrors,
+  scheduleFromDraft,
+  scheduledTaskDefaultModel,
+  scheduledTaskDestinationThreads,
+  taskToDraft,
+  toDateTimeLocalValue,
+  unbindDraftFromThread,
+  webhookDeliveryLabel,
+  type DraftState,
+  type ScheduleMode,
+  type WorkspaceMode,
+} from "./scheduledTasksSettings.logic";
+import { SettingsGroup } from "./SettingsGroup";
+import {
+  SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
-  SETTINGS_PICKER_TRIGGER_CLASSNAME,
 } from "./settingsLayout";
+import { settingsScopeEnvironmentLabel, settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+import { useSettingsScope } from "./SettingsScopeContext";
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const WEEKDAY_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] as const;
+
+// Thread ids are trimmed, so the leading space keeps this from matching one.
+const NEW_THREAD_DESTINATION = " new-thread";
 
 const WORKSPACE_MODE_LABELS: Record<WorkspaceMode, string> = {
   worktree: "Create a new worktree",
@@ -216,7 +240,7 @@ function WebhookFiltersField({
             <div className="grid min-w-0 flex-1 grid-cols-1">
               <Input
                 aria-label={uiT("Filter {0} path", { "0": index + 1 })}
-                placeholder="body.action"
+                placeholder={"body.action"}
                 value={filter.path}
                 onChange={(event) => update(index, { path: event.target.value })}
               />
@@ -1226,17 +1250,25 @@ const THREAD_MODE_LABELS: Record<ScheduledTaskThreadMode, string> = {
 
 function ScheduledTaskDestination({
   environmentId,
+  projectId,
   threadId,
   threadMode,
+  disabled,
+  onSelect,
   onThreadModeChange,
 }: {
   readonly environmentId: EnvironmentId;
+  readonly projectId: string;
   readonly threadId: ThreadId | null;
   readonly threadMode: ScheduledTaskThreadMode;
+  readonly disabled: boolean;
+  readonly onSelect: (thread: { id: ThreadId; projectId: ProjectId } | null) => void;
   /** Absent on servers that predate thread modes. */
   readonly onThreadModeChange: ((mode: ScheduledTaskThreadMode) => void) | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const ref = threadId === null ? null : scopeThreadRef(environmentId, threadId);
   const shell = useThreadShell(ref);
   // The shell can omit older settled threads; their family read still carries the title.
@@ -1244,11 +1276,38 @@ function ScheduledTaskDestination({
     ref !== null && shell === null ? threadFamilies.familyAtom(environmentId, ref.threadId) : null,
   );
   const thread = shell ?? family.data?.threads.find((row) => row.id === threadId);
-  const bound = ref !== null && threadMode !== "new_thread";
+  const currentLabel =
+    ref !== null
+      ? thread?.title.trim() || `Thread ${ref.threadId}`
+      : threadMode === "new_thread"
+        ? "New thread each run"
+        : "Started by the first run";
+  const shells = useVisibleThreadShells(open);
+  // Mounts older settled threads matching the query, which shells may leave out.
+  useThreadSearch(open && projectId ? [environmentId] : [], query, {
+    titlesOnly: true,
+    projectIds: [projectId as ProjectId],
+  });
+  const threads = scheduledTaskDestinationThreads(shells, {
+    environmentId,
+    projectId,
+    currentThreadId: threadId,
+    query,
+  });
+  const search = query.trim().toLocaleLowerCase();
+  const items: ReadonlyArray<string> = [
+    ...(search ? [] : [NEW_THREAD_DESTINATION]),
+    ...(threadId !== null && currentLabel.toLocaleLowerCase().includes(search) ? [threadId] : []),
+    ...threads.map((row) => row.id),
+  ];
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) setQuery("");
+  };
   const detail =
     threadMode === "new_thread"
       ? "Each run starts a new thread with the workspace and model below."
-      : !bound
+      : ref === null
         ? threadMode === "continue"
           ? "The first run starts a thread with the workspace and model below. Later runs continue that conversation."
           : "The first run starts a thread with the workspace and model below. Later runs post there, each in a fresh session without earlier runs' context."
@@ -1274,10 +1333,68 @@ function ScheduledTaskDestination({
           </SelectPopup>
         </Select>
       ) : null}
+      {!onThreadModeChange || threadMode !== "new_thread" ? (
+        <Combobox
+          items={items}
+          filteredItems={items}
+          filter={null}
+          autoHighlight
+          open={open && !disabled}
+          onOpenChange={handleOpenChange}
+          value={threadId ?? (threadMode === "new_thread" ? NEW_THREAD_DESTINATION : null)}
+          onValueChange={(value) => {
+            if (value === NEW_THREAD_DESTINATION) {
+              onSelect(null);
+              handleOpenChange(false);
+              return;
+            }
+            const picked = threads.find((row) => row.id === value);
+            if (picked) onSelect(picked);
+            handleOpenChange(false);
+          }}
+        >
+          <ComboboxTrigger
+            id={
+              onThreadModeChange
+                ? "scheduled-task-destination-thread"
+                : "scheduled-task-destination"
+            }
+            aria-label={onThreadModeChange ? "Destination thread" : undefined}
+            disabled={disabled}
+            render={<Button variant="outline" size="sm" />}
+            className="w-full justify-between"
+          >
+            <MessageSquareIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate text-left">{currentLabel}</span>
+            <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          </ComboboxTrigger>
+          <ComboboxPopup align="start" side="bottom" className="w-80">
+            <ComboboxSearchInput
+              aria-label={uiT("Search threads")}
+              placeholder={uiT("Search all threads...")}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <ComboboxEmpty>
+              <UiText message={"No threads found."} />
+            </ComboboxEmpty>
+            <ComboboxList className="max-h-72">
+              {items.map((value, index) => (
+                <ComboboxItem key={value} index={index} value={value}>
+                  <span className="block truncate">
+                    {value === NEW_THREAD_DESTINATION
+                      ? uiT("New thread each run")
+                      : value === threadId
+                        ? currentLabel
+                        : threads.find((row) => row.id === value)?.title || "Untitled thread"}
+                  </span>
+                </ComboboxItem>
+              ))}
+            </ComboboxList>
+          </ComboboxPopup>
+        </Combobox>
+      ) : null}
       <div className="space-y-1 text-sm">
-        {bound ? (
-          <p className="wrap-anywhere">{thread?.title.trim() || `Thread ${ref.threadId}`}</p>
-        ) : null}
         <p className="text-muted-foreground">{detail}</p>
         {threadMode !== "new_thread" ? (
           <p className="text-muted-foreground">
@@ -1531,7 +1648,7 @@ function ScheduledTaskEditorForm({
                 if (!next) return;
                 setEnvironmentId(next.environmentId);
                 setDraft((current) => ({
-                  ...current,
+                  ...unbindDraftFromThread(current),
                   projectId: defaultScheduledTaskProjectId(projectsOn(next.environmentId), scope),
                   modelKey: "",
                   baseModelSelection: null,
@@ -1607,11 +1724,24 @@ function ScheduledTaskEditorForm({
 
           <ScheduledTaskDestination
             environmentId={environmentId}
+            projectId={selectedProjectId}
             threadId={draft.threadId ? (draft.threadId as ThreadId) : null}
             threadMode={draft.threadMode}
+            disabled={saving || !connected}
+            onSelect={(thread) =>
+              setDraft((current) =>
+                thread === null
+                  ? { ...unbindDraftFromThread(current), threadMode: "new_thread" }
+                  : moveDraftToThread(current, thread),
+              )
+            }
             onThreadModeChange={
               offersThreadModes
-                ? (threadMode) => setDraft((current) => ({ ...current, threadMode }))
+                ? (threadMode) =>
+                    setDraft((current) => ({
+                      ...(threadMode === "new_thread" ? unbindDraftFromThread(current) : current),
+                      threadMode,
+                    }))
                 : undefined
             }
           />
@@ -1621,7 +1751,7 @@ function ScheduledTaskEditorForm({
               <Select
                 value={selectedProjectId}
                 onValueChange={(projectId) =>
-                  setDraft((current) => ({ ...current, projectId: projectId ?? "" }))
+                  setDraft((current) => changeDraftProject(current, projectId ?? ""))
                 }
               >
                 <SelectTrigger size="sm" id="scheduled-task-project">

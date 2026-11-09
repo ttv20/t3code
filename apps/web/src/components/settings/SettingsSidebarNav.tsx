@@ -1,4 +1,30 @@
-import { useUiLanguage } from "../../i18n";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  ArchiveIcon,
+  BotIcon,
+  CalendarClockIcon,
+  createLucideIcon,
+  FileDiffIcon,
+  FlaskConicalIcon,
+  FolderTreeIcon,
+  GitBranchIcon,
+  GlobeIcon,
+  InfoIcon,
+  KeyboardIcon,
+  KeyRoundIcon,
+  MessageSquareTextIcon,
+  MessagesSquareIcon,
+  MicIcon,
+  PaletteIcon,
+  PanelsTopLeftIcon,
+  SearchIcon,
+  ServerIcon,
+  Settings2Icon,
+  ShieldCheckIcon,
+  SmartphoneIcon,
+  WrenchIcon,
+  XIcon,
+} from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -8,50 +34,25 @@ import {
   type ComponentType,
   type KeyboardEvent,
 } from "react";
-import {
-  ArchiveIcon,
-  FlaskConicalIcon,
-  BotIcon,
-  createLucideIcon,
-  CalendarClockIcon,
-  FileDiffIcon,
-  FolderTreeIcon,
-  GitBranchIcon,
-  GlobeIcon,
-  InfoIcon,
-  MessageSquareTextIcon,
-  MessagesSquareIcon,
-  PanelsTopLeftIcon,
-  KeyboardIcon,
-  KeyRoundIcon,
-  MicIcon,
-  PaletteIcon,
-  SearchIcon,
-  ServerIcon,
-  Settings2Icon,
-  ShieldCheckIcon,
-  SmartphoneIcon,
-  WrenchIcon,
-  XIcon,
-} from "lucide-react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
+import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import { Button } from "../ui/button";
 import { Kbd } from "../ui/kbd";
 import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarInput,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarInput,
 } from "../ui/sidebar";
 import { scrollToSettingsTarget } from "./settingsLayout";
 import {
-  searchSettings,
   revealSettingsSearchTarget,
+  searchSettings,
   SETTINGS_NAV_GROUPS,
   SETTINGS_SECTION_LABELS,
   type SettingsPath,
@@ -59,7 +60,6 @@ import {
 } from "./settingsSearch";
 import { useAvailableSettingsSearchItems } from "./useAvailableSettingsSearchItems";
 import { useSettingsSectionNavigation } from "./useSettingsSectionNavigation";
-import { workspaceAreaProps } from "../../lib/workspaceFocus";
 
 const SnapShotIcon = createLucideIcon("snap-shot", [
   [

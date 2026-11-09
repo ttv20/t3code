@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { ChevronDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";

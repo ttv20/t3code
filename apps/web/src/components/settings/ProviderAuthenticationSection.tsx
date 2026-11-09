@@ -1,5 +1,3 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -12,8 +10,9 @@ import type {
   ProviderInstanceId,
   ServerProvider,
 } from "@t3tools/contracts";
-import { lazy, Suspense, useRef, useState } from "react";
 import { CopyIcon } from "lucide-react";
+import { lazy, Suspense, useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { ensureLocalApi } from "../../localApi";
@@ -24,8 +23,8 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { SettingsRow } from "./settingsLayout";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { SettingsRow } from "./settingsLayout";
 
 const ProviderAuthTerminal = lazy(() => import("./ProviderAuthTerminal"));
 

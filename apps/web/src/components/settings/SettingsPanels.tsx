@@ -1,14 +1,8 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { NotificationSettings } from "./NotificationSettings";
-import { PRIVACY_POLICY_URL } from "../../legalLinks";
-import { CheckIcon } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
 import {
   type DesktopUpdateChannel,
-  IDLE_COMPACTION_MODES,
   globalIdleCompaction,
+  IDLE_COMPACTION_MODES,
   managedUpdatesDenial,
   managedUpdatesMessage,
   ProviderDriverKind,
@@ -20,19 +14,22 @@ import {
   type DiffLayout,
   MAX_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
   MIN_SIDEBAR_AUTO_SETTLE_AFTER_DAYS,
-  type ResponseStreamingMode,
   type QuitConfirmationMode,
+  type ResponseStreamingMode,
   SidebarProjectSortOrder,
+  ToolCallVisibility,
 } from "@t3tools/contracts/settings";
 import { desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
 import { createModelSelection } from "@t3tools/shared/model";
 import { resolvePastedPath } from "@t3tools/shared/path";
+import { Link, useNavigate } from "@tanstack/react-router";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
+import { CheckIcon } from "lucide-react";
+import { useRef, useState } from "react";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import { environmentSessionStatesAtom } from "~/state/session";
 import { APP_VERSION, HOSTED_APP_CHANNEL, HOSTED_APP_CHANNEL_LABEL } from "../../branding";
-import { AboutVersionTitle } from "./AboutVersionTitle";
-import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
-import { MobileAppSettingsRow } from "./MobileAppSettingsRow";
 import {
   canCheckForUpdate,
   getDesktopUpdateButtonTooltip,
@@ -41,47 +38,50 @@ import {
   isDesktopUpdateButtonDisabled,
   resolveDesktopUpdateButtonAction,
 } from "../../components/desktopUpdate.logic";
-import { ProviderModelPicker } from "../chat/ProviderModelPicker";
-import { TraitsPicker } from "../chat/TraitsPicker";
 import { isElectron } from "../../env";
-import { buildHostedChannelSelectionUrl, type HostedAppChannel } from "../../hostedPairing";
 import {
   readAppearanceModePreference,
   readThemeHalves,
   readThemePreference,
   useTheme,
 } from "../../hooks/useTheme";
-import {
-  useScopedSettings,
-  useScopedSettingsMixed,
-  useUpdateScopedSettings,
-} from "./useScopedSettings";
-import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
-import { useOptionalSettingsScope, useSettingsScope } from "./SettingsScopeContext";
-import { scopedIdleCompaction } from "./scopedSettings";
-import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
-import { ThreadTitleInstructionsSettings } from "./ThreadTitleInstructionsSettings";
-import { SnoozePresetsRow } from "./SnoozePresetsSettings";
-import { useDesktopUpdateState } from "../../state/desktopUpdate";
-import { managedTelemetryOffMessage, usePrimaryManagedPolicy } from "../../state/managedPolicy";
+import { buildHostedChannelSelectionUrl, type HostedAppChannel } from "../../hostedPairing";
+import { UiText, useUiLanguage } from "../../i18n";
+import { PRIVACY_POLICY_URL } from "../../legalLinks";
+import { isMacPlatform } from "../../lib/utils";
+import { ensureLocalApi, readLocalApi } from "../../localApi";
 import {
   getCustomModelOptionsByInstance,
   resolveAppModelSelectionState,
   selectsPlanAgent,
 } from "../../modelSelection";
-import { providerInstanceEntriesFor } from "../../providerInstances";
-import { ensureLocalApi, readLocalApi } from "../../localApi";
-import { isMacPlatform } from "../../lib/utils";
+import { useDesktopUpdateState } from "../../state/desktopUpdate";
 import { useEnvironmentProviders, useEnvironments } from "../../state/environments";
+import { managedTelemetryOffMessage, usePrimaryManagedPolicy } from "../../state/managedPolicy";
 import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
+import { useTextGenerationTargets } from "../../textGenerators";
+import { canUpdateServer } from "../ServerUpdateAction";
+import { ProviderModelPicker } from "../chat/ProviderModelPicker";
+import { TraitsPicker } from "../chat/TraitsPicker";
+import { awaitsTrackSwitch, channelSwitchLabel } from "../sidebar/updateEverything.logic";
+import { useUpdateEverythingRun } from "../sidebar/updateEverythingRun";
+import { isHostedByThisApp } from "../sidebar/useUpdateEverything";
 import { Button } from "../ui/button";
 import { DraftInput } from "../ui/draft-input";
 import { Input } from "../ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { ScopedSwitch } from "./ScopedSwitch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { AboutVersionTitle } from "./AboutVersionTitle";
+import { AdvancedSettings } from "./AdvancedSettings";
+import { BackgroundActivitySettingsRow } from "./BackgroundActivitySettings";
+import { CliCommandSettingsRow } from "./CliCommandSettingsRow";
+import { PullRequestLinksOpenInAppSetting } from "./IntegrationsSettings";
+import { MobileAppSettingsRow } from "./MobileAppSettingsRow";
+import { NotificationSettings } from "./NotificationSettings";
+import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
+import { ScopedSwitch } from "./ScopedSwitch";
 import {
   getChangedBrowserSettingLabels,
   getChangedTypographySettingLabels,
@@ -91,25 +91,26 @@ import {
   readLastEnabledProjectGroupingMode,
   rememberEnabledProjectGroupingMode,
 } from "./SettingsPanels.logic";
+import { useOptionalSettingsScope, useSettingsScope } from "./SettingsScopeContext";
+import { SnoozePresetsRow } from "./SnoozePresetsSettings";
+import { StorageCleanupSections } from "./StorageSettings";
+import { ThreadTitleInstructionsSettings } from "./ThreadTitleInstructionsSettings";
+import { UpdateTrackSwitchDialog } from "./UpdateTrackSwitchDialog";
+import { scopedIdleCompaction } from "./scopedSettings";
 import {
-  SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingResetButton,
+  SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
-import { BackgroundActivitySettingsRow } from "./BackgroundActivitySettings";
-import { AdvancedSettings } from "./AdvancedSettings";
-import { PullRequestLinksOpenInAppSetting } from "./IntegrationsSettings";
-import { StorageCleanupSections } from "./StorageSettings";
-import { UpdateTrackSwitchDialog } from "./UpdateTrackSwitchDialog";
-import { environmentIdsKey } from "~/state/environmentAtomList";
-import { environmentSessionStatesAtom } from "~/state/session";
-import { canUpdateServer } from "../ServerUpdateAction";
-import { useUpdateEverythingRun } from "../sidebar/updateEverythingRun";
-import { awaitsTrackSwitch, channelSwitchLabel } from "../sidebar/updateEverything.logic";
-import { isHostedByThisApp } from "../sidebar/useUpdateEverything";
+import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
+import {
+  useScopedSettings,
+  useScopedSettingsMixed,
+  useUpdateScopedSettings,
+} from "./useScopedSettings";
 
 const RESPONSE_STREAMING_MODE_LABELS: Record<ResponseStreamingMode, string> = {
   turn: "Wait for the full response",
@@ -536,8 +537,8 @@ export function useSettingsRestore(onRestored?: () => void) {
     ...(settings.followUpBehavior !== DEFAULT_UNIFIED_SETTINGS.followUpBehavior
       ? [uiT("Follow-up behavior")]
       : []),
-    ...(settings.contextWindowMeterEnabled !== DEFAULT_UNIFIED_SETTINGS.contextWindowMeterEnabled
-      ? ["Context window indicator"]
+    ...(settings.toolCallVisibility !== DEFAULT_UNIFIED_SETTINGS.toolCallVisibility
+      ? ["Tool calls in chat"]
       : []),
     ...(settings.responseStreamingMode !== DEFAULT_UNIFIED_SETTINGS.responseStreamingMode
       ? [uiT("Response streaming")]
@@ -653,7 +654,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       composerRichTextEnabled: DEFAULT_UNIFIED_SETTINGS.composerRichTextEnabled,
       sendShortcut: DEFAULT_UNIFIED_SETTINGS.sendShortcut,
       followUpBehavior: DEFAULT_UNIFIED_SETTINGS.followUpBehavior,
-      contextWindowMeterEnabled: DEFAULT_UNIFIED_SETTINGS.contextWindowMeterEnabled,
+      toolCallVisibility: DEFAULT_UNIFIED_SETTINGS.toolCallVisibility,
       environmentIdentificationMode: DEFAULT_UNIFIED_SETTINGS.environmentIdentificationMode,
       glassOpacity: DEFAULT_UNIFIED_SETTINGS.glassOpacity,
       panelAnimationDurationMs: DEFAULT_UNIFIED_SETTINGS.panelAnimationDurationMs,
@@ -753,46 +754,6 @@ function AutoSettleDaysInput({
       onBlur={() => setDraft(String(value))}
       aria-label={uiT("Days of inactivity before auto-settle")}
     />
-  );
-}
-
-export function LegacyFeaturesSection() {
-  const { t: uiT } = useUiLanguage();
-
-  const settings = useScopedSettings();
-  const updateSettings = useUpdateScopedSettings();
-
-  return (
-    <SettingsSection id="legacy-features" title={uiT("Legacy")}>
-      <SettingsRow
-        {...searchableSetting("legacy-plan-mode")}
-        description={uiT(
-          "Restore Build/Plan, /plan, /default, and Shift+Tab. Off uses build mode.",
-        )}
-        control={
-          <Switch
-            checked={settings.planModeEnabled}
-            onCheckedChange={(checked) => {
-              updateSettings({ planModeEnabled: Boolean(checked) });
-            }}
-            aria-label={uiT("Plan mode (legacy)")}
-          />
-        }
-      />
-      <SettingsRow
-        {...searchableSetting("legacy-context-window-indicator")}
-        description={uiT("Shows context window usage as a circular indicator in the composer.")}
-        control={
-          <Switch
-            checked={settings.contextWindowMeterEnabled}
-            onCheckedChange={(checked) =>
-              updateSettings({ contextWindowMeterEnabled: Boolean(checked) })
-            }
-            aria-label={uiT("Context window indicator (legacy)")}
-          />
-        }
-      />
-    </SettingsSection>
   );
 }
 
@@ -1272,7 +1233,67 @@ export function ChatSettingsPanel() {
           }
         />
       </SettingsSection>
+
+      <SettingsSection id="activity" title={uiT("Activity")}>
+        <ToolCallVisibilityRow />
+      </SettingsSection>
     </SettingsPageContainer>
+  );
+}
+
+const TOOL_CALL_VISIBILITY_LABELS: Record<ToolCallVisibility, string> = {
+  showAll: "Show all",
+  hideSuccessful: "Hide successful",
+  hideAll: "Hide all",
+  zen: "Zen",
+};
+
+const isToolCallVisibility = Schema.is(ToolCallVisibility);
+
+function ToolCallVisibilityRow() {
+  const { t: uiT } = useUiLanguage();
+  const settings = useScopedSettings();
+  const updateSettings = useUpdateScopedSettings();
+  return (
+    <SettingsRow
+      {...searchableSetting("tool-call-visibility")}
+      description={uiT(
+        "Hide the commands, edits, and searches agents run. Hide successful keeps failures. Zen shows only final answers. Approvals, questions, and errors always show.",
+      )}
+      resetAction={
+        settings.toolCallVisibility !== DEFAULT_UNIFIED_SETTINGS.toolCallVisibility ? (
+          <SettingResetButton
+            label={uiT("tool calls in chat")}
+            onClick={() =>
+              updateSettings({ toolCallVisibility: DEFAULT_UNIFIED_SETTINGS.toolCallVisibility })
+            }
+          />
+        ) : null
+      }
+      control={
+        <Select
+          value={settings.toolCallVisibility}
+          onValueChange={(value) => {
+            if (isToolCallVisibility(value)) updateSettings({ toolCallVisibility: value });
+          }}
+        >
+          <SelectTrigger
+            size="sm"
+            className="w-full sm:w-40"
+            aria-label={uiT("Tool calls in chat")}
+          >
+            <SelectValue>{TOOL_CALL_VISIBILITY_LABELS[settings.toolCallVisibility]}</SelectValue>
+          </SelectTrigger>
+          <SelectPopup align="end" alignItemWithTrigger={false}>
+            {ToolCallVisibility.literals.map((value) => (
+              <SelectItem key={value} value={value}>
+                {TOOL_CALL_VISIBILITY_LABELS[value]}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </Select>
+      }
+    />
   );
 }
 
@@ -1578,9 +1599,14 @@ export function ThreadsSettingsPanel() {
     (target) => target.serverConfig?.environment.capabilities.threadAutoSettlementScope === true,
   );
 
-  const textGenerationProviders = serverProviders.filter(
-    (provider) => provider.supportsTextGeneration !== false,
-  );
+  const textGenerationTargets = useTextGenerationTargets({
+    environmentId,
+    settings,
+    providers: serverProviders.filter((provider) => provider.supportsTextGeneration !== false),
+    projectId: target?.projectId ?? null,
+    selections: [settings.textGenerationModelSelection],
+  });
+  const textGenerationProviders = textGenerationTargets.providers;
   const textGenerationModelSelection = resolveAppModelSelectionState(
     settings,
     textGenerationProviders,
@@ -1588,11 +1614,7 @@ export function ThreadsSettingsPanel() {
   const textGenInstanceId = textGenerationModelSelection.instanceId;
   const textGenModel = textGenerationModelSelection.model;
   const textGenModelOptions = textGenerationModelSelection.options;
-  const textGenerationModelInstanceEntries = providerInstanceEntriesFor(
-    textGenerationProviders,
-    settings,
-    target?.projectId ?? null,
-  );
+  const textGenerationModelInstanceEntries = textGenerationTargets.entries;
   const hasTextGenerationProvider = textGenerationModelInstanceEntries.some(
     (entry) => entry.enabled && entry.isAvailable,
   );
@@ -1836,7 +1858,7 @@ export function ThreadsSettingsPanel() {
           settingKeys={["textGenerationModelSelection"]}
           {...searchableSetting("text-generation-model")}
           description={uiT(
-            "Used for thread titles and other generated text on connected devices with this provider. Source control can override it.",
+            "For thread titles and other generated text. Source control has its own setting. Text generators from Providers also appear here.",
           )}
           resetAction={
             hasServerTargets && isTextGenerationModelDirty ? (
@@ -1910,9 +1932,7 @@ export function ThreadsSettingsPanel() {
                     model={textGenModel}
                     modelOptions={textGenModelOptions}
                     allowPromptInjectedEffort={false}
-                    planModeEnabled={
-                      settings.planModeEnabled || selectsPlanAgent(textGenModelOptions)
-                    }
+                    includePlanAgent={selectsPlanAgent(textGenModelOptions)}
                     triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
                     onModelOptionsChange={(nextOptions) => {
                       updateSettings({

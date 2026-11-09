@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId, ProviderDriverKind } from "@t3tools/contracts";
 import { InfoIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { serverEnvironment } from "../../state/server";
 import { Alert, AlertDescription } from "../ui/alert";

@@ -9,8 +9,8 @@ import { View } from "react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { AppBar, type AppBarMenu } from "../../components/ui/AppBar";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { useAttachmentDocument } from "../../lib/attachmentDocument";
 import { nativeViewerErrorMessage } from "../../lib/attachmentDownload";
 import { isFileBackedComposerAttachment } from "../../lib/composerImages";

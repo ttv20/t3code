@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../i18n";
-import type { EnvironmentId, RuntimeMode } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
+import type { EnvironmentId, RuntimeMode } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 
 import { shortcutLabelForCommand } from "../keybindings";
 import { useManagedPolicy } from "../state/managedPolicy";
 import { primaryServerKeybindingsAtom } from "../state/server";
 import { ComposerControl } from "./chat/ComposerControl";
-import { ComposerPermissionsSection } from "./chat/ComposerFooterControls";
 import { useComposerMenuProps } from "./chat/composerEventScope";
+import { ComposerPermissionsSection } from "./chat/ComposerFooterControls";
 import {
   resolveCompatibleRuntimeMode,
   resolveRuntimeModeOptions,

@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { LoaderCircleIcon, PauseIcon, PlayIcon, TriangleAlertIcon } from "lucide-react";
 import { createContext, useContext, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { ContextChip, ContextChipAction, ContextChipLabel } from "../ContextChip";

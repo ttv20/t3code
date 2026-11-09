@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import type {
   DeviceServiceState,
   EnvironmentId,
@@ -6,11 +6,11 @@ import type {
   ScopedThreadRef,
   ThreadId,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
+import { useUiLanguage } from "../../i18n";
 
-import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { useRightPanelStore } from "~/rightPanelStore";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { DeviceSetup } from "../device/DeviceSetup";
 import { PullRequestThreadDialog } from "../PullRequestThreadDialog";
 import {

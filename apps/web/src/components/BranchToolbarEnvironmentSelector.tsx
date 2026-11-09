@@ -1,18 +1,17 @@
-import { UiText } from "../i18n";
-import { useUiLanguage } from "../i18n";
-import { ComposerSelectControl } from "./chat/ComposerControl";
-import { ComposerContextLabel } from "./ComposerContextLabel";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "./ui/tooltip";
 import { useAtomValue } from "@effect/atom-react";
-import { shortcutLabelForCommand } from "../keybindings";
-import { primaryServerKeybindingsAtom } from "../state/server";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { PlusIcon, ScaleIcon } from "lucide-react";
 import { memo } from "react";
+import { UiText, useUiLanguage } from "../i18n";
+import { shortcutLabelForCommand } from "../keybindings";
+import { primaryServerKeybindingsAtom } from "../state/server";
+import { ComposerSelectControl } from "./chat/ComposerControl";
+import { ComposerContextLabel } from "./ComposerContextLabel";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
 import { ADD_TO_MACHINE_LABEL_CLASS, type EnvironmentOption } from "./BranchToolbar.logic";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 import { useComposerMenuProps } from "./chat/composerEventScope";
+import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 import {
   Select,
   SelectGroup,

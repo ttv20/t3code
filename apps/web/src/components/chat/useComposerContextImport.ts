@@ -1,28 +1,19 @@
-import { useUiLanguage } from "../../i18n";
 import {
   ConnectionBlockedError,
   ConnectionTransientError,
 } from "@t3tools/client-runtime/connection";
 import { EnvironmentRpcUnavailableError } from "@t3tools/client-runtime/rpc";
-import * as Cause from "effect/Cause";
-import * as Schema from "effect/Schema";
-import type { RefObject } from "react";
-import type { ChatComposerProps } from "./ChatComposer";
 import {
   type ComposerContextClipboardFragment,
   type ComposerContextRecord,
   type EnvironmentId,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
 } from "@t3tools/contracts";
-import {
-  type ComposerFileAttachment,
-  type ComposerImageAttachment,
-  type DraftId,
-  composerFileMatchesReattachMarker,
-  composerFileNeedsReattach,
-  useComposerDraftStore,
-} from "../../composerDraftStore";
-import { type PendingUserInput } from "../../session-logic";
+import { toKindScopedComposerContextId } from "@t3tools/shared/composerContextReferences";
+import * as Cause from "effect/Cause";
+import * as Schema from "effect/Schema";
+import type { RefObject } from "react";
+import { resolveAssetUrl } from "~/assets/assetUrls";
 import {
   asKnownContextRecord,
   composerContextImportLookupIds,
@@ -37,25 +28,34 @@ import {
   terminalContextRecord,
   terminalContextReference,
 } from "~/lib/composerContextRecords";
-import { assetEnvironment } from "~/state/assets";
 import { copiedComposerAttachmentFile } from "~/lib/copiedComposerAttachments";
-import { countQuestionAttachments, questionAttachmentDraftId } from "../../questionAttachments";
+import { randomUUID } from "~/lib/utils";
+import { assetEnvironment } from "~/state/assets";
+import { orchestrationEnvironment } from "~/state/orchestration";
+import { readPreparedConnection } from "~/state/session";
+import { useAtomQueryRunner } from "~/state/use-atom-query-runner";
+import {
+  type ComposerFileAttachment,
+  type ComposerImageAttachment,
+  type DraftId,
+  composerFileMatchesReattachMarker,
+  composerFileNeedsReattach,
+  useComposerDraftStore,
+} from "../../composerDraftStore";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
 import { collectInlineContextIds } from "../../lib/composerContextReferences";
 import { elementContextToPreviewAnnotation } from "../../lib/elementContext";
-import { orchestrationEnvironment } from "~/state/orchestration";
-import { pendingDraftWork } from "./pendingDraftWork";
-import { randomUUID } from "~/lib/utils";
-import { readPreparedConnection } from "~/state/session";
-import { resolveAssetUrl } from "~/assets/assetUrls";
-import { toKindScopedComposerContextId } from "@t3tools/shared/composerContextReferences";
-import { toastManager } from "../ui/toast";
+import { countQuestionAttachments, questionAttachmentDraftId } from "../../questionAttachments";
+import { type PendingUserInput } from "../../session-logic";
+import { useAtomCommand } from "../../state/use-atom-command";
 import {
   type ComposerDraftContextRecords,
   uploadedContextRecordFromDraft,
 } from "../composerContextPresentation";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { useAtomQueryRunner } from "~/state/use-atom-query-runner";
-import { useStableCallback } from "../../hooks/useStableCallback";
+import { toastManager } from "../ui/toast";
+import type { ChatComposerProps } from "./ChatComposer";
+import { pendingDraftWork } from "./pendingDraftWork";
 import { countPreparingComposerImages } from "./preparingComposerImages";
 
 const isUnreachable = Schema.is(

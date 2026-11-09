@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { useId, useRef, useState, type ComponentProps } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
-import { observeResize } from "~/lib/observeResize";
 
 export function PullRequestCommentBody({
   className,

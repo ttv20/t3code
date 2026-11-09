@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { resolveExternalWebLinkHost } from "../chat/externalLinkContextMenu";
 import { Button } from "../ui/button";

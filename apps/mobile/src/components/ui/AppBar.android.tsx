@@ -7,7 +7,7 @@ import { useAppearancePreferences } from "../../features/settings/appearance/App
 import { useUiLanguage } from "../../i18n";
 import { useHardwareBack } from "../../lib/backHandler";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
-import { AndroidHeaderIconButton, AndroidScreenHeader } from "./AndroidScreenHeader";
+import { AndroidHeaderIconButton, AndroidScreenHeader } from "./AndroidScreenHeader.android";
 import type { AppBarMenuItem, AppBarProps, AppBarSearch } from "./AppBar.types";
 import { Button } from "./Button";
 import { Menu } from "./Menu";
@@ -15,11 +15,11 @@ import { RoutedFormSheetContext } from "./RoutedFormSheetContext";
 import { ScreenHeaderButton } from "./ScreenHeaderButton.android";
 import { SearchField } from "./SearchField";
 import { useHasWorkspaceAppBar, WorkspaceAppBar } from "./WorkspaceAppBar.android";
-import { androidHeaderMenuActions, findHeaderMenuAction } from "./headerMenu.android";
+import { findAppBarMenuItem, menuActionsFromAppBarItems } from "./menuActionItems";
 import { useToolbarLayout } from "./useToolbarLayout";
 
 function selectMenuItem(items: ReadonlyArray<AppBarMenuItem>, id: string) {
-  const action = findHeaderMenuAction(items, id);
+  const action = findAppBarMenuItem(items, id);
   if (action && !action.disabled) action.onPress();
 }
 
@@ -137,7 +137,7 @@ function AppBarView(props: AppBarProps & { readonly searchState?: SearchState })
             ? {
                 accessibilityLabel: menu.title,
                 customized: icon?.endsWith(".fill") === true,
-                actions: androidHeaderMenuActions(menu.items),
+                actions: menuActionsFromAppBarItems(menu.items),
                 onSelect: (id) => selectMenuItem(menu.items, id),
               }
             : undefined
@@ -149,7 +149,7 @@ function AppBarView(props: AppBarProps & { readonly searchState?: SearchState })
   const menuView = props.menus?.map((menu) => (
     <Menu
       key={menu.title}
-      actions={androidHeaderMenuActions(menu.items)}
+      actions={menuActionsFromAppBarItems(menu.items)}
       isAnchoredToRight
       title={menu.status ?? menu.title}
       onPressAction={({ nativeEvent }) => selectMenuItem(menu.items, nativeEvent.event)}
@@ -158,13 +158,15 @@ function AppBarView(props: AppBarProps & { readonly searchState?: SearchState })
     </Menu>
   ));
   const confirmButton = props.confirm ? (
-    <Button
-      label={props.confirm.label}
-      tone="text"
-      loading={props.confirm.loading}
-      disabled={props.confirm.disabled}
-      onPress={props.confirm.onPress}
-    />
+    <View className="self-center">
+      <Button
+        label={props.confirm.label}
+        tone="text"
+        loading={props.confirm.loading}
+        disabled={props.confirm.disabled}
+        onPress={props.confirm.onPress}
+      />
+    </View>
   ) : null;
   const options =
     props.embedded || props.sheet ? null : (

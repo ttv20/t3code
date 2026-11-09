@@ -1,6 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { cloudSpeechDisclosure } from "@t3tools/shared/speech";
 import type { PreparedConnection } from "@t3tools/client-runtime/connection";
 import {
   configuredSecretSources,
@@ -14,10 +12,10 @@ import {
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
-  CloudSpeechApiKey,
-  CloudSpeechModelId,
   CLOUD_SPEECH_LABELS,
   CLOUD_SPEECH_PROVIDER_NAMES,
+  CloudSpeechApiKey,
+  CloudSpeechModelId,
   isSecretReference,
   type CloudSpeechModel,
   type CloudSpeechProvider,
@@ -25,13 +23,15 @@ import {
   type SettingsSecretValue,
   type VoiceTranscriptionDestination,
 } from "@t3tools/contracts";
+import { cloudSpeechDisclosure } from "@t3tools/shared/speech";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import type { HttpClient } from "effect/http";
-import { Atom, AsyncResult } from "effect/reactivity";
+import { AsyncResult, Atom } from "effect/reactivity";
 import { useId, useState } from "react";
 import { isSecretsFeatureEnabled } from "../../env";
+import { UiText, useUiLanguage } from "../../i18n";
 import {
   inEnvironmentSpeechRuntime,
   runEnvironmentSpeech,

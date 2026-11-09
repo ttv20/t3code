@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { Children, isValidElement } from "react";
 import type * as React from "react";
+import { Children, isValidElement } from "react";
 
 import { cn } from "~/lib/utils";
 
@@ -147,4 +147,4 @@ AlertTitle.displayName = "AlertTitle";
 AlertDescription.displayName = "AlertDescription";
 AlertAction.displayName = "AlertAction";
 
-export { Alert, AlertTitle, AlertDescription, AlertAction };
+export { Alert, AlertAction, AlertDescription, AlertTitle };

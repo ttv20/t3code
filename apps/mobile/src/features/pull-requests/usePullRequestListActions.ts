@@ -110,8 +110,8 @@ export function usePullRequestListActions(
     if (AsyncResult.isFailure(result)) {
       const cause = squashAtomCommandFailure(result);
       Dialog.alert(
-        `Couldn't update this ${terminology.singular}`,
-        cause instanceof Error ? cause.message : "Try again.",
+        uiT("Couldn't update this {0}", { "0": terminology.singular }),
+        cause instanceof Error ? cause.message : uiT("Try again."),
       );
     }
   };
@@ -158,25 +158,25 @@ export function usePullRequestListActions(
     return [
       {
         id: "open",
-        title: `Open ${terminology.singular}`,
-        image: Platform.OS === "ios" ? "arrow.up.right" : "open_in_new",
+        title: uiT("Open {0}", { "0": terminology.singular }),
+        image: "arrow.up.right",
       },
       ...(writableEnvironments.has(entry.environmentId) && entry.state === "open"
         ? [
             {
               id: "request-review",
-              title: "Request review",
-              image: Platform.OS === "ios" ? "person.badge.plus" : "person_add",
+              title: uiT("Request review"),
+              image: "person.badge.plus",
             },
             {
               id: entry.isDraft ? "ready" : "draft",
-              title: entry.isDraft ? "Mark ready for review" : "Convert to draft",
-              image: Platform.OS === "ios" ? "pencil" : "edit",
+              title: entry.isDraft ? uiT("Mark ready for review") : uiT("Convert to draft"),
+              image: "pencil",
             },
             {
               id: "close",
               title: pullRequestActionLabel("close", terminology),
-              image: Platform.OS === "ios" ? "xmark" : "close",
+              image: "xmark",
               attributes: { destructive: true },
             },
           ]
@@ -185,7 +185,7 @@ export function usePullRequestListActions(
               {
                 id: "reopen",
                 title: pullRequestActionLabel("reopen", terminology),
-                image: Platform.OS === "ios" ? "arrow.clockwise" : "refresh",
+                image: "arrow.clockwise",
               },
             ]
           : []),
@@ -198,7 +198,7 @@ export function usePullRequestListActions(
       {
         id: "provider",
         title: openOnProviderLabel(entry.provider),
-        image: Platform.OS === "ios" ? "safari" : "open_in_browser",
+        image: "safari",
       },
     ];
   };

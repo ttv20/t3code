@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
-import type { ReactNode } from "react";
 import { Smartphone } from "lucide-react";
+import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Spinner } from "~/components/ui/spinner";
 

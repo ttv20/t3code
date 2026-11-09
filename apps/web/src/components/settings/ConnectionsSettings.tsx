@@ -1,64 +1,77 @@
 import { UiText, useUiLanguage } from "../../i18n";
 
-import { SessionPermissions } from "./SessionPermissions";
-import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
-import { type ReactNode, useState } from "react";
 import {
+  isAtomCommandInterrupted,
+  settlePromise,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import {
+  type AdvertisedEndpoint,
   AuthAccessReadScope,
   AuthAccessWriteScope,
+  type AuthClientSession,
   AuthEnvironmentMaintainScope,
+  type AuthPairingCredentialResult,
+  type AuthPairingLink,
   AuthRelayReadScope,
   AuthRelayWriteScope,
-  type AuthClientSession,
-  type AuthPairingLink,
-  type AuthPairingCredentialResult,
-  type AdvertisedEndpoint,
   type DesktopServerExposureState,
   type DesktopWslState,
   type EnvironmentId,
   managedCapabilityDenial,
   resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
-import {
-  isAtomCommandInterrupted,
-  settlePromise,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
+import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { SessionPermissions } from "./SessionPermissions";
 
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
+import { hasCloudPublicConfig } from "~/cloud/publicConfig";
+import { requestConfirmDialog } from "~/confirmDialog";
+import { environmentCatalog } from "~/connection/catalog";
+import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
+import { type ServerClientSessionRecord } from "~/environments/primary";
+import { authEnvironment } from "~/state/auth";
 import {
-  applyWslEnableSelection,
-  isWslSettingsRowVisible,
-  missingTailscaleEndpointDescription,
-  resolveAccessEnvironmentId,
-  resolveLocalVersionStatusLabel,
-  resolveTailscaleServeBaseUrl,
-} from "./ConnectionsSettings.logic";
-import { settingsScopeEnvironmentLabel } from "./settingsScopeAxis";
-import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
-import { ManagedByOrganization } from "../ManagedPolicy";
-import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
-import { searchableSetting } from "./settingsSearch";
-import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
-import { FoldedSettingsSection } from "./FoldedSettingsSection";
-import { LinkedEnvironmentsSettings } from "./LinkedEnvironmentsSettings";
+  desktopNetworkAccessStateAtom,
+  refreshDesktopNetworkAccessState,
+} from "~/state/desktopNetworkAccess";
+import { useDesktopUpdateState } from "~/state/desktopUpdate";
+import { desktopWslStateAtom, refreshDesktopWslState } from "~/state/desktopWslState";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import {
+  type EnvironmentPresentation,
+  useEnvironment,
+  useEnvironments,
+  usePrimaryEnvironment,
+  usePrimaryEnvironmentId,
+} from "~/state/environments";
 import { usePeerLinkHosts } from "~/state/peerLinks";
-import { LoadBalancingSettings } from "./LoadBalancingSettings";
-import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
-import { Input } from "../ui/input";
+import { useEnvironmentQuery } from "~/state/query";
+import { environmentUpdateStatesAtom, serverEnvironment } from "~/state/server";
 import {
-  Dialog,
-  DialogClose,
-  DialogFooter,
-  DialogDescription,
-  DialogHeader,
-  DialogPanel,
-  DialogPopup,
-  DialogTitle,
-} from "../ui/dialog";
-import { ScrollArea } from "../ui/scroll-area";
+  readEnvironmentScope,
+  useEnvironmentScope,
+  useEnvironmentSessionState,
+} from "~/state/session";
+import { useUiStateStore } from "~/uiStateStore";
+import {
+  resolveServerConfigVersionMismatch,
+  resolveServerSelfUpdateCapability,
+  supportsDesktopAppUpdate,
+} from "~/versionSkew";
+import { isLocalEnvironmentDisabled } from "../../localEnvironment";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { RemoveT3ConnectEnvironmentDialog } from "../clerk/RemoveT3ConnectEnvironmentDialog";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { ManagedByOrganization } from "../ManagedPolicy";
+import {
+  ServerUpdateAction,
+  ServerUpdateProgress,
+  ServerUpdatesAction,
+  type ServerUpdateTarget,
+} from "../ServerUpdateAction";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -68,78 +81,63 @@ import {
   AlertDialogPopup,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Spinner } from "../ui/spinner";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Button } from "../ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
+} from "../ui/dialog";
+import { Input } from "../ui/input";
 import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
+import { ScrollArea } from "../ui/scroll-area";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Spinner } from "../ui/spinner";
 import { Switch } from "../ui/switch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Button } from "../ui/button";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { type ServerClientSessionRecord } from "~/environments/primary";
-import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
-import { useUiStateStore } from "~/uiStateStore";
-import {
-  resolveServerConfigVersionMismatch,
-  resolveServerSelfUpdateCapability,
-  supportsDesktopAppUpdate,
-} from "~/versionSkew";
-import { hasCloudPublicConfig } from "~/cloud/publicConfig";
-import { RemoveT3ConnectEnvironmentDialog } from "../clerk/RemoveT3ConnectEnvironmentDialog";
-import { authEnvironment } from "~/state/auth";
-import { environmentCatalog } from "~/connection/catalog";
-import {
-  readEnvironmentScope,
-  useEnvironmentScope,
-  useEnvironmentSessionState,
-} from "~/state/session";
-import { useEnvironmentQuery } from "~/state/query";
-import {
-  desktopNetworkAccessStateAtom,
-  refreshDesktopNetworkAccessState,
-} from "~/state/desktopNetworkAccess";
-import { desktopWslStateAtom, refreshDesktopWslState } from "~/state/desktopWslState";
-import { useDesktopUpdateState } from "~/state/desktopUpdate";
-import {
-  type EnvironmentPresentation,
-  useEnvironment,
-  useEnvironments,
-  usePrimaryEnvironment,
-  usePrimaryEnvironmentId,
-} from "~/state/environments";
-import { requestConfirmDialog } from "~/confirmDialog";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { environmentIdsKey } from "~/state/environmentAtomList";
-import { environmentUpdateStatesAtom, serverEnvironment } from "~/state/server";
-import {
-  ServerUpdateAction,
-  ServerUpdateProgress,
-  ServerUpdatesAction,
-  type ServerUpdateTarget,
-} from "../ServerUpdateAction";
-import {
-  sortDesktopPairingLinks,
-  summarizeAuthorizedClients,
-  sortDesktopClientSessions,
-  toDesktopPairingLinkRecord,
-  toDesktopClientSessionRecord,
-  selectPairingEndpoint,
-  isTailscaleHttpsEndpoint,
-  endpointDefaultPreferenceKey,
-} from "./ConnectionsSettings.logic";
+import { AddEnvironmentDialog } from "./AddEnvironmentDialog";
 import {
   AdvertisedEndpointListRow,
   AuthorizedClientsHeaderAction,
   NetworkAccessDescription,
   PairingClientsList,
 } from "./AuthorizedClientsSettings";
+import {
+  applyWslEnableSelection,
+  endpointDefaultPreferenceKey,
+  isTailscaleHttpsEndpoint,
+  isWslSettingsRowVisible,
+  missingTailscaleEndpointDescription,
+  resolveAccessEnvironmentId,
+  resolveLocalVersionStatusLabel,
+  resolveTailscaleServeBaseUrl,
+  selectPairingEndpoint,
+  sortDesktopClientSessions,
+  sortDesktopPairingLinks,
+  summarizeAuthorizedClients,
+  toDesktopClientSessionRecord,
+  toDesktopPairingLinkRecord,
+} from "./ConnectionsSettings.logic";
+import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
+import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { ITEM_ROW_CLASSNAME } from "./itemRows";
+import { LinkedEnvironmentsSettings } from "./LinkedEnvironmentsSettings";
+import { LoadBalancingSettings } from "./LoadBalancingSettings";
+import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
+import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
 import {
   CloudLinkRow,
   CloudRemoteEnvironmentRows,
   SavedBackendListRow,
 } from "./SavedEnvironmentRows";
-import { AddEnvironmentDialog } from "./AddEnvironmentDialog";
+import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
+import { settingsScopeEnvironmentLabel } from "./settingsScopeAxis";
+import { searchableSetting } from "./settingsSearch";
 
 const DEFAULT_TAILSCALE_SERVE_PORT = 443;
 const EMPTY_ADVERTISED_ENDPOINTS: ReadonlyArray<AdvertisedEndpoint> = [];

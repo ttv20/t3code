@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Textarea } from "../ui/textarea";
-import { SettingsRow, SettingResetButton } from "./settingsLayout";
+import { SettingResetButton, SettingsRow } from "./settingsLayout";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
 import {

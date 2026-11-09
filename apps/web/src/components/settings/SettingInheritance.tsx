@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   DEFAULT_SERVER_SETTINGS,
   PROJECT_FILE_BACKED_SETTINGS,
@@ -7,13 +6,14 @@ import {
   type ServerSettings,
   type WorktreeSubmodules,
 } from "@t3tools/contracts";
-import { CheckIcon, ChevronRightIcon, LayersIcon } from "lucide-react";
 import * as Equal from "effect/Equal";
+import { CheckIcon, ChevronRightIcon, LayersIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import type { EnvironmentPresentation } from "../../state/environments";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../BranchToolbar.logic";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { PULL_REQUEST_MERGE_METHOD_LABELS } from "../pullRequest/pullRequestDetail.logic";
 import { Button, InlineButton } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";

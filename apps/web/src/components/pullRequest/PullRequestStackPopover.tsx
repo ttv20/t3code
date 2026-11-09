@@ -1,11 +1,11 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import type { EnvironmentId, PullRequestRef, PullRequestStackMembership } from "@t3tools/contracts";
 import { useState } from "react";
 import { usePullRequestStack } from "~/state/usePullRequestStack";
-import { Menu, MenuTrigger, MenuPopup, MenuGroup, MenuGroupLabel, MenuItem } from "../ui/menu";
-import { PullRequestStackLayers } from "./PullRequestStackLayers";
+import { UiText, useUiLanguage } from "../../i18n";
+import { Menu, MenuGroup, MenuGroupLabel, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { PullRequestStackHeader } from "./PullRequestStackHeader";
+import { PullRequestStackLayers } from "./PullRequestStackLayers";
 import { PullRequestGlyph } from "./pullRequestIcons";
 
 // Mount only on open to avoid per-row stack fetches.

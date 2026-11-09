@@ -1,47 +1,74 @@
+import type { HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
 import type { UiLocale } from "@t3tools/client-runtime/i18n";
-import { formatTurnWorkLabel } from "@t3tools/client-runtime/turn-work-label";
-import { formatDuration } from "@t3tools/shared/orchestrationTiming";
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
+import type { ThreadRunSummary } from "@t3tools/client-runtime/state/shell";
 import { isLiveSubagentTurnItem } from "@t3tools/client-runtime/state/subagentRuntime";
-import * as DateTime from "effect/DateTime";
-import * as Equal from "effect/Equal";
-import {
-  assistantCitationLabel,
-  collectAssistantCitations,
-} from "@t3tools/shared/assistantCitations";
-import { shallow } from "zustand/vanilla/shallow";
-import { claudeResumeCompactionAge } from "@t3tools/shared/claudeCompaction";
+import { formatTurnWorkLabel } from "@t3tools/client-runtime/turn-work-label";
 import {
   IDLE_COMPACTING_LABELS,
   IDLE_COMPACTION_TITLES,
+  resolveUserMessagePresentation,
 } from "@t3tools/client-runtime/user-message";
-import type { HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
-import { renderCodexDirectivesForCopy } from "@t3tools/shared/codexMarkdownDirectives";
 import {
   commandDisplayText,
   commandProgramName,
 } from "@t3tools/client-runtime/work-log/command-label";
 import {
+  contextCompactionTokenCounts,
   liveActivityToolStatus,
+  liveThoughtLine,
   normalizeCompactToolLabel,
   resolveWorkEntryToolPresentation,
   summarizeToolGroup,
   toolGroupAction,
   toolGroupSummaryKind,
-  contextCompactionTokenCounts,
-  type ToolGroupSummaryKind,
-  liveThoughtLine,
   workEntryHiddenByToolCallVisibility,
+  type ToolGroupSummaryKind,
 } from "@t3tools/client-runtime/work-log/presentation";
+import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
+import {
+  idleCompactionOf,
+  isCompactionCommandMessage,
+  RunId,
+  type MessageId,
+  type OrchestrationV2IdleCompaction,
+  type OrchestrationV2ProjectedTurnItem,
+  type RunAttemptId,
+  type RuntimeRequestId,
+  type ThreadId,
+  type TurnItemId,
+  type WorktreeSetupSnapshot,
+} from "@t3tools/contracts";
+import type { ToolCallVisibility } from "@t3tools/contracts/settings";
+import {
+  assistantCitationLabel,
+  collectAssistantCitations,
+} from "@t3tools/shared/assistantCitations";
+import { claudeResumeCompactionAge } from "@t3tools/shared/claudeCompaction";
+import { renderCodexDirectivesForCopy } from "@t3tools/shared/codexMarkdownDirectives";
+import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@t3tools/shared/htmlRender";
+import { mcpAppReferencesEqual, type McpAppReference } from "@t3tools/shared/mcpApp";
+import { formatDuration } from "@t3tools/shared/orchestrationTiming";
+import { isWindowsAbsolutePath } from "@t3tools/shared/path";
+import { resolveT3McpToolDefinition } from "@t3tools/shared/t3McpToolPresentation";
+import {
+  collectToolFilePaths,
+  dynamicToolTitle,
+  formatReadToolLabel,
+  formatSearchToolLabel,
+} from "@t3tools/shared/toolActivity";
+import { compactDynamicToolOutput } from "@t3tools/shared/toolOutput";
+import * as DateTime from "effect/DateTime";
+import * as Equal from "effect/Equal";
+import { shallow } from "zustand/vanilla/shallow";
+import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 import {
   deriveRevertTurnCountByUserMessageId,
   isStreamingMessageTextUpdate,
   isStreamingTurnItemTextUpdate,
   timelineEntryIsPersistentResourceCard,
   workEntryDisplayIndicatesToolFailure,
-  workEntryIndicatesToolSuccess,
   workEntryIndicatesToolNeutralStatus,
+  workEntryIndicatesToolSuccess,
   workLogEntryIsToolLike,
   type TimelineEntry,
   type WorkLogEntry,
@@ -52,33 +79,6 @@ import {
   type ThreadShell,
   type TurnDiffSummary,
 } from "../../types";
-import {
-  idleCompactionOf,
-  isCompactionCommandMessage,
-  type MessageId,
-  type OrchestrationV2IdleCompaction,
-  type WorktreeSetupSnapshot,
-  type OrchestrationV2ProjectedTurnItem,
-  type RunAttemptId,
-  type RuntimeRequestId,
-  RunId,
-  type ThreadId,
-  type TurnItemId,
-} from "@t3tools/contracts";
-import type { ThreadRunSummary } from "@t3tools/client-runtime/state/shell";
-import type { ToolCallVisibility } from "@t3tools/contracts/settings";
-import { resolveT3McpToolDefinition } from "@t3tools/shared/t3McpToolPresentation";
-import { compactDynamicToolOutput } from "@t3tools/shared/toolOutput";
-import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@t3tools/shared/htmlRender";
-import { mcpAppReferencesEqual, type McpAppReference } from "@t3tools/shared/mcpApp";
-import { dynamicToolTitle } from "@t3tools/shared/toolActivity";
-import { formatWorkspaceRelativePath } from "../../filePathDisplay";
-import {
-  collectToolFilePaths,
-  formatReadToolLabel,
-  formatSearchToolLabel,
-} from "@t3tools/shared/toolActivity";
-import { isWindowsAbsolutePath } from "@t3tools/shared/path";
 
 function timelineEntryRunId(entry: TimelineEntry): RunId | null {
   if (entry.kind === "message") {

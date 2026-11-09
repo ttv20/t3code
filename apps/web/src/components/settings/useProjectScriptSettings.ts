@@ -1,6 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { AuthSettingsWriteScope, EnvironmentAuthorizationError } from "@t3tools/contracts";
-import { readEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   mapAtomCommandResult,
@@ -8,6 +5,8 @@ import {
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
 import {
+  AuthSettingsWriteScope,
+  EnvironmentAuthorizationError,
   type EnvironmentId,
   type ProjectId,
   type ProjectScript,
@@ -19,6 +18,8 @@ import { clearProjectSettingsOverrides } from "@t3tools/shared/projectSettings";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { readEnvironmentScope } from "../../state/session";
 
 import {
   decodeProjectScriptKeybindingRule,
@@ -91,7 +92,7 @@ export function useProjectScriptSettings(
           Cause.fail(
             new EnvironmentAuthorizationError({
               requiredScope: AuthSettingsWriteScope,
-              message: "This connection cannot change environment settings.",
+              message: uiT("This connection cannot change environment settings."),
             }),
           ),
         ),

@@ -1,6 +1,6 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 import { getProviderSummary, getProviderVersionAdvisoryPresentation } from "./providerStatus";
 

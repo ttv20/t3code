@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../i18n";
 import {
   type ClientSettings,
   type EnvironmentId,
   resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 
+import { getProjectOrderKey } from "@t3tools/client-runtime/state/project-grouping";
 import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
 import { useClientSettings } from "../hooks/useSettings";
-import { getProjectOrderKey } from "@t3tools/client-runtime/state/project-grouping";
+import { buildSidebarProjectSnapshots } from "../sidebarProjectGrouping";
 import { useProjects, useVisibleThreadShells } from "../state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
-import { buildSidebarProjectSnapshots } from "../sidebarProjectGrouping";
 import { legacyProjectCwdPreferenceKey, useUiStateStore } from "../uiStateStore";
 import { orderItemsByPreferredIds, sortLogicalProjectsForSidebar } from "./Sidebar.logic";
 
@@ -33,7 +33,7 @@ export function useEnvironmentLookups() {
         {
           kind: isLocal ? "local" : "remote",
           label: isPrimary
-            ? "Local"
+            ? uiT("Local")
             : isLocal
               ? uiT("{0} (Local)", { "0": environment.label })
               : environment.label,

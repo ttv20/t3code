@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import type {
   EditorId,
   EnvironmentId,
@@ -9,10 +9,9 @@ import type {
   ThreadLinkedPullRequest,
   ThreadPullRequestLink,
 } from "@t3tools/contracts";
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { lazy, Suspense } from "react";
-import SideChatPane from "./SideChatPane";
 import type { ComposerImageAttachment, DraftId } from "../../composerDraftStore";
+import { useUiLanguage } from "../../i18n";
 import type { ShortcutMatchContext } from "../../keybindings";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
 import { type RightPanelSurface, useRightPanelStore } from "../../rightPanelStore";
@@ -25,6 +24,7 @@ import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
 import { PullRequestDetailGhost } from "../pullRequest/PullRequestGhosts";
 import { PullRequestsUnavailableState } from "../pullRequest/PullRequestsUnavailableState";
 import { ThreadPullRequestsPanel } from "../pullRequest/ThreadPullRequestsPanel";
+import SideChatPane from "./SideChatPane";
 
 const PreviewPanel = lazy(() =>
   import("../preview/PreviewPanel").then((module) => ({ default: module.PreviewPanel })),

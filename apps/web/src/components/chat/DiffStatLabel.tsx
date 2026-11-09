@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { memo } from "react";
 import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 
 export function hasNonZeroStat(stat: { additions: number; deletions: number }): boolean {
   return stat.additions > 0 || stat.deletions > 0;

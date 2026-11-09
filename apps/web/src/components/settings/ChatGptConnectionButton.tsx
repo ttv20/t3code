@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { ComponentProps } from "react";
+import { useUiLanguage } from "../../i18n";
 import { OpenAI } from "../Icons";
 import { Button } from "../ui/button";
 

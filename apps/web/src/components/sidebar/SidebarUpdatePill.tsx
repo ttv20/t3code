@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   type DesktopBridge,
   type DesktopUpdateState,
@@ -7,14 +7,13 @@ import {
 import { TriangleAlertIcon } from "lucide-react";
 import { type ComponentProps, useId, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { isElectron } from "../../env";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { ensureLocalApi } from "../../localApi";
 import { useDesktopUpdateState } from "../../state/desktopUpdate";
 import { usePrimaryManagedPolicy } from "../../state/managedPolicy";
-import { stackedThreadToast, toastManager } from "../ui/toast";
 import {
   canCheckForUpdate,
   getArm64IntelBuildWarningDescription,
@@ -32,6 +31,7 @@ import { showDesktopUpdateDownloadedToast } from "../desktopUpdate.toast";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { SidebarMenuItem } from "../ui/sidebar";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   DesktopUpdateStatusIcon,
@@ -39,8 +39,8 @@ import {
   shouldContinueDesktopUpdateCheckAnimation,
   shouldShowDesktopUpdateCheckIcon,
 } from "./DesktopUpdateStatusIcon";
-import { SidebarUpdateReleaseNotes } from "./SidebarUpdateReleaseNotes";
 import { SidebarUpdateCapsule } from "./SidebarUpdateCapsule";
+import { SidebarUpdateReleaseNotes } from "./SidebarUpdateReleaseNotes";
 import { UpdateEverythingDialog } from "./UpdateEverythingDialog";
 import type { UpdateEverythingRun, UpdateRunLocalState } from "./updateEverything.logic";
 import {

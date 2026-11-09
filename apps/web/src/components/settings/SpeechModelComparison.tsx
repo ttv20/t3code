@@ -1,6 +1,6 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import type { EnvironmentSpeechModel } from "@t3tools/contracts";
 import { CheckIcon } from "lucide-react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { languageLabel } from "./SpeechLanguageSelect";

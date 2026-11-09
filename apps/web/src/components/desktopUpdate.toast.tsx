@@ -1,6 +1,6 @@
-import { useUiLanguage, UiText } from "../i18n";
 import type { DesktopBridge, DesktopUpdateState } from "@t3tools/contracts";
 import { ArrowRightIcon } from "lucide-react";
+import { UiText, useUiLanguage } from "../i18n";
 
 import {
   getDesktopUpdateDownloadedVersion,

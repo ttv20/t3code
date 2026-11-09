@@ -1,37 +1,38 @@
-import { useUiLanguage } from "../../i18n";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
+import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import {
   type EnvironmentId,
   type ModelSelection,
   type RuntimeMode,
   type ThreadId,
 } from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
-import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { useNavigate } from "@tanstack/react-router";
 import { newMessageId } from "~/lib/utils";
 import { collapseExpandedComposerCursor } from "../../composer-logic";
 import {
-  type ComposerThreadTarget,
   composerDraftHasUserContent,
+  type ComposerThreadTarget,
   type DraftId,
   useComposerDraftStore,
 } from "../../composerDraftStore";
 import type { ComposerHandleRef } from "../../composerHandleContext";
+import { useUiLanguage } from "../../i18n";
 import { releaseDraftAttachments } from "../../lib/attachmentUploadQueue";
 import type { buildMessageContext } from "../../lib/composerContextRecords";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { threadEnvironment } from "../../state/threads";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
 import { buildThreadRouteParams } from "../../threadRoutes";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+import { DEFAULT_INTERACTION_MODE } from "../../types";
 import {
   boundAttachmentIds,
   type ComposerSendSnapshot,
   type makeThreadErrorSetter,
   withMessageContext,
 } from "../ChatView.logic";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import {
   draftFanoutSelectionsAtom,
   draftSendState,
@@ -177,14 +178,14 @@ export function useMultipleModelSend(input: MultipleModelSendInput) {
                   modelSelection: target.selection,
                   titleSeed: title,
                   runtimeMode,
-                  interactionMode: target.interactionMode,
+                  interactionMode: DEFAULT_INTERACTION_MODE,
                   bootstrap: {
                     createThread: {
                       projectId: project.id,
                       title,
                       modelSelection: target.selection,
                       runtimeMode,
-                      interactionMode: target.interactionMode,
+                      interactionMode: DEFAULT_INTERACTION_MODE,
                       branch,
                       worktreePath: null,
                       createdAt: createdAt,

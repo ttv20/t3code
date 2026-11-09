@@ -1,68 +1,69 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
-import { DeviceToolVersions } from "../device/DeviceToolVersions";
-import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
-import { ScopedSwitch } from "./ScopedSwitch";
-import { DeviceSourcesSettings } from "./DeviceSourcesSettings";
 import {
   AuthSettingsWriteScope,
-  BrowserImportFailureReason,
+  BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH,
   BROWSER_PROFILE_MAX_COUNT,
+  BROWSER_PROFILE_NAME_MAX_LENGTH,
+  BROWSER_RECORDING_FRAME_RATES,
+  BrowserImportFailureReason,
+  type BrowserImportSource,
   type BrowserLinkTarget,
   type BrowserProfile,
   BrowserSearchEngine,
-  BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH,
-  type EnvironmentId,
-  BROWSER_PROFILE_NAME_MAX_LENGTH,
-  BROWSER_RECORDING_FRAME_RATES,
   DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW,
-  DEFAULT_BROWSER_PROFILE_ID,
   DEFAULT_BROWSER_LINK_TARGET,
+  DEFAULT_BROWSER_PROFILE_ID,
   DEFAULT_BROWSER_RECORDING_FRAME_RATE,
   DEFAULT_BROWSER_SEARCH_ENGINE,
   DEFAULT_BROWSER_VIEWPORT,
   DEFAULT_PREVIEW_APPEARANCE,
   DEFAULT_PREVIEW_ZOOM_FACTOR,
   DEFAULT_SERVER_SETTINGS,
+  type EnvironmentId,
   FILL_PREVIEW_VIEWPORT,
   PREVIEW_VIEWPORT_MAX_AREA,
   PREVIEW_VIEWPORT_MAX_DIMENSION,
   PREVIEW_VIEWPORT_MIN_DIMENSION,
   PREVIEW_ZOOM_LEVELS,
-  findBrowserProfile,
-  isBuiltInBrowserProfileId,
-  resolveBrowserProfiles,
-  type BrowserImportSource,
   type PreviewAppearancePreference,
   type PreviewViewportSetting,
+  findBrowserProfile,
+  isBuiltInBrowserProfileId,
   managedCapabilityDenial,
+  resolveBrowserProfiles,
 } from "@t3tools/contracts";
-import { usePrimaryManagedPolicy } from "~/state/managedPolicy";
 import { isValidSearchUrlTemplate } from "@t3tools/shared/preview";
 import { PREVIEW_VIEWPORT_PRESETS } from "@t3tools/shared/previewViewport";
-import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import * as Schema from "effect/Schema";
+import { MoreVertical, Plus as PlusIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { usePrimaryManagedPolicy } from "~/state/managedPolicy";
+import { UiText, useUiLanguage } from "../../i18n";
+import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
+import { DeviceToolVersions } from "../device/DeviceToolVersions";
+import { DeviceSourcesSettings } from "./DeviceSourcesSettings";
+import { ScopedSwitch } from "./ScopedSwitch";
+import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { ScreenRotationIcon } from "~/browser/ScreenRotationIcon";
 import { resolveEnvironmentOptionLabel } from "~/components/BranchToolbar.logic";
-import { previewBridge } from "~/components/preview/previewBridge";
-import { cn, randomUUID } from "~/lib/utils";
-import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
-import { deviceEnvironment, useDeviceState } from "~/state/device";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { formatEnvironmentQueryError } from "~/state/query";
-import { previewEnvironment } from "~/state/preview";
-import { useServerConfigs } from "~/state/entities";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AgentDeviceSetupStatus,
   DeviceHubSetupStatus,
   deviceHubReadiness,
 } from "~/components/device/DeviceSetup";
+import { previewBridge } from "~/components/preview/previewBridge";
+import { cn, randomUUID } from "~/lib/utils";
+import { deviceEnvironment, useDeviceState } from "~/state/device";
+import { useServerConfigs } from "~/state/entities";
+import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
+import { previewEnvironment } from "~/state/preview";
+import { formatEnvironmentQueryError } from "~/state/query";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { isElectron } from "../../env";
 
+import { readLocalApi } from "~/localApi";
 import { Badge } from "../ui/badge";
 import {
   Menu,
@@ -73,9 +74,14 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "../ui/menu";
-import { readLocalApi } from "~/localApi";
 
-import { toastManager } from "../ui/toast";
+import {
+  getClientSettings,
+  persistClientSettingsUpdate,
+  useClientSettings,
+  useClientSettingsHydrated,
+  useUpdatePrimarySettings,
+} from "~/hooks/useSettings";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -98,27 +104,21 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Switch } from "../ui/switch";
+import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import {
-  getClientSettings,
-  persistClientSettingsUpdate,
-  useClientSettings,
-  useClientSettingsHydrated,
-  useUpdatePrimarySettings,
-} from "~/hooks/useSettings";
 
+import { AdvancedSettings } from "./AdvancedSettings";
+import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
+import type { ImportOutcome } from "./browserImportWizard.logic";
 import {
-  SettingsUnavailableGroup,
   SettingResetButton,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
+  SettingsUnavailableGroup,
 } from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
-import { AdvancedSettings } from "./AdvancedSettings";
 import { useSettingsScope } from "./SettingsScopeContext";
-import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
-import type { ImportOutcome } from "./browserImportWizard.logic";
+import { searchableSetting } from "./settingsSearch";
 
 const FILL_VALUE = "fill";
 const RESPONSIVE_VALUE = "responsive";
@@ -956,9 +956,7 @@ function DeviceIntegrationControls({
                   .finally(() => setPending(null));
               }}
             >
-              {pending === `update-${tool}`
-                ? uiT("Updating…")
-                : uiT("Update to v{0}", { "0": version.requiredVersion })}
+              {pending === `update-${tool}` ? uiT("Updating…") : uiT("Update")}
             </Button>
           ) : null}
           {state.supportsToolInspection ? (

@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../i18n";
-import { AuthProvidersManageScope, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { AuthProvidersManageScope, PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
 import { useRef, useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { useEnvironmentProviders, useEnvironments } from "~/state/environments";
 import { serverEnvironment } from "~/state/server";

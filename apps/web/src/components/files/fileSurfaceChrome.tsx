@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { Spinner } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
+import { Spinner } from "~/components/ui/spinner";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { DIFF_SURFACE_THEME_UNSAFE_CSS } from "~/lib/diffRendering";

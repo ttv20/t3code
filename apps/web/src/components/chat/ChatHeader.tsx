@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
   type ScopedThreadRef,
   type ThreadId,
 } from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import { ChevronDownIcon } from "lucide-react";
 import {
   memo,
@@ -20,28 +20,28 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
+import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
+import { observeResize } from "~/lib/observeResize";
+import { cn } from "~/lib/utils";
+import { readLocalApi } from "~/localApi";
+import { textDirection } from "~/textDirection";
+import { useClientSettings } from "../../hooks/useSettings";
+import { useUiLanguage } from "../../i18n";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
+import { threadEnvironment } from "../../state/threads";
+import { useOrchestrationCommand } from "../../state/use-orchestration-command";
+import { ProjectFavicon } from "../ProjectFavicon";
 import { isTrailingDoubleClick } from "../Sidebar.logic";
 import { Badge } from "../ui/badge";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
-import { useThreadActionMenu } from "~/hooks/useThreadActionMenu";
-import { readLocalApi } from "~/localApi";
-import { threadEnvironment } from "../../state/threads";
-import { canShareWithGuestAtom } from "./guestShareAvailability";
-import { useAtomValue } from "@effect/atom-react";
-import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
-import { ProjectFavicon } from "../ProjectFavicon";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
   WorkspaceBreadcrumbText,
 } from "../WorkspaceBreadcrumb";
-import { observeResize } from "~/lib/observeResize";
-import { cn } from "~/lib/utils";
-import { textDirection } from "~/textDirection";
-import { useClientSettings } from "../../hooks/useSettings";
+import { canShareWithGuestAtom } from "./guestShareAvailability";
 import { GuestShareIndicator } from "./GuestShareControls";
 
 interface ChatHeaderProps {

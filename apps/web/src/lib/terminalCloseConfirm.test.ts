@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { confirmMock, readLocalApiMock } = vi.hoisted(() => {
   const confirmMock = vi.fn<(message: string, options?: unknown) => Promise<boolean>>();

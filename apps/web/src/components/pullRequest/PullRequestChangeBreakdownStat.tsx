@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import type { EnvironmentId, PullRequestChangeBreakdown, PullRequestRef } from "@t3tools/contracts";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";

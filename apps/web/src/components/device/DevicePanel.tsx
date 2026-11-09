@@ -1,5 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { DeviceHostUpdates } from "./DeviceHostUpdates";
+import { useAtomMount } from "@effect/atom-react";
 import type {
   DevicePlatform,
   DeviceServiceState,
@@ -7,23 +6,24 @@ import type {
   ScopedThreadRef,
 } from "@t3tools/contracts";
 import { ArrowUpRight, CircleAlert, Play, Smartphone, X } from "lucide-react";
-import { useAtomMount } from "@effect/atom-react";
-import { type ReactNode, useState } from "react";
+import { useState, type ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { DeviceHostUpdates } from "./DeviceHostUpdates";
 
+import { Button } from "~/components/ui/button";
+import { Dialog } from "~/components/ui/dialog";
+import { DiscoveryList } from "~/components/ui/discovery-list";
+import { Popover, PopoverPopup, PopoverTrigger } from "~/components/ui/popover";
+import { Spinner } from "~/components/ui/spinner";
+import { WizardPopup } from "~/components/ui/wizard";
+import { focusPanelTerminalAfterClose } from "~/lib/terminalFocus";
+import { cn } from "~/lib/utils";
 import { usePreviewMiniPlayerStore } from "~/previewMiniPlayerStore";
 import {
   selectThreadRightPanelState,
   useRightPanelStore,
   type RightPanelSurface,
 } from "~/rightPanelStore";
-import { Button } from "~/components/ui/button";
-import { DiscoveryList } from "~/components/ui/discovery-list";
-import { Dialog } from "~/components/ui/dialog";
-import { Popover, PopoverPopup, PopoverTrigger } from "~/components/ui/popover";
-import { WizardPopup } from "~/components/ui/wizard";
-import { Spinner } from "~/components/ui/spinner";
-import { cn } from "~/lib/utils";
-import { focusPanelTerminalAfterClose } from "~/lib/terminalFocus";
 import {
   deviceEnvironment,
   deviceHostProbeAtom,
@@ -32,15 +32,15 @@ import {
 } from "~/state/device";
 import { formatEnvironmentQueryError } from "~/state/query";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { PreviewPanelShell, type PreviewPanelMode } from "../preview/PreviewPanelShell";
 import { DeviceLoadingView } from "./DeviceLoadingView";
 import {
-  DeviceSetup,
   deviceHubReadiness,
+  DeviceSetup,
   incompleteListings,
   isAndroidDiscoveryUncertain,
 } from "./DeviceSetup";
 import { DeviceWorkspace } from "./DeviceWorkspace";
-import { PreviewPanelShell, type PreviewPanelMode } from "../preview/PreviewPanelShell";
 
 const platformLabel = (platform: DevicePlatform) =>
   platform === "ios" ? "iOS Simulators" : "Android Emulators";

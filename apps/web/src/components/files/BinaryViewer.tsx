@@ -1,33 +1,33 @@
 import { useUiLanguage } from "../../i18n";
 /* oxlint-disable react/no-array-index-key -- Read-only cells retain their database row and column positions. */
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import {
   decodeFilePreviewText,
   filePreviewKind,
   hostPreviewMimeTypeFromExtension,
 } from "@t3tools/shared/filePreview";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { ChevronLeftIcon, ChevronRightIcon, FileIcon, FolderIcon } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import {
   Select,
+  SelectItem,
+  SelectPopup,
   SelectTrigger,
   SelectValue,
-  SelectPopup,
-  SelectItem,
 } from "~/components/ui/select";
 
+import {
+  SQLITE_PAGE_SIZE,
+  type BinaryWorkerRequest,
+  type BinaryWorkerResult,
+} from "./binaryPreviewProtocol";
 import {
   FileSurfaceAction,
   FileSurfaceFailure,
   FileSurfaceLoading,
   FileSurfaceNotice,
 } from "./fileSurfaceChrome";
-import {
-  SQLITE_PAGE_SIZE,
-  type BinaryWorkerRequest,
-  type BinaryWorkerResult,
-} from "./binaryPreviewProtocol";
 import { PreviewImage } from "./PreviewImage";
 import { readBinaryPreview } from "./readBinaryPreview";
 
@@ -66,7 +66,9 @@ function ArchiveFile(props: { readonly path: string; readonly bytes: Uint8Array<
     return url ? <PreviewImage key={url} src={url} name={props.path} /> : <FileSurfaceLoading />;
   if (!text)
     return (
-      <FileSurfaceFailure message="Only UTF-8 text and images can be opened inside an archive." />
+      <FileSurfaceFailure
+        message={uiT("Only UTF-8 text and images can be opened inside an archive.")}
+      />
     );
   return (
     <>

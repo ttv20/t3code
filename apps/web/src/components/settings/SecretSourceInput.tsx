@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import {
   SecretReference,
   type EnvironmentId,
@@ -7,16 +7,16 @@ import {
   type SecretProviderKind,
 } from "@t3tools/contracts";
 import { builtInSecretProviderDefinitions } from "@t3tools/secret-provider-definitions/registry";
-import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { KeyRoundIcon, TypeIcon } from "lucide-react";
 import { useState, type ComponentProps, type ComponentType, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { isSecretsFeatureEnabled } from "../../env";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
-import { OnePasswordIcon } from "../Icons";
 import { serverEnvironment } from "../../state/server";
+import { OnePasswordIcon } from "../Icons";
 import { DraftInput } from "../ui/draft-input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { SecretInput } from "./SecretInput";

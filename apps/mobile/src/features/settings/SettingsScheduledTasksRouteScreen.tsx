@@ -72,17 +72,19 @@ import { ScheduledTaskPromptField } from "./components/ScheduledTaskPromptField"
 import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
-import { useScheduledTaskEditor } from "./scheduled-task-editor";
+import { useScheduledTaskDestinationLabel, useScheduledTaskEditor } from "./scheduled-task-editor";
 import {
   discardScheduledTaskEditor,
   markScheduledTaskEditorSaved,
   scheduledTaskEditorSessionAtom,
 } from "./scheduled-task-editor-state";
 import {
+  changeDraftProject,
   editDraft,
   parseIntervalMinutes,
   scheduledTaskDefaultModel,
   scheduleFromDraft,
+  unbindDraftFromThread,
   type ScheduledTaskDraft as Draft,
 } from "./scheduledTaskDraft";
 import {
@@ -97,6 +99,7 @@ type ScheduledTaskRoutes = {
   SettingsScheduledTaskEdit: undefined;
   SettingsScheduledTaskModel: undefined;
   SettingsScheduledTaskBranch: undefined;
+  SettingsScheduledTaskThread: undefined;
 };
 
 const DAYS = [
@@ -292,7 +295,7 @@ function WebhookFilterRows(props: {
         <View key={filter.id}>
           <View className="flex-row items-center gap-3 border-t border-border-subtle px-4 pt-3">
             <Text className="min-w-0 flex-1 text-sm text-foreground-muted">
-              <UiText message={"Filter{0}"} values={{ "0": index + 1 }} />
+              <UiText message={uiT("Filter{0}")} values={{ "0": index + 1 }} />
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -696,6 +699,7 @@ function TaskForm({
     )
     .sort((left, right) => Number(right.pinnedAt != null) - Number(left.pinnedAt != null));
   const config = useEnvironmentServerConfig(environmentId);
+  const destinationLabel = useScheduledTaskDestinationLabel(environmentId, draft.threadId);
   const modelOptions = buildModelOptions(config, null, undefined, draft.projectId);
   // Existing webhook tasks keep the option so they can still switch to a timer.
   const webhookDenial = managedCapabilityDenial(config?.managedPolicy, "webhookTasks");
@@ -805,7 +809,7 @@ function TaskForm({
       modelSelection: draft.modelSelection,
       schedule,
       enabled: draft.enabled,
-      threadId: draft.task?.threadId ?? null,
+      threadId: draft.threadId,
       ...(offersThreadModes ? { threadMode: draft.threadMode } : {}),
       workspaceStrategy:
         draft.workspace === "root"
@@ -920,8 +924,7 @@ function TaskForm({
                     draft.modelSelection.instanceId,
                   ));
               setDraft({
-                ...draft,
-                projectId: project.id,
+                ...changeDraftProject(draft, project.id),
                 modelSelection: keepsExplicitModel
                   ? draft.modelSelection
                   : scheduledTaskDefaultModel(config, project),
@@ -946,20 +949,23 @@ function TaskForm({
           />
         </SettingsSection>
 
-        {offersThreadModes ? (
-          <SettingsSection
-            title={uiT("Destination")}
-            footer={
-              draft.threadMode === "new_thread"
-                ? uiT("Each run starts a new thread.")
-                : uiT("{0} The first run starts the thread. Deleting it also deletes this task.", {
-                    "0":
-                      draft.threadMode === "continue"
-                        ? "Runs continue one conversation."
-                        : "Runs share one thread, each in a fresh session without earlier runs' context.",
-                  })
-            }
-          >
+        <SettingsSection
+          title={uiT("Destination")}
+          footer={
+            draft.threadMode === "new_thread"
+              ? uiT("Each run starts a new thread.")
+              : uiT("{0}{1} Deleting it also deletes this task.", {
+                  "0":
+                    draft.threadMode === "continue"
+                      ? uiT("Runs continue one conversation.")
+                      : uiT(
+                          "Runs share one thread, each in a fresh session without earlier runs' context.",
+                        ),
+                  "1": draft.threadId === null ? " " + uiT("The first run starts the thread.") : "",
+                })
+          }
+        >
+          {offersThreadModes ? (
             <SelectRow
               label={uiT("Runs go to")}
               value={uiT(THREAD_MODE_LABELS[draft.threadMode])}
@@ -971,12 +977,27 @@ function TaskForm({
                 }),
               )}
               onSelect={(id) => {
-                if (id === "new_thread" || id === "continue" || id === "fresh_session")
+                if (id === "new_thread")
+                  setDraft({ ...unbindDraftFromThread(draft), threadMode: id });
+                else if (id === "continue" || id === "fresh_session")
                   setDraft({ ...draft, threadMode: id });
               }}
             />
-          </SettingsSection>
-        ) : null}
+          ) : null}
+          {!offersThreadModes || draft.threadMode !== "new_thread" ? (
+            <PickerRow
+              label={uiT("Thread")}
+              borderTop={offersThreadModes}
+              value={
+                draft.threadId === null && draft.threadMode !== "new_thread"
+                  ? "Started by the first run"
+                  : destinationLabel
+              }
+              onPress={() => navigation.navigate("SettingsScheduledTaskThread")}
+              disabled={!draft.projectId || saving || dictationPending || environmentUnavailable}
+            />
+          ) : null}
+        </SettingsSection>
 
         <SettingsSection title={uiT("Workspace")}>
           <SelectRow
@@ -1246,7 +1267,7 @@ function TaskForm({
                 }
               />
               <Text className="px-4 pb-3 text-sm text-foreground-muted">
-                <UiText message={"Requests with the same key run only once within 7 days."} />
+                <UiText message={uiT("Requests with the same key run only once within 7 days.")} />
               </Text>
               <FormField
                 label={uiT("Coalesce key template")}
@@ -1271,9 +1292,9 @@ function TaskForm({
               />
               <Text className="px-4 pb-3 text-sm text-foreground-muted">
                 <UiText
-                  message={
-                    "Coalescing runs the latest payload when the window from the first delivery closes. Empty keys run normally."
-                  }
+                  message={uiT(
+                    "Coalescing runs the latest payload when the window from the first delivery closes. Empty keys run normally.",
+                  )}
                 />
               </Text>
             </>
@@ -1541,7 +1562,10 @@ function EnvironmentTasks({
               ) : null}
               {task.lastRunError ? (
                 <Text className="text-sm text-danger-foreground" numberOfLines={2}>
-                  <UiText message={"Last run failed:{0}"} values={{ "0": task.lastRunError }} />
+                  <UiText
+                    message={uiT("Last run failed:{0}")}
+                    values={{ "0": task.lastRunError }}
+                  />
                 </Text>
               ) : null}
             </Pressable>

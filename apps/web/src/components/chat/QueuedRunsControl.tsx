@@ -1,11 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { deriveThreadQueueWorkflowState } from "@t3tools/client-runtime/state/thread-workflows";
-import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
-import {
-  isAttachmentOnlyBootstrapPrompt,
-  replaceComposerContextReferences,
-} from "@t3tools/shared/composerContextReferences";
+import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
 import type {
   ChatAttachment as ContractChatAttachment,
   EnvironmentId,
@@ -13,8 +8,13 @@ import type {
   RunId,
   ThreadId,
 } from "@t3tools/contracts";
-import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
+import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
+import {
+  isAttachmentOnlyBootstrapPrompt,
+  replaceComposerContextReferences,
+} from "@t3tools/shared/composerContextReferences";
 import { Link } from "@tanstack/react-router";
+import * as DateTime from "effect/DateTime";
 import {
   ArrowUpIcon,
   CalendarClockIcon,
@@ -24,18 +24,18 @@ import {
   PencilIcon,
   XIcon,
 } from "lucide-react";
-import * as DateTime from "effect/DateTime";
 import { useId, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import type { TimestampFormat } from "@t3tools/contracts/settings";
+import { cn } from "~/lib/utils";
 import { useAssetUrls } from "../../assets/assetUrls";
-import { threadEnvironment } from "../../state/threads";
 import { useQuietThreadShell, useThreadProjection } from "../../state/entities";
+import { threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { isImageAttachment, type ChatMessage } from "../../types";
-import { cn } from "~/lib/utils";
 import { Button, InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import type { TimestampFormat } from "@t3tools/contracts/settings";
 import { GuestMessageName } from "./guestMessageStyle";
 import { TimelineRowTimestamp } from "./TimelineRowParts";
 import { FoldedMessageHeader, useScheduledTaskTitle } from "./TimelineUserMessageRow";

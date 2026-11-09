@@ -1,11 +1,27 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
 import { Spinner } from "~/components/ui/spinner";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import {
+  isProviderDriverKind,
+  resolveProviderInstanceEnabled,
+  type AcpRegistryUrlAuthAction,
+  type EnvironmentId,
+  type ProjectId,
+  type ProviderDriverKind,
+  type ProviderInstanceConfig,
+  type ProviderInstanceEnvironmentVariable,
+  type ProviderInstanceId,
+  type SecretReference,
+  type ServerProvider,
+  type ServerProviderModel,
+} from "@t3tools/contracts";
+import * as Arr from "effect/Array";
+import * as Result from "effect/Result";
+import { Lock as LockGlyph, LockOpen } from "lucide";
+import {
   AlertTriangleIcon,
-  CheckIcon,
   ArrowUpCircleIcon,
+  CheckIcon,
   CopyIcon,
   DownloadIcon,
   ExternalLinkIcon,
@@ -14,71 +30,54 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
-import { Lock as LockGlyph, LockOpen } from "lucide";
-import * as Arr from "effect/Array";
-import * as Result from "effect/Result";
 import { Fragment, useState, type ReactElement, type ReactNode } from "react";
-import {
-  isProviderDriverKind,
-  resolveProviderInstanceEnabled,
-  type ProviderInstanceConfig,
-  type ProviderInstanceEnvironmentVariable,
-  type ProviderInstanceId,
-  type AcpRegistryUrlAuthAction,
-  type EnvironmentId,
-  type ProjectId,
-  type ProviderDriverKind,
-  type SecretReference,
-  type ServerProvider,
-  type ServerProviderModel,
-} from "@t3tools/contracts";
 
-import {
-  type CustomModelDefinition,
-  readCustomModelEntries,
-  toCustomModelSetting,
-} from "@t3tools/shared/model";
-import { cn } from "../../lib/utils";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { normalizeProviderAccentColor } from "../../providerInstances";
-import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
-import { DraftInput } from "../ui/draft-input";
-import { SecretSourceInput, type SecretSource } from "./SecretSourceInput";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Switch } from "../ui/switch";
-import { ManagedControl, ManagedNotice } from "../ManagedPolicy";
-import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
 import { disallowedProviderMessage, isManagedDriverAllowed } from "@t3tools/contracts";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import type {
   ProviderClientDefinition,
   ProviderEnvironmentField,
 } from "@t3tools/provider-core/client";
+import {
+  readCustomModelEntries,
+  toCustomModelSetting,
+  type CustomModelDefinition,
+} from "@t3tools/shared/model";
+import { MorphIcon } from "~/components/MorphIcon";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { cn } from "../../lib/utils";
+import { normalizeProviderAccentColor } from "../../providerInstances";
+import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { ManagedControl, ManagedNotice } from "../ManagedPolicy";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { DraftInput } from "../ui/draft-input";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { Switch } from "../ui/switch";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { AcpSessionManagementSection } from "./AcpSessionManagementSection";
+import { readCodexSetupMode } from "./CodexSetupSection.logic";
+import { FoldedSettingsSection } from "./FoldedSettingsSection";
+import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
+import { ProviderModelsSection } from "./ProviderModelsSection";
 import {
   deriveProviderSettingsFields,
   ProviderSettingsForm,
   reconcileRowsDraft,
   seedRowsDraft,
 } from "./ProviderSettingsForm";
-import { ProviderModelsSection } from "./ProviderModelsSection";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
-import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
-import { RedactedSensitiveText } from "./RedactedSensitiveText";
-import { SettingResetButton, SettingsRow, SettingsSection } from "./settingsLayout";
-import { AcpSessionManagementSection } from "./AcpSessionManagementSection";
-import { FoldedSettingsSection } from "./FoldedSettingsSection";
-import { readCodexSetupMode } from "./CodexSetupSection.logic";
 import {
-  getProviderVersionAdvisoryPresentation,
-  PROVIDER_STATUS_STYLES,
   getProviderStatusKey,
   getProviderSummary,
+  getProviderVersionAdvisoryPresentation,
   getProviderVersionLabel,
+  PROVIDER_STATUS_STYLES,
 } from "./providerStatus";
+import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { SecretSourceInput, type SecretSource } from "./SecretSourceInput";
+import { SettingResetButton, SettingsRow, SettingsSection } from "./settingsLayout";
 
 const ENVIRONMENT_VARIABLE_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 

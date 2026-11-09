@@ -1,5 +1,5 @@
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
-import { Pressable, ScrollView, View } from "react-native";
+import { Platform, Pressable, ScrollView, View } from "react-native";
 import { UiText, useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -21,14 +21,19 @@ export function ThreadSideChatsRow(props: {
   const openLinkedThread = useOpenLinkedThread();
   if (sideChats.length === 0) return null;
   return (
-    <View className="flex-row items-center gap-2 pb-2" style={{ paddingStart: 16 }}>
+    <View
+      className={cn(
+        "flex-row items-center gap-2 py-2 ps-4",
+        Platform.OS === "android" ? "bg-thread-canvas" : "bg-screen",
+      )}
+    >
       <SymbolView
         name="bubble.left.and.bubble.right"
         size={12}
         tintColorClassName="accent-foreground-muted"
       />
       <Text className="text-xs text-foreground-muted">
-        <UiText message={"Side chats"} />
+        <UiText message={uiT("Side chats")} />
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
         <View className="flex-row gap-1" style={{ paddingEnd: 16 }}>

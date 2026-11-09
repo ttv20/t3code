@@ -2,9 +2,9 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { ChevronsUpDownIcon, SearchIcon, XIcon } from "lucide-react";
 import * as React from "react";
 
-import { cn } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { ScrollArea } from "~/components/ui/scroll-area";
+import { cn } from "~/lib/utils";
 
 const ComboboxContext = React.createContext<{
   chipsRef: React.RefObject<Element | null> | null;
@@ -114,7 +114,7 @@ function ComboboxSearchInput(props: React.ComponentProps<typeof ComboboxInput>) 
         />
         <ComboboxInput
           {...props}
-          className="[&_input]:h-6.5 [&_input]:px-0 [&_input]:font-sans [&_input]:leading-6.5"
+          className="flex w-full [&_input]:h-6.5 [&_input]:ps-5 [&_input]:font-sans [&_input]:leading-6.5"
           showTrigger={false}
           size="sm"
           unstyled
@@ -272,15 +272,15 @@ const useComboboxFilter = ComboboxPrimitive.useFilter;
 
 export {
   Combobox,
-  ComboboxInput,
-  ComboboxSearchInput,
-  ComboboxTrigger,
-  ComboboxPopup,
-  ComboboxItem,
+  ComboboxClear,
   ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
   ComboboxList,
   ComboboxListVirtualized,
-  ComboboxClear,
+  ComboboxPopup,
+  ComboboxSearchInput,
   ComboboxStatus,
+  ComboboxTrigger,
   useComboboxFilter,
 };

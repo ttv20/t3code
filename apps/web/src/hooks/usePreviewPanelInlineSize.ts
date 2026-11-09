@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import { type ResizableWidthHandlers, useResizableWidth } from "./useResizableWidth";
 import { useUiLanguage } from "../i18n";
 import { observeResize } from "../lib/observeResize";
+import { type ResizableWidthHandlers, useResizableWidth } from "./useResizableWidth";
 
 export interface PreviewPanelInlineSize {
   readonly width: number;

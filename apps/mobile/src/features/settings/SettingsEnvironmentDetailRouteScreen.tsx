@@ -243,11 +243,11 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                 <SettingsSection title={uiT("T3 Code")}>
                   <View className="gap-1 p-4">
                     <Text className="text-base text-foreground">
-                      <UiText message={"Version"} /> {version}
+                      <UiText message={uiT("Version")} /> {version}
                     </Text>
                     {managedPolicy ? (
                       <Text className="text-sm text-foreground-muted">
-                        <UiText message={"Managed by"} /> {managedPolicy.organization}
+                        <UiText message={uiT("Managed by")} /> {managedPolicy.organization}
                       </Text>
                     ) : null}
                     {updatesDenial ? (

@@ -1,8 +1,8 @@
-import { currentUiTranslator } from "../../../currentUiTranslator";
-import type { AnyRouter } from "@tanstack/react-router";
 import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
-import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
+import type { AnyRouter } from "@tanstack/react-router";
 import { AsyncResult, type AtomRegistry } from "effect/reactivity";
+import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
+import { currentUiTranslator } from "../../../currentUiTranslator";
 
 import { getClientSettings } from "~/hooks/useSettings";
 import { observedPullRequestTitle, pullRequestEnvironment } from "~/state/pullRequests";

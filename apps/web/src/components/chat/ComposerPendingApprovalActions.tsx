@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import {
   type ProviderApprovalDecision,
   type ProviderApprovalOption,
   type RuntimeRequestId,
 } from "@t3tools/contracts";
-import { memo } from "react";
 import { EllipsisIcon, TriangleAlertIcon } from "lucide-react";
+import { memo } from "react";
+import { useUiLanguage } from "../../i18n";
 import { Button, InlineButton } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -112,7 +112,7 @@ export const ComposerPendingApprovalActions = memo(function ComposerPendingAppro
               )
             }
           >
-            {presentation === "inline" ? "More" : <EllipsisIcon />}
+            {presentation === "inline" ? uiT("More") : <EllipsisIcon />}
           </MenuTrigger>
           <MenuPopup {...composerFloatingLayerProps} side="top" align="end" width="content">
             {moreOptions.map((option) => {

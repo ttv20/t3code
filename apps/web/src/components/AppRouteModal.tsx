@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../i18n";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { XIcon } from "lucide-react";
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { useNativeTitlebarHeight } from "../lib/windowControlsOverlay";
 import { useCloseAppModal } from "./sidebar/mainAppLocation";

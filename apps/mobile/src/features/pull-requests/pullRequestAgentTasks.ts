@@ -1,8 +1,10 @@
+import type { MenuAction } from "@react-native-menu/menu";
 import {
   sourceControlClients,
   type ChangeRequestTerminology,
 } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestDetail, PullRequestLinkedThreadsResult } from "@t3tools/contracts";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 export type PullRequestAgentTask = "ask" | "explain" | "feedback" | "conflicts" | "watch";
 
@@ -11,7 +13,40 @@ export function pullRequestAgentThread(
   threadId?: string,
 ) {
   if (threadId) return threads.find((thread) => thread.id === threadId);
-  return threads.length === 1 ? threads[0] : undefined;
+  return threads.length === 1 && !threads[0]?.settled && !threads[0]?.archivedAt
+    ? threads[0]
+    : undefined;
+}
+
+export function pullRequestAgentThreadActions(
+  threads: PullRequestLinkedThreadsResult["threads"],
+  task: PullRequestAgentTask,
+  canAsk: boolean,
+  uiT = createUiTranslator("en"),
+): MenuAction[] {
+  const active: MenuAction[] = [];
+  const settled: MenuAction[] = [];
+  for (const thread of threads) {
+    const action = {
+      id: `${task}:${thread.id}`,
+      title: thread.title,
+      subtitle: thread.archivedAt
+        ? uiT("Archived thread")
+        : thread.settled
+          ? uiT("Settled thread")
+          : uiT("Continue thread"),
+      image: "bubble.left.and.bubble.right",
+      attributes: { disabled: task !== "ask" && Boolean(thread.archivedAt) },
+    };
+    (thread.settled ? settled : active).push(action);
+  }
+  return [
+    ...(canAsk ? [{ id: `${task}:new`, title: uiT("Start a new thread"), image: "plus" }] : []),
+    ...active,
+    ...(settled.length
+      ? [{ id: `${task}:settled`, title: uiT("Settled threads"), subactions: settled }]
+      : []),
+  ];
 }
 
 export function pullRequestAgentPrompt(
@@ -33,31 +68,40 @@ export function pullRequestAgentPrompt(
   }
 }
 
-export function pullRequestAgentActions(pr: PullRequestDetail, canWatch: boolean) {
+export function pullRequestAgentActions(
+  pr: PullRequestDetail,
+  canWatch: boolean,
+  uiT = createUiTranslator("en"),
+) {
   const { shortLabel } = sourceControlClients.get(pr.provider).changeRequest;
   return [
     {
       task: "ask",
-      title: "Ask a question",
+      title: uiT("Ask a question"),
       icon: "bubble.left.and.text.bubble.right",
       disabled: false,
     },
-    { task: "explain", title: `Explain this ${shortLabel}`, icon: "book", disabled: false },
+    {
+      task: "explain",
+      title: uiT("Explain this {0}", { "0": shortLabel }),
+      icon: "book",
+      disabled: false,
+    },
     {
       task: "feedback",
-      title: "Address feedback",
+      title: uiT("Address feedback"),
       icon: "wrench.and.screwdriver",
       disabled: pr.state !== "open",
     },
     {
       task: "conflicts",
-      title: "Resolve conflicts",
+      title: uiT("Resolve conflicts"),
       icon: "arrow.triangle.branch",
       disabled: pr.state !== "open" || pr.mergeability !== "conflicting",
     },
     {
       task: "watch",
-      title: `Watch ${shortLabel}`,
+      title: uiT("Watch {0}", { "0": shortLabel }),
       icon: "eye",
       disabled: pr.state !== "open" || !canWatch,
     },

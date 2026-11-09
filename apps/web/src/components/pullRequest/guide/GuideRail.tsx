@@ -1,11 +1,11 @@
-import { useUiLanguage, UiText } from "../../../i18n";
 import type { PullRequestReviewGuideStop } from "@t3tools/contracts";
 import { CheckIcon } from "lucide-react";
+import { UiText, useUiLanguage } from "../../../i18n";
 
 import { cn } from "~/lib/utils";
 
-import { Badge } from "../../ui/badge";
 import { stopSubline } from "@t3tools/client-runtime/review-guide-tour";
+import { Badge } from "../../ui/badge";
 
 export function GuideRail({
   stops,

@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
   getNewProjectRepository,
@@ -9,14 +8,15 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { waitForProject } from "~/state/entities";
 import { projectEnvironment } from "~/state/projects";
 import { sourceControlEnvironment } from "~/state/sourceControl";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { useNewThreadHandler } from "./useHandleNewThread";
 import { suggestAppAccessForRemote } from "../components/sourceControlAppAccessToast";
+import { useNewThreadHandler } from "./useHandleNewThread";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim().length > 0

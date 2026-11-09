@@ -3,10 +3,10 @@ import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments"
 import { useAudioPlayerStatus } from "expo-audio";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AppState, Pressable, View } from "react-native";
-import type { FilePreviewSource } from "../../components/FilePreviewModal";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
+import type { FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { useUiLanguage } from "../../i18n";
 import {
   acquireAudioSession,

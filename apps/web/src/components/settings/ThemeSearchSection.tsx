@@ -1,21 +1,22 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { ExternalLinkIcon, PackagePlusIcon, PaletteIcon, SearchIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { useState, type ReactNode } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { UiText, useUiLanguage } from "../../i18n";
 import {
   importOpenVsxThemeExtension,
   searchOpenVsxThemes,
   type OpenVsxThemeExtension,
   type OpenVsxThemeSort,
 } from "../../openVsxThemes";
+import { sourceControlIcon } from "../../sourceControlPresentation";
 import {
   getCustomThemes,
   getStoredCustomThemeCollection,
   replaceCustomThemeCollection,
   type ThemeDefinition,
 } from "../../themePalette";
-import { sourceControlIcon } from "../../sourceControlPresentation";
+import { Alert, AlertDescription } from "../ui/alert";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -25,7 +26,6 @@ import {
   AlertDialogPopup,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";

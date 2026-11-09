@@ -1,22 +1,22 @@
-import { useUiLanguage } from "../../i18n";
 import type { GitStatusEntry } from "@pierre/trees";
 import { FileTree, useFileTree, useFileTreeSelector } from "@pierre/trees/react";
 import { ChevronsDownUp, ChevronsUpDown } from "lucide";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
 import { PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
 
+import { MorphIcon } from "~/components/MorphIcon";
 import { areAllDirectoriesExpanded, setAllDirectoriesExpanded } from "../files/fileTreeExpansion";
 import { Button } from "../ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   buildDiffFileTreeUpdates,
-  compareDiffFileTreeEntries,
   collectDirectoryPaths,
+  compareDiffFileTreeEntries,
   diffFileTreeModel,
   diffFileTreePositions,
   type DiffFileTreeEntry,

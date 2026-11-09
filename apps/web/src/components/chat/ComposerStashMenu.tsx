@@ -1,13 +1,12 @@
-import { UiText } from "../../i18n";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-import { useUiLanguage } from "../../i18n";
+import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
 import { memo, useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
-import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { RelativeTime } from "../RelativeTime";
 import { cn } from "~/lib/utils";
 import { type PromptStashEntry } from "../../promptStashStore";
+import { RelativeTime } from "../RelativeTime";
 import { ComposerBanner } from "./ComposerBanner";
 
 const SNIPPET_MAX_CHARS = 90;

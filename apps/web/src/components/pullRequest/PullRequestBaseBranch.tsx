@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import type { PullRequestUpdateMethod } from "@t3tools/contracts";
 import { TriangleAlertIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";

@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
-import { TooltipPopup } from "./ui/tooltip";
 import { cn } from "~/lib/utils";
+import { TooltipPopup } from "./ui/tooltip";
 
 export function ThreadHoverCardPopup({ className, ...props }: ComponentProps<typeof TooltipPopup>) {
   return (

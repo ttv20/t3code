@@ -1,4 +1,9 @@
-import { StackActions, type StaticScreenProps, useNavigation } from "@react-navigation/native";
+import {
+  StackActions,
+  type StaticScreenProps,
+  useNavigation,
+  usePreventRemove,
+} from "@react-navigation/native";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { mediaFileReference } from "@t3tools/client-runtime/media-reference";
 import { resolveFilesystemReadAccess } from "@t3tools/client-runtime/state/filesystem";
@@ -10,17 +15,17 @@ import {
   mediaMimeTypeFromExtension,
 } from "@t3tools/shared/filePreview";
 import { videoMimeType } from "@t3tools/shared/video";
-import { type ReactNode, useId, useState } from "react";
+import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { Platform, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useUiLanguage } from "../../i18n";
 import { environmentSession } from "../../state/session";
 
 import { filePreviewDelimiter, parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { LoadingScreen } from "../../components/LoadingScreen";
 import { AppBar } from "../../components/ui/AppBar";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { ScreenContent } from "../../components/ui/ScreenContent";
 import { useContentTopInset } from "../../components/ui/useBarInset";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
@@ -202,6 +207,33 @@ function defaultViewMode(path: string | null): FileViewMode {
     : "source";
 }
 
+// Android numbered rows are separate text views, so a long-press opens the whole file as one
+// selectable text at that line. Back returns to the numbered rows at the same line.
+function FileSourceSurface(props: ComponentProps<typeof SourceFileSurface>) {
+  const navigation = useNavigation();
+  const [selection, setSelection] = useState<{
+    readonly line: number;
+    readonly active: boolean;
+  } | null>(null);
+  usePreventRemove(selection?.active === true, ({ data }) => {
+    setSelection((value) => value && { ...value, active: false });
+    // The re-dispatched action skips this guard, so "Return to chat" still leaves in one tap.
+    if (data.action.type !== "GO_BACK" && data.action.type !== "POP") {
+      navigation.dispatch(data.action);
+    }
+  });
+  return (
+    <SourceFileSurface
+      {...props}
+      initialLine={selection?.line ?? props.initialLine}
+      selectable={selection?.active === true}
+      onLongPressLine={
+        Platform.OS === "android" ? (line) => setSelection({ line, active: true }) : undefined
+      }
+    />
+  );
+}
+
 function FileContent(props: {
   readonly activeMode: FileViewMode;
   readonly cwd: string;
@@ -315,7 +347,8 @@ function FileContent(props: {
           onRefresh={props.onRefresh}
         />
       ) : (
-        <SourceFileSurface
+        <FileSourceSurface
+          key={props.initialLine}
           contents={props.fileContents}
           path={props.relativePath}
           initialLine={props.initialLine}
@@ -862,6 +895,16 @@ export function ThreadFileScreen(props: ThreadFileRouteScreenProps) {
                 kind: "pdf",
                 uri: previewUri,
                 name: basename(relativePath),
+                ...(environmentId !== null && assetPreview.resource !== null
+                  ? {
+                      actionsSource: {
+                        name: basename(relativePath),
+                        mimeType: "application/pdf",
+                        environmentId,
+                        resource: assetPreview.resource,
+                      },
+                    }
+                  : {}),
               }),
           } as const)
         : null,

@@ -1,20 +1,27 @@
-import { useUiLanguage } from "../i18n";
 import type { EnvironmentId, PullRequestContextMetadata } from "@t3tools/contracts";
 import { CircleDashedIcon, FilmIcon, ImageIcon } from "lucide-react";
-import { useEffect, useState, type ComponentProps, type MouseEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { useAssetUrlState } from "~/assets/assetUrls";
 import { documentChipKindForFileName } from "~/pierre-icons";
+import { useUiLanguage } from "../i18n";
 
 import { PULL_REQUEST_STATE_PRESENTATION } from "~/components/pullRequest/pullRequestIcons";
 import type { PullRequestContextDisplayState } from "~/lib/composerContextRecords";
+import { usePullRequestPreviewTarget } from "~/lib/openPullRequestLink";
 import { PierreEntryIcon } from "./chat/PierreEntryIcon";
 import { middleTruncateAttachmentName } from "./composerInlineChip";
-import { PullRequestContextDetails } from "./PullRequestContextDetails";
 import { ContextChip, ContextChipLabel, type ContextChipKind } from "./ContextChip";
+import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+import { PullRequestContextDetails } from "./PullRequestContextDetails";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "./ui/popover";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
-import { usePullRequestPreviewTarget } from "~/lib/openPullRequestLink";
 
 export const PULL_REQUEST_CHIP_KINDS = {
   open: "pr-open",
@@ -62,6 +69,8 @@ export function ContextChipPopover(props: {
   label: string;
   copyMarkdown?: string | undefined;
   accessibleLabel: string;
+  /** Overrides the kind's accent color. */
+  accent?: string | undefined;
   children: ReactNode;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -72,6 +81,11 @@ export function ContextChipPopover(props: {
           <ContextChip
             kind={props.kind}
             dir={props.dir}
+            style={
+              props.accent
+                ? ({ "--context-chip-accent": props.accent } as CSSProperties)
+                : undefined
+            }
             render={<button type="button" />}
             aria-label={uiT("{0}. Show details", { "0": props.accessibleLabel })}
             data-markdown-copy={props.copyMarkdown}

@@ -2,9 +2,9 @@ import { splitPullRequestBody } from "@t3tools/client-runtime/pull-request-markd
 import { useContext, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-import type { FilePreviewItem } from "../../components/FilePreviewModal";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
+import type { FilePreviewItem } from "../../components/ui/FilePreviewModal";
 import { useUiLanguage } from "../../i18n";
 import { parseMarkdownDocument } from "../../lib/markdownDocument";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";

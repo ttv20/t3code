@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../i18n";
-import { currentUiTranslator } from "../currentUiTranslator";
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { currentUiTranslator } from "../currentUiTranslator";
+import { useUiLanguage } from "../i18n";
 import { type SlowRpcAckRequest, subscribeSlowRpcAckRequests } from "../rpc/requestLatencyState";
 import { toastManager } from "./ui/toast";
 

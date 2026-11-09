@@ -55,6 +55,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { createV5StackNavigator as createNativeStackNavigator } from "../../native/createV5StackNavigator";
+import {
+  rememberModelOptions,
+  withRememberedModelOptions,
+} from "../../state/use-model-option-memory";
 import { useSheetStackOptions } from "../layout/nested-stacks";
 
 import { formatProviderUpdateRequiredNotice } from "@t3tools/client-runtime/providerUpdateRequiredModels";
@@ -85,6 +89,7 @@ import { mobilePreferencesAtom } from "../../state/preferences";
 import { useEnvironmentQuery } from "../../state/query";
 import { activeComposerDraftKey, useQueuedRunEdit } from "../../state/queued-run-edit";
 import { environmentServerConfigsAtom, serverEnvironment } from "../../state/server";
+import { selectThreadModel } from "../../state/thread-model-selection";
 import { threadAllowsProviderSwitch } from "../../state/thread-provider-switching";
 import { useAtomCommand } from "../../state/use-atom-command";
 import {
@@ -93,11 +98,6 @@ import {
   useComposerDraft,
   useComposerDraftSettings,
 } from "../../state/use-composer-drafts";
-import {
-  rememberModelOptions,
-  withRememberedModelOptions,
-} from "../../state/use-model-option-memory";
-import { updateThreadDraftModelSelection } from "../../state/use-thread-composer-state";
 import { useQuietThreadStructure } from "../../state/use-thread-detail";
 import { useThreadSelection } from "../../state/use-thread-selection";
 import { ChatGptSharingStatus } from "./ChatGptSharingStatus";
@@ -1244,7 +1244,7 @@ function ThreadSettingsModelsScreen() {
           session.hasLegacyModels,
         ]}
         confirm={{
-          label: session.pendingModel ? uiT("Save thread settings") : uiT("Done"),
+          label: session.pendingModel ? uiT("Save") : uiT("Done"),
           onPress: commitAndClose,
         }}
         hideBottomBorder
@@ -1367,7 +1367,7 @@ export function ExistingThreadSettingsRouteScreen({
         option.selection.model === modelSelection.model,
     ) ?? null;
   const updateModelSelection = (selection: ModelSelection) =>
-    updateThreadDraftModelSelection(threadKey, selection, serverConfig?.providers ?? []);
+    selectThreadModel(route.params, selection);
 
   return (
     <ThreadSettingsPickerScreen

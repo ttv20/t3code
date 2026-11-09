@@ -1,6 +1,6 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, SecretReference, UnifiedSettings } from "@t3tools/contracts";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import { Button } from "../ui/button";
@@ -14,9 +14,9 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { sourceIdFromUrl } from "./AddUsageLimitSourceDialog.logic";
 import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
-import { Label } from "../ui/label";
 
 /** Send the management key once to server secret storage; settings retain only a redaction marker. */
 export function AddUsageLimitSourceDialog({

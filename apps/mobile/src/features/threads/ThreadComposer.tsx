@@ -12,7 +12,6 @@ import {
   type EnvironmentId,
   type MessageId,
   type ModelSelection,
-  type ProviderInteractionMode,
   type ServerConfig as T3ServerConfig,
   type UsageLimitsReport,
 } from "@t3tools/contracts";
@@ -35,9 +34,9 @@ import Animated, {
   withTiming,
   type LayoutAnimationFunction,
 } from "react-native-reanimated";
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { useUiLanguage } from "../../i18n";
 import type { ComposerDocumentAttachment } from "../../lib/composerContext";
 import { composerImageGallery } from "../../lib/composerImageGallery";
@@ -83,10 +82,10 @@ import {
 import { ComposerEditor, type ComposerEditorHandle } from "../../components/ComposerEditor";
 import { ComposerModelControl } from "../../components/ComposerModelControl";
 import { ComposerActionButton, ComposerToolbarRow } from "../../components/ComposerToolbar";
-import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
 import { AppText as Text } from "../../components/ui/AppText";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { Menu } from "../../components/ui/Menu";
+import { VideoPreviewModal, type VideoPreviewSource } from "../../components/ui/VideoPreviewModal";
 import {
   composerStripAttachments,
   type DraftComposerFileAttachment,
@@ -272,7 +271,6 @@ export interface ThreadComposerProps {
   ) => Promise<MessageId | null>;
   readonly onShowUsageLimits: (report: UsageLimitsReport | null) => void;
   readonly canSwitchProvider: boolean;
-  readonly onUpdateInteractionMode?: (interactionMode: ProviderInteractionMode) => void;
   readonly onHeightChange?: (height: number) => void;
   readonly onEditorFocusChange?: (focused: boolean) => void;
 }
@@ -566,6 +564,13 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
   };
 
   const mentionableEnvironments = useMentionableEnvironments();
+  // Mentions name any model for the agent, so they aren't limited to models this thread can switch to.
+  const mentionModelOptions = buildModelOptions(
+    props.serverConfig,
+    currentModelSelection,
+    undefined,
+    props.selectedThread.projectId,
+  );
   const composerMenu = useComposerCommandMenu({
     draftMessage: draftMessage,
     ownerKey: composerDraftKey,
@@ -584,13 +589,11 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
     hasThread: !props.isDraft,
     hasCompactableConversation: props.hasCompactableConversation,
     onChangeDraftMessage: props.onChangeDraftMessage,
-    onUpdateInteractionMode:
-      selectedProviderStatus?.showInteractionModeToggle === false
-        ? undefined
-        : props.onUpdateInteractionMode,
     offersUsageLimits: usageLimitsOffered,
     onUsageLimits:
       usageLimitsOffered && draftAttachments.length === 0 ? openUsageLimits : undefined,
+    modelOptions: mentionModelOptions,
+    modelProviders: props.serverConfig?.providers,
     ...(props.onFreshSession === undefined ? {} : { onFreshSession: props.onFreshSession }),
     offersSideChat: props.offersSideChat === true,
   });

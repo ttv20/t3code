@@ -1,28 +1,36 @@
-import { useUiLanguage } from "../i18n";
-import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
+import { useAtomValue } from "@effect/atom-react";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   AuthSettingsWriteScope,
   type EnvironmentId,
   type ProjectScript,
   type T3ProjectFileScript,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import { projectScriptMenuLabel } from "@t3tools/shared/projectScripts";
 import { ChevronDownIcon, DownloadIcon, PlusIcon, SettingsIcon, WrenchIcon } from "lucide-react";
 import React, { useState } from "react";
+import { useUiLanguage } from "../i18n";
+import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
 
-import { commandForProjectScript, primaryProjectScript } from "~/projectScripts";
 import { shortcutLabelForCommand } from "~/keybindings";
+import { cn } from "~/lib/utils";
+import { commandForProjectScript, primaryProjectScript } from "~/projectScripts";
 import { serverEnvironment } from "~/state/server";
 import { readEnvironmentScope } from "~/state/session";
 import {
-  EMPTY_PROJECT_SCRIPT_INPUT,
+  THREAD_DETAILS_PANEL_CHEVRON_CLASS,
+  THREAD_DETAILS_PANEL_ICON_CLASS,
+  THREAD_DETAILS_PANEL_LABEL_CLASS,
+  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
+  THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
+} from "./chat/threadDetailsPanelStyles";
+import {
   editorRequestForScript,
+  EMPTY_PROJECT_SCRIPT_INPUT,
   ProjectScriptEditorDialog,
   ScriptIcon,
   type NewProjectScriptInput,
@@ -40,20 +48,12 @@ import {
   MenuPopup,
   MenuSeparator,
   MenuShortcut,
-  MenuTrigger,
   MenuSub,
-  MenuSubTrigger,
   MenuSubPopup,
+  MenuSubTrigger,
+  MenuTrigger,
 } from "./ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { cn } from "~/lib/utils";
-import {
-  THREAD_DETAILS_PANEL_CHEVRON_CLASS,
-  THREAD_DETAILS_PANEL_ICON_CLASS,
-  THREAD_DETAILS_PANEL_LABEL_CLASS,
-  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
-  THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
-} from "./chat/threadDetailsPanelStyles";
 
 export type { NewProjectScriptInput, ProjectScriptActionResult };
 

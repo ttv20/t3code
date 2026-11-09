@@ -1,6 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import type { ToolCallDiffTarget } from "../../diffPanelStore";
-import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@t3tools/contracts";
+import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import {
   isJsonToolText,
   toolCallLines,
@@ -9,24 +7,26 @@ import {
   turnItemOutputImages,
   turnItemOutputText,
 } from "@t3tools/client-runtime/work-log/item-detail";
-import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
+import type { EnvironmentId, OrchestrationV2ProjectedTurnItem } from "@t3tools/contracts";
 import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
 import { ExternalLinkIcon } from "lucide-react";
 import { memo, type ReactNode, Suspense, use } from "react";
+import type { ToolCallDiffTarget } from "../../diffPanelStore";
+import { UiText, useUiLanguage } from "../../i18n";
 
+import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 import { useRenderedAppearance } from "../../hooks/useTheme";
-import { cn } from "../../lib/utils";
 import { resolveDiffThemeName } from "../../lib/diffRendering";
 import { getSyntaxHighlighterPromise } from "../../lib/syntaxHighlighting";
+import { cn } from "../../lib/utils";
 import { useTurnItemDetail } from "../../state/queries";
-import { formatWorkspaceRelativePath } from "../../filePathDisplay";
-import { Button } from "../ui/button";
 import ChatMarkdown from "../ChatMarkdown";
-import { ChatMarkdownAssetImage } from "./ChatMarkdownMedia";
 import { RenderErrorBoundary } from "../RenderErrorBoundary";
+import { Button } from "../ui/button";
+import { ChatMarkdownAssetImage } from "./ChatMarkdownMedia";
 import { CommandOutputPanel, useCommandOutputStreaming } from "./CommandOutputPanel";
-import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
 import type { ExpandedImagePreview } from "./ExpandedImagePreview";
+import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
 import { ShellCommandBlock } from "./ShellCommandBlock";
 import type { TurnItemSource } from "./timelineRowContext";
 

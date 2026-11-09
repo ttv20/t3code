@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { type EnvironmentId, sessionGrantsScope } from "@t3tools/contracts";
 import {
   AUTH_SCOPE_OPTIONS,
   sessionPermissionsUnavailableMessage,
 } from "@t3tools/shared/authScopeOptions";
 import { useEnvironmentSessionState } from "~/state/session";
+import { useUiLanguage } from "../../i18n";
 
 export function SessionPermissions({
   environmentId,

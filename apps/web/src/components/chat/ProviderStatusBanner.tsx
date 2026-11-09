@@ -1,19 +1,19 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import {
   type EnvironmentId,
   type ProviderInstanceId,
   type ServerProvider,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
-import { memo, useRef, useState } from "react";
 import { InfoIcon, XIcon } from "lucide-react";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
-import { Button, InlineButton } from "../ui/button";
+import { memo, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 import { formatProviderDriverKindLabel } from "../../providerModels";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
+import { Button, InlineButton } from "../ui/button";
 import { RefreshIcon } from "../ui/refresh-icon";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 function getIncompatibleVersion(status: ServerProvider) {
   const compatibility = status.compatibilityAdvisory;

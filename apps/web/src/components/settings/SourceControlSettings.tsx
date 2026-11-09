@@ -1,17 +1,15 @@
-import { UiText, useUiLanguage } from "../../i18n";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { ChevronDownIcon } from "lucide-react";
-import * as Option from "effect/Option";
-import { useState, type ReactNode } from "react";
 import type {
   SourceControlDiscoveryResult,
   SourceControlProviderAuth,
   SourceControlProviderDiscoveryItem,
-  VcsDriverKind,
   VcsDiscoveryItem,
+  VcsDriverKind,
 } from "@t3tools/contracts";
-import { useSettingsScope } from "./SettingsScopeContext";
-import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
+import * as Option from "effect/Option";
+import { ChevronDownIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { UiText, useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
 import { useEnvironmentQuery } from "../../state/query";
 import { sourceControlEnvironment } from "../../state/sourceControl";
@@ -29,13 +27,18 @@ import {
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
+import { useSettingsScope } from "./SettingsScopeContext";
 
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { sourceControlIcon } from "~/sourceControlPresentation";
 import { GitIcon, JujutsuIcon, type Icon } from "../Icons";
-import { SourceControlHostSettings } from "./SourceControlHostSettings";
+import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SourceControlAccountSettings } from "./SourceControlAccountSettings";
 import { SourceControlAppSignInSettings } from "./SourceControlAppSignInSettings";
+import { SourceControlHostSettings } from "./SourceControlHostSettings";
 import { SourceControlTokenSettings } from "./SourceControlTokenSettings";
-import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
 import {
   SettingsPageContainer,
@@ -44,9 +47,6 @@ import {
   useSettingsSearchTargetId,
 } from "./settingsLayout";
 import { searchableSetting, sourceControlHostSettingsSearchId } from "./settingsSearch";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { sourceControlIcon } from "~/sourceControlPresentation";
 
 const EMPTY_DISCOVERY_RESULT: SourceControlDiscoveryResult = {
   versionControlSystems: [],

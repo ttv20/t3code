@@ -1,14 +1,14 @@
-import { createMemoryHistory } from "@tanstack/react-router";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { ThreadId } from "@t3tools/contracts";
 import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
+import { createMemoryHistory } from "@tanstack/react-router";
 import type * as Context from "effect/Context";
 import { expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 
 // Transform the lazy chat module before timing the reserved-thread behavior.
-import "./ChatView";
 import { AppRoot } from "~/AppRoot";
+import "./ChatView";
 // The route loads ChatView lazily, and its first transform (React Compiler over ~4k lines)
 // takes 6-11s; importing it here keeps that out of the test's timeout.
 import "~/components/ChatView";

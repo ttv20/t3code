@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
-import type { ComponentProps } from "react";
-import { ExternalLinkIcon } from "lucide-react";
 import { CHATGPT_USAGE_URL } from "@t3tools/shared/usageLimits";
+import { ExternalLinkIcon } from "lucide-react";
+import type { ComponentProps } from "react";
+import { useUiLanguage } from "../../i18n";
 import { ensureLocalApi } from "../../localApi";
 import { Button } from "../ui/button";
 

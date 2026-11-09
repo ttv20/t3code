@@ -1,4 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import {
   isSecretReference,
   type EnvironmentId,
@@ -7,13 +6,14 @@ import {
 } from "@t3tools/contracts";
 import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { useEnvironmentSettings } from "../../hooks/useSettings";
 import {
   readHostCredentialSettings,
   type SourceControlDefinition,
   type SourceControlHostCredentials,
 } from "@t3tools/client-runtime/source-control-clients";
+import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button, InlineButton } from "../ui/button";

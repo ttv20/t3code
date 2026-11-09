@@ -1,14 +1,14 @@
-import { UiText, useUiLanguage } from "../../i18n";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
 import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
 import { ChevronDownIcon, SquarePenIcon } from "lucide-react";
 import { memo } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import { useUiStateStore } from "../../uiStateStore";
-import { resolveSidebarFolderDot, resolveThreadLastVisitedAt } from "../Sidebar.logic";
 import { ProjectFavicon } from "../ProjectFavicon";
+import { resolveSidebarFolderDot, resolveThreadLastVisitedAt } from "../Sidebar.logic";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 

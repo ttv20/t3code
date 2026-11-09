@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
@@ -13,17 +12,20 @@ import {
 } from "@t3tools/contracts";
 import { CheckIcon, CopyIcon, UserIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import { useAssetUrls } from "~/assets/assetUrls";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useNowMinute } from "~/hooks/useNowMinute";
+import { cn } from "~/lib/utils";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { useQuietThreadProjection } from "~/state/entities";
 import { serverEnvironment } from "~/state/server";
 import { useEnvironmentScope } from "~/state/session";
 import { threadEnvironment } from "~/state/threads";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { cn } from "~/lib/utils";
 import { useOrchestrationCommand } from "~/state/use-orchestration-command";
+import { isImageAttachment, type ChatFileAttachment } from "../../types";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -35,8 +37,6 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { useAssetUrls } from "~/assets/assetUrls";
-import { type ChatFileAttachment, isImageAttachment } from "../../types";
 import { buildExpandedImagePreview, type ExpandedImagePreview } from "./ExpandedImagePreview";
 import { GuestMessageAttachments } from "./GuestMessageAttachments";
 import { GuestMessageName, guestBubbleClassName } from "./guestMessageStyle";
@@ -100,7 +100,7 @@ function GuestShareDialog({
     const error = squashAtomCommandFailure(result);
     setState({
       status: "failed",
-      message: error instanceof Error ? error.message : "Could not create a guest link.",
+      message: error instanceof Error ? error.message : uiT("Could not create a guest link."),
     });
   };
 
@@ -131,14 +131,14 @@ function GuestShareDialog({
               />
               <Button size="sm" variant="outline" onClick={() => copyToClipboard(state.url)}>
                 {isCopied ? <CheckIcon /> : <CopyIcon />}
-                {isCopied ? "Copied" : "Copy"}
+                {isCopied ? uiT("Copied") : uiT("Copy")}
               </Button>
             </div>
           ) : (
             <p className="text-muted-foreground text-sm">
               {activeShare !== null
-                ? "A new link ends the current one."
-                : "The link works once and expires in 24 hours."}
+                ? uiT("A new link ends the current one.")
+                : uiT("The link works once and expires in 24 hours.")}
             </p>
           )}
           {state.status === "failed" ? (
@@ -167,7 +167,7 @@ function GuestShareDialog({
                 onClick={() => void create()}
                 disabled={!canCreate || state.status === "creating"}
               >
-                {state.status === "creating" ? "Creating..." : "Create link"}
+                {state.status === "creating" ? uiT("Creating...") : uiT("Create link")}
               </Button>
             </>
           )}
@@ -217,7 +217,9 @@ function GuestShareStatus({ share }: { readonly share: ThreadGuestShare }) {
   // The share stays on the thread after it expires, until the owner clears it.
   if (share.expiresAt.slice(0, 16) <= nowMinute) return <span>{uiT("Guest link expired")}</span>;
   return (
-    <span>{share.guestName !== null ? `${share.guestName} is a guest` : "Guest link active"}</span>
+    <span>
+      {share.guestName !== null ? `${share.guestName} is a guest` : uiT("Guest link active")}
+    </span>
   );
 }
 

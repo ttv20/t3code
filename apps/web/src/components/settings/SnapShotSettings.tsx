@@ -1,23 +1,23 @@
-import { useUiLanguage } from "../../i18n";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import {
   isModifierPairShortcut,
   type ClientSettingsPatch,
-  type DesktopSnapShotShortcutAvailability,
   type DesktopSnapShotSetupAction,
+  type DesktopSnapShotShortcutAvailability,
   type SnapShotShortcut,
 } from "@t3tools/contracts";
-import { PlayIcon } from "lucide-react";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
+import { PlayIcon } from "lucide-react";
 import { useContext, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { useClientSettings, updateClientSettings } from "../../hooks/useSettings";
+import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
 import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
 import {
-  saveSnapShotSetupResume,
   clearSnapShotSetupResume,
   readSnapShotSetupResume,
+  saveSnapShotSetupResume,
 } from "../../lib/snapShotSetupResume";
 import { sameSnapShotShortcut, snapShotKeybindingConflict } from "../../lib/snapShotShortcut";
 import { playSnapShotSound } from "../../lib/snapShotSound";
@@ -27,40 +27,40 @@ import {
   snapShotSetupError,
   type SnapShotSetupError,
 } from "../../state/desktopSnapShot";
-import { toastManager } from "../ui/toast";
 import { primaryServerKeybindingsAtom } from "../../state/server";
-import { commandLabel } from "./KeybindingsSettings.logic";
-import {
-  snapShotStatus,
-  snapShotShortcutStatus,
-  snapShotSetupButtonLabel,
-  snapShotUnavailableMessage,
-  snapShotSoundPatch,
-  snapShotFeedbackUnavailableMessage,
-  snapShotDescription,
-  snapShotAccessibilityUnavailableMessage,
-  snapShotSetupComplete,
-  type SnapShotSoundSelection,
-} from "./SnapShotSettings.logic";
-import {
-  SettingsUnavailableGroup,
-  SettingsPageContainer,
-  SettingsRow,
-  SettingsSection,
-} from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
 import { Button } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";
 import { SelectButton } from "../ui/select";
 import { Switch } from "../ui/switch";
+import { toastManager } from "../ui/toast";
+import { commandLabel } from "./KeybindingsSettings.logic";
+import {
+  snapShotAccessibilityUnavailableMessage,
+  snapShotDescription,
+  snapShotFeedbackUnavailableMessage,
+  snapShotSetupButtonLabel,
+  snapShotSetupComplete,
+  snapShotShortcutStatus,
+  snapShotSoundPatch,
+  snapShotStatus,
+  snapShotUnavailableMessage,
+  type SnapShotSoundSelection,
+} from "./SnapShotSettings.logic";
 import { SnapShotSetupDialog } from "./SnapShotSetupDialog";
-import { useSnapShotShortcutRecorder } from "./useSnapShotShortcutRecorder";
 import {
   captureSetupAccessReady,
   captureSetupInitialStep,
   captureSetupShouldDisableOnClose,
   type CaptureSetupStep,
 } from "./SnapShotSetupDialog.logic";
+import {
+  SettingsPageContainer,
+  SettingsRow,
+  SettingsSection,
+  SettingsUnavailableGroup,
+} from "./settingsLayout";
+import { searchableSetting } from "./settingsSearch";
+import { useSnapShotShortcutRecorder } from "./useSnapShotShortcutRecorder";
 
 const soundOptionRowClassName = "grid grid-cols-[1fr_auto]";
 

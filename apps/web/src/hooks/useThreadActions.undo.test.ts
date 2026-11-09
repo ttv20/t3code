@@ -2,10 +2,10 @@ import { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { useThreadActions } from "./useThreadActions";
-import { threadEnvironment } from "../state/threads";
 import { toastManager } from "../components/ui/toast";
+import { threadEnvironment } from "../state/threads";
 import { useThreadUndoNotice } from "./showThreadUndoNotice";
+import { useThreadActions } from "./useThreadActions";
 
 const commands = vi.hoisted(() => ({
   pin: vi.fn(),

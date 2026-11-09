@@ -1,12 +1,12 @@
-import { UiLanguageContext } from "./i18n";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
-import { useLayoutEffect, type ReactNode } from "react";
 import {
   createUiTranslator,
   resolveUiDirection,
   resolveUiLocale,
 } from "@t3tools/client-runtime/i18n";
+import { useLayoutEffect, type ReactNode } from "react";
 import { useClientSettings } from "./hooks/useSettings";
+import { UiLanguageContext } from "./i18n";
 
 /** Sets document direction too, so portals inherit the selected language and layout. */
 export function UiLanguageProvider({ children }: { children: ReactNode }) {

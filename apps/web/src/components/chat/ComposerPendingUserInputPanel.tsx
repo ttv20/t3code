@@ -1,23 +1,23 @@
-import { useUiLanguage } from "../../i18n";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
-import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
-import { markdownProseDirection, textDirection } from "~/textDirection";
-import { memo, use, useEffect, useEffectEvent, useRef, useState } from "react";
-import { BackgroundThreadContext } from "./backgroundThread";
-import { useStableCallback } from "~/hooks/useStableCallback";
-import { type PendingUserInput } from "../../session-logic";
 import type { PendingUserInputDraftAnswer } from "@t3tools/client-runtime/state/pending-user-input";
+import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
+import { memo, use, useEffect, useEffectEvent, useRef, useState } from "react";
+import { useStableCallback } from "~/hooks/useStableCallback";
+import { isInSideChatPane } from "~/lib/sideChatPane";
+import { cn } from "~/lib/utils";
+import { markdownProseDirection, textDirection } from "~/textDirection";
+import { useUiLanguage } from "../../i18n";
 import { derivePendingUserInputProgress } from "../../pendingUserInput";
+import { type PendingUserInput } from "../../session-logic";
+import ChatMarkdown from "../ChatMarkdown";
 import { CheckboxMark } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { Kbd } from "../ui/kbd";
-import { cn } from "~/lib/utils";
-import { isInSideChatPane } from "~/lib/sideChatPane";
+import { BackgroundThreadContext } from "./backgroundThread";
 import { ComposerBanner } from "./ComposerBanner";
-import ChatMarkdown from "../ChatMarkdown";
 
 interface PendingUserInputPanelProps {
   pendingUserInputs: PendingUserInput[];

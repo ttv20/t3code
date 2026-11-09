@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import type { LinkableMachine } from "@t3tools/client-runtime/link-request";
 import { useId } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { Badge } from "../ui/badge";
@@ -23,7 +23,7 @@ export function LinkMachineBadge({ machine }: { readonly machine: LinkableMachin
   if (machine.connected) return null;
   return (
     <Badge variant="outline" size="sm">
-      {machine.connectOnly ? "T3 Connect" : "Not connected"}
+      {machine.connectOnly ? uiT("T3 Connect") : uiT("Not connected")}
     </Badge>
   );
 }

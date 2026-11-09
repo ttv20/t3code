@@ -1,18 +1,11 @@
-import { useUiLanguage } from "../../i18n";
-import { useScopedSettingsWriteAllowed } from "./useScopedSettings";
-import { SettingsIcon } from "lucide-react";
-import { useState } from "react";
 import { type BackgroundActivityProfile } from "@t3tools/contracts";
 import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
 import { resolveServerBackgroundActivitySettings } from "@t3tools/shared/backgroundActivitySettings";
 import * as Duration from "effect/Duration";
 import * as Equal from "effect/Equal";
-import {
-  useScopedSettings,
-  useScopedSettingsMixed,
-  useUpdateScopedSettings,
-} from "./useScopedSettings";
-import { useSettingsScope } from "./SettingsScopeContext";
+import { SettingsIcon } from "lucide-react";
+import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -26,6 +19,8 @@ import {
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { IntervalSecondsField } from "./IntervalSecondsField";
+import { PolicyTooltip, SettingResetButton, SettingsRow } from "./settingsLayout";
 import {
   backgroundActivityOverrideSettings,
   backgroundActivitySharedPolicySettings,
@@ -33,9 +28,14 @@ import {
   PROVIDER_HEALTH_INTERVAL_STEP_SECONDS,
   resolveBackgroundActivityProfileOption,
 } from "./SettingsPanels.logic";
-import { IntervalSecondsField } from "./IntervalSecondsField";
-import { PolicyTooltip, SettingResetButton, SettingsRow } from "./settingsLayout";
+import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
+import {
+  useScopedSettings,
+  useScopedSettingsMixed,
+  useScopedSettingsWriteAllowed,
+  useUpdateScopedSettings,
+} from "./useScopedSettings";
 
 const BACKGROUND_ACTIVITY_PROFILE_LABELS: Record<BackgroundActivityProfile, string> = {
   balanced: "Balanced",

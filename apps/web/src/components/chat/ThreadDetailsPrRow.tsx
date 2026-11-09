@@ -1,15 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import { resolvePullRequestDetailChecks } from "@t3tools/client-runtime/pull-request-checks";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
-import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
-import { ThreadDetailsControl } from "./ThreadDetailsControl";
-import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { selectEnvironmentQueryData } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import type { EnvironmentId, ProjectId, PullRequestRef } from "@t3tools/contracts";
+import { AsyncResult } from "effect/reactivity";
 import {
   ArrowUpRightIcon,
   EyeIcon,
@@ -18,32 +15,35 @@ import {
   GitBranchIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { AsyncResult } from "effect/reactivity";
 import { useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useUiLanguage } from "../../i18n";
+import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { ThreadDetailsControl } from "./ThreadDetailsControl";
 
 import { useLiveRefresh } from "~/hooks/useLiveRefresh";
 import { usePullRequestChecksRefresh } from "~/hooks/usePullRequestChecksRefresh";
 import { cn } from "~/lib/utils";
 import { useServerConfigs } from "~/state/entities";
 import { pullRequestEnvironment } from "~/state/pullRequests";
-import { useUiStateStore } from "~/uiStateStore";
 import {
   useEnvironmentQueryIsNewer,
   useEnvironmentQueryRefresh,
   useEnvironmentQuerySelector,
 } from "~/state/query";
+import { useUiStateStore } from "~/uiStateStore";
 
+import { PullRequestChecksPopover } from "../pullRequest/PullRequestChecksPopover";
 import {
+  allowedPullRequestMergeMethods,
   buildFixFindingsHandoff,
   buildResolveConflictsPrompt,
   classifyPullRequestChecks,
   describePullRequestChecks,
   isPullRequestConflicting,
   resolvePullRequestMergeMethod,
-  allowedPullRequestMergeMethods,
   resolveThreadPanelPullRequestAction,
 } from "../pullRequest/pullRequestDetail.logic";
-import { PullRequestChecksPopover } from "../pullRequest/PullRequestChecksPopover";
 import {
   pullRequestChecksState,
   PullRequestCheckStatusIcon,

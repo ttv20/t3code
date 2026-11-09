@@ -1,8 +1,9 @@
-import { useUiLanguage } from "../../i18n";
+import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   CHATGPT_USAGE_URL,
-  collectLimitAccounts,
   collectExternalUsageLinks,
+  collectLimitAccounts,
   collectLimitNotices,
   collectLimitPools,
   cursorUsageWindowDetails,
@@ -15,8 +16,6 @@ import {
   paceRemainingPercent,
   remainingPercent,
 } from "@t3tools/shared/usageLimits";
-import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import { AlertTriangleIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
 import {
   createContext,
@@ -28,24 +27,25 @@ import {
   useRef,
   useState,
 } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { ensureLocalApi } from "../../localApi";
 import { usePrimarySettings } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
+import { ensureLocalApi } from "../../localApi";
 import { formatUpcomingTimestamp } from "../../timestampFormat";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { OpenAI } from "../Icons";
 import { providerClients } from "../settings/providerDriverMeta";
 import { RedactedSensitiveText } from "../settings/RedactedSensitiveText";
-import { Button } from "../ui/button";
-import { OpenAI } from "../Icons";
 import { Alert, AlertTitle } from "../ui/alert";
+import { Button } from "../ui/button";
 import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import {
+  barColor,
   PaceIcon,
   ResetCreditDialog,
-  barColor,
-  usePaceMark,
   resetCreditsSummary,
+  usePaceMark,
   useResetCredit,
 } from "./UsageLimits";
 

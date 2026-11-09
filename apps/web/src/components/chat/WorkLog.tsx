@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   createContext,
   use,
@@ -7,6 +6,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from "react";
+import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
 
 const GroupedRows = createContext(false);

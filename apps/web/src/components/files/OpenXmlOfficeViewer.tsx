@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
-import { useStableCallback } from "~/hooks/useStableCallback";
 import type { OfficePreviewKind } from "@t3tools/shared/filePreview";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { useStableCallback } from "~/hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
 import {
+  FILE_SURFACE_SUBHEADER_CLASS,
   FileSurfaceLoading,
   FileSurfaceNotice,
-  FILE_SURFACE_SUBHEADER_CLASS,
 } from "./fileSurfaceChrome";
 import { OFFICE_PREVIEW_MAX_BYTES, type OfficeWorkerResult } from "./officePreviewProtocol";
 const WordDocument = lazy(() => import("./office/WordDocument"));
@@ -115,7 +115,7 @@ export default function OfficeViewer(props: {
         <div className={FILE_SURFACE_SUBHEADER_CLASS}>
           <span className="text-xs text-muted-foreground" aria-live="polite">
             {details}
-            {props.kind !== "xlsx" ? " · Fit to width" : ""}
+            {props.kind !== "xlsx" ? uiT(" · Fit to width") : ""}
           </span>
         </div>
       ) : null}

@@ -1,11 +1,11 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { Spinner } from "~/components/ui/spinner";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { ArrowLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { Spinner } from "~/components/ui/spinner";
+import { UiText, useUiLanguage } from "../../i18n";
 
+import { isHostPath } from "@t3tools/shared/path";
 import { PierreEntryIcon } from "~/components/chat/PierreEntryIcon";
 import {
   Menu,
@@ -20,7 +20,6 @@ import {
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
-import { isHostPath } from "@t3tools/shared/path";
 
 import {
   breadcrumbPathOf,

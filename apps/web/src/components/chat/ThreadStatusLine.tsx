@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { InlineButton } from "../ui/button";
 

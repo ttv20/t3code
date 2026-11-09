@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
 import { Maximize2, Minimize2 } from "lucide";
-import { MorphIcon } from "~/components/MorphIcon";
+import { PanelBottomIcon, PanelRightIcon, SquareMenuIcon } from "lucide-react";
 import { memo, type ReactNode } from "react";
+import { MorphIcon } from "~/components/MorphIcon";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 

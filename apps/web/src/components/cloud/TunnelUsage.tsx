@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { T3CHAT_PLAN_TUNNEL_LIMITS } from "@t3tools/contracts/relay";
 import { TriangleAlertIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import type { ManagedTunnelUpgrade } from "../../cloud/managedRelayState";
 import { cn } from "../../lib/utils";
@@ -112,10 +112,10 @@ export function TunnelLimitAlert({
       <AlertTitle>{uiT("You're out of tunnels (they cost us money).")}</AlertTitle>
       <AlertDescription>
         {upgrade === "link"
-          ? "Switch to Tailscale or get more tunnels by linking your T3 Chat sub (sorry!)"
+          ? uiT("Switch to Tailscale or get more tunnels by linking your T3 Chat sub (sorry!)")
           : upgrade
-            ? "Switch to Tailscale or get more tunnels by upgrading your T3 Chat sub (sorry!)"
-            : "Switch to Tailscale or deregister an environment you no longer use (sorry!)"}
+            ? uiT("Switch to Tailscale or get more tunnels by upgrading your T3 Chat sub (sorry!)")
+            : uiT("Switch to Tailscale or deregister an environment you no longer use (sorry!)")}
       </AlertDescription>
       {action ? <AlertAction>{action}</AlertAction> : null}
     </Alert>

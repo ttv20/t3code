@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../i18n";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AuthOrchestrationOperateScope,
   type EditorId,
   type EnvironmentId,
 } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { useUiLanguage } from "../i18n";
 
 import { useOpenInPreferredEditor } from "../editorPreferences";
 import { useEnvironmentScope } from "../state/session";

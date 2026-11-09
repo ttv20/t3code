@@ -976,35 +976,71 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       { id: "copy-thread-id", title: uiT("Copy thread ID"), image: "doc.on.doc" },
     ];
     if (snoozedRow) {
-      return layoutThreadListV2RowMenuActions({
-        nested,
-        direct: [...direct, sharedMenuActions.unsnooze],
-        reorder: [],
-        pin: [],
-        secondary: [
-          ...titleMenuItems,
-          ...autoSettleMenuItems,
-          sharedMenuActions.archive,
-          sharedMenuActions.delete,
-        ],
-      });
+      return layoutThreadListV2RowMenuActions(
+        {
+          nested,
+          direct: [...direct, sharedMenuActions.unsnooze],
+          reorder: [],
+          pin: [],
+          secondary: [
+            ...titleMenuItems,
+            ...autoSettleMenuItems,
+            sharedMenuActions.archive,
+            sharedMenuActions.delete,
+          ],
+        },
+        uiT,
+      );
     }
     if (!props.settlementSupported) {
-      return layoutThreadListV2RowMenuActions({
-        nested,
-        direct: [...direct, sharedMenuActions.archive],
-        reorder: reorderMenuItems,
-        pin: pinMenuItems,
-        secondary: [...titleMenuItems, sharedMenuActions.delete],
-      });
+      return layoutThreadListV2RowMenuActions(
+        {
+          nested,
+          direct: [...direct, sharedMenuActions.archive],
+          reorder: reorderMenuItems,
+          pin: pinMenuItems,
+          secondary: [...titleMenuItems, sharedMenuActions.delete],
+        },
+        uiT,
+      );
     }
     if (canUnsettle) {
-      return layoutThreadListV2RowMenuActions({
+      return layoutThreadListV2RowMenuActions(
+        {
+          nested,
+          direct: [...direct, sharedMenuActions.unsettle],
+          reorder: reorderMenuItems.filter(
+            (action) => action.id !== "move-up" && action.id !== "move-down",
+          ),
+          pin: pinMenuItems,
+          secondary: [
+            ...titleMenuItems,
+            ...autoSettleMenuItems,
+            sharedMenuActions.archive,
+            sharedMenuActions.delete,
+          ],
+        },
+        uiT,
+      );
+    }
+    return layoutThreadListV2RowMenuActions(
+      {
         nested,
-        direct: [...direct, sharedMenuActions.unsettle],
-        reorder: reorderMenuItems.filter(
-          (action) => action.id !== "move-up" && action.id !== "move-down",
-        ),
+        direct: [
+          ...direct,
+          sharedMenuActions.settle,
+          ...(swipeActions.secondary === "snooze"
+            ? [
+                {
+                  id: "snooze",
+                  title: uiT("Snooze"),
+                  image: "clock",
+                  subactions: snoozePresetActions,
+                },
+              ]
+            : []),
+        ],
+        reorder: reorderMenuItems,
         pin: pinMenuItems,
         secondary: [
           ...titleMenuItems,
@@ -1012,33 +1048,9 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           sharedMenuActions.archive,
           sharedMenuActions.delete,
         ],
-      });
-    }
-    return layoutThreadListV2RowMenuActions({
-      nested,
-      direct: [
-        ...direct,
-        sharedMenuActions.settle,
-        ...(swipeActions.secondary === "snooze"
-          ? [
-              {
-                id: "snooze",
-                title: uiT("Snooze"),
-                image: "clock",
-                subactions: snoozePresetActions,
-              },
-            ]
-          : []),
-      ],
-      reorder: reorderMenuItems,
-      pin: pinMenuItems,
-      secondary: [
-        ...titleMenuItems,
-        ...autoSettleMenuItems,
-        sharedMenuActions.archive,
-        sharedMenuActions.delete,
-      ],
-    });
+      },
+      uiT,
+    );
   }, [
     autoSettleMenuItems,
     canUnsettle,

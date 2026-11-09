@@ -1,12 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { SettingsGroup } from "./SettingsGroup";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import {
-  AuthSettingsWriteScope,
-  AuthProvidersManageScope,
-  AuthOrchestrationReadScope,
-} from "@t3tools/contracts";
-import { useEnvironmentScope, readEnvironmentScope } from "../../state/session";
 import { useAtomValue } from "@effect/atom-react";
 import { connectionStatusTitle } from "@t3tools/client-runtime/connection";
 import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
@@ -16,18 +7,21 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import {
+  AuthOrchestrationReadScope,
+  AuthProvidersManageScope,
+  AuthSettingsWriteScope,
   defaultInstanceIdForDriver,
-  type EnvironmentId,
-  type AcpRegistryUrlAuthAction,
   PROVIDER_DISPLAY_NAMES,
   ProviderDriverKind,
+  resolveEnvironmentMachineKind,
+  resolveProjectProviderInstanceEnabled,
+  resolveProviderInstanceEnabled,
+  type AcpRegistryUrlAuthAction,
+  type EnvironmentId,
   type ProjectId,
   type ProviderInstanceConfig,
   type ProviderInstanceId,
   type ServerProvider,
-  resolveEnvironmentMachineKind,
-  resolveProjectProviderInstanceEnabled,
-  resolveProviderInstanceEnabled,
 } from "@t3tools/contracts";
 import { DEFAULT_UNIFIED_SETTINGS, type UnifiedSettings } from "@t3tools/contracts/settings";
 import {
@@ -39,20 +33,26 @@ import * as Duration from "effect/Duration";
 import * as Result from "effect/Result";
 import { PlusIcon } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { useUiLanguage } from "../../i18n";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
+import { SettingsGroup } from "./SettingsGroup";
 
+import { useManagedPolicy } from "~/state/managedPolicy";
 import { isDesktopLocalConnectionTarget } from "../../connection/desktopLocal";
+import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import {
   useEnvironmentSettings,
   usePersistEnvironmentProviderInstanceMutation,
-  useUpdateEnvironmentSettings,
-  useUpdateEnvironmentModelPreferences,
   useToggleEnvironmentModelFavorite,
+  useUpdateEnvironmentModelPreferences,
+  useUpdateEnvironmentSettings,
 } from "../../hooks/useSettings";
 import { useStableCallback } from "../../hooks/useStableCallback";
-import { ensureLocalApi } from "../../localApi";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { cn } from "../../lib/utils";
+import { ensureLocalApi } from "../../localApi";
 import { resolveAppModelSelectionState } from "../../modelSelection";
+import { useProjects } from "../../state/entities";
 import {
   useEnvironments,
   usePrimaryEnvironmentId,
@@ -64,14 +64,13 @@ import {
   serverEnvironment,
 } from "../../state/server";
 import { useEnvironmentSessionState } from "../../state/session";
-import { useProjects } from "../../state/entities";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import {
-  ConnectionStatusDot,
   connectionPhaseDotClassName,
   connectionPhasePingClassName,
+  ConnectionStatusDot,
 } from "../ConnectionStatusDot";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import {
   isProviderSettingsUpdateCandidate,
   isProviderUpdateActive,
@@ -88,22 +87,28 @@ import {
   EmptyTitle,
 } from "../ui/empty";
 import { ScrollArea } from "../ui/scroll-area";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { stackedThreadToast, toastManager } from "../ui/toast";
 import { AddProviderInstanceDialog } from "./AddProviderInstanceDialog";
-import { useManagedPolicy } from "~/state/managedPolicy";
+import { CodexManagedRuntimeFields, CodexSetupSection } from "./CodexSetupSection";
+import { readCodexSetupMode } from "./CodexSetupSection.logic";
 import { ExpandableText } from "./ExpandableText";
 import { IntervalSecondsField } from "./IntervalSecondsField";
-import { ProviderInstanceCard } from "./ProviderInstanceCard";
-import { useSecretSources } from "./SecretSourceInput";
-import { UsageProviderSettings } from "./UsageProviderSettings";
-import { ProviderSetupSection, readAntigravityAuthMethod } from "./ProviderSetupSection";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
-import { CodexSetupSection, CodexManagedRuntimeFields } from "./CodexSetupSection";
-import { readCodexSetupMode } from "./CodexSetupSection.logic";
-import { providerClients } from "./providerDriverMeta";
-import { searchableSetting } from "./settingsSearch";
+import { ProviderInstanceCard } from "./ProviderInstanceCard";
+import {
+  buildProviderEnvironmentOptions,
+  buildProviderInstanceOverridePatch,
+  classifyProviderEnvironmentAccess,
+  isProviderSettingsEnvironmentAvailable,
+  resolveRemoteOperateAccess,
+  resolveSelectedProviderEnvironmentId,
+  type ProviderEnvironmentAccess,
+  type ProviderOperateAccess,
+} from "./ProviderSettingsPanel.logic";
+import { ProviderSetupSection, readAntigravityAuthMethod } from "./ProviderSetupSection";
+import { useSecretSources } from "./SecretSourceInput";
 import { CompactIdleThreadsRow } from "./SettingsPanels";
 import {
   backgroundActivityOverrideSettings,
@@ -111,6 +116,9 @@ import {
   durationToSeconds,
   PROVIDER_HEALTH_INTERVAL_STEP_SECONDS,
 } from "./SettingsPanels.logic";
+import { TextGeneratorsSettings } from "./TextGeneratorsSettings";
+import { UsageProviderSettings } from "./UsageProviderSettings";
+import { providerClients } from "./providerDriverMeta";
 import {
   PolicyTooltip,
   SettingResetButton,
@@ -119,16 +127,7 @@ import {
   SettingsSection,
   useSettingsSearchTargetId,
 } from "./settingsLayout";
-import {
-  buildProviderEnvironmentOptions,
-  buildProviderInstanceOverridePatch,
-  classifyProviderEnvironmentAccess,
-  isProviderSettingsEnvironmentAvailable,
-  type ProviderEnvironmentAccess,
-  type ProviderOperateAccess,
-  resolveRemoteOperateAccess,
-  resolveSelectedProviderEnvironmentId,
-} from "./ProviderSettingsPanel.logic";
+import { searchableSetting } from "./settingsSearch";
 
 function providerInstanceName(instance: ProviderInstanceConfig): string {
   return (
@@ -1114,6 +1113,17 @@ export function EnvironmentProviderSettings({
         sources={settings.usageLimitSources}
         readOnly={readOnly}
       />
+
+      {/* The server drops text generators under a provider allow-list. */}
+      {managedPolicy?.limits?.providers?.allowedDrivers === undefined ? (
+        <TextGeneratorsSettings
+          key={`text-generators:${environmentId}`}
+          environmentId={environmentId}
+          environmentLabel={environmentLabel}
+          providers={serverProviders}
+          readOnly={readOnly}
+        />
+      ) : null}
 
       <SettingsSection title={uiT("Advanced")}>
         <SettingsRow

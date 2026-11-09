@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import { useLocation } from "@tanstack/react-router";
 import { CheckIcon, ChevronDownIcon, LayersIcon } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import { useEnvironments, type EnvironmentPresentation } from "../../state/environments";

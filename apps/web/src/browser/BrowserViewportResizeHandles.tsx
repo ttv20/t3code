@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../i18n";
 import type {
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { cn } from "~/lib/utils";
 

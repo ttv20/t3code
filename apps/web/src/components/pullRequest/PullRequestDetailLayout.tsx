@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { ArrowLeftIcon, FileDiffIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 

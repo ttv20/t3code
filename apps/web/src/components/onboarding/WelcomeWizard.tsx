@@ -1,6 +1,10 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
+import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import type {
   AgentSessionProjectCandidate,
   EnvironmentId,
@@ -10,17 +14,12 @@ import type {
   ServerConfig,
   ServerProvider,
 } from "@t3tools/contracts";
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import {
   AgentSessionSource,
+  AuthOrchestrationOperateScope,
   AuthTerminalOperateScope,
   CommandId,
   defaultInstanceIdForDriver,
-  AuthOrchestrationOperateScope,
   isManagedDriverAllowed,
   ProviderDriverKind,
   ThreadId,
@@ -36,21 +35,23 @@ import {
   TerminalIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { TYPOGRAPHY_ADVANCED_STORAGE_KEY } from "../../appearanceFonts";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
+import { connectPairing } from "../../connection/onboarding";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { PRIVACY_POLICY_URL } from "../../legalLinks";
-import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
+import { cn, newProjectId, randomUUID } from "../../lib/utils";
 import { completeOnboarding } from "../../onboarding/firstRun";
 import {
   groupOnboardingProjects,
-  partitionOnboardingProjects,
   onboardingProjectKey,
+  partitionOnboardingProjects,
   resolveOnboardingLandingProject,
   resolveOnboardingProjectId,
-  type OnboardingProjectGroup,
   splitOnboardingProjectPath,
+  type OnboardingProjectGroup,
 } from "../../onboarding/projectImport.logic";
 import {
   getOnboardingProviderState,
@@ -58,7 +59,11 @@ import {
   resolveOnboardingProviderLoginCommand,
   selectOnboardingProvidersByDriver,
 } from "../../onboarding/providerReadiness.logic";
-import { newProjectId, randomUUID } from "../../lib/utils";
+import {
+  isOnboardingRelayEnvironment,
+  resolveOnboardingSetup,
+} from "../../onboarding/targetEnvironment.logic";
+import { useProjectScans } from "../../onboarding/useProjectScans";
 import { agentSessionImport } from "../../state/agentSessions";
 import { readProjects, waitForProject } from "../../state/entities";
 import { useEnvironments, usePrimaryEnvironment } from "../../state/environments";
@@ -67,11 +72,6 @@ import {
   managedTelemetryOffMessage,
   usePrimaryManagedPolicy,
 } from "../../state/managedPolicy";
-import {
-  isOnboardingRelayEnvironment,
-  resolveOnboardingSetup,
-} from "../../onboarding/targetEnvironment.logic";
-import { useProjectScans } from "../../onboarding/useProjectScans";
 import { projectEnvironment } from "../../state/projects";
 import { serverEnvironment } from "../../state/server";
 import {
@@ -81,32 +81,32 @@ import {
 } from "../../state/session";
 import { terminalEnvironment } from "../../state/terminal";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { connectPairing } from "../../connection/onboarding";
-import { getProviderSummary } from "../settings/providerStatus";
-import { providerClients } from "../settings/providerDriverMeta";
+import { formatRelativeTime } from "../../timestampFormat";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
+import { presentSavedCloudEnvironmentConnection } from "../cloud/cloudEnvironmentConnectionPresentation";
+import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
+import { InstallT3Commands } from "../InstallT3Commands";
 import { ChatGptWelcomeCoordinator } from "../settings/ChatGptWelcomeCoordinator";
+import { useDesktopCliCommand } from "../settings/CliCommandSettingsRow";
 import { AddManagedCodexAccountDialog, CodexSetupSection } from "../settings/CodexSetupSection";
 import { readCodexSetupMode } from "../settings/CodexSetupSection.logic";
+import { providerClients } from "../settings/providerDriverMeta";
+import { getProviderSummary } from "../settings/providerStatus";
 import { buildProviderInstanceUpdatePatch } from "../settings/SettingsPanels.logic";
-import { TerminalViewport } from "../ThreadTerminalDrawer";
-import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
-import { presentSavedCloudEnvironmentConnection } from "../cloud/cloudEnvironmentConnectionPresentation";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { T3Wordmark } from "../T3Wordmark";
+import { TerminalViewport } from "../ThreadTerminalDrawer";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
-import { CommandBlock } from "../CommandBlock";
 import { Checkbox } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
+import { Dialog } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { ScrollArea } from "../ui/scroll-area";
 import { Spinner } from "../ui/spinner";
-import { WizardPanel, WizardSteps, WizardPopup, WizardHeader } from "../ui/wizard";
-import { Dialog } from "../ui/dialog";
 import { toastManager } from "../ui/toast";
-import { cn } from "../../lib/utils";
-import { formatRelativeTime } from "../../timestampFormat";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "../ui/wizard";
 
 type WizardStep = "connection" | "agents" | "import";
 const NO_ENVIRONMENTS: readonly EnvironmentId[] = [];
@@ -556,7 +556,7 @@ function ConnectAccountOption({
             <p className="text-sm text-muted-foreground">
               {uiT("Run this on each computer you want to connect.")}
             </p>
-            <CommandBlock command="npx t3 connect" className="mt-3" />
+            <InstallT3Commands command="t3 connect" className="mt-3" />
             <p className="mt-3 text-xs text-muted-foreground">
               {uiT("Keep T3 Code running. Select the computers you want to set up above.")}
             </p>
@@ -666,15 +666,20 @@ function PairingForm({
           </div>
           <CollapsiblePanel>
             <p className="pt-3 text-sm text-muted-foreground">
-              <UiText message={"On the computer with your code, start T3 Code or run"} />{" "}
-              <code className="font-mono">{uiT("npx t3 serve")}</code>
-              <UiText message={", then run:"} />
+              <UiText message={"On the computer with your code:"} />
             </p>
-            <CommandBlock command="npx t3 pair" className="mt-2" />
+            <InstallT3Commands command="t3 pair" className="mt-2" />
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              <UiText message={"On a tailnet, run"} />{" "}
-              <code className="font-mono">npx t3 pair --tailscale</code>{" "}
-              <UiText message={"instead."} />
+              <UiText
+                message={
+                  "Start T3 Code or run {0} there before  {1}. On a tailnet, run  {2} instead."
+                }
+                values={{
+                  0: <code className="font-mono">t3 serve</code>,
+                  1: <code className="font-mono">t3 pair</code>,
+                  2: <code className="font-mono">t3 pair --tailscale</code>,
+                }}
+              />
             </p>
           </CollapsiblePanel>
         </Collapsible>
@@ -724,6 +729,7 @@ function AgentsStep({
           ))}
         </div>
       </ScrollArea>
+      <CliPathSetup />
       <div className="mt-6 flex justify-end">
         <Button autoFocus onClick={onContinue}>
           {uiT("Continue")}
@@ -1834,6 +1840,39 @@ function ImportRowMeta({
       <span className="text-right">{threadCount}</span>
       <span className="text-right whitespace-nowrap">{age}</span>
     </span>
+  );
+}
+
+/** The desktop app links `t3` on a fresh install; this puts its folder on PATH when it is not. */
+function CliPathSetup() {
+  const { state, busy, run } = useDesktopCliCommand();
+  const setup = state?.pathSetup;
+  if (!setup) return null;
+  return (
+    <div className="mt-5 flex items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground">
+        {setup.added ? (
+          <>
+            <UiText
+              message={"Added to {0}. Open a new terminal to use {1}."}
+              values={{ 0: setup.file, 1: <code className="font-mono">t3</code> }}
+            />
+          </>
+        ) : (
+          <>
+            <UiText
+              message={"Use {0} from any terminal. Adds one line to  {1}."}
+              values={{ 0: <code className="font-mono">t3</code>, 1: setup.file }}
+            />
+          </>
+        )}
+      </p>
+      {setup.added ? null : (
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => run("addToPath")}>
+          <UiText message={"Add to PATH"} />
+        </Button>
+      )}
+    </div>
   );
 }
 

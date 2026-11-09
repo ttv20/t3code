@@ -1,7 +1,7 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import type { EnvironmentId, SecretProviderConfig, SecretProviderId } from "@t3tools/contracts";
 import * as Result from "effect/Result";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import { Button } from "../ui/button";
@@ -121,7 +121,7 @@ export function SecretProviderDialog({
               </Label>
               <Input
                 id="secret-provider-account"
-                placeholder="my.1password.com"
+                placeholder={"my.1password.com"}
                 value={draft.account}
                 onChange={(event) => update({ account: event.target.value })}
                 maxLength={253}

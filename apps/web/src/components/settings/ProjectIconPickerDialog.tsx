@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../../i18n";
-import * as Schema from "effect/Schema";
-import { deriveProjectIdentity } from "../../projectIdentity";
-import { ProjectMonogram } from "../ProjectMonogram";
 import {
   ProjectMonogramText,
   type ProjectIconColor,
   type ProjectIconOverride,
 } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
 import { createElement, useState } from "react";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
+import { lucideIconByName } from "../../lib/lucideIconByName";
 import {
   filterProjectIconNames,
   firstEmoji,
@@ -15,8 +15,8 @@ import {
   PROJECT_ICON_COLORS,
   projectIconColorClassName,
 } from "../../projectIconOptions";
-import { cn } from "~/lib/utils";
-import { lucideIconByName } from "../../lib/lucideIconByName";
+import { deriveProjectIdentity } from "../../projectIdentity";
+import { ProjectMonogram } from "../ProjectMonogram";
 import { Button } from "../ui/button";
 import {
   Dialog,

@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
-import { SettingsGroup } from "./SettingsGroup";
 import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { SettingsGroup } from "./SettingsGroup";
 
 import { cn } from "~/lib/utils";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";

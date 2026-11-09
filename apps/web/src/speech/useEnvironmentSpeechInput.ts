@@ -1,4 +1,4 @@
-import { useUiLanguage } from "../i18n";
+import type { PreparedConnection } from "@t3tools/client-runtime/connection";
 import {
   cancelEnvironmentSpeechModelDownload,
   downloadEnvironmentSpeechModel,
@@ -6,14 +6,12 @@ import {
   getEnvironmentSpeechStatus,
   postProcessEnvironmentTranscript,
   selectEnvironmentSpeechModel,
-  VoiceInputController,
   voiceInputBlocksSubmission,
+  VoiceInputController,
   type VoiceDraftSnapshot,
   type VoiceInputControllerDependencies,
   type VoiceInputState,
 } from "@t3tools/client-runtime/voice-input";
-import type { PreparedConnection } from "@t3tools/client-runtime/connection";
-import { AuthOrchestrationOperateScope, CLOUD_SPEECH_LABELS } from "@t3tools/contracts";
 import type {
   EnvironmentId,
   EnvironmentSpeechModel,
@@ -23,11 +21,13 @@ import type {
   SpeechStreamText,
   SpeechTranscriptionOptions,
 } from "@t3tools/contracts";
+import { AuthOrchestrationOperateScope, CLOUD_SPEECH_LABELS } from "@t3tools/contracts";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { chooseSetupSpeechModel, resolveSpeechVocabulary } from "@t3tools/shared/speech";
 import { useNavigate } from "@tanstack/react-router";
 import * as Option from "effect/Option";
 import { useEffect, useRef, useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { toastManager } from "../components/ui/toast";

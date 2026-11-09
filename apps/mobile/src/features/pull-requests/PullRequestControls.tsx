@@ -1,3 +1,4 @@
+import type { MenuAction } from "@react-native-menu/menu";
 import { useNavigation } from "@react-navigation/native";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestDetail } from "@t3tools/contracts";
@@ -136,7 +137,7 @@ export function PullRequestActionToolbar(props: {
   const primaryLabel = pendingReview
     ? uiT("Submit review · {0}", { "0": draft.comments.length })
     : threadLabel;
-  const chooseThread = agent.threads.length > 1;
+  const chooseThread = agent.chooseThread;
   const agentActions = agent.actions.filter((action) => action.task !== "ask");
   const open = (mode: "review" | "comment") =>
     navigation.navigate("PullRequestReview", { ...props.params, mode });
@@ -205,17 +206,6 @@ export function PullRequestActionToolbar(props: {
       </View>
     );
   }
-  const nativeThreadItems = threadMenuItems.map((item) => (
-    <Toolbar.MenuAction
-      key={item.id}
-      icon={item.image}
-      subtitle={"subtitle" in item ? item.subtitle : undefined}
-      disabled={"attributes" in item && item.attributes.disabled}
-      onPress={() => agent.select(item.id)}
-    >
-      <Toolbar.Label>{uiT(item.title)}</Toolbar.Label>
-    </Toolbar.MenuAction>
-  ));
   const primaryControl = showPrimary ? (
     !pendingReview && chooseThread ? (
       <Toolbar.Menu
@@ -234,7 +224,7 @@ export function PullRequestActionToolbar(props: {
         disabled={primaryDisabled}
         separateBackground
       >
-        {nativeThreadItems}
+        {renderThreadMenuItems(threadMenuItems, agent.select)}
       </Toolbar.Menu>
     ) : (
       <Toolbar.Button
@@ -268,17 +258,7 @@ export function PullRequestActionToolbar(props: {
       {agentActions.map((action) =>
         chooseThread && !action.disabled ? (
           <Toolbar.Menu key={action.task} title={action.title} icon={action.icon}>
-            {agent.threadActions(action.task).map((item) => (
-              <Toolbar.MenuAction
-                key={item.id}
-                icon={item.image}
-                subtitle={"subtitle" in item ? item.subtitle : undefined}
-                disabled={"attributes" in item && item.attributes.disabled}
-                onPress={() => agent.select(item.id)}
-              >
-                <Toolbar.Label>{uiT(item.title)}</Toolbar.Label>
-              </Toolbar.MenuAction>
-            ))}
+            {renderThreadMenuItems(agent.threadActions(action.task), agent.select)}
           </Toolbar.Menu>
         ) : (
           <Toolbar.MenuAction
@@ -318,5 +298,25 @@ export function PullRequestActionToolbar(props: {
       <Toolbar.Spacer flexible />
       {filesControl}
     </Toolbar>
+  );
+}
+
+function renderThreadMenuItems(items: MenuAction[], select: (id: string) => void): ReactNode {
+  return items.map((item) =>
+    item.subactions ? (
+      <Toolbar.Menu key={item.id} title={item.title} icon={item.image}>
+        {renderThreadMenuItems(item.subactions, select)}
+      </Toolbar.Menu>
+    ) : (
+      <Toolbar.MenuAction
+        key={item.id}
+        icon={item.image}
+        subtitle={item.subtitle}
+        disabled={item.attributes?.disabled}
+        onPress={() => item.id && select(item.id)}
+      >
+        <Toolbar.Label>{item.title}</Toolbar.Label>
+      </Toolbar.MenuAction>
+    ),
   );
 }

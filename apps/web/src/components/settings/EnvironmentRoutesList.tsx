@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   DndContext,
   type DragEndEvent,
@@ -28,6 +27,7 @@ import {
 } from "@t3tools/client-runtime/connection";
 import { GripVerticalIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { requestConfirmDialog } from "~/confirmDialog";
 import { environmentCatalog } from "~/connection/catalog";

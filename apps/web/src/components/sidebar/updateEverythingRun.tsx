@@ -1,5 +1,5 @@
-import { currentUiLocale, currentUiTranslator } from "../../currentUiTranslator";
 import type { UiLocale } from "@t3tools/client-runtime/i18n";
+import { currentUiLocale, currentUiTranslator } from "../../currentUiTranslator";
 
 import { useAtomValue } from "@effect/atom-react";
 import { serverUpdateStateAtom } from "@t3tools/client-runtime/state/server";

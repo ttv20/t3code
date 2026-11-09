@@ -1,77 +1,75 @@
-import { useUiLanguage } from "../../i18n";
-import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
-import { PlusIcon, QrCodeIcon } from "lucide-react";
-import { type ReactNode, memo, useId, useState } from "react";
-import {
-  AuthAccessWriteScope,
-  AuthDiagnosticsReadScope,
-  AuthOrchestrationReadScope,
-  AuthFilesystemReadScope,
-  AuthStandardClientScopes,
-  AuthTerminalReadScope,
-  managedCapabilityDenial,
-  type AuthEnvironmentScope,
-  type AuthGrantScope,
-  type AuthPairingCredentialResult,
-  type AdvertisedEndpoint,
-  type EnvironmentId,
-} from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import {
+  AuthAccessWriteScope,
+  AuthDiagnosticsReadScope,
+  AuthFilesystemReadScope,
+  AuthOrchestrationReadScope,
+  AuthStandardClientScopes,
+  AuthTerminalReadScope,
+  managedCapabilityDenial,
+  type AdvertisedEndpoint,
+  type AuthEnvironmentScope,
+  type AuthGrantScope,
+  type AuthPairingCredentialResult,
+  type EnvironmentId,
+} from "@t3tools/contracts";
+import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { PlusIcon, QrCodeIcon } from "lucide-react";
+import { memo, useId, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { cn } from "../../lib/utils";
-import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../timestampFormat";
-import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
-import {
-  canRevokeOtherClients,
-  isQrShareableEndpoint,
-  selectQrEndpointOption,
-  togglePairingScopeSelection,
-} from "./ConnectionsSettings.logic";
-import { useNowSecond } from "../../hooks/useNowSecond";
-import { Input } from "../ui/input";
-import { Checkbox } from "../ui/checkbox";
-import {
-  Dialog,
-  DialogFooter,
-  DialogDescription,
-  DialogHeader,
-  DialogPanel,
-  DialogPopup,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { QRCodeSvg } from "../ui/qr-code";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
 import {
   isLoopbackHostname,
   type ServerClientSessionRecord,
   type ServerPairingLinkRecord,
 } from "~/environments/primary";
 import { authEnvironment } from "~/state/auth";
-import { readEnvironmentScope } from "~/state/session";
 import { useManagedPolicy, usePrimaryManagedPolicy } from "~/state/managedPolicy";
+import { readEnvironmentScope } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { ManagedControl } from "../ManagedPolicy";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { useNowSecond } from "../../hooks/useNowSecond";
+import { cn } from "../../lib/utils";
+import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../timestampFormat";
 import { ConnectionStatusDot } from "../ConnectionStatusDot";
-import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
+import { ManagedControl } from "../ManagedPolicy";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import {
-  formatAccessTimestamp,
-  selectPairingEndpoint,
-  isTailscaleHttpsEndpoint,
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { QRCodeSvg } from "../ui/qr-code";
+import { Textarea } from "../ui/textarea";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import {
+  canRevokeOtherClients,
   endpointDefaultPreferenceKey,
+  endpointShareHint,
+  formatAccessTimestamp,
+  isHostedAppPairingUrl,
+  isQrShareableEndpoint,
+  isTailscaleHttpsEndpoint,
   resolveAdvertisedEndpointPairingUrl,
   resolveCurrentOriginPairingUrl,
-  isHostedAppPairingUrl,
-  endpointShareHint,
+  selectPairingEndpoint,
+  selectQrEndpointOption,
+  togglePairingScopeSelection,
 } from "./ConnectionsSettings.logic";
+import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
+import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
 
 function AccessScopeSummary({
   scopes,

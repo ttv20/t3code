@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vite-plus/test";
 import { MessageId } from "@t3tools/contracts";
+import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@t3tools/shared/composerContextReferences";
+import { describe, expect, it } from "vite-plus/test";
+import type { ChatMessage } from "../../types";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
 import { deriveTimelineMinimapItems, resolveTimelineMinimapPreview } from "./timelineMinimapItems";
-import type { ChatMessage } from "../../types";
 
 function rows(
   entries: ReadonlyArray<readonly ["user" | "assistant", string]>,
@@ -151,7 +152,6 @@ describe("timeline minimap previews", () => {
     expect(resolveTimelineMinimapPreview(item!)?.assistantDirection).toBe("rtl");
   });
 });
-import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@t3tools/shared/composerContextReferences";
 
 describe("deriveTimelineMinimapItems", () => {
   it.each(["", "Ultrathink:\n"])(

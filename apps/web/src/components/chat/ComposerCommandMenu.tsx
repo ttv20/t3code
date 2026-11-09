@@ -1,24 +1,24 @@
-import { useUiLanguage } from "../../i18n";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
-import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
 } from "@t3tools/client-runtime/providerSkills";
+import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
   type EnvironmentId,
   type EnvironmentMachineKind,
   type ProjectEntry,
   type ProviderDriverKind,
+  type ProviderInstanceId,
   type PullRequestContextMetadata,
   type ScopedThreadRef,
   type ServerProviderSkill,
   type ServerProviderSlashCommand,
 } from "@t3tools/contracts";
+import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import {
   BlocksIcon,
   FolderIcon,
@@ -29,15 +29,17 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { memo, useLayoutEffect, useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { type ComposerSlashCommand, type ComposerTriggerKind } from "../../composer-logic";
 import { cn } from "~/lib/utils";
+import { type ComposerSlashCommand, type ComposerTriggerKind } from "../../composer-logic";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { resolvePullRequestState } from "../pullRequest/pullRequestPresentation";
 import { Badge } from "../ui/badge";
 import { Command, CommandGroup, CommandItem, CommandList } from "../ui/command";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { PierreEntryIcon } from "./PierreEntryIcon";
 import { ComposerBanner } from "./ComposerBanner";
-import { resolvePullRequestState } from "../pullRequest/pullRequestPresentation";
+import { PierreEntryIcon } from "./PierreEntryIcon";
+import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
 
 export type ComposerCommandItem =
   | {
@@ -91,6 +93,18 @@ export type ComposerCommandItem =
       type: "environment";
       environmentId: EnvironmentId;
       machine: EnvironmentMachineKind;
+      label: string;
+      description: string;
+    }
+  | {
+      id: string;
+      type: "model";
+      instanceId: ProviderInstanceId;
+      model: string;
+      driverKind: ProviderDriverKind;
+      providerDisplayName: string;
+      acpRegistryAgentId: string | undefined;
+      acpRegistryIconUrl: string | undefined;
       label: string;
       description: string;
     };
@@ -238,6 +252,16 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
           kind={props.item.machine}
           aria-hidden="true"
           className="size-4 shrink-0 text-secondary-label"
+        />
+      ) : null}
+      {props.item.type === "model" ? (
+        <ProviderInstanceIcon
+          driverKind={props.item.driverKind}
+          displayName={props.item.providerDisplayName}
+          acpRegistryAgentId={props.item.acpRegistryAgentId}
+          acpRegistryIconUrl={props.item.acpRegistryIconUrl}
+          className="size-4 shrink-0"
+          iconClassName="size-4"
         />
       ) : null}
       {pullRequestPresentation ? (

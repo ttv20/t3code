@@ -1,48 +1,54 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import type { DesktopPreviewAnnotationVoiceConfig } from "@t3tools/contracts";
 import { previewStreamDownloadUrl } from "@t3tools/client-runtime/preview/server-browser-stream";
 import {
   isAtomCommandInterrupted,
+  settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import type { DesktopPreviewAnnotationVoiceConfig } from "@t3tools/contracts";
 import {
   AuthOrchestrationOperateScope,
   DEFAULT_BROWSER_PROFILE_ID,
-  FILL_PREVIEW_VIEWPORT,
-  type PreviewAnnotationPayload,
-  type ScopedThreadRef,
   DEFAULT_PREVIEW_ZOOM_FACTOR,
+  FILL_PREVIEW_VIEWPORT,
   PREVIEW_ZOOM_LEVELS,
   type PreviewAdjustInput,
+  type PreviewAnnotationPayload,
+  type ScopedThreadRef,
 } from "@t3tools/contracts";
 import {
-  normalizePreviewUrl,
   isPreviewUrlNormalizationError,
-  resolveAddressBarInput,
+  normalizePreviewUrl,
   previewPdfAssetUrl,
+  resolveAddressBarInput,
   resolveSearchUrlTemplate,
 } from "@t3tools/shared/preview";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
+import { resolveDiscoveredServerUrl } from "~/browser/browserTargetResolver";
 import {
   BROWSER_HISTORY_MAX_ENTRIES_PER_PROJECT,
   recordVisitForThread,
   removeUrlForThread,
   useThreadRecentHistory,
 } from "~/browserHistoryStore";
-import { type ComposerImageAttachment, useComposerDraftStore } from "~/composerDraftStore";
+import { useComposerDraftStore, type ComposerImageAttachment } from "~/composerDraftStore";
+import { getClientSettings } from "~/hooks/useSettings";
 import { capturePreviewAnnotationScreenshot } from "~/lib/previewAnnotation";
 import { ensureLocalApi } from "~/localApi";
-import { getClientSettings } from "~/hooks/useSettings";
+import {
+  browserMiniPlayerSource,
+  selectThreadPreviewMiniPlayerTabId,
+  usePreviewMiniPlayerStore,
+} from "~/previewMiniPlayerStore";
 import {
   rememberPreviewUrl,
   updatePreviewServerSnapshot,
   useThreadPreviewState,
 } from "~/previewStateStore";
-import { resolveDiscoveredServerUrl } from "~/browser/browserTargetResolver";
+import { useRightPanelStore } from "~/rightPanelStore";
 import { useEnvironmentSupportsServerBrowser } from "~/state/entities";
 import {
   useEnvironment,
@@ -51,46 +57,11 @@ import {
 } from "~/state/environments";
 import { previewEnvironment } from "~/state/preview";
 import { usePreviewStreamAccess } from "~/state/previewStream";
-import { useAtomCommand } from "~/state/use-atom-command";
-import {
-  browserMiniPlayerSource,
-  selectThreadPreviewMiniPlayerTabId,
-  usePreviewMiniPlayerStore,
-} from "~/previewMiniPlayerStore";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useRightPanelStore } from "~/rightPanelStore";
+import { useAtomCommand } from "~/state/use-atom-command";
 
-import { effectiveShortcutsForCommand } from "~/keybindings";
-import { randomUUID } from "~/lib/utils";
-import { primaryServerKeybindingsAtom } from "~/state/server";
-import { PreviewAnnotationSpeech } from "./PreviewAnnotationSpeech";
-import { previewBridge } from "./previewBridge";
-import { subscribePreviewAction } from "./previewActionBus";
-import { closePreviewSession } from "./closePreviewSession";
-import { openPreviewSession } from "./openPreviewSession";
-import { showPreviewPopup } from "./showPreviewPopup";
-import { PreviewChromeRow } from "./PreviewChromeRow";
-import { PreviewEmptyState } from "./PreviewEmptyState";
-import { PreviewMoreMenu, type PreviewMoreMenuActions } from "./PreviewMoreMenu";
-import { commitBrowserViewportChange } from "~/browser/browserViewportActions";
 import { browserResponsiveViewportForToggle, useBrowserDefaults } from "~/browser/browserDefaults";
 import { BrowserDeviceToolbar } from "~/browser/BrowserDeviceToolbar";
-import { BROWSER_DEVICE_TOOLBAR_HEIGHT } from "~/browser/browserViewportLayout";
-import { useBrowserLayoutZoomFactor } from "~/browser/useBrowserLayoutZoomFactor";
-import { previewRuntimeTabId } from "~/browser/previewRuntimeTabId";
-import { isBrowserSettingsReadError } from "~/browser/openFileInPreview";
-import { PreviewFileNotShown, PreviewUnreachable } from "./PreviewUnreachable";
-import { revealInFileExplorerLabel } from "./fileExplorerLabel";
-import { shouldShowPreviewEmptyState } from "./previewEmptyStateLogic";
-import { Badge } from "~/components/ui/badge";
-import { BrowserSurfaceSlot } from "~/browser/BrowserSurfaceSlot";
-import { alternatePreviewRuntime, useRendersServerTabNatively } from "~/browser/previewRuntime";
-import { ServerBrowserSurface, type ServerBrowserHandle } from "~/browser/ServerBrowserSurface";
-import { cn } from "~/lib/utils";
-import { useBrowserSurfaceStore } from "~/browser/browserSurfaceStore";
-import { usePreviewSession } from "./usePreviewSession";
-import { ZoomIndicator } from "./ZoomIndicator";
-import { AgentBrowserCursor } from "./AgentBrowserCursor";
 import {
   findActiveBrowserRecordingRuntimeTabId,
   isBrowserRecordingStartCancelledError,
@@ -98,9 +69,37 @@ import {
   stopBrowserRecording,
   useActiveBrowserRecordingTabIds,
 } from "~/browser/browserRecording";
+import { BrowserSurfaceSlot } from "~/browser/BrowserSurfaceSlot";
+import { useBrowserSurfaceStore } from "~/browser/browserSurfaceStore";
+import { commitBrowserViewportChange } from "~/browser/browserViewportActions";
+import { BROWSER_DEVICE_TOOLBAR_HEIGHT } from "~/browser/browserViewportLayout";
+import { isBrowserSettingsReadError } from "~/browser/openFileInPreview";
+import { alternatePreviewRuntime, useRendersServerTabNatively } from "~/browser/previewRuntime";
+import { previewRuntimeTabId } from "~/browser/previewRuntimeTabId";
+import { ServerBrowserSurface, type ServerBrowserHandle } from "~/browser/ServerBrowserSurface";
+import { useBrowserLayoutZoomFactor } from "~/browser/useBrowserLayoutZoomFactor";
+import { Badge } from "~/components/ui/badge";
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { effectiveShortcutsForCommand } from "~/keybindings";
 import { observeResize } from "~/lib/observeResize";
+import { cn, randomUUID } from "~/lib/utils";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import { AgentBrowserCursor } from "./AgentBrowserCursor";
+import { closePreviewSession } from "./closePreviewSession";
+import { revealInFileExplorerLabel } from "./fileExplorerLabel";
+import { openPreviewSession } from "./openPreviewSession";
+import { subscribePreviewAction } from "./previewActionBus";
+import { PreviewAnnotationSpeech } from "./PreviewAnnotationSpeech";
+import { previewBridge } from "./previewBridge";
+import { PreviewChromeRow } from "./PreviewChromeRow";
+import { PreviewEmptyState } from "./PreviewEmptyState";
+import { shouldShowPreviewEmptyState } from "./previewEmptyStateLogic";
+import { PreviewMoreMenu, type PreviewMoreMenuActions } from "./PreviewMoreMenu";
+import { PreviewFileNotShown, PreviewUnreachable } from "./PreviewUnreachable";
+import { showPreviewPopup } from "./showPreviewPopup";
+import { usePreviewSession } from "./usePreviewSession";
+import { ZoomIndicator } from "./ZoomIndicator";
 
 interface Props {
   threadRef: ScopedThreadRef;

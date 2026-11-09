@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { UserButton, useAuth } from "@clerk/react";
 import { LogInIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";

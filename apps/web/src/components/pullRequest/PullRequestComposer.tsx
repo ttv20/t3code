@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   capitalizeTerm,
   sourceControlClients,
@@ -6,18 +5,19 @@ import {
 import type { EnvironmentId, PullRequestDetailView, PullRequestRef } from "@t3tools/contracts";
 import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Button } from "../ui/button";
 import { Popover, PopoverClose, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { PullRequestCommentForm } from "./PullRequestCommentForm";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import { PullRequestReviewForm } from "./PullRequestReviewForm";
 import {
   pullRequestReviewKey,
   usePendingReviewComments,
   usePullRequestReviewStore,
 } from "./pullRequestReviewStore";
-import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 
 export function PullRequestComposer({
   environmentId,

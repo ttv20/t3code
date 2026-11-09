@@ -1,4 +1,8 @@
-import { useUiLanguage, UiText } from "../i18n";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+  type AtomCommandResult,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -8,11 +12,6 @@ import {
   type ResolvedKeybindingsConfig,
 } from "@t3tools/contracts";
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
-import {
   BugIcon,
   FlaskConicalIcon,
   HammerIcon,
@@ -20,13 +19,14 @@ import {
   PlayIcon,
   WrenchIcon,
 } from "lucide-react";
-import React, { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { UiText, useUiLanguage } from "../i18n";
 
-import {
-  keybindingValueForCommand,
-  decodeProjectScriptKeybindingRule,
-} from "~/lib/projectScriptKeybindings";
 import { keybindingFromKeyboardEvent } from "~/components/settings/KeybindingsSettings.logic";
+import {
+  decodeProjectScriptKeybindingRule,
+  keybindingValueForCommand,
+} from "~/lib/projectScriptKeybindings";
 import { commandForProjectScript, nextProjectScriptId } from "~/projectScripts";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useComposerMenuState } from "./chat/useComposerMenuState";

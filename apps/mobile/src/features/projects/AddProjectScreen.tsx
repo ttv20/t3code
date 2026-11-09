@@ -282,6 +282,8 @@ function ProjectPathInput(props: {
   readonly onChangeText: (value: string) => void;
   readonly onSubmit: () => void;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   return (
     <TextInput
       className="h-12 min-h-12 rounded-[24px] px-4 py-0 text-base leading-snug"
@@ -289,7 +291,7 @@ function ProjectPathInput(props: {
       onChangeText={(text) => props.onChangeText(resolvePastedPath(props.value, text))}
       autoCapitalize="none"
       autoCorrect={false}
-      placeholder="~/projects/my-app"
+      placeholder={uiT("~/projects/my-app")}
       returnKeyType="done"
       onSubmitEditing={props.onSubmit}
     />

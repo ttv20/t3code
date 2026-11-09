@@ -1,6 +1,6 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { Globe, History, RadioTower } from "lucide-react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import type { BrowserHistoryEntry } from "~/browserHistoryStore";
 import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "~/components/ui/empty";

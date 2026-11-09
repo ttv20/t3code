@@ -1,12 +1,12 @@
-import type { DesktopUpdateChannel } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
+import type { DesktopUpdateChannel } from "@t3tools/contracts";
 import {
   CLI_ARCHIVE_PLATFORM_KEYS,
   CLI_RELEASE_CHECKSUMS_FILE,
   cliArchiveFileName,
-  cliReleaseTagUrl,
-  cliReleaseIndexPageUrl,
   cliReleaseChannelOf,
+  cliReleaseIndexPageUrl,
+  cliReleaseTagUrl,
 } from "@t3tools/shared/cliRelease";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";

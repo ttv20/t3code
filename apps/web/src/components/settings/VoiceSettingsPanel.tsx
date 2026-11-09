@@ -1,4 +1,5 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import type { PreparedConnection } from "@t3tools/client-runtime/connection";
+import { openRouterIcon } from "@t3tools/client-runtime/provider-clients";
 import {
   cancelEnvironmentSpeechModelDownload,
   downloadEnvironmentSpeechModel,
@@ -9,18 +10,16 @@ import {
   updateEnvironmentSpeechAcceleration,
   updateEnvironmentSpeechModelUnloadTimeout,
 } from "@t3tools/client-runtime/voice-input";
-import type { PreparedConnection } from "@t3tools/client-runtime/connection";
-import { openRouterIcon } from "@t3tools/client-runtime/provider-clients";
 import {
   AuthSettingsWriteScope,
   CLOUD_SPEECH_LABELS,
   CloudSpeechProvider,
   DEFAULT_SPEECH_POST_PROCESSING_PROMPT,
+  ProviderDriverKind,
   type EnvironmentId,
   type EnvironmentSpeechModel,
   type EnvironmentSpeechStatus,
   type ProjectId,
-  ProviderDriverKind,
   type SpeechAcceleration,
   type SpeechCustomWords,
   type SpeechModelUnloadTimeout,
@@ -33,49 +32,49 @@ import {
   AudioLinesIcon,
   CheckIcon,
   DownloadIcon,
-  LanguagesIcon,
   KeyRoundIcon,
-  MonitorIcon,
-  MicOffIcon,
+  LanguagesIcon,
   MicIcon,
+  MicOffIcon,
+  MonitorIcon,
   RefreshCwIcon,
-  StarIcon,
   SlidersHorizontalIcon,
+  StarIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
+import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
+import {
+  getCustomModelOptionsByInstance,
+  resolveAppModelSelectionState,
+} from "../../modelSelection";
 import { listBrowserMicrophones, type BrowserMicrophone } from "../../speech/browserMicrophones";
 import { preferredSpeechLanguages } from "../../speech/preferredSpeechLanguages";
+import { runEnvironmentSpeech } from "../../speech/runEnvironmentSpeech";
+import {
+  useEnvironmentSpeechInput,
+  useVoiceTranscriptionDestination,
+} from "../../speech/useEnvironmentSpeechInput";
 import {
   chooseAudioDestination,
   chooseTranscriptCleanup,
   useCleanupGrant,
 } from "../../speech/voiceConsent";
-import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
-import { runEnvironmentSpeech } from "../../speech/runEnvironmentSpeech";
-import {
-  getCustomModelOptionsByInstance,
-  resolveAppModelSelectionState,
-} from "../../modelSelection";
-import { providerInstanceEntriesFor } from "../../providerInstances";
 import { useEnvironmentProviders, useEnvironments } from "../../state/environments";
-import { useEnvironmentScope } from "../../state/session";
 import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
-import {
-  useEnvironmentSpeechInput,
-  useVoiceTranscriptionDestination,
-} from "../../speech/useEnvironmentSpeechInput";
+import { useEnvironmentScope } from "../../state/session";
+import { useTextGenerationTargets } from "../../textGenerators";
 import { ComposerSpeechRecordingPill } from "../chat/ComposerSpeechButton";
-import { ProviderModelPicker } from "../chat/ProviderModelPicker";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { ProviderModelPicker } from "../chat/ProviderModelPicker";
 import { ProviderPackageIcon } from "../chat/ProviderPackageIcon";
 import { TraitsPicker } from "../chat/TraitsPicker";
 import { VoiceInputSetup } from "../chat/VoiceInputSetup";
 import { Badge } from "../ui/badge";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
@@ -103,22 +102,22 @@ import {
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 import { toastManager } from "../ui/toast";
-import { MicrophoneTest } from "./MicrophoneTest";
-import { CloudVoiceConfiguration } from "./CloudVoiceConfiguration";
-import { LanguageRow, ModelBenchmarks, orderSpeechLanguages } from "./SpeechModelComparison";
-import { languageLabel, SpeechLanguageSelect } from "./SpeechLanguageSelect";
-import { filterSpeechModels, type SpeechModelSort } from "./speechModelBrowser";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { AdvancedSettings } from "./AdvancedSettings";
+import { CloudVoiceConfiguration } from "./CloudVoiceConfiguration";
+import { MicrophoneTest } from "./MicrophoneTest";
 import {
   SETTINGS_PICKER_TRIGGER_CLASSNAME,
-  SettingResetButton,
   SettingsPageContainer,
   SettingsRow,
   SettingsSearchTarget,
   SettingsSection,
 } from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
 import { useOptionalSettingsScope, useSettingsScope } from "./SettingsScopeContext";
+import { searchableSetting } from "./settingsSearch";
+import { languageLabel, SpeechLanguageSelect } from "./SpeechLanguageSelect";
+import { filterSpeechModels, type SpeechModelSort } from "./speechModelBrowser";
+import { LanguageRow, ModelBenchmarks, orderSpeechLanguages } from "./SpeechModelComparison";
 import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 
@@ -479,10 +478,18 @@ function CleanupModelRow() {
     (environment?.serverConfig
       ? providersByEnvironment.get(environment.environmentId)
       : undefined) ?? EMPTY_SERVER_PROVIDERS;
-  const textGenerationProviders = providers.filter(
-    (provider) => provider.supportsTextGeneration !== false,
-  );
-  const instanceEntries = providerInstanceEntriesFor(textGenerationProviders, settings, null);
+  const targets = useTextGenerationTargets({
+    environmentId: environment?.environmentId ?? null,
+    settings,
+    providers: providers.filter((provider) => provider.supportsTextGeneration !== false),
+    projectId: null,
+    selections: [
+      settings.speechPostProcessingModelSelection,
+      settings.textGenerationModelSelection,
+    ],
+  });
+  const textGenerationProviders = targets.providers;
+  const instanceEntries = targets.entries;
   const hasProvider = instanceEntries.some((entry) => entry.enabled && entry.isAvailable);
   const dedicated = settings.speechPostProcessingModelSelection !== null;
   const selection = resolveAppModelSelectionState(
@@ -521,60 +528,64 @@ function CleanupModelRow() {
       settingKeys={["speechPostProcessingModelSelection"]}
       {...searchableSetting("speech-post-processing-model")}
       title={uiT("Cleanup model")}
-      description={
-        dedicated
-          ? uiT(
-              "Drafts on {0} use this model for cleanup instead of the environment’s text generation model.",
-              { "0": environment?.label ?? "this environment" },
-            )
-          : uiT(
-              "Cleanup currently uses the text generation model on {0}. Pick another model if you want a cheaper or faster one.",
-              { "0": environment?.label ?? "this environment" },
-            )
-      }
-      resetAction={
-        dedicated ? (
-          <SettingResetButton
-            label={uiT("cleanup model")}
-            onClick={() => updateSettings({ speechPostProcessingModelSelection: null })}
-          />
-        ) : null
-      }
+      description={uiT(
+        "Model for transcript cleanup, such as a cheaper or faster one. When disabled, use the text generation model configured for this environment.",
+      )}
       control={
         connectedEnvironments.length === 0 ? (
           <span className="text-sm text-muted-foreground">
-            <UiText message={"Connect an environment first."} />
-          </span>
-        ) : !hasProvider || !instanceEntry ? (
-          <span className="text-sm text-muted-foreground">
-            <UiText message={"No providers available."} />
+            {uiT("Connect an environment first.")}
           </span>
         ) : (
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-            <ProviderModelPicker
-              environmentId={environment?.environmentId ?? null}
-              activeInstanceId={selection.instanceId}
-              model={selection.model}
-              lockedProvider={null}
-              instanceEntries={instanceEntries}
-              modelOptionsByInstance={modelOptionsByInstance}
-              triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-              getModelDisabledReason={modelDisabledReason}
-              onInstanceModelChange={(instanceId, model) =>
-                setModel(createModelSelection(instanceId, model))
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            {dedicated && (!hasProvider || !instanceEntry) ? (
+              <span className="text-sm text-muted-foreground">
+                <UiText message={"No text generation providers available."} />
+              </span>
+            ) : null}
+            {dedicated && hasProvider && instanceEntry ? (
+              <>
+                <ProviderModelPicker
+                  environmentId={environment?.environmentId ?? null}
+                  activeInstanceId={selection.instanceId}
+                  model={selection.model}
+                  lockedProvider={null}
+                  instanceEntries={instanceEntries}
+                  modelOptionsByInstance={modelOptionsByInstance}
+                  triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
+                  getModelDisabledReason={modelDisabledReason}
+                  onInstanceModelChange={(instanceId, model) =>
+                    setModel(createModelSelection(instanceId, model))
+                  }
+                />
+                <TraitsPicker
+                  provider={instanceEntry.driverKind}
+                  models={instanceEntry.models}
+                  model={selection.model}
+                  modelOptions={selection.options ?? []}
+                  allowPromptInjectedEffort={false}
+                  triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
+                  onModelOptionsChange={(options) =>
+                    setModel(createModelSelection(selection.instanceId, selection.model, options))
+                  }
+                />
+              </>
+            ) : null}
+            <Switch
+              checked={dedicated}
+              disabled={!dedicated && !hasProvider}
+              onCheckedChange={(checked) =>
+                updateSettings({
+                  speechPostProcessingModelSelection: checked
+                    ? createModelSelection(
+                        settings.textGenerationModelSelection.instanceId,
+                        settings.textGenerationModelSelection.model,
+                        settings.textGenerationModelSelection.options,
+                      )
+                    : null,
+                })
               }
-            />
-            <TraitsPicker
-              provider={instanceEntry.driverKind}
-              models={instanceEntry.models}
-              model={selection.model}
-              modelOptions={selection.options ?? []}
-              allowPromptInjectedEffort={false}
-              planModeEnabled={settings.planModeEnabled}
-              triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
-              onModelOptionsChange={(options) =>
-                setModel(createModelSelection(selection.instanceId, selection.model, options))
-              }
+              aria-label={uiT("Use a separate cleanup model")}
             />
           </div>
         )
@@ -1621,13 +1632,13 @@ export function VoiceSettingsPanel() {
 
       <SettingsSection id={searchableSetting("speech-post-processing").id} title={uiT("Cleanup")}>
         <SettingsRow
-          title={uiT("Clean up transcripts with a provider")}
+          title={uiT("Clean up transcripts")}
           description={uiT(
-            "Sends the transcript and nearby draft text to the text generation provider on the draft’s environment to fix punctuation, numbers, and spoken corrections. Sends text only; off by default.",
+            "Fixes punctuation, numbers, and spoken corrections with the cleanup model on the draft’s environment. Sends the transcript and nearby draft text, never audio.",
           )}
           control={
             <Switch
-              aria-label={uiT("Clean up transcripts with a provider")}
+              aria-label={uiT("Clean up transcripts")}
               checked={cleanupEnabled}
               onCheckedChange={chooseTranscriptCleanup}
             />

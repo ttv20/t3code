@@ -76,7 +76,7 @@ export function ThreadPullRequestsSheet(
           lines.length > 0 ? (
             <Text className="px-4 pt-2 pb-1 text-xs text-foreground-muted">
               <UiText
-                message={"{0}  open ·{1}  linked"}
+                message={uiT("{0}  open ·{1}  linked")}
                 values={{ "0": openCount, "1": lines.length }}
               />
             </Text>
@@ -85,7 +85,7 @@ export function ThreadPullRequestsSheet(
         ListEmptyComponent={
           <Text className="pt-6 text-center text-sm text-foreground-muted">
             <UiText
-              message={"No linked {0}."}
+              message={uiT("No linked {0}.")}
               values={{ "0": <UiText message={actions.terminology.plural} /> }}
             />
           </Text>

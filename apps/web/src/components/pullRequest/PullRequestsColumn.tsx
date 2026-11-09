@@ -1,10 +1,11 @@
-import { useUiLanguage } from "../../i18n";
 import type { PullRequestInvolvement, PullRequestListState } from "@t3tools/contracts";
 import { Plug2Icon, SearchIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { isElectron } from "~/env";
 import { cn } from "~/lib/utils";
+import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import { Button } from "../ui/button";
 import { RefreshIcon } from "../ui/refresh-icon";
 import {
@@ -14,7 +15,6 @@ import {
 } from "../WorkspaceBreadcrumb";
 import { WorkspacePageContainer } from "../WorkspacePageContainer";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
-import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import { PullRequestCompactFilterMenu } from "./PullRequestCompactFilterMenu";
 import type { PullRequestFilterOption } from "./PullRequestListFilters";
 import { INVOLVEMENT_TABS, STATE_TABS } from "./pullRequestListOptions";

@@ -1,13 +1,10 @@
-import { useUiLanguage } from "../../i18n";
-import { SessionPermissions } from "./SessionPermissions";
-import {
-  ChevronRightIcon,
-  ChevronsLeftRightEllipsisIcon,
-  EllipsisIcon,
-  RouteIcon,
-} from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
-import { useEffect, useEffectEvent, useState } from "react";
+import {
+  connectionRoutes,
+  connectionStatusText,
+  environmentMcpUrl,
+  hasSavedBearerRoute,
+} from "@t3tools/client-runtime/connection";
 import {
   AuthRelayWriteScope,
   type EnvironmentId,
@@ -16,58 +13,60 @@ import {
   managedCapabilityDenial,
   resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
-import {
-  connectionRoutes,
-  hasSavedBearerRoute,
-  connectionStatusText,
-  environmentMcpUrl,
-} from "@t3tools/client-runtime/connection";
 import * as Option from "effect/Option";
-
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { cn } from "../../lib/utils";
-import { SettingsRow } from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
-import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
-import { EnvironmentRoutesList } from "./EnvironmentRoutesList";
 import {
-  ConnectionDiagnosisPanel,
-  ConnectionDiagnosisSummary,
-  useConnectionDiagnosis,
-} from "./ConnectionDiagnosisDetails";
-import { usePreparedConnection } from "~/state/session";
-import { EnvironmentRow, environmentTransportLabel } from "./EnvironmentRow";
-import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
-import { Switch } from "../ui/switch";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { Button, InlineButton } from "../ui/button";
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
+  ChevronRightIcon,
+  ChevronsLeftRightEllipsisIcon,
+  EllipsisIcon,
+  RouteIcon,
+} from "lucide-react";
+import { useEffect, useEffectEvent, useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { SessionPermissions } from "./SessionPermissions";
+
+import { APP_VERSION } from "~/branding";
+import { useManagedTunnelUsage } from "~/cloud/managedRelayState";
+import { hasCloudPublicConfig } from "~/cloud/publicConfig";
+import { useCloudLinkController } from "~/cloud/useCloudLinkController";
+import { environmentCatalog } from "~/connection/catalog";
+import { isElectron } from "~/env";
+import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
+import { useManagedPolicy } from "~/state/managedPolicy";
+import { serverEnvironment } from "~/state/server";
+import { readEnvironmentScope, usePreparedConnection } from "~/state/session";
 import {
   resolveServerConfigVersionMismatch,
   resolveServerSelfUpdateCapability,
   supportsDesktopAppUpdate,
 } from "~/versionSkew";
-import { hasCloudPublicConfig } from "~/cloud/publicConfig";
-import { isElectron } from "~/env";
-import { useCloudLinkController } from "~/cloud/useCloudLinkController";
-import { useManagedTunnelUsage } from "~/cloud/managedRelayState";
-import { useT3ConnectAccountPage } from "../clerk/T3ConnectAccountPages";
-import { TunnelLimitAlert, TunnelUsageMeter } from "../cloud/TunnelUsage";
-import { environmentCatalog } from "~/connection/catalog";
-import { readEnvironmentScope } from "~/state/session";
-import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
-import { APP_VERSION } from "~/branding";
-import { useManagedPolicy } from "~/state/managedPolicy";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { cn } from "../../lib/utils";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { serverEnvironment } from "~/state/server";
 import {
   OutdatedServerUpdateAction,
   ServerUpdateAction,
   ServerUpdateProgress,
 } from "../ServerUpdateAction";
-import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
+import { useT3ConnectAccountPage } from "../clerk/T3ConnectAccountPages";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
+import { CloudEnvironmentConnectRows } from "../cloud/CloudEnvironmentConnectList";
+import { TunnelLimitAlert, TunnelUsageMeter } from "../cloud/TunnelUsage";
+import { Button, InlineButton } from "../ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
+import { Switch } from "../ui/switch";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import {
+  ConnectionDiagnosisPanel,
+  ConnectionDiagnosisSummary,
+  useConnectionDiagnosis,
+} from "./ConnectionDiagnosisDetails";
+import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
+import { EnvironmentRoutesList } from "./EnvironmentRoutesList";
+import { EnvironmentRow, environmentTransportLabel } from "./EnvironmentRow";
+import { SettingsRow } from "./settingsLayout";
+import { searchableSetting } from "./settingsSearch";
 
 type SavedBackendListRowProps = {
   environment: EnvironmentPresentation;

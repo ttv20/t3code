@@ -1,25 +1,4 @@
-import { useUiLanguage } from "../i18n";
-import { useRef, useSyncExternalStore, use } from "react";
-import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
-import {
-  DEFAULT_SERVER_SETTINGS,
-  AuthSettingsWriteScope,
-  requiredScopesForServerSettingsPatch,
-  type EnvironmentId,
-  type ProviderInstanceMutation,
-  type ProviderInstanceId,
-  ServerSettings,
-  type ServerSettingsPatch,
-  sessionGrantsScope,
-} from "@t3tools/contracts";
-import {
-  type ClientSettingsPatch,
-  type ClientSettings,
-  DEFAULT_CLIENT_SETTINGS,
-  type EnvironmentIdentificationMode,
-  type UnifiedSettings,
-} from "@t3tools/contracts/settings";
 import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
 import {
   isAtomCommandInterrupted,
@@ -31,7 +10,49 @@ import {
   splitSharedServerPatch,
   supportsSharedSettingsSync,
 } from "@t3tools/client-runtime/state/shared-settings";
+import {
+  AuthSettingsWriteScope,
+  DEFAULT_SERVER_SETTINGS,
+  type EnvironmentId,
+  type ProviderInstanceId,
+  type ProviderInstanceMutation,
+  requiredScopesForServerSettingsPatch,
+  ServerSettings,
+  type ServerSettingsPatch,
+  sessionGrantsScope,
+} from "@t3tools/contracts";
+import {
+  type ClientSettings,
+  type ClientSettingsPatch,
+  DEFAULT_CLIENT_SETTINGS,
+  type EnvironmentIdentificationMode,
+  type UnifiedSettings,
+} from "@t3tools/contracts/settings";
+import {
+  modelPreferencesMigrationPatch,
+  resolveModelPreferences,
+} from "@t3tools/shared/serverSettings";
+import * as Equal from "effect/Equal";
+import * as Option from "effect/Option";
+import { AsyncResult, Atom } from "effect/reactivity";
+import * as Struct from "effect/Struct";
+import { use, useRef, useSyncExternalStore } from "react";
+import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
+import { toastManager } from "~/components/ui/toast";
+import { environmentCatalog } from "~/connection/catalog";
+import { isHostedStaticApp } from "~/hostedPairing";
 import { ensureLocalApi } from "~/localApi";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
+import { primaryServerSettingsAtom, serverEnvironment } from "~/state/server";
+import {
+  environmentSession,
+  environmentSessionStatesAtom,
+  readEnvironmentScope,
+  useEnvironmentScope,
+} from "~/state/session";
+import { useAtomCommand } from "~/state/use-atom-command";
 import {
   getThemeDefinition,
   getThemePreviewSidebarArtwork,
@@ -39,29 +60,8 @@ import {
   subscribeToThemePreview,
   themeAllowsSidebarArtwork,
 } from "~/themePalette";
-import {
-  modelPreferencesMigrationPatch,
-  resolveModelPreferences,
-} from "@t3tools/shared/serverSettings";
-import * as Equal from "effect/Equal";
-import * as Struct from "effect/Struct";
-import * as Option from "effect/Option";
-import { AsyncResult, Atom } from "effect/reactivity";
-import { toastManager } from "~/components/ui/toast";
-import { isHostedStaticApp } from "~/hostedPairing";
-import { environmentCatalog } from "~/connection/catalog";
-import { primaryServerSettingsAtom, serverEnvironment } from "~/state/server";
-import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
-import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../i18n";
 import { useTheme } from "./useTheme";
-import {
-  environmentSession,
-  environmentSessionStatesAtom,
-  readEnvironmentScope,
-  useEnvironmentScope,
-} from "~/state/session";
-import { environmentIdsKey } from "~/state/environmentAtomList";
-import { appAtomRegistry } from "~/rpc/atomRegistry";
 
 const CLIENT_SETTINGS_PERSISTENCE_ERROR_SCOPE = "[CLIENT_SETTINGS]";
 
@@ -416,13 +416,6 @@ export function useEnvironmentIdentificationMode(): EnvironmentIdentificationMod
   });
 }
 
-/** Legacy sidebar opt-ins still count, so those users land in the boring sidebar. */
-export function useBoringSidebarEnabled(): boolean {
-  return useClientSettings(
-    (settings) => settings.boringSidebarEnabled || settings.legacySidebarEnabled,
-  );
-}
-
 export async function prepareModelPreferencesPatch(
   settings: ServerSettings,
   patch: ServerSettingsPatch,
@@ -617,7 +610,7 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
   const sharedSettingsSyncTargetIds = useSharedSettingsSyncTargetIds(true);
   const updateSettings = (
     patch: UnifiedSettingsPatch,
-    options?: { readonly onFailed?: () => void },
+    options?: { readonly onFailed?: () => void; readonly onSaved?: () => void },
   ) => {
     const { serverPatch, clientPatch } = splitPatch(patch);
 
@@ -650,7 +643,9 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
           void persistServerSettings(
             { environmentId, input: { patch: localPatch } },
             options?.onFailed,
-          );
+          ).then((result) => {
+            if (result._tag === "Success") options?.onSaved?.();
+          });
         } else {
           warnUnsaved();
         }
@@ -718,13 +713,22 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
                 `Could not save on ${label}: ${error instanceof Error ? error.message : "The save failed. Try reconnecting and saving again."}`,
               ];
             });
+            if (
+              deniedLabels.length === 0 &&
+              outcomes.every(({ result }) => result._tag === "Success")
+            ) {
+              options?.onSaved?.();
+            }
             if (failures.length === 0) return;
             const saved = outcomes
               .filter(({ result }) => result._tag === "Success")
               .map(({ label }) => label);
             toastManager.add({
               type: "error",
-              title: saved.length > 0 ? "Setting saved on some environments" : "Setting not saved",
+              title:
+                saved.length > 0
+                  ? uiT("Setting saved on some environments")
+                  : uiT("Setting not saved"),
               description: [
                 ...failures,
                 ...(saved.length > 0 ? [`Saved on ${saved.join(", ")}.`] : []),

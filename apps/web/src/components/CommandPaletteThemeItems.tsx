@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../i18n";
 import { BUILT_IN_THEMES } from "@t3tools/shared/themePalettes";
 import { MonitorIcon, MoonIcon, PaletteIcon, SunIcon } from "lucide-react";
+import { useUiLanguage } from "../i18n";
 
 import { useCustomThemes } from "../hooks/useCustomThemes";
 import { useEnvironmentThemeDefinitions } from "../hooks/useEnvironmentTheme";
@@ -14,8 +14,8 @@ import {
 } from "./CommandPalette.logic";
 import { toggleThemeEditorForTheme } from "./settings/themeEditorStore";
 import {
-  STANDARD_THEME_CARDS,
   getThemeCardDefinition,
+  STANDARD_THEME_CARDS,
   ThemePreviewCircle,
 } from "./settings/ThemePreviewCircles";
 import { stackedThreadToast, toastManager } from "./ui/toast";

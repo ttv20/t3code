@@ -1,12 +1,12 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 
-import { cn } from "~/lib/utils";
+import { ControlledOpenContext, renderRetainedPopup } from "~/components/ui/dialog";
 import {
   DIALOG_BACKDROP_CLASS,
   DIALOG_MOBILE_SHEET_CLASS,
   DIALOG_POPUP_CLASS,
 } from "~/components/ui/dialog-styles";
-import { ControlledOpenContext, renderRetainedPopup } from "~/components/ui/dialog";
+import { cn } from "~/lib/utils";
 
 function AlertDialog<Payload>(props: AlertDialogPrimitive.Root.Props<Payload>) {
   return (
@@ -137,15 +137,15 @@ function AlertDialogClose(props: AlertDialogPrimitive.Close.Props) {
 
 export {
   AlertDialog,
-  AlertDialogPortal,
   AlertDialogBackdrop,
+  AlertDialogClose,
+  AlertDialogPopup as AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogBackdrop as AlertDialogOverlay,
   AlertDialogPopup,
-  AlertDialogPopup as AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
+  AlertDialogPortal,
   AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogClose,
   AlertDialogViewport,
 };

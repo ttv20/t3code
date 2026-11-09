@@ -236,7 +236,7 @@ function ExtendedOfficeViewer(props: {
             </div>
           ) : (
             <span className="flex-1 text-center tabular-nums" aria-live="polite">
-              {navigation === "slide" ? "Slide" : "Page"} {page + 1} {uiT("of")} {count}
+              {navigation === "slide" ? uiT("Slide") : uiT("Page")} {page + 1} {uiT("of")} {count}
             </span>
           )}
           <FileSurfaceAction
@@ -281,8 +281,8 @@ function ExtendedOfficeViewer(props: {
             {uiT("Cell values only. Charts, images, and formatting are not shown.")}
             {sheet.truncated
               ? props.kind === "ods"
-                ? " Limited to 500 rows and 50 columns."
-                : " Preview limited to 250,000 rows, 1,024 columns, and bounded cell text."
+                ? uiT(" Limited to 500 rows and 50 columns.")
+                : uiT(" Preview limited to 250,000 rows, 1,024 columns, and bounded cell text.")
               : ""}
           </FileSurfaceNotice>
           {sheet.rowCount === 0 ? (

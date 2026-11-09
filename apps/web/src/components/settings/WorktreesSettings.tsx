@@ -1,17 +1,17 @@
-import { useUiLanguage } from "../../i18n";
 import { DEFAULT_UNIFIED_SETTINGS } from "@t3tools/contracts/settings";
+import { useUiLanguage } from "../../i18n";
 
 import { AdvancedSettings } from "./AdvancedSettings";
 import { BranchNamingSettings } from "./BranchNamingSettings";
 import { WorktreeSubmodulesRow } from "./ProjectDefaultsSettings";
 import { ScopedSwitch } from "./ScopedSwitch";
-import { useSettingsScope } from "./SettingsScopeContext";
 import {
   SettingResetButton,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
+import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
 import { WorktreeCleanupSection, WorktreesDirectoryRow } from "./StorageSettings";
 import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";

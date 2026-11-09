@@ -1,27 +1,27 @@
-import { useUiLanguage } from "../../i18n";
-import { useAtomCommand } from "~/state/use-atom-command";
-import type {
-  EnvironmentId,
-  PullRequestRef,
-  PullRequestReviewerCandidate,
-} from "@t3tools/contracts";
 import {
   hostReviewerQuery,
   reviewerCandidateView,
   type ReviewerTruncation,
 } from "@t3tools/client-runtime/pull-request-reviewers";
+import type {
+  EnvironmentId,
+  PullRequestRef,
+  PullRequestReviewerCandidate,
+} from "@t3tools/contracts";
 import { CheckIcon, UserPlusIcon } from "lucide-react";
 import { useState } from "react";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../../i18n";
 
-import { pullRequestEnvironment } from "~/state/pullRequests";
-import { useEnvironmentQuery } from "~/state/query";
-import { useDebouncedValue } from "~/state/queries";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { pullRequestEnvironment } from "~/state/pullRequests";
+import { useDebouncedValue } from "~/state/queries";
+import { useEnvironmentQuery } from "~/state/query";
 
 import { toastManager } from "../ui/toast";
 import { PullRequestCandidatePicker } from "./PullRequestCandidatePicker";
-import { PullRequestActorLabel } from "./pullRequestPresentation";
 import { readableFailure } from "./pullRequestDetail.logic";
+import { PullRequestActorLabel } from "./pullRequestPresentation";
 
 const TRUNCATED_LABELS: Record<ReviewerTruncation, (error: string | null) => string> = {
   unsearchable: () =>

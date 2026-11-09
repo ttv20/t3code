@@ -1,67 +1,67 @@
-import { useUiLanguage } from "../../i18n";
-import { documentChipKindForFileName } from "~/pierre-icons";
-import { isSvgAttachment } from "@t3tools/shared/image";
-import { useRenderedAppearance } from "../../hooks/useTheme";
-import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
-import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
-import { useRightPanelStore } from "~/rightPanelStore";
-import { COMPOSER_CONTEXT_KINDS } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { use, type ReactNode } from "react";
 import { FileDiff } from "@pierre/diffs/react";
-import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
-import {
-  type ChatFileAttachment,
-  type ChatImageAttachment,
-  isImageAttachment,
-  isVideoAttachment,
-} from "../../types";
-import {
-  getRenderablePatch,
-  resolveDiffThemeName,
-  resolveFileDiffPath,
-} from "../../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import ChatMarkdown from "../ChatMarkdown";
-import { EnvironmentContextChip } from "../EnvironmentContextChip";
-import { ThreadContextChip } from "../ThreadContextChip";
-import { MessageCircleIcon, MousePointerClickIcon, PaintbrushIcon } from "lucide-react";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type { ComposerContextId, KnownComposerContextRecord } from "@t3tools/contracts";
-import { buildExpandedImagePreview } from "./ExpandedImagePreview";
-import { WorkspaceEntryIcon, WorkspaceEntryTooltip } from "./WorkspaceEntryIcon";
-import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import {
-  ContextChipPopover as UserMessageContextPopover,
-  FileChip,
-  ImageChipButton,
-  PULL_REQUEST_CHIP_KINDS,
-  PullRequestChip,
-  UnresolvedChip,
-} from "../contextChipParts";
+import { COMPOSER_CONTEXT_KINDS } from "@t3tools/contracts";
+import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
+import { isSvgAttachment } from "@t3tools/shared/image";
+import { MessageCircleIcon, MousePointerClickIcon, PaintbrushIcon } from "lucide-react";
+import { use, type ReactNode } from "react";
 import {
   isPullRequestSummaryContext,
   pullRequestContextDisplayState,
   pullRequestContextKindLabel,
   reviewCommentContextLabel,
 } from "~/lib/composerContextRecords";
-import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
-import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
-import { createContextPresentationRegistry } from "../contextPresentationRegistry";
-import type { ChatMarkdownContextReference } from "../ChatMarkdown";
-import {
-  SkillChipPopover,
-  skillInstructionsOpener,
-  skillPopoverDescription,
-} from "./SkillInlineText";
+import { documentChipKindForFileName } from "~/pierre-icons";
+import { useRightPanelStore } from "~/rightPanelStore";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import { useRenderedAppearance } from "../../hooks/useTheme";
+import { useUiLanguage } from "../../i18n";
+import {
+  getRenderablePatch,
+  resolveDiffThemeName,
+  resolveFileDiffPath,
+} from "../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
 import {
   buildReviewCommentRenderablePatch,
   formatReviewCommentFence,
   type ReviewCommentContext,
 } from "../../reviewCommentContext";
+import {
+  isImageAttachment,
+  isVideoAttachment,
+  type ChatFileAttachment,
+  type ChatImageAttachment,
+} from "../../types";
+import type { ChatMarkdownContextReference } from "../ChatMarkdown";
+import ChatMarkdown from "../ChatMarkdown";
+import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
+import {
+  FileChip,
+  ImageChipButton,
+  PULL_REQUEST_CHIP_KINDS,
+  PullRequestChip,
+  UnresolvedChip,
+  ContextChipPopover as UserMessageContextPopover,
+} from "../contextChipParts";
+import { createContextPresentationRegistry } from "../contextPresentationRegistry";
+import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import { EnvironmentContextChip } from "../EnvironmentContextChip";
+import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { ThreadContextChip } from "../ThreadContextChip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { buildExpandedImagePreview } from "./ExpandedImagePreview";
+import {
+  SkillChipPopover,
+  skillInstructionsOpener,
+  skillPopoverDescription,
+} from "./SkillInlineText";
+import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
 import { TimelineRowCtx } from "./timelineRowContext";
 import { userMessageFileLabel } from "./TimelineUserMessageRow.logic";
+import { WorkspaceEntryIcon, WorkspaceEntryTooltip } from "./WorkspaceEntryIcon";
 
 function UserMessageMentionChip(props: {
   record: Extract<KnownComposerContextRecord, { kind: "mention" }>;

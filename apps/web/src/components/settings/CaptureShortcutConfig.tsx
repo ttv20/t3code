@@ -1,4 +1,6 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { parseDiffFromFile } from "@pierre/diffs";
+import { FileDiff } from "@pierre/diffs/react";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import {
   isModifierPairShortcut,
   type DesktopCaptureConfigApplied,
@@ -6,16 +8,14 @@ import {
   type DesktopSnapShotState,
 } from "@t3tools/contracts";
 import { parseKeybindingShortcut } from "@t3tools/shared/keybindings";
-import { FileDiff } from "@pierre/diffs/react";
-import { parseDiffFromFile } from "@pierre/diffs";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import * as Cause from "effect/Cause";
 import { useState } from "react";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
+import { useRenderedAppearance } from "../../hooks/useTheme";
+import { UiText, useUiLanguage } from "../../i18n";
 import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
 import { resolveDiffThemeName } from "../../lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import { useRenderedAppearance } from "../../hooks/useTheme";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
 import { shortcutToKeybindingInput } from "./KeybindingsSettings.logic";

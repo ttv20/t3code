@@ -1,5 +1,7 @@
-import { isMacPlatform } from "../../lib/utils";
+import { isMonospaceFamily } from "../../appearanceFonts";
+import { observeResize } from "../../lib/observeResize";
 import { SELECTION_MULTI_CLICK_INTERVAL_MS } from "../../lib/selectionActions";
+import { isMacPlatform } from "../../lib/utils";
 import { collectWrappedTerminalLinkLine, extractTerminalLinks } from "../../terminal-links";
 import {
   GHOSTTY_CELL_WIDE,
@@ -9,16 +11,14 @@ import {
   type GhosttySnapshot,
   type GhosttyTheme,
 } from "./core";
+import symbolsFontUrl from "./fonts/SymbolsNerdFontMono-Regular.woff2?url";
 import {
   measureGhosttyCell,
   renderGhosttySnapshot,
   terminalGridSize,
-  type GhosttyCellRange,
   type GhosttyCellMetrics,
+  type GhosttyCellRange,
 } from "./renderer";
-import symbolsFontUrl from "./fonts/SymbolsNerdFontMono-Regular.woff2?url";
-import { isMonospaceFamily } from "../../appearanceFonts";
-import { observeResize } from "../../lib/observeResize";
 
 const DEFAULT_TERMINAL_FONT_SIZE = 12;
 const MIN_TERMINAL_FONT_SIZE = 6;

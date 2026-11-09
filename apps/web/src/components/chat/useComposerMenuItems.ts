@@ -1,14 +1,13 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
 import {
   matchComposerEnvironmentItems,
   matchComposerThreadItems,
 } from "@t3tools/client-runtime/composerThreadItems";
-import { useAtomValue } from "@effect/atom-react";
-import { useState } from "react";
 import type {
   EnvironmentId,
   ProjectId,
   ProviderDriverKind,
+  ProviderInstanceId,
   PullRequestListInput,
   ServerProvider,
   ThreadId,
@@ -20,15 +19,13 @@ import {
   withLinkedComposerPullRequestsFirst,
 } from "@t3tools/shared/composerPullRequestMatches";
 import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import type { ComposerTrigger } from "../../composer-logic";
-import type { DraftId } from "../../composerDraftStore";
-import { basenameOfPath } from "../../pierre-icons";
 import {
   getProviderSkillsForSlashMenu,
   getProviderSlashCommandsForSlashMenu,
 } from "@t3tools/client-runtime/providerSkills";
-import { searchProviderSkills } from "../../providerSkillSearch";
 import { useVisibleThreadShells } from "~/state/entities";
 import { useEnvironmentIdentities, useEnvironmentMachines } from "~/state/environments";
 import { offersLinkedEnvironmentsAtom } from "~/state/peerLinks";
@@ -37,17 +34,24 @@ import {
   usePullRequestList,
   type EnvironmentQueryTarget,
 } from "~/state/pullRequests";
-import { useEnvironmentQuery } from "~/state/query";
 import { useComposerPathSearch, useDebouncedValue, useThreadSearch } from "~/state/queries";
+import { useEnvironmentQuery } from "~/state/query";
+import type { ComposerTrigger } from "../../composer-logic";
+import type { DraftId } from "../../composerDraftStore";
+import { basenameOfPath } from "../../pierre-icons";
+import type { ProviderInstanceEntry } from "../../providerInstances";
+import { searchProviderSkills } from "../../providerSkillSearch";
 import {
   matchesPullRequestQuery,
   rankPullRequestMatches,
 } from "../pullRequest/pullRequestList.logic";
 import type { ComposerCommandItem } from "./ComposerCommandMenu";
+import { matchComposerModelItems } from "./composerModelMentions";
 import {
   searchSlashCommandItems,
   slashCommandItemsForPromptPosition,
 } from "./composerSlashCommandSearch";
+import type { ModelEsque } from "./providerIconUtils";
 
 const COMPOSER_PULL_REQUEST_LIST_LIMIT = 99;
 const COMPOSER_PULL_REQUEST_RESULT_LIMIT = 12;
@@ -64,7 +68,6 @@ export function useComposerMenuItems({
   pullRequestProjectId,
   pullRequestRepository,
   threadPullRequests,
-  planModeUiEnabled,
   sideChatAvailable,
   sideChatDisabledReason,
   freshSessionAvailable,
@@ -75,6 +78,7 @@ export function useComposerMenuItems({
   showSkillsInSlashMenu,
   workspaceSkillsScanning,
   questionAttachmentTarget,
+  modelMentions,
 }: {
   readonly composerTrigger: ComposerTrigger | null;
   readonly environmentId: EnvironmentId;
@@ -84,7 +88,6 @@ export function useComposerMenuItems({
   readonly pullRequestProjectId: ProjectId | null;
   readonly pullRequestRepository: string | null;
   readonly threadPullRequests: ReadonlyArray<ThreadPullRequestLink> | undefined;
-  readonly planModeUiEnabled: boolean;
   readonly sideChatAvailable: boolean;
   readonly sideChatDisabledReason: string | null;
   readonly freshSessionAvailable: boolean;
@@ -95,6 +98,10 @@ export function useComposerMenuItems({
   readonly showSkillsInSlashMenu: boolean;
   readonly workspaceSkillsScanning: boolean;
   readonly questionAttachmentTarget: DraftId | null;
+  readonly modelMentions: {
+    readonly instanceEntries: ReadonlyArray<ProviderInstanceEntry>;
+    readonly modelOptionsByInstance: ReadonlyMap<ProviderInstanceId, ReadonlyArray<ModelEsque>>;
+  };
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -209,6 +216,11 @@ export function useComposerMenuItems({
               query: composerTrigger.query,
             })
           : []),
+        ...matchComposerModelItems({
+          instanceEntries: modelMentions.instanceEntries,
+          modelOptionsByInstance: modelMentions.modelOptionsByInstance,
+          query: composerTrigger.query,
+        }),
         ...workspaceEntries.entries.map((entry) => ({
           id: `path:${entry.kind}:${entry.path}`,
           type: "path" as const,
@@ -229,24 +241,6 @@ export function useComposerMenuItems({
           label: "/model",
           description: uiT("Switch response model for this thread"),
         },
-        ...(planModeUiEnabled
-          ? ([
-              {
-                id: "slash:plan",
-                type: "slash-command",
-                command: "plan",
-                label: "/plan",
-                description: uiT("Switch this thread into plan mode"),
-              },
-              {
-                id: "slash:default",
-                type: "slash-command",
-                command: "default",
-                label: "/default",
-                description: uiT("Switch this thread back to normal build mode"),
-              },
-            ] as const)
-          : []),
         ...(sideChatAvailable
           ? ([
               {

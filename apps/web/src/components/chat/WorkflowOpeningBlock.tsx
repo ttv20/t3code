@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isTerminalSubagentStatus,
@@ -15,6 +14,7 @@ import type {
 } from "@t3tools/contracts";
 import { ChevronRightIcon, WorkflowIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { providersIgnoringCheckedAtAtom } from "../../state/server";

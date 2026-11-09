@@ -1,9 +1,9 @@
-import { UiText } from "../../i18n";
 import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
 } from "@t3tools/client-runtime/state/threads";
 import { MessageSquareIcon } from "lucide-react";
+import { UiText } from "../../i18n";
 
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { Button } from "../ui/button";

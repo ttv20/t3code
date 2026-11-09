@@ -1,21 +1,21 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentId, SourceControlProviderAuth } from "@t3tools/contracts";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
+import {
+  readHostCredentialSettings,
+  type SourceControlDefinition,
+  type SourceControlHostCredentials,
+} from "@t3tools/client-runtime/source-control-clients";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { groupHostAccounts, nextHostAccountChoices } from "./SourceControlAccountSettings.logic";
-import {
-  readHostCredentialSettings,
-  type SourceControlDefinition,
-  type SourceControlHostCredentials,
-} from "@t3tools/client-runtime/source-control-clients";
 import { redactedPlaceholder } from "./RedactedSensitiveText";
+import { groupHostAccounts, nextHostAccountChoices } from "./SourceControlAccountSettings.logic";
 
 /** Sentinel select value for "follow the CLI's active login"; logins never contain spaces. */
 const ACTIVE_ACCOUNT = "active cli account";

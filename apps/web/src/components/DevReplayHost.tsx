@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { ProviderInstanceId, type ThreadId } from "@t3tools/contracts";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { newMessageId, newThreadId } from "~/lib/utils";
 import { useProjects, useThreadShell } from "../state/entities";
@@ -127,7 +127,7 @@ export function DevReplayHost() {
       <DialogPopup className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>
-            {project === undefined ? "Replay a recorded turn" : `Replay in ${project.title}`}
+            {project === undefined ? uiT("Replay a recorded turn") : `Replay in ${project.title}`}
           </DialogTitle>
         </DialogHeader>
         <DialogPanel>

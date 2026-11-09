@@ -1,10 +1,10 @@
 import { DayPicker } from "@daypicker/react";
 import { ar, faIR, he } from "@daypicker/react/locale";
 import { UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";
-import { useUiLanguage } from "~/i18n";
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 
 const buttonClassNames =
   "relative flex size-(--cell-size) text-base sm:text-sm items-center justify-center rounded-lg text-foreground not-in-data-selected:hover:bg-accent disabled:pointer-events-none disabled:opacity-64 [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0";

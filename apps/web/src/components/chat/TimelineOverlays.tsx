@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { ChevronDownIcon, PaperclipIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { Button } from "../ui/button";
 

@@ -1,13 +1,13 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import {
   DEFAULT_SERVER_SETTINGS,
+  managedRuntimeModeDenial,
   type ModelSelection,
   type WorktreeSubmodules,
-  managedRuntimeModeDenial,
 } from "@t3tools/contracts";
 import { createModelSelection } from "@t3tools/shared/model";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { useNavigate } from "@tanstack/react-router";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useClientSettings } from "../../hooks/useSettings";
 import {
@@ -25,21 +25,21 @@ import { firstManagedDenial } from "../../state/managedPolicy";
 import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
 import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../BranchToolbar.logic";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
+import { TraitsPicker } from "../chat/TraitsPicker";
 import { runtimeModeConfig, runtimeModeOptions } from "../chat/runtimeModeConfig";
 import { PULL_REQUEST_MERGE_METHOD_LABELS } from "../pullRequest/pullRequestDetail.logic";
-import { TraitsPicker } from "../chat/TraitsPicker";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { toastManager } from "../ui/toast";
 import { Switch } from "../ui/switch";
+import { toastManager } from "../ui/toast";
 import type { ProjectSettingsCategory } from "./ProjectSettingsPanel";
-import { searchableSetting } from "./settingsSearch";
 import { useSettingsScope } from "./SettingsScopeContext";
 import {
-  SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingResetButton,
+  SETTINGS_PICKER_TRIGGER_CLASSNAME,
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
+import { searchableSetting } from "./settingsSearch";
 import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
 import {
   useScopedSettings,
@@ -195,7 +195,6 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                 model={selection.model}
                 modelOptions={selection.options ?? []}
                 allowPromptInjectedEffort={false}
-                planModeEnabled={settings.planModeEnabled}
                 triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
                 onModelOptionsChange={(options) =>
                   setModel(createModelSelection(selection.instanceId, selection.model, options))
@@ -312,7 +311,6 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                 model={fallbackSelection.model}
                 modelOptions={fallbackSelection.options ?? []}
                 allowPromptInjectedEffort={false}
-                planModeEnabled={settings.planModeEnabled}
                 triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
                 onModelOptionsChange={(options) =>
                   updateSettings({

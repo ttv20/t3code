@@ -1,9 +1,9 @@
-import { useUiLanguage } from "../i18n";
 import type { ProviderDriverKind } from "@t3tools/contracts";
 import { FolderGit2Icon, FolderIcon, GitBranchIcon } from "lucide-react";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../i18n";
 import { ProjectFavicon, type ProjectFaviconProject } from "./ProjectFavicon";
 import { ProviderInstanceIcon } from "./chat/ProviderInstanceIcon";
-import { cn } from "~/lib/utils";
 
 import { MiddleTruncate } from "./ui/middle-truncate";
 

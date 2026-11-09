@@ -1,16 +1,16 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { useState } from "react";
 import type { ProviderAuthMethod } from "@t3tools/contracts";
-import { RadioGroup, Radio } from "../ui/radio-group";
+import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { Button } from "../ui/button";
 import {
   Dialog,
-  DialogPopup,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogPopup,
+  DialogTitle,
 } from "../ui/dialog";
-import { Button } from "../ui/button";
+import { Radio, RadioGroup } from "../ui/radio-group";
 import { ChatGptConnectionButton } from "./ChatGptConnectionButton";
 
 export function ChatGptAccountPicker({

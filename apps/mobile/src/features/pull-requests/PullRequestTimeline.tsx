@@ -234,7 +234,7 @@ export function pullRequestTimelineRows(
               </Text>
               <Text className="text-foreground-muted">
                 {" "}
-                <UiText message={"started a discussion"} />
+                <UiText message={uiT("started a discussion")} />
               </Text>
             </Text>
             {thread.comments[0] ? (
@@ -314,7 +314,7 @@ export function pullRequestTimelineRows(
       date: "",
       content: (
         <Text className="py-3 text-xs text-foreground-muted">
-          <UiText message={"More activity is available on the provider."} />
+          <UiText message={uiT("More activity is available on the provider.")} />
         </Text>
       ),
     });

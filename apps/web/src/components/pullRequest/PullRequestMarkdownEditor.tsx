@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
-import { useState } from "react";
 import {
   AuthSourceControlWriteScope,
   type EnvironmentId,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
+import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";

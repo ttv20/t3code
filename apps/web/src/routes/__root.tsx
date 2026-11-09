@@ -1,62 +1,62 @@
-import { useUiLanguage, UiText } from "../i18n";
-import { type ServerLifecycleWelcomePayload } from "@t3tools/contracts";
 import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { type ServerLifecycleWelcomePayload } from "@t3tools/contracts";
 import {
-  Outlet,
-  Link,
-  redirect,
   createRootRoute,
   type ErrorComponentProps,
+  Link,
+  Outlet,
+  redirect,
   useLocation,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
 import { Check, Copy } from "lucide";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../i18n";
 
-import { APP_DISPLAY_NAME, APP_VERSION } from "../branding";
-import { AppSidebarLayout } from "../components/AppSidebarLayout";
-import { CommandPalette } from "../components/CommandPalette";
-import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
-import { GuestShareDialogHost } from "../components/chat/GuestShareControls";
-import { AddProjectToMachineDialogHost } from "../components/AddProjectToMachineDialog";
-import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
-import { DevReplayHost } from "../components/DevReplayHost";
-import { FirstRunGate } from "../components/onboarding/FirstRunGate";
-import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
-import { RelayClientInstallDialog } from "../components/cloud/RelayClientInstallDialog";
-import { SshPasswordPromptDialog } from "../components/desktop/SshPasswordPromptDialog";
-import { SnapShotCoordinator } from "../components/desktop/SnapShotCoordinator";
-import { DesktopAppActivationCoordinator } from "../components/desktop/DesktopAppActivationCoordinator";
-import { DesktopWebLinkCoordinator } from "../components/desktop/DesktopWebLinkCoordinator";
-import { RunningThreadKeepAlive } from "../components/desktop/RunningThreadKeepAlive";
-import { ReopenClosedViewShortcut } from "../components/ReopenClosedViewShortcut";
-import { ProjectCloneToastCoordinator } from "../components/ProjectCloneToastCoordinator";
-import { ChatGptWelcomeCoordinator } from "../components/settings/ChatGptWelcomeCoordinator";
-import { ThemeEditorHost } from "../components/settings/ThemeEditorHost";
-import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
-import { Button } from "../components/ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
-import { StandalonePage, StandalonePageHeader } from "../components/ui/standalone-page";
-import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
-import { isElectron } from "../env";
-import { cn } from "../lib/utils";
-import { useClientSettings } from "../hooks/useSettings";
+import { useAtomValue } from "@effect/atom-react";
 import {
   deriveLogicalProjectKeyFromSettings,
   derivePhysicalProjectKeyFromPath,
   selectProjectGroupingSettings,
 } from "@t3tools/client-runtime/state/project-grouping";
-import { useUiStateStore } from "../uiStateStore";
-import { configureClientTracing } from "../observability/clientTracing";
+import { MorphIcon } from "~/components/MorphIcon";
+import { APP_DISPLAY_NAME, APP_VERSION } from "../branding";
+import { AddProjectToMachineDialogHost } from "../components/AddProjectToMachineDialog";
+import { AppSidebarLayout } from "../components/AppSidebarLayout";
+import { GuestShareDialogHost } from "../components/chat/GuestShareControls";
+import { ConnectOnboardingDialog } from "../components/cloud/ConnectOnboardingDialog";
+import { RelayClientInstallDialog } from "../components/cloud/RelayClientInstallDialog";
+import { CommandPalette } from "../components/CommandPalette";
+import { ConfirmDialogHost } from "../components/ConfirmDialogHost";
+import { CustomSnoozeDialogHost } from "../components/CustomSnoozeDialog";
+import { DesktopAppActivationCoordinator } from "../components/desktop/DesktopAppActivationCoordinator";
+import { DesktopWebLinkCoordinator } from "../components/desktop/DesktopWebLinkCoordinator";
+import { RunningThreadKeepAlive } from "../components/desktop/RunningThreadKeepAlive";
+import { SnapShotCoordinator } from "../components/desktop/SnapShotCoordinator";
+import { SshPasswordPromptDialog } from "../components/desktop/SshPasswordPromptDialog";
+import { DevReplayHost } from "../components/DevReplayHost";
+import { FirstRunGate } from "../components/onboarding/FirstRunGate";
+import { ProjectCloneToastCoordinator } from "../components/ProjectCloneToastCoordinator";
+import { useHostedPromptLinkLanding } from "../components/promptLinks/HostedPromptLinkLanding";
+import { ReopenClosedViewShortcut } from "../components/ReopenClosedViewShortcut";
+import { ChatGptWelcomeCoordinator } from "../components/settings/ChatGptWelcomeCoordinator";
+import { ThemeEditorHost } from "../components/settings/ThemeEditorHost";
+import { Button } from "../components/ui/button";
+import { StandalonePage, StandalonePageHeader } from "../components/ui/standalone-page";
+import { AnchoredToastProvider, ToastProvider } from "../components/ui/toast";
+import { isElectron } from "../env";
 import { resolveInitialServerAuthGateState } from "../environments/primary";
 import { GUEST_PAGE_PATH } from "../guestPage";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
+import { useClientSettings } from "../hooks/useSettings";
 import { hasHostedPairingRequest, isHostedStaticApp } from "../hostedPairing";
-import { useHostedPromptLinkLanding } from "../components/promptLinks/HostedPromptLinkLanding";
+import { cn } from "../lib/utils";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
-import { useAtomValue } from "@effect/atom-react";
-import { primaryServerConfigAtom, primaryServerWelcomeAtom } from "../state/server";
+import { configureClientTracing } from "../observability/clientTracing";
 import { readProject } from "../state/entities";
+import { primaryServerConfigAtom, primaryServerWelcomeAtom } from "../state/server";
+import { useUiStateStore } from "../uiStateStore";
 
 import { getDesktopSnapShotBridge } from "../lib/desktopSnapShot";
 import { shouldResumeSnapShotSetupOnStartup } from "../lib/snapShotSetupResume";

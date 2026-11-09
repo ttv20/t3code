@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import { type EnvironmentContextRecord, resolveEnvironmentMachineKind } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 
 import { useEnvironment } from "~/state/environments";
 import { ContextChip, ContextChipLabel } from "./ContextChip";
@@ -36,7 +36,7 @@ export function EnvironmentContextChip(props: {
         }
       />
       <TooltipPopup side="top">
-        {environment ? "T3 Code environment" : "Machine not in this app"}
+        {environment ? uiT("T3 Code environment") : uiT("Machine not in this app")}
       </TooltipPopup>
     </Tooltip>
   );

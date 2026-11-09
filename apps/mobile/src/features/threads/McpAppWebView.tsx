@@ -507,7 +507,7 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          <UiText message={"The {0}  app is open full screen"} values={{ "0": app.server }} />
+          <UiText message={uiT("The {0}  app is open full screen")} values={{ "0": app.server }} />
         </Text>
       </View>
     );
@@ -520,7 +520,7 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center gap-2 rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          <UiText message={"The {0}  app was closed"} values={{ "0": app.server }} />
+          <UiText message={uiT("The {0}  app was closed")} values={{ "0": app.server }} />
         </Text>
         <View className="items-center">
           <Button
@@ -542,7 +542,7 @@ export function ThreadMcpApp(props: {
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
             <UiText
-              message={"The {0}  app left its page and was stopped"}
+              message={uiT("The {0}  app left its page and was stopped")}
               values={{ "0": app.server }}
             />
           </Text>
@@ -590,7 +590,7 @@ export function ThreadMcpApp(props: {
       ) : asset._tag === "Failure" || crashed ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            <UiText message={"Unable to load the{0}  app"} values={{ "0": app.server }} />
+            <UiText message={uiT("Unable to load the{0}  app")} values={{ "0": app.server }} />
           </Text>
         </View>
       ) : null}

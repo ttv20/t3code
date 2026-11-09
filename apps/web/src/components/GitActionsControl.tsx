@@ -1,13 +1,9 @@
 import { UiText, useUiLanguage } from "../i18n";
 
-import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
+import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { useAtomMount, useAtomValue } from "@effect/atom-react";
-import {
-  AuthOrchestrationOperateScope,
-  AuthSourceControlWriteScope,
-  SourceControlProviderKind,
-  type ScopedThreadRef,
-} from "@t3tools/contracts";
+import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -21,12 +17,15 @@ import type {
   SourceControlRepositoryVisibility,
   VcsStatusResult,
 } from "@t3tools/contracts";
+import {
+  AuthOrchestrationOperateScope,
+  AuthSourceControlWriteScope,
+  type ScopedThreadRef,
+  SourceControlProviderKind,
+} from "@t3tools/contracts";
+import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
 import { useNavigate } from "@tanstack/react-router";
 import * as Option from "effect/Option";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { useDeadlinePassed } from "../hooks/useDeadline";
-import { useNowSecond } from "../hooks/useNowSecond";
-import { flushSync } from "react-dom";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -35,37 +34,13 @@ import {
   FileDiffIcon,
   GitBranchPlusIcon,
   GitCommitIcon,
+  GlobeIcon,
   InfoIcon,
   LockIcon,
-  GlobeIcon,
 } from "lucide-react";
-import { Radio as RadioPrimitive } from "@base-ui/react/radio";
-import { RadioGroup } from "~/components/ui/radio-group";
-import { Spinner } from "~/components/ui/spinner";
-import { Toggle, ToggleGroup } from "~/components/ui/toggle-group";
-import { cn } from "~/lib/utils";
-import {
-  buildMenuItems,
-  formatGitActionElapsed,
-  GIT_ACTION_SUCCESS_VISIBLE_MS,
-  type GitActionProgressPresentation,
-  type GitActionIconName,
-  type GitActionMenuItem,
-  type GitQuickAction,
-  type DefaultBranchConfirmableAction,
-  requiresDefaultBranchConfirmation,
-  resolveChangesTotals,
-  resolveDefaultBranchActionDialogCopy,
-  resolveFeatureBranchUnavailableReason,
-  resolveGitActionProgressPresentation,
-  resolveGitActionResultToastTiming,
-  resolveLiveThreadBranchUpdate,
-  resolveThreadBranchMetadataPatch,
-  resolveQuickAction,
-  resolveThreadBranchUpdate,
-} from "./GitActionsControl.logic";
-import { WizardPopup, WizardHeader, WizardSteps, WizardPanel, WizardFooter } from "./ui/wizard";
-import { StartTruncatedPath } from "./StartTruncatedPath";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { useOpenLink } from "~/browser/useOpenLink";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import {
@@ -80,11 +55,27 @@ import {
 import { Input } from "~/components/ui/input";
 import { Menu, MenuItem, MenuItemLabel, MenuPopup, MenuTrigger } from "~/components/ui/menu";
 import { Popover, PopoverPopup, PopoverTrigger } from "~/components/ui/popover";
+import { RadioGroup } from "~/components/ui/radio-group";
 import { ScrollArea } from "~/components/ui/scroll-area";
+import { Spinner } from "~/components/ui/spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
+import { Toggle, ToggleGroup } from "~/components/ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
 import { useOpenInPreferredEditor } from "~/editorPreferences";
+import { cn, randomUUID } from "~/lib/utils";
+import { getSourceControlPresentation, sourceControlIcon } from "~/sourceControlPresentation";
+import { useQuietThreadProjection, useQuietThreadShell } from "~/state/entities";
+import { useEnvironmentQuery } from "~/state/query";
+import { serverEnvironment } from "~/state/server";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { sourceControlEnvironment } from "~/state/sourceControl";
+import { threadEnvironment } from "~/state/threads";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { vcsActionManager, vcsEnvironment, vcsStatusRevalidation } from "~/state/vcs";
+import { useDeadlinePassed } from "../hooks/useDeadline";
+import { useNowSecond } from "../hooks/useNowSecond";
 import {
   useGitStackedAction,
   useSourceControlActionRunning,
@@ -92,17 +83,7 @@ import {
   useVcsInitAction,
   useVcsPullAction,
 } from "../state/sourceControlActions";
-import { useQuietThreadProjection, useQuietThreadShell } from "~/state/entities";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useEnvironmentQuery } from "~/state/query";
-import { serverEnvironment } from "~/state/server";
-import { sourceControlEnvironment } from "~/state/sourceControl";
-import { threadEnvironment } from "~/state/threads";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { vcsActionManager, vcsEnvironment, vcsStatusRevalidation } from "~/state/vcs";
-import { randomUUID } from "~/lib/utils";
-import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
-import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
+import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
 import {
   THREAD_DETAILS_PANEL_CHEVRON_CLASS,
   THREAD_DETAILS_PANEL_ICON_CLASS,
@@ -110,10 +91,28 @@ import {
   THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
   THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
 } from "./chat/threadDetailsPanelStyles";
-import { getSourceControlPresentation, sourceControlIcon } from "~/sourceControlPresentation";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
-import { useOpenLink } from "~/browser/useOpenLink";
+import {
+  buildMenuItems,
+  type DefaultBranchConfirmableAction,
+  formatGitActionElapsed,
+  GIT_ACTION_SUCCESS_VISIBLE_MS,
+  type GitActionIconName,
+  type GitActionMenuItem,
+  type GitActionProgressPresentation,
+  type GitQuickAction,
+  requiresDefaultBranchConfirmation,
+  resolveChangesTotals,
+  resolveDefaultBranchActionDialogCopy,
+  resolveFeatureBranchUnavailableReason,
+  resolveGitActionProgressPresentation,
+  resolveGitActionResultToastTiming,
+  resolveLiveThreadBranchUpdate,
+  resolveQuickAction,
+  resolveThreadBranchMetadataPatch,
+  resolveThreadBranchUpdate,
+} from "./GitActionsControl.logic";
+import { StartTruncatedPath } from "./StartTruncatedPath";
+import { WizardFooter, WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "./ui/wizard";
 
 interface GitActionsControlProps {
   gitCwd: string | null;

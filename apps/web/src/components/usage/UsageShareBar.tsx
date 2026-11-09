@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { formatPercent } from "@t3tools/shared/usageFormat";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 

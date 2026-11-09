@@ -1,9 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import type { UsageProviderKind } from "@t3tools/contracts";
 import { useLayoutEffect, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 
-import type { DailyTotals, HourlyTotals } from "@t3tools/shared/usageMerge";
 import {
   formatDayShort,
   formatHourShort,
@@ -11,9 +10,10 @@ import {
   formatTokens,
   formatUsd,
 } from "@t3tools/shared/usageFormat";
+import type { DailyTotals, HourlyTotals } from "@t3tools/shared/usageMerge";
+import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { PROVIDER_ORDER, PROVIDER_PRESENTATION } from "./usageProviders";
-import { observeResize } from "~/lib/observeResize";
 
 const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 260;

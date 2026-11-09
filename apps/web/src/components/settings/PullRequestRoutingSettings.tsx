@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import {
   pullRequestRoutingConnectionKey,
   pullRequestRoutingPermissionFor,
   type PullRequestRoutingPermission,
 } from "@t3tools/client-runtime/connection";
+import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { environmentCatalog } from "~/connection/catalog";
 import type { EnvironmentPresentation } from "~/state/environments";

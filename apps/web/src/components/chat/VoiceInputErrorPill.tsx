@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { MICROPHONE_PERMISSION_ERROR } from "@t3tools/client-runtime/voice-input";
 import { useNavigate } from "@tanstack/react-router";
 import { RotateCcwIcon, SettingsIcon, XIcon } from "lucide-react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";

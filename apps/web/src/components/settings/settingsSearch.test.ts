@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from "vite-plus/test";
+import { UNKNOWN_SOURCE_CONTROL_CLIENT } from "@t3tools/client-runtime/source-control-clients";
 import {
   EnvironmentId,
   makeProviderSettingsSchema,
   SourceControlProviderKind,
 } from "@t3tools/contracts";
-import { UNKNOWN_SOURCE_CONTROL_CLIENT } from "@t3tools/client-runtime/source-control-clients";
 import * as Schema from "effect/Schema";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   filterAvailableSettingsSearchItems,
@@ -249,7 +249,7 @@ describe("settings search targets", () => {
     for (const scope of ["all", "environment", "project"] as const) {
       expect(isSettingsSearchScopeAvailable("project-defaults", scope)).toBe(true);
     }
-    for (const id of ["legacy-plan-mode", "legacy-context-window-indicator", "boring-sidebar"]) {
+    for (const id of ["tool-call-visibility", "boring-sidebar"]) {
       expect(getSettingsSearchTargetScope(id)!.scope).toBeNull();
     }
   });

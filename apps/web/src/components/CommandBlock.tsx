@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import { Check, Copy } from "lucide";
+import { useUiLanguage } from "../i18n";
 
 import { MorphIcon } from "~/components/MorphIcon";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";

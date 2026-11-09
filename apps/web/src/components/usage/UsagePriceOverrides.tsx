@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { AuthSettingsWriteScope, type EnvironmentId, sessionGrantsScope } from "@t3tools/contracts";
-import { ChevronDownIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
+import { AuthSettingsWriteScope, sessionGrantsScope, type EnvironmentId } from "@t3tools/contracts";
 import { AsyncResult, Atom } from "effect/reactivity";
+import { ChevronDownIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { environmentPresentations } from "../../state/presentation";
 import { serverEnvironment } from "../../state/server";
 import { environmentSession, readEnvironmentScope } from "../../state/session";
-import { useAtomCommand } from "../../state/use-atom-command";
 import type { EnvironmentUsageStatus } from "../../state/usage";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -25,7 +25,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { isUsagePriceEdit, USAGE_PRICE_FIELDS } from "./usagePriceForm";
 import {
   isEmptyUsagePriceDraft,

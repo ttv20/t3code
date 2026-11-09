@@ -1,6 +1,14 @@
-import { useUiLanguage } from "../../i18n";
-import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
-import { WorkLogDetails, WorkLogRow } from "./WorkLog";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
+import {
+  turnItemHasDetail,
+  turnItemNeedsDetailFetch,
+} from "@t3tools/client-runtime/work-log/item-detail";
+import {
+  resolveViewedImageAsset,
+  toolGroupAction,
+  workEntryViewedImagePath,
+} from "@t3tools/client-runtime/work-log/presentation";
 import {
   getQuestionAnswerPreview,
   getQuestionAnswerText,
@@ -9,34 +17,26 @@ import {
 } from "@t3tools/client-runtime/work-log/user-input";
 import {
   ORCHESTRATION_V2_WORKSPACE_PREPARATION_FAILURE_CODE,
-  type EnvironmentId,
   ThreadId,
+  type EnvironmentId,
 } from "@t3tools/contracts";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { Link } from "@tanstack/react-router";
-import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
-import {
-  resolveViewedImageAsset,
-  toolGroupAction,
-  workEntryViewedImagePath,
-} from "@t3tools/client-runtime/work-log/presentation";
-import {
-  turnItemHasDetail,
-  turnItemNeedsDetailFetch,
-} from "@t3tools/client-runtime/work-log/item-detail";
 import { claudeSkillInvocation } from "@t3tools/shared/toolActivity";
+import { Link } from "@tanstack/react-router";
+import { ChevronRightIcon, CircleAlertIcon, RotateCcwIcon, XIcon } from "lucide-react";
 import { memo, use, useState, type KeyboardEvent } from "react";
+import { cn } from "~/lib/utils";
+import { useAssetUrls } from "../../assets/assetUrls";
+import { useUiLanguage } from "../../i18n";
 import {
   workEntryDisplayIndicatesToolFailure,
   workEntrySignalsSevereFailure,
   workLogEntryIsToolLike,
 } from "../../session-logic";
-import ChatMarkdown from "../ChatMarkdown";
-import { ChatMarkdownAssetImage } from "./ChatMarkdownMedia";
-import { ChevronRightIcon, CircleAlertIcon, XIcon, RotateCcwIcon } from "lucide-react";
-import { Button, InlineButton } from "../ui/button";
-import { useAssetUrls } from "../../assets/assetUrls";
 import { useThreadShell } from "../../state/entities";
+import { formatUpcomingTimestamp } from "../../timestampFormat";
+import ChatMarkdown from "../ChatMarkdown";
+import { Button, InlineButton } from "../ui/button";
+import { ChatMarkdownAssetImage } from "./ChatMarkdownMedia";
 import {
   threadReadLabelPrefix,
   threadReadTargetId,
@@ -44,30 +44,30 @@ import {
   workEntryDisplayLabel,
   workEntryReadOutput,
 } from "./MessagesTimeline.logic";
-import { cn } from "~/lib/utils";
-import { formatUpcomingTimestamp } from "../../timestampFormat";
-import { FetchedToolOutput, V2ItemInspector } from "./V2ItemInspector";
-import { SubagentNotificationLink } from "./V2LifecycleRow";
+import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
 import {
-  TimelineRowCtx,
   TimelineRowActivityCtx,
+  TimelineRowCtx,
   WorkGroupViewCtx,
   type TimelineWorkEntry,
 } from "./timelineRowContext";
 import { MESSAGE_HEADING_LEVEL, TimelineRowTimestamp } from "./TimelineRowParts";
 import {
   failedToolIconClassName,
-  toolIconAcceptsTint,
   ToolActivityIconView,
+  toolIconAcceptsTint,
 } from "./TimelineToolActivityIcon";
 import {
-  workToneIcon,
-  workEntryRawCommand,
   buildToolCallExpandedBody,
-  workEntryIconName,
   THINKING_PREVIEW_PLUGINS,
   THOUGHT_PREVIEW_PLUGINS,
+  workEntryIconName,
+  workEntryRawCommand,
+  workToneIcon,
 } from "./TimelineWorkEntryRow.logic";
+import { FetchedToolOutput, V2ItemInspector } from "./V2ItemInspector";
+import { SubagentNotificationLink } from "./V2LifecycleRow";
+import { WorkLogDetails, WorkLogRow } from "./WorkLog";
 
 export function useThreadReadTarget(entry: TimelineWorkEntry, environmentId: EnvironmentId) {
   const rawThreadId = threadReadTargetId(entry);

@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { MICROPHONE_PERMISSION_ERROR } from "@t3tools/client-runtime/voice-input";
 import { CheckIcon, MicIcon, PauseIcon, PlayIcon, RotateCcwIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useStableCallback } from "~/hooks/useStableCallback";
 import workletUrl from "../../speech/pcmWorklet.ts?worker&url";

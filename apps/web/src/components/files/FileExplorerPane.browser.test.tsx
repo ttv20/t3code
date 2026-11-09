@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { UiLanguageContext } from "~/i18n";
+import "~/index.css";
 import { render } from "../../../test/render";
 import { FileExplorerPane } from "./FileExplorerPane";
-import { UiLanguageContext } from "~/i18n";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-import "~/index.css";
 
 const STORAGE_KEY = "test:file-explorer-default";
 

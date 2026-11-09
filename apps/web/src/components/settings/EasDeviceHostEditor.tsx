@@ -1,8 +1,4 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { useId, useRef, useState } from "react";
-import * as Cause from "effect/Cause";
-import * as Option from "effect/Option";
 import {
   isSecretReference,
   type DeviceEasAccount,
@@ -10,7 +6,11 @@ import {
   type EnvironmentId,
   type SettingsSecretValue,
 } from "@t3tools/contracts";
+import * as Cause from "effect/Cause";
+import * as Option from "effect/Option";
 import { XIcon } from "lucide-react";
+import { useId, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { deviceEasAccountCheck, deviceEnvironment } from "../../state/device";
 import { useAtomCommand } from "../../state/use-atom-command";

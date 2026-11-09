@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import DOMPurify from "dompurify";
 import type { DiagramType, MathResolver } from "pele/lazy";
 import { use, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { serializeCodeBlockToMarkdown } from "../../markdown-clipboard";
 import { Button } from "../ui/button";
@@ -259,7 +259,7 @@ export function MermaidDiagram({
   if (load.status === "failed") {
     return (
       <DiagramError
-        message="The diagram renderer failed to load."
+        message={uiT("The diagram renderer failed to load.")}
         source={source}
         onRetry={() => {
           if (core.status === "failed") coreLoad = null;

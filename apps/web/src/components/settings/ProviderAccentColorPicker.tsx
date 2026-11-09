@@ -1,13 +1,13 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useRef, useState, type PointerEvent } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { hexToHsv, hsvToHex, type HsvColor } from "../../lib/color";
+import { normalizeProviderAccentColor } from "../../providerInstances";
+import { Button } from "../ui/button";
 import { ColorHueSlider, ColorSaturationValuePlane } from "../ui/color-picker";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 import { Popover, PopoverClose, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { normalizeProviderAccentColor } from "../../providerInstances";
 
 const FALLBACK_ACCENT_COLOR = "#2563eb";
 

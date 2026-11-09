@@ -183,7 +183,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               {!allowed ? (
                 <Text className="text-xs text-foreground-muted">
                   <UiText
-                    message={"Requesting reviews requires write access and an open {0}."}
+                    message={uiT("Requesting reviews requires write access and an open {0}.")}
                     values={{ "0": <UiText message={singular} /> }}
                   />
                 </Text>

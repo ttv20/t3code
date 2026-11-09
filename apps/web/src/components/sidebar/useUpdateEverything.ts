@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
 import { APP_VERSION } from "~/branding";
 import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
 import { isElectron } from "~/env";
+import { environmentIdsKey } from "~/state/environmentAtomList";
 import { useEnvironments } from "~/state/environments";
 import { useForkReleasePublished } from "~/state/forkRelease";
-import { environmentIdsKey } from "~/state/environmentAtomList";
 import { environmentUpdateStatesAtom } from "~/state/server";
 import { environmentSessionStatesAtom } from "~/state/session";
 import { getProviderUpdateRunOutcome } from "../ProviderUpdateLaunchNotification.logic";
@@ -27,8 +27,8 @@ import {
 import {
   clearSavedUpdateEverythingResult,
   saveUpdateEverythingResult,
-  setUpdateEverythingRun,
   settleUpdateRunMachine,
+  setUpdateEverythingRun,
   showUpdateEverythingResult,
   waitForServerUpdateHandoff,
   waitForUpdateRestart,

@@ -14,10 +14,12 @@ import {
   type ComposerDocumentAttachment,
 } from "../lib/composerContext";
 import { importComposerContextClipboard } from "../lib/composerContextClipboard";
+import { enrichedModelDetails, enrichedModelReference } from "../lib/enrichedLinkPresentation";
 import type { ComposerEditorProps as NativeComposerEditorProps } from "../native/T3ComposerEditor";
 import { ComposerEditor as NativeComposerEditor } from "../native/T3ComposerEditor";
 import { appAtomRegistry } from "../state/atom-registry";
 import { startComposerDraftOperation } from "../state/composerDraftOperations";
+import { useModelMentions } from "../state/model-mentions";
 import { useLinkedEnvironments } from "../state/peerLinks";
 import { mobilePreferencesAtom } from "../state/preferences";
 import {
@@ -83,6 +85,7 @@ export function ComposerEditor({
     null,
   );
   const linkedEnvironments = useLinkedEnvironments(environmentId ?? null);
+  const models = useModelMentions(environmentId ?? draft.project?.environmentId, props.value);
   const contextImports = useAtomValue(composerContextImportsAtom);
   const importing = draftKey ? contextImports[draftKey] === true : false;
   const pasteContext = async (
@@ -181,6 +184,7 @@ export function ComposerEditor({
       <NativeComposerEditor
         key={hidden ? "hidden" : "visible"}
         {...props}
+        models={models}
         enterBehavior={props.enterBehavior ?? preferredEnterBehavior}
         onChangeText={changeText}
         readResetGeneration={readResetGeneration}
@@ -197,6 +201,11 @@ export function ComposerEditor({
           const path = composerMentionPath(selection.source, draft.context);
           if (path && onOpenMention) {
             onOpenMention(path);
+            return;
+          }
+          const model = enrichedModelReference(selection.source, models);
+          if (model) {
+            Dialog.alert(model.label, enrichedModelDetails(model));
             return;
           }
           const document = composerDocumentAttachment(selection.source, draft.context);

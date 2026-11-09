@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import type { SourceControlProviderKind } from "@t3tools/contracts";
 import { ExternalLinkIcon, TriangleAlertIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
 

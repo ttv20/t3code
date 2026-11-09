@@ -1,5 +1,5 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import { useRef } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { APP_VERSION } from "../../branding";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";

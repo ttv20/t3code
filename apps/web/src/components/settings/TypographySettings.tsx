@@ -1,6 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import type { ReactNode } from "react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   DEFAULT_UNIFIED_SETTINGS,
   MAX_CODE_FONT_SIZE,
@@ -13,10 +10,8 @@ import {
   MIN_TERMINAL_FONT_SIZE,
 } from "@t3tools/contracts/settings";
 import * as Schema from "effect/Schema";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
-import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
-import { isMacPlatform } from "../../lib/utils";
-import { Input } from "../ui/input";
+import type { ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   DEFAULT_CODE_FONT_STACK,
   DEFAULT_SANS_FONT_STACK,
@@ -27,11 +22,15 @@ import {
   resolveTerminalFontSizePreference,
   TYPOGRAPHY_ADVANCED_STORAGE_KEY,
 } from "../../appearanceFonts";
-import { AdvancedSettings } from "./AdvancedSettings";
-import { CodeFontPreview, PromptFontPreview, TerminalFontPreview } from "./SettingsFontPreviews";
-import { discoverInstalledFonts, FontFamilyPicker, useFontEnumeration } from "./FontFamilyPicker";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
+import { useUiLanguage } from "../../i18n";
+import { isMacPlatform } from "../../lib/utils";
+import { Input } from "../ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
+import { AdvancedSettings } from "./AdvancedSettings";
+import { discoverInstalledFonts, FontFamilyPicker, useFontEnumeration } from "./FontFamilyPicker";
+import { CodeFontPreview, PromptFontPreview, TerminalFontPreview } from "./SettingsFontPreviews";
 import {
   SettingResetButton,
   SettingsRow,
@@ -43,6 +42,7 @@ import {
   revealSettingsSearchTarget,
   searchableSetting,
 } from "./settingsSearch";
+import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
 
 function useFontDefaultFamilies() {
   const settings = useScopedSettings();

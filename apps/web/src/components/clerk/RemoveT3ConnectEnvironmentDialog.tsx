@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { Discovery } from "@t3tools/client-runtime/relay";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useRelayEnvironmentDiscovery } from "../../state/environments";
 import {

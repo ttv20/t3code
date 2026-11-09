@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   type LinkedPrompt,
   parseNewThreadLink,
@@ -9,6 +8,7 @@ import {
 import { useLocation } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { DESKTOP_DOWNLOAD_URL } from "~/branding";
 import { useLocalStorage } from "~/hooks/useLocalStorage";

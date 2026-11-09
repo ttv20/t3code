@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { T3CHAT_PLAN_TUNNEL_LIMITS, type RelayT3ChatLink } from "@t3tools/contracts/relay";
 import { MessageSquareIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useManagedTunnelUsage } from "../../cloud/managedRelayState";
 import { T3CHAT_SUBSCRIPTION_URL, TunnelUsageMeter } from "../cloud/TunnelUsage";
@@ -82,7 +82,7 @@ export function T3ChatUserProfilePage() {
             <div className="flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm leading-4.5 font-medium text-foreground">
-                  {link ? link.email : "Not linked"}
+                  {link ? link.email : uiT("Not linked")}
                 </h3>
                 <p className="mt-1 text-xs leading-4.5 text-muted-foreground">
                   {link ? (
@@ -101,7 +101,7 @@ export function T3ChatUserProfilePage() {
                       {uiT(", then select Refresh.")}
                     </>
                   ) : (
-                    "You confirm the link on t3.chat."
+                    uiT("You confirm the link on t3.chat.")
                   )}
                 </p>
               </div>
@@ -112,11 +112,11 @@ export function T3ChatUserProfilePage() {
                   disabled={pending !== null}
                   onClick={() => void handleUnlink()}
                 >
-                  {pending === "unlink" ? "Unlinking…" : "Unlink"}
+                  {pending === "unlink" ? uiT("Unlinking…") : uiT("Unlink")}
                 </Button>
               ) : (
                 <Button size="sm" disabled={pending !== null} onClick={() => void handleLink()}>
-                  {pending === "link" ? "Opening…" : "Link T3 Chat"}
+                  {pending === "link" ? uiT("Opening…") : uiT("Link T3 Chat")}
                 </Button>
               )}
             </div>

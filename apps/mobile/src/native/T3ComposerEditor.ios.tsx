@@ -15,6 +15,8 @@ import type { NativeSyntheticEvent, StyleProp, ViewProps, ViewStyle } from "reac
 import { StyleSheet } from "react-native";
 import { useUiLanguage } from "../i18n";
 import { composerContextEditorTokens, composerSkillLabels } from "../lib/composerContext";
+import { DEFAULT_COMPOSER_ENTER_BEHAVIOR } from "../lib/composerEnterBehavior";
+import { useComposerModelTokens } from "./useComposerModelTokens";
 
 import { useScaledTextRole } from "../features/settings/appearance/useScaledTextRole";
 import {
@@ -24,8 +26,7 @@ import {
   contextChipPresentation,
   contextRecordFileName,
 } from "../lib/composerChipPresentation";
-import { DEFAULT_COMPOSER_ENTER_BEHAVIOR } from "../lib/composerEnterBehavior";
-import { contextChipIconUri } from "../lib/contextChipIconSource";
+import { contextChipIconUri, modelChipIcon, modelChipIconUri } from "../lib/contextChipIconSource";
 import { FONT_FAMILIES } from "../lib/fontFamilies";
 import { createNativeComposerTheme } from "../lib/nativeComposerTheme";
 import { useUniwindTheme } from "../lib/useUniwindTheme";
@@ -41,6 +42,7 @@ import type { ComposerEditorProps, ComposerEditorSelection } from "./T3ComposerE
 
 const NATIVE_MODULE_NAME = "T3ComposerEditor";
 const EMPTY_SKILLS: NonNullable<ComposerEditorProps["skills"]> = [];
+const EMPTY_MODELS: NonNullable<ComposerEditorProps["models"]> = [];
 const NO_RESET = () => 0;
 
 type NativeEditorEvent = NativeSyntheticEvent<{
@@ -138,6 +140,7 @@ function basename(path: string): string {
 export function ComposerEditor({
   ref,
   skills = EMPTY_SKILLS,
+  models = EMPTY_MODELS,
   selection,
   style,
   textStyle,
@@ -181,10 +184,12 @@ export function ComposerEditor({
   const fontFamily = FONT_FAMILIES.regular;
 
   const skillLabels = useMemo(() => composerSkillLabels(skills), [skills]);
+  const { modelsBySource, modelTokens } = useComposerModelTokens(props.value, models);
   const chipTextColor = createNativeComposerTheme(theme).text;
   const tokensJson = useMemo(() => {
     return JSON.stringify(
-      composerContextEditorTokens(props.value, tokens, skillLabels).map((token) => {
+      composerContextEditorTokens(props.value, tokens, skillLabels, modelTokens).map((token) => {
+        const model = token.type === "model" ? modelsBySource.get(token.source) : undefined;
         const record =
           token.type === "context"
             ? props.context?.records.find((record) => record.contextId === token.contextId)
@@ -202,20 +207,36 @@ export function ComposerEditor({
           source: token.source,
           start: token.start,
           end: token.end,
-          accent: contextChipAccent(presentation.accent, theme, chipTextColor),
+          accent: contextChipAccent(
+            model ? modelChipIcon(model).accent : presentation.accent,
+            theme,
+            chipTextColor,
+          ),
           label:
             token.type === "skill"
               ? (skillLabels.get(token.value) ?? token.value)
-              : token.type === "context"
-                ? `${token.label}${props.context?.records.some((record) => record.contextId === token.contextId) ? "" : uiT(" · unavailable")}`
-                : basename(token.value),
+              : model
+                ? model.label
+                : token.type === "context"
+                  ? `${token.label}${props.context?.records.some((record) => record.contextId === token.contextId) ? "" : uiT(" · unavailable")}`
+                  : basename(token.value),
           detail: token.type === "context" ? composerChipSizeSuffix(record) : "",
-          iconUri: contextChipIconUri(icon),
-          tintsIcon: icon.kind === "chip",
+          iconUri: model ? modelChipIconUri(model) : contextChipIconUri(icon),
+          tintsIcon: model ? modelChipIcon(model).tintsIcon : icon.kind === "chip",
         };
       }),
     );
-  }, [props.value, tokens, props.context, skillLabels, theme, chipTextColor, uiT]);
+  }, [
+    props.value,
+    tokens,
+    props.context,
+    skillLabels,
+    modelsBySource,
+    modelTokens,
+    theme,
+    chipTextColor,
+    uiT,
+  ]);
   // Every render resolves against the snapshot history, so a render whose
   // (value, selection) lags the acknowledged native state is stamped behind
   // the native revision and rejected by the editor instead of re-applying a

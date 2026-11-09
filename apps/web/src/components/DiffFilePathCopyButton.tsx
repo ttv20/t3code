@@ -1,7 +1,8 @@
-import { useUiLanguage } from "../i18n";
 import { Check, Copy } from "lucide";
 import { useRef } from "react";
+import { MorphIcon } from "~/components/MorphIcon";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
+import { useUiLanguage } from "../i18n";
 import { cn } from "../lib/utils";
 import {
   ANCHORED_COPY_TOAST_TIMEOUT_MS,
@@ -9,7 +10,6 @@ import {
   showAnchoredCopySuccessToast,
 } from "./ui/anchoredCopyToast";
 import { Button } from "./ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
 export function DiffFilePathCopyButton({ filePath }: { filePath: string }) {

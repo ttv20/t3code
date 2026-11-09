@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { resolveEnvironmentMachineKind, type EnvironmentId } from "@t3tools/contracts";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { ChevronRightIcon, LayersIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
@@ -13,13 +13,13 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ITEM_ROW_CLASSNAME } from "./itemRows";
 import { SettingsGroup } from "./SettingsGroup";
 import { SettingsPageContainer, SettingsSection } from "./settingsLayout";
-import { useSettingsScope } from "./SettingsScopeContext";
 import type { SettingsScopeSearch } from "./settingsScope";
 import {
   settingsScopeEnvironmentAddress,
   settingsScopeEnvironmentLabels,
   settingsScopeProjectMachines,
 } from "./settingsScopeAxis";
+import { useSettingsScope } from "./SettingsScopeContext";
 
 interface ScopeChoice {
   label: string;

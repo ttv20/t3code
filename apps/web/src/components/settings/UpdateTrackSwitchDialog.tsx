@@ -1,11 +1,11 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { DesktopUpdateChannel } from "@t3tools/contracts";
 import { acceptsTrackSwitchRelease, desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
 import { isMacPlatform } from "@t3tools/shared/keybindings";
-import { useState } from "react";
 import { AsyncResult } from "effect/reactivity";
+import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { APP_VERSION } from "~/branding";
 import { useDesktopUpdateState } from "~/state/desktopUpdate";
@@ -19,7 +19,6 @@ import {
   type ChannelSwitchRelease,
 } from "../sidebar/updateEverything.logic";
 import { isHostedByThisApp, useUpdateEverything } from "../sidebar/useUpdateEverything";
-import { localUpdaterStaysPut, prepareLocalTrackSwitch } from "./updateTrackSwitch.logic";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -31,6 +30,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+import { localUpdaterStaysPut, prepareLocalTrackSwitch } from "./updateTrackSwitch.logic";
 
 /** Moves this app and every connected machine to `channel`. */
 export function UpdateTrackSwitchDialog({

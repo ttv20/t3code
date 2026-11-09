@@ -1,27 +1,30 @@
-import { useUiLanguage } from "../../i18n";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo } from "react";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useUiLanguage } from "../../i18n";
 
 import { useAtomValue } from "@effect/atom-react";
+import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { observeResize } from "~/lib/observeResize";
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { shortcutLabelForCommand } from "../../keybindings";
+import { cn } from "../../lib/utils";
 import {
   navigateHistory,
   useCanNavigateHistory,
   type HistoryDirection,
 } from "../../navigationHistory";
-import { primaryServerKeybindingsAtom } from "../../state/server";
-import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
-import { T3Wordmark } from "../T3Wordmark";
+import { primaryServerKeybindingsAtom } from "../../state/server";
+import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
   SidebarStageBackdrop,
   useEnvironmentStageLabel,
 } from "../SidebarStageBackdrop";
+import { T3Wordmark } from "../T3Wordmark";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
@@ -33,13 +36,10 @@ import {
   useSidebar,
 } from "../ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
-import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
+import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
-import { observeResize } from "~/lib/observeResize";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
   isElectron,

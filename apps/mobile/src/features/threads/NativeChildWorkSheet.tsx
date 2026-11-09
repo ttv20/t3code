@@ -46,7 +46,7 @@ export function NativeChildWorkSheet(props: {
         }}
       >
         <Text className="font-sans text-xs text-foreground-secondary">
-          <UiText message={"Read only. These subagents cannot take messages."} />
+          <UiText message={uiT("Read only. These subagents cannot take messages.")} />
         </Text>
         {query.error !== null ? (
           <Text selectable className="font-sans text-sm text-danger-foreground">
@@ -54,11 +54,13 @@ export function NativeChildWorkSheet(props: {
           </Text>
         ) : children === undefined ? (
           <Text className="font-sans text-sm text-foreground-secondary">
-            <UiText message={"Loading…"} />
+            <UiText message={uiT("Loading…")} />
           </Text>
         ) : children.length === 0 ? (
           <Text className="font-sans text-sm text-foreground-secondary">
-            <UiText message={"The provider has no record of which subagents this call started."} />
+            <UiText
+              message={uiT("The provider has no record of which subagents this call started.")}
+            />
           </Text>
         ) : (
           children.map((child) => <NativeChild key={child.conversationId} child={child} />)
@@ -77,6 +79,8 @@ export function NativeChildWorkSheet(props: {
 }
 
 function NativeChild(props: { readonly child: OrchestrationV2NativeChildWork }) {
+  const { t: uiT } = useUiLanguage();
+
   const { child } = props;
   return (
     <View className="gap-2">
@@ -86,12 +90,12 @@ function NativeChild(props: { readonly child: OrchestrationV2NativeChildWork }) 
       </Text>
       {child.truncated ? (
         <Text className="font-sans text-xs text-foreground-secondary">
-          <UiText message={"Earlier steps are not shown."} />
+          <UiText message={uiT("Earlier steps are not shown.")} />
         </Text>
       ) : null}
       {child.steps === null ? (
         <Text className="font-sans text-xs text-foreground-secondary">
-          <UiText message={"No transcript yet."} />
+          <UiText message={uiT("No transcript yet.")} />
         </Text>
       ) : (
         <View className="gap-2 border-l border-border ps-3">

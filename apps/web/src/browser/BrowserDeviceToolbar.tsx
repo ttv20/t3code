@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import {
   PREVIEW_VIEWPORT_MAX_AREA,
   PREVIEW_VIEWPORT_MAX_DIMENSION,
@@ -8,10 +7,10 @@ import {
 import { PREVIEW_VIEWPORT_PRESETS, resolvePreviewViewport } from "@t3tools/shared/previewViewport";
 import { Link2, Unlink2, X } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import {
   Select,
   SelectGroup,
@@ -21,10 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
 
-import { BROWSER_DEVICE_TOOLBAR_HEIGHT, resizeFreeformViewport } from "./browserViewportLayout";
 import { commitViewportAndAspectRatio } from "./browserDeviceToolbarState";
+import { BROWSER_DEVICE_TOOLBAR_HEIGHT, resizeFreeformViewport } from "./browserViewportLayout";
 import { ScreenRotationIcon } from "./ScreenRotationIcon";
 
 const RESPONSIVE_VALUE = "responsive";

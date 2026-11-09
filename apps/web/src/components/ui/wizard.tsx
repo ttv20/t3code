@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { CheckIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { AnimatedHeight } from "../AnimatedHeight";
-import { DialogPopup, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog";
+import { DialogDescription, DialogFooter, DialogHeader, DialogPopup, DialogTitle } from "./dialog";
 import { ScrollArea } from "./scroll-area";
 
 export function WizardPopup({

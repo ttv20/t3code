@@ -1,19 +1,16 @@
-import { useUiLanguage } from "../../i18n";
-import { AuthSettingsWriteScope } from "@t3tools/contracts";
-import { useEnvironmentsWithScope } from "../../state/session";
 import {
-  requiredScopesForServerSettingsPatch,
-  EnvironmentAuthorizationError,
-} from "@t3tools/contracts";
-import { readEnvironmentScope } from "../../state/session";
-import * as Cause from "effect/Cause";
-import { AsyncResult } from "effect/reactivity";
-import {
+  AuthSettingsWriteScope,
   DEFAULT_SERVER_SETTINGS,
+  EnvironmentAuthorizationError,
+  requiredScopesForServerSettingsPatch,
   type ProjectScopedServerSettingKey,
   type ServerSettings,
   type UnifiedSettings,
 } from "@t3tools/contracts";
+import * as Cause from "effect/Cause";
+import { AsyncResult } from "effect/reactivity";
+import { useUiLanguage } from "../../i18n";
+import { readEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
 
 import { persistClientSettingsPatch, useMergedSettings } from "../../hooks/useSettings";
 import { serverEnvironment } from "../../state/server";
@@ -73,7 +70,7 @@ function useRunScopedPlan() {
             Cause.fail(
               new EnvironmentAuthorizationError({
                 requiredScope: missing,
-                message: "This connection lacks permission to change these settings.",
+                message: uiT("This connection lacks permission to change these settings."),
               }),
             ),
           );
@@ -86,7 +83,9 @@ function useRunScopedPlan() {
       toastManager.add({
         type: "error",
         title:
-          savedEnvironmentCount > 0 ? "Setting saved on some environments" : "Setting not saved",
+          savedEnvironmentCount > 0
+            ? uiT("Setting saved on some environments")
+            : uiT("Setting not saved"),
         description: [
           ...failedEnvironments.map(
             ({ label, message }) => `Could not save on ${label}: ${message}`,

@@ -1,13 +1,19 @@
-import { useUiLanguage } from "../i18n";
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import { visibleThreadPullRequests } from "@t3tools/shared/threadPullRequests";
+import { useUiLanguage } from "../i18n";
 
+import { useAtomValue } from "@effect/atom-react";
+import type { LegendListRef } from "@legendapp/list/react";
+import { connectionStatusText } from "@t3tools/client-runtime/connection";
 import {
   scopedThreadKey,
   scopeProjectRef,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
 import {
+  addProjectRemoteSourceLabel,
+  addProjectRemoteSourcePathHint,
+  addProjectRemoteSourceProvider,
   canCreateProjectInEnvironment,
   getCloneDestinationBrowsePath,
   getCloneDestinationPath,
@@ -20,16 +26,11 @@ import {
   getNewProjectRepository,
   githubIncompleteOwnerRepositoryMessage,
   normalizePastedCloneUrl,
-  addProjectRemoteSourceLabel,
-  addProjectRemoteSourcePathHint,
-  addProjectRemoteSourceProvider,
   sortAddProjectProviderSources,
   type AddProjectRemoteSource,
   type AddProjectRemoteSourceReadiness,
 } from "@t3tools/client-runtime/operations/projects";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { connectionStatusText } from "@t3tools/client-runtime/connection";
-import { resolveThreadReferenceCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import {
   canPreloadBrowsePath,
   createBrowseNavigationCoordinator,
@@ -42,16 +43,17 @@ import {
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import { resolveThreadReferenceCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import {
+  AuthFilesystemReadScope,
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
-  AuthFilesystemReadScope,
+  PRIMARY_LOCAL_ENVIRONMENT_ID,
+  resolveEnvironmentMachineKind,
+  SourceControlProviderKind,
   type DesktopWslState,
   type EnvironmentId,
   type FilesystemBrowseResult,
-  SourceControlProviderKind,
-  PRIMARY_LOCAL_ENVIRONMENT_ID,
-  resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
@@ -65,20 +67,19 @@ import {
   FolderGit2Icon,
   FolderIcon,
   FolderPlusIcon,
-  MessageSquareDashedIcon,
   LinkIcon,
+  MessageSquareDashedIcon,
   MessageSquareIcon,
-  PaletteIcon,
-  RotateCcwIcon,
-  SettingsIcon,
   MonitorIcon,
+  PaletteIcon,
   PinIcon,
   PinOffIcon,
+  RotateCcwIcon,
+  SettingsIcon,
   SquarePenIcon,
   TextSearchIcon,
   UserPlusIcon,
 } from "lucide-react";
-import { openThreadFind } from "./chat/threadFindStore";
 import {
   useDeferredValue,
   useEffect,
@@ -88,60 +89,9 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import type { LegendListRef } from "@legendapp/list/react";
-import { useAtomValue } from "@effect/atom-react";
+import { openThreadFind } from "./chat/threadFindStore";
 
-import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
-import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
-import { useHandleNewThread } from "../hooks/useHandleNewThread";
-import { useOpenPanelPullRequestUrl } from "../hooks/useOpenPanelPullRequestUrl";
-import { copyThreadReference } from "../lib/copyThreadReference";
-import {
-  queueWorkspaceFocusFromPalette,
-  restoreWorkspaceFocusFromPalette,
-} from "../lib/workspaceFocus";
-import {
-  composerPromptLink,
-  copyPromptLink,
-  promptLinkRepositoryOf,
-} from "./promptLinks/copyPromptLink";
-import { useClientSettings } from "../hooks/useSettings";
-import { useStableCallback } from "../hooks/useStableCallback";
-import { readLocalApi } from "../localApi";
-import { configuredHostedAppUrl } from "../hostedPairing";
-import { desktopLocalBackendId } from "../connection/desktopLocal";
-import { filesystemEnvironment, useFilesystemReadAccess } from "../state/filesystem";
-import { projectEnvironment } from "../state/projects";
-import { useEnvironmentQuery } from "../state/query";
-import { serverEnvironment } from "../state/server";
-import { threadEnvironment } from "../state/threads";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { sourceControlEnvironment } from "../state/sourceControl";
-import { useAtomCommand } from "../state/use-atom-command";
-import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { useScratchProject } from "../hooks/useScratchProject";
-import { useStartTriage } from "../hooks/useStartTriage";
-import { pickTriageEnvironment } from "../lib/triageTarget";
-import { useNewProject } from "../hooks/useNewProject";
-import { useOrderWhileOpen } from "../hooks/useOrderWhileOpen";
-import { reportProjectFailure, useProjectPin } from "../hooks/useProjectGroupUpdate";
-import {
-  useEnvironmentProviders,
-  useEnvironments,
-  usePrimaryEnvironmentId,
-} from "../state/environments";
-import {
-  useAnyEnvironmentHiding,
-  useHiddenThreadKeys,
-  useEnvironmentThreadRefs,
-  useProjects,
-  useServerConfigs,
-  useVisibleThreadShells,
-  waitForProject,
-} from "../state/entities";
-import { visibleLinkedThreads } from "@t3tools/client-runtime/state/threads";
-import { resolveThreadActionProjectRef, startNewThreadFromContext } from "../lib/chatThreadActions";
+import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
 import {
   appendBrowsePathSegment,
   ensureBrowseDirectoryPath,
@@ -155,15 +105,37 @@ import {
   isUnsupportedWindowsProjectPath,
   resolveProjectPathForDispatch,
 } from "@t3tools/client-runtime/state/projects";
+import { getLatestThreadForProject, sortThreads } from "@t3tools/client-runtime/state/thread-sort";
+import { visibleLinkedThreads } from "@t3tools/client-runtime/state/threads";
+import { threadRecentUse } from "@t3tools/shared/paletteSearch";
 import { resolvePastedPath } from "@t3tools/shared/path";
+import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { readPullRequestListPreferences } from "~/components/pullRequest/pullRequestListPreferences";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import {
   dispatchCommandPalette,
   getCommandPaletteReturnFocus,
   useCommandPaletteMount,
   useCommandPaletteStore,
 } from "../commandPaletteStore";
-import { PULL_REQUESTS_PANEL_REF, useRightPanelStore } from "../rightPanelStore";
-import { getLatestThreadForProject, sortThreads } from "@t3tools/client-runtime/state/thread-sort";
+import { ComposerHandleContext, useComposerHandleContext } from "../composerHandleContext";
+import { desktopLocalBackendId, isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
+import { useDesktopLocalBootstraps } from "../connection/useDesktopLocalBootstraps";
+import { useHandleNewThread } from "../hooks/useHandleNewThread";
+import { useNewProject } from "../hooks/useNewProject";
+import { useOpenPanelPullRequestUrl } from "../hooks/useOpenPanelPullRequestUrl";
+import { useOrderWhileOpen } from "../hooks/useOrderWhileOpen";
+import { reportProjectFailure, useProjectPin } from "../hooks/useProjectGroupUpdate";
+import { useScratchProject } from "../hooks/useScratchProject";
+import { useClientSettings } from "../hooks/useSettings";
+import { useStableCallback } from "../hooks/useStableCallback";
+import { useStartTriage } from "../hooks/useStartTriage";
+import { useThreadRouteTarget } from "../hooks/useThreadRouteTarget";
+import { configuredHostedAppUrl } from "../hostedPairing";
+import { resolveShortcutCommand, threadJumpIndexFromCommand } from "../keybindings";
+import { resolveThreadActionProjectRef, startNewThreadFromContext } from "../lib/chatThreadActions";
+import { copyThreadReference } from "../lib/copyThreadReference";
+import { pickTriageEnvironment } from "../lib/triageTarget";
 import {
   cn,
   getLocalFileManagerName,
@@ -171,52 +143,91 @@ import {
   isWindowsPlatform,
   newProjectId,
 } from "../lib/utils";
+import {
+  queueWorkspaceFocusFromPalette,
+  restoreWorkspaceFocusFromPalette,
+} from "../lib/workspaceFocus";
+import { readLocalApi } from "../localApi";
+import { PULL_REQUESTS_PANEL_REF, useRightPanelStore } from "../rightPanelStore";
+import { buildSidebarProjectPickerEntries } from "../sidebarProjectGrouping";
+import {
+  useAnyEnvironmentHiding,
+  useEnvironmentThreadRefs,
+  useHiddenThreadKeys,
+  useProjects,
+  useServerConfigs,
+  useVisibleThreadShells,
+  waitForProject,
+} from "../state/entities";
+import {
+  useEnvironmentProviders,
+  useEnvironments,
+  usePrimaryEnvironmentId,
+} from "../state/environments";
+import { filesystemEnvironment, useFilesystemReadAccess } from "../state/filesystem";
+import { projectEnvironment } from "../state/projects";
+import { useEnvironmentQuery } from "../state/query";
+import { primaryServerKeybindingsAtom, serverEnvironment } from "../state/server";
+import { sourceControlEnvironment } from "../state/sourceControl";
+import { threadEnvironment } from "../state/threads";
+import { useAtomCommand } from "../state/use-atom-command";
+import { useAtomQueryRunner } from "../state/use-atom-query-runner";
+import { useOrchestrationCommand } from "../state/use-orchestration-command";
 import { buildThreadRouteParams } from "../threadRoutes";
-import { useAvailableSettingsSearchItems } from "./settings/useAvailableSettingsSearchItems";
 import {
   applyWslEnvironmentConfiguration,
   parseWslUncPath,
   resolveProjectPickerTarget,
   resolveWslProjectSelection,
 } from "../wslPaths";
+import { resolveEnvironmentOptionLabel } from "./BranchToolbar.logic";
+import type { ChatComposerHandle } from "./chat/ChatComposer";
+import { canShareWithGuestAtom } from "./chat/guestShareAvailability";
+import { openGuestShareDialog } from "./chat/guestShareDialogState";
 import {
-  resolveCommandPaletteProject,
   ADDON_ICON_CLASS,
   browseInputEndPaddingClass,
   buildBrowseGroups,
-  buildRootGroups,
-  buildLinkedThreadActionItems,
   buildCommandPaletteRows,
+  buildLinkedThreadActionItems,
+  buildNestedSearchItems,
+  buildPaletteRemoteSourceReadiness,
+  buildRootGroups,
+  createCommandPaletteSearchState,
   enumerateCommandPaletteItems,
-  newThreadNoProjectIndex,
+  errorMessage,
+  filterCommandPaletteGroups,
+  filterPinnedBrowseEntries,
   findHighlightedCommandPaletteItem,
+  getCommandPaletteInputPlaceholder,
+  getCommandPaletteMode,
+  getEnvironmentBrowsePlatform,
+  ITEM_ICON_CLASS,
+  newThreadNoProjectIndex,
+  RECENT_THREAD_LIMIT,
+  reduceCommandPaletteSearchState,
+  remoteProjectInputPlaceholder,
+  resolveAddProjectEntry,
+  resolveCommandPaletteProject,
+  type AddProjectCloneFlow,
+  type AddProjectEnvironmentOption,
   type CommandPaletteActionItem,
+  type CommandPaletteGroup,
   type CommandPaletteOpenIntent,
   type CommandPaletteProject,
   type CommandPaletteReturnContext,
   type CommandPaletteSubmenuItem,
   type CommandPaletteView,
-  filterCommandPaletteGroups,
-  buildNestedSearchItems,
-  filterPinnedBrowseEntries,
-  getCommandPaletteInputPlaceholder,
-  getCommandPaletteMode,
-  ITEM_ICON_CLASS,
-  RECENT_THREAD_LIMIT,
-  createCommandPaletteSearchState,
-  type CommandPaletteGroup,
-  resolveAddProjectEntry,
-  type AddProjectCloneFlow,
-  type AddProjectEnvironmentOption,
-  buildPaletteRemoteSourceReadiness,
-  errorMessage,
-  getEnvironmentBrowsePlatform,
-  remoteProjectInputPlaceholder,
-  reduceCommandPaletteSearchState,
   type SearchOverlayMode,
 } from "./CommandPalette.logic";
-import { resolveEnvironmentOptionLabel } from "./BranchToolbar.logic";
-import { isSidebarHiddenThread } from "./Sidebar.logic";
+import {
+  CommandPaletteSubmitButton,
+  NewProjectPublishHostPicker,
+  NewProjectSummary,
+  remoteProjectSourceIcon,
+  RemoteRepositorySummary,
+  sourceControlHostIcon,
+} from "./CommandPaletteAddProject";
 import { CommandPaletteContent, type PendingInputSelection } from "./CommandPaletteContent";
 import {
   selectCommandPaletteClientSettings,
@@ -229,46 +240,33 @@ import {
   buildProjectSearchItems,
 } from "./CommandPaletteProjectItems";
 import {
-  CommandPaletteSubmitButton,
-  NewProjectPublishHostPicker,
-  NewProjectSummary,
-  RemoteRepositorySummary,
-  remoteProjectSourceIcon,
-  sourceControlHostIcon,
-} from "./CommandPaletteAddProject";
-import { useCommandPaletteThreadItems } from "./CommandPaletteThreadItems";
-import { useCommandPaletteThemeItems } from "./CommandPaletteThemeItems";
-import {
   CommandPaletteVirtualizedResults,
   scrollCommandPaletteRowIntoView,
 } from "./CommandPaletteResults";
+import { useCommandPaletteThemeItems } from "./CommandPaletteThemeItems";
+import { useCommandPaletteThreadItems } from "./CommandPaletteThreadItems";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { Checkbox } from "./ui/checkbox";
 import { ProjectFilePicker } from "./files/ProjectFilePicker";
+import {
+  composerPromptLink,
+  copyPromptLink,
+  promptLinkRepositoryOf,
+} from "./promptLinks/copyPromptLink";
 import { openLinkPullRequestDialog } from "./pullRequest/LinkPullRequestDialog";
-import { canShareWithGuestAtom } from "./chat/guestShareAvailability";
-import { openGuestShareDialog } from "./chat/guestShareDialogState";
 import { ProjectContentSearchDialog } from "./search/ProjectContentSearchDialog";
 import {
+  SETTINGS_SECTION_LABELS,
   settingsForThisPlatform,
   settingsSearchTerms,
-  SETTINGS_SECTION_LABELS,
 } from "./settings/settingsSearch";
-import { primaryServerKeybindingsAtom } from "../state/server";
-import { resolveShortcutCommand, threadJumpIndexFromCommand } from "../keybindings";
-import { CommandDialog, CommandDialogPopup, CommandFooterAction } from "./ui/command";
-import { Button } from "./ui/button";
-import { stackedThreadToast, toastManager } from "./ui/toast";
+import { useAvailableSettingsSearchItems } from "./settings/useAvailableSettingsSearchItems";
+import { isSidebarHiddenThread } from "./Sidebar.logic";
 import { suggestAppAccessForRemote } from "./sourceControlAppAccessToast";
+import { Button } from "./ui/button";
+import { Checkbox } from "./ui/checkbox";
+import { CommandDialog, CommandDialogPopup, CommandFooterAction } from "./ui/command";
+import { stackedThreadToast, toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { ComposerHandleContext, useComposerHandleContext } from "../composerHandleContext";
-import type { ChatComposerHandle } from "./chat/ChatComposer";
-import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
-import { buildSidebarProjectPickerEntries } from "../sidebarProjectGrouping";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
-import { readPullRequestListPreferences } from "~/components/pullRequest/pullRequestListPreferences";
-import { useThreadRouteTarget } from "../hooks/useThreadRouteTarget";
-import { threadRecentUse } from "@t3tools/shared/paletteSearch";
 
 const EMPTY_BROWSE_ENTRIES: FilesystemBrowseResult["entries"] = [];
 const ADD_PROJECT_ENTRY_GROUP = "add-project";
@@ -835,8 +833,15 @@ function OpenCommandPaletteDialog(props: {
     (() => {
       const isScratch = (project: CommandPaletteProject) =>
         isScratchProject(project, scratchWorkspaceRootFor(project.environmentId));
+      const currentEntry =
+        currentProjectId === null
+          ? undefined
+          : projectPickerEntries.find((entry) => entry.isPreferred);
       const projectItems = buildNewThreadInProjectItems({
         projects: pickerProjects.filter((project) => !isScratch(project)),
+        currentProjectKey: currentEntry
+          ? `${currentEntry.targetProject.environmentId}:${currentEntry.targetProject.id}`
+          : null,
         projectGroupByTargetKey,
         locationByEnvironmentId: projectEnvironmentLocationById,
         pin: projectPin,

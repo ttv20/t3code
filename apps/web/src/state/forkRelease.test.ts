@@ -2,10 +2,10 @@ import { AtomRegistry } from "effect/reactivity";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { afterAll, afterEach, describe, expect, it, vi } from "vite-plus/test";
 
-import * as Effect from "effect/Effect";
 import { it as effectIt } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 
-import { lookupForkTrackRelease, forkReleasePublishedAtom } from "./forkRelease";
+import { forkReleasePublishedAtom, lookupForkTrackRelease } from "./forkRelease";
 
 const version = "0.0.46-nightly.20261012.3021";
 

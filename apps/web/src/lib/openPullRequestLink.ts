@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../i18n";
-import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
+import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { type MouseEvent } from "react";
+import { useUiLanguage } from "../i18n";
 
 import {
   resolveChangeRequestLinkTarget,
@@ -13,20 +13,20 @@ import { sourceControlClients } from "@t3tools/client-runtime/source-control-cli
 
 import { canOpenLinksInApp } from "../browser/browserLinkTarget";
 import { useOpenLink } from "../browser/useOpenLink";
-import { useClientSettings } from "../hooks/useSettings";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
-import { selectActiveRightPanel, useRightPanelStore } from "../rightPanelStore";
 import {
   selectThreadBranchBaseRef,
   selectThreadDiffPanelSelection,
   useDiffPanelStore,
 } from "../diffPanelStore";
+import { useClientSettings } from "../hooks/useSettings";
+import { selectActiveRightPanel, useRightPanelStore } from "../rightPanelStore";
 
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { readProject, readProjects, readThreadShell, useProjects } from "../state/entities";
-import { environmentServerConfigsAtom, serverEnvironment } from "../state/server";
 import { usePrimaryEnvironmentId } from "../state/environments";
 import { reviewEnvironment } from "../state/review";
+import { environmentServerConfigsAtom, serverEnvironment } from "../state/server";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
 
 export function usePullRequestPreviewTarget(environmentId: EnvironmentId | null, url: string) {
@@ -61,6 +61,7 @@ export function useOpenChangeRequestLink(
   targetEnvironmentId?: EnvironmentId,
   onCommitUnavailable?: () => void,
 ) => boolean {
+  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const openInApp = useClientSettings((settings) => settings.pullRequestLinksOpenInApp);
@@ -203,7 +204,7 @@ export function useOpenChangeRequestLink(
             const toastId = toastManager.add(
               stackedThreadToast({
                 type: "info",
-                title: "This commit is not in the thread's workspace",
+                title: uiT("This commit is not in the thread's workspace"),
                 actionProps: {
                   children: "Open link",
                   onClick: () => {
@@ -253,7 +254,7 @@ export function useOpenPrLink(threadRef?: ScopedThreadRef) {
         stackedThreadToast({
           type: "error",
           title: uiT("Unable to open pull request link"),
-          description: error instanceof Error ? error.message : "An error occurred.",
+          description: error instanceof Error ? error.message : uiT("An error occurred."),
         }),
       );
     });

@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import {
   CODE_BLOCK_LANGUAGES,

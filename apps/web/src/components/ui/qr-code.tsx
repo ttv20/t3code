@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
-import { memo } from "react";
 import { QrCode } from "@t3tools/shared/qrCode";
+import { memo } from "react";
+import { useUiLanguage } from "../../i18n";
 
 type QRCodeSvgProps = {
   value: string;

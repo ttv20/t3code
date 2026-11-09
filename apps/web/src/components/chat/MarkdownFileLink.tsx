@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import {
   isAtomCommandInterrupted,
@@ -7,9 +6,10 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { memo, type MouseEvent as ReactMouseEvent } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { readLocalApi } from "../../localApi";
 import { cn } from "../../lib/utils";
+import { readLocalApi } from "../../localApi";
 import { shouldOpenMarkdownFileLinkInEditor } from "../../markdown-links";
 import type { markdownFileCopyPaths } from "../../markdownFileHostPath";
 import { documentChipKindForFileName } from "../../pierre-icons";
@@ -17,12 +17,12 @@ import { ContextChip } from "../ContextChip";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { FileTagChipContent } from "./FileTagChip";
+import { reportMarkdownActionFailure } from "./markdownActionFailure";
 import {
   hasMarkdownFilePrimaryAction,
   markdownFileCopyMenuItems,
   shouldUseMarkdownFileBrowserPrimaryAction,
 } from "./MarkdownFileLink.logic";
-import { reportMarkdownActionFailure } from "./markdownActionFailure";
 import { WorkspaceEntryTooltip } from "./WorkspaceEntryIcon";
 
 interface MarkdownFileLinkProps {
@@ -382,9 +382,7 @@ export const MarkdownFileLink = memo(function MarkdownFileLink({
         }
       />
       <TooltipPopup side="top" variant="code">
-        <div className="overflow-x-auto whitespace-nowrap scrollbar-thumb-border/78 scrollbar-track-transparent [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/78 [&::-webkit-scrollbar-track]:bg-transparent">
-          <WorkspaceEntryTooltip path={iconPath} label={targetPath} environmentId={environmentId} />
-        </div>
+        <WorkspaceEntryTooltip path={iconPath} label={targetPath} environmentId={environmentId} />
       </TooltipPopup>
     </Tooltip>
   );

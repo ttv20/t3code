@@ -1,13 +1,13 @@
-import { useUiLanguage } from "../../i18n";
-import * as Schema from "effect/Schema";
-import type { DeviceHubAccess } from "@t3tools/client-runtime/state/deviceHubAccess";
 import { useAtomMount, useAtomSet, useAtomValue } from "@effect/atom-react";
+import type { DeviceHubAccess } from "@t3tools/client-runtime/state/deviceHubAccess";
+import * as Schema from "effect/Schema";
 import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { useUiLanguage } from "../../i18n";
+import { DeviceDuoGlyph } from "./DeviceDuoGlyph";
 import { AndroidFoldError, setAndroidFold, type AndroidFoldPosture } from "./deviceFold";
 import { androidFoldReadAtom, androidFoldViewAtom, foldAngle, NOOP_ATOM } from "./deviceHubAtoms";
-import { DeviceDuoGlyph } from "./DeviceDuoGlyph";
 
 const isAndroidFoldError = Schema.is(AndroidFoldError);
 

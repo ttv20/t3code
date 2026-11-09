@@ -1,11 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import {
   buildTraitsTriggerDisplay,
   getDescriptorStringValue,
   getTraitSelectChange,
+  isReasoningSelect,
   replaceDescriptorCurrentValue,
   selectableProviderOptionChoices,
-  isReasoningSelect,
 } from "@t3tools/client-runtime/model-traits";
 import {
   type ModelSelection,
@@ -23,21 +22,22 @@ import {
   isClaudeUltrathinkPrompt,
   normalizeModelSlug,
 } from "@t3tools/shared/model";
-import { memo } from "react";
 import { GaugeIcon } from "lucide-react";
+import { memo } from "react";
+import { cn } from "~/lib/utils";
+import { DraftId, useComposerDraftStore } from "../../composerDraftStore";
+import { useUiLanguage } from "../../i18n";
+import { getProviderModelCapabilities } from "../../providerModels";
+import { Badge } from "../ui/badge";
 import {
   Menu,
+  MenuSeparator as MenuDivider,
   MenuGroup,
   MenuPopup,
   MenuRadioGroup,
   MenuRadioItem,
-  MenuSeparator as MenuDivider,
   MenuTrigger,
 } from "../ui/menu";
-import { useComposerDraftStore, DraftId } from "../../composerDraftStore";
-import { getProviderModelCapabilities } from "../../providerModels";
-import { cn } from "~/lib/utils";
-import { Badge } from "../ui/badge";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ComposerControl, ComposerControlIcon, type ComposerControlSize } from "./ComposerControl";
 import { useComposerMenuState } from "./useComposerMenuState";
@@ -94,10 +94,13 @@ type TraitsPersistence =
   | {
       threadRef?: ScopedThreadRef;
       draftId?: DraftId;
+      /** Runs after a change is written to the draft. */
+      onDraftModelOptionsChange?: () => void;
       onModelOptionsChange?: never;
     }
   | {
       threadRef?: undefined;
+      onDraftModelOptionsChange?: never;
       onModelOptionsChange: (nextOptions: ProviderOptions | undefined) => void;
     };
 
@@ -118,15 +121,15 @@ function getSelectedTraits(
   promptUltrathink: PromptUltrathink,
   modelOptions: ProviderOptions | null | undefined,
   allowPromptInjectedEffort: boolean,
-  planModeEnabled: boolean,
+  includePlanAgent: boolean | undefined,
 ) {
-  const caps = getProviderModelCapabilities(models, model, provider, planModeEnabled);
+  const caps = getProviderModelCapabilities(models, model, provider, includePlanAgent);
   const modelIsUnavailable =
     provider === "opencode" &&
     !models.some((candidate) => candidate.slug === normalizeModelSlug(model, provider));
   const descriptors = modelIsUnavailable
     ? buildUnavailableModelOptionDescriptors(
-        planModeEnabled
+        includePlanAgent
           ? modelOptions
           : modelOptions?.filter((option) => option.id !== "agent" || option.value !== "plan"),
       )
@@ -196,7 +199,7 @@ export function getTraitsSectionVisibility(input: {
   promptUltrathink?: PromptUltrathink | undefined;
   modelOptions?: ProviderOptions | null | undefined;
   allowPromptInjectedEffort?: boolean;
-  planModeEnabled: boolean;
+  includePlanAgent?: boolean | undefined;
 }) {
   const selected = getSelectedTraits(
     input.provider,
@@ -205,7 +208,7 @@ export function getTraitsSectionVisibility(input: {
     input.promptUltrathink ?? "none",
     input.modelOptions,
     input.allowPromptInjectedEffort ?? true,
-    input.planModeEnabled,
+    input.includePlanAgent,
   );
 
   const showEffort = selected.primarySelectDescriptor !== null;
@@ -244,7 +247,7 @@ export function getReasoningTraitStep(input: {
   modelOptions: ProviderOptions | undefined;
   reportedModelSelection: ModelSelection | null | undefined;
   prompt: string;
-  planModeEnabled: boolean;
+  includePlanAgent?: boolean | undefined;
   direction: 1 | -1;
 }) {
   const selected = getSelectedTraits(
@@ -254,7 +257,7 @@ export function getReasoningTraitStep(input: {
     readPromptUltrathink(input.prompt),
     input.modelOptions,
     true,
-    input.planModeEnabled,
+    input.includePlanAgent,
   );
   if (selected.modelIsUnavailable || selected.ultrathinkInBodyText) return null;
   const descriptor = selected.selectDescriptors.find(isReasoningSelect);
@@ -293,7 +296,7 @@ export interface TraitsMenuContentProps {
   modelOptions?: ProviderOptions | null | undefined;
   reportedModelSelection?: ModelSelection | null | undefined;
   allowPromptInjectedEffort?: boolean;
-  planModeEnabled: boolean;
+  includePlanAgent?: boolean | undefined;
   triggerClassName?: string;
 }
 
@@ -310,7 +313,7 @@ export function useTraitsSelection({
   modelOptions,
   reportedModelSelection,
   allowPromptInjectedEffort = true,
-  planModeEnabled,
+  includePlanAgent,
   triggerClassName: _triggerClassName,
   ...persistence
 }: TraitsSelectionInput) {
@@ -331,6 +334,7 @@ export function useTraitsSelection({
       model,
       persistSticky: true,
     });
+    persistence.onDraftModelOptionsChange?.();
   };
   const selected = getTraitsSectionVisibility({
     provider,
@@ -339,7 +343,7 @@ export function useTraitsSelection({
     promptUltrathink,
     modelOptions,
     allowPromptInjectedEffort,
-    planModeEnabled,
+    includePlanAgent,
   });
   return {
     ...selected,
@@ -500,7 +504,6 @@ export const TraitsPicker = memo(function TraitsPicker({
     return null;
   }
   const { label: triggerLabel } = buildTraitsTriggerDisplay({
-    provider: props.provider,
     descriptors: traits.descriptors,
     primarySelectDescriptorId: traits.primarySelectDescriptor?.id ?? null,
     ultrathinkPromptControlled: traits.ultrathinkPromptControlled,

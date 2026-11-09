@@ -1,28 +1,28 @@
-import { useUiLanguage } from "../../i18n";
-import { useState } from "react";
-import * as Option from "effect/Option";
 import type { SshDeviceHostConfig } from "@t3tools/contracts";
+import * as Option from "effect/Option";
 import { CheckIcon, ChevronDownIcon, MonitorIcon, XIcon } from "lucide-react";
+import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { DeviceHostAvailability } from "../device/DeviceHostAvailability";
 import { Button, InlineButton } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
-import { Input } from "../ui/input";
-import { Spinner } from "../ui/spinner";
 import {
   Dialog,
-  DialogPopup,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
-  DialogPanel,
   DialogFooter,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
 } from "../ui/dialog";
-import { DeviceHostAvailability } from "../device/DeviceHostAvailability";
-import { useHostConnectionChecks } from "./useHostConnectionChecks";
+import { Input } from "../ui/input";
+import { Spinner } from "../ui/spinner";
 import {
   deviceHostConnectionKey,
   parseDeviceHostDraft,
   type DeviceHostCheckTarget,
 } from "./deviceHostConnectionChecks";
+import { useHostConnectionChecks } from "./useHostConnectionChecks";
 
 export function DeviceHostEditor({
   host,

@@ -1,5 +1,16 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
+import {
+  isAtomCommandInterrupted,
+  settlePromise,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import type { ServerUpdateStage, ServerUpdateState } from "@t3tools/client-runtime/state/server";
+import type {
+  DesktopUpdateChannel,
+  EnvironmentId,
+  ServerInstallation,
+  ServerSelfUpdateCapability,
+} from "@t3tools/contracts";
 import {
   AuthEnvironmentMaintainScope,
   type AuthSessionState,
@@ -7,33 +18,22 @@ import {
   sessionGrantsScope,
 } from "@t3tools/contracts";
 import type { AsyncResult } from "effect/reactivity";
-import { environmentSession } from "~/state/session";
-import type {
-  DesktopUpdateChannel,
-  EnvironmentId,
-  ServerInstallation,
-  ServerSelfUpdateCapability,
-} from "@t3tools/contracts";
-import type { ServerUpdateStage, ServerUpdateState } from "@t3tools/client-runtime/state/server";
-import {
-  isAtomCommandInterrupted,
-  settlePromise,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import { CircleArrowUpIcon } from "lucide-react";
 import { type ComponentProps, useRef, useState } from "react";
+import { environmentSession } from "~/state/session";
+import { useUiLanguage } from "../i18n";
 
+import { crossesReleaseTrack } from "@t3tools/shared/cliRelease";
 import { requestConfirmDialog } from "~/confirmDialog";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
-import { serverEnvironment, updateOutdatedServer } from "~/state/server";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { useServerConfigs } from "~/state/entities";
 import { useManagedPolicy } from "~/state/managedPolicy";
 import { environmentPresentations } from "~/state/presentation";
-import { ManagedControl } from "./ManagedPolicy";
+import { serverEnvironment, updateOutdatedServer } from "~/state/server";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { manualServerUpdateCommand } from "~/versionSkew";
-import { crossesReleaseTrack } from "@t3tools/shared/cliRelease";
+import { ManagedControl } from "./ManagedPolicy";
 import { Button } from "./ui/button";
 import { toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";

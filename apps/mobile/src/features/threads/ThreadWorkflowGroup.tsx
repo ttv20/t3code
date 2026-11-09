@@ -128,7 +128,7 @@ export function ThreadWorkflowGroup(props: {
             textRole="footnote"
             className="border-t border-border-subtle px-4 py-3 text-foreground-muted"
           >
-            <UiText message={"No agents yet"} />
+            <UiText message={uiT("No agents yet")} />
           </Text>
         ) : (
           open.members.map((member) => (

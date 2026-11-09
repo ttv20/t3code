@@ -1,12 +1,4 @@
 import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
-import { UiText } from "../../i18n";
-import type {
-  EnvironmentId,
-  OrchestrationV2PendingBackgroundTask,
-  OrchestrationV2ProviderGoal,
-  OrchestrationV2ProviderSession,
-  ThreadId,
-} from "@t3tools/contracts";
 import type { EnvironmentThreadShell, ThreadStructure } from "@t3tools/client-runtime/state/shell";
 import {
   presentPendingBackgroundWork,
@@ -15,6 +7,13 @@ import {
 } from "@t3tools/client-runtime/state/thread-execution";
 import { childThreadInputsTitle } from "@t3tools/client-runtime/state/threads";
 import { commandDisplayText } from "@t3tools/client-runtime/work-log/command-label";
+import type {
+  EnvironmentId,
+  OrchestrationV2PendingBackgroundTask,
+  OrchestrationV2ProviderGoal,
+  OrchestrationV2ProviderSession,
+  ThreadId,
+} from "@t3tools/contracts";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import * as DateTime from "effect/DateTime";
 import {
@@ -29,6 +28,7 @@ import {
 } from "lucide-react";
 import { Fragment } from "react";
 import { tickTextContent } from "~/lib/tickTextContent";
+import { UiText } from "../../i18n";
 import { Button, InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";

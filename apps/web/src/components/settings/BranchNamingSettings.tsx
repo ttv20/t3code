@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
-import { useRef } from "react";
 import { BranchNamingMode, DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
+import { useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Input } from "../ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { SettingsRow, SettingResetButton } from "./settingsLayout";
+import { SettingResetButton, SettingsRow } from "./settingsLayout";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
 import {

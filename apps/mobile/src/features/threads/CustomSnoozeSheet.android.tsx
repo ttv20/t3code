@@ -34,14 +34,16 @@ import { useUiLanguage } from "../../i18n";
 import { OverlayPortal } from "../../components/ui/OverlayPortal";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
-import type { CustomSnoozeSheet as SharedCustomSnoozeSheet } from "./CustomSnoozeSheet.shared";
 import {
   applySnoozePickerDate,
   applySnoozePickerTime,
   snoozeDateToPickerDate,
 } from "./customSnoozeDate";
 
-type Props = Parameters<typeof SharedCustomSnoozeSheet>[0];
+type Props = {
+  readonly onClose: () => void;
+  readonly onSnooze: (snoozedUntil: string) => void;
+};
 
 const roundedCorner = Shape.RoundedCorner;
 

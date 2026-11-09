@@ -1,8 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-import { resolveTimelineMinimapPreview, type TimelineMinimapItem } from "./timelineMinimapItems";
-import { useRef, useState, type MouseEvent } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { useRef, useState, type MouseEvent } from "react";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   resolveTimelineMinimapHeightStyle,
   resolveTimelineMinimapIndexFromPointer,
@@ -11,8 +12,7 @@ import {
   resolveTimelineMinimapTopPercent,
   TIMELINE_MINIMAP_MIN_ITEMS,
 } from "./MessagesTimeline.logic";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { cn } from "~/lib/utils";
+import { resolveTimelineMinimapPreview, type TimelineMinimapItem } from "./timelineMinimapItems";
 
 function timelineMinimapEventTargetsPreview(target: EventTarget): boolean {
   return target instanceof Element && target.closest("[data-minimap-preview]") !== null;

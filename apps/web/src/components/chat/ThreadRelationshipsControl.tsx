@@ -1,27 +1,20 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { threadKey } from "@t3tools/client-runtime/state/entities";
-import { ThreadDetailsControl } from "./ThreadDetailsControl";
-import { ThreadHoverCardPopup } from "../ThreadHoverCard";
-import { ThreadDetailsSection } from "./ThreadDetailsSection";
-import { SectionHeaderStatus } from "../ui/collapsible-section-header";
-import { SubagentTooltipContent } from "./SubagentTooltipContent";
-import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { scopedThreadKey, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { threadKey } from "@t3tools/client-runtime/state/entities";
+import { formatSubagentDisplayTitle } from "@t3tools/client-runtime/state/subagent-display";
 import {
   deriveWorkflowGroups,
   projectedSubagentsToRuntime,
   type RuntimeSubagent,
 } from "@t3tools/client-runtime/state/subagentRuntime";
-import { formatSubagentDisplayTitle } from "@t3tools/client-runtime/state/subagent-display";
 import { deriveProviderSubagentStatus } from "@t3tools/client-runtime/state/thread-execution";
 import {
   deriveThreadRelationshipGraph,
   immediateThreadRelationships,
   isParentThreadRelationship,
-  threadRelationshipRowStatus,
   orderWebThreadLineageRows,
   resolveMergeBackTargetThreadId,
+  threadRelationshipRowStatus,
   type ThreadRelationshipEdge,
   type ThreadRelationshipWalkRow,
 } from "@t3tools/client-runtime/state/thread-relationships";
@@ -42,9 +35,9 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { deriveSubagentElapsedMs } from "@t3tools/shared/orchestrationTiming";
+import { useNavigate } from "@tanstack/react-router";
 import { groupBy } from "effect/Array";
 import * as DateTime from "effect/DateTime";
-import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRightIcon,
   BotIcon,
@@ -58,43 +51,50 @@ import {
   UnplugIcon,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { ThreadHoverCardPopup } from "../ThreadHoverCard";
+import { SectionHeaderStatus } from "../ui/collapsible-section-header";
+import { SubagentTooltipContent } from "./SubagentTooltipContent";
+import { ThreadDetailsControl } from "./ThreadDetailsControl";
+import { ThreadDetailsSection } from "./ThreadDetailsSection";
 
 import { useArchivedThreadSnapshots } from "../../lib/archivedThreadsState";
-import { buildThreadRouteParams } from "../../threadRoutes";
-import {
-  useProjects,
-  useQuietThreadShell,
-  useThreadProjection,
-  useThreadRelationshipShells,
-  useHiddenThreadKeys,
-  useAnyEnvironmentHiding,
-} from "../../state/entities";
-import { useEnvironment, useEnvironmentProviders } from "../../state/environments";
-import { serverEnvironment } from "../../state/server";
+import { openSideChatTab } from "../../lib/sideChatPane";
 import {
   applyProviderInstanceSettings,
   deriveProviderInstanceEntries,
 } from "../../providerInstances";
-import { threadEnvironment } from "../../state/threads";
+import {
+  useAnyEnvironmentHiding,
+  useHiddenThreadKeys,
+  useProjects,
+  useQuietThreadShell,
+  useThreadProjection,
+  useThreadRelationshipShells,
+} from "../../state/entities";
+import { useEnvironment, useEnvironmentProviders } from "../../state/environments";
 import { orchestrationEnvironment } from "../../state/orchestration";
-import { useAtomCommand } from "../../state/use-atom-command";
 import { useEnvironmentQuery } from "../../state/query";
+import { serverEnvironment } from "../../state/server";
+import { threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { buildThreadRouteParams } from "../../threadRoutes";
 import { AgentElapsed } from "./AgentElapsed";
-import { ThreadRelationshipIcon, threadRelationshipStatusLabel } from "./ThreadRelationshipIcon";
 import { ThreadLineageWorkflowRow } from "./ThreadLineageWorkflowRow";
-import { openSideChatTab } from "../../lib/sideChatPane";
+import { ThreadRelationshipIcon, threadRelationshipStatusLabel } from "./ThreadRelationshipIcon";
 
-import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
-import { Spinner } from "../ui/spinner";
 import { cn } from "~/lib/utils";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
+import { Spinner } from "../ui/spinner";
+import { toastManager } from "../ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   THREAD_DETAILS_PANEL_CHEVRON_CLASS,
   THREAD_DETAILS_PANEL_ICON_CLASS,
   THREAD_DETAILS_PANEL_LABEL_CLASS,
-  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
   THREAD_DETAILS_PANEL_ROW_CONTENT_CLASS,
+  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
   THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
 } from "./threadDetailsPanelStyles";
 

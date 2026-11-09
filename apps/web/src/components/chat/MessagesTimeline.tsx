@@ -1,30 +1,30 @@
-import { useUiLanguage } from "../../i18n";
-import { threadEnvironment } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import type { ToolCallDiffTarget } from "../../diffPanelStore";
-import { AudioPreviewUnmountContext } from "../files/AudioPreview";
-import { ThreadFindTimelineContext } from "./ThreadFindProvider";
-import { MarkdownFindContext } from "./markdownFindContext";
-import { useChatCanvas } from "./ChatCanvasContext";
-import { WorkLogBlock } from "./WorkLog";
-import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+import { parseScopedThreadKey } from "@t3tools/client-runtime/environment";
+import type { WorkflowOpening } from "@t3tools/client-runtime/state/subagentRuntime";
+import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
 import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
-import { deriveTimelineMinimapItems } from "./timelineMinimapItems";
 import {
   type AssistantCitation,
   type EnvironmentId,
   type MessageId,
   type OrchestrationV2TurnItem,
   type RunAttemptId,
-  type ServerProviderSkill,
   type RunId,
+  type ServerProviderSkill,
   ThreadId,
 } from "@t3tools/contracts";
-import { parseScopedThreadKey } from "@t3tools/client-runtime/environment";
-import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
-import type { WorkflowOpening } from "@t3tools/client-runtime/state/subagentRuntime";
-import { observeResize } from "~/lib/observeResize";
 import { useStableCallback } from "~/hooks/useStableCallback";
+import { observeResize } from "~/lib/observeResize";
+import type { ToolCallDiffTarget } from "../../diffPanelStore";
+import { useUiLanguage } from "../../i18n";
+import { threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { AudioPreviewUnmountContext } from "../files/AudioPreview";
+import { useChatCanvas } from "./ChatCanvasContext";
+import { MarkdownFindContext } from "./markdownFindContext";
+import { ThreadFindTimelineContext } from "./ThreadFindProvider";
+import { deriveTimelineMinimapItems } from "./timelineMinimapItems";
+import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+import { WorkLogBlock } from "./WorkLog";
 
 const NOOP_USE_ARTIFACT_TEMPLATE = () => {};
 const EMPTY_PENDING_APPROVALS: ReadonlyArray<PendingApproval> = [];
@@ -32,28 +32,16 @@ const EMPTY_RESPONDING_REQUEST_IDS: TimelineRowSharedState["respondingRequestIds
 
 const NOOP_OPEN_ATTACHMENT = (_attachment: ChatFileAttachment) => {};
 
-import { resolveChatListAnchoredEndSpace } from "@t3tools/shared/chatList";
-import { observeVisibleAnimation } from "../../lib/visibleAnimation";
-import {
-  memo,
-  use,
-  useContext,
-  useLayoutEffect,
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-  type ReactNode,
-  type SyntheticEvent,
-} from "react";
 import {
   LegendList,
   type LegendListRef,
   type MaintainScrollAtEndOptions,
 } from "@legendapp/list/react";
-import { type PendingApproval, type TimelineEntry } from "../../session-logic";
+import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
+import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { resolveChatListAnchoredEndSpace } from "@t3tools/shared/chatList";
 import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
-import { type ChatFileAttachment, type TurnDiffSummary } from "../../types";
+import { ChevronDown, ChevronRight } from "lucide";
 import {
   ArrowRightIcon,
   BotIcon,
@@ -61,83 +49,95 @@ import {
   MessagesSquareIcon,
   Minimize2Icon,
 } from "lucide-react";
-import { ChevronDown, ChevronRight } from "lucide";
+import {
+  memo,
+  type ReactNode,
+  type SyntheticEvent,
+  use,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { MorphIcon } from "~/components/MorphIcon";
+import { useMediaQuery } from "~/hooks/useMediaQuery";
+import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
+import { useOpenPrLink } from "~/lib/openPullRequestLink";
+import { cn } from "~/lib/utils";
+import { observeVisibleAnimation } from "../../lib/visibleAnimation";
+import { type PendingApproval, type TimelineEntry } from "../../session-logic";
+import { type ChatFileAttachment, type TurnDiffSummary } from "../../types";
 import { Skeleton } from "../ui/skeleton";
+import { TooltipScrollDismissArea } from "../ui/tooltip";
+import { type AssistantCitationRequest } from "./AssistantCitationSource";
+import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
+import { type CitedHistory, resolveCitationPhase } from "./citationProcedure";
 import { ExpandedImagePreview } from "./ExpandedImagePreview";
+import {
+  isTimelineMinimapRowVisible,
+  liveAnswerPreview,
+  type MessagesTimelineRow,
+  resolveTimelineIsAtEnd,
+  resolveTimelineMinimapCurrentIndex,
+  resolveTimelineMinimapHasPersistentGutter,
+  resolveTimelineMinimapHitStripWidth,
+  resolveTimelineMinimapVisibleRange,
+  type TimelineLatestRun,
+  timelineTurnFoldRunIdsByEntryId,
+} from "./MessagesTimeline.logic";
+import { type ThreadFindMatch } from "./threadFind";
 import {
   CHAT_TIMELINE_ANCHOR_OFFSET,
   readTimelinePosition,
   type RememberedTimelinePosition,
   rememberTimelinePosition,
 } from "./timelineScrollAnchoring";
-import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
-import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
-import { type AssistantCitationRequest } from "./AssistantCitationSource";
-import { useAssistantCitationTarget } from "./useAssistantCitationTarget";
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-import { resolveCitationPhase, type CitedHistory } from "./citationProcedure";
-import {
-  resolveTimelineIsAtEnd,
-  resolveTimelineMinimapHasPersistentGutter,
-  resolveTimelineMinimapCurrentIndex,
-  isTimelineMinimapRowVisible,
-  resolveTimelineMinimapVisibleRange,
-  resolveTimelineMinimapHitStripWidth,
-  timelineTurnFoldRunIdsByEntryId,
-  liveAnswerPreview,
-  type MessagesTimelineRow,
-  type TimelineLatestRun,
-} from "./MessagesTimeline.logic";
-import { type ThreadFindMatch } from "./threadFind";
-import { useThreadFindNavigation } from "./useThreadFindNavigation";
-import { TooltipScrollDismissArea } from "../ui/tooltip";
-import { WorktreeSetupCard } from "./WorktreeSetupCard";
-import { useOpenPrLink } from "~/lib/openPullRequestLink";
-import { useMediaQuery } from "~/hooks/useMediaQuery";
-import { cn } from "~/lib/utils";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
-import { type HandoffTimelineRun } from "./V2LifecycleRow";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
+import { useAssistantCitationTarget } from "./useAssistantCitationTarget";
+import { useThreadFindNavigation } from "./useThreadFindNavigation";
+import { type HandoffTimelineRun } from "./V2LifecycleRow";
+import { WorktreeSetupCard } from "./WorktreeSetupCard";
 
-import { forwardWheelToTimeline } from "./timelineMinimapWheel";
-import { TimelineMinimap } from "./TimelineMinimap";
+import { useClientSettings } from "../../hooks/useSettings";
+import { ThreadActivityAnnouncer } from "./ThreadActivityAnnouncer";
 import {
-  type TimelineRowSharedState,
-  type TimelineRowActivityState,
-  TimelineRowCtx,
-  TimelineRowActivityCtx,
-  type WorkGroupViewState,
-  type TimelineRow,
-} from "./timelineRowContext";
-import { TimelineRowTimestamp, ActivityShimmerOverlay } from "./TimelineRowParts";
-import {
-  WorkGroupSection,
-  WorkingTimelineRow,
-  ThinkingTimelineRow,
-  LiveWorkEntryTimelineRow,
-  WorkGroupToggleTimelineRow,
-} from "./TimelineWorkGroupRows";
-import { UserMessageRow } from "./TimelineUserMessageRow";
-import {
-  AssistantTimelineRow,
   AssistantMetaTimelineRow,
-  ProposedPlanTimelineRow,
+  AssistantTimelineRow,
   HtmlRenderTimelineRow,
   McpAppTimelineRow,
+  ProposedPlanTimelineRow,
 } from "./TimelineAssistantRows";
+import { TimelineMinimap } from "./TimelineMinimap";
+import { forwardWheelToTimeline } from "./timelineMinimapWheel";
+import {
+  type TimelineRow,
+  TimelineRowActivityCtx,
+  type TimelineRowActivityState,
+  TimelineRowCtx,
+  type TimelineRowSharedState,
+  type WorkGroupViewState,
+} from "./timelineRowContext";
+import { ActivityShimmerOverlay, TimelineRowTimestamp } from "./TimelineRowParts";
+import { UserMessageRow } from "./TimelineUserMessageRow";
 import { V2EventTimelineRow } from "./TimelineV2EventRow";
-import { startTimelinePositionRestore } from "./useTimelinePositionRestore";
 import {
   attachTimelineViewport,
   nextListOpening,
   type TimelineListOpening,
   type TimelineViewport,
 } from "./timelineViewport";
+import {
+  LiveWorkEntryTimelineRow,
+  ThinkingTimelineRow,
+  WorkGroupSection,
+  WorkGroupToggleTimelineRow,
+  WorkingTimelineRow,
+} from "./TimelineWorkGroupRows";
 import { useThreadFindPositionReader } from "./useThreadFindPositionReader";
-import { ThreadActivityAnnouncer } from "./ThreadActivityAnnouncer";
-import { useStableHandoffRuns, useIncrementalTimelineRows, useStableRows } from "./useTimelineRows";
-import { useClientSettings } from "../../hooks/useSettings";
+import { startTimelinePositionRestore } from "./useTimelinePositionRestore";
+import { useIncrementalTimelineRows, useStableHandoffRuns, useStableRows } from "./useTimelineRows";
 
 function timelineListStateFor(identity: string): {
   readonly identity: string;
@@ -429,7 +429,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   topFadeEnabled = false,
   historyControls,
 }: MessagesTimelineProps) {
-  const { locale, t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const listIdentityKey = displayThreadKey ?? routeThreadKey;
   // Snapshot restore positions on identity changes; ongoing scroll writes must not move them.
@@ -490,43 +490,19 @@ const ConversationTimeline = memo(function ConversationTimeline({
   const citationThreadRef = parseScopedThreadKey(routeThreadKey);
   const openPullRequest = useOpenPrLink(citationThreadRef ?? undefined);
   const [minimapStripMap] = useState(() => new Map<string, HTMLSpanElement>());
-  const [disclosureToggleSettling, setDisclosureToggleSettling] = useState(false);
-  const disclosureAnchorKeyRef = useRef<string | null>(null);
-  const disclosureSettleFrameRef = useRef<number | null>(null);
-  const disclosureSettleSecondFrameRef = useRef<number | null>(null);
   const normalizedFindQuery = findQuery.trim();
   const findActive = findExpanded;
 
-  const scheduleDisclosureSettle = () => {
-    if (disclosureSettleFrameRef.current !== null) {
-      cancelAnimationFrame(disclosureSettleFrameRef.current);
-    }
-    if (disclosureSettleSecondFrameRef.current !== null) {
-      cancelAnimationFrame(disclosureSettleSecondFrameRef.current);
-    }
-    disclosureSettleFrameRef.current = requestAnimationFrame(() => {
-      disclosureSettleSecondFrameRef.current = requestAnimationFrame(() => {
-        disclosureAnchorKeyRef.current = null;
-        setDisclosureToggleSettling(false);
-        disclosureSettleFrameRef.current = null;
-        disclosureSettleSecondFrameRef.current = null;
-      });
-    });
-  };
-
-  const suspendEndScrollMaintenanceForDisclosure = (anchorKey: string) => {
-    disclosureAnchorKeyRef.current = anchorKey;
-    setDisclosureToggleSettling(true);
-    scheduleDisclosureSettle();
-  };
-
-  const shouldRestoreVisibleContentPosition = (row: MessagesTimelineRow) => {
-    const disclosureAnchorKey = disclosureAnchorKeyRef.current;
-    return disclosureAnchorKey === null || row.id === disclosureAnchorKey;
+  const preserveDisclosurePosition = (anchorKey: string) => {
+    const list = listRef.current;
+    // An anchor ends end-follow until the reader scrolls, so a streaming turn keeps the live end.
+    if (!list || (isWorking && list.getState().isFollowingEnd)) return;
+    list.cancelScroll();
+    list.anchorVisibleContent({ key: anchorKey });
   };
 
   const onToggleTurnFold = (runId: RunId) => {
-    suspendEndScrollMaintenanceForDisclosure(`turn-fold:${runId}`);
+    preserveDisclosurePosition(`turn-fold:${runId}`);
     setExpandedRunIds((existing) => {
       const next = new Set(existing);
       if (next.has(runId)) {
@@ -538,7 +514,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     });
   };
   const onToggleWorkGroup = (groupId: string, anchorKey: string) => {
-    suspendEndScrollMaintenanceForDisclosure(anchorKey);
+    preserveDisclosurePosition(anchorKey);
     setExpandedWorkGroupIds((existing) => {
       const next = new Set(existing);
       if (next.has(groupId)) {
@@ -550,7 +526,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     });
   };
   const onToggleAttemptFold = (attemptId: RunAttemptId) => {
-    suspendEndScrollMaintenanceForDisclosure(`attempt-fold:${attemptId}`);
+    preserveDisclosurePosition(`attempt-fold:${attemptId}`);
     setExpandedAttemptIds((existing) => {
       const next = new Set(existing);
       if (next.has(attemptId)) {
@@ -876,7 +852,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
   const maintainVisibleContentPosition = {
     data: true,
     size: true,
-    shouldRestorePosition: shouldRestoreVisibleContentPosition,
   };
 
   const refreshMinimap = useStableCallback(() => {
@@ -891,7 +866,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
       firstBufferedIndex == null ? undefined : state.elementAtIndex(firstBufferedIndex);
     const firstBufferedTop =
       firstBufferedIndex == null ? undefined : state.positionAtIndex(firstBufferedIndex);
-    const viewport: HTMLElement | undefined = listRef.current?.getScrollableNode();
+    const viewport = listRef.current?.getScrollableNode() ?? undefined;
     // Cached row positions exclude the header and pending scroll adjustments.
     const scroll =
       firstBufferedRow && viewport && firstBufferedTop !== undefined
@@ -982,13 +957,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
     const isAtEnd = rememberPosition(liveFollowEnabled && !anchoredEndSpace);
     if (isAtEnd !== undefined && !citationPositioning) {
       onIsAtEndChange(isAtEnd);
-    }
-    scheduleMinimapRefresh();
-  };
-
-  const handleItemSizeChanged = () => {
-    if (disclosureAnchorKeyRef.current !== null) {
-      scheduleDisclosureSettle();
     }
     scheduleMinimapRefresh();
   };
@@ -1086,7 +1054,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
     onToggleTurnFold,
     onToggleAttemptFold,
     onToggleWorkGroup,
-    onToggleWorkEntry: suspendEndScrollMaintenanceForDisclosure,
+    onToggleWorkEntry: preserveDisclosurePosition,
     onCancelWorktreeSetup: onCancelWorktreeSetup ?? null,
     retryableWorkspacePreparationRunIds,
     onRetryWorkspacePreparation: onRetryWorkspacePreparation ?? null,
@@ -1205,8 +1173,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
       detachViewport?.();
       viewport?.dispose();
       if (viewportRef.current === viewport) viewportRef.current = null;
-      // Refresh frames only read the list; disclosure frames still run so the
-      // settle flag clears.
       if (minimapRefreshFrameRef.current !== null) {
         cancelAnimationFrame(minimapRefreshFrameRef.current);
         minimapRefreshFrameRef.current = null;
@@ -1391,8 +1357,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
                 (restoringThreadPosition && rememberedPosition?.atEnd === false) ||
                 anchoredEndSpace ||
                 !liveFollowEnabled ||
-                fullscreenAppRowId !== null ||
-                disclosureToggleSettling
+                fullscreenAppRowId !== null
                   ? false
                   : isWorking && !prefersReducedMotion && settlingListIdentity === null
                     ? TIMELINE_MAINTAIN_SCROLL_AT_END_SMOOTH
@@ -1407,7 +1372,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
               }
               maintainScrollAtEndThreshold={1}
               onScroll={handleScroll}
-              onItemSizeChanged={handleItemSizeChanged}
+              onItemSizeChanged={scheduleMinimapRefresh}
               className={cn(
                 "messages-timeline-scroll scrollbar-gutter-both h-full min-h-0 overflow-x-hidden overscroll-y-contain [overflow-anchor:none]",
                 topFadeEnabled && "topbar-scroll-fade",
@@ -1480,11 +1445,14 @@ function keyExtractor(item: MessagesTimelineRow) {
   return item.id;
 }
 
-// LegendList averages by type; length buckets prevent inflated estimates and nested-update loops.
+// LegendList estimates unmeasured rows from their type's average. Long messages of equal length
+// can differ in height by orders of magnitude, so each gets its own type to avoid nested-update loops.
 function getItemType(item: MessagesTimelineRow) {
   if (item.kind !== "message") return item.kind;
   const lengthBucket = Math.max(0, Math.floor(Math.log2(item.message.text.length / 1000)));
-  return `message:${item.message.role}:${lengthBucket}`;
+  return lengthBucket < 2
+    ? `message:${item.message.role}:${lengthBucket}`
+    : `message:${item.message.id}`;
 }
 
 const TimelineRowContent = memo(function TimelineRowContent({ row }: { row: TimelineRow }) {

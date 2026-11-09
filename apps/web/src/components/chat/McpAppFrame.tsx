@@ -1,5 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import {
   makeMcpAppHost,
   McpAppHostRefusal,
@@ -11,6 +9,7 @@ import {
   type McpAppHostContext,
 } from "@t3tools/client-runtime/mcp-apps";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import {
   clampMcpAppHeight,
   MCP_APP_DEFAULT_HEIGHT,
@@ -22,20 +21,21 @@ import {
 import { Minimize2Icon } from "lucide-react";
 import { useEffect, useRef, useState, type FocusEvent, type ToggleEvent } from "react";
 import { flushSync } from "react-dom";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useLongLivedAssetUrl } from "~/assets/longLivedAssetUrls";
 import { APP_VERSION } from "~/branding";
+import { Button } from "~/components/ui/button";
 import { isConfirmDialogActive, requestConfirmDialog } from "~/confirmDialog";
+import { isElectron } from "~/env";
 import { useHtmlRenderTheme } from "~/hooks/useHtmlRenderTheme";
 import { useStableCallback } from "~/hooks/useStableCallback";
-import { Button } from "~/components/ui/button";
-import { isElectron } from "~/env";
-import { cn } from "~/lib/utils";
-import { useEnvironmentQuery } from "~/state/query";
-import { useTurnItemDetail } from "~/state/queries";
-import { mcpAppEnvironment } from "~/state/mcpApps";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { observeResize } from "~/lib/observeResize";
+import { cn } from "~/lib/utils";
+import { mcpAppEnvironment } from "~/state/mcpApps";
+import { useTurnItemDetail } from "~/state/queries";
+import { useEnvironmentQuery } from "~/state/query";
+import { useAtomCommand } from "~/state/use-atom-command";
 
 const commandFailure = (result: {
   readonly cause: Parameters<typeof squashAtomCommandFailure>[0]["cause"];

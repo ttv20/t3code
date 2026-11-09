@@ -2,16 +2,16 @@ import { videoMimeType } from "@t3tools/shared/video";
 import { Image } from "expo-image";
 import { createContext, useContext, useState } from "react";
 import { Pressable, View } from "react-native";
-import { useFilePreviewGallery } from "../../components/FilePreviewGallery";
+import { MediaVideoPlayer } from "../../components/MediaVideoPlayer";
+import { VideoAttachmentTile } from "../../components/VideoAttachmentTile";
+import { AppText } from "../../components/ui/AppText";
+import { useFilePreviewGallery } from "../../components/ui/FilePreviewGallery";
 import {
   FilePreviewModal,
   type FilePreviewItem,
   type FilePreviewSource,
-} from "../../components/FilePreviewModal";
-import { MediaVideoPlayer } from "../../components/MediaVideoPlayer";
-import { AppText } from "../../components/ui/AppText";
-import { VideoAttachmentTile } from "../../components/VideoAttachmentTile";
-import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
+} from "../../components/ui/FilePreviewModal";
+import { VideoPreviewModal, type VideoPreviewSource } from "../../components/ui/VideoPreviewModal";
 import { useUiLanguage } from "../../i18n";
 import { assetImageCacheKey } from "../../lib/assetImageSource";
 import { useAssetUrlState, useRefreshAssetUrl } from "../../state/assets";

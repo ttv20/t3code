@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import type { EnvironmentPresentation } from "~/state/environments";

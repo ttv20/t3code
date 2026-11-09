@@ -1,6 +1,6 @@
-import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import { parseDiffFromFile } from "@pierre/diffs";
 import type { FileDiffMetadata } from "@pierre/diffs/types";
+import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import { READABLE_LIGHT_THEME_NAME } from "./readableSyntaxTheme";
 
 // Light mode uses a darker pierre-light so syntax stays readable on every code surface.

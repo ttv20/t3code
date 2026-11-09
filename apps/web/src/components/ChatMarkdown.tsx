@@ -1,31 +1,75 @@
+import { useAtomValue } from "@effect/atom-react";
+import { resolvePullRequestPreviewTarget } from "@t3tools/client-runtime/change-request-links";
+import {
+  classifyMarkdownImageSource,
+  markdownImageSourceFragment,
+} from "@t3tools/client-runtime/markdown-images";
 import { remarkRtlSentenceBoundaries } from "@t3tools/client-runtime/markdown-rtl";
-import { useUiLanguage } from "../i18n";
-import { buildFileLinkParentSuffixByPath, fileLinkLabel } from "@t3tools/shared/fileLinks";
+import { mediaUrlReference } from "@t3tools/client-runtime/media-reference";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
-  isWindowsDrivePathHref,
-  normalizeMarkdownLinkDestination,
-  extractInlineCodeSpans,
-  extractMarkdownLinkHrefs,
-  inlineCodeFilePathCandidate,
-} from "@t3tools/shared/markdownLinks";
-import { taskListMarkerOffset } from "@t3tools/shared/markdownTaskList";
-import { isHostPath, resolveWorkspaceFilePath } from "@t3tools/shared/path";
-import { usePullRequestLinking } from "~/hooks/usePullRequestLinking";
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
+  claimWorkspaceBasenameLookup,
+  needsWorkspaceBasenameLookup,
+  pickStrippedWorkspaceMatch,
+  pickWorkspaceBasenameMatch,
+  stripRepeatedWorkspacePrefix,
+  WORKSPACE_BASENAME_LOOKUP_LIMIT,
+} from "@t3tools/client-runtime/workspace-basename-lookup";
+import {
+  AssetWorkspaceAssetNotFoundError,
   AuthFilesystemReadScope,
   AuthOrchestrationOperateScope,
+  AuthPreviewOperateScope,
   SOURCE_CONTROL_MEDIA_ASSET,
+  type EditorId,
+  type EnvironmentId,
+  type ScopedThreadRef,
+  type ServerConfig,
+  type ServerProviderSkill,
+  type ThreadPullRequestKey,
 } from "@t3tools/contracts";
+import { parseAssistantCitationHref } from "@t3tools/shared/assistantCitations";
 import {
-  CHAT_MARKDOWN_REMARK_PLUGINS,
-  CHAT_MARKDOWN_REMARK_PLUGINS_WITH_BREAKS,
-  CHAT_MARKDOWN_REHYPE_PLUGINS,
-} from "@t3tools/shared/markdownPipeline";
-import { useAtomValue } from "@effect/atom-react";
+  codexArtifactTemplatePresentationLabel,
+  type CodexArtifactTemplate,
+  type CodexArtifactTemplateKind,
+} from "@t3tools/shared/codexArtifactTemplates";
+import {
+  artifactTemplateFromHastProperties,
+  renderCodexInlineDirectivesAsMarkdown,
+} from "@t3tools/shared/codexMarkdownDirectives";
 import {
   COMPOSER_CONTEXT_CLIPBOARD_MIME,
   encodeComposerContextClipboardHtml,
 } from "@t3tools/shared/composerContextClipboard";
+import { parseComposerContextHref } from "@t3tools/shared/composerContextReferences";
+import { buildFileLinkParentSuffixByPath, fileLinkLabel } from "@t3tools/shared/fileLinks";
+import {
+  extractInlineCodeSpans,
+  extractMarkdownLinkHrefs,
+  inlineCodeFilePathCandidate,
+  isMarkdownFileLinkLabel,
+  isWindowsDrivePathHref,
+  normalizeMarkdownLinkDestination,
+} from "@t3tools/shared/markdownLinks";
+import { mathKind } from "@t3tools/shared/markdownMath";
+import {
+  CHAT_MARKDOWN_REHYPE_PLUGINS,
+  CHAT_MARKDOWN_REMARK_PLUGINS,
+  CHAT_MARKDOWN_REMARK_PLUGINS_WITH_BREAKS,
+} from "@t3tools/shared/markdownPipeline";
+import { taskListMarkerOffset } from "@t3tools/shared/markdownTaskList";
+import { mediaKindFromPath, mediaMimeTypeFromExtension } from "@t3tools/shared/mediaPreview";
+import { isHostPath, resolveWorkspaceFilePath } from "@t3tools/shared/path";
+import { parseThreadLinkHref } from "@t3tools/shared/threadLinks";
+import * as Cause from "effect/Cause";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
+import { AsyncResult, Atom } from "effect/reactivity";
 import {
   FileSpreadsheetIcon,
   FileTextIcon,
@@ -42,47 +86,16 @@ import {
   TriangleAlertIcon,
   type LucideIcon,
 } from "lucide-react";
-import {
-  AssetWorkspaceAssetNotFoundError,
-  AuthPreviewOperateScope,
-  type EditorId,
-  type EnvironmentId,
-  type ServerConfig,
-  type ScopedThreadRef,
-  type ServerProviderSkill,
-  type ThreadPullRequestKey,
-} from "@t3tools/contracts";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import {
-  codexArtifactTemplatePresentationLabel,
-  type CodexArtifactTemplate,
-  type CodexArtifactTemplateKind,
-} from "@t3tools/shared/codexArtifactTemplates";
-import {
-  classifyMarkdownImageSource,
-  markdownImageSourceFragment,
-} from "@t3tools/client-runtime/markdown-images";
-import { mediaUrlReference } from "@t3tools/client-runtime/media-reference";
-import { mediaKindFromPath, mediaMimeTypeFromExtension } from "@t3tools/shared/mediaPreview";
-import { InlineAudioPreview } from "./files/InlineAudioPreview";
-import { HostImageUrlContext } from "./chat/hostImageUrl";
-import * as Cause from "effect/Cause";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
-import { AsyncResult, Atom } from "effect/reactivity";
 import React, {
-  Suspense,
-  type ComponentProps,
-  type ClipboardEvent as ReactClipboardEvent,
-  type MouseEvent as ReactMouseEvent,
-  use,
   memo,
+  Suspense,
+  use,
   useLayoutEffect,
   useRef,
   useState,
+  type ComponentProps,
+  type ClipboardEvent as ReactClipboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 import type {
@@ -90,54 +103,40 @@ import type {
   ExtraProps as ReactMarkdownExtraProps,
   Options as ReactMarkdownOptions,
 } from "react-markdown";
-import { createIncrementalMarkdownPlugin } from "../markdown-incremental";
-import type { Pluggable, PluggableList } from "unified";
 import { defaultUrlTransform } from "react-markdown";
-import { parseAssistantCitationHref } from "@t3tools/shared/assistantCitations";
-import { parseComposerContextHref } from "@t3tools/shared/composerContextReferences";
-import { parseThreadLinkHref } from "@t3tools/shared/threadLinks";
-import { AssistantCitationChip } from "./chat/AssistantCitationChip";
-import { MarkdownThreadLink } from "./chat/MarkdownThreadLink";
-import { mathKind } from "@t3tools/shared/markdownMath";
 import remarkMath from "remark-math";
+import type { Pluggable, PluggableList } from "unified";
+import { usePullRequestLinking } from "~/hooks/usePullRequestLinking";
+import { useOpenChangeRequestLink } from "~/lib/openPullRequestLink";
+import { resolveLinkTarget } from "../browser/browserLinkTarget";
 import {
-  artifactTemplateFromHastProperties,
-  renderCodexInlineDirectivesAsMarkdown,
-} from "@t3tools/shared/codexMarkdownDirectives";
-import { renderSkillInlineMarkdownChildren } from "./chat/SkillInlineText";
-import { MarkdownMath } from "./chat/MarkdownMath";
-import {
-  resolveMarkdownMediaPreview,
-  type ExpandedImagePreview,
-} from "./chat/ExpandedImagePreview";
-import { ExpandedImageDialog } from "./chat/ExpandedImageDialog";
-import { markdownImageGallery } from "./chat/markdownImageGallery";
-import { type MediaActionSource } from "./media/MediaActions";
-import { resolveProtocolRelativeMediaUrl } from "./media/mediaContent";
-import {
-  revealInFileExplorerLabelForKind,
-  revealInFileExplorerLabelForOs,
-} from "./preview/fileExplorerLabel";
-import {
-  resolveExternalWebLinkHost,
-  showExternalLinkContextMenu,
-} from "./chat/externalLinkContextMenu";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-import { Button } from "./ui/button";
-import { stackedThreadToast, toastManager } from "./ui/toast";
+  BrowserPreviewUnavailableError,
+  isBrowserPreviewFile,
+  isBrowserSettingsReadError,
+  openFileInPreview,
+  openUrlInPreview,
+} from "../browser/openFileInPreview";
+import { isPreviewAvailableFor } from "../browser/previewRuntime";
+import { useOpenLink } from "../browser/useOpenLink";
 import { recordVisitForThread } from "../browserHistoryStore";
+import { openInEditorMenuLabel } from "../editorLabels";
 import {
   PreferredEditorEnvironmentRequiredError,
   useOpenInPreferredEditor,
   usePreferredEditor,
 } from "../editorPreferences";
-import { openInEditorMenuLabel } from "../editorLabels";
-import { resolveDiffThemeName } from "../lib/diffRendering";
-import { RenderErrorBoundary } from "./RenderErrorBoundary";
-import { useRenderedAppearance } from "../hooks/useTheme";
+import { isElectron } from "../env";
+import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
 import { useClientSettings } from "../hooks/useSettings";
+import { useRenderedAppearance } from "../hooks/useTheme";
+import { useUiLanguage } from "../i18n";
+import { resolveDiffThemeName } from "../lib/diffRendering";
+import { cn } from "../lib/utils";
+import { readLocalApi } from "../localApi";
 import { chatMarkdownClipboardPayload } from "../markdown-clipboard";
+import { createIncrementalMarkdownPlugin } from "../markdown-incremental";
 import {
+  isLocalEditorFileHref,
   resolveInlineCodeFileLinkMeta,
   resolveMarkdownFileLinkMeta,
   rewriteMarkdownFileUriHref,
@@ -148,71 +147,39 @@ import {
   markdownFileEditorTarget,
   resolveMarkdownFileHostPath,
 } from "../markdownFileHostPath";
-import { isMarkdownFileLinkLabel } from "@t3tools/shared/markdownLinks";
-import { isElectron } from "../env";
-import { readLocalApi } from "../localApi";
-import { cn } from "../lib/utils";
 import { resolveRemoteOpenState, useRemoteOpenResolution } from "../remoteOpen";
 import { useRightPanelStore } from "../rightPanelStore";
-import { readThreadShell, useProjects } from "../state/entities";
-import { serverEnvironment } from "../state/server";
-import { shellEnvironment } from "../state/shell";
 import { assetEnvironment } from "../state/assets";
+import { readThreadShell, useProjects } from "../state/entities";
+import { filesystemEnvironment } from "../state/filesystem";
+import { previewEnvironment } from "../state/preview";
+import { projectEnvironment } from "../state/projects";
+import { serverEnvironment } from "../state/server";
 import {
   readEnvironmentScope,
   readPreparedConnection,
   useEnvironmentScope,
 } from "../state/session";
-import { previewEnvironment } from "../state/preview";
+import { shellEnvironment } from "../state/shell";
 import { useAtomCommand } from "../state/use-atom-command";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { projectEnvironment } from "../state/projects";
-import { filesystemEnvironment } from "../state/filesystem";
-import {
-  claimWorkspaceBasenameLookup,
-  needsWorkspaceBasenameLookup,
-  pickStrippedWorkspaceMatch,
-  pickWorkspaceBasenameMatch,
-  stripRepeatedWorkspacePrefix,
-  WORKSPACE_BASENAME_LOOKUP_LIMIT,
-} from "@t3tools/client-runtime/workspace-basename-lookup";
-import { resolvePullRequestPreviewTarget } from "@t3tools/client-runtime/change-request-links";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { useOpenChangeRequestLink } from "~/lib/openPullRequestLink";
-import { useOpenLink } from "../browser/useOpenLink";
-import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { isPreviewAvailableFor } from "../browser/previewRuntime";
-import {
-  isBrowserPreviewFile,
-  openFileInPreview,
-  openUrlInPreview,
-  BrowserPreviewUnavailableError,
-  isBrowserSettingsReadError,
-} from "../browser/openFileInPreview";
-import { resolveLinkTarget } from "../browser/browserLinkTarget";
-import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
-import { MarkdownCodeBlock, SuspenseShikiCodeBlock } from "./chat/MarkdownCodeBlock";
-import { createMarkdownRenderer } from "./chat/markdownRenderer";
-import { splitMarkdownBlocks } from "./chat/markdownStreamBlocks";
-import { MarkdownMermaidCodeBlock } from "./chat/MarkdownMermaidCodeBlock";
-import { MarkdownTable } from "./chat/MarkdownTable";
-import { MarkdownDetails } from "./chat/MarkdownDetails";
+import { RenderErrorBoundary } from "./RenderErrorBoundary";
+import { AssistantCitationChip } from "./chat/AssistantCitationChip";
 import {
   authoredImageSizeStyle,
   ChatMarkdownAssetImage,
   ChatMarkdownImage,
   ChatMarkdownImageFallback,
   ChatMarkdownVideo,
-  MarkdownLinkContext,
   markdownImageCopy,
+  MarkdownLinkContext,
 } from "./chat/ChatMarkdownMedia";
-import { MarkdownExternalLinkContent } from "./chat/MarkdownExternalLink";
-import { MarkdownFileLink } from "./chat/MarkdownFileLink";
-import { canUseMarkdownFileShellActions } from "./chat/MarkdownFileLink.logic";
-import { rehypeChipPunctuation } from "./chat/markdownChipPunctuation";
-import { handleMarkdownFragmentClick, rehypeHeadingIds } from "./chat/markdownFragments";
-import { rehypeTextDirection } from "./chat/markdownTextDirection";
-import { hastHasText, hastPlainTextDeep, plainHastText } from "./chat/markdownHast.logic";
+import { ExpandedImageDialog } from "./chat/ExpandedImageDialog";
+import {
+  resolveMarkdownMediaPreview,
+  type ExpandedImagePreview,
+} from "./chat/ExpandedImagePreview";
+import { MarkdownCodeBlock, SuspenseShikiCodeBlock } from "./chat/MarkdownCodeBlock";
 import {
   extractCodeBlock,
   extractFenceLanguage,
@@ -221,7 +188,39 @@ import {
   isClosedCodeFence,
   nodeToPlainText,
 } from "./chat/MarkdownCodeBlock.logic";
+import { MarkdownDetails } from "./chat/MarkdownDetails";
+import { MarkdownExternalLinkContent } from "./chat/MarkdownExternalLink";
+import { MarkdownFileLink } from "./chat/MarkdownFileLink";
+import { canUseMarkdownFileShellActions } from "./chat/MarkdownFileLink.logic";
+import { MarkdownMath } from "./chat/MarkdownMath";
+import { MarkdownMermaidCodeBlock } from "./chat/MarkdownMermaidCodeBlock";
+import { MarkdownTable } from "./chat/MarkdownTable";
+import { MarkdownThreadLink } from "./chat/MarkdownThreadLink";
+import { renderSkillInlineMarkdownChildren } from "./chat/SkillInlineText";
+import {
+  resolveExternalWebLinkHost,
+  showExternalLinkContextMenu,
+} from "./chat/externalLinkContextMenu";
+import { HostImageUrlContext } from "./chat/hostImageUrl";
 import { reportMarkdownActionFailure } from "./chat/markdownActionFailure";
+import { rehypeChipPunctuation } from "./chat/markdownChipPunctuation";
+import { handleMarkdownFragmentClick, rehypeHeadingIds } from "./chat/markdownFragments";
+import { hastHasText, hastPlainTextDeep, plainHastText } from "./chat/markdownHast.logic";
+import { markdownImageGallery } from "./chat/markdownImageGallery";
+import { createMarkdownRenderer } from "./chat/markdownRenderer";
+import { splitMarkdownBlocks } from "./chat/markdownStreamBlocks";
+import { rehypeTextDirection } from "./chat/markdownTextDirection";
+import { InlineAudioPreview } from "./files/InlineAudioPreview";
+import { type MediaActionSource } from "./media/MediaActions";
+import { resolveProtocolRelativeMediaUrl } from "./media/mediaContent";
+import {
+  revealInFileExplorerLabelForKind,
+  revealInFileExplorerLabelForOs,
+} from "./preview/fileExplorerLabel";
+import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+import { Button } from "./ui/button";
+import { stackedThreadToast, toastManager } from "./ui/toast";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
 const isAssetNotFoundError = Schema.is(AssetWorkspaceAssetNotFoundError);
 
@@ -403,6 +402,7 @@ function markdownUrlTransform(href: string) {
   if (parseComposerContextHref(href)) return href;
   if (parseThreadLinkHref(href)) return href;
   if (isWindowsDrivePathHref(href)) return href;
+  if (isLocalEditorFileHref(href)) return href;
   return rewriteMarkdownFileUriHref(href) ?? defaultUrlTransform(href);
 }
 
@@ -982,8 +982,12 @@ const CHAT_MARKDOWN_COMPONENTS = {
     return <div {...props}>{children}</div>;
   },
   p: function MarkdownParagraph({ node: _node, children, ...props }) {
-    const { skills, threadRef } = use(ChatMarkdownRendererContext);
-    return <p {...props}>{renderSkillInlineMarkdownChildren(children, skills, threadRef)}</p>;
+    const { skills, threadRef, environmentId } = use(ChatMarkdownRendererContext);
+    return (
+      <p {...props}>
+        {renderSkillInlineMarkdownChildren(children, skills, threadRef, environmentId)}
+      </p>
+    );
   },
   blockquote: function MarkdownBlockquote({ node: _node, children, ...props }) {
     const { t: uiT } = useUiLanguage();
@@ -1020,12 +1024,12 @@ const CHAT_MARKDOWN_COMPONENTS = {
     );
   },
   li: function MarkdownListItem({ node, children, ...props }) {
-    const { skills, threadRef } = use(ChatMarkdownRendererContext);
+    const { skills, threadRef, environmentId } = use(ChatMarkdownRendererContext);
     // Resolve checkbox markers by offset to avoid rerendering list items on every streamed token.
     const isTaskItem = String(props.className ?? "").includes("task-list-item");
     return (
       <li {...props} data-list-item-offset={isTaskItem ? node?.position?.start.offset : undefined}>
-        {renderSkillInlineMarkdownChildren(children, skills, threadRef)}
+        {renderSkillInlineMarkdownChildren(children, skills, threadRef, environmentId)}
       </li>
     );
   },

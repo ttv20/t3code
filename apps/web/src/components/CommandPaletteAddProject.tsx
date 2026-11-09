@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../i18n";
 import {
   type AddProjectRemoteSource,
   type NewProjectPublishTarget,
@@ -7,6 +6,7 @@ import { sourceControlClients } from "@t3tools/client-runtime/source-control-cli
 import type { SourceControlProviderKind } from "@t3tools/contracts";
 import { FolderGit2Icon, LinkIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { sourceControlIcon } from "~/sourceControlPresentation";
 import { ITEM_ICON_CLASS } from "./CommandPalette.logic";

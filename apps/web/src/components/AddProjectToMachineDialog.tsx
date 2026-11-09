@@ -1,12 +1,9 @@
-import { useUiLanguage } from "../i18n";
-import { useParams } from "@tanstack/react-router";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
   getAddProjectInitialQuery,
   getCloneDestinationPath,
   getCloneDirectoryPath,
 } from "@t3tools/client-runtime/operations/projects";
-import { resolvePastedPath } from "@t3tools/shared/path";
 import {
   type EnvironmentId,
   type ProjectIgnoredFile,
@@ -18,9 +15,12 @@ import {
   cloneUrlForProtocol,
   cloneUrlProtocol,
 } from "@t3tools/shared/cloneUrl";
+import { resolvePastedPath } from "@t3tools/shared/path";
+import { useParams } from "@tanstack/react-router";
 import { ArrowRightIcon } from "lucide-react";
 import { useId, useState } from "react";
 import { create } from "zustand";
+import { useUiLanguage } from "../i18n";
 
 import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { useAddProjectTargets } from "../hooks/useAddProjectTargets";

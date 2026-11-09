@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { useEffect, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useTheme } from "~/hooks/useTheme";
 

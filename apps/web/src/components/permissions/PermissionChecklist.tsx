@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { CircleCheckIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
 
 export interface PermissionItem {

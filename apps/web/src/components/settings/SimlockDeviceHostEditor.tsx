@@ -1,6 +1,4 @@
-import { UiText, useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { useId, useState, type ReactNode } from "react";
 import {
   isSecretReference,
   type EnvironmentId,
@@ -11,6 +9,8 @@ import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { XIcon } from "lucide-react";
+import { useId, useState, type ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { deviceSimlockIdentityCheck } from "../../state/device";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";

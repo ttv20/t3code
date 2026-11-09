@@ -14,10 +14,10 @@ import {
   useLocalAttachmentPreview,
 } from "../lib/localAttachmentPreview";
 import { useAssetUrlState, useRefreshAssetUrl } from "../state/assets";
-import { FilePreviewModal } from "./FilePreviewModal";
 import { AppText as Text } from "./ui/AppText";
 import { Button } from "./ui/Button";
 import * as Dialog from "./ui/Dialog";
+import { FilePreviewModal } from "./ui/FilePreviewModal";
 import { PresentationSource } from "./ui/NativePresentation";
 
 export function ComposerContextAttachment(props: {

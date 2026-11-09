@@ -1,6 +1,5 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 

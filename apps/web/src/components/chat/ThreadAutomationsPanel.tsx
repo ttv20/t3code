@@ -1,27 +1,27 @@
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
-import { UiText, useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { ThreadDetailsControl } from "./ThreadDetailsControl";
-import { useNavigate } from "@tanstack/react-router";
-import { CalendarClockIcon, PencilIcon, PlayIcon, Settings2Icon } from "lucide-react";
-import { useState } from "react";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
   type ScheduledTask,
   type ThreadId,
 } from "@t3tools/contracts";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { useNavigate } from "@tanstack/react-router";
+import { CalendarClockIcon, PencilIcon, PlayIcon, Settings2Icon } from "lucide-react";
+import { useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { ThreadDetailsControl } from "./ThreadDetailsControl";
 
-import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { cn } from "../../lib/utils";
-import { ScheduledRelativeLabel, scheduleLabel } from "../settings/ScheduledTasksSettings";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { ScheduledRelativeLabel, scheduleLabel } from "../settings/ScheduledTasksSettings";
+import { ThreadDetailsSection } from "./ThreadDetailsSection";
 
 import { readEnvironmentScope } from "../../state/session";
 import { Switch } from "../ui/switch";

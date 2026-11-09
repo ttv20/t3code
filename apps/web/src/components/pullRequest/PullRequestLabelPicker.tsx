@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
-import { useAtomCommand } from "~/state/use-atom-command";
 import type { EnvironmentId, PullRequestLabelCandidate, PullRequestRef } from "@t3tools/contracts";
 import { CheckIcon, TagIcon } from "lucide-react";
 import { useState } from "react";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../../i18n";
 
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 
 import { toastManager } from "../ui/toast";
 import { PullRequestCandidatePicker } from "./PullRequestCandidatePicker";
@@ -84,7 +84,7 @@ export function PullRequestLabelPicker({
       isPending={candidatesQuery.isPending && candidatesQuery.data === null}
       error={candidatesQuery.data === null ? candidatesQuery.error : null}
       candidates={candidates}
-      emptyLabel="This repository has no labels."
+      emptyLabel={uiT("This repository has no labels.")}
       noMatchLabel="No label matches that."
       errorLabel="The labels could not be read."
       truncated={candidatesQuery.data?.truncated === true}

@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vite-plus/test";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import {
   compileResolvedKeybindingsConfig,
   DEFAULT_RESOLVED_KEYBINDINGS,
 } from "@t3tools/shared/keybindings";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { describe, expect, it } from "vite-plus/test";
 
 import {
-  buildKeybindingRows,
   buildKeybindingCommandOptions,
+  buildKeybindingRows,
   buildWhenVariableOptions,
   commandLabel,
   filterKeybindingRows,

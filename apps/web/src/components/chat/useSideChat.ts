@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import type { ModelSelection, RuntimeMode, ScopedThreadRef } from "@t3tools/contracts";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
 import {
@@ -7,7 +5,9 @@ import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import type { ModelSelection, RuntimeMode, ScopedThreadRef } from "@t3tools/contracts";
 import { useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { newMessageId, newThreadId } from "~/lib/utils";
 import { useComposerDraftStore } from "../../composerDraftStore";

@@ -1,6 +1,17 @@
-import { useUiLanguage } from "../../i18n";
-import { useEnvironmentScope } from "../../state/session";
-import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import {
+  AuthOrchestrationOperateScope,
+  AuthSettingsWriteScope,
+  type KeybindingCommand,
+  type KeybindingWhenNode,
+  type ServerRemoveKeybindingInput,
+  type ServerUpsertKeybindingInput,
+} from "@t3tools/contracts";
+import { mergeWithDefaultKeybindings } from "@t3tools/shared/keybindings";
+import { useLocation } from "@tanstack/react-router";
 import {
   ChevronDownIcon,
   CircleXIcon,
@@ -12,7 +23,6 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
-import { useLocation } from "@tanstack/react-router";
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -22,26 +32,19 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { useUiLanguage } from "../../i18n";
 import {
-  AuthOrchestrationOperateScope,
-  AuthSettingsWriteScope,
-  type KeybindingCommand,
-  type KeybindingWhenNode,
-  type ServerRemoveKeybindingInput,
-  type ServerUpsertKeybindingInput,
-} from "@t3tools/contracts";
-import { mergeWithDefaultKeybindings } from "@t3tools/shared/keybindings";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+  readEnvironmentScope,
+  useEnvironmentScope,
+  useEnvironmentsWithScope,
+} from "../../state/session";
 
-import { isElectron } from "../../env";
 import { useOpenInPreferredEditor } from "../../editorPreferences";
+import { isElectron } from "../../env";
 import { formatShortcutLabel } from "../../keybindings";
 import { cn } from "../../lib/utils";
 import { serverEnvironment } from "../../state/server";
-import { useSettingsScope } from "./SettingsScopeContext";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -50,33 +53,33 @@ import { Kbd, KbdGroup } from "../ui/kbd";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Toggle } from "../ui/toggle";
 import { toastManager } from "../ui/toast";
+import { Toggle } from "../ui/toggle";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
-  buildKeybindingRows,
-  filterKeybindingRows,
   buildKeybindingCommandOptions,
+  buildKeybindingRows,
   buildWhenVariableOptions,
   commandLabel,
   DEFAULT_WHEN_VARIABLE,
+  filterKeybindingRows,
+  groupKeybindingRows,
   isKnownWhenVariable,
+  type KeybindingCommandOption,
   keybindingConflictLabels,
   keybindingFromKeyboardEvent,
-  parseWhenExpressionDraft,
-  groupKeybindingRows,
-  type KeybindingCommandOption,
   type KeybindingGroup,
   type KeybindingRow,
-  type WhenVariableOption,
+  parseWhenExpressionDraft,
   unknownWhenVariables,
   whenAstToExpression,
   whenNodeRemoveLabel,
+  type WhenVariableOption,
 } from "./KeybindingsSettings.logic";
 import { SettingsGroup } from "./SettingsGroup";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
+import { useSettingsScope } from "./SettingsScopeContext";
 import { keybindingSearchAnchorId, searchableSetting } from "./settingsSearch";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { useAtomCommand } from "../../state/use-atom-command";
 
 function KeybindingPill({ value }: { value: string }) {
   const { t: uiT } = useUiLanguage();

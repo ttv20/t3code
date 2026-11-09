@@ -4,6 +4,7 @@ import {
   type LimitAccount,
   type LimitPresentations,
 } from "@t3tools/shared/usageLimits";
+import { readUiTranslator } from "../state/ui-language";
 
 import type { WidgetTheme } from "./widgetTheme";
 
@@ -52,6 +53,8 @@ function subscriptionUsageProps(
   configuredDrivers: ReadonlySet<string>,
   maxWindowsPerProvider: number,
 ): SubscriptionUsageSnapshot {
+  const uiT = readUiTranslator();
+
   const pools = collectLimitPools(accounts, now);
   const checked = accounts
     .filter((account) => account.driver === "codex" || account.driver === "claudeAgent")
@@ -69,7 +72,7 @@ function subscriptionUsageProps(
         if (!pool)
           return {
             name,
-            detail: "No limits available",
+            detail: uiT("No limits available"),
             windows: [],
             expiresAt: 0,
             totalWindows: 0,
@@ -96,10 +99,10 @@ function subscriptionUsageProps(
         return {
           name,
           detail: !fresh
-            ? "Open T3 to refresh"
+            ? uiT("Open T3 to refresh")
             : pool.accounts.length > 1
-              ? `${pool.accounts.length} accounts · pooled`
-              : "Subscription remaining",
+              ? uiT("{0} accounts · pooled", { "0": pool.accounts.length })
+              : uiT("Subscription remaining"),
           expiresAt: fresh ? expiresAt : 0,
           totalWindows: fresh ? pool.windows.length : 0,
           windows: fresh
@@ -152,6 +155,8 @@ export function buildSubscriptionUsageSnapshot(
 }
 
 export function subscriptionUsageTimeline(snapshot: SubscriptionUsageSnapshot, now: number) {
+  const uiT = readUiTranslator();
+
   const deadlines = [...new Set(snapshot.providers.map((p) => p.expiresAt))]
     .filter((deadline) => deadline > now)
     .sort((a, b) => a - b);
@@ -161,7 +166,7 @@ export function subscriptionUsageTimeline(snapshot: SubscriptionUsageSnapshot, n
       ...snapshot,
       providers: snapshot.providers.map((provider) =>
         provider.windows.length > 0 && provider.expiresAt <= date
-          ? { ...provider, detail: "Open T3 to refresh", windows: [], totalWindows: 0 }
+          ? { ...provider, detail: uiT("Open T3 to refresh"), windows: [], totalWindows: 0 }
           : provider,
       ),
     },

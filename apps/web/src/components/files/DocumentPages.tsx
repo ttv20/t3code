@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import DOMPurify from "dompurify";
 import { MinusIcon, PlusIcon, RotateCcwIcon } from "lucide-react";
-import { FileSurfaceAction } from "./fileSurfaceChrome";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "~/hooks/useTheme";
 import { observeResize } from "~/lib/observeResize";
+import { useUiLanguage } from "../../i18n";
+import { FileSurfaceAction } from "./fileSurfaceChrome";
 
 export function sanitizeDocumentHtml(source: string): string {
   const fragment = DOMPurify.sanitize(source, {

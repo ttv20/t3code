@@ -1,23 +1,23 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   AuthPreviewOperateScope,
   type DiscoveredLocalServer,
   type EnvironmentId,
   type ThreadId,
 } from "@t3tools/contracts";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import { ChevronDown, ChevronUp } from "lucide";
 import { GlobeIcon, LoaderCircleIcon, SquareIcon } from "lucide-react";
 import { type MouseEvent, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { resolveDiscoveredServerUrl } from "../../browser/browserTargetResolver";
-import { readLocalApi } from "../../localApi";
 import { cn, isMacPlatform } from "../../lib/utils";
+import { readLocalApi } from "../../localApi";
 import { useThreadDiscoveredPorts } from "../../portDiscoveryState";
 import { useEnvironment } from "../../state/environments";
 import { previewEnvironment } from "../../state/preview";

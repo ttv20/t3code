@@ -3,13 +3,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { useUiLanguage } from "../../i18n";
 import { AndroidNavigationAppearanceSection } from "./appearance/sections/AndroidNavigationAppearanceSection";
+import { SettingsScreen } from "./components/SettingsScreen";
 import { LanguageSettingsSection } from "./LanguageSettingsSection";
 
 import { CodeAppearanceSection } from "./appearance/sections/CodeAppearanceSection";
 import { TerminalAppearanceSection } from "./appearance/sections/TerminalAppearanceSection";
 import { TextAppearanceSection } from "./appearance/sections/TextAppearanceSection";
 import { ThemeAppearanceSection } from "./appearance/sections/ThemeAppearanceSection";
-import { SettingsScreen } from "./components/SettingsScreen";
+import { ToolCallsAppearanceSection } from "./appearance/sections/ToolCallsAppearanceSection";
 
 export function SettingsAppearanceRouteScreen() {
   const { t: uiT } = useUiLanguage();
@@ -32,6 +33,7 @@ export function SettingsAppearanceRouteScreen() {
         <TextAppearanceSection />
         <TerminalAppearanceSection />
         <CodeAppearanceSection />
+        <ToolCallsAppearanceSection />
       </ScrollView>
     </SettingsScreen>
   );

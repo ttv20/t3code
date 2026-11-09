@@ -1,14 +1,14 @@
-import { UiText } from "../../i18n";
 import {
   getClientSettings,
   updateClientSettings,
   useClientSettings,
 } from "../../hooks/useSettings";
+import { UiText } from "../../i18n";
 import { MenuCheckboxItem, MenuGroup, MenuGroupLabel, MenuItem, MenuSeparator } from "../ui/menu";
 import {
   isDefaultThreadDetailsVisibility,
-  resolveThreadDetailsVisibility,
   RESET_THREAD_DETAILS_ITEMS,
+  resolveThreadDetailsVisibility,
   setThreadDetailsItem,
   THREAD_DETAILS_ITEMS,
 } from "./threadDetailsItems";

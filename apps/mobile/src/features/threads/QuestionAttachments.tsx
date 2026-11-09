@@ -7,10 +7,10 @@ import { TextInputWrapper } from "expo-paste-input";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { View, type TextInputInstance } from "react-native";
 import { ComposerAttachmentStrip } from "../../components/ComposerAttachmentStrip";
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { AppTextInput as TextInput } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
-import { VideoPreviewModal, type VideoPreviewSource } from "../../components/VideoPreviewModal";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
+import { VideoPreviewModal, type VideoPreviewSource } from "../../components/ui/VideoPreviewModal";
 import { useUiLanguage } from "../../i18n";
 import {
   convertPastedImagesToAttachments,

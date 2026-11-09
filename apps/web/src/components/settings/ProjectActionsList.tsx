@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import type { ProjectScript, ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import { SettingsIcon } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 import { shortcutLabelForCommand } from "../../keybindings";
 import { commandForProjectScript } from "../../projectScripts";
 import { ScriptIcon } from "../projectScriptEditor";

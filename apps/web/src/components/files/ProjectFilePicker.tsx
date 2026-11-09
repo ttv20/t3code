@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useActiveProjectTarget, type ActiveProjectTarget } from "~/hooks/useActiveProjectTarget";
 import { useTheme } from "~/hooks/useTheme";
@@ -8,8 +8,8 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
-import { CommandPaletteContent } from "../CommandPaletteContent";
 import { type CommandPaletteActionItem } from "../CommandPalette.logic";
+import { CommandPaletteContent } from "../CommandPaletteContent";
 import { CommandPaletteResults } from "../CommandPaletteResults";
 import {
   getProjectFilePickerMatches,

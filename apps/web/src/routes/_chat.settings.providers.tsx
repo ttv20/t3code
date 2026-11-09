@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../i18n";
-import { createFileRoute } from "@tanstack/react-router";
 import { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
+import { createFileRoute } from "@tanstack/react-router";
+import { useUiLanguage } from "../i18n";
 
 import { ProviderSettingsPanel } from "../components/settings/ProviderSettingsPanel";
 import { useSettingsScope } from "../components/settings/SettingsScopeContext";

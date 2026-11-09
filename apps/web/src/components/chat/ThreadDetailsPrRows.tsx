@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
-import { ThreadDetailsControl } from "./ThreadDetailsControl";
-import type { EnvironmentId, ScopedThreadRef, ThreadPullRequestLink } from "@t3tools/contracts";
 import {
   pullRequestListLines,
   resolveThreadPullRequestChains,
   threadPullRequestKeyOf,
   visibleThreadPullRequests,
 } from "@t3tools/client-runtime/thread-pull-requests";
+import type { EnvironmentId, ScopedThreadRef, ThreadPullRequestLink } from "@t3tools/contracts";
+import { pipe } from "effect/Function";
 import { ChevronDown, ChevronUp } from "lucide";
 import { useState, type ComponentProps, type MouseEvent as ReactMouseEvent } from "react";
+import { useUiLanguage } from "../../i18n";
+import { ThreadDetailsControl } from "./ThreadDetailsControl";
 
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { findProjectOnChangeRequestHost } from "@t3tools/client-runtime/change-request-links";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 
 import { useProjects } from "~/state/entities";
 import { threadEnvironment } from "~/state/threads";

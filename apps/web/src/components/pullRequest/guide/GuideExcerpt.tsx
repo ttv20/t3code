@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../../i18n";
 import type {
   DiffLineAnnotation,
   FileDiffContentsLoader,
@@ -9,6 +8,7 @@ import { FileDiff } from "@pierre/diffs/react";
 import type { PullRequestReviewGuideExcerpt, PullRequestReviewPosition } from "@t3tools/contracts";
 import { ArrowUpRightIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../../../i18n";
 
 import { useRenderedAppearance } from "~/hooks/useTheme";
 import {
@@ -23,22 +23,22 @@ import {
   type ReviewCommentContext,
 } from "~/reviewCommentContext";
 
-import { DiffCommentAnnotation } from "../../diffs/DiffCommentAnnotation";
-import { DIFF_VIEW_UNSAFE_CSS } from "../../diffs/StyledDiffCodeView";
-import { Button } from "../../ui/button";
-import {
-  getReviewPositionAnchor,
-  PendingReviewCommentCard,
-  toViewerSide,
-} from "../PullRequestReviewAnnotation";
-import type { PendingReviewComment } from "../pullRequestReviewStore";
 import {
   excerptExpansionOldContents,
   excerptRows,
   fileDiffRows,
   rowsToPatch,
 } from "@t3tools/client-runtime/review-guide-tour";
+import { DiffCommentAnnotation } from "../../diffs/DiffCommentAnnotation";
+import { DIFF_VIEW_UNSAFE_CSS } from "../../diffs/StyledDiffCodeView";
+import { Button } from "../../ui/button";
 import type { PullRequestCompletionScope } from "../PullRequestMarkdownTextarea";
+import {
+  getReviewPositionAnchor,
+  PendingReviewCommentCard,
+  toViewerSide,
+} from "../PullRequestReviewAnnotation";
+import type { PendingReviewComment } from "../pullRequestReviewStore";
 import { GuideNoteMarker } from "./GuideNotes";
 import { GuideProse } from "./GuideProse";
 

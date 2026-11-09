@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vite-plus/test";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
   resolveStreamingMarkdownDirection,
   startsWithRtlLetter,
 } from "@t3tools/client-runtime/markdown-direction";
+import { describe, expect, it } from "vite-plus/test";
 
 describe("message direction", () => {
   it("keeps technical Hebrew questions and answer choices RTL even when they start with Latin text", () => {

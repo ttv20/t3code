@@ -1,12 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import {
   AuthPreviewOperateScope,
   type PreviewAnnotationPayload,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
-import type { ComposerImageAttachment } from "~/composerDraftStore";
 import { usePreviewAvailable } from "~/browser/previewRuntime";
+import type { ComposerImageAttachment } from "~/composerDraftStore";
 import { useEnvironmentScope } from "~/state/session";
 
 import { PreviewPanelShell, type PreviewPanelMode } from "./PreviewPanelShell";

@@ -1,17 +1,23 @@
-import { ThreadId, type WorktreeSetupSnapshot } from "@t3tools/contracts";
 import {
   CheckpointRef,
+  EnvironmentId,
+  MessageId,
   NodeId,
   ProviderDriverKind,
   ProviderInstanceId,
   ProviderTurnId,
   RunAttemptId,
-  TurnItemId,
+  RunId,
   RuntimeRequestId,
+  ThreadId,
+  TurnItemId,
   type OrchestrationV2ProjectedTurnItem,
   type OrchestrationV2TurnItem,
+  type WorktreeSetupSnapshot,
 } from "@t3tools/contracts";
+import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
 import * as DateTime from "effect/DateTime";
+import { describe, expect, it } from "vite-plus/test";
 import {
   deriveTimelineEntriesFromVisibleTurnItems,
   deriveTimelineEntriesFromVisibleTurnItemsWithState,
@@ -20,19 +26,16 @@ import {
 } from "../../session-logic";
 import { makeStreamingTimelineFixture } from "../../test-fixtures";
 import type { TurnDiffSummary } from "../../types";
-import { describe, expect, it } from "vite-plus/test";
-import { EnvironmentId, MessageId, RunId } from "@t3tools/contracts";
-import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
 import {
   computeStableMessagesTimelineRows,
   deriveMessagesTimelineRows,
-  timelineTurnFoldRunIdsByEntryId,
-  liveAnswerPreview,
   deriveMessagesTimelineRowsWithState,
-  shouldCollapseUserMessage,
+  liveAnswerPreview,
   resolveAssistantMessageCopyState,
-  type MessagesTimelineRow,
+  shouldCollapseUserMessage,
+  timelineTurnFoldRunIdsByEntryId,
   workEntryDisplayLabel,
+  type MessagesTimelineRow,
 } from "./MessagesTimeline.logic";
 
 describe("resolveAssistantMessageCopyState", () => {

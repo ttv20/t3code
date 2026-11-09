@@ -19,9 +19,9 @@ import { fetch } from "expo/fetch";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, TextInput, View } from "react-native";
 import { useUiLanguage } from "../../i18n";
+import { attachmentDocumentPresentation } from "../../lib/attachmentDocumentPresentation";
 import { readUiTranslator } from "../../state/ui-language";
 
-import { FilePreviewModal } from "../../components/FilePreviewModal";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { AppBar } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -29,9 +29,9 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { FilePreviewModal } from "../../components/ui/FilePreviewModal";
 import { Progress } from "../../components/ui/Progress";
-import { useContentTopInset } from "../../components/ui/useBarInset";
-import { attachmentDocumentPresentation } from "../../lib/attachmentDocumentPresentation";
+import { useContentBottomInset, useContentTopInset } from "../../components/ui/useBarInset";
 import {
   nativeViewerErrorMessage,
   shareGeneratedAttachment,
@@ -409,15 +409,16 @@ function ZipArchiveList(props: {
       return next;
     });
   const fileCount = archive.fileCount;
+  const bottomInset = useContentBottomInset();
   return (
     <View className="flex-1 bg-sheet">
       <LegendList
         renderScrollComponent={NativeScrollView}
-        contentInsetStartAdjustment={props.headerInset}
+        contentInset={{ top: props.headerInset, bottom: bottomInset }}
         className="flex-1"
         data={rows}
         keyExtractor={(row) => `${row.node.entry ? "f" : "d"}:${row.node.path}`}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         automaticallyAdjustsScrollIndicatorInsets
         estimatedItemSize={44}
         recycleItems

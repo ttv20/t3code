@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 

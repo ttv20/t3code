@@ -1,23 +1,23 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { filePreviewDelimiter } from "@t3tools/shared/delimitedPreview";
-import type { AssetResource, EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { readFilePreviewResponse } from "@t3tools/client-runtime/file-preview";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import * as AsyncResult from "effect/reactivity/AsyncResult";
-import * as Cause from "effect/Cause";
+import type { AssetResource, EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import { filePreviewDelimiter } from "@t3tools/shared/delimitedPreview";
 import {
+  FILE_TEXT_PREVIEW_MAX_BYTES,
   filePreviewKind,
   officePreviewKind,
-  FILE_TEXT_PREVIEW_MAX_BYTES,
 } from "@t3tools/shared/filePreview";
-import { ChevronRightIcon, DownloadIcon, Trash2Icon, WrapTextIcon, XIcon } from "lucide-react";
+import * as Cause from "effect/Cause";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { Check, Code2, Copy, Eye, Table2 } from "lucide";
+import { ChevronRightIcon, DownloadIcon, Trash2Icon, WrapTextIcon, XIcon } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
+import { maskMarkdownFrontmatter } from "@t3tools/shared/markdownFrontmatter";
 import { useAssetUrlRefresh } from "~/assets/assetUrls";
 import ChatMarkdown from "~/components/ChatMarkdown";
-import { maskMarkdownFrontmatter } from "@t3tools/shared/markdownFrontmatter";
 import { MorphIcon } from "~/components/MorphIcon";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { toastManager } from "~/components/ui/toast";
@@ -25,9 +25,8 @@ import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useClientSettings } from "~/hooks/useSettings";
 import { cn } from "~/lib/utils";
 
-import { BinaryFilePreview } from "./BinaryFilePreview";
-import { PreviewImage } from "./PreviewImage";
 import { AudioPreview } from "./AudioPreview";
+import { BinaryFilePreview } from "./BinaryFilePreview";
 import { BrowserDocumentFrame } from "./BrowserDocumentFrame";
 import { DelimitedTablePreview } from "./DelimitedTablePreview";
 import {
@@ -37,6 +36,7 @@ import {
   FileSurfaceLoading,
   FileSurfaceNotice,
 } from "./fileSurfaceChrome";
+import { PreviewImage } from "./PreviewImage";
 
 const LargeTextViewer = lazy(() => import("./LargeTextViewer"));
 

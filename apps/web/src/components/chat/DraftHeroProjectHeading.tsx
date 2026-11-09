@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { observeResize } from "~/lib/observeResize";
 

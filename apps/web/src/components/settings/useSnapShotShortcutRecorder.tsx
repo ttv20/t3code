@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   isModifierPairShortcut,
   type SnapShotModifier,
@@ -6,6 +5,7 @@ import {
 } from "@t3tools/contracts";
 import { parseKeybindingShortcut } from "@t3tools/shared/keybindings";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useUiLanguage } from "../../i18n";
 import { getDesktopSnapShotBridge } from "../../lib/desktopSnapShot";
 import {
   formatSnapShotShortcutLabel,

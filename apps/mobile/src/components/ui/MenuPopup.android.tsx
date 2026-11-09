@@ -12,11 +12,11 @@ import { Pressable } from "react-native";
 import { useUiLanguage } from "../../i18n";
 import { resolveScaledTextRole } from "../../lib/appearancePreferences";
 import { NativeThemeHost } from "./NativeThemeHost.android";
+import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
-import { isAppSymbolName, SymbolView, type AppSymbolName } from "./AppSymbol";
+import { isAppSymbolName, SymbolView, type AppSymbolName } from "./AppSymbol.android";
 import type { MenuPopupProps } from "./MenuPopup";
-import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 // The Compose glyph host consumes touches; run the action here and keep accessibility on the row.
 function MenuIcon(props: {

@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../i18n";
 import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
 import { PinIcon, PinOffIcon } from "lucide-react";
 import type { KeyboardEvent } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { resolveShortcutCommand } from "../keybindings";
 

@@ -1,12 +1,12 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { ChevronDownIcon } from "lucide-react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
 import { ThreadDetailsItemsMenuItems } from "../chat/ThreadDetailsItemsMenu";
 import {
   isDefaultThreadDetailsVisibility,
-  resolveThreadDetailsVisibility,
   RESET_THREAD_DETAILS_ITEMS,
+  resolveThreadDetailsVisibility,
   THREAD_DETAILS_ITEMS,
 } from "../chat/threadDetailsItems";
 import { Button } from "../ui/button";
@@ -48,7 +48,7 @@ export function ThreadDetailsItemsRow() {
             }
           >
             <UiText
-              message="{0} of {1} on"
+              message={uiT("{0} of {1} on")}
               values={{ "0": enabled, "1": THREAD_DETAILS_ITEMS.length }}
             />
             <ChevronDownIcon aria-hidden />

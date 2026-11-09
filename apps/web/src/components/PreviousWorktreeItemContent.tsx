@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import { HistoryIcon } from "lucide-react";
+import { useUiLanguage } from "../i18n";
 
 import { MiddleTruncate } from "./ui/middle-truncate";
 

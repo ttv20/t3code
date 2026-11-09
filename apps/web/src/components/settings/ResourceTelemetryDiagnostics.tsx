@@ -1,18 +1,8 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { ProcessSignalActions } from "./ProcessSignalActions";
-import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { RegistryContext } from "@effect/atom-react";
 import {
-  ActivityIcon,
-  AlertTriangleIcon,
-  BatteryIcon,
-  CpuIcon,
-  DatabaseIcon,
-  GaugeIcon,
-  HardDriveIcon,
-  MemoryStickIcon,
-} from "lucide-react";
-import { ChevronDown, ChevronRight } from "lucide";
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import type {
   BackgroundBooleanState,
   EnvironmentId,
@@ -27,32 +17,42 @@ import type {
   ResourceTelemetrySourceStatus,
   ServerProcessSignal,
 } from "@t3tools/contracts";
+import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
-import { RegistryContext } from "@effect/atom-react";
-import { useContext, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide";
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+  ActivityIcon,
+  AlertTriangleIcon,
+  BatteryIcon,
+  CpuIcon,
+  DatabaseIcon,
+  GaugeIcon,
+  HardDriveIcon,
+  MemoryStickIcon,
+} from "lucide-react";
+import { useContext, useRef, useState, type ReactNode } from "react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { UiText, useUiLanguage } from "../../i18n";
+import { ProcessSignalActions } from "./ProcessSignalActions";
 
+import { MorphIcon } from "~/components/MorphIcon";
+import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
+import { formatBytes } from "../../lib/formatBytes";
 import {
   useResourceTelemetry,
   useResourceTelemetryHistory,
 } from "../../lib/resourceTelemetryState";
 import { cn } from "../../lib/utils";
-import { formatBytes } from "../../lib/formatBytes";
 import { ensureLocalApi } from "../../localApi";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import { Button } from "../ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
 import { ScrollArea } from "../ui/scroll-area";
+import { toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { toastManager } from "../ui/toast";
 import {
   processIdentityKey,
   resourceHistoryBarHeight,

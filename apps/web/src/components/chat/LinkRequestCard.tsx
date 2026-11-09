@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
 import { useAtomValue } from "@effect/atom-react";
 import {
   type LinkableMachine,
@@ -22,14 +20,16 @@ import {
   type EnvironmentId,
   type OrchestrationV2ProjectedTurnItem,
 } from "@t3tools/contracts";
+import { pipe } from "effect/Function";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { CheckIcon, LinkIcon, MinusIcon, XIcon } from "lucide-react";
 import { useId, useRef, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { useEnvironmentScope, usePreparedConnection } from "../../state/session";
-import { mintPairingCodeOn } from "../../state/peerPairingCode";
 import { peerLinkEnvironment, useLinkableMachines } from "../../state/peerLinks";
+import { mintPairingCodeOn } from "../../state/peerPairingCode";
+import { useEnvironmentScope, usePreparedConnection } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { accessConfig } from "../auth/ConnectAgentSurface";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
@@ -121,7 +121,7 @@ function PendingLinkRequest(props: {
       <div className="flex min-w-0 flex-col gap-1">
         <p className="text-sm font-medium text-foreground">
           {picksMachine(item)
-            ? "Link a machine to this environment"
+            ? uiT("Link a machine to this environment")
             : `Link ${target} to this environment`}
         </p>
         {item.reason.trim() ? <p className="text-sm text-muted-foreground">{item.reason}</p> : null}
@@ -146,7 +146,7 @@ function PendingLinkRequest(props: {
             {uiT("Decline")}
           </Button>
           <Button type="button" size="xs" disabled={declining} onClick={() => setOpen(true)}>
-            {picksMachine(item) ? "Choose machine…" : "Review link…"}
+            {picksMachine(item) ? uiT("Choose machine…") : uiT("Review link…")}
           </Button>
         </div>
       ) : (
@@ -472,7 +472,13 @@ function LinkRequestDialog(props: {
             type="submit"
             disabled={busy || (finishesHere ? !ready : !machineReady)}
           >
-            {busy ? "Linking…" : useExisting ? "Use this link" : finishesHere ? "Link" : "Continue"}
+            {busy
+              ? uiT("Linking…")
+              : useExisting
+                ? uiT("Use this link")
+                : finishesHere
+                  ? uiT("Link")
+                  : uiT("Continue")}
           </Button>
         </WizardFooter>
       </WizardPopup>

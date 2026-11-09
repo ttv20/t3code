@@ -1,14 +1,14 @@
-import { useUiLanguage } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { isWindowsAbsolutePath } from "@t3tools/shared/path";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useTheme } from "~/hooks/useTheme";
 import { getLocalFileManagerName, isWindowsPlatform } from "~/lib/utils";
-import { CommandPaletteContent } from "../CommandPaletteContent";
+import { primaryServerKeybindingsAtom } from "~/state/server";
 import type { CommandPaletteActionItem } from "../CommandPalette.logic";
+import { CommandPaletteContent } from "../CommandPaletteContent";
 import { CommandPaletteResults } from "../CommandPaletteResults";
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
 import {

@@ -1,6 +1,3 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import { Spinner } from "~/components/ui/spinner";
 import type {
   EnvironmentId,
   ProjectId,
@@ -24,13 +21,15 @@ import {
   UserRoundIcon,
 } from "lucide-react";
 import { type ElementType, useState } from "react";
+import { Spinner } from "~/components/ui/spinner";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
-import { useDebouncedValue } from "~/state/queries";
 import { type EnvironmentQueryTarget, usePullRequestFilterOptions } from "~/state/pullRequests";
+import { useDebouncedValue } from "~/state/queries";
 import { ProjectFavicon, type ProjectFaviconProject } from "../ProjectFavicon";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { Button } from "../ui/button";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 
 import {
   Menu,
@@ -49,16 +48,16 @@ import {
   MenuTrigger,
 } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { PullRequestGlyph } from "./pullRequestIcons";
 import {
   pullRequestAuthorChoices,
-  selectedPullRequestAuthor,
+  type PullRequestAuthorFacet,
   pullRequestLabelChoices,
   pullRequestLabelColor,
-  type PullRequestAuthorFacet,
   type PullRequestLabelFacet,
+  selectedPullRequestAuthor,
 } from "./pullRequestList.logic";
 import { PullRequestActorAvatar } from "./pullRequestPresentation";
-import { PullRequestGlyph } from "./pullRequestIcons";
 
 export interface PullRequestFilterOption<Value extends string> {
   readonly value: Value;
@@ -331,7 +330,9 @@ function PullRequestAuthorChoices({
         ))}
         {visible.length === 0 && !hosted.isPending ? (
           <MenuItem disabled>
-            {hosted.error === null ? "No authors found" : "Couldn't search authors on the host"}
+            {hosted.error === null
+              ? uiT("No authors found")
+              : uiT("Couldn't search authors on the host")}
           </MenuItem>
         ) : null}
       </MenuRadioGroup>
@@ -407,7 +408,9 @@ function PullRequestLabelChoices({
       />
       {visible.length === 0 && !hosted.isPending ? (
         <MenuItem disabled>
-          {hosted.error === null ? "No labels found" : "Couldn't search labels on the host"}
+          {hosted.error === null
+            ? uiT("No labels found")
+            : uiT("Couldn't search labels on the host")}
         </MenuItem>
       ) : null}
       {visible.map((option) => {

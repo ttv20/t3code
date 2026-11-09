@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../i18n";
-import type { EnvironmentId, SourceControlSignInPrompt } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
 import {
   readHostCredentialSettings,
   type SourceControlAppSignIn,
   type SourceControlDefinition,
 } from "@t3tools/client-runtime/source-control-clients";
-import { useAtomValue } from "@effect/atom-react";
+import type { EnvironmentId, SourceControlSignInPrompt } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { Check, Copy } from "lucide";
 import { CheckIcon, ExternalLinkIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { MorphIcon } from "~/components/MorphIcon";
 import { T3AppIcon } from "~/components/T3AppIcon";

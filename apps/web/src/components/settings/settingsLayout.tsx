@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../../i18n";
-import { SettingsGroup } from "./SettingsGroup";
-import { AuthSettingsWriteScope } from "@t3tools/contracts";
-import { usePrimaryEnvironmentId, usePrimaryEnvironment } from "../../state/environments";
-import { useEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
-import { useServerConfigs } from "../../state/entities";
-import { InfoIcon, Undo2Icon } from "lucide-react";
 import {
+  AuthSettingsWriteScope,
   DEFAULT_SERVER_SETTINGS,
   isManagedSettingPath,
   type ServerSettings,
 } from "@t3tools/contracts";
-import * as Equal from "effect/Equal";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { createContext, type ComponentPropsWithoutRef, type ReactNode, useContext } from "react";
+import * as Equal from "effect/Equal";
+import { InfoIcon, Undo2Icon } from "lucide-react";
+import { type ComponentPropsWithoutRef, createContext, type ReactNode, useContext } from "react";
+import { useUiLanguage } from "../../i18n";
+import { useServerConfigs } from "../../state/entities";
+import { usePrimaryEnvironment, usePrimaryEnvironmentId } from "../../state/environments";
+import { useEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
+import { SettingsGroup } from "./SettingsGroup";
 
 import {
   PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE,
@@ -22,6 +22,11 @@ import { cn } from "../../lib/utils";
 import { WorkspacePageContainer, type WorkspacePageWidth } from "../WorkspacePageContainer";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import {
+  SettingInheritance,
+  type SettingInheritanceState,
+  type SettingOverridingProject,
+} from "./SettingInheritance";
 import { useOptionalSettingsScope } from "./SettingsScopeContext";
 import { SettingsScopeSentence } from "./SettingsScopeSentence";
 import {
@@ -32,11 +37,6 @@ import {
   scopedSettingsSource,
 } from "./scopedSettings";
 import { useClearProjectOverrides, useClearScopedSettings } from "./useScopedSettings";
-import {
-  SettingInheritance,
-  type SettingInheritanceState,
-  type SettingOverridingProject,
-} from "./SettingInheritance";
 
 const EMPTY_SETTING_KEYS: readonly (keyof ServerSettings)[] = [];
 const EMPTY_MANAGED_PATHS: readonly string[] = [];

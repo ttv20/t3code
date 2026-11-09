@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { TRIAGE_CLI_COMMAND } from "~/hooks/useStartTriage";
+import { useUiLanguage } from "../../i18n";
 
 import { InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -52,7 +52,7 @@ export function TriageDraftHero(props: {
               />
             }
           >
-            {isCopied ? "Copied" : "or run"}
+            {isCopied ? uiT("Copied") : uiT("or run")}
             {isCopied ? null : <code className="ml-1 font-mono text-xs">{TRIAGE_CLI_COMMAND}</code>}
           </TooltipTrigger>
           <TooltipPopup side="bottom">{uiT("Copy command, for a terminal")}</TooltipPopup>

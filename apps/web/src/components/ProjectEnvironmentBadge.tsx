@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../i18n";
 import type { EnvironmentId, EnvironmentMachineKind } from "@t3tools/contracts";
+import { useUiLanguage } from "../i18n";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";

@@ -1,20 +1,22 @@
-import { useUiLanguage } from "../../i18n";
-import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
-import { WorkLogButton, WorkLogList, WorkLogRow } from "./WorkLog";
-import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
-import { type ToolActivityIcon } from "@t3tools/contracts";
+import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { liveThoughtLine } from "@t3tools/client-runtime/work-log/presentation";
 import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
+import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
+import { type ToolActivityIcon } from "@t3tools/contracts";
+import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { Minimize2Icon, XIcon } from "lucide-react";
+import { memo, use, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { observeResize } from "~/lib/observeResize";
 import { tickTextContent } from "~/lib/tickTextContent";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 import { observeVisibleAnimation } from "../../lib/visibleAnimation";
-import { memo, use, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { workEntryDisplayIndicatesToolFailure } from "../../session-logic";
 import ChatMarkdown from "../ChatMarkdown";
-import { Minimize2Icon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
+import { Spinner } from "../ui/spinner";
 import {
   liveWorkEntryLabel,
   resolveWorkGroupScrollIndex,
@@ -22,31 +24,27 @@ import {
   workEntryIsVisibleInGroup,
   type MessagesTimelineRow,
 } from "./MessagesTimeline.logic";
-import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import { Spinner } from "../ui/spinner";
-import { WorktreeSetupCard } from "./WorktreeSetupCard";
-import { cn } from "~/lib/utils";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
 import {
-  TimelineRowCtx,
   TimelineRowActivityCtx,
+  TimelineRowCtx,
   WorkGroupViewCtx,
-  type TimelineWorkEntry,
   type TimelineRow,
+  type TimelineWorkEntry,
 } from "./timelineRowContext";
-import { TimelineRowTimestamp, ActivityShimmerOverlay } from "./TimelineRowParts";
+import { ActivityShimmerOverlay, TimelineRowTimestamp } from "./TimelineRowParts";
 import {
   failedToolIconClassName,
+  ToolActivityIconView,
   toolIconAcceptsTint,
   type WorkEntryIconName,
-  ToolActivityIconView,
 } from "./TimelineToolActivityIcon";
 import {
-  useThreadReadTarget,
-  threadReadLabel,
-  ThreadReadLabel,
   ReasoningTraceContent,
   SimpleWorkEntryRow,
+  threadReadLabel,
+  ThreadReadLabel,
+  useThreadReadTarget,
 } from "./TimelineWorkEntryRow";
 import {
   THINKING_PREVIEW_PLUGINS,
@@ -55,6 +53,8 @@ import {
   workEntryIconName,
 } from "./TimelineWorkEntryRow.logic";
 import { formatWorkingTimerNow } from "./TimelineWorkGroupRows.logic";
+import { WorkLogButton, WorkLogList, WorkLogRow } from "./WorkLog";
+import { WorktreeSetupCard } from "./WorktreeSetupCard";
 
 export const WorkGroupSection = memo(function WorkGroupSection({
   anchorKey,

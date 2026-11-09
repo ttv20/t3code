@@ -1,26 +1,15 @@
-import { useUiLanguage } from "../i18n";
-import { pipe } from "effect/Function";
 import {
-  scopeProjectRef,
   scopedThreadKey,
+  scopeProjectRef,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
-import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
+import { pipe } from "effect/Function";
 import { useStableCallback } from "~/hooks/useStableCallback";
+import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
+import { useUiLanguage } from "../i18n";
 
+import { useRender } from "@base-ui/react/use-render";
 import { pullRequestDetailToVcsStatus } from "@t3tools/client-runtime/state/pull-requests";
-import {
-  resolveEnvironmentMachineKind,
-  type EnvironmentId,
-  type ScopedThreadRef,
-  type ThreadLinkedPullRequest,
-  type ThreadPullRequestLink,
-  type VcsStatusResult,
-} from "@t3tools/contracts";
-import { FolderGit2Icon, TerminalIcon } from "lucide-react";
-import { useEnvironment, usePrimaryEnvironmentId } from "../state/environments";
-import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
-import { useProject } from "../state/entities";
 import {
   pullRequestListLines,
   resolveThreadCurrentPullRequestLink,
@@ -29,17 +18,28 @@ import {
   type ThreadPullRequestBadge,
   visibleThreadPullRequests,
 } from "@t3tools/client-runtime/thread-pull-requests";
-import { useRender } from "@base-ui/react/use-render";
-import { type ReactNode, type AnimationEvent, type MouseEvent, type ReactElement } from "react";
-import { cn } from "../lib/utils";
+import {
+  type EnvironmentId,
+  resolveEnvironmentMachineKind,
+  type ScopedThreadRef,
+  type ThreadLinkedPullRequest,
+  type ThreadPullRequestLink,
+  type VcsStatusResult,
+} from "@t3tools/contracts";
+import { FolderGit2Icon, TerminalIcon } from "lucide-react";
+import { type AnimationEvent, type MouseEvent, type ReactElement, type ReactNode } from "react";
 import { revealThreadTerminal } from "../lib/revealThreadTerminal";
+import { cn } from "../lib/utils";
+import { useProject } from "../state/entities";
+import { useEnvironment, usePrimaryEnvironmentId } from "../state/environments";
+import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 
-import { useEnvironmentQuery } from "../state/query";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { linkedPullRequestDetailAtom, useSharedPullRequestSummary } from "../state/pullRequests";
+import { useEnvironmentQuery } from "../state/query";
 import { useThreadRunningTerminalIds } from "../state/terminalSessions";
 import { vcsEnvironment } from "../state/vcs";
 import { useUiStateStore } from "../uiStateStore";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   pullRequestMatchesSearchQuery,
   resolveThreadLastVisitedAt,
@@ -51,13 +51,13 @@ import {
 
 import type { SidebarThreadSummary } from "../types";
 import { formatWorktreePathForDisplay } from "../worktreeCleanup";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import {
   PULL_REQUEST_STATE_PRESENTATION,
   PullRequestGlyph,
   type PullRequestGlyphIcon,
 } from "./pullRequest/pullRequestIcons";
 import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
 export interface PrStatusIndicator {
   label: string;

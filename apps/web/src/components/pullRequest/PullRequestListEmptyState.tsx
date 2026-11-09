@@ -1,11 +1,11 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { PlusIcon, SearchIcon } from "lucide-react";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { openCommandPalette } from "../../commandPaletteBus";
 import { Button } from "../ui/button";
-import { PullRequestListGhost } from "./PullRequestGhosts";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "../ui/empty";
+import { PullRequestListGhost } from "./PullRequestGhosts";
 
 function BranchMark({ joined }: { joined: boolean }) {
   return (

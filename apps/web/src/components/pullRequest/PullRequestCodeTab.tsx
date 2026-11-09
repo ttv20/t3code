@@ -1,22 +1,25 @@
 import { UiText, useUiLanguage } from "../../i18n";
 
+import { useAtomRefresh } from "@effect/atom-react";
+import type { CodeViewItem, DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
+import type { CodeViewAnnotationArgs, CodeViewDiffItem } from "@pierre/diffs/react";
 import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
-import type { CodeViewItem, DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
-import type { CodeViewAnnotationArgs, CodeViewDiffItem } from "@pierre/diffs/react";
 import type {
   EnvironmentId,
   PullRequestDetailView,
-  PullRequestDiffSide,
   PullRequestDiffResult,
+  PullRequestDiffSide,
   PullRequestOmittedFileStat,
   PullRequestRef,
   PullRequestReviewPosition,
   PullRequestReviewThread,
   PullRequestThreadCommentsResult,
 } from "@t3tools/contracts";
+import * as Schema from "effect/Schema";
+import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -31,9 +34,6 @@ import {
   TextWrapIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide";
-import { useAtomRefresh } from "@effect/atom-react";
-import * as Schema from "effect/Schema";
 import {
   createContext,
   use,
@@ -44,22 +44,17 @@ import {
   type ReactNode,
 } from "react";
 
-import { observeIntersection } from "~/lib/observeIntersection";
-import { useLocalStorage } from "~/hooks/useLocalStorage";
-import { useClientSettings, updateClientSettings } from "~/hooks/useSettings";
-import { useRenderedAppearance } from "~/hooks/useTheme";
-import { areAllDiffFilesCollapsed } from "~/lib/diffCollapse";
-import {
-  pullRequestFindingKey,
-  type PullRequestChatSubject,
-  type PullRequestFinding,
-} from "./pullRequestDetail.logic";
 import {
   canEditPullRequestComment,
   canResolvePullRequestThread,
 } from "@t3tools/client-runtime/pull-request-editing";
 import { isTestChangedFile } from "@t3tools/shared/changedFileKind";
-import { orderDiffFiles } from "./pullRequestFileOrder.logic";
+import { APP_BASE_NAME } from "~/branding";
+import { useLocalStorage } from "~/hooks/useLocalStorage";
+import { updateClientSettings, useClientSettings } from "~/hooks/useSettings";
+import { useRenderedAppearance } from "~/hooks/useTheme";
+import { areAllDiffFilesCollapsed } from "~/lib/diffCollapse";
+import { createPullRequestDiffFileContentsLoader } from "~/lib/diffFileContents";
 import {
   buildFileDiffRenderKey,
   fnv1a32,
@@ -70,10 +65,9 @@ import {
   resolveFileDiffPreviousPath,
   type RenderablePatch,
 } from "~/lib/diffRendering";
-import { APP_BASE_NAME } from "~/branding";
+import { observeIntersection } from "~/lib/observeIntersection";
 import { PREFERRED_HIGHLIGHTER } from "~/lib/syntaxHighlighting";
 import { cn } from "~/lib/utils";
-import { createPullRequestDiffFileContentsLoader } from "~/lib/diffFileContents";
 import {
   buildDiffReviewComment,
   resolveDiffReviewAnchor,
@@ -82,18 +76,24 @@ import {
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
 import { useAtomCommand } from "~/state/use-atom-command";
+import {
+  pullRequestFindingKey,
+  type PullRequestChatSubject,
+  type PullRequestFinding,
+} from "./pullRequestDetail.logic";
+import { orderDiffFiles } from "./pullRequestFileOrder.logic";
 
+import { MorphIcon } from "~/components/MorphIcon";
 import { DiffPanelLoadingState } from "../DiffPanelShell";
 import { useDiffWorkerPool } from "../DiffWorkerPoolProvider";
 import { DiffCommentAnnotation } from "../diffs/DiffCommentAnnotation";
 import { DiffFileTree } from "../diffs/DiffFileTree";
-import { FileExplorerPane } from "../files/FileExplorerPane";
+import { StyledDiffCodeView } from "../diffs/StyledDiffCodeView";
+import { diffFileTreeEntries, orderDiffFilesLikeTree } from "../diffs/diffFileTree.logic";
 import { useCodeViewFileReveal } from "../diffs/useCodeViewFileReveal";
 import { useHideTestFiles } from "../diffs/useHideTestFiles";
-import { diffFileTreeEntries, orderDiffFilesLikeTree } from "../diffs/diffFileTree.logic";
-import { StyledDiffCodeView } from "../diffs/StyledDiffCodeView";
+import { FileExplorerPane } from "../files/FileExplorerPane";
 import { Button } from "../ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
 import { Checkbox } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import {
@@ -109,13 +109,14 @@ import {
 import { toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { PullRequestDiffUnavailableState } from "./PullRequestDiffUnavailableState";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import {
   getReviewPositionAnchor,
   PendingReviewCommentCard,
   ReviewThreadCard,
   toViewerSide,
 } from "./PullRequestReviewAnnotation";
-import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import {
   getFileViewedRange,
   isFileDiffCollapsed,
@@ -124,8 +125,6 @@ import {
   type DiffFoldOverride,
 } from "./pullRequestDiff.logic";
 import { PullRequestDiffStat, PullRequestMetaLine } from "./pullRequestPresentation";
-import { PullRequestDiffUnavailableState } from "./PullRequestDiffUnavailableState";
-import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
 import {
   nextPendingReviewCommentId,
   pullRequestReviewKey,
@@ -133,6 +132,7 @@ import {
   usePullRequestReviewStore,
   type PendingReviewComment,
 } from "./pullRequestReviewStore";
+import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
 
 interface ReviewAnnotationGroup {
   readonly threads: ReadonlyArray<PullRequestReviewThread>;

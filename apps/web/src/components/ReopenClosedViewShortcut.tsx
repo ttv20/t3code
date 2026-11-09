@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import {
-  scopeProjectRef,
   scopedThreadKey,
+  scopeProjectRef,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useRef } from "react";
+import { useUiLanguage } from "../i18n";
 
-import { isCommandPaletteOpen } from "../commandPaletteBus";
 import { useClosedViewStore } from "../closedViewStore";
+import { isCommandPaletteOpen } from "../commandPaletteBus";
 import { useComposerDraftStore } from "../composerDraftStore";
 import { environmentCatalog } from "../connection/catalog";
 import { effectiveShortcutsForCommand, resolveShortcutCommand } from "../keybindings";

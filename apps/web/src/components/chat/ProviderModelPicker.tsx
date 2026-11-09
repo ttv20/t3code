@@ -1,24 +1,24 @@
-import { useUiLanguage } from "../../i18n";
 import {
   ANTIGRAVITY_DEFAULT_MODEL,
-  type ProviderInstanceId,
   type EnvironmentId,
   type ProviderDriverKind,
+  type ProviderInstanceId,
   type ResolvedKeybindingsConfig,
 } from "@t3tools/contracts";
-import { createContext, memo, type ReactNode, useRef, useState } from "react";
+import { createContext, memo, useRef, useState, type ReactNode } from "react";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
+import { shortcutLabelForCommand } from "../../keybindings";
+import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../providerInstances";
 import { Badge } from "../ui/badge";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { cn } from "~/lib/utils";
-import { ModelPickerContent, resolveModelPickerSelectedModel } from "./ModelPickerContent";
 import { ChatGptSharingControl } from "./ChatGptSharingControl";
-import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
-import { ModelEsque, getDisplayModelName, getTriggerDisplayModelName } from "./providerIconUtils";
-import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../providerInstances";
 import { ComposerControl, type ComposerControlSize } from "./ComposerControl";
+import { ModelPickerContent, resolveModelPickerSelectedModel } from "./ModelPickerContent";
+import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
 import { takeOpenTarget, useComposerMenuProps } from "./composerEventScope";
-import { shortcutLabelForCommand } from "../../keybindings";
+import { ModelEsque, getDisplayModelName, getTriggerDisplayModelName } from "./providerIconUtils";
 
 /** Holds the page still behind the open picker; its lifetime is the popup element's. */
 function lockBackgroundScroll(popup: HTMLElement | null) {

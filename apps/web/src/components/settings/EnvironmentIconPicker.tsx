@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   AuthSettingsWriteScope,
   ENVIRONMENT_MACHINE_KINDS,
@@ -7,6 +6,7 @@ import {
   type EnvironmentId,
   type ServerConfig,
 } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import { useEnvironmentScope } from "../../state/session";

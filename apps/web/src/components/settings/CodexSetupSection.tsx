@@ -1,7 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { AuthProvidersManageScope, ProviderDriverKind } from "@t3tools/contracts";
-import { readPreparedConnection, useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -14,9 +11,10 @@ import type {
   ProviderInstanceId,
   ServerProvider,
 } from "@t3tools/contracts";
+import { AuthProvidersManageScope, ProviderDriverKind } from "@t3tools/contracts";
 import { codexAuthHandoffUrl } from "@t3tools/shared/codexAuthHandoff";
-import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
 import { isLoopbackHost } from "@t3tools/shared/preview";
+import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
 import { CheckIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
 import {
   Children,
@@ -27,34 +25,36 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
+import { readPreparedConnection, useEnvironmentScope } from "../../state/session";
 
 import { ensureLocalApi } from "../../localApi";
-import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
-import { ManagedControl } from "../ManagedPolicy";
+import { getOnboardingProviderState } from "../../onboarding/providerReadiness.logic";
+import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { useEnvironmentHttpBaseUrl } from "../../state/environments";
+import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
 import { environmentPresentations } from "../../state/presentation";
 import { primaryEnvironmentIdAtom } from "../../state/primaryEnvironment";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { waitForQuerySettled } from "../../state/waitForQuerySettled";
+import { OpenAI } from "../Icons";
+import { ManagedControl } from "../ManagedPolicy";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { AddCodexAccountDialog } from "./AddCodexAccountDialog";
+import { ChatGptAccountPicker } from "./ChatGptAccountPicker";
 import { ChatGptConnectionButton } from "./ChatGptConnectionButton";
 import { ChatGptUsageButton } from "./ChatGptUsageButton";
-import { ChatGptAccountPicker } from "./ChatGptAccountPicker";
-import { Input } from "../ui/input";
-import { OpenAI } from "../Icons";
-import { RedactedSensitiveText } from "./RedactedSensitiveText";
-import { SettingsRow } from "./settingsLayout";
-import { AddCodexAccountDialog } from "./AddCodexAccountDialog";
-import { getOnboardingProviderState } from "../../onboarding/providerReadiness.logic";
-import { getProviderSummary } from "./providerStatus";
 import {
   settleAuthorizationPage,
   settleHandoffAuthorizationPage,
   settleProviderInstall,
 } from "./CodexSetupSection.logic";
+import { getProviderSummary } from "./providerStatus";
+import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { SettingsRow } from "./settingsLayout";
 
 const noop = () => undefined;
 

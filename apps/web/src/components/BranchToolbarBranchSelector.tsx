@@ -1,21 +1,16 @@
-import { useUiLanguage, UiText } from "../i18n";
-import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
-import { ComposerContextLabel } from "./ComposerContextLabel";
-import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
-import { resolveThreadCurrentPullRequestLink } from "@t3tools/client-runtime/thread-pull-requests";
-import { useRightPanelStore } from "../rightPanelStore";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
+import { resolveThreadCurrentPullRequestLink } from "@t3tools/client-runtime/thread-pull-requests";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   type ContextMenuItem,
   type EnvironmentId,
-  type VcsRef,
   type ThreadId,
+  type VcsRef,
 } from "@t3tools/contracts";
 import { GitBranchIcon } from "lucide-react";
 import {
@@ -27,35 +22,40 @@ import {
   type MouseEvent as ReactMouseEvent,
   type Ref,
 } from "react";
+import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
+import { UiText, useUiLanguage } from "../i18n";
+import { useRightPanelStore } from "../rightPanelStore";
+import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
+import { ComposerContextLabel } from "./ComposerContextLabel";
 
+import { parsePullRequestReference } from "@t3tools/client-runtime/pull-request-link-input";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useComposerDraftStore, type DraftId } from "../composerDraftStore";
 import { writeTextToClipboard } from "../hooks/useCopyToClipboard";
-import { readLocalApi } from "../localApi";
 import { useOpenPrLink } from "../lib/openPullRequestLink";
-import { usePaginatedBranches } from "../state/queries";
+import { cn } from "../lib/utils";
+import { readLocalApi } from "../localApi";
+import { getSourceControlPresentation } from "../sourceControlPresentation";
 import { useProject, useQuietThreadShell } from "../state/entities";
+import { usePaginatedBranches } from "../state/queries";
 import { useEnvironmentQuery } from "../state/query";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { threadEnvironment } from "../state/threads";
 import { useAtomCommand } from "../state/use-atom-command";
 import { vcsEnvironment } from "../state/vcs";
-import { cn } from "../lib/utils";
-import { THREAD_DETAILS_PANEL_ICON_CLASS } from "./chat/threadDetailsPanelStyles";
-import { ThreadDetailsPrRows } from "./chat/ThreadDetailsPrRows";
-import { parsePullRequestReference } from "@t3tools/client-runtime/pull-request-link-input";
-import { getSourceControlPresentation } from "../sourceControlPresentation";
-import { useComposerMenuProps } from "./chat/composerEventScope";
 import {
   deriveLocalBranchNameFromRemoteRef,
-  resolveBranchTriggerLabel,
-  resolveBranchToolbarPrBranch,
   resolveBranchSelectionTarget,
+  resolveBranchToolbarPrBranch,
   resolveBranchToolbarValue,
+  resolveBranchTriggerLabel,
   resolveDraftEnvModeAfterBranchChange,
   resolveEffectiveEnvMode,
   sanitizeNewRefName,
   shouldIncludeBranchPickerItem,
 } from "./BranchToolbar.logic";
+import { useComposerMenuProps } from "./chat/composerEventScope";
+import { THREAD_DETAILS_PANEL_ICON_CLASS } from "./chat/threadDetailsPanelStyles";
+import { ThreadDetailsPrRows } from "./chat/ThreadDetailsPrRows";
 import {
   ThreadPullRequestBadgeControl,
   prStatusIndicator,
@@ -63,10 +63,10 @@ import {
   useLinkedThreadPullRequest,
 } from "./ThreadStatusIndicators";
 
-import { ComboboxItem, ComboboxTrigger } from "./ui/combobox";
-import { ComposerControl } from "./chat/ComposerControl";
-import { MiddleTruncate } from "./ui/middle-truncate";
 import { BranchPicker, BranchPickerRefItem } from "./BranchPicker";
+import { ComposerControl } from "./chat/ComposerControl";
+import { ComboboxItem, ComboboxTrigger } from "./ui/combobox";
+import { MiddleTruncate } from "./ui/middle-truncate";
 import { stackedThreadToast, toastManager } from "./ui/toast";
 
 export interface BranchToolbarBranchSelectorHandle {

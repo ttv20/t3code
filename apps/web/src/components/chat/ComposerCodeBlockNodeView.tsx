@@ -3,8 +3,8 @@ import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/re
 import { languageOfInfoString, withInfoStringLanguage } from "~/composer-code-languages";
 
 import { useRenderedAppearance } from "../../hooks/useTheme";
-import { MarkdownCodeBlockFrame } from "./MarkdownCodeBlock";
 import { ComposerCodeBlockLanguagePicker } from "./ComposerCodeBlockLanguagePicker";
+import { MarkdownCodeBlockFrame } from "./MarkdownCodeBlock";
 
 export function ComposerCodeBlockNodeView({
   node,

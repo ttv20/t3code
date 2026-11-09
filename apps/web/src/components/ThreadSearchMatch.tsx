@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../i18n";
 import {
   findSearchTokenRanges,
   splitSearchText,
   type SearchMatchHint,
   type SearchRange,
 } from "@t3tools/shared/paletteSearch";
+import { useUiLanguage } from "../i18n";
 
 /** `text` with each range in semibold foreground. */
 function HighlightedSearchText(props: { text: string; ranges: ReadonlyArray<SearchRange> }) {

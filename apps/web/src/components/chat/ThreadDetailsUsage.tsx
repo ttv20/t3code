@@ -1,4 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type {
   ProviderInstanceId,
   ServerProvider,
@@ -14,15 +13,16 @@ import {
   remainingPercent,
 } from "@t3tools/shared/usageLimits";
 import type { ReactNode } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
-import { usePrimarySettings } from "../../hooks/useSettings";
-import { useNowMinute } from "../../hooks/useNowMinute";
 import type { ContextWindowSnapshot } from "@t3tools/client-runtime/state/context-window";
+import { useNowMinute } from "../../hooks/useNowMinute";
+import { usePrimarySettings } from "../../hooks/useSettings";
 import { formatContextWindowTokens } from "../../lib/contextWindow";
 import { cn } from "../../lib/utils";
 import { formatUpcomingTimestamp } from "../../timestampFormat";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { formatContextWindowCompactionMessage } from "./ContextWindowMeter.logic";
+import { formatContextWindowCompactionMessage } from "./compaction.logic";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 
 const PACE_LABEL: Record<LimitPace, string> = {
@@ -130,7 +130,7 @@ export function ThreadDetailsContext({ usage }: { readonly usage: ContextWindowS
               ) : null}
               {threshold !== null && threshold > 0 ? (
                 <span className="text-muted-foreground">
-                  {formatContextWindowCompactionMessage(null, threshold)}
+                  {formatContextWindowCompactionMessage(threshold)}
                 </span>
               ) : null}
             </>

@@ -1,15 +1,15 @@
-import { useUiLanguage } from "../../i18n";
-import { memo, useRef } from "react";
 import { Check, Copy } from "lucide";
-import { Button } from "../ui/button";
+import { memo, useRef } from "react";
 import { MorphIcon } from "~/components/MorphIcon";
-import { cn } from "~/lib/utils";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 import {
   ANCHORED_COPY_TOAST_TIMEOUT_MS,
   showAnchoredCopyErrorToast,
   showAnchoredCopySuccessToast,
 } from "../ui/anchoredCopyToast";
+import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 export const MessageCopyButton = memo(function MessageCopyButton({

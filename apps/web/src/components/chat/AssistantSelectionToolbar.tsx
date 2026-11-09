@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
@@ -19,10 +18,11 @@ import {
 import {
   isSelectionRectVisible,
   observeSelectionActions,
-  resolveSelectionActionPosition,
   resolveSelectionActionPlacement,
+  resolveSelectionActionPosition,
   type SelectionActionPoint,
 } from "~/lib/selectionActions";
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
 import { BackgroundThreadContext } from "./backgroundThread";
 

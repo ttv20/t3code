@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type {
   EnvironmentId,
   ProviderInstanceId,
@@ -8,6 +7,7 @@ import type {
 import { collectProviderUsageLimits, hasProviderUsageLimits } from "@t3tools/shared/usageLimits";
 import { useState } from "react";
 import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
 import { toastManager } from "../ui/toast";
 import { usageLimitsBannerItem } from "./ComposerUsageLimits";
 

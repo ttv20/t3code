@@ -1,17 +1,17 @@
-import { useUiLanguage } from "../../i18n";
-import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
-import { usePermissionStatus } from "../permissions/usePermissionStatus";
 import {
   isModifierPairShortcut,
   type DesktopSnapShotSetupAction,
   type DesktopSnapShotState,
 } from "@t3tools/contracts";
 import { useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 import { MacAccessibilityIcon, MacScreenRecordingIcon } from "../Icons";
-import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
+import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
+import { usePermissionStatus } from "../permissions/usePermissionStatus";
 import { Button } from "../ui/button";
 import { Dialog, DialogDescription } from "../ui/dialog";
-import { WizardSteps, WizardPopup, WizardHeader, WizardPanel, WizardFooter } from "../ui/wizard";
+import { WizardFooter, WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "../ui/wizard";
+import { CaptureShortcutConfig } from "./CaptureShortcutConfig";
 import {
   captureSetupAccessReady,
   captureSetupBackend,

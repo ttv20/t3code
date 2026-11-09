@@ -1,24 +1,24 @@
-import { useUiLanguage } from "../../i18n";
-import { useStableCallback } from "../../hooks/useStableCallback";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
-import { DownloadIcon } from "lucide-react";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { useRemoveClonedProject } from "../../hooks/useRemoveClonedProject";
-import { sourceControlEnvironment } from "../../state/sourceControl";
-import { useProjectClone } from "../../state/projectClones";
 import {
   projectCloneDisplayName,
   projectCloneProgressSummary,
   type ScopedProjectRef,
 } from "@t3tools/contracts";
+import { DownloadIcon } from "lucide-react";
+import { useRemoveClonedProject } from "../../hooks/useRemoveClonedProject";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
 import { dismissProjectFileCopy, useProjectFileCopy } from "../../lib/addProjectToMachine";
-import { type ComposerBannerStackItem } from "./ComposerBannerStack";
+import { useProjectClone } from "../../state/projectClones";
+import { sourceControlEnvironment } from "../../state/sourceControl";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
+import { stackedThreadToast, toastManager } from "../ui/toast";
+import { type ComposerBannerStackItem } from "./ComposerBannerStack";
 /**
  * A project still being cloned or copied into place: the composer banner with its cancel,
  * retry, and remove actions, and the reason sending waits until it is done.

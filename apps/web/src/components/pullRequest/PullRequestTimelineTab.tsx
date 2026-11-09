@@ -4,7 +4,6 @@ import {
   capitalizeTerm,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
-import { useAtomCommand } from "~/state/use-atom-command";
 import type {
   EnvironmentId,
   PullRequestActor,
@@ -23,34 +22,40 @@ import {
   MessageSquarePlusIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useAtomCommand } from "~/state/use-atom-command";
 
+import { RelativeTime } from "~/components/RelativeTime";
 import { cn } from "~/lib/utils";
 import { readLocalApi } from "~/localApi";
 import { pullRequestEnvironment } from "~/state/pullRequests";
-import { RelativeTime } from "~/components/RelativeTime";
 
+import { LegendList, type LegendListRef } from "@legendapp/list/react";
+import { canEditPullRequestComment } from "@t3tools/client-runtime/pull-request-editing";
 import { Button } from "../ui/button";
-import { PullRequestEditButton } from "./PullRequestEditButton";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   buildPullRequestTimeline,
   groupPullRequestTimelineConversations,
-  type PullRequestTimelineRow,
   isPullRequestVerdictStale,
   newestPullRequestCommitAt,
   pullRequestReviewOutcome,
   type PullRequestChatSubject,
   type PullRequestReviewOutcome,
   type PullRequestTimelineEvent,
+  type PullRequestTimelineRow,
   type PullRequestTimelineThread,
 } from "./pullRequestDetail.logic";
-import { canEditPullRequestComment } from "@t3tools/client-runtime/pull-request-editing";
+import { PullRequestEditButton } from "./PullRequestEditButton";
+import { PullRequestGlyph } from "./pullRequestIcons";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
-import { PullRequestMoreReplies } from "./PullRequestMoreReplies";
 import { PullRequestMarkdownEditor } from "./PullRequestMarkdownEditor";
-import { PullRequestReactionBar } from "./PullRequestReactions";
+import {
+  pullRequestCompletionScope,
+  type PullRequestCompletionScope,
+} from "./PullRequestMarkdownTextarea";
+import { PullRequestMoreReplies } from "./PullRequestMoreReplies";
 import {
   PullRequestActorAvatar,
   PullRequestDiffStat,
@@ -60,12 +65,7 @@ import {
   pullRequestReviewOutcomeStaleLabel,
   pullRequestReviewOutcomeToneClassName,
 } from "./pullRequestPresentation";
-import { PullRequestGlyph } from "./pullRequestIcons";
-import {
-  type PullRequestCompletionScope,
-  pullRequestCompletionScope,
-} from "./PullRequestMarkdownTextarea";
-import { LegendList, type LegendListRef } from "@legendapp/list/react";
+import { PullRequestReactionBar } from "./PullRequestReactions";
 
 interface ReactionSurface {
   readonly canReact: boolean;

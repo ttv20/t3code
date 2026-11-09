@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
-import { useLoadBalancedEnvironment } from "../../hooks/useLoadBalancedEnvironment";
-import { useLogicalProjectEnvironments } from "../../hooks/useLogicalProjectEnvironments";
-import { useScratchProject } from "../../hooks/useScratchProject";
-import { useStableCallback } from "../../hooks/useStableCallback";
+import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import {
+  deriveLogicalProjectKeyFromSettings,
+  selectProjectGroupingSettings,
+} from "@t3tools/client-runtime/state/project-grouping";
 import {
   type EnvironmentId,
   type ProviderDriverKind,
@@ -10,17 +10,17 @@ import {
   resolveProjectProviderInstanceEnabled,
   type ThreadContextRecord,
 } from "@t3tools/contracts";
-import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { toastManager } from "../ui/toast";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  selectProjectGroupingSettings,
-} from "@t3tools/client-runtime/state/project-grouping";
-import { useComposerDraftStore, DraftId } from "../../composerDraftStore";
-import { type EnvironmentPresentation, useEnvironmentProviders } from "../../state/environments";
-import { useProjects } from "../../state/entities";
 import type { DraftSessionState } from "../../composerDraftStore";
+import { DraftId, useComposerDraftStore } from "../../composerDraftStore";
+import { useLoadBalancedEnvironment } from "../../hooks/useLoadBalancedEnvironment";
+import { useLogicalProjectEnvironments } from "../../hooks/useLogicalProjectEnvironments";
+import { useScratchProject } from "../../hooks/useScratchProject";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { useUiLanguage } from "../../i18n";
+import { useProjects } from "../../state/entities";
+import { type EnvironmentPresentation, useEnvironmentProviders } from "../../state/environments";
+import { toastManager } from "../ui/toast";
 
 interface DraftEnvironmentRoutingInput {
   readonly draftId: DraftId | null;

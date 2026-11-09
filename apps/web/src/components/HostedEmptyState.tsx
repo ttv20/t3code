@@ -1,18 +1,18 @@
-import { useUiLanguage } from "../i18n";
 import { useAuth } from "@clerk/react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { Link } from "@tanstack/react-router";
 import { CheckIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { APP_DISPLAY_NAME, DESKTOP_DOWNLOAD_URL } from "~/branding";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { isElectron } from "../env";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { useRelayEnvironmentDiscovery } from "../state/environments";
-import { CommandBlock } from "./CommandBlock";
 import { useT3ConnectAuthPrompt } from "./clerk/useT3ConnectAuthPrompt";
 import { CloudEnvironmentConnectRows } from "./cloud/CloudEnvironmentConnectList";
+import { InstallT3Commands } from "./InstallT3Commands";
 import { Button } from "./ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 import { SidebarInset } from "./ui/sidebar";
@@ -39,14 +39,14 @@ export function HostedEmptyState() {
         <Empty className="flex-1">
           <EmptyHeader>
             <EmptyTitle>
-              {localEnvironmentOff ? "This computer is off" : "No computer connected"}
+              {localEnvironmentOff ? uiT("This computer is off") : uiT("No computer connected")}
             </EmptyTitle>
             <EmptyDescription>
               {localEnvironmentOff
-                ? "Turn it back on, or connect a different computer."
+                ? uiT("Turn it back on, or connect a different computer.")
                 : cloudEnabled
-                  ? "Your agents run on your computer."
-                  : "Your agents run on your computer. Start T3 Code there first."}
+                  ? uiT("Your agents run on your computer.")
+                  : uiT("Your agents run on your computer. Start T3 Code there first.")}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -93,7 +93,7 @@ function T3ConnectSteps() {
         )}
       </SetupStep>
       <SetupStep number={2}>
-        <RunOnComputer command="npx t3 connect" />
+        <RunOnComputer command="t3 connect" />
         {isSignedIn ? (
           <div className="mt-4 space-y-1.5">
             <CloudEnvironmentConnectRows
@@ -128,7 +128,7 @@ function PairingSteps() {
   return (
     <>
       <SetupStep number={1}>
-        <RunOnComputer command="npx t3 pair" />
+        <RunOnComputer command="t3 pair" />
       </SetupStep>
       <SetupStep number={2}>
         <Button render={<Link to="/settings/connections" />} size="sm">
@@ -160,7 +160,7 @@ function RunOnComputer({ command }: { readonly command: string }) {
   return (
     <>
       <p>{uiT("Run on your computer:")}</p>
-      <CommandBlock command={command} className="mt-2" />
+      <InstallT3Commands command={command} className="mt-2" />
       <a
         className="mt-2 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
         href={DESKTOP_DOWNLOAD_URL}

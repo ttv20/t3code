@@ -1,4 +1,5 @@
-import { useUiLanguage } from "../../i18n";
+import { ChevronDownIcon, ChevronUpIcon, MinusIcon, PlusIcon, ScanIcon } from "lucide-react";
+import { TextLayer, type PDFDocumentProxy } from "pdfjs-dist";
 import {
   useEffect,
   useEffectEvent,
@@ -7,15 +8,15 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { TextLayer, type PDFDocumentProxy } from "pdfjs-dist";
-import { ChevronDownIcon, ChevronUpIcon, MinusIcon, PlusIcon, ScanIcon } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { observeResize } from "~/lib/observeResize";
+import { useUiLanguage } from "../../i18n";
 import { FileSurfaceAction, FileSurfaceFailure, FileSurfaceLoading } from "./fileSurfaceChrome";
-import { readBoundedDocument } from "./readBoundedDocument";
 import { openPdf } from "./pdfDocument";
 import {
   currentPdfPage,
+  PDF_MAX_ZOOM,
+  PDF_MIN_ZOOM,
   pdfFindIncludes,
   pdfFindMatchRuns,
   pdfPageOffsets,
@@ -23,12 +24,11 @@ import {
   pdfPageText,
   pdfPageWidth,
   pdfRestoredScrollTop,
-  PDF_MAX_ZOOM,
-  PDF_MIN_ZOOM,
   stepPdfZoom,
   visiblePdfPages,
 } from "./pdfLayout";
 import "./pdfViewer.css";
+import { readBoundedDocument } from "./readBoundedDocument";
 
 const MAX_PAGES = 2000;
 const MAX_FIND_TEXT = 4 * 1024 * 1024;

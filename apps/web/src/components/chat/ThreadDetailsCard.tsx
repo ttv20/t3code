@@ -1,4 +1,4 @@
-import { workspaceAreaProps } from "../../lib/workspaceFocus";
+import type { ScopedThreadRef } from "@t3tools/contracts";
 import {
   useLayoutEffect,
   useState,
@@ -6,18 +6,17 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import type { ScopedThreadRef } from "@t3tools/contracts";
-import { ScrollArea } from "../ui/scroll-area";
+import { observeResize } from "../../lib/observeResize";
 import { cn } from "../../lib/utils";
-import { Popover, PopoverPopup, PopoverCreateHandle } from "../ui/popover";
+import { requestWorkspaceFocus, workspaceAreaProps } from "../../lib/workspaceFocus";
 import { selectThreadPanelOpen, useRightPanelStore } from "../../rightPanelStore";
+import { Popover, PopoverCreateHandle, PopoverPopup } from "../ui/popover";
+import { ScrollArea } from "../ui/scroll-area";
 import { useChatCanvas } from "./ChatCanvasContext";
 import {
   THREAD_DETAILS_CARD_GAP,
   resolveThreadDetailsCardDensity,
 } from "./threadDetailsCardLayout";
-import { observeResize } from "../../lib/observeResize";
-import { requestWorkspaceFocus } from "../../lib/workspaceFocus";
 
 export function ThreadDetailsCard({
   threadRef,

@@ -1,4 +1,4 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import { MenuGroupLabel } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 

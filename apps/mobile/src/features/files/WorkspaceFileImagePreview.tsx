@@ -2,9 +2,9 @@ import { useId, useState } from "react";
 import { Image, Pressable, View } from "react-native";
 import { useUiLanguage } from "../../i18n";
 
-import { FilePreviewModal, type FilePreviewSource } from "../../components/FilePreviewModal";
 import { MediaActionsMenu } from "../../components/MediaActionsMenu";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { FilePreviewModal, type FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { PresentationSource } from "../../components/ui/NativePresentation";
 import { type MediaActionsSource } from "../../lib/mediaActionsSource";
 import { useMediaActions } from "../../state/mediaActions";

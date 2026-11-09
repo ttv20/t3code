@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import { useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
-import { MermaidDiagram } from "../chat/MermaidDiagram";
 import { ExpandedImageDialog } from "../chat/ExpandedImageDialog";
+import { MermaidDiagram } from "../chat/MermaidDiagram";
 
 export default function MermaidViewer(props: { readonly text: string }) {
   const { t: uiT } = useUiLanguage();

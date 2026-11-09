@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { useSettingsSearchTargetId } from "./settingsLayout";

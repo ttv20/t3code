@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 import { XIcon } from "lucide-react";
 import type { CSSProperties } from "react";
-import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { ControlledOpenContext, renderRetainedPopup } from "~/components/ui/dialog";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 
 function Sheet<Payload>(props: SheetPrimitive.Root.Props<Payload>) {
   return (
@@ -164,12 +164,12 @@ function SheetDescription({ className, ...props }: SheetPrimitive.Description.Pr
 
 export {
   Sheet,
-  SheetPortal,
   SheetBackdrop,
+  SheetPopup as SheetContent,
+  SheetDescription,
+  SheetHeader,
   SheetBackdrop as SheetOverlay,
   SheetPopup,
-  SheetPopup as SheetContent,
-  SheetHeader,
+  SheetPortal,
   SheetTitle,
-  SheetDescription,
 };

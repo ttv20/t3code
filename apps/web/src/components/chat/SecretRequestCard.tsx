@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
+import { useAtomValue } from "@effect/atom-react";
 import {
   SECRET_REQUEST_DEFAULT_PLACEHOLDER,
   secretRequestAnswerInput,
   secretRequestDisplay,
   secretRequestFailureMessage,
+  secretRequestLink,
   secretRequestPrivacyNote,
   secretRequestReference,
   secretRequestSources,
@@ -21,16 +21,17 @@ import type {
   OrchestrationV2ProjectedTurnItem,
   SecretProviderId,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
-import { CheckIcon, LockIcon, MinusIcon, ShieldCheckIcon } from "lucide-react";
+import { pipe } from "effect/Function";
+import { CheckIcon, ExternalLinkIcon, LockIcon, MinusIcon, ShieldCheckIcon } from "lucide-react";
 import { useId, useRef, useState, type FormEvent } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { isSecretsFeatureEnabled } from "../../env";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { SecretSourceSelect } from "../settings/SecretSourceInput";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { SecretSourceSelect } from "../settings/SecretSourceInput";
 import { WorkLogRow } from "./WorkLog";
 
 export function SecretRequestCard(props: {
@@ -128,6 +129,7 @@ function PendingSecretRequestForm(props: {
     }
   };
   const draft = source === null ? secret : reference;
+  const link = secretRequestLink(item);
   const describedBy = error !== null ? `${privacyId} ${errorId}` : privacyId;
 
   return (
@@ -154,6 +156,24 @@ function PendingSecretRequestForm(props: {
           <p className="text-sm wrap-anywhere text-muted-foreground">{item.reason}</p>
         ) : null}
       </div>
+      {link !== null ? (
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            render={<a href={link.href} target="_blank" rel="noopener noreferrer" />}
+          >
+            <UiText
+              message={"Open {0} {1}"}
+              values={{ 0: link.host, 1: <ExternalLinkIcon aria-hidden /> }}
+            />
+          </Button>
+          {/* A link found in the reason is already shown there. */}
+          {item.url !== undefined ? (
+            <p className="font-mono text-xs wrap-anywhere text-muted-foreground">{item.url}</p>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex min-w-0 items-center gap-2">
         {sources.length > 0 ? (
           <SecretSourceSelect

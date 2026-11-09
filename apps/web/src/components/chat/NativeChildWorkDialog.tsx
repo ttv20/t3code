@@ -1,4 +1,3 @@
-import { UiText } from "../../i18n";
 import type {
   EnvironmentId,
   OrchestrationV2GetNativeChildWorkResult,
@@ -8,6 +7,7 @@ import type {
 } from "@t3tools/contracts";
 import { ListTreeIcon } from "lucide-react";
 import { useState } from "react";
+import { UiText } from "../../i18n";
 
 import { orchestrationEnvironment } from "../../state/orchestration";
 import { useEnvironmentQuery } from "../../state/query";

@@ -2,27 +2,27 @@
 import * as NodeFSP from "node:fs/promises";
 import * as NodeZlib from "node:zlib";
 
-import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
+import react from "@vitejs/plugin-react";
 import compression from "compression";
-import { playwright } from "vite-plus/test/browser-playwright";
-import { defineProject, type TestProjectInlineConfiguration } from "vite-plus/test/config";
-import "vite-plus/test/config";
-import { defineConfig, type Connect, type Plugin } from "vite-plus";
 import * as Hash from "effect/Hash";
-import pkg from "./package.json" with { type: "json" };
 import pdfjsPkg from "pdfjs-dist/package.json" with { type: "json" };
+import { defineConfig, type Connect, type Plugin } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
+import "vite-plus/test/config";
+import { defineProject, type TestProjectInlineConfiguration } from "vite-plus/test/config";
+import pkg from "./package.json" with { type: "json" };
 
 import {
   DEV_PROXIED_ORIGIN_PRESERVING_PREFIXES,
   DEV_PROXIED_PATH_PREFIXES,
 } from "@t3tools/shared/devProxy";
 
+import nesting from "postcss-nesting";
 import { loadRepoEnv } from "../../scripts/lib/public-config";
 import { thirdPartyLicensesPlugin } from "../../scripts/lib/third-party-licenses";
-import { tailwindPlugins } from "./vite/tailwind";
 import { rtlStyles } from "./vite/rtl";
-import nesting from "postcss-nesting";
+import { tailwindPlugins } from "./vite/tailwind";
 import { warmBundledDevPlugin } from "./vite/warmBundledDev";
 
 const repoEnv = loadRepoEnv();

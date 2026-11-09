@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../i18n";
-import type { EnvironmentId } from "@t3tools/contracts";
 import {
   readHostCredentialSettings,
   sourceControlClients,
 } from "@t3tools/client-runtime/source-control-clients";
+import type { EnvironmentId } from "@t3tools/contracts";
 import { ExternalLinkIcon } from "lucide-react";
+import { useUiLanguage } from "../i18n";
 
 import { useEnvironmentSettings } from "../hooks/useSettings";
 import { cn } from "../lib/utils";

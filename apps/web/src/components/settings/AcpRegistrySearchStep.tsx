@@ -1,7 +1,3 @@
-import { useUiLanguage } from "../../i18n";
-import { pipe } from "effect/Function";
-import { ACP_REGISTRY_MAX_AGENTS, AuthProvidersManageScope } from "@t3tools/contracts";
-import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -12,21 +8,25 @@ import type {
   EnvironmentId,
   ProviderInstanceConfig,
 } from "@t3tools/contracts";
+import { ACP_REGISTRY_MAX_AGENTS, AuthProvidersManageScope } from "@t3tools/contracts";
+import { pipe } from "effect/Function";
 import { ExternalLinkIcon, SearchIcon } from "lucide-react";
 import { type FormEvent, useState } from "react";
+import { useUiLanguage } from "../../i18n";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 
+import { ProviderDriverKind } from "@t3tools/contracts";
 import { useDeadlinePassed } from "../../hooks/useDeadline";
-import { serverEnvironment } from "../../state/server";
 import { useEnvironmentQuery } from "../../state/query";
+import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { isConfiguredAcpRegistryAgent } from "./AddProviderInstanceDialog.logic";
-import { ProviderDriverKind } from "@t3tools/contracts";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { providerClients } from "./providerDriverMeta";
 
 function errorMessage(error: unknown): string {

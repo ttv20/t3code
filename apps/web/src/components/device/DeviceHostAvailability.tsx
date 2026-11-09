@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import type { DevicePlatformAvailability } from "@t3tools/contracts";
 import { Check, Minus } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { useUiLanguage } from "../../i18n";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 export function DeviceHostAvailability({
   platforms,

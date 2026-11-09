@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { ServerProcessSignal } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 
 import { InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";

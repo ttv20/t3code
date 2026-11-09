@@ -1,6 +1,14 @@
-import { useUiLanguage } from "../../i18n";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+  type ChangeRequestTerminology,
+} from "@t3tools/client-runtime/source-control-clients";
+import {
+  deriveLogicalProjectKeyFromSettings,
+  derivePhysicalProjectKey,
+  selectProjectGroupingSettings,
+} from "@t3tools/client-runtime/state/project-grouping";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -15,34 +23,26 @@ import type {
   PullRequestSummary,
   ScopedThreadRef,
 } from "@t3tools/contracts";
-import { useRef, useState } from "react";
-import {
-  capitalizeTerm,
-  sourceControlClients,
-  type ChangeRequestTerminology,
-} from "@t3tools/client-runtime/source-control-clients";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { useRef, useState } from "react";
 import { useClientSettings, useEnvironmentSettings } from "~/hooks/useSettings";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  derivePhysicalProjectKey,
-  selectProjectGroupingSettings,
-} from "@t3tools/client-runtime/state/project-grouping";
 import { buildPhysicalToLogicalProjectKeyMap } from "~/sidebarProjectGrouping";
 import { useProjects } from "~/state/entities";
 import { usePrimaryEnvironmentId } from "~/state/environments";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { useUiLanguage } from "../../i18n";
 
-import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
+import { useComposerDraftStore, type DraftId } from "~/composerDraftStore";
 import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
-import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
 import type { ReviewCommentContext } from "~/reviewCommentContext";
 import { pullRequestEnvironment } from "~/state/pullRequests";
+import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
 
 import { toastManager } from "../ui/toast";
 import { offHeadPullRequestCheckoutToast } from "./pullRequestCheckoutToast";
 import {
-  checkoutFailureDescription,
   appendHandoff,
+  checkoutFailureDescription,
   readableFailure,
 } from "./pullRequestDetail.logic";
 import { pullRequestEntryKey, type EnvironmentPullRequestEntry } from "./pullRequestList.logic";

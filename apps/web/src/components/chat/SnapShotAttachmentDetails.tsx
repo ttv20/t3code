@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import type { SnapShotSource } from "@t3tools/contracts";
 import { ImageIcon, TextIcon } from "lucide-react";
 import { Suspense } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useRenderedAppearance } from "../../hooks/useTheme";
 import { cn } from "../../lib/utils";

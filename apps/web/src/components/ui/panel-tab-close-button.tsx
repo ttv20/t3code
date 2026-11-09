@@ -1,7 +1,7 @@
-import { useUiLanguage } from "../../i18n";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
+import { useUiLanguage } from "../../i18n";
 
 interface PanelTabCloseButtonProps {
   children: ReactNode;

@@ -1,8 +1,8 @@
-import { useUiLanguage } from "../../i18n";
 import type { CommandOutputView } from "@t3tools/client-runtime/state/command-output";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { TERMINAL_PALETTES, terminalOutputSpans } from "@t3tools/shared/terminalOutput";
 import { useLayoutEffect, useRef } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { useTheme } from "../../hooks/useTheme";
 import { useServerConfigs } from "../../state/entities";

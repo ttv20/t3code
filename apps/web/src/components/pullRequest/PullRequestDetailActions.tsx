@@ -1,4 +1,3 @@
-import { useUiLanguage } from "../../i18n";
 import type {
   EnvironmentId,
   PullRequestAction,
@@ -7,6 +6,7 @@ import type {
 } from "@t3tools/contracts";
 import { CheckIcon, ChevronDownIcon, FolderGit2Icon, GitBranchIcon, PlayIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { AnimatedWidth } from "~/components/AnimatedWidth";
 import { cn } from "~/lib/utils";

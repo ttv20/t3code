@@ -1,15 +1,15 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { type ProviderDriverKind, type ProviderInstanceId } from "@t3tools/contracts";
-import { memo } from "react";
 import { CheckIcon, StarIcon } from "lucide-react";
-import { getDisplayModelName } from "./providerIconUtils";
-import { ComboboxItem } from "../ui/combobox";
-import { Button } from "../ui/button";
+import { memo } from "react";
+import { cn } from "~/lib/utils";
+import { UiText, useUiLanguage } from "../../i18n";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { ComboboxItem } from "../ui/combobox";
 import { Kbd } from "../ui/kbd";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { cn } from "~/lib/utils";
 import { modelPickerModelKey } from "./modelPickerKeys";
+import { getDisplayModelName } from "./providerIconUtils";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
 
 export const ModelListRow = memo(function ModelListRow(props: {

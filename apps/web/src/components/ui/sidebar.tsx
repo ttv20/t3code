@@ -1,13 +1,12 @@
-import { useUiLanguage } from "../../i18n";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
+import * as Schema from "effect/Schema";
 import { PanelLeft, PanelLeftClose } from "lucide";
 import * as React from "react";
-import { cn } from "~/lib/utils";
+import { MorphIcon } from "~/components/MorphIcon";
 import { Button } from "~/components/ui/button";
 import { Input, type InputProps } from "~/components/ui/input";
-import { MorphIcon } from "~/components/MorphIcon";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import {
   Sheet,
@@ -17,19 +16,20 @@ import {
   SheetTitle,
 } from "~/components/ui/sheet";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { useResizeDrag } from "~/hooks/useResizeDrag";
-import { useMediaQuery } from "~/hooks/useMediaQuery";
 import {
   getLocalStorageItem,
   setLocalStorageItem,
   writeLocalStorageValue,
 } from "~/hooks/useLocalStorage";
-import { resolveSidebarState, type ResponsiveSidebarState } from "./sidebarState";
-import * as Schema from "effect/Schema";
+import { useMediaQuery } from "~/hooks/useMediaQuery";
+import { useResizeDrag } from "~/hooks/useResizeDrag";
 import { announceSidebarVisibility } from "~/lib/accessibilityAnnouncements";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
+import { resolveSidebarState, type ResponsiveSidebarState } from "./sidebarState";
 
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "calc(100vw - var(--spacing(3)))";
+const SIDEBAR_WIDTH_MOBILE = "calc(100vw - var(--spacing) * 3)";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_RESIZE_DEFAULT_MIN_WIDTH = 16 * 16;
 const SIDEBAR_TITLEBAR_CONTROL_SIZE = "max-sm:[--workspace-titlebar-control-size:--spacing(8)]";
@@ -862,12 +862,12 @@ function SidebarMenuSubButton({
 }
 
 export {
-  SidebarInput,
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
+  SidebarInput,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,

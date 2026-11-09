@@ -1,5 +1,3 @@
-import { useUiLanguage } from "../i18n";
-import { useParams } from "@tanstack/react-router";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
   type AtomCommandResult,
@@ -7,14 +5,17 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import {
+  type EnvironmentId,
   projectCloneDisplayName,
   projectCloneProgressSummary,
-  type EnvironmentId,
   type ProjectCloneSnapshot,
   type ProjectId,
 } from "@t3tools/contracts";
+import { useParams } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import { useUiLanguage } from "../i18n";
 
+import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import { useRemoveClonedProject } from "../hooks/useRemoveClonedProject";
 import { useEnvironments } from "../state/environments";
@@ -25,7 +26,6 @@ import {
 } from "../state/projectClones";
 import { sourceControlEnvironment } from "../state/sourceControl";
 import { useAtomCommand } from "../state/use-atom-command";
-import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { toastManager } from "./ui/toast";
 import { stackedThreadToast } from "./ui/toastHelpers";
 

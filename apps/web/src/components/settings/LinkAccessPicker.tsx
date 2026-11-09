@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { AuthMcpClientAccess } from "@t3tools/contracts";
 import { useId } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { accessConfig } from "../auth/ConnectAgentSurface";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";

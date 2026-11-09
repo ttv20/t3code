@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, RefreshControl, View } from "react-native";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { useUiLanguage } from "../../i18n";
 import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
-import { AppText as Text } from "../../components/ui/AppText";
-import { useContentTopInset } from "../../components/ui/useBarInset";
+import { useContentBottomInset, useContentTopInset } from "../../components/ui/useBarInset";
 import { cn } from "../../lib/cn";
 import {
   buildFileTree,
@@ -130,6 +130,7 @@ export function FileTreeBrowser(props: {
     readonly selectedPathAtPress: string | null;
   } | null>(null);
   const headerInset = useContentTopInset();
+  const bottomInset = useContentBottomInset();
   const {
     onLoadDirectory,
     onPreviewFile,
@@ -222,12 +223,12 @@ export function FileTreeBrowser(props: {
   return (
     <LegendList
       renderScrollComponent={NativeScrollView}
-      contentInsetStartAdjustment={headerInset}
+      contentInset={{ top: headerInset, bottom: bottomInset }}
       alwaysBounceVertical
       className="flex-1"
       data={visibleNodes}
       keyExtractor={(item) => item.node.path}
-      contentInsetAdjustmentBehavior="automatic"
+      contentInsetAdjustmentBehavior="never"
       automaticallyAdjustsScrollIndicatorInsets
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"

@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { X } from "lucide-react";
+import { useUiLanguage } from "../../i18n";
 
 import { isValidHistoryTimestamp, type BrowserHistoryEntry } from "~/browserHistoryStore";
 import { RelativeTime } from "~/components/RelativeTime";

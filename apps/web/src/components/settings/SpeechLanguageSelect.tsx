@@ -1,7 +1,7 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import type { EnvironmentSpeechStatus } from "@t3tools/contracts";
 import { effectiveSpeechLanguage } from "@t3tools/shared/speech";
 import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
+import { UiText, useUiLanguage } from "../../i18n";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 
 const languageNames = new Intl.DisplayNames(["en"], { type: "language" });

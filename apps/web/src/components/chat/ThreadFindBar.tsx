@@ -1,11 +1,11 @@
-import { useUiLanguage } from "../../i18n";
-import { useEffect, useRef, type KeyboardEvent } from "react";
 import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
+import { cn } from "~/lib/utils";
+import { useUiLanguage } from "../../i18n";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
-import { cn } from "~/lib/utils";
-import { formatThreadFindCount } from "./threadFind";
 import { THREAD_DETAILS_CARD_GAP } from "./threadDetailsCardLayout";
+import { formatThreadFindCount } from "./threadFind";
 
 interface ThreadFindBarProps {
   readonly open: boolean;

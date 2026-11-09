@@ -1,11 +1,12 @@
-import { useUiLanguage } from "../../i18n";
-import { MousePointer2Icon, PaintbrushIcon, PlusIcon, XIcon } from "lucide-react";
 import { ChevronDown, ChevronUp } from "lucide";
+import { MousePointer2Icon, PaintbrushIcon, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { MorphIcon } from "~/components/MorphIcon";
+import { useViewportSize } from "../../hooks/useViewportSize";
+import { useUiLanguage } from "../../i18n";
+import { cn } from "../../lib/utils";
 import {
   applyThemeColorPreview,
-  THEME_COLOR_ROLES,
-  THEME_FILE_VERSION,
   createVividThemeColors,
   getCustomThemes,
   getStandardThemeColors,
@@ -15,26 +16,25 @@ import {
   isThemeColor,
   parseThemeFile,
   removeCustomTheme,
+  THEME_COLOR_ROLES,
+  THEME_FILE_VERSION,
   themeIdFromName,
-  updateThemeColorFamily,
   updateCustomTheme,
+  updateThemeColorFamily,
   type ThemeAppearance,
-  type ThemeColors,
   type ThemeColorRole,
+  type ThemeColors,
   type ThemeDefinition,
 } from "../../themePalette";
-import { useViewportSize } from "../../hooks/useViewportSize";
-import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
-import { MorphIcon } from "~/components/MorphIcon";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { getThemeRoleLabel, ThemeColorField } from "./ThemeColorPicker";
 import {
-  clearThemeInspectorHover,
   clearThemeInspectorHighlights,
+  clearThemeInspectorHover,
   highlightThemeRoleUsage,
   inspectThemeRoleAtElement,
   inspectThemeRoleFromUtilitiesAtElement,

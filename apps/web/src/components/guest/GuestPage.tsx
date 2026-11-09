@@ -1,24 +1,4 @@
-import { UiText } from "../../i18n";
-import { useUiLanguage } from "../../i18n";
-import {
-  EnvironmentId,
-  GUEST_MESSAGE_MAX_LENGTH,
-  GUEST_HISTORY_ROUTE,
-  GUEST_NAME_MAX_LENGTH,
-  GUEST_ROUTE_PREFIX,
-  GUEST_SHARE_PARAM,
-  GuestMessageId,
-  type GuestRedeemRequest,
-  type GuestShareView,
-  type GuestThreadModel,
-  OrchestrationV2ThreadHistoryPage,
-  type OrchestrationV2ThreadProjection,
-  type ThreadGuestMessage,
-  type ThreadGuestMessageStatus,
-} from "@t3tools/contracts";
 import type { LegendListRef } from "@legendapp/list/react";
-import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import {
   deriveRunlessWorkStartedAt,
@@ -26,6 +6,24 @@ import {
   deriveThreadStructureRuntime,
 } from "@t3tools/client-runtime/state/thread-execution";
 import { createQuestionHistoryProjector } from "@t3tools/client-runtime/state/thread-requests";
+import {
+  EnvironmentId,
+  GUEST_HISTORY_ROUTE,
+  GUEST_MESSAGE_MAX_LENGTH,
+  GUEST_NAME_MAX_LENGTH,
+  GUEST_ROUTE_PREFIX,
+  GUEST_SHARE_PARAM,
+  GuestMessageId,
+  OrchestrationV2ThreadHistoryPage,
+  type GuestRedeemRequest,
+  type GuestShareView,
+  type GuestThreadModel,
+  type OrchestrationV2ThreadProjection,
+  type ThreadGuestMessage,
+  type ThreadGuestMessageStatus,
+} from "@t3tools/contracts";
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import { ArrowUpIcon, PaperclipIcon, XIcon } from "lucide-react";
 import {
   useEffect,
@@ -36,41 +34,41 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { useIncrementalTimelineEntries } from "~/hooks/useIncrementalTimelineEntries";
 import { useNowMinute } from "~/hooks/useNowMinute";
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { useTheme } from "~/hooks/useTheme";
-import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { deriveActiveWorkStartedAt, derivePhase } from "~/session-logic";
 import { ComposerControl, ComposerControlIcon } from "../chat/ComposerControl";
 import type { ExpandedImagePreview } from "../chat/ExpandedImagePreview";
 import { GuestMessageAttachments } from "../chat/GuestMessageAttachments";
-import { HostImageUrlContext } from "../chat/hostImageUrl";
-import { PierreEntryIcon } from "../chat/PierreEntryIcon";
 import { GuestMessageName, guestBubbleClassName } from "../chat/guestMessageStyle";
+import { HostImageUrlContext } from "../chat/hostImageUrl";
 import { MessagesTimeline, type MessagesTimelineHistoryControls } from "../chat/MessagesTimeline";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { PierreEntryIcon } from "../chat/PierreEntryIcon";
 import { getDisplayModelName, getTriggerDisplayModelName } from "../chat/providerIconUtils";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { ScrollToEndButton } from "../chat/TimelineOverlays";
 import type { TimelineRow } from "../chat/timelineRowContext";
 import { useTimelineFollow } from "../chat/useTimelineFollow";
-import { GuestHtmlRender } from "./GuestHtmlRender";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { GuestHtmlRender } from "./GuestHtmlRender";
 import {
   applyGuestStreamEvent,
+  createGuestAttachmentUrls,
   formatGuestExpiry,
   guestAttachmentUrl,
-  guestMediaUrl,
-  createGuestAttachmentUrls,
   guestFilesProblem,
+  guestMediaUrl,
   initialGuestStreamState,
   inviteShareId,
-  type GuestStreamState,
   parseGuestStreamEvent,
   unplacedGuestMessages,
+  type GuestStreamState,
 } from "./guestStream.logic";
 import { guestTurnItemSource } from "./guestTurnItemSource";
 
@@ -491,31 +489,6 @@ function GuestThread({
     ),
   );
   const unplaced = unplacedGuestMessages(messages, items, awaitingRowIds);
-  // The guest's waiting messages sit in the list footer, which the list does not follow on its
-  // own (the owner's view does the same in ChatView). A new one is the guest's own send, so it
-  // comes into view even if they had scrolled up, as the owner's send does. While following, the
-  // footer stays in view as it grows, such as when its images load.
-  const unplacedKey = unplaced.map((message) => message.id).join(",");
-  const previousUnplacedKey = useRef(unplacedKey);
-  const following = useRef(follow.timelineLiveFollowEnabled);
-  const scrollToEnd = useStableCallback(follow.scrollToEnd);
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- scrolls the timeline to the end after commit when new unplaced messages appear
-  useEffect(() => {
-    following.current = follow.timelineLiveFollowEnabled;
-    const previous = new Set(previousUnplacedKey.current.split(","));
-    previousUnplacedKey.current = unplacedKey;
-    if (unplacedKey.split(",").some((id) => id !== "" && !previous.has(id))) scrollToEnd(true);
-  }, [follow.timelineLiveFollowEnabled, unplacedKey, scrollToEnd, following, previousUnplacedKey]);
-  const footerRef = useRef<HTMLOListElement>(null);
-  const hasFooter = unplaced.length > 0;
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- ResizeObserver on the footer keeps it scrolled into view while following
-  useEffect(() => {
-    const footer = footerRef.current;
-    if (!hasFooter || footer === null) return;
-    return observeResize(footer, () => {
-      if (following.current) scrollToEnd();
-    });
-  }, [hasFooter, scrollToEnd, following]);
   return (
     <>
       <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2.5">
@@ -557,9 +530,10 @@ function GuestThread({
             liveFollowEnabled={follow.timelineLiveFollowEnabled}
             onIsAtEndChange={follow.onIsAtEndChangeStable}
             onViewportAttach={follow.attachTimelineViewport}
+            onFooterGrow={follow.onTimelineFooterGrowStable}
             footer={
               unplaced.length === 0 ? null : (
-                <ol ref={footerRef} className="chat-content-lane flex flex-col gap-4 pb-4">
+                <ol className="chat-content-lane flex flex-col gap-4 pb-4">
                   {unplaced.map((message) => (
                     <li key={message.id}>
                       <UnplacedGuestMessage shareId={shareId} message={message} />
@@ -579,7 +553,7 @@ function GuestThread({
         ) : null}
       </div>
       <div className={cn(LANE, "shrink-0 pb-4")}>
-        <GuestComposer shareId={shareId} model={model} />
+        <GuestComposer shareId={shareId} model={model} onSent={() => follow.scrollToEnd(true)} />
       </div>
     </>
   );
@@ -689,9 +663,12 @@ function StagedImage({ file }: { readonly file: File }) {
 function GuestComposer({
   shareId,
   model,
+  onSent,
 }: {
   readonly shareId: GuestShareView["shareId"];
   readonly model: GuestThreadModel;
+  /** The guest's own message comes into view even if they had scrolled up, as the owner's does. */
+  readonly onSent: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -729,6 +706,7 @@ function GuestComposer({
     setError(failure);
     // Keep anything typed or attached while the request was in flight.
     if (failure === null) {
+      onSent();
       setText((current) => (current.trim() === trimmed ? "" : current));
       setFiles((current) => current.filter((staged) => !sentFiles.includes(staged)));
     }

@@ -1,25 +1,25 @@
-import { useUiLanguage, UiText } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import { useState } from "react";
 import {
   deriveAvailableInstanceId,
   deriveInstanceId,
 } from "@t3tools/client-runtime/provider-instance-ids";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import type { ProviderClientDefinition } from "@t3tools/provider-core/client";
 import {
-  type AcpRegistrySearchAgent,
   AuthProvidersManageScope,
-  ProviderInstanceId,
   ProviderDriverKind,
+  ProviderInstanceId,
+  isManagedDriverAllowed,
+  type AcpRegistrySearchAgent,
   type EnvironmentId,
   type ProviderInstanceConfig,
   type ProviderInstanceEnvironmentVariable,
-  isManagedDriverAllowed,
 } from "@t3tools/contracts";
+import type { ProviderClientDefinition } from "@t3tools/provider-core/client";
+import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import { useState } from "react";
 
 import {
   useEnvironmentSettings,
@@ -30,23 +30,19 @@ import { cn } from "../../lib/utils";
 import { normalizeProviderAccentColor } from "../../providerInstances";
 import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
-import { Button } from "../ui/button";
-import { ChatGptConnectionButton } from "./ChatGptConnectionButton";
-import { Dialog } from "../ui/dialog";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
+import { Dialog } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { RadioGroup } from "../ui/radio-group";
 import { toastManager } from "../ui/toast";
-import { providerClients } from "./providerDriverMeta";
-import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
-import { SettingsGroup } from "./SettingsGroup";
-import { SettingsRow } from "./settingsLayout";
-import { ProviderSettingsForm, deriveProviderSettingsFields } from "./ProviderSettingsForm";
-import { WizardPanel, WizardPopup, WizardHeader, WizardFooter } from "../ui/wizard";
+import { WizardFooter, WizardHeader, WizardPanel, WizardPopup } from "../ui/wizard";
+import { resolveOfficialAcpRegistryIconUrl } from "./AcpRegistryIcon";
+import { AcpRegistrySearchStep, useAcpRegistrySearch } from "./AcpRegistrySearchStep";
 import {
-  ADD_PROVIDER_WIZARD_STEPS,
   ACP_REGISTRY_WIZARD_STEPS,
+  ADD_PROVIDER_WIZARD_STEPS,
   LOCAL_ACP_WIZARD_STEPS,
   resolveAcpRegistryWizardNavigation,
   resolveWizardNavigation,
@@ -55,13 +51,17 @@ import {
   type WizardNavigation,
 } from "./AddProviderInstanceDialog.logic";
 import { AddProviderInstanceWizardSteps } from "./AddProviderInstanceWizardSteps";
-import { AcpRegistrySearchStep, useAcpRegistrySearch } from "./AcpRegistrySearchStep";
-import { ProviderWizardAuthenticationStep } from "./ProviderWizardAuthenticationStep";
-import { resolveOfficialAcpRegistryIconUrl } from "./AcpRegistryIcon";
+import { ChatGptConnectionButton } from "./ChatGptConnectionButton";
 import { AddManagedCodexAccountDialog } from "./CodexSetupSection";
 import { MultipleAccountsNote } from "./MultipleAccountsNote";
+import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
+import { providerClients } from "./providerDriverMeta";
 import { ProviderEnvironmentSection } from "./ProviderInstanceCard";
+import { ProviderSettingsForm, deriveProviderSettingsFields } from "./ProviderSettingsForm";
+import { ProviderWizardAuthenticationStep } from "./ProviderWizardAuthenticationStep";
 import { useSecretSources } from "./SecretSourceInput";
+import { SettingsGroup } from "./SettingsGroup";
+import { SettingsRow } from "./settingsLayout";
 
 const INSTANCE_ID_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const DEFAULT_DRIVER_KIND = ProviderDriverKind.make("codex");

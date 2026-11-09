@@ -1,16 +1,16 @@
-import { useUiLanguage } from "../i18n";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import { useState } from "react";
+import { useUiLanguage } from "../i18n";
 
 import { usePaginatedBranches } from "../state/queries";
 import { useEnvironmentQuery } from "../state/query";
 import { vcsEnvironment } from "../state/vcs";
 import { BranchPicker, BranchPickerRefItem } from "./BranchPicker";
 import { resolveBranchTriggerLabel, sanitizeNewRefName } from "./BranchToolbar.logic";
-import { MiddleTruncate } from "./ui/middle-truncate";
 import { Button } from "./ui/button";
 import { ComboboxTrigger } from "./ui/combobox";
+import { MiddleTruncate } from "./ui/middle-truncate";
 
 export function WorktreeBaseBranchPicker({
   environmentId,

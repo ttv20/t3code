@@ -1,16 +1,14 @@
-import { useUiLanguage } from "../../i18n";
-import { Spinner } from "~/components/ui/spinner";
+import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import type {
   PullRequestActor,
   PullRequestCheck,
-  PullRequestCheckStatus,
   PullRequestChecksState,
+  PullRequestCheckStatus,
   PullRequestLabel,
   PullRequestMergeability,
   PullRequestReviewDecision,
   PullRequestState,
 } from "@t3tools/contracts";
-import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import {
   CircleCheckIcon,
   CircleDashedIcon,
@@ -22,6 +20,8 @@ import {
   UserRoundXIcon,
 } from "lucide-react";
 import { Children, type CSSProperties, isValidElement, type ReactNode, useState } from "react";
+import { Spinner } from "~/components/ui/spinner";
+import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 
@@ -29,13 +29,13 @@ import { Badge } from "../ui/badge";
 import { InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import type { PullRequestReviewOutcome } from "./pullRequestDetail.logic";
-import { pullRequestLabelColor } from "./pullRequestList.logic";
 import {
   PULL_REQUEST_STATE_PRESENTATION,
   PullRequestGlyph,
-  type PullRequestStatePresentation,
   type PullRequestGlyphIcon,
+  type PullRequestStatePresentation,
 } from "./pullRequestIcons";
+import { pullRequestLabelColor } from "./pullRequestList.logic";
 
 export function PullRequestLabelChip({
   label,

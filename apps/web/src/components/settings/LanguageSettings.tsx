@@ -1,10 +1,10 @@
-import { useUiLanguage } from "../../i18n";
 import { INTERFACE_DIRECTIONS } from "@t3tools/client-runtime/i18n";
+import { useUiLanguage } from "../../i18n";
 
-import { useClientSettings, updateClientSettings } from "../../hooks/useSettings";
+import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
 
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { InterfaceLanguageSelect } from "../InterfaceLanguageSelect";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
 
 export function LanguageSettings() {

@@ -1,6 +1,6 @@
-import { useUiLanguage, UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { type ReactNode, useSyncExternalStore } from "react";
+import { UiText, useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { environmentIdsKey } from "~/state/environmentAtomList";
@@ -11,8 +11,8 @@ import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import {
   describeUpdateCapsule,
   formatUpdateElapsed,
-  RUN_STATUS_LABELS,
   resolveUpdateRunMachineStatus,
+  RUN_STATUS_LABELS,
   type UpdateEverythingRun,
   type UpdateRunLocalState,
   type UpdateRunMachineView,

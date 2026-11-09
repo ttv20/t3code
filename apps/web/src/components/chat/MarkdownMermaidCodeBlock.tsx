@@ -1,6 +1,6 @@
-import { useUiLanguage } from "../../i18n";
 import { CodeIcon, WorkflowIcon } from "lucide-react";
 import { Suspense, use, useState, type ReactNode } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { RenderErrorBoundary } from "../RenderErrorBoundary";
 import { Button } from "../ui/button";

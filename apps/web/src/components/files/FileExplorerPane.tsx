@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import { type CSSProperties, type ReactNode, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { RightPanelResizeHandle } from "~/components/preview/RightPanelResizeHandle";
 import { RESIZABLE_WIDTH_PROPERTY, useResizableWidth } from "~/hooks/useResizableWidth";

@@ -1,16 +1,15 @@
-import { useUiLanguage } from "../../i18n";
+import { useAtomValue } from "@effect/atom-react";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   AuthProvidersManageScope,
   type EnvironmentId,
-  type ProviderConsumeResetCreditOutcome,
   ProviderConsumeResetCreditInput,
+  type ProviderConsumeResetCreditOutcome,
   ServerProvider,
   ServerProviderResetCredits,
   ServerProviderUsageWindow,
   UsageProviderKind,
 } from "@t3tools/contracts";
-import { useAtomValue } from "@effect/atom-react";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   formatDuration,
   formatResetsIn,
@@ -21,12 +20,13 @@ import {
 } from "@t3tools/shared/usageLimits";
 import { GaugeIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 import { Fragment, useLayoutEffect, useState } from "react";
+import { useUiLanguage } from "../../i18n";
 
 import { usePrimarySettings } from "../../hooks/useSettings";
 import { observeResize } from "../../lib/observeResize";
 import { environmentPresentations } from "../../state/presentation";
-import { useEnvironmentScope, readEnvironmentScope } from "../../state/session";
 import { serverEnvironment } from "../../state/server";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { formatUpcomingTimestamp } from "../../timestampFormat";
 import {

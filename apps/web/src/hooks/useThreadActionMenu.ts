@@ -1,12 +1,9 @@
-import { useUiLanguage } from "../i18n";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
-import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
-import { openGuestShareDialog } from "../components/chat/guestShareDialogState";
 import {
-  type AtomCommandResult,
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
+  type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
 import { canSnooze, effectiveSnoozed } from "@t3tools/client-runtime/state/thread-settled";
 import {
@@ -15,7 +12,17 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { useRouter } from "@tanstack/react-router";
+import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
+import { openGuestShareDialog } from "../components/chat/guestShareDialogState";
+import { useUiLanguage } from "../i18n";
 
+import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
+import {
+  deriveLogicalProjectKeyFromSettings,
+  derivePhysicalProjectKey,
+  selectProjectGroupingSettings,
+} from "@t3tools/client-runtime/state/project-grouping";
+import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import { pickSnoozePreset, resolveSnoozePresets } from "../components/Sidebar.snooze";
 import {
   buildThreadActionMenuItems,
@@ -23,11 +30,10 @@ import {
   type ThreadActionMenuId,
 } from "../components/threadActionMenu.logic";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
+import { configuredHostedAppUrl } from "../hostedPairing";
 import { copyThreadReference } from "../lib/copyThreadReference";
-import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
-import { threadEnvironment } from "../state/threads";
-import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { readEnvironmentScope } from "../state/session";
+import { readLocalApi } from "../localApi";
+import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
 import {
   readEnvironmentServerConfigLoaded,
   readEnvironmentSupportsAutoSettleOptOut,
@@ -35,15 +41,9 @@ import {
   useProjects,
 } from "../state/entities";
 import { usePrimaryEnvironmentId } from "../state/environments";
-import { readLocalApi } from "../localApi";
-import { configuredHostedAppUrl } from "../hostedPairing";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  derivePhysicalProjectKey,
-  selectProjectGroupingSettings,
-} from "@t3tools/client-runtime/state/project-grouping";
-import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
-import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
+import { readEnvironmentScope } from "../state/session";
+import { threadEnvironment } from "../state/threads";
+import { useOrchestrationCommand } from "../state/use-orchestration-command";
 import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";

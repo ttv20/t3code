@@ -73,6 +73,7 @@ import { ReviewSheet } from "./features/review/ReviewSheet";
 import {
   ScheduledTaskBranchPickerRouteScreen,
   ScheduledTaskModelPickerRouteScreen,
+  ScheduledTaskThreadPickerRouteScreen,
 } from "./features/settings/ScheduledTaskPickerScreens";
 import { SettingsEnvironmentFilterProvider } from "./features/settings/settings-environment-filter";
 import { openSettings, settingsOpenIn } from "./features/settings/settings-navigation";
@@ -301,6 +302,10 @@ const SETTINGS_SCREENS = {
   SettingsScheduledTaskBranch: createNativeStackScreen({
     screen: ScheduledTaskBranchPickerRouteScreen,
     options: settingsPage("Base branch"),
+  }),
+  SettingsScheduledTaskThread: createNativeStackScreen({
+    screen: ScheduledTaskThreadPickerRouteScreen,
+    options: settingsPage("Destination"),
   }),
   SettingsScheduledTaskModel: createNativeStackScreen({
     screen: ScheduledTaskModelPickerRouteScreen,

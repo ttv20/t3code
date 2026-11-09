@@ -1,28 +1,28 @@
-import { useUiLanguage } from "../../i18n";
-import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
-import { Spinner } from "~/components/ui/spinner";
-import { ArchiveIcon, ArchiveX, Trash2Icon } from "lucide-react";
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
-import { presentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   type AtomCommandResult,
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { useSettingsScope } from "./SettingsScopeContext";
+import { presentThreadShell } from "@t3tools/client-runtime/state/shell";
+import { ArchiveIcon, ArchiveX, Trash2Icon } from "lucide-react";
+import { Spinner } from "~/components/ui/spinner";
 import { useThreadActions } from "../../hooks/useThreadActions";
-import { readLocalApi } from "../../localApi";
+import { useUiLanguage } from "../../i18n";
 import { useArchivedThreadSnapshots } from "../../lib/archivedThreadsState";
+import { readLocalApi } from "../../localApi";
+import { ProjectFavicon } from "../ProjectFavicon";
 import { RelativeTime } from "../RelativeTime";
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
+import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
-import { ProjectFavicon } from "../ProjectFavicon";
 
 import { useRef, useState } from "react";
-import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const ARCHIVE_ACTIONS = [
   { action: "unarchive", label: "Unarchive", Icon: ArchiveX },

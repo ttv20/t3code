@@ -1,6 +1,3 @@
-import { useUiLanguage, UiText } from "../../i18n";
-import { useStableCallback } from "~/hooks/useStableCallback";
-import { listBrowserMicrophones, type BrowserMicrophone } from "../../speech/browserMicrophones";
 import type {
   EnvironmentId,
   EnvironmentSpeechModel,
@@ -9,10 +6,13 @@ import type {
 import { useNavigate } from "@tanstack/react-router";
 import { RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useStableCallback } from "~/hooks/useStableCallback";
+import { UiText, useUiLanguage } from "../../i18n";
+import { listBrowserMicrophones, type BrowserMicrophone } from "../../speech/browserMicrophones";
 
-import { useClientSettings, updateClientSettings } from "../../hooks/useSettings";
-import { useEnvironment } from "../../state/environments";
 import { AuthSettingsWriteScope } from "@t3tools/contracts";
+import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
+import { useEnvironment } from "../../state/environments";
 import { useEnvironmentScope } from "../../state/session";
 import { languageLabel } from "../settings/SpeechLanguageSelect";
 import { Button } from "../ui/button";

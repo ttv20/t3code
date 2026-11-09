@@ -1,28 +1,29 @@
-import { useUiLanguage } from "../../i18n";
-import type { DraftId } from "~/composerDraftStore";
-import { composerDraftHasUserContent, useComposerDraftStore } from "~/composerDraftStore";
-import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
 import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { isScratchProject } from "@t3tools/client-runtime/state/projects";
+import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
 import { FolderPlusIcon } from "lucide-react";
-import { useAtomValue } from "@effect/atom-react";
 import { useRef, useState } from "react";
+import type { DraftId } from "~/composerDraftStore";
+import { composerDraftHasUserContent, useComposerDraftStore } from "~/composerDraftStore";
+import { useUiLanguage } from "../../i18n";
 
-import { openCommandPalette } from "~/commandPaletteBus";
-import { shortcutLabelForCommand } from "~/keybindings";
-import { primaryServerKeybindingsAtom } from "~/state/server";
-import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
-import { useOrderWhileOpen } from "~/hooks/useOrderWhileOpen";
-import { useProjectPin } from "~/hooks/useProjectGroupUpdate";
-import { useScratchProject } from "~/hooks/useScratchProject";
-import { isTriagePrompt } from "~/hooks/useStartTriage";
-import { useClientSettings } from "~/hooks/useSettings";
-import { hasExplicitComposerModelSelection } from "~/lib/chatThreadActions";
 import {
   deriveLogicalProjectKeyFromSettings,
   pickableProjectGroups,
   selectProjectGroupingSettings,
 } from "@t3tools/client-runtime/state/project-grouping";
+import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
+import { openCommandPalette } from "~/commandPaletteBus";
+import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
+import { useOrderWhileOpen } from "~/hooks/useOrderWhileOpen";
+import { useProjectPin } from "~/hooks/useProjectGroupUpdate";
+import { useScratchProject } from "~/hooks/useScratchProject";
+import { useClientSettings } from "~/hooks/useSettings";
+import { isTriagePrompt } from "~/hooks/useStartTriage";
+import { shortcutLabelForCommand } from "~/keybindings";
+import { hasExplicitComposerModelSelection } from "~/lib/chatThreadActions";
 import {
   buildSidebarProjectPickerEntries,
   buildSidebarProjectSnapshots,
@@ -30,14 +31,17 @@ import {
 } from "~/sidebarProjectGrouping";
 import { useProjects, useVisibleThreadShells } from "~/state/entities";
 import {
+  useEnvironmentProviders,
   useEnvironments,
   usePrimaryEnvironmentId,
-  useEnvironmentProviders,
 } from "~/state/environments";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import { resolveProjectDefaultProviderModelSelection } from "../../providerInstances";
 import { ProjectEnvironmentBadge } from "../ProjectEnvironmentBadge";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { isProjectPinShortcut, ProjectPinButton } from "../ProjectPinButton";
 import { sortLogicalProjectsForSidebar } from "../Sidebar.logic";
+import { InlineButton } from "../ui/button";
 import {
   Combobox,
   ComboboxEmpty,
@@ -49,13 +53,9 @@ import {
   useComboboxFilter,
 } from "../ui/combobox";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { InlineButton } from "../ui/button";
-import { DraftProjectName } from "./DraftProjectName";
 import { DraftHeroProjectHeading } from "./DraftHeroProjectHeading";
+import { DraftProjectName } from "./DraftProjectName";
 import { TriageDraftHero } from "./TriageDraftHero";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
-import { resolveProjectDefaultProviderModelSelection } from "../../providerInstances";
-import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
 
 const ADD_PROJECT_VALUE = "add-project";
 

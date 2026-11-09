@@ -1,5 +1,5 @@
-import { useUiLanguage } from "../../i18n";
 import type { SnapShotShortcut } from "@t3tools/contracts";
+import { useUiLanguage } from "../../i18n";
 import { snapShotShortcutKeyLabels } from "../../lib/snapShotShortcut";
 import { Kbd, KbdGroup } from "../ui/kbd";
 

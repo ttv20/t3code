@@ -11,11 +11,11 @@ import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { parse, SvgAst, type JsxAST } from "react-native-svg";
 import { useUiLanguage } from "../../i18n";
 
-import { useFilePreviewGallery } from "../../components/FilePreviewGallery";
-import type { FilePreviewSource } from "../../components/FilePreviewModal";
 import { MediaActionsMenu } from "../../components/MediaActionsMenu";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppText as Text } from "../../components/ui/AppText";
+import { useFilePreviewGallery } from "../../components/ui/FilePreviewGallery";
+import type { FilePreviewSource } from "../../components/ui/FilePreviewModal";
 import { PresentationSource } from "../../components/ui/NativePresentation";
 import { assetImageCacheKey } from "../../lib/assetImageSource";
 import type { MediaActionsSource } from "../../lib/mediaActionsSource";

@@ -37,7 +37,7 @@ export function ChatGptUsageSummary({
       </View>
       <Text className="text-xs text-foreground-muted">
         <UiText
-          message={"{0}. Open ChatGPT with the account you connected."}
+          message={uiT("{0}. Open ChatGPT with the account you connected.")}
           values={{ "0": usage.accounts.join(", ") }}
         />
       </Text>
