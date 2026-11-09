@@ -174,3 +174,8 @@ describe("mobile model mentions", () => {
     expect(buildComposerModelItems([option("traex:gpt-6.1")], "gpt", providers)).toEqual([]);
   });
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

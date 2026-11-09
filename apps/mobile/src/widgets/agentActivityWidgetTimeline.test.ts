@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import type { RelayAgentActivityAggregateState } from "@t3tools/contracts/relay";
@@ -69,4 +69,9 @@ describe("agentActivityWidgetTimeline", () => {
     expect(timeline).toHaveLength(1);
     expect(timeline[0]?.props.activities[0]?.phase).toBe("failed");
   });
+});
+
+vi.mock("../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

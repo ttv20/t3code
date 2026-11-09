@@ -543,7 +543,7 @@ function parseDefaultBranchFromRemoteHeadRef(value: string, remoteName: string):
 }
 
 function isMissingGitCwdError(error: GitCommandError): boolean {
-  if (!(error.cause instanceof PlatformError.PlatformError)) {
+  if (!PlatformError.isPlatformError(error.cause)) {
     return false;
   }
 
