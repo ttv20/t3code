@@ -1,3 +1,6 @@
+import { AsyncResult, Atom } from "effect/reactivity";
+import { stickyWorkingShelfAtom } from "../../state/sticky-working-shelf";
+import { StickyWorkingShelf } from "./StickyWorkingShelf";
 import { useAtomValue } from "@effect/atom-react";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
@@ -74,6 +77,7 @@ import {
   THREAD_LIST_V2_SETTLED_INITIAL_COUNT,
   THREAD_LIST_V2_SETTLED_PAGE_COUNT,
   threadListV2ListItemsAreEqual,
+  partitionWorkingShelf,
   type ThreadListV2ListItem,
 } from "../threads/threadListV2";
 import { requestThreadMessageJump } from "../threads/threadMessageJump";
@@ -140,6 +144,9 @@ interface HomeScreenProps {
   readonly onNewThreadOnBranch: (thread: EnvironmentThreadShell) => void;
   readonly onNewThreadInProject: (project: EnvironmentProject) => void;
 }
+
+const homeStickyWorkingShelfAtom =
+  Platform.OS === "android" ? stickyWorkingShelfAtom : Atom.make(AsyncResult.success(false));
 
 const ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT = 72;
 // Rows away from the viewport skip their swipe actions (see
@@ -252,6 +259,9 @@ function renderHomeScrollView(props: ScrollViewProps) {
 
 export function HomeScreen(props: HomeScreenProps) {
   const { t: uiT, locale } = useUiLanguage();
+  const stickyPreference = useAtomValue(homeStickyWorkingShelfAtom);
+  const [stickyHeight, setStickyHeight] = useState(0);
+  const [listViewportHeight, setListViewportHeight] = useState(0);
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const workspace = useWorkspaceTabs();
   const [initialScrollOffset] = useState(() => workspace?.getScrollOffset("threads") ?? 0);
@@ -493,6 +503,22 @@ export function HomeScreen(props: HomeScreenProps) {
     settledShelfExpanded,
     selectedThreadKey,
   });
+  const stickyEnabled =
+    Platform.OS === "android" &&
+    workingShelfEnabled &&
+    !hasSearchQuery &&
+    AsyncResult.isSuccess(stickyPreference) &&
+    stickyPreference.value;
+  const { items: mainListItems, working: stickyItems } = useMemo(
+    () => partitionWorkingShelf(threadListV2Items, stickyEnabled),
+    [threadListV2Items, stickyEnabled],
+  );
+  const threadJumpItems = useMemo(
+    () => (stickyItems.length > 0 ? [...mainListItems, ...stickyItems] : mainListItems),
+    [mainListItems, stickyItems],
+  );
+  const bottomClearance = workspace?.bottomClearance ?? Math.max(insets.bottom, 16) + fabClearance;
+  const hasStickyShelf = stickyItems.length > 0;
   // Called as `props.onSelectThread(...)`, the compiler would cache this handler on the whole
   // props object, which is new on every render of Home's parent.
   const { onSelectThread } = props;
@@ -508,13 +534,16 @@ export function HomeScreen(props: HomeScreenProps) {
     }
     onSelectThread(thread);
   };
-  useThreadJumpShortcuts(threadListV2Items, selectThread);
+  useThreadJumpShortcuts(threadJumpItems, selectThread);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads the list's visible range after commit to enable swipe gestures on those rows
   useEffect(() => {
-    if (swipeEnabled) activateVisibleRows(threadListV2Items);
-  }, [activateVisibleRows, swipeEnabled, threadListV2Items]);
+    if (swipeEnabled) activateVisibleRows(mainListItems);
+  }, [activateVisibleRows, swipeEnabled, mainListItems]);
 
-  const renderV2Item = ({ item }: { readonly item: ThreadListV2ListItem }) => {
+  const renderV2Item = (
+    { item }: { readonly item: ThreadListV2ListItem },
+    simultaneousGesture = homeScrollGesture,
+  ) => {
     if (item.type === "v2-pending") {
       const pendingScopeKey = scopedProjectKey(
         item.pendingTask.environmentId,
@@ -546,7 +575,7 @@ export function HomeScreen(props: HomeScreenProps) {
           fullSwipeWidth={fullSwipeWidth}
           onSwipeableClose={handleSwipeableClose}
           onSwipeableWillOpen={handleSwipeableWillOpen}
-          simultaneousSwipeGesture={homeScrollGesture}
+          simultaneousSwipeGesture={simultaneousGesture}
           activationKey={item.key}
         />
       );
@@ -647,7 +676,7 @@ export function HomeScreen(props: HomeScreenProps) {
         onMoveThread={handleMoveThread}
         onSwipeableClose={handleSwipeableClose}
         onSwipeableWillOpen={handleSwipeableWillOpen}
-        simultaneousSwipeGesture={homeScrollGesture}
+        simultaneousSwipeGesture={simultaneousGesture}
         activationKey={item.key}
       />
     );
@@ -798,18 +827,25 @@ export function HomeScreen(props: HomeScreenProps) {
   return (
     <View className={containerClassName}>
       <ScreenContent surface="screen">
-        <View className={cn("flex-1", Platform.OS !== "android" && contentBackground)}>
+        <View
+          className={cn("flex-1", Platform.OS !== "android" && contentBackground)}
+          onLayout={
+            Platform.OS === "android"
+              ? (event) => setListViewportHeight(event.nativeEvent.layout.height)
+              : undefined
+          }
+        >
           <SwipeableScrollGateProvider enabled={swipeEnabled} activation={swipeRowActivation}>
             <GestureDetector gesture={homeScrollGesture}>
               <AnimatedLegendList
                 itemLayoutAnimation={sidebarSurface ? THREAD_SIDEBAR_ROW_LAYOUT : undefined}
                 ref={listRef}
-                onLoad={() => activateVisibleRows(threadListV2Items)}
+                onLoad={() => activateVisibleRows(mainListItems)}
                 onTouchStart={(event) => trackListTouches(event, true)}
                 onTouchEnd={(event) => trackListTouches(event, false)}
                 onTouchCancel={(event) => trackListTouches(event, false)}
                 renderScrollComponent={Platform.OS === "ios" ? renderHomeScrollView : undefined}
-                data={threadListV2Items}
+                data={mainListItems}
                 renderItem={renderV2Item}
                 keyExtractor={v2KeyExtractor}
                 getItemType={(item) => item.type}
@@ -837,7 +873,7 @@ export function HomeScreen(props: HomeScreenProps) {
                     />
                   ) : null
                 }
-                ListEmptyComponent={v2ListEmpty}
+                ListEmptyComponent={hasStickyShelf ? null : v2ListEmpty}
                 style={{ flex: 1 }}
                 automaticallyAdjustsScrollIndicatorInsets={Platform.OS === "ios"}
                 contentInsetAdjustmentBehavior="never"
@@ -858,13 +894,29 @@ export function HomeScreen(props: HomeScreenProps) {
                   paddingBottom:
                     Platform.OS === "ios"
                       ? iosBottomClearance
-                      : (workspace?.bottomClearance ??
-                        Math.max(insets.bottom, 16) +
-                          (Platform.OS === "android" ? fabClearance : 88)),
+                      : bottomClearance + (hasStickyShelf ? stickyHeight : 0),
                 }}
               />
             </GestureDetector>
           </SwipeableScrollGateProvider>
+          {hasStickyShelf && listViewportHeight > 0 ? (
+            <StickyWorkingShelf
+              items={stickyItems}
+              bottom={bottomClearance}
+              maxHeight={Math.max(0, (listViewportHeight - bottomClearance) / 2)}
+              paddingLeft={
+                (contentSideInsets?.left ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
+              }
+              paddingRight={
+                (contentSideInsets?.right ?? 0) + (sidebarSurface ? 8 : 0) + androidListGutter
+              }
+              estimatedItemSize={ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT}
+              extraData={v2ExtraData}
+              renderItem={(item, gesture) => renderV2Item({ item }, gesture)}
+              onScrollBeginDrag={handleScrollBeginDrag}
+              onLayout={(event) => setStickyHeight(event.nativeEvent.layout.height)}
+            />
+          ) : null}
         </View>
       </ScreenContent>
     </View>

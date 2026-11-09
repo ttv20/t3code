@@ -450,6 +450,17 @@ export function isThreadListV2ListItem(value: {
   );
 }
 
+export function partitionWorkingShelf(items: ReadonlyArray<ThreadListV2ListItem>, sticky: boolean) {
+  const start = sticky ? items.findIndex((item) => item.type === "v2-working-shelf") : -1;
+  if (start < 0) return { items, working: [] as ReadonlyArray<ThreadListV2ListItem> };
+  let end = start + 1;
+  while (end < items.length && items[end]?.type === "v2-thread") end++;
+  return {
+    items: [...items.slice(0, start), ...items.slice(end)],
+    working: items.slice(start, end),
+  };
+}
+
 /** Compare rebuilt items by content so minute ticks and partition runs do not re-render every mounted row. */
 export function threadListV2ListItemsAreEqual(
   previous: ThreadListV2ListItem,

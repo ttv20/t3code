@@ -10549,5 +10549,6 @@
   "⌘/Ctrl Enter to send": "⌘/Ctrl Enter برای ارسال",
   "△ 2 warnings": "△ 2 هشدار",
   "✓ 85 passed": "✓ 85 گذشت",
-  "✗ 0 failed": "✗ 0 شکست خورد"
+  "✗ 0 failed": "✗ 0 شکست خورد",
+  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device."
 }

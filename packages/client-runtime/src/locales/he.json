@@ -10549,5 +10549,6 @@
   "⌘/Ctrl Enter to send": "⌘/Ctrl Enter כדי לשלוח",
   "△ 2 warnings": "△ 2 אזהרות",
   "✓ 85 passed": "✓ 85 עברו",
-  "✗ 0 failed": "✗ 0 נכשל"
+  "✗ 0 failed": "✗ 0 נכשל",
+  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "השארת המדף „בעבודה” בתחתית רשימת השיחות בזמן ששאר השיחות נגללות מאחוריו. נשמר רק במכשיר הזה."
 }

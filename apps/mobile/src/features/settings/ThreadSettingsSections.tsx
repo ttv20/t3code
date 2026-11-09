@@ -1,3 +1,7 @@
+import {
+  stickyWorkingShelfAtom,
+  updateStickyWorkingShelfAtom,
+} from "../../state/sticky-working-shelf";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import {
   AuthSettingsWriteScope,
@@ -6,7 +10,7 @@ import {
 } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import type { ComponentProps } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../components/ui/Button";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
@@ -209,6 +213,30 @@ export function AutoSettleSettingsRows(props: {
   );
 }
 
+function AndroidStickyWorkingShelfSetting() {
+  const { t: uiT } = useUiLanguage();
+  const value = useAtomValue(stickyWorkingShelfAtom);
+  const save = useAtomSet(updateStickyWorkingShelfAtom);
+  return (
+    <View className="gap-3">
+      <SettingsSection>
+        <SettingsSwitchRow
+          icon="pin"
+          label={uiT("Keep working threads visible")}
+          value={AsyncResult.isSuccess(value) && value.value}
+          disabled={!AsyncResult.isSuccess(value)}
+          onValueChange={save}
+        />
+      </SettingsSection>
+      <Text className="px-2 text-sm text-foreground-muted">
+        {uiT(
+          "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.",
+        )}
+      </Text>
+    </View>
+  );
+}
+
 export function WorkingSectionSettings() {
   const { t: uiT } = useUiLanguage();
 
@@ -232,6 +260,7 @@ export function WorkingSectionSettings() {
           "Fold working and monitoring threads into a Working section. They return to the top of the list when they need you. While this is on, active threads are ordered by time and cannot be moved.",
         )}
       </Text>
+      {Platform.OS === "android" ? <AndroidStickyWorkingShelfSetting /> : null}
     </View>
   );
 }

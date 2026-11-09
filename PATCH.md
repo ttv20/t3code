@@ -69,9 +69,11 @@ Translation scope and the reasons behind these choices are recorded in [Translat
 
 ## Sticky Working shelf
 
+- Android **Settings → General → Sidebar → Keep working threads visible** docks the same Working header and thread actions above the scrolling Home list. Long shelves use a bounded virtualized list, with safe-area/FAB clearance; search retains the ordinary results list. The toggle is off by default and stored in Expo SecureStore, without a SQLite preference field or migration.
+
 - Web and desktop **Settings → General → Sidebar → Keep working threads visible** can keep the Working shelf at the bottom above the scrolling thread list. It is off by default and retains the existing expand/collapse control and thread actions.
 - The expanded shelf has its own bounded scroll area when it contains many threads. Turning the option off restores upstream's normal shelf layout.
-- This is a per-client local-storage preference. It adds no database field, migration, thread mutation, server setting, RPC, polling, or cross-device sync. Settings search includes its English and translated title; its reset action and restoring defaults turn it off.
+- On web and desktop this is a per-client local-storage preference. It adds no database field, migration, thread mutation, server setting, RPC, polling, or cross-device sync. Settings search includes its English and translated title; its reset action and restoring defaults turn it off.
 
 ## Finished-thread entry position
 

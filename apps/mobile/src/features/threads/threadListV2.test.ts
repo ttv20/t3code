@@ -35,6 +35,7 @@ import { threadJumpTarget } from "../keyboard/threadKeyboardShortcuts";
 import {
   buildThreadListV2Items,
   buildThreadListV2ListItems,
+  partitionWorkingShelf,
   getThreadListV2OrderedSection,
   layoutThreadListV2RowMenuActions,
   resolveThreadListV2SnoozeMenuSelection,
@@ -1794,6 +1795,24 @@ describe("Working section beta", () => {
       "snoozed",
       "v2-settled-shelf",
       "settled",
+    ]);
+    const split = partitionWorkingShelf(items, true);
+    expect(split.working.map((item) => item.key)).toEqual([
+      "v2-working-shelf",
+      `v2-thread:${environmentId}:working`,
+    ]);
+    expect(split.items).toEqual(items.filter((item) => !split.working.includes(item)));
+    expect(new Set([...split.items, ...split.working].map((item) => item.key)).size).toBe(
+      items.length,
+    );
+    expect(partitionWorkingShelf(items, false).items).toBe(items);
+    expect(partitionWorkingShelf(split.items, true).items).toBe(split.items);
+    const onlyWorking = partitionWorkingShelf(split.working, true);
+    expect(onlyWorking.items).toEqual([]);
+    expect(onlyWorking.working).toEqual(split.working);
+    const collapsed = items.filter((item) => item.key !== `v2-thread:${environmentId}:working`);
+    expect(partitionWorkingShelf(collapsed, true).working.map((item) => item.type)).toEqual([
+      "v2-working-shelf",
     ]);
   });
 });

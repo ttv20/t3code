@@ -150,6 +150,8 @@ cannot drag or move threads within it. Your saved order returns when you turn it
 On web and desktop, turn on **Settings → General → Sidebar → Keep working threads visible**
 to keep Working at the bottom while the rest of the list scrolls behind it. A long Working
 section scrolls within its own area. This is off by default and saved only on this client.
+On Android, the same option under **Settings → General → Sidebar** keeps Working above the
+bottom controls while the Home list scrolls. Search continues to show its normal results.
 
 ### Group threads by project (beta)
 
