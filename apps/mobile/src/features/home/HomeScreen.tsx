@@ -526,6 +526,7 @@ export function HomeScreen(props: HomeScreenProps) {
     [mainListItems, stickyItems],
   );
   const bottomClearance = workspace?.bottomClearance ?? Math.max(insets.bottom, 16) + fabClearance;
+  const stickyBottom = floatingTabsEnabled ? bottomClearance : insets.bottom;
   const hasStickyShelf = stickyItems.length > 0;
   const measureListViewport =
     Platform.OS === "android"
@@ -727,7 +728,7 @@ export function HomeScreen(props: HomeScreenProps) {
       <View
         pointerEvents="box-none"
         className="absolute left-0 right-0 z-20"
-        style={{ bottom: floatingTabsEnabled ? bottomClearance : insets.bottom }}
+        style={{ bottom: stickyBottom }}
         onLayout={(event) => {
           const height = event.nativeEvent.layout.height;
           setStickyHeight(height);
@@ -915,7 +916,7 @@ export function HomeScreen(props: HomeScreenProps) {
                   ) : null
                 }
                 ListEmptyComponent={threadListV2Layout.workingCount > 0 ? null : v2ListEmpty}
-                style={{ flex: 1 }}
+                style={{ flex: 1, marginBottom: hasStickyShelf ? stickyHeight + stickyBottom : 0 }}
                 automaticallyAdjustsScrollIndicatorInsets={Platform.OS === "ios"}
                 contentInsetAdjustmentBehavior="never"
                 contentInset={Platform.OS === "ios" ? { top: contentTopInset } : undefined}
@@ -935,7 +936,9 @@ export function HomeScreen(props: HomeScreenProps) {
                   paddingBottom:
                     Platform.OS === "ios"
                       ? iosBottomClearance
-                      : bottomClearance + (hasStickyShelf ? stickyHeight : 0),
+                      : hasStickyShelf
+                        ? Math.max(0, bottomClearance - stickyBottom)
+                        : bottomClearance,
                 }}
               />
             </GestureDetector>
