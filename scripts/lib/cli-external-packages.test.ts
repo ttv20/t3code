@@ -1,3 +1,8 @@
+// @effect-diagnostics nodeBuiltinImport:off -- Exercises the installed package and bundled module in a child Node process.
+import * as NodeChildProcess from "node:child_process";
+import * as NodeModule from "node:module";
+import { build } from "vite-plus/pack";
+import { cliUndiciRequirePlugin } from "./cli-undici-require.ts";
 import * as NodeURL from "node:url";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -125,6 +130,65 @@ it.layer(NodeServices.layer)("external package dependency closure", (it) => {
         [],
         `these dependencies of external packages would be bundled away and fail to resolve under WSL: ${violations.join(", ")}`,
       );
+    }),
+  );
+
+  it.effect("keeps Effect's Undici bridge loadable from a single-executable bundle", () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const root = path.resolve(path.dirname(NodeURL.fileURLToPath(import.meta.url)), "../..");
+      const requireServer = NodeModule.createRequire(path.join(root, "apps/server/package.json"));
+      const dir = yield* fs.makeTempDirectoryScoped({ prefix: "cli-undici-bundle-" });
+      const entry = path.join(dir, "bridge.mjs");
+      const specifier = JSON.stringify(requireServer.resolve("@effect/platform-node/Undici"));
+      yield* fs.writeFileString(
+        entry,
+        `export { default } from ${specifier};\nexport * from ${specifier};`,
+      );
+      const built = yield* Effect.acquireRelease(
+        Effect.promise(() =>
+          build({
+            config: false,
+            entry: [entry],
+            outDir: path.join(dir, "out"),
+            format: "esm",
+            platform: "node",
+            dts: false,
+            sourcemap: false,
+            deps: {
+              alwaysBundle: shouldBundleCliDependency,
+              neverBundle: isRuntimeExternalCliDependency,
+              onlyBundle: false,
+            },
+            plugins: [cliUndiciRequirePlugin()],
+          }),
+        ),
+        (handle) =>
+          Effect.promise(() =>
+            Promise.all(handle.bundles.map((bundle) => bundle[Symbol.asyncDispose]())),
+          ),
+      );
+      const chunk = built.bundles
+        .flatMap((bundle) => bundle.chunks)
+        .find((chunk) => chunk.type === "chunk");
+      assert.isDefined(chunk);
+      if (!chunk || chunk.type !== "chunk") return;
+      assert.deepStrictEqual(findEsmImportsOfExternalPackages(chunk.code), []);
+      assert.deepStrictEqual(findInlinedExternalPackages(chunk.code).inlined, []);
+      const output = path.join(chunk.outDir, chunk.fileName);
+      const code = `
+        import { createRequire } from "node:module";
+        const actual = createRequire(import.meta.url)("undici");
+        const bridge = await import(${JSON.stringify(NodeURL.pathToFileURL(output).href)});
+        if (bridge.default !== actual || Object.keys(actual).some(key => bridge[key] !== actual[key])) {
+          throw new Error("Undici exports changed while packaging");
+        }
+      `;
+      NodeChildProcess.execFileSync(process.execPath, ["--input-type=module", "--eval", code], {
+        cwd: dir,
+        env: { ...process.env, NODE_PATH: path.join(root, "apps/server/node_modules") },
+      });
     }),
   );
 
