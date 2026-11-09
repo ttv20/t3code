@@ -54,7 +54,7 @@ export function useUpdateEverything(
   localUpdateVersion: string | null,
   channelSwitch?: ChannelSwitchRelease,
 ) {
-  const { locale } = useUiLanguage();
+  const { locale, t: uiT } = useUiLanguage();
   const targetVersion = localUpdateVersion ?? APP_VERSION;
   const { environments } = useEnvironments();
   const environmentIds = environmentIdsKey(environments.map(({ environmentId }) => environmentId));
@@ -70,8 +70,8 @@ export function useUpdateEverything(
     updateState: updateStates[index]!,
   }));
   const collected = channelSwitch
-    ? collectChannelSwitchTargets(machines, channelSwitch)
-    : collectServerUpdateTargets(machines, targetVersion);
+    ? collectChannelSwitchTargets(machines, channelSwitch, locale)
+    : collectServerUpdateTargets(machines, targetVersion, locale);
   const needsRelease = collected.targets.some(
     (server) => server.selfUpdate !== "desktop-managed" && !server.trackOnly,
   );
@@ -91,7 +91,7 @@ export function useUpdateEverything(
       .map((server) => ({
         environmentId: server.environmentId,
         label: server.serverLabel,
-        reason: `T3 ${server.targetVersion} is not on GitHub Releases yet`,
+        reason: uiT("T3 {0} is not on GitHub Releases yet", { "0": server.targetVersion }),
       })),
   ];
   // Track-only hosts save a setting and restart nothing, so they are neither listed nor counted.
@@ -179,11 +179,13 @@ export function useUpdateEverything(
           updateProviders: async () => {
             const runs = await providers.updateAll({ quiet: true });
             const outcomes = runs.map((run) => {
-              const runOutcome = getProviderUpdateRunOutcome(run);
+              const runOutcome = getProviderUpdateRunOutcome(run, locale);
               if (runOutcome.status !== "updated") {
                 providerFailures.set(
                   run.environmentId,
-                  runOutcome.status === "failed" ? runOutcome.line : "Provider update interrupted",
+                  runOutcome.status === "failed"
+                    ? runOutcome.line
+                    : uiT("Provider update interrupted"),
                 );
               }
               return runOutcome;
@@ -235,12 +237,15 @@ export function useUpdateEverything(
           },
         });
         const result = (finished: ReadonlyArray<{ label: string; outcome: ServerUpdateOutcome }>) =>
-          collectUpdateEverythingResult({
-            localVersion: null,
-            localFailures,
-            servers: finished,
-            providers: outcome.providers,
-          });
+          collectUpdateEverythingResult(
+            {
+              localVersion: null,
+              localFailures,
+              servers: finished,
+              providers: outcome.providers,
+            },
+            locale,
+          );
         if (outcome.localReady && installLocal) {
           if (await waitForUpdateRestart(UPDATE_RESTART_DELAY_MS)) {
             setUpdateEverythingRun(

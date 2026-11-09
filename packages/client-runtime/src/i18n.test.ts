@@ -101,6 +101,15 @@ describe("interface localization", () => {
     expect(createUiTranslator("en")("Reset {0} to default", { "0": "color" })).toBe(
       "Reset color to default",
     );
+    expect(t("{machine} failed", { machine: "Settings $& {0}" })).toBe(
+      "העדכון של Settings $& {0} נכשל",
+    );
+    expect(
+      t("{0} running threads will be interrupted. {1} can resume after the restart.", {
+        "0": 3,
+        "1": 2,
+      }),
+    ).toBe("3 שיחות פועלות יופסקו. מתוכן, 2 יוכלו להתחדש לאחר ההפעלה מחדש.");
     const slot = { type: "custom" };
     expect(t(slot)).toBe(slot);
     expect(t(undefined)).toBeUndefined();

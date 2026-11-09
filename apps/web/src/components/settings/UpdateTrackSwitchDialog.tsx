@@ -50,9 +50,7 @@ export function UpdateTrackSwitchDialog({
     <AlertDialog open onOpenChange={(open) => !open && onClose()}>
       <AlertDialogPopup>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            <UiText message={"Switch to"} /> {label}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{uiT("Switch to {0}", { "0": label })}</AlertDialogTitle>
           <AlertDialogDescription>
             {AsyncResult.isFailure(release)
               ? uiT("Could not check this fork’s GitHub releases. Try again later.")
@@ -78,7 +76,7 @@ function SwitchPlan({
   readonly release: ChannelSwitchRelease;
   readonly onClose: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const updateState = useDesktopUpdateState();
   const { environments } = useEnvironments();
   const crossesLocal = desktopUpdateChannelOf(APP_VERSION) !== release.channel;
@@ -97,6 +95,7 @@ function SwitchPlan({
       databaseMigration: environment.serverConfig?.environment.databaseMigration,
     })),
     window.desktopBridge?.getLocalEnvironmentBootstraps().length ?? 0,
+    locale,
   );
 
   const run = async () => {
@@ -112,11 +111,15 @@ function SwitchPlan({
           description,
         }),
       );
-    const prepared = await prepareLocalTrackSwitch(bridge, {
-      channel: release.channel,
-      version: release.version,
-      reinstall: switchesLocal,
-    });
+    const prepared = await prepareLocalTrackSwitch(
+      bridge,
+      {
+        channel: release.channel,
+        version: release.version,
+        reinstall: switchesLocal,
+      },
+      locale,
+    );
     onClose();
     if (!prepared.ok) {
       fail(prepared.message);
@@ -142,8 +145,11 @@ function SwitchPlan({
                   !acceptsTrackSwitchRelease(downloadedVersion, release.channel, release.version)
                 ) {
                   reportError(
-                    "Could not install update",
-                    `This app downloaded ${downloadedVersion ?? "nothing"}, not ${release.version} or newer.`,
+                    uiT("Could not install update"),
+                    uiT("This app downloaded {0}, not {1} or newer.", {
+                      "0": downloadedVersion ?? uiT("nothing"),
+                      "1": release.version,
+                    }),
                   );
                   return false;
                 }
@@ -154,7 +160,7 @@ function SwitchPlan({
     );
     if (result._tag === "Failure") {
       const error = squashAtomCommandFailure(result);
-      fail(error instanceof Error ? error.message : "An unexpected error occurred.");
+      fail(error instanceof Error ? error.message : uiT("An unexpected error occurred."));
     }
   };
 
@@ -168,20 +174,26 @@ function SwitchPlan({
       rows={everything.rows}
       notes={[
         ...(everything.rows.length === 0 && !crossesLocal
-          ? [`Every connected machine is already on ${label}. This only saves the track.`]
+          ? [
+              uiT("Every connected machine is already on {0}. This only saves the track.", {
+                "0": label,
+              }),
+            ]
           : []),
         ...(crossesLocal && updatesOff
-          ? ["This app's updates are off here, so reinstall it yourself to switch."]
+          ? [uiT("This app's updates are off here, so reinstall it yourself to switch.")]
           : []),
         ...(switchesLocal && isMacPlatform(navigator.platform)
-          ? ["If T3 Code does not reopen after it restarts, open it again."]
+          ? [uiT("If T3 Code does not reopen after it restarts, open it again.")]
           : []),
       ]}
       restarts={everything.restarts}
-      confirmLabel={checking ? "Checking…" : `Switch to ${label}`}
+      confirmLabel={checking ? uiT("Checking…") : uiT("Switch to {0}", { "0": label })}
       busy={checking}
       disabledReason={
-        !switchesLocal || localBlocked === null ? null : `This app cannot switch: ${localBlocked}.`
+        !switchesLocal || localBlocked === null
+          ? null
+          : uiT("This app cannot switch: {0}.", { "0": localBlocked })
       }
       onConfirm={() => void run()}
     />

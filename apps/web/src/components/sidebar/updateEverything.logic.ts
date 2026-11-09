@@ -73,10 +73,12 @@ export interface SkippedMachine {
 export function collectServerUpdateTargets(
   machines: ReadonlyArray<UpdateEverythingMachine>,
   targetVersion: string,
+  locale: UiLocale = "en",
 ): {
   readonly targets: ServerUpdateTarget[];
   readonly skipped: SkippedMachine[];
 } {
+  const t = createUiTranslator(locale);
   const targets: ServerUpdateTarget[] = [];
   const skipped: SkippedMachine[] = [];
   for (const machine of machines) {
@@ -90,9 +92,9 @@ export function collectServerUpdateTargets(
     }
     const skip = (reason: string) =>
       skipped.push({ environmentId: machine.environmentId, label: machine.label, reason });
-    const unavailable = unavailableReason(machine);
+    const unavailable = unavailableReason(machine, locale);
     if (config === null || unavailable !== null) {
-      skip(unavailable ?? "not connected");
+      skip(unavailable ?? t("not connected"));
       continue;
     }
     const selfUpdate = resolveServerSelfUpdateCapability(config);
@@ -106,11 +108,11 @@ export function collectServerUpdateTargets(
     }
     const desktopAppUpdate = supportsDesktopAppUpdate(config);
     if (selfUpdate === null) {
-      skip("needs a manual update");
+      skip(t("needs a manual update"));
       continue;
     }
     if (selfUpdate === "desktop-managed" && !desktopAppUpdate) {
-      skip("needs a newer desktop app");
+      skip(t("needs a newer desktop app"));
       continue;
     }
     const serverVersion = config.environment.serverVersion;
@@ -118,7 +120,7 @@ export function collectServerUpdateTargets(
       selfUpdate !== "desktop-managed" &&
       cliReleaseChannelOf(serverVersion) !== cliReleaseChannelOf(targetVersion)
     ) {
-      skip(`on the ${cliReleaseChannelOf(serverVersion)} channel`);
+      skip(t("on the {0} channel", { "0": cliReleaseChannelOf(serverVersion) }));
       continue;
     }
     const target: ServerUpdateTarget = {
@@ -134,10 +136,11 @@ export function collectServerUpdateTargets(
   return { targets, skipped };
 }
 
-function unavailableReason(machine: UpdateEverythingMachine): string | null {
-  if (machine.serverConfig === null || !machine.connected) return "not connected";
-  if (!machine.canMaintain) return "no permission";
-  if (machine.updateState.status === "running") return "already updating";
+function unavailableReason(machine: UpdateEverythingMachine, locale: UiLocale): string | null {
+  const t = createUiTranslator(locale);
+  if (machine.serverConfig === null || !machine.connected) return t("not connected");
+  if (!machine.canMaintain) return t("no permission");
+  if (machine.updateState.status === "running") return t("already updating");
   return null;
 }
 
@@ -160,18 +163,27 @@ function channelSwitchBlockReason(
   fromVersion: string,
   release: ChannelSwitchRelease,
   currentMigration: number | undefined,
+  locale: UiLocale,
 ): string | null {
+  const t = createUiTranslator(locale);
   if (!crossesTrack(fromVersion, release)) return null;
   const from = channelSwitchLabel(desktopUpdateChannelOf(fromVersion));
   // Servers and releases from before this check report no migration number.
   if (currentMigration === undefined) {
-    return `its server predates database checks; update it on ${from} first`;
+    return t("its server predates database checks; update it on {0} first", { "0": from });
   }
   if (release.databaseMigration === undefined) {
-    return `${release.version} predates database checks; wait for a newer ${channelSwitchLabel(release.channel)} release`;
+    return t("{0} predates database checks; wait for a newer {1} release", {
+      "0": release.version,
+      "1": channelSwitchLabel(release.channel),
+    });
   }
   return currentMigration > release.databaseMigration
-    ? `its database has changes ${release.version} does not support yet; stay on ${from} until ${channelSwitchLabel(release.channel)} has them`
+    ? t("its database has changes {0} does not support yet; stay on {1} until {2} has them", {
+        "0": release.version,
+        "1": from,
+        "2": channelSwitchLabel(release.channel),
+      })
     : null;
 }
 
@@ -186,18 +198,22 @@ export function localSwitchBlockReason(
     readonly databaseMigration: number | undefined;
   }>,
   backendCount: number,
+  locale: UiLocale = "en",
 ): string | null {
+  const t = createUiTranslator(locale);
   if (!crossesTrack(appVersion, release)) return null;
   if (
     hosted.length === 0 ||
     hosted.length < backendCount ||
     hosted.some((server) => !server.connected)
   ) {
-    return "its server is not connected, so its database cannot be checked";
+    return t("its server is not connected, so its database cannot be checked");
   }
   return (
     hosted
-      .map((server) => channelSwitchBlockReason(appVersion, release, server.databaseMigration))
+      .map((server) =>
+        channelSwitchBlockReason(appVersion, release, server.databaseMigration, locale),
+      )
       .find((reason) => reason !== null) ?? null
   );
 }
@@ -227,7 +243,9 @@ function managedMachineUpdateDenial(
 export function collectChannelSwitchTargets(
   machines: ReadonlyArray<UpdateEverythingMachine>,
   release: ChannelSwitchRelease,
+  locale: UiLocale = "en",
 ): { readonly targets: ServerUpdateTarget[]; readonly skipped: SkippedMachine[] } {
+  const t = createUiTranslator(locale);
   const targets: ServerUpdateTarget[] = [];
   const skipped: SkippedMachine[] = [];
   for (const machine of machines) {
@@ -257,20 +275,20 @@ export function collectChannelSwitchTargets(
       sameTrack &&
       resolveVersionMismatch(serverVersion, release.version) === null
     ) {
-      const move = trackSwitchMove(config, true);
+      const move = trackSwitchMove(config, true, locale);
       if (
         !("skip" in move) &&
         move.selfUpdate === "desktop-managed" &&
-        unavailableReason(machine) === null &&
+        unavailableReason(machine, locale) === null &&
         managedMachineUpdateDenial(config, release.version) === undefined
       ) {
         targets.push({ ...target(move.selfUpdate, serverVersion), trackOnly: true });
       }
       continue;
     }
-    const unavailable = unavailableReason(machine);
+    const unavailable = unavailableReason(machine, locale);
     if (config === null || serverVersion === undefined || unavailable !== null) {
-      skip(unavailable ?? "not connected");
+      skip(unavailable ?? t("not connected"));
       continue;
     }
     const managedDenial = managedMachineUpdateDenial(config, release.version);
@@ -278,7 +296,7 @@ export function collectChannelSwitchTargets(
       skip(managedDenial);
       continue;
     }
-    const move = trackSwitchMove(config, sameTrack);
+    const move = trackSwitchMove(config, sameTrack, locale);
     if ("skip" in move) {
       skip(move.skip);
       continue;
@@ -287,6 +305,7 @@ export function collectChannelSwitchTargets(
       serverVersion,
       release,
       config.environment.databaseMigration,
+      locale,
     );
     if (blocked !== null) {
       skip(blocked);
@@ -298,7 +317,9 @@ export function collectChannelSwitchTargets(
       compareSemverVersions(release.version, serverVersion) <= 0
     ) {
       skip(
-        `run \`t3 update --channel ${release.channel === "nightly" ? "nightly" : "stable"} --allow-downgrade\` there`,
+        t("run {0} there", {
+          "0": `\`t3 update --channel ${release.channel === "nightly" ? "nightly" : "stable"} --allow-downgrade\``,
+        }),
       );
       continue;
     }
@@ -329,19 +350,21 @@ function isOnTrack(version: string, channel: DesktopUpdateChannel): boolean {
 function trackSwitchMove(
   config: NonNullable<UpdateEverythingMachine["serverConfig"]>,
   sameTrack: boolean,
+  locale: UiLocale = "en",
 ): { readonly selfUpdate: ServerSelfUpdateCapability } | { readonly skip: string } {
+  const t = createUiTranslator(locale);
   if (cliReleaseChannelOf(config.environment.serverVersion) === "preview") {
-    return { skip: "runs a preview build" };
+    return { skip: t("runs a preview build") };
   }
   const selfUpdate = resolveServerSelfUpdateCapability(config);
-  if (selfUpdate === null) return { skip: "needs a manual update" };
+  if (selfUpdate === null) return { skip: t("needs a manual update") };
   if (selfUpdate !== "desktop-managed") return { selfUpdate };
   if (config.environment.capabilities.desktopAppChannelSwitch !== true) {
-    return { skip: "needs a newer desktop app" };
+    return { skip: t("needs a newer desktop app") };
   }
   // Squirrel.Mac renames the bundle for the new track and then cannot relaunch it.
   if (!sameTrack && config.environment.platform.os === "darwin") {
-    return { skip: "switch the Mac app on that Mac" };
+    return { skip: t("switch the Mac app on that Mac") };
   }
   return { selfUpdate };
 }
@@ -427,11 +450,12 @@ export function closeFinishedUpdateRun(run: UpdateEverythingRun): UpdateEverythi
 
 export const UPDATE_SLOW_AFTER_MS = 3 * 60 * 1000;
 
-export function formatUpdateElapsed(ms: number): string {
+export function formatUpdateElapsed(ms: number, locale: UiLocale = "en"): string {
+  const t = createUiTranslator(locale);
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return "<1m";
-  if (minutes < 60) return `${minutes}m`;
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  if (minutes < 1) return t("<1m");
+  if (minutes < 60) return t("{0}m", { "0": minutes });
+  return t("{0}h {1}m", { "0": Math.floor(minutes / 60), "1": minutes % 60 });
 }
 
 export interface UpdateRunMachineView {
@@ -458,13 +482,15 @@ export function describeUpdateCapsule(
   machines: ReadonlyArray<UpdateRunMachineView>,
   local: UpdateRunLocalState,
   now: number,
+  locale: UiLocale = "en",
 ): UpdateCapsuleView {
+  const t = createUiTranslator(locale);
   if (run.phase === "countdown" && run.restartAt !== null) {
     const seconds = Math.max(0, Math.ceil((run.restartAt - now) / 1000));
-    return { tone: "default", label: `Restart in ${seconds}s`, action: "later" };
+    return { tone: "default", label: t("Restart in {0}s", { "0": seconds }), action: "later" };
   }
   if (run.phase === "installing") {
-    return { tone: "default", label: "Restarting…", action: null };
+    return { tone: "default", label: t("Restarting…"), action: null };
   }
   const active = machines.filter(({ status }) => isActive(status) && status !== "waiting");
   const slowest = active.toSorted((a, b) => a.machine.startedAt - b.machine.startedAt)[0];
@@ -473,20 +499,27 @@ export function describeUpdateCapsule(
       tone: "slow",
       label: slowest.machine.label,
       slow: {
-        status: RUN_STATUS_LABELS[slowest.status],
-        elapsed: formatUpdateElapsed(now - slowest.machine.startedAt),
+        status: t(RUN_STATUS_LABELS[slowest.status]),
+        elapsed: formatUpdateElapsed(now - slowest.machine.startedAt, locale),
       },
       action: null,
     };
   }
   const done = machines.filter(({ status }) => status === "done").length;
   if (machines.some(({ status }) => isActive(status))) {
-    return { tone: "default", label: `${done} of ${machines.length} updated`, action: null };
+    return {
+      tone: "default",
+      label: t("{0} of {1} updated", { "0": done, "1": machines.length }),
+      action: null,
+    };
   }
   if (local?.status === "downloading") {
     return {
       tone: "default",
-      label: `Downloading${local.percent === null ? "" : ` ${Math.floor(local.percent)}%`}`,
+      label:
+        local.percent === null
+          ? t("Downloading")
+          : t("Downloading {0}%", { "0": Math.floor(local.percent) }),
       action: null,
     };
   }
@@ -494,14 +527,21 @@ export function describeUpdateCapsule(
   if (failed.length > 0) {
     return {
       tone: "failed",
-      label: failed.length === 1 ? `${failed[0]!.machine.label} failed` : `${failed.length} failed`,
+      label:
+        failed.length === 1
+          ? t("{machine} failed", { machine: failed[0]!.machine.label })
+          : t("{0} failed", { "0": failed.length }),
       action:
         !run.trackSwitch && failed.some(({ machine }) => machine.server !== null)
           ? "retry"
           : "dismiss",
     };
   }
-  return { tone: "default", label: `${done} of ${machines.length} updated`, action: null };
+  return {
+    tone: "default",
+    label: t("{0} of {1} updated", { "0": done, "1": machines.length }),
+    action: null,
+  };
 }
 
 export const RUN_STATUS_LABELS: Record<UpdateRunMachineStatus, string> = {
@@ -521,25 +561,29 @@ export interface UpdateEverythingResult {
   readonly restarting: ReadonlyArray<string>;
 }
 
-export function collectUpdateEverythingResult(input: {
-  readonly localVersion: string | null;
-  readonly localFailures: ReadonlyArray<string>;
-  readonly servers: ReadonlyArray<{
-    readonly label: string;
-    readonly outcome: ServerUpdateOutcome;
-  }>;
-  readonly providers: ReadonlyArray<
-    | { readonly status: "interrupted" | "updated" }
-    | { readonly status: "failed"; readonly line: string }
-  >;
-}): UpdateEverythingResult {
+export function collectUpdateEverythingResult(
+  input: {
+    readonly localVersion: string | null;
+    readonly localFailures: ReadonlyArray<string>;
+    readonly servers: ReadonlyArray<{
+      readonly label: string;
+      readonly outcome: ServerUpdateOutcome;
+    }>;
+    readonly providers: ReadonlyArray<
+      | { readonly status: "interrupted" | "updated" }
+      | { readonly status: "failed"; readonly line: string }
+    >;
+  },
+  locale: UiLocale = "en",
+): UpdateEverythingResult {
+  const t = createUiTranslator(locale);
   return {
     localVersion: input.localVersion,
     updatedServers: input.servers.filter(({ outcome }) => outcome.status === "updated").length,
     updatedProviders: input.providers.filter((outcome) => outcome.status === "updated").length,
     restarting: [],
     failures: [
-      ...input.localFailures.map((failure) => `This app: ${failure}`),
+      ...input.localFailures.map((failure) => t("This app: {0}", { "0": failure })),
       ...input.servers.flatMap(({ label, outcome }) =>
         outcome.status === "failed" ? [`${label}: ${outcome.message}`] : [],
       ),
@@ -669,7 +713,7 @@ export function describeUpdateEverything(
     rows.set(environmentId, { ...row, ...change });
   };
   if (plan.localVersion) {
-    if (plan.localMachines.length === 0) update(null, "This app", { app: "this-app" });
+    if (plan.localMachines.length === 0) update(null, t("This app"), { app: "this-app" });
     for (const machine of plan.localMachines) {
       update(machine.environmentId, machine.label, { app: "this-app" });
     }

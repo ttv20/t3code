@@ -148,7 +148,7 @@ const QUIT_CONFIRMATION_MODE_LABELS: Record<QuitConfirmationMode, string> = {
 
 const DEFAULT_DRIVER_KIND = ProviderDriverKind.make("codex");
 function AboutVersionSection() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const updateState = useDesktopUpdateState();
   const [switchChannel, setSwitchChannel] = useState<DesktopUpdateChannel | null>(null);
@@ -218,6 +218,7 @@ function AboutVersionSection() {
         confirmed = await ensureLocalApi().dialogs.confirm(
           getDesktopUpdateInstallConfirmationMessage(
             updateState ?? { availableVersion: null, downloadedVersion: null },
+            locale,
           ),
         );
       } catch (error) {
@@ -280,7 +281,7 @@ function AboutVersionSection() {
   };
 
   const action = updateState ? resolveDesktopUpdateButtonAction(updateState) : "none";
-  const buttonTooltip = updateState ? getDesktopUpdateButtonTooltip(updateState) : null;
+  const buttonTooltip = updateState ? getDesktopUpdateButtonTooltip(updateState, locale) : null;
   const buttonDisabled =
     action === "none"
       ? !canCheckForUpdate(updateState)
@@ -297,7 +298,7 @@ function AboutVersionSection() {
     actionLabel[action] ?? statusLabel[updateState?.status ?? ""] ?? uiT("Check for Updates");
   const description =
     action === "download" || action === "install"
-      ? "Update available."
+      ? uiT("Update available.")
       : (getDesktopUpdateDisabledReason(updateState, updatesDenial) ??
         uiT("Current version of the application."));
 
@@ -318,7 +319,7 @@ function AboutVersionSection() {
                   disabled={buttonDisabled || isUpdateActionPending}
                   onClick={handleButtonClick}
                 >
-                  {buttonLabel}
+                  {uiT(buttonLabel)}
                 </Button>
               }
             />
@@ -331,17 +332,30 @@ function AboutVersionSection() {
           {...searchableSetting("update-track")}
           description={
             nightlyDeniedBy !== undefined ? (
-              `${managedUpdatesMessage(nightlyDeniedBy)} Nightly builds are not available${
+              uiT(
                 selectedUpdateChannel === "nightly"
-                  ? "; switch to Stable to keep getting updates."
-                  : "."
-              }`
+                  ? "{0} Nightly builds are not available; switch to Stable to keep getting updates."
+                  : "{0} Nightly builds are not available.",
+                { "0": managedUpdatesMessage(nightlyDeniedBy) },
+              )
             ) : unswitchedMachines > 0 ? (
               <>
                 {unswitchedMachines === 1
-                  ? "1 machine still runs"
-                  : `${unswitchedMachines} machines still run`}{" "}
-                {channelSwitchLabel(selectedUpdateChannel === "nightly" ? "latest" : "nightly")}.{" "}
+                  ? uiT("1 machine still runs {0}.", {
+                      "0": uiT(
+                        channelSwitchLabel(
+                          selectedUpdateChannel === "nightly" ? "latest" : "nightly",
+                        ),
+                      ),
+                    })
+                  : uiT("{0} machines still run {1}.", {
+                      "0": unswitchedMachines,
+                      "1": uiT(
+                        channelSwitchLabel(
+                          selectedUpdateChannel === "nightly" ? "latest" : "nightly",
+                        ),
+                      ),
+                    })}{" "}
                 {/* The dialog moves what it can and says why it skips the rest. */}
                 <Button
                   size="xs"
@@ -353,7 +367,9 @@ function AboutVersionSection() {
                 </Button>
               </>
             ) : (
-              "Switches this app and every connected machine whose database the target release supports."
+              uiT(
+                "Switches this app and every connected machine whose database the target release supports.",
+              )
             )
           }
           managed={updatesDenial}

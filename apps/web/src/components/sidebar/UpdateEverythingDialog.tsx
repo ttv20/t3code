@@ -123,7 +123,6 @@ function UpdateEverythingDialogContent({
     ),
   );
   const running = stopped + continuing;
-  const threads = `${running} running ${running === 1 ? "thread" : "threads"}`;
   const restarting = new Set(restarts.map((machine) => machine.environmentId));
   const updating = rows.filter((row) => row.app !== null || row.providers.length > 0);
   const skipped = rows.filter((row) => row.skipped !== null);
@@ -132,17 +131,25 @@ function UpdateEverythingDialogContent({
     <>
       <AlertDialogHeader className="shrink-0">
         <AlertDialogTitle>
-          {title ?? `Update ${updating.length} ${updating.length === 1 ? "machine" : "machines"}?`}
+          {title ??
+            uiT(updating.length === 1 ? "Update 1 machine?" : "Update {0} machines?", {
+              "0": updating.length,
+            })}
         </AlertDialogTitle>
         <AlertDialogDescription>
           {version !== null ? (
             <>
-              {uiT("T3 Code")} <span className="font-mono text-xs">{version}</span>
+              {uiT("T3 Code")}{" "}
+              <bdi dir="ltr" className="font-mono text-xs">
+                {version}
+              </bdi>
             </>
           ) : null}
           {version !== null && providerCount > 0 ? " · " : null}
           {providerCount > 0
-            ? `${providerCount} provider ${providerCount === 1 ? "update" : "updates"}`
+            ? uiT(providerCount === 1 ? "1 provider update" : "{0} provider updates", {
+                "0": providerCount,
+              })
             : null}
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -167,10 +174,14 @@ function UpdateEverythingDialogContent({
                 className="col-span-full grid grid-cols-subgrid border-b border-border/50 py-1.5 last:border-b-0"
               >
                 <span className="max-w-32 min-w-0">
-                  <MiddleTruncate value={row.label} />
+                  <bdi>
+                    <MiddleTruncate
+                      value={row.environmentId === null ? uiT("This app") : row.label}
+                    />
+                  </bdi>
                 </span>
                 <span>
-                  {row.app !== null ? APP_LABELS[row.app] : null}
+                  {row.app !== null ? uiT(APP_LABELS[row.app]) : null}
                   {row.app === null && row.skipped !== null ? (
                     <span className="text-muted-foreground">{uiT("Skipped")}</span>
                   ) : null}
@@ -180,10 +191,10 @@ function UpdateEverythingDialogContent({
                     </span>
                   ) : null}
                 </span>
-                <span>
+                <span dir="ltr">
                   {row.providers.map((provider, index) => (
                     <Fragment key={provider}>
-                      <span className="whitespace-nowrap">{provider}</span>
+                      <bdi className="whitespace-nowrap">{provider}</bdi>
                       {index < row.providers.length - 1 ? ", " : null}
                     </Fragment>
                   ))}
@@ -200,14 +211,18 @@ function UpdateEverythingDialogContent({
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground text-xs hover:text-foreground data-panel-open:[&_svg]:rotate-90">
                 <ChevronRightIcon className="size-3.5 transition-transform" aria-hidden />
-                {skipped.length} {uiT("skipped")}
+                {uiT("{0} skipped", { "0": skipped.length })}
               </CollapsibleTrigger>
               <CollapsiblePanel>
                 <div className="grid grid-cols-[minmax(0,max-content)_1fr] gap-x-3 gap-y-0.5 pt-1.5 ps-4.5 text-muted-foreground text-xs">
                   {skipped.map((row) => (
                     <Fragment key={row.environmentId ?? "this-app"}>
                       <span className="max-w-32 min-w-0">
-                        <MiddleTruncate value={row.label} />
+                        <bdi>
+                          <MiddleTruncate
+                            value={row.environmentId === null ? uiT("This app") : row.label}
+                          />
+                        </bdi>
                       </span>
                       <span className="wrap-anywhere">{row.skipped}</span>
                     </Fragment>
@@ -226,20 +241,35 @@ function UpdateEverythingDialogContent({
         ) : running > 0 ? (
           <p className="self-center text-muted-foreground text-sm max-sm:order-1 max-sm:text-center sm:mr-auto">
             {stopped === 0
-              ? uiT("{0} will be interrupted and can resume after the restart.", { "0": threads })
+              ? uiT(
+                  running === 1
+                    ? "1 running thread will be interrupted and can resume after the restart."
+                    : "{0} running threads will be interrupted and can resume after the restart.",
+                  { "0": running },
+                )
               : continuing === 0
-                ? uiT("{0} will be interrupted.", { "0": threads })
-                : uiT("{0} will be interrupted. {1} can resume after the restart.", {
-                    "0": threads,
-                    "1": continuing,
-                  })}
+                ? uiT(
+                    running === 1
+                      ? "1 running thread will be interrupted."
+                      : "{0} running threads will be interrupted.",
+                    { "0": running },
+                  )
+                : uiT(
+                    continuing === 1
+                      ? "{0} running threads will be interrupted. 1 can resume after the restart."
+                      : "{0} running threads will be interrupted. {1} can resume after the restart.",
+                    {
+                      "0": running,
+                      "1": continuing,
+                    },
+                  )}
           </p>
         ) : null}
         <AlertDialogClose ref={cancelRef} render={<Button variant="outline" disabled={busy} />}>
           {uiT("Cancel")}
         </AlertDialogClose>
         <Button disabled={disabledReason !== null || busy} onClick={onConfirm}>
-          {confirmLabel}
+          {uiT(confirmLabel)}
         </Button>
       </AlertDialogFooter>
     </>
@@ -252,7 +282,7 @@ function RunningThreads({ environmentId }: { readonly environmentId: Environment
   const count = useAtomValue(runningThreadCountAtom(environmentId));
   return count > 0 ? (
     <span className="whitespace-nowrap text-warning">
-      {count} {uiT("running")}
+      {uiT(count === 1 ? "1 running" : "{0} running", { "0": count })}
     </span>
   ) : null;
 }

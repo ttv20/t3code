@@ -114,7 +114,9 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
     if (AsyncResult.isFailure(result)) {
       const cause = squashAtomCommandFailure(result);
       setError(
-        cause instanceof Error ? cause.message : "The action could not be completed. Try again.",
+        cause instanceof Error
+          ? cause.message
+          : uiT("The action could not be completed. Try again."),
       );
     }
   }
@@ -124,18 +126,18 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
     if (disabled || !targetVersion || !capabilities || !supportsEnvironmentUpdate(capabilities))
       return;
     Dialog.alert(
-      uiT("Update {0}?", { "0": environment?.environmentLabel ?? "environment" }),
+      uiT("Update {0}?", { "0": environment?.environmentLabel ?? uiT("Environment") }),
       uiT("Install T3 Code {0}. {1} Running threads may be interrupted.", {
         "0": targetVersion,
         "1":
           capabilities.serverSelfUpdate === "desktop-managed"
-            ? "The desktop app will close and relaunch."
-            : "The server will restart and reconnect.",
+            ? uiT("The desktop app will close and relaunch.")
+            : uiT("The server will restart and reconnect."),
       }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: uiT("Cancel"), style: "cancel" },
         {
-          text: "Update",
+          text: uiT("Update"),
           onPress: () =>
             void run("server", async () => {
               if (
@@ -153,7 +155,7 @@ function EnvironmentDetail({ environmentId }: { readonly environmentId: Environm
                 input: { targetVersion },
               });
               if (AsyncResult.isFailure(result)) throw squashAtomCommandFailure(result);
-              setNotice(`Updated to ${result.value.targetVersion}.`);
+              setNotice(uiT("Updated to {0}.", { "0": result.value.targetVersion }));
             }),
         },
       ],

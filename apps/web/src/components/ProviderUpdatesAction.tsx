@@ -18,7 +18,7 @@ import { stackedThreadToast, toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
 export function useProviderUpdates() {
-  const { t: uiT } = useUiLanguage();
+  const { locale } = useUiLanguage();
   const { environments } = useEnvironments();
   const manageableIds = useEnvironmentsWithScope(environments, AuthProvidersManageScope);
   const providersByEnvironment = useEnvironmentProviders();
@@ -56,12 +56,12 @@ export function useProviderUpdates() {
         })),
       ),
     );
-    const view = quiet ? null : getProviderUpdateRunToastView(runs);
+    const view = quiet ? null : getProviderUpdateRunToastView(runs, locale);
     if (view) {
       toastManager.add(
         stackedThreadToast({
           ...view,
-          description: <span className="whitespace-pre-line">{uiT(view.description)}</span>,
+          description: <span className="whitespace-pre-line">{view.description}</span>,
         }),
       );
     }
@@ -106,7 +106,7 @@ export function ProviderUpdatesAction() {
       <TooltipPopup side="top">
         {machines.map((machine) => (
           <div key={machine.environmentId}>
-            {uiT(machine.label)}:{" "}
+            <bdi>{machine.label}</bdi>:{" "}
             {machine.candidates
               .map((candidate) => PROVIDER_DISPLAY_NAMES[candidate.driver] ?? candidate.driver)
               .join(", ")}

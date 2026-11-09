@@ -198,7 +198,7 @@ export function SidebarUpdatePill() {
 }
 
 function SidebarUpdateControl() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const state = useDesktopUpdateState();
   // The desktop updates this machine, whose policy the primary environment reports.
   const updatesDenial = managedUpdatesDenial(usePrimaryManagedPolicy());
@@ -254,11 +254,11 @@ function SidebarUpdateControl() {
     ? everything.summary
     : showUpdateDetails
       ? state
-        ? getDesktopUpdateButtonTooltip(state)
-        : "Update available"
+        ? getDesktopUpdateButtonTooltip(state, locale)
+        : uiT("Update available")
       : showCheckIcon
         ? uiT("Checking for updates…")
-        : (idleTooltip?.title ?? uiT("Check for updates"));
+        : (uiT(idleTooltip?.title) ?? uiT("Check for updates"));
   const disabled = showCheckIcon
     ? true
     : runsEverything
@@ -303,7 +303,7 @@ function SidebarUpdateControl() {
       let confirmed = false;
       try {
         confirmed = await ensureLocalApi().dialogs.confirm(
-          getDesktopUpdateInstallConfirmationMessage(state),
+          getDesktopUpdateInstallConfirmationMessage(state, locale),
         );
       } catch (error) {
         setIsActionPending(false);

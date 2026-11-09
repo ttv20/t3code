@@ -1,3 +1,5 @@
+import type { UiLocale } from "@t3tools/client-runtime/i18n";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { UiText, useUiLanguage } from "../../i18n";
@@ -45,15 +47,23 @@ function useUpdateRunMachineViews(run: UpdateEverythingRun): ReadonlyArray<Updat
   }));
 }
 
-function localStatusLabel(run: UpdateEverythingRun, local: UpdateRunLocalState, now: number) {
+function localStatusLabel(
+  run: UpdateEverythingRun,
+  local: UpdateRunLocalState,
+  now: number,
+  locale: UiLocale,
+) {
+  const t = createUiTranslator(locale);
   if (run.phase === "countdown" && run.restartAt !== null) {
-    return `restarts in ${Math.max(0, Math.ceil((run.restartAt - now) / 1000))}s`;
+    return t("restarts in {0}s", { "0": Math.max(0, Math.ceil((run.restartAt - now) / 1000)) });
   }
-  if (run.phase === "installing") return "restarting";
+  if (run.phase === "installing") return t("restarting");
   if (local?.status === "downloading") {
-    return `downloading${local.percent === null ? "" : ` ${Math.floor(local.percent)}%`}`;
+    return local.percent === null
+      ? t("downloading")
+      : t("downloading {0}%", { "0": Math.floor(local.percent) });
   }
-  return "restarts after the servers";
+  return t("restarts after the servers");
 }
 
 export function SidebarUpdateCapsule({
@@ -67,20 +77,24 @@ export function SidebarUpdateCapsule({
   readonly icon: ReactNode;
   readonly onRestart?: () => Promise<void>;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const machines = useUpdateRunMachineViews(run);
   const hasActiveMachine = machines.some(
     ({ status }) => status !== "done" && status !== "failed" && status !== "waiting",
   );
   const now = useNow(run.phase === "countdown" ? 1_000 : hasActiveMachine ? 30_000 : null);
-  const view = describeUpdateCapsule(run, machines, local, now);
+  const view = describeUpdateCapsule(run, machines, local, now, locale);
   const updateServer = useServerUpdate();
   const failed = machines.some(({ status }) => status === "failed");
   const settled = !hasActiveMachine && run.localVersion === null;
 
   const actionLabel =
-    view.action === "later" ? "Later" : view.action === "retry" ? uiT("Retry") : uiT("Dismiss");
+    view.action === "later"
+      ? uiT("Later")
+      : view.action === "retry"
+        ? uiT("Retry")
+        : uiT("Dismiss");
   const runAction = () => {
     if (view.action === "later") postponeUpdateRestart();
     else if (view.action === "retry") retryFailedUpdateRunServers(updateServer);
@@ -110,7 +124,7 @@ export function SidebarUpdateCapsule({
         {/* w-0 keeps the label out of the capsule's minimum width, so a shared footer row
             can squeeze the label but never push the action past the sidebar edge. */}
         <span className="pointer-events-none relative w-0 min-w-0 flex-1 truncate pl-3 text-xs">
-          <span className={cn(view.tone === "failed" && "text-destructive")}>{view.label}</span>
+          <bdi className={cn(view.tone === "failed" && "text-destructive")}>{view.label}</bdi>
           {view.slow ? (
             <span className="text-warning tabular-nums"> {view.slow.elapsed}</span>
           ) : null}
@@ -137,7 +151,7 @@ export function SidebarUpdateCapsule({
                 <UiText message={"This app"} />
               </span>
               <span className="text-muted-foreground tabular-nums">
-                {localStatusLabel(run, local, now)}
+                {localStatusLabel(run, local, now, locale)}
               </span>
             </div>
           ) : onRestart ? (
@@ -153,16 +167,16 @@ export function SidebarUpdateCapsule({
           {machines.map(({ machine, status }) => (
             <div key={machine.environmentId} className="flex min-w-0 flex-col">
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate">{uiT(machine.label)}</span>
+                <bdi className="truncate">{machine.label}</bdi>
                 <span
                   className={cn(
                     "shrink-0 tabular-nums",
                     status === "failed" ? "text-destructive" : "text-muted-foreground",
                   )}
                 >
-                  {RUN_STATUS_LABELS[status]}
+                  {uiT(RUN_STATUS_LABELS[status])}
                   {status !== "done" && status !== "failed" && status !== "waiting"
-                    ? ` ${formatUpdateElapsed(now - machine.startedAt)}`
+                    ? ` ${formatUpdateElapsed(now - machine.startedAt, locale)}`
                     : ""}
                 </span>
               </div>

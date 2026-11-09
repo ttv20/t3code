@@ -44,7 +44,7 @@ function latestProviderCheckedAt(
 }
 
 export function SidebarProviderUpdatePill() {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const navigate = useNavigate();
   const providers = useAtomValue(primaryServerProvidersAtom);
   const [dismissedKeys, setDismissedKeys] = useState<ReadonlySet<string>>(() => new Set());
@@ -55,6 +55,7 @@ export function SidebarProviderUpdatePill() {
   const [visibleAfterIso, setVisibleAfterIso] = useState<string | undefined>();
   const effectiveVisibleAfterIso = visibleAfterIso ?? latestProviderCheckedAt(providers);
   const view = getProviderUpdateSidebarPillView(providers, {
+    locale,
     ...(effectiveVisibleAfterIso !== undefined
       ? { visibleAfterIso: effectiveVisibleAfterIso }
       : {}),
@@ -68,7 +69,7 @@ export function SidebarProviderUpdatePill() {
   const openProviderSettings = () => {
     void navigate({ to: "/settings/providers" });
   };
-  const displayedView = renderedView ?? view;
+  const displayedView = renderedView && view?.key !== renderedView.key ? renderedView : view;
   const dismissAfterVisibleMs = displayedView?.dismissAfterVisibleMs;
   const viewKey = displayedView?.key ?? null;
   const showDismissProgress =
@@ -170,7 +171,7 @@ export function SidebarProviderUpdatePill() {
           render={
             <button
               type="button"
-              aria-label={uiT(displayedView.description)}
+              aria-label={displayedView.description}
               data-provider-update-main
               className="relative z-[1] flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left"
               onClick={openProviderSettings}
@@ -188,7 +189,7 @@ export function SidebarProviderUpdatePill() {
             </button>
           }
         />
-        <TooltipPopup side="top">{uiT(displayedView.description)}</TooltipPopup>
+        <TooltipPopup side="top">{displayedView.description}</TooltipPopup>
       </Tooltip>
       {displayedView.dismissible && (
         <Tooltip>

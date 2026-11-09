@@ -168,6 +168,24 @@ describe("provider update launch notification logic", () => {
       title: "Updating Claude",
       description: "Claude update in progress.",
     });
+    const localized = getProviderUpdateSidebarPillView(
+      [
+        provider({
+          driver: driver("claudeAgent"),
+          updateState: {
+            status: "running",
+            startedAt: checkedAt,
+            finishedAt: null,
+            message: "Settings",
+            output: null,
+          },
+        }),
+      ],
+      { locale: "he" },
+    );
+    expect(localized?.key).toBe(view?.key);
+    expect(localized?.title).toBe("מעדכן את Claude");
+    expect(localized?.description).toBe("העדכון של Claude מתבצע כעת.");
   });
 
   it("shows the latest terminal sidebar pill across instances of a driver", () => {

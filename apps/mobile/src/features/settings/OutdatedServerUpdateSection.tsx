@@ -62,9 +62,9 @@ export function OutdatedServerUpdateSection({
         { "0": targetVersion },
       ),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: uiT("Cancel"), style: "cancel" },
         {
-          text: "Update",
+          text: uiT("Update"),
           onPress: () => {
             setCheckErrorDismissed(true);
             void update({
@@ -82,20 +82,20 @@ export function OutdatedServerUpdateSection({
     <SettingsSection title={uiT("T3 Code")}>
       <View className="gap-1 p-4">
         <Text className="text-base text-foreground">
-          {release ? `Version ${release.fromVersion}` : uiT("Update required")}
+          {release ? uiT("Version {0}", { "0": release.fromVersion }) : uiT("Update required")}
         </Text>
         <Text className="text-sm text-foreground-muted">
           {state.status === "running"
             ? state.stage === "resuming"
               ? uiT("Restarting and reconnecting…")
               : state.stage === "installing"
-                ? "Installing update…"
+                ? uiT("Installing update…")
                 : uiT("Downloading update…")
             : release
               ? release.targetVersion
-                ? `Version ${release.targetVersion} is available.`
-                : "No newer version is available yet."
-              : "This app needs a newer version of T3 Code on this machine."}
+                ? uiT("Version {0} is available.", { "0": release.targetVersion })
+                : uiT("No newer version is available yet.")
+              : uiT("This app needs a newer version of T3 Code on this machine.")}
         </Text>
         {error || state.status === "failed" ? (
           <Text selectable accessibilityRole="alert" className="text-sm text-danger-foreground">

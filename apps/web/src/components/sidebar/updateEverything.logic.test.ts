@@ -527,6 +527,8 @@ describe("update capsule", () => {
         0,
       ),
     ).toEqual({ tone: "failed", label: "2 failed", action: "dismiss" });
+    const localized = describeUpdateCapsule(run(), [view("Settings", "failed")], null, 0, "he");
+    expect(localized.label).toBe("העדכון של Settings נכשל");
   });
 
   it("ends the run only when every machine is done and this app is not installing", () => {
