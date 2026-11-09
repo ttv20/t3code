@@ -450,14 +450,35 @@ export function isThreadListV2ListItem(value: {
   );
 }
 
-export function partitionWorkingShelf(items: ReadonlyArray<ThreadListV2ListItem>, sticky: boolean) {
+export function partitionWorkingShelf(
+  items: ReadonlyArray<ThreadListV2ListItem>,
+  sticky: boolean,
+  emptyShelf?: Pick<ThreadListV2WorkingShelfListItem, "expanded" | "disabled">,
+) {
   const start = sticky ? items.findIndex((item) => item.type === "v2-working-shelf") : -1;
-  if (start < 0) return { items, working: [] as ReadonlyArray<ThreadListV2ListItem> };
+  if (start < 0) {
+    const working: ReadonlyArray<ThreadListV2ListItem> = sticky
+      ? [
+          {
+            type: "v2-working-shelf",
+            key: "v2-working-shelf",
+            count: 0,
+            expanded: emptyShelf?.expanded ?? false,
+            disabled: emptyShelf?.disabled ?? false,
+          },
+        ]
+      : [];
+    return { items, working };
+  }
   let end = start + 1;
   while (end < items.length && items[end]?.type === "v2-thread") end++;
+  const header = items[start];
   return {
     items: [...items.slice(0, start), ...items.slice(end)],
-    working: items.slice(start, end),
+    working: items.slice(
+      start,
+      header?.type === "v2-working-shelf" && header.expanded ? end : start + 1,
+    ),
   };
 }
 

@@ -1806,7 +1806,17 @@ describe("Working section beta", () => {
       items.length,
     );
     expect(partitionWorkingShelf(items, false).items).toBe(items);
-    expect(partitionWorkingShelf(split.items, true).items).toBe(split.items);
+    const empty = partitionWorkingShelf(split.items, true, { expanded: true, disabled: true });
+    expect(empty.items).toBe(split.items);
+    expect(empty.working).toEqual([
+      {
+        type: "v2-working-shelf",
+        key: "v2-working-shelf",
+        count: 0,
+        expanded: true,
+        disabled: true,
+      },
+    ]);
     const onlyWorking = partitionWorkingShelf(split.working, true);
     expect(onlyWorking.items).toEqual([]);
     expect(onlyWorking.working).toEqual(split.working);
@@ -1814,6 +1824,15 @@ describe("Working section beta", () => {
     expect(partitionWorkingShelf(collapsed, true).working.map((item) => item.type)).toEqual([
       "v2-working-shelf",
     ]);
+    const selectedCollapsed = items.map((item) =>
+      item.type === "v2-working-shelf" ? { ...item, expanded: false } : item,
+    );
+    const closed = partitionWorkingShelf(selectedCollapsed, true);
+    expect(closed.working.map((item) => item.type)).toEqual(["v2-working-shelf"]);
+    expect(closed.items.some((item) => item.key === `v2-thread:${environmentId}:working`)).toBe(
+      false,
+    );
+    expect(partitionWorkingShelf(selectedCollapsed, false).items).toBe(selectedCollapsed);
   });
 });
 

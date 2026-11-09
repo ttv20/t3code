@@ -152,6 +152,8 @@ to keep Working at the bottom while the rest of the list scrolls behind it. A lo
 section scrolls within its own area. This is off by default and saved only on this client.
 On Android, the same option under **Settings → General → Sidebar** keeps Working above the
 bottom controls while the Home list scrolls. Search continues to show its normal results.
+The pinned header stays visible with a count of 0 when nothing is working. Collapsing it
+hides every working row, including the thread you have open.
 
 ### Group threads by project (beta)
 

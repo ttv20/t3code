@@ -413,6 +413,7 @@ function routeThreadOnly(
 
 // Separate hooks cache maps independently of later Sidebar hooks and preserve dnd-kit inputs.
 function useSidebarThreads(input: {
+  readonly stickyWorkingShelf: boolean;
   readonly projectScopeKey: string | null;
   readonly scopedProjectKeys: ReadonlySet<string> | null;
   readonly serverConfigs: ReadonlyMap<EnvironmentId, EnvironmentServerConfig>;
@@ -521,7 +522,9 @@ function useSidebarThreads(input: {
     : routeThreadOnly(snoozedThreads, routeRowThreadKey);
   const visibleWorkingThreads = workingShelfExpanded
     ? workingThreads
-    : routeThreadOnly(workingThreads, routeRowThreadKey);
+    : input.stickyWorkingShelf
+      ? EMPTY_THREADS
+      : routeThreadOnly(workingThreads, routeRowThreadKey);
   const projectFolders =
     folderGroups === null
       ? null
@@ -1335,6 +1338,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     pinnedKeysById,
     activeKeysById,
   } = useSidebarThreads({
+    stickyWorkingShelf,
     projectScopeKey,
     scopedProjectKeys,
     serverConfigs,
@@ -1927,6 +1931,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     });
   };
   const hasProjectFolders = projectFolders !== null && projectFolders.length > 0;
+  const showStickyWorkingShelf = stickyWorkingShelf && workingShelfEnabled && !isSearchingThreads;
   const sidebarListItemsFresh = ((): readonly SidebarListItem[] => {
     const rowsOf = (
       list: readonly EnvironmentThreadShell[],
@@ -1946,7 +1951,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         settledCount ===
         0
     ) {
-      return [];
+      return showStickyWorkingShelf ? [{ kind: "marker", marker: "working-header" }] : [];
     }
     const items: SidebarListItem[] = [{ kind: "marker", marker: "pinned-header" }];
     const pinnedRows = rowsOf(pinnedThreads, "pinned");
@@ -1955,7 +1960,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     const activeRows = rowsOf(activeThreads, "active");
     items.push({ kind: "marker", marker: "active-placeholder" });
     items.push(...activeRows);
-    if (workingThreads.length > 0 && !stickyWorkingShelf) {
+    if (workingThreads.length > 0 && !showStickyWorkingShelf) {
       items.push({ kind: "marker", marker: "working-header" });
       items.push(...rowsOf(visibleWorkingThreads, "working"));
     }
@@ -1967,7 +1972,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     const settledRows = rowsOf(renderedSettledThreads, "settled");
     items.push({ kind: "marker", marker: "settled-placeholder" });
     items.push(...settledRows);
-    if (stickyWorkingShelf && workingThreads.length > 0) {
+    if (showStickyWorkingShelf) {
       items.push({ kind: "marker", marker: "working-header" });
       items.push(...rowsOf(visibleWorkingThreads, "working"));
     }
@@ -3012,6 +3017,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       <SidebarContent
         ref={sidebarContentRef}
         className="min-h-full"
+        scrollFade={showStickyWorkingShelf ? "top" : true}
         fixedHeader={
           <SidebarGroup className="z-[1]">
             <SidebarThreadHeader
@@ -3250,7 +3256,11 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
           </SidebarGroup>
         }
       >
-        <SidebarGroup className="flex-1" role="presentation">
+        <SidebarGroup
+          className="flex-1"
+          padding={showStickyWorkingShelf ? "flush-bottom" : "default"}
+          role="presentation"
+        >
           {isSearchingThreads ? (
             threadSearchResults.length > 0 ? (
               <TooltipProvider
@@ -3501,7 +3511,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           // Folders draw active rows in their own place below.
                           if (projectFolders !== null && item.section === "active") continue;
                           const target =
-                            stickyWorkingShelf && item.section === "working" ? workingItems : items;
+                            showStickyWorkingShelf && item.section === "working"
+                              ? workingItems
+                              : items;
                           target.push(renderThreadRow(threadByKey.get(item.key)!, item.section));
                           continue;
                         }
@@ -3572,12 +3584,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             );
                             break;
                           case "working-header":
-                            (stickyWorkingShelf ? workingItems : items).push(
+                            (showStickyWorkingShelf ? workingItems : items).push(
                               <SidebarSectionHeader
                                 key="working-shelf-header"
                                 marker="working-header"
                                 className={
-                                  stickyWorkingShelf ? "sticky top-0 z-10 bg-sidebar" : "mt-auto"
+                                  showStickyWorkingShelf
+                                    ? "sticky top-0 z-10 bg-sidebar"
+                                    : "mt-auto"
                                 }
                                 label={uiT("Working")}
                                 count={workingThreads.length}
@@ -3669,12 +3683,12 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           </li>,
                         );
                       }
-                      if (stickyWorkingShelf && workingItems.length > 0) {
+                      if (showStickyWorkingShelf && workingItems.length > 0) {
                         items.push(
                           <li
                             key="sticky-working-shelf"
                             data-testid="sticky-working-shelf"
-                            className="sticky bottom-0 z-20 mt-auto list-none border-t border-sidebar-border bg-sidebar"
+                            className="sticky bottom-0 z-20 mt-auto list-none border-t border-sidebar-border bg-sidebar pb-2"
                           >
                             <ul
                               role="presentation"
@@ -3701,7 +3715,12 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             snoozedThreads.length +
             settledCount ===
             0 ? (
-            <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-muted-foreground/60">
+            <div
+              className={cn(
+                "flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-muted-foreground/60",
+                showStickyWorkingShelf && "order-first",
+              )}
+            >
               {projects.length === 0 ? (
                 <>
                   <span>{uiT("No projects yet")}</span>

@@ -277,7 +277,9 @@ function ThreadListV2ShelfHeader(
   const messages = SHELF_MESSAGES[props.kind];
   return (
     <ThreadListV2Section
-      label={uiT(props.expanded ? messages.title : messages.collapsed, { "0": props.count })}
+      label={uiT(props.expanded && props.count > 0 ? messages.title : messages.collapsed, {
+        "0": props.count,
+      })}
       pane={props.pane}
       tone={props.kind === "snoozed" ? "snoozed" : "default"}
       disclosure={{

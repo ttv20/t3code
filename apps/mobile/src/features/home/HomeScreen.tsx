@@ -510,8 +510,12 @@ export function HomeScreen(props: HomeScreenProps) {
     AsyncResult.isSuccess(stickyPreference) &&
     stickyPreference.value;
   const { items: mainListItems, working: stickyItems } = useMemo(
-    () => partitionWorkingShelf(threadListV2Items, stickyEnabled),
-    [threadListV2Items, stickyEnabled],
+    () =>
+      partitionWorkingShelf(threadListV2Items, stickyEnabled, {
+        expanded: workingShelfExpanded,
+        disabled: !shelfPreferencesLoaded,
+      }),
+    [threadListV2Items, stickyEnabled, workingShelfExpanded, shelfPreferencesLoaded],
   );
   const threadJumpItems = useMemo(
     () => (stickyItems.length > 0 ? [...mainListItems, ...stickyItems] : mainListItems),
@@ -873,7 +877,7 @@ export function HomeScreen(props: HomeScreenProps) {
                     />
                   ) : null
                 }
-                ListEmptyComponent={hasStickyShelf ? null : v2ListEmpty}
+                ListEmptyComponent={threadListV2Layout.workingCount > 0 ? null : v2ListEmpty}
                 style={{ flex: 1 }}
                 automaticallyAdjustsScrollIndicatorInsets={Platform.OS === "ios"}
                 contentInsetAdjustmentBehavior="never"
