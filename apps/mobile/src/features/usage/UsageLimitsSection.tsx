@@ -57,7 +57,7 @@ function WindowRow(props: {
   readonly color: string | null;
   readonly now: number;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
+  const { t: uiT, locale, direction } = useUiLanguage();
 
   const { window, now } = props;
   const remaining = remainingPercent(window);
@@ -102,6 +102,8 @@ function WindowRow(props: {
       </View>
       <View
         className="h-3 justify-center"
+        // The clipped copies share physical coordinates; mirror the finished graphic for RTL.
+        style={{ direction: "ltr", transform: [{ scaleX: direction === "rtl" ? -1 : 1 }] }}
         onLayout={(event) => setBarWidth(event.nativeEvent.layout.width)}
       >
         {tickX === null ? (
