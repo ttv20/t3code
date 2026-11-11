@@ -12,6 +12,7 @@ import {
   type EnvironmentId,
   type MessageId,
   type ModelSelection,
+  type ScopedThreadRef,
   type ServerConfig as T3ServerConfig,
   type UsageLimitsReport,
 } from "@t3tools/contracts";
@@ -232,6 +233,7 @@ export interface ThreadComposerProps {
   readonly connectionState: RemoteClientConnectionState;
   readonly environmentLabel: string | null;
   readonly selectedThread: EnvironmentThreadShell;
+  readonly selectedThreadDetailRef: ScopedThreadRef | null;
   readonly reportedModelSelection?: ModelSelection | null;
   readonly hasCompactableConversation: boolean;
   /** Arms a fresh session for the next message; absent where `/clear` is unavailable. */
@@ -1268,7 +1270,7 @@ export const ThreadComposer = function ThreadComposer(props: ThreadComposerProps
         </ComposerSurface>
         <ComposerStatus
           environmentId={props.environmentId}
-          threadId={props.selectedThread.id}
+          threadRef={props.selectedThreadDetailRef}
           provider={selectedProviderStatus}
           connected={props.connectionState === "connected"}
           hidden={props.hidden}

@@ -1838,6 +1838,7 @@ function ThreadDetailBody(
                         connectionState={props.connectionStateLabel}
                         environmentLabel={props.environmentLabel}
                         selectedThread={props.selectedThread}
+                        selectedThreadDetailRef={props.selectedThreadDetailRef}
                         hasCompactableConversation={
                           hasCompactableConversation && !props.isCompacting
                         }

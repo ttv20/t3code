@@ -19,7 +19,7 @@ import type {
   StyleProp,
   ViewStyle,
 } from "react-native";
-import { Pressable, View } from "react-native";
+import { I18nManager, Pressable, View } from "react-native";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -241,6 +241,7 @@ interface ThreadSwipeableProps {
 }
 
 export function ThreadSwipeable(props: ThreadSwipeableProps) {
+  const { direction } = useUiLanguage();
   const swipeableRef = useRef<SwipeableMethods | null>(null);
   const hasSecondaryAction = props.secondaryAction !== null;
   const actionsWidth = swipeActionsWidth(hasSecondaryAction);
@@ -480,9 +481,16 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
     rightActions.current = { deps, element };
     return element;
   };
-  const childrenContainerStyle = useMemo(() => ({ backgroundColor }), [backgroundColor]);
+  const childrenContainerStyle = useMemo(
+    () => ({ backgroundColor, direction }),
+    [backgroundColor, direction],
+  );
   const swipeableContainerStyle = useMemo(
-    () => [{ backgroundColor }, containerStyle],
+    // RNGH's action layout uses native RTL, while this app changes content direction without a restart.
+    () => [
+      containerStyle,
+      { backgroundColor, direction: I18nManager.isRTL ? ("rtl" as const) : ("ltr" as const) },
+    ],
     [backgroundColor, containerStyle],
   );
 

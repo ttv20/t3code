@@ -10,7 +10,8 @@ import {
   formatUiUsageReset,
   formatUiUsageWindowLabel,
 } from "@t3tools/client-runtime/usage-localization";
-import type { EnvironmentId, ServerProvider, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentId, ServerProvider, ScopedThreadRef } from "@t3tools/contracts";
+import { Atom } from "effect/reactivity";
 import { useMemo } from "react";
 import { Pressable, View } from "react-native";
 
@@ -21,6 +22,8 @@ import { useUiLanguage } from "../../i18n";
 import { environmentThreadDetails } from "../../state/threads";
 import { useRefreshLimits } from "../usage/UsageLimitsSection";
 import { useVisibleSecondClock } from "./use-visible-second-clock";
+
+const EMPTY_THREAD_ATOM = Atom.make(null);
 
 function UsageBar({ label, percent }: { readonly label: string; readonly percent: number }) {
   const value = Math.min(100, Math.max(0, percent));
@@ -41,7 +44,7 @@ function UsageBar({ label, percent }: { readonly label: string; readonly percent
 
 export function ComposerStatus(props: {
   readonly environmentId: EnvironmentId;
-  readonly threadId: ThreadId;
+  readonly threadRef: ScopedThreadRef | null;
   readonly provider: ServerProvider | null;
   readonly connected: boolean;
   readonly hidden: boolean;
@@ -49,7 +52,11 @@ export function ComposerStatus(props: {
 }) {
   const { t: uiT, locale } = useUiLanguage();
   const focused = useIsFocused();
-  const projection = useAtomValue(environmentThreadDetails.quietThreadAtom(props))?.projection;
+  const projection = useAtomValue(
+    props.threadRef === null
+      ? EMPTY_THREAD_ATOM
+      : environmentThreadDetails.quietThreadAtom(props.threadRef),
+  )?.projection;
   const context = useMemo(() => {
     if (!projection) return null;
     const providerThread = projection.providerThreads.find(

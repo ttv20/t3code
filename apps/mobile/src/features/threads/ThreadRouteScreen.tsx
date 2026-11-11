@@ -201,14 +201,12 @@ function ThreadUnavailableScreen(props: {
 
 /** A thread that can't load opens a new task in its environment instead of a dead end. */
 function UnavailableThreadDraftRedirect(props: { readonly environmentId: EnvironmentId }) {
-  const { t: uiT } = useUiLanguage();
-
   const navigation = useNavigation();
   const projects = useProjects();
   const openDraft = useEffectEvent(() => {
     const project = projects.find((candidate) => candidate.environmentId === props.environmentId);
     navigation.dispatch(
-      StackActions.replace(uiT("Thread"), {
+      StackActions.replace("Thread", {
         draft: project
           ? {
               requestId: uuidv4(),
@@ -825,7 +823,7 @@ function ThreadRouteContent(
     }
     clearPendingThreadCreationOutcome(routeThreadIdentity);
     navigation.dispatch(
-      StackActions.replace(uiT("Thread"), {
+      StackActions.replace("Thread", {
         draft: {
           draftId: restoredNewTaskDraftKey(creation.messageId),
           environmentId: String(creation.environmentId),
@@ -905,7 +903,7 @@ function ThreadRouteContent(
     localResendBusy.current = false;
     if (launched._tag !== "Success") return;
     navigation.dispatch(
-      StackActions.replace(uiT("Thread"), {
+      StackActions.replace("Thread", {
         environmentId: String(selectedThread.environmentId),
         threadId: metadata.threadId,
       }),
