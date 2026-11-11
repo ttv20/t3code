@@ -32,6 +32,7 @@ Each release also attaches `t3-<version>-linux-x64.tgz` for direct npm or Bun in
 - The web and desktop composer shows the selected account's reported five-hour and seven-day limits as two miniature meters in its original bottom spacing. Each meter includes a progress bar, used percentage, and minute-updated reset countdown. Usage above 80% is red.
 - The indicator reads upstream's provider usage-limit snapshot and adds no separate polling or persistence. Upstream refreshes provider status on its configured interval and from live turn events.
 - Clicking the meters opens the account email, every reported usage window, exact reset times, last-check time, and a manual refresh action. Available reset credits can be redeemed through the existing permission checks and confirmation dialog. Manual refresh uses upstream's targeted provider refresh.
+- Claude reset choices remain separate in the footer popup and usage views on web, desktop, and mobile. Each choice keeps its own credit ID, available count, expiry, and translated confirmation. A Fable reset restores Fable's allowance and returns its weekly usage; it does not reset the whole weekly allowance. Older servers without typed choices retain the existing reset action.
 - Upstream's `/usage-limits` feature remains available for full quota details and account/environment aggregation.
 
 ## Android local completion notifications

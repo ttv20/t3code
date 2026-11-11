@@ -1,5 +1,5 @@
 import {
-  formatUiResetCredits,
+  formatUiResetCreditChoices,
   formatUiUsageReset,
   formatUiUsageWindowLabel,
 } from "@t3tools/client-runtime/usage-localization";
@@ -146,10 +146,13 @@ function ComposerUsagePanel({
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
-  const reset = useResetCredit(environmentId, { instanceId: provider.instanceId });
+  const reset = useResetCredit(environmentId);
   const now = Date.parse(`${useNowMinute()}:00.000Z`);
   const windows = [usage.session, usage.weekly].filter((window) => window !== null);
   const credits = limits.resetCredits;
+  const resetChoices = credits
+    ? formatUiResetCreditChoices(credits, { instanceId: provider.instanceId }, now, locale)
+    : [];
   const refresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -202,25 +205,27 @@ function ComposerUsagePanel({
                 ) : null}
               </div>
             ))}
-            {credits && credits.availableCount > 0 ? (
-              <div className="flex flex-col items-start gap-2">
+            {resetChoices.map((choice) => (
+              <div key={choice.key} className="flex flex-col items-start gap-2">
                 <span className="text-2xs text-muted-foreground tabular-nums">
-                  {formatUiResetCredits(credits, now, locale)}
+                  {choice.summary}
                 </span>
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="outline"
-                  disabled={reset.busy || !reset.canManageProviders}
-                  onClick={() => {
-                    setOpen(false);
-                    reset.setConfirming(true);
-                  }}
-                >
-                  {reset.busy ? uiT("Using…") : uiT("Use reset")}
-                </Button>
+                {choice.availableCount > 0 ? (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    disabled={reset.busy || !reset.canManageProviders}
+                    onClick={() => {
+                      setOpen(false);
+                      reset.confirm(choice);
+                    }}
+                  >
+                    {reset.busy ? uiT("Using…") : choice.actionLabel}
+                  </Button>
+                ) : null}
               </div>
-            ) : null}
+            ))}
             <div className="flex flex-wrap justify-between gap-x-3 text-2xs text-muted-foreground">
               <span>{uiT("Last checked")}</span>
               <span className="tabular-nums">
@@ -241,6 +246,7 @@ function ComposerUsagePanel({
         </PopoverPopup>
       </Popover>
       <ResetCreditDialog
+        choice={reset.choice}
         open={reset.confirming}
         onOpenChange={reset.setConfirming}
         onConfirm={() => void reset.redeem()}

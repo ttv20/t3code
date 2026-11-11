@@ -10550,5 +10550,14 @@
   "△ 2 warnings": "△ 2 אזהרות",
   "✓ 85 passed": "✓ 85 עברו",
   "✗ 0 failed": "✗ 0 נכשל",
-  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "השארת המדף „בעבודה” בתחתית רשימת השיחות בזמן ששאר השיחות נגללות מאחוריו. נשמר רק במכשיר הזה."
+  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "השארת המדף „בעבודה” בתחתית רשימת השיחות בזמן ששאר השיחות נגללות מאחוריו. נשמר רק במכשיר הזה.",
+  "5-hour reset": "איפוס מכסת חמש השעות",
+  "Fable reset": "איפוס מכסת Fable",
+  "Full reset": "איפוס מלא",
+  "Refills your 5-hour and weekly limits.": "מחדש את מכסת חמש השעות ואת המכסה השבועית שלך.",
+  "Refills your 5-hour limit.": "מחדש את מכסת חמש השעות שלך.",
+  "Refills your Fable allowance and gives back what Fable used on your weekly limit. It doesn't reset your whole week.": "מחדש את מכסת Fable ומחזיר למכסה השבועית את השימוש של Fable. הוא אינו מאפס את כל המכסה השבועית.",
+  "Refills your weekly limit.": "מחדש את המכסה השבועית שלך.",
+  "Weekly reset": "איפוס המכסה השבועית",
+  "{0}: {1} This cannot be undone.": "{0}: {1} לא ניתן לבטל פעולה זו."
 }

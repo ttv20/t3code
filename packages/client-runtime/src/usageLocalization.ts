@@ -1,6 +1,36 @@
-import type { ServerProviderResetCredits, ServerProviderUsageWindow } from "@t3tools/contracts";
-import { formatDuration } from "@t3tools/shared/usageLimits";
+import type {
+  ProviderConsumeResetCreditInput,
+  ServerProviderResetCredits,
+  ServerProviderUsageWindow,
+} from "@t3tools/contracts";
+import { formatDuration, resetCreditChoices } from "@t3tools/shared/usageLimits";
 import { createUiTranslator, type UiLocale } from "./i18n.ts";
+
+export function formatUiResetCreditChoices(
+  credits: ServerProviderResetCredits,
+  input: ProviderConsumeResetCreditInput,
+  now: number,
+  locale: UiLocale,
+  compact = false,
+) {
+  const t = createUiTranslator(locale);
+  return resetCreditChoices(credits, input, now, compact).map((choice) => {
+    const option =
+      "instanceId" in choice.input
+        ? credits.options?.find((option) => option.creditId === choice.key)
+        : undefined;
+    return {
+      ...choice,
+      summary: option
+        ? `${t(option.label)} · ${formatUiResetCredits({ availableCount: option.availableCount, nextExpiresAt: option.expiresAt }, now, locale, true)}`
+        : formatUiResetCredits(credits, now, locale, compact),
+      actionLabel: t(choice.actionLabel),
+      confirmDescription: option
+        ? t("{0}: {1} This cannot be undone.", { "0": t(option.label), "1": t(option.description) })
+        : t(choice.confirmDescription),
+    };
+  });
+}
 
 /** Translate the window period while retaining a provider's model qualifier. */
 export function formatUiUsageWindowLabel(label: string, locale: UiLocale): string {

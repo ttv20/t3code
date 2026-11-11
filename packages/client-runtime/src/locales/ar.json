@@ -10550,5 +10550,14 @@
   "△ 2 warnings": "△ 2 تحذيرات",
   "✓ 85 passed": "✓ نجح 85",
   "✗ 0 failed": "✗ 0 فشل",
-  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device."
+  "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.": "Keep the Working section at the bottom of the thread list while other threads scroll behind it. Saved only on this device.",
+  "5-hour reset": "5-hour reset",
+  "Fable reset": "Fable reset",
+  "Full reset": "Full reset",
+  "Refills your 5-hour and weekly limits.": "Refills your 5-hour and weekly limits.",
+  "Refills your 5-hour limit.": "Refills your 5-hour limit.",
+  "Refills your Fable allowance and gives back what Fable used on your weekly limit. It doesn't reset your whole week.": "Refills your Fable allowance and gives back what Fable used on your weekly limit. It doesn't reset your whole week.",
+  "Refills your weekly limit.": "Refills your weekly limit.",
+  "Weekly reset": "Weekly reset",
+  "{0}: {1} This cannot be undone.": "{0}: {1} This cannot be undone."
 }

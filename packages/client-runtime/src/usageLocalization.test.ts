@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
+import { ProviderInstanceId, UsageLimitSourceId } from "@t3tools/contracts";
 import {
+  formatUiResetCreditChoices,
   formatUiResetCredits,
   formatUiUsageReset,
   formatUiUsageWindowLabel,
@@ -57,6 +59,50 @@ describe("usage quota translations", () => {
     expect(
       formatUiResetCredits({ availableCount: 2, nextExpiresAt: future }, now, "en", true),
     ).toBe("2 banked · expires in 4h 42m");
+    const credits = {
+      availableCount: 3,
+      nextCreditId: "weekly",
+      options: [
+        {
+          creditId: "weekly",
+          label: "Weekly reset",
+          description: "Refills your weekly limit.",
+          availableCount: 1,
+        },
+        {
+          creditId: "fable",
+          label: "Fable reset",
+          description:
+            "Refills your Fable allowance and gives back what Fable used on your weekly limit. It doesn't reset your whole week.",
+          availableCount: 2,
+          expiresAt: future,
+        },
+      ],
+    };
+    const input = { instanceId: ProviderInstanceId.make("claude-work") };
+    for (const locale of ["en", "he"] as const) {
+      const choices = formatUiResetCreditChoices(credits, input, now, locale);
+      expect(choices.map(({ input, availableCount }) => ({ input, availableCount }))).toEqual([
+        { input: { ...input, creditId: "weekly" }, availableCount: 1 },
+        { input: { ...input, creditId: "fable" }, availableCount: 2 },
+      ]);
+      expect(choices[1]?.summary).toContain("Fable");
+      expect(choices[1]?.summary).toContain("4h 42m");
+      expect(choices[1]?.confirmDescription).toContain(
+        createUiTranslator(locale)(credits.options[1]!.description),
+      );
+    }
+    const hubInput = {
+      sourceId: UsageLimitSourceId.make("hub"),
+      accountId: "account",
+      creditId: "hub-credit",
+    };
+    expect(
+      formatUiResetCreditChoices(credits, hubInput, now, "he").map(({ input }) => input),
+    ).toEqual([hubInput]);
+    expect(formatUiResetCreditChoices({ availableCount: 1 }, input, now, "he")[0]?.input).toEqual(
+      input,
+    );
   });
 
   it.each([
