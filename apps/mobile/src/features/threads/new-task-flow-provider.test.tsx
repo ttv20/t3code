@@ -442,3 +442,8 @@ it.each([
     expect(screen.current.selectedProject).toEqual(screen.projects[expectedProject]);
   },
 );
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

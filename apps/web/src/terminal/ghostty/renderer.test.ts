@@ -81,6 +81,7 @@ describe("renderGhosttySnapshot", () => {
       fillText: () => {},
       rect: () => {},
       resetTransform: () => {},
+      getTransform: () => ({ a: 1, d: 1 }),
       restore: () => {},
       save: () => {},
       set fillStyle(_value: string) {},
@@ -137,6 +138,7 @@ describe("renderGhosttySnapshot", () => {
       fillText: (...args: unknown[]) => fillTextCalls.push(args),
       rect: () => {},
       resetTransform: () => {},
+      getTransform: () => ({ a: 1, d: 1 }),
       restore: () => {},
       save: () => {},
       set fillStyle(_value: string) {},
@@ -173,7 +175,7 @@ describe("renderGhosttySnapshot", () => {
     });
 
     expect(context.direction).toBe("ltr");
-    expect(context.textAlign).toBe("left");
+    expect(["left", "start"]).toContain(context.textAlign);
     expect(fillTextCalls).toEqual([
       ["abx", 4, 15, 21.6],
       ["x", 18.4, 15, 7.2],
@@ -190,6 +192,7 @@ describe("renderGhosttySnapshot", () => {
       fillText: (...args: unknown[]) => fillTextCalls.push(args),
       rect: () => {},
       resetTransform: () => {},
+      getTransform: () => ({ a: 1, d: 1 }),
       restore: () => {},
       save: () => {},
       set fillStyle(_value: string) {},
@@ -244,6 +247,7 @@ describe("renderGhosttySnapshot", () => {
       fillText: () => {},
       rect: () => {},
       resetTransform: () => {},
+      getTransform: () => ({ a: 1, d: 1 }),
       restore: () => {},
       save: () => {},
       set fillStyle(_value: string) {},

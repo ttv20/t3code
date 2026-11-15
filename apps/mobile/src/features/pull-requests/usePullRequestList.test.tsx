@@ -136,3 +136,8 @@ it("keeps load-more failures retryable", async () => {
   expect(probe.latest.hasMore).toBe(false);
   expect(probe.latest.continued).toBe(true);
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

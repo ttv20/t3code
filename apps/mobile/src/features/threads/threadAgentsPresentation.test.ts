@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   deriveWorkflowGroups,
   projectedSubagentsToRuntime,
@@ -349,4 +349,9 @@ describe("resolveSubagentStopTarget", () => {
       }),
     ).toBeNull();
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

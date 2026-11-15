@@ -111,3 +111,8 @@ it("ignores a late action from a dialog that a newer one replaced", () => {
   expect(olderAction).toHaveBeenCalledOnce();
   expect(container.textContent).toContain("Newer");
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

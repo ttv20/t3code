@@ -1,6 +1,6 @@
 import type { AuthPairingLink } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { connectDeviceApprovalPrompts, createApprovalPromptQueue } from "./connectDeviceApproval";
 
@@ -110,4 +110,9 @@ describe("createApprovalPromptQueue", () => {
     // A dropped host's request can be offered again once the host is back.
     expect(queue.known.has("b")).toBe(false);
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

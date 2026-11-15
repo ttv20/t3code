@@ -97,3 +97,8 @@ describe("attachment mutation grants", () => {
     expect(transport).not.toHaveBeenCalled();
   });
 });
+
+vi.mock("./ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

@@ -1,5 +1,5 @@
 import type { PullRequestActivity, PullRequestCheck, PullRequestComment } from "@t3tools/contracts";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   normalizedReviewState,
   pullRequestChecksSummary,
@@ -101,4 +101,9 @@ describe("mobile overview check status", () => {
       pullRequestChecksSummary({ checks: [check("success"), check("cancelled")] }),
     ).toMatchObject({ title: "1 check failing", tint: "accent-danger-foreground" });
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

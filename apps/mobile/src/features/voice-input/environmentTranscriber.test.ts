@@ -67,3 +67,8 @@ it("trims at most one second of recorder padding and rejects longer recordings",
   );
   expect(upload).toHaveBeenCalledOnce();
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

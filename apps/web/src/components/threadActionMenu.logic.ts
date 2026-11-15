@@ -165,7 +165,7 @@ export function buildThreadActionMenuItems(
                 children: [
                   ...state.snoozePresets.map((preset) => ({
                     id: `snooze:${preset.id}` as const,
-                    label: preset.label,
+                    label: t(preset.label),
                     detail: preset.whenLabel,
                   })),
                   {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   EnvironmentId,
   ProjectId,
@@ -520,4 +520,9 @@ describe("cached PR diff stats", () => {
     expect([...pushed.cache.stats.values()]).toEqual([stat(2, 7)]);
     expect(pushed.refresh).toEqual([query]);
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

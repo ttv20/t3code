@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { NavigationState } from "@react-navigation/native";
 
 import type { RecentThreadShortcut } from "../../persistence/imperative";
@@ -95,4 +95,9 @@ describe("launcher shortcut ids", () => {
     const b = buildShortcutActions([{ environmentId: "a", threadId: "b-c", title: "x" }]);
     expect(a[1]?.id).not.toBe(b[1]?.id);
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

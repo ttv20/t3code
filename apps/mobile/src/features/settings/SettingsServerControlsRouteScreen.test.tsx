@@ -236,3 +236,13 @@ describe("SettingsServerControlsRouteScreen", () => {
     expect(autoSettle.disabled).toBe(true);
   });
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});
+
+vi.mock("../../state/sticky-working-shelf", () => ({
+  stickyWorkingShelfAtom: {},
+  updateStickyWorkingShelfAtom: {},
+}));

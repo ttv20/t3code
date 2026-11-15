@@ -41,9 +41,8 @@ describe("buildThreadActionMenuItems", () => {
       "שיחה חדשה על feature/עברית-English-123",
     );
     expect(items.find((item) => item.id === "filter-by-project")?.label).toBe("סינון לפי Settings");
-    expect(items.find((item) => item.id === "snooze")?.children?.[0]?.label).toBe(
-      "בעוד שעה (3:00 PM)",
-    );
+    expect(items.find((item) => item.id === "snooze")?.children?.[0]?.label).toBe("בעוד שעה");
+    expect(items.find((item) => item.id === "snooze")?.children?.[0]?.detail).toBe("3:00 PM");
     expect(items.find((item) => item.id === "copy")?.children?.[0]?.label).toBe(t("Path"));
     expect(items.map((item) => item.id)).toEqual(
       buildThreadActionMenuItems({

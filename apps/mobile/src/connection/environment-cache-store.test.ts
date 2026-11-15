@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import {
   ORCHESTRATION_CACHE_SCHEMA_VERSION,
   ORCHESTRATION_THREAD_CACHE_SCHEMA_VERSION,
@@ -703,4 +704,9 @@ describe("mobile SQLite environment cache store", () => {
       expect(memory.removed).toEqual([id]);
     }),
   );
+});
+
+vi.mock("../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

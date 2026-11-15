@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import { describe, expect, it } from "@effect/vitest";
 
 import { projectThreadContentPresentation } from "./threadContentPresentation";
@@ -28,4 +29,9 @@ describe("thread content presentation", () => {
       detail: "Reconnect this environment to load the conversation.",
     });
   });
+});
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

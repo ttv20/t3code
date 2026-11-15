@@ -258,3 +258,8 @@ it("a late cloud key save cannot override a newer destination choice", () => {
     appAtomRegistry.reset();
   }
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});

@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import { describe, expect, it } from "@effect/vitest";
 import { EnvironmentId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
@@ -75,4 +76,9 @@ describe("migrateLegacyConnectionCatalog", () => {
       expect(catalog.targets).toEqual([]);
     }),
   );
+});
+
+vi.mock("../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

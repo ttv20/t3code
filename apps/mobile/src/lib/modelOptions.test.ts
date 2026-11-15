@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   DEFAULT_SERVER_SETTINGS,
@@ -855,4 +855,9 @@ describe("synchronized mobile model visibility", () => {
       });
     });
   });
+});
+
+vi.mock("../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
 });

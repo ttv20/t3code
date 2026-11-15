@@ -266,3 +266,8 @@ describe("mobile cloud link environment client", () => {
     }),
   );
 });
+
+vi.mock("../../state/ui-language", async () => {
+  const { createUiTranslator } = await import("@t3tools/client-runtime/i18n");
+  return { readUiTranslator: () => createUiTranslator("en") };
+});
