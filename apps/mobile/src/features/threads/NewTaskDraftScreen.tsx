@@ -536,16 +536,21 @@ export function NewTaskDraftScreen(props: {
       (flow.workspaceMode === "worktree" ? availableCurrentBranchName : null),
     currentCheckoutBranch: flow.currentCheckoutBranchName,
   });
-  const selectedBranchLabel = resolveNewTaskBranchLabel({
-    branchName: selectedBranchName,
-    startFromOrigin: flow.startFromOrigin,
-    workspaceMode: flow.workspaceMode,
-    pullRequestReference: flow.pullRequestReference,
-  });
-  const workspaceLabel = resolveNewTaskWorkspaceLabel({
-    workspaceMode: flow.workspaceMode,
-    worktreePath: flow.selectedWorktreePath,
-  });
+  const selectedBranchLabel = resolveNewTaskBranchLabel(
+    {
+      branchName: selectedBranchName,
+      startFromOrigin: flow.startFromOrigin,
+      workspaceMode: flow.workspaceMode,
+      pullRequestReference: flow.pullRequestReference,
+    },
+    uiT,
+  );
+  const workspaceLabel = uiT(
+    resolveNewTaskWorkspaceLabel({
+      workspaceMode: flow.workspaceMode,
+      worktreePath: flow.selectedWorktreePath,
+    }),
+  );
   const showBranchLoading =
     environmentConnected && flow.branchesLoading && flow.availableBranches.length === 0;
 
@@ -877,9 +882,11 @@ export function NewTaskDraftScreen(props: {
   const workspaceControls = (
     <View className="flex-row items-center gap-1 px-2">
       <ComposerInlineControl
-        accessibilityHint={uiT("Switches to {0}", {
-          "0": flow.workspaceMode === "local" ? "a new worktree" : "the current checkout",
-        })}
+        accessibilityHint={
+          flow.workspaceMode === "local"
+            ? uiT("Switches to a new worktree")
+            : uiT("Switches to the current checkout")
+        }
         accessibilityLabel={workspaceLabel}
         disabled={isComposerInteractionLocked || !flow.isGitRepo}
         renderIcon={(size) => (
