@@ -537,9 +537,9 @@ function ThreadRouteContent(
     selectedEnvironmentConnection?.environmentLabel ?? null,
     // A linked environment's delegated task names its parent; other linked work its origin.
     delegatedFrom !== null
-      ? `Subagent of ${delegatedFromThread?.title ?? delegatedFrom.title}`
+      ? uiT("Subagent of {0}", { "0": delegatedFromThread?.title ?? delegatedFrom.title })
       : selectedThread?.linkOrigin
-        ? `From ${selectedThread.linkOrigin.label}`
+        ? uiT("Linked from {0}", { "0": selectedThread.linkOrigin.label })
         : null,
   ]
     .filter(Boolean)
