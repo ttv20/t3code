@@ -7,9 +7,8 @@ import type * as Context from "effect/Context";
 import { expect, it, vi } from "vite-plus/test";
 import { cdp, page, userEvent } from "vite-plus/test/browser";
 
-// Transform the lazy chat module before timing the reserved-thread behavior.
 import { AppRoot } from "~/AppRoot";
-import "./ChatView";
+import "~/index.css";
 // The route loads ChatView lazily, and its first transform (React Compiler over ~4k lines)
 // takes 6-11s; importing it here keeps that out of the test's timeout.
 import "~/components/ChatView";
@@ -54,6 +53,7 @@ vi.mock(import("~/rpc/requestLatencyState"), async (original) => ({
 }));
 
 it("a machine chip stashed in one thread restores with its machine in another", async () => {
+  await page.viewport(1280, 800);
   const other = threadWithHistory("thread-stash-restore", 1);
   const asking = threadWithQuestion("thread-stash-question", "Which file should change?");
   using _environment = installFakeEnvironment([other, asking]);
@@ -111,6 +111,7 @@ it("a machine chip stashed in one thread restores with its machine in another", 
 });
 
 it("a question that opens while a stashed file is checked keeps a machine stash", async () => {
+  await page.viewport(1280, 800);
   const thread = threadWithHistory("thread-stash-late-question", 1);
   const asking = threadWithQuestion("thread-stash-late-question", "Which file should change?");
   const [request] = asking.runtimeRequests ?? [];
@@ -166,6 +167,7 @@ it("a question that opens while a stashed file is checked keeps a machine stash"
 });
 
 it("a new draft does not load its reserved thread before the server lists it", async () => {
+  await page.viewport(1280, 800);
   using _environment = installFakeEnvironment([]);
   using fetchSpy = vi.spyOn(globalThis, "fetch");
   __setClientSettingsForTests({
@@ -196,6 +198,7 @@ it("a new draft does not load its reserved thread before the server lists it", a
 });
 
 it("opens the thread actions menu for an older settled thread the shell leaves out", async () => {
+  await page.viewport(1280, 800);
   const thread = { ...threadWithHistory("older-settled", 1), olderSettled: true as const };
   using _environment = installFakeEnvironment([thread]);
   __setClientSettingsForTests({
@@ -221,6 +224,7 @@ it("opens the thread actions menu for an older settled thread the shell leaves o
 });
 
 it("retains each thread's diff selection when returning from another thread or Settings", async () => {
+  await page.viewport(1280, 800);
   const a = threadWithHistory("diff-selection-a", 1);
   const b = threadWithHistory("diff-selection-b", 1);
   using _environment = installFakeEnvironment([a, b]);
@@ -285,6 +289,7 @@ it("retains each thread's diff selection when returning from another thread or S
 });
 
 it("a stashed prompt ending in a file chip restores with the chip", async () => {
+  await page.viewport(1280, 800);
   using _environment = installFakeEnvironment([]);
   __setClientSettingsForTests({
     ...DEFAULT_CLIENT_SETTINGS,
@@ -319,6 +324,7 @@ it("a stashed prompt ending in a file chip restores with the chip", async () => 
 });
 
 it("a rejected send leaves the timeline when a new draft was typed meanwhile", async () => {
+  await page.viewport(1280, 800);
   const thread = threadWithHistory("rejected-send", 1);
   using _environment = installFakeEnvironment([thread], {
     acceptCommands: true,
