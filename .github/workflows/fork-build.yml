@@ -384,5 +384,10 @@ jobs:
         run: |
           tag="${{ needs.build_linux_x64.outputs.tag }}"
           version="${{ needs.build_linux_x64.outputs.version }}"
+          gh release download "$tag" --pattern SHA256SUMS --output release-desktop/SHA256SUMS --repo "$GITHUB_REPOSITORY"
+          (
+            cd release-desktop
+            sha256sum "t3-$version-win32-x64.zip" >> SHA256SUMS
+          )
           gh release upload "$tag" release-desktop/* --clobber --repo "$GITHUB_REPOSITORY"
           gh release edit "$tag" --title "T3 Code RTL $version" --notes-file release-metadata/fork-release-notes.md --prerelease=false --latest --repo "$GITHUB_REPOSITORY"
