@@ -8,17 +8,11 @@ import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
 import { render } from "../../../test/render";
+import { UiLanguageContext } from "../../i18n";
 import "../../index.css";
 
-const harness = vi.hoisted(() => ({ locale: "en" as "en" | "he", calls: [] as unknown[] }));
+const harness = vi.hoisted(() => ({ calls: [] as unknown[] }));
 vi.mock("../../hooks/useSettings", () => ({ usePrimarySettings: () => "24-hour" }));
-vi.mock("../../i18n", () => ({
-  useUiLanguage: () => ({
-    locale: harness.locale,
-    direction: harness.locale === "he" ? "rtl" : "ltr",
-    t: createUiTranslator(harness.locale),
-  }),
-}));
 vi.mock("../../state/session", () => ({
   useEnvironmentScope: () => true,
   readEnvironmentScope: () => true,
@@ -36,7 +30,6 @@ vi.mock("../../state/use-atom-command", () => ({
 import { ComposerUsageIndicator } from "./ComposerWeeklyUsageIndicator";
 
 it.each(["en", "he"] as const)("redeems only the confirmed footer choice in %s", async (locale) => {
-  harness.locale = locale;
   harness.calls = [];
   const t = createUiTranslator(locale);
   const environmentId = EnvironmentId.make("desk");
@@ -87,7 +80,9 @@ it.each(["en", "he"] as const)("redeems only the confirmed footer choice in %s",
     },
   };
   await using screen = await render(
-    <ComposerUsageIndicator environmentId={environmentId} provider={provider} />,
+    <UiLanguageContext value={{ locale, direction: locale === "he" ? "rtl" : "ltr", t }}>
+      <ComposerUsageIndicator environmentId={environmentId} provider={provider} />
+    </UiLanguageContext>,
   );
   await screen.getByRole("button").first().click();
   await page

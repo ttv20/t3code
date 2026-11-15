@@ -58,7 +58,7 @@ it("collapses the selected working thread only when the shelf is docked", async 
   const header = page.getByTestId("sidebar-working-shelf-toggle");
   await expect.element(shelf).toBeInTheDocument();
   await expect.element(shelf.getByText(thread.title, { exact: true }).last()).toBeVisible();
-  await header.click();
+  await act(() => (header.element() as HTMLButtonElement).click());
   await expect.element(header).toHaveAttribute("aria-expanded", "false");
   expect(
     shelf.element().querySelectorAll('[data-sidebar-parent="shelf:working"][data-sidebar-row]'),
@@ -78,7 +78,7 @@ it("collapses the selected working thread only when the shelf is docked", async 
   expect(
     shelf.element().querySelectorAll('[data-sidebar-parent="shelf:working"][data-sidebar-row]'),
   ).toHaveLength(0);
-  await header.click();
+  await act(() => (header.element() as HTMLButtonElement).click());
   await expect.element(header).toHaveAttribute("aria-expanded", "true");
   expect(
     shelf.element().querySelectorAll('[data-sidebar-parent="shelf:working"][data-sidebar-row]'),

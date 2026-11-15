@@ -57,7 +57,7 @@ describe("interface language in the document and portals", () => {
     ["he-IL", "he", "הגדרות", "rtl"],
     ["ar-SA", "ar", "الإعدادات", "rtl"],
     ["fa-IR", "fa", "تنظیمات", "rtl"],
-    ["fr-FR", "en", "Settings", "ltr"],
+    ["fr-FR", "fr", "Settings", "ltr"],
   ])(
     "uses %s on first launch and preserves an explicit choice",
     async (system, locale, label, direction) => {
