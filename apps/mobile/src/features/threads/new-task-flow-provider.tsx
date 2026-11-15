@@ -685,6 +685,8 @@ export function NewTaskFlowProvider(
     if (!selectedProject || !selectedProjectDraftKey) {
       return;
     }
+    const latestStartFromOrigin =
+      getComposerDraftSnapshot(selectedProjectDraftKey).workspaceSelection?.startFromOrigin;
     updateComposerDraftSettings(selectedProjectDraftKey, {
       workspaceSelection: {
         mode: workspaceMode,
@@ -694,7 +696,7 @@ export function NewTaskFlowProvider(
           projectCwd: selectedProject.workspaceRoot,
           branchWorktreePath: branch.worktreePath,
         }),
-        ...(draftStartFromOrigin !== undefined ? { startFromOrigin: draftStartFromOrigin } : {}),
+        ...(latestStartFromOrigin !== undefined ? { startFromOrigin: latestStartFromOrigin } : {}),
       },
     });
   };

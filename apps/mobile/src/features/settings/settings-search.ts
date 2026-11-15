@@ -1,4 +1,4 @@
-import { uiSearchTerms, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { INTERFACE_LANGUAGES, uiSearchTerms, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { foldSearchQuery, rankSearchItems, scoreSearchTerms } from "@t3tools/shared/paletteSearch";
 
 import type { SettingsPageTarget } from "./components/settings-page-targets";
@@ -37,6 +37,7 @@ const SETTINGS_SEARCH_TERMS = {
     "final answers only",
   ],
   SettingsLanguage: [
+    ...INTERFACE_LANGUAGES.map(({ label }) => label),
     "Language",
     "language",
     "locale",

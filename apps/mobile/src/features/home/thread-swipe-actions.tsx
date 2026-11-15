@@ -67,6 +67,7 @@ interface ThreadSwipeAction {
   readonly icon: ComponentProps<typeof SymbolView>["name"];
   readonly label: string;
   readonly destructive?: boolean;
+  readonly disabled?: boolean;
   readonly menu?: {
     readonly actions: MenuAction[];
     readonly onPressAction: NonNullable<ComponentProps<typeof Menu>["onPressAction"]>;
@@ -250,6 +251,7 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
   const fullSwipeThreshold = Math.max(actionsWidth + 44, props.fullSwipeWidth * 0.58);
   const fullSwipeAction =
     props.fullSwipeAction ?? (props.secondaryAction === undefined ? "delete" : "primary");
+  const fullSwipeEnabled = fullSwipeAction !== "primary" || props.primaryAction.disabled !== true;
   const close = useCallback(() => swipeableRef.current?.close(), []);
   const gateEnabled = use(SwipeableScrollGateContext);
   const mountedRef = useRef(true);
@@ -384,7 +386,7 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
   }));
   const actionStyle = useAnimatedStyle(() => ({ opacity: actionOpacity.value, height: "100%" }));
   const commitPrimaryAction = useCallback(() => {
-    if (!mountedRef.current || contentRef.current !== content) return;
+    if (!mountedRef.current || contentRef.current !== content || primaryAction.disabled) return;
     primaryAction.onPress();
     if (!pendingDismissRef.current) swipeableRef.current?.close();
   }, [content, primaryAction]);
@@ -401,13 +403,13 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
     (translation: SharedValue<number>, canceled: boolean) => {
       "worklet";
       if (dismissing.value) return true;
-      if (!canceled && -translation.value >= fullSwipeThreshold) {
+      if (!canceled && fullSwipeEnabled && -translation.value >= fullSwipeThreshold) {
         runOnJS(commitFullSwipe)();
         return true;
       }
       return false;
     },
-    [commitFullSwipe, dismissing, fullSwipeThreshold],
+    [commitFullSwipe, dismissing, fullSwipeThreshold, fullSwipeEnabled],
   );
   const handleFullSwipeArmedChange = useCallback(
     (armed: boolean) => {
@@ -545,6 +547,7 @@ function SwipeActionButton(props: {
   readonly fullSwipeThreshold: number;
   readonly icon: ComponentProps<typeof SymbolView>["name"];
   readonly label: string;
+  readonly disabled?: boolean;
   readonly menu?: ThreadSwipeAction["menu"];
   readonly onPress: () => void;
   readonly stretchesOnFullSwipe: boolean;
@@ -640,12 +643,14 @@ function SwipeActionButton(props: {
     <Pressable
       accessibilityLabel={props.accessibilityLabel}
       accessibilityRole="button"
+      accessibilityState={{ disabled: props.disabled === true }}
+      disabled={props.disabled}
       onPress={props.menu === undefined ? props.onPress : undefined}
       style={({ pressed }) => ({
         alignItems: "center",
         height: "100%",
         justifyContent: "center",
-        opacity: pressed ? 0.72 : 1,
+        opacity: props.disabled ? 0.4 : pressed ? 0.72 : 1,
         width: "100%",
       })}
     >
@@ -759,14 +764,15 @@ function ThreadSwipeActions(props: {
   const { fullSwipeThreshold, onFullSwipeArmedChange, secondaryAction, translation } = props;
   const fullSwipeIsPrimary = props.fullSwipeAction === "primary" || secondaryAction === null;
   const actionsWidth = swipeActionsWidth(secondaryAction !== null);
+  const primaryDisabled = props.primaryAction.disabled === true;
   useAnimatedReaction(
-    () => -translation.value >= fullSwipeThreshold,
+    () => !(fullSwipeIsPrimary && primaryDisabled) && -translation.value >= fullSwipeThreshold,
     (armed, previous) => {
       if (armed !== previous) {
         runOnJS(onFullSwipeArmedChange)(armed);
       }
     },
-    [fullSwipeThreshold, onFullSwipeArmedChange, translation],
+    [fullSwipeThreshold, onFullSwipeArmedChange, translation, fullSwipeIsPrimary, primaryDisabled],
   );
 
   return (
@@ -791,6 +797,7 @@ function ThreadSwipeActions(props: {
         fullSwipeThreshold={props.fullSwipeThreshold}
         icon={props.primaryAction.icon}
         label={uiT(props.primaryAction.label)}
+        disabled={primaryDisabled}
         onPress={props.primaryAction.onPress}
         stretchesOnFullSwipe={fullSwipeIsPrimary}
         translation={props.translation}

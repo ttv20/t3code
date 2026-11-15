@@ -562,6 +562,9 @@ importers:
       '@formatjs/intl-locale':
         specifier: 4.2.13
         version: 4.2.13
+      '@generaltranslation/react-core':
+        specifier: 11.4.18
+        version: 11.4.18(react@19.3.0)
       '@legendapp/list':
         specifier: 3.7.2
         version: 3.7.2(patch_hash=3c68607b8bb7a531873bcbe0b197d163ef1fdb4d4cf52a4ddf9d2b3804671658)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)

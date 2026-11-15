@@ -307,12 +307,23 @@ it("owns a status stream only while the draft is active, retaining draft choices
     }),
   );
   act(() => screen.current.setStartFromOrigin(true));
+  expect(screen.snapshot(draftKey).workspaceSelection?.startFromOrigin).toBe(true);
+  const selectBranchBeforeToggle = screen.current.selectBranch;
+  act(() => screen.current.setStartFromOrigin(false));
+  act(() =>
+    selectBranchBeforeToggle({
+      name: "feature",
+      current: false,
+      isDefault: false,
+      worktreePath: null,
+    }),
+  );
   const chosenWorkspace = screen.snapshot(draftKey).workspaceSelection;
   expect(chosenWorkspace).toEqual({
     mode: "worktree",
     branch: "feature",
     worktreePath: null,
-    startFromOrigin: true,
+    startFromOrigin: false,
   });
 
   await screen.render(false);

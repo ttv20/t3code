@@ -262,6 +262,42 @@ describe("threadListV2RowAccessibilityLabel", () => {
 });
 
 describe("resolveThreadListV2SwipeActions", () => {
+  it.each(["preparing", "starting", "running", "waiting", "queued", "completed"] as const)(
+    "gates settlement while the runtime is %s without changing other actions",
+    (status) => {
+      const thread = makeThread({
+        id: ThreadId.make("active-row"),
+        title: "Active row",
+        runtime: {
+          status,
+          activeRunId: RunId.make("active-run"),
+          providerInstanceId: ProviderInstanceId.make("codex"),
+          providerName: null,
+          lastError: null,
+          updatedAt: NOW,
+        },
+      });
+      const input = {
+        variant: "card" as const,
+        settlementSupported: true,
+        snoozeSupported: true,
+        snoozable: false,
+        thread,
+      };
+      expect(resolveThreadListV2SwipeActions(input)).toMatchObject({
+        primary: "settle",
+        primaryDisabled: status !== "completed",
+      });
+      expect(resolveThreadListV2SwipeActions({ ...input, variant: "slim" })).toMatchObject({
+        primary: "unsettle",
+        primaryDisabled: false,
+      });
+      expect(resolveThreadListV2SwipeActions({ ...input, snoozed: true })).toMatchObject({
+        primary: "unsnooze",
+        primaryDisabled: false,
+      });
+    },
+  );
   it("offers snooze for a presented input request and moves it onto the snoozed shelf", () => {
     const raw = makeRawThreadShell({
       pendingRuntimeRequest: {
@@ -278,6 +314,7 @@ describe("resolveThreadListV2SwipeActions", () => {
         settlementSupported: true,
         snoozeSupported: true,
         snoozable: canSnooze(thread, { now: NOW }),
+        thread,
       }).secondary,
     ).toBe("snooze");
 

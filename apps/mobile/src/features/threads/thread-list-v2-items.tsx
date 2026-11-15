@@ -889,6 +889,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const snoozeGateNowMs = useNowAfter(snoozeGateExpiryMs === null ? null : snoozeGateExpiryMs + 1);
   const snoozeGateNow = new Date(snoozeGateNowMs).toISOString();
   const swipeActions = resolveThreadListV2SwipeActions({
+    thread,
+    hasQueuedMessages: props.hasQueuedMessages === true,
     variant,
     settlementSupported: props.settlementSupported,
     snoozeSupported: props.snoozeSupported,
@@ -971,7 +973,12 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   );
   const sharedMenuActions = useMemo(
     () => ({
-      settle: { id: "settle", title: uiT("Settle"), image: "checkmark" },
+      settle: {
+        id: "settle",
+        title: uiT("Settle"),
+        image: "checkmark",
+        attributes: { disabled: swipeActions.primaryDisabled },
+      },
       unsettle: { id: "unsettle", title: uiT("Un-settle"), image: "arrow.uturn.backward" },
       unsnooze: { id: "unsnooze", title: uiT("Wake thread"), image: "clock" },
       archive: { id: "archive", title: uiT("Archive"), image: "archivebox" },
@@ -982,7 +989,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         attributes: { destructive: true },
       },
     }),
-    [uiT],
+    [uiT, swipeActions.primaryDisabled],
   );
   const canTurnIntoProject = canTurnThreadIntoProject(thread);
   const titleMenuItems = useMemo<MenuAction[]>(
@@ -1119,7 +1126,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const handleMenuAction = useCallback(
     ({ nativeEvent }: { readonly nativeEvent: { readonly event: string } }) => {
       if (nativeEvent.event === "new-thread-on-branch") onNewThreadOnBranch(thread);
-      if (nativeEvent.event === "settle") handleSettle();
+      if (nativeEvent.event === "settle" && !swipeActions.primaryDisabled) handleSettle();
       if (nativeEvent.event === "unsettle") handleUnsettle();
       if (nativeEvent.event === "unsnooze") handleUnsnooze();
       if (nativeEvent.event === "pin") handlePin();
@@ -1183,6 +1190,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       handleSetAutoSettle,
       handleUnpin,
       handleUnsettle,
+      swipeActions.primaryDisabled,
       handleUnsnooze,
       setCustomSnoozeOpen,
       snoozePresets,
@@ -1217,6 +1225,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           accessibilityLabel: uiT("Settle {0}", { "0": thread.title }),
           icon: "checkmark" as const,
           label: uiT("Settle"),
+          disabled: swipeActions.primaryDisabled,
           onPress: handleSettle,
         };
   }, [
@@ -1225,6 +1234,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     handleUnsettle,
     handleUnsnooze,
     swipeActions.primary,
+    swipeActions.primaryDisabled,
     thread.title,
     uiT,
   ]);
@@ -1247,11 +1257,13 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   );
   const swipeAccessibilityHint = !canOperateThread
     ? uiT("Opens the thread")
-    : secondaryAction === null
-      ? uiT("Opens the thread. Swipe left to {0}.", { "0": primaryAction.label.toLowerCase() })
-      : uiT("Opens the thread. Swipe left for {0} and snooze actions.", {
-          "0": primaryAction.label.toLowerCase(),
-        });
+    : swipeActions.primaryDisabled
+      ? uiT("Finish or stop the thread before settling.")
+      : secondaryAction === null
+        ? uiT("Opens the thread. Swipe left to {0}.", { "0": primaryAction.label.toLowerCase() })
+        : uiT("Opens the thread. Swipe left for {0} and snooze actions.", {
+            "0": primaryAction.label.toLowerCase(),
+          });
 
   const titleTextInset = props.project ? projectIconSize + 8 : 0;
   const cardContent = (

@@ -143,12 +143,7 @@ function ConfiguredSettingsRouteScreen() {
           onPress: () => navigation.navigate("SettingsAuth"),
         },
         environmentsRow(gt("Environments"), Object.keys(savedConnectionsById).length),
-        {
-          id: "SettingsNotifications",
-          icon: "bell.badge",
-          label: gt("Notifications"),
-          target: "SettingsNotifications",
-        },
+        notificationsRow(gt("Notifications")),
       ]}
     />
   );
@@ -160,9 +155,21 @@ function LocalSettingsRouteScreen() {
 
   return (
     <SettingsList
-      connections={[environmentsRow(gt("Environments"), Object.keys(savedConnectionsById).length)]}
+      connections={[
+        environmentsRow(gt("Environments"), Object.keys(savedConnectionsById).length),
+        notificationsRow(gt("Notifications")),
+      ]}
     />
   );
+}
+
+function notificationsRow(label: string): SettingsListRow {
+  return {
+    id: "SettingsNotifications",
+    icon: "bell.badge",
+    label,
+    target: "SettingsNotifications",
+  };
 }
 
 function environmentsRow(label: string, count: number): SettingsListRow {

@@ -1,6 +1,9 @@
 import type { MenuAction } from "@react-native-menu/menu";
 import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
-import { resolveThreadProviderStack } from "@t3tools/client-runtime/state/models";
+import {
+  threadRuntimeIsActive,
+  resolveThreadProviderStack,
+} from "@t3tools/client-runtime/state/models";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
   createInboxReturnTracker,
@@ -114,6 +117,11 @@ export function resolveThreadListV2SnoozeMenuSelection(input: {
 }
 
 export function resolveThreadListV2SwipeActions(input: {
+  readonly thread: Pick<
+    EnvironmentThreadShell,
+    "runtime" | "latestRun" | "hasPendingApprovals" | "hasPendingUserInput"
+  >;
+  readonly hasQueuedMessages?: boolean;
   readonly variant: "card" | "slim";
   readonly settlementSupported: boolean;
   readonly snoozeSupported: boolean;
@@ -122,9 +130,10 @@ export function resolveThreadListV2SwipeActions(input: {
 }): {
   readonly primary: Exclude<ThreadListV2SwipeAction, "snooze">;
   readonly secondary: "snooze" | null;
+  readonly primaryDisabled: boolean;
 } {
   if (input.snoozed === true) {
-    return { primary: "unsnooze", secondary: null };
+    return { primary: "unsnooze", secondary: null, primaryDisabled: false };
   }
   const primary = input.settlementSupported
     ? input.variant === "slim"
@@ -133,6 +142,16 @@ export function resolveThreadListV2SwipeActions(input: {
     : "archive";
   return {
     primary,
+    primaryDisabled:
+      primary === "settle" &&
+      (threadRuntimeIsActive(input.thread.runtime) ||
+        (input.thread.latestRun !== null &&
+          ["preparing", "queued", "starting", "running", "waiting"].includes(
+            input.thread.latestRun.status,
+          )) ||
+        input.thread.hasPendingApprovals ||
+        input.thread.hasPendingUserInput ||
+        input.hasQueuedMessages === true),
     secondary: input.snoozeSupported && input.snoozable ? "snooze" : null,
   };
 }
