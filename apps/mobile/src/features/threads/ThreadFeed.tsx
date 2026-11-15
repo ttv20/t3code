@@ -301,6 +301,8 @@ const FEED_PADDING_TOP = 12;
 const VIEWED_IMAGE_GAP = 8;
 const USER_BUBBLE_HORIZONTAL_PADDING = 3.5 * 3.5;
 const ASSISTANT_ROW_HORIZONTAL_PADDING = 3.5;
+// Android entering animations can leave measured chat rows at zero opacity.
+const MESSAGE_ENTRY_ANIMATIONS_ENABLED = Platform.OS !== "android";
 // Virtualization remounts old rows; only newly created content should replay an entrance.
 const FRESH_ENTRY_WINDOW_MS = 3_000;
 function isFreshTimestamp(input: string): boolean {
@@ -2006,7 +2008,7 @@ function renderFeedEntry(
       );
     }
     if (isUser) {
-      const enterAnimated = isFreshTimestamp(message.createdAt);
+      const enterAnimated = MESSAGE_ENTRY_ANIMATIONS_ENABLED && isFreshTimestamp(message.createdAt);
       const foldRowId = presentation.attribution === "agent" ? `agent:${message.id}` : null;
       // A linked environment's agent sent it from a thread there.
       const senderRef =
@@ -2320,7 +2322,7 @@ function renderFeedEntry(
       return null;
     }
 
-    const enterAnimated = isFreshTimestamp(message.createdAt);
+    const enterAnimated = MESSAGE_ENTRY_ANIMATIONS_ENABLED && isFreshTimestamp(message.createdAt);
     return (
       <Animated.View
         className={cn(
