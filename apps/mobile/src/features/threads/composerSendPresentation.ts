@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import {
   alternateComposerDispatchAction,
   type ActiveTurnComposerAction,
@@ -31,9 +32,10 @@ export function resolveComposerSendPresentation(input: {
   readonly followUpBehavior: FollowUpBehavior;
   readonly deliveryDeferred: boolean;
 }): ComposerSendPresentation {
+  const uiT = readUiTranslator();
   if (input.editingQueuedMessage) {
     return {
-      label: "Update queued message",
+      label: uiT("Update queued message"),
       icon: "checkmark",
       action: null,
       alternate: null,
@@ -42,7 +44,7 @@ export function resolveComposerSendPresentation(input: {
   }
   if (!input.running) {
     return {
-      label: input.deliveryDeferred ? "Queue" : "Send",
+      label: input.deliveryDeferred ? uiT("Queue") : uiT("Send"),
       icon: input.deliveryDeferred ? "tray.and.arrow.up" : "arrow.up",
       action: null,
       alternate: null,

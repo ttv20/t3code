@@ -94,7 +94,7 @@ export function SubscriptionUsage(props: SubscriptionUsageProps, environment: Wi
               {shown.map((window) => {
                 const low = window.remaining <= 10;
                 return (
-                  <Column key={uiT(window.label)} modifiers={[fillMaxWidth(), padding(0, 4, 0, 0)]}>
+                  <Column key={window.label} modifiers={[fillMaxWidth(), padding(0, 4, 0, 0)]}>
                     <Text
                       color={low ? colors.error : colors.onSurface}
                       maxLines={1}

@@ -8,8 +8,6 @@ import { FileDiff } from "@pierre/diffs/react";
 import type { PullRequestReviewGuideExcerpt, PullRequestReviewPosition } from "@t3tools/contracts";
 import { ArrowUpRightIcon } from "lucide-react";
 import { useState } from "react";
-import { useUiLanguage } from "../../../i18n";
-
 import { useRenderedAppearance } from "~/hooks/useTheme";
 import {
   getRenderablePatch,
@@ -22,25 +20,22 @@ import {
   resolveDiffReviewAnchor,
   type ReviewCommentContext,
 } from "~/reviewCommentContext";
-
-import {
-  excerptExpansionOldContents,
-  excerptRows,
-  fileDiffRows,
-  rowsToPatch,
-} from "@t3tools/client-runtime/review-guide-tour";
 import { DiffCommentAnnotation } from "../../diffs/DiffCommentAnnotation";
 import { DIFF_VIEW_UNSAFE_CSS } from "../../diffs/StyledDiffCodeView";
 import { Button } from "../../ui/button";
-import type { PullRequestCompletionScope } from "../PullRequestMarkdownTextarea";
 import {
   getReviewPositionAnchor,
   PendingReviewCommentCard,
   toViewerSide,
 } from "../PullRequestReviewAnnotation";
 import type { PendingReviewComment } from "../pullRequestReviewStore";
+import { excerptRows, fileDiffRows, rowsToPatch } from "@t3tools/client-runtime/review-guide-tour";
+import type { PullRequestCompletionScope } from "../PullRequestMarkdownTextarea";
+import { excerptLoader } from "./GuideExcerpt.logic";
 import { GuideNoteMarker } from "./GuideNotes";
 import { GuideProse } from "./GuideProse";
+
+import { useUiLanguage } from "../../../i18n";
 
 const EXCERPT_UNSAFE_CSS = `${DIFF_VIEW_UNSAFE_CSS}
 [data-code]::-webkit-scrollbar-thumb {
@@ -100,30 +95,6 @@ function excerptSlice(file: FileDiffMetadata | null, excerpt: PullRequestReviewG
     deletions: new Set(shown.flatMap((row) => (row.oldLine === null ? [] : [row.oldLine]))),
   };
   return { fileDiff, rows: shown, shown: shown.length, total: rows.length, drawn };
-}
-
-// Other hunks shift old-side context; expand against an excerpt-matching old side.
-function excerptLoader(
-  excerpt: PullRequestReviewGuideExcerpt,
-  sliceRows: ExcerptSlice["rows"],
-  loadDiffFiles: FileDiffContentsLoader,
-): FileDiffContentsLoader | null {
-  if (sliceRows.some((row) => row.hunk !== sliceRows[0]?.hunk)) {
-    return null;
-  }
-  return async (fileDiff) => {
-    const loaded = await loadDiffFiles(fileDiff);
-    const oldContents = excerptExpansionOldContents(loaded.newFile.contents, sliceRows);
-    if (oldContents === null) return loaded;
-    return {
-      newFile: loaded.newFile,
-      oldFile: {
-        name: loaded.oldFile?.name ?? loaded.newFile.name,
-        contents: oldContents,
-        cacheKey: `${loaded.newFile.cacheKey ?? loaded.newFile.name}:excerpt:${excerpt.side}:${excerpt.start}-${excerpt.end}`,
-      },
-    };
-  };
 }
 
 export function GuideExcerpt({
@@ -212,7 +183,7 @@ function ExcerptDiff({
   const { t: uiT } = useUiLanguage();
 
   const resolvedTheme = useRenderedAppearance();
-  const loadExcerptFiles = excerptLoader(excerpt, slice.rows, loadDiffFiles);
+  const loadExcerptFiles = excerptLoader(excerpt, file, slice.rows, loadDiffFiles);
 
   const annotations = (() => {
     const groups = new Map<string, DiffLineAnnotation<ExcerptAnnotation>>();
@@ -333,9 +304,11 @@ function ExcerptDiff({
                 text=""
                 completionScope={commenting.canComment ? commenting.completionScope : null}
                 placeholder={
-                  commenting.canComment ? "Add a comment…" : uiT("Ask the agent about these lines…")
+                  commenting.canComment
+                    ? uiT("Add a comment…")
+                    : uiT("Ask the agent about these lines…")
                 }
-                submitLabel={commenting.canComment ? "Add to review" : "Ask agent"}
+                submitLabel={commenting.canComment ? uiT("Add to review") : uiT("Ask agent")}
                 {...(commenting.canComment && onAskAgent !== null
                   ? {
                       secondaryAction: {

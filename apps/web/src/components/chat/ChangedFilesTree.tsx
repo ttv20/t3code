@@ -1,19 +1,25 @@
 import { useSyncLayout } from "@legendapp/list/react";
 import { type OrchestrationV2CheckpointFileTotals, type RunId } from "@t3tools/contracts";
-import { ChevronsDownUp, ChevronsUpDown, Folder, FolderClosed } from "lucide";
-import { ChevronRightIcon, FileDiffIcon } from "lucide-react";
-import { memo, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { MorphIcon } from "~/components/MorphIcon";
-import { observeResize } from "~/lib/observeResize";
-import { cn } from "~/lib/utils";
-import { UiText, useUiLanguage } from "../../i18n";
-import { buildTurnDiffTree, type TurnDiffTreeNode } from "../../lib/turnDiffTree";
+import { type MouseEvent, type ReactNode, memo, useLayoutEffect, useRef, useState } from "react";
 import { type TurnDiffFileChange } from "../../types";
-import { Button } from "../ui/button";
-import { MiddleTruncate } from "../ui/middle-truncate";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { buildTurnDiffTree, type TurnDiffTreeNode } from "../../lib/turnDiffTree";
+import {
+  ChevronRightIcon,
+  FileDiffIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
+  FolderClosedIcon,
+  FolderIcon,
+} from "lucide-react";
+import { cn } from "~/lib/utils";
 import { DiffStatLabel, hasNonZeroStat } from "./DiffStatLabel";
 import { PierreEntryIcon } from "./PierreEntryIcon";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { MiddleTruncate } from "../ui/middle-truncate";
+import { observeResize } from "~/lib/observeResize";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const EMPTY_DIRECTORY_OVERRIDES: Record<string, boolean> = {};
 const VIRTUALIZE_AFTER_ROWS = 250;
@@ -99,10 +105,11 @@ export const ChangedFilesCard = memo(function ChangedFilesCard(props: {
                   />
                 }
               >
-                <MorphIcon
-                  className="size-3"
-                  icon={allDirectoriesExpanded ? ChevronsDownUp : ChevronsUpDown}
-                />
+                {allDirectoriesExpanded ? (
+                  <ChevronsDownUpIcon className="size-3" />
+                ) : (
+                  <ChevronsUpDownIcon className="size-3" />
+                )}
               </TooltipTrigger>
               <TooltipPopup side="top">
                 {allDirectoriesExpanded ? uiT("Collapse all folders") : uiT("Expand all folders")}
@@ -222,10 +229,11 @@ const ChangedFilesTree = memo(function ChangedFilesTree(props: {
               isExpanded && "rotate-90",
             )}
           />
-          <MorphIcon
-            className="size-3.5 shrink-0 text-muted-foreground/75"
-            icon={isExpanded ? Folder : FolderClosed}
-          />
+          {isExpanded ? (
+            <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
+          ) : (
+            <FolderClosedIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
+          )}
           <span className="truncate font-mono text-2xs text-muted-foreground/90 group-hover:text-foreground/90">
             {node.name}
           </span>

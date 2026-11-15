@@ -9,15 +9,13 @@ import { defaultMinSize, height, size, width } from "@expo/ui/jetpack-compose/mo
 import { View } from "react-native";
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
 import { useScaledTextRole } from "../../features/settings/appearance/useScaledTextRole";
-import { useUiLanguage } from "../../i18n";
+
 import { SymbolView } from "./AppSymbol";
 import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
 import { NativeThemeHost } from "./NativeThemeHost.android";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
 
 export function FloatingActionButton(props: FloatingActionButtonProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { themeVariables: colors } = useAppearancePreferences();
   const typography = useScaledTextRole("footnote");
   const { scale, iconSize: standardIconSize, fabSize, largeFabSize } = useAndroidControlSizing();
@@ -37,7 +35,7 @@ export function FloatingActionButton(props: FloatingActionButtonProps) {
     <View
       accessible
       accessibilityRole="button"
-      accessibilityLabel={uiT(props.label)}
+      accessibilityLabel={props.label}
       accessibilityActions={[{ name: "activate" }]}
       onAccessibilityAction={props.onPress}
       className={props.className}
@@ -61,7 +59,7 @@ export function FloatingActionButton(props: FloatingActionButtonProps) {
             {props.variant === "extended" ? (
               <ExtendedFloatingActionButton.Text>
                 <Text color={contentColor} style={{ ...typography, fontWeight: "500" }}>
-                  {uiT(props.label)}
+                  {props.label}
                 </Text>
               </ExtendedFloatingActionButton.Text>
             ) : null}

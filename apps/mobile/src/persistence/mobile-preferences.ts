@@ -1,10 +1,11 @@
+import { resolveInterfaceLanguage } from "@t3tools/client-runtime/i18n";
 import {
   EnvironmentId,
   PullRequestInvolvement,
   PullRequestListFilters,
   PullRequestListState,
   type ProviderInstanceId,
-  type PullRequestMergeMethod,
+  PullRequestMergeMethod,
   type SidebarProjectGroupingMode,
 } from "@t3tools/contracts";
 import type { InterfaceDirection, InterfaceLanguage } from "@t3tools/contracts/settings";
@@ -119,6 +120,8 @@ export interface Preferences {
   /** Hardware-keyboard Return behavior in the composer. */
   readonly composerEnterBehavior?: ComposerEnterBehavior;
   readonly followUpBehavior?: FollowUpBehavior;
+  /** Alias of interfaceLanguage for the upstream language setting. */
+  readonly language?: string;
   readonly microphones?: ReadonlyArray<MicrophoneEntry>;
   readonly projectGroupingEnabled?: boolean;
   readonly projectGroupingMode?: SidebarProjectGroupingMode;
@@ -178,6 +181,14 @@ export class MobilePreferencesStore extends Context.Service<
 >()("@t3tools/mobile/persistence/mobile-preferences/MobilePreferencesStore") {}
 
 const isToolCallVisibility = Schema.is(ToolCallVisibility);
+const isPullRequestMergeMethod = Schema.is(PullRequestMergeMethod);
+
+export function normalizeLanguagePatch(patch: Partial<Preferences>): Partial<Preferences> {
+  const language = patch.interfaceLanguage ?? patch.language;
+  if (typeof language !== "string") return patch;
+  const normalized = resolveInterfaceLanguage(language);
+  return { ...patch, interfaceLanguage: normalized, language: normalized };
+}
 
 function sanitizePreferences(parsed: Preferences): Preferences {
   const preferences: {
@@ -208,6 +219,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     dismissedDatabaseStorageNotices?: readonly string[];
     composerEnterBehavior?: ComposerEnterBehavior;
     followUpBehavior?: FollowUpBehavior;
+    language?: string;
     microphones?: ReadonlyArray<MicrophoneEntry>;
     projectGroupingEnabled?: boolean;
     projectGroupingMode?: SidebarProjectGroupingMode;
@@ -227,8 +239,10 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   if (typeof parsed.localCompletionNotificationsEnabled === "boolean") {
     preferences.localCompletionNotificationsEnabled = parsed.localCompletionNotificationsEnabled;
   }
-  if (["system", "en", "he", "ar", "fa"].includes(parsed.interfaceLanguage ?? "")) {
-    preferences.interfaceLanguage = parsed.interfaceLanguage;
+  const language = parsed.interfaceLanguage ?? parsed.language;
+  if (typeof language === "string") {
+    preferences.interfaceLanguage = resolveInterfaceLanguage(language);
+    preferences.language = preferences.interfaceLanguage;
   }
   if (["auto", "ltr", "rtl"].includes(parsed.interfaceDirection ?? "")) {
     preferences.interfaceDirection = parsed.interfaceDirection;
@@ -250,11 +264,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     preferences.pullRequestHideTestFiles = parsed.pullRequestHideTestFiles;
   }
 
-  if (
-    parsed.pullRequestMergeMethod === "squash" ||
-    parsed.pullRequestMergeMethod === "merge" ||
-    parsed.pullRequestMergeMethod === "rebase"
-  ) {
+  if (isPullRequestMergeMethod(parsed.pullRequestMergeMethod)) {
     preferences.pullRequestMergeMethod = parsed.pullRequestMergeMethod;
   }
 
@@ -332,6 +342,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   if (parsed.followUpBehavior === "queue" || parsed.followUpBehavior === "steer") {
     preferences.followUpBehavior = parsed.followUpBehavior;
   }
+
   if (Array.isArray(parsed.microphones)) {
     preferences.microphones = parsed.microphones.flatMap((entry): MicrophoneEntry[] => {
       if (typeof entry !== "object" || entry === null || !isMicrophoneKind(entry.kind)) return [];
@@ -575,7 +586,7 @@ const make = Effect.fn("MobilePreferencesStore.make")(function* () {
               try: () => transform(current),
               catch: (cause) => new MobilePreferencesSaveError({ cause }),
             });
-            const next: Preferences = { ...current, ...patch };
+            const next: Preferences = { ...current, ...normalizeLanguagePatch(patch) };
             const payload = yield* encode(PREFERENCES_KEY, next);
             yield* saveJson(payload);
             return next;

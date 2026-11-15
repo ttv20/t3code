@@ -1,77 +1,64 @@
-import { UiText, useUiLanguage } from "../../i18n";
-
+import { SessionPermissions } from "./SessionPermissions";
+import { useSearch } from "@tanstack/react-router";
+import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
+import { type ReactNode, useState } from "react";
+import {
+  AuthAccessReadScope,
+  AuthAccessWriteScope,
+  AuthEnvironmentMaintainScope,
+  AuthRelayReadScope,
+  AuthRelayWriteScope,
+  type AuthClientSession,
+  type AuthPairingLink,
+  type AuthPairingCredentialResult,
+  type AdvertisedEndpoint,
+  type DesktopServerExposureState,
+  type DesktopWslState,
+  EnvironmentId,
+  managedCapabilityDenial,
+  resolveEnvironmentMachineKind,
+} from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  type AdvertisedEndpoint,
-  AuthAccessReadScope,
-  AuthAccessWriteScope,
-  type AuthClientSession,
-  AuthEnvironmentMaintainScope,
-  type AuthPairingCredentialResult,
-  type AuthPairingLink,
-  AuthRelayReadScope,
-  AuthRelayWriteScope,
-  type DesktopServerExposureState,
-  type DesktopWslState,
-  type EnvironmentId,
-  managedCapabilityDenial,
-  resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
-import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
-import { SessionPermissions } from "./SessionPermissions";
-
-import { hasCloudPublicConfig } from "~/cloud/publicConfig";
-import { requestConfirmDialog } from "~/confirmDialog";
-import { environmentCatalog } from "~/connection/catalog";
-import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
-import { type ServerClientSessionRecord } from "~/environments/primary";
-import { authEnvironment } from "~/state/auth";
-import {
-  desktopNetworkAccessStateAtom,
-  refreshDesktopNetworkAccessState,
-} from "~/state/desktopNetworkAccess";
-import { useDesktopUpdateState } from "~/state/desktopUpdate";
-import { desktopWslStateAtom, refreshDesktopWslState } from "~/state/desktopWslState";
-import { environmentIdsKey } from "~/state/environmentAtomList";
-import {
-  type EnvironmentPresentation,
-  useEnvironment,
-  useEnvironments,
-  usePrimaryEnvironment,
-  usePrimaryEnvironmentId,
-} from "~/state/environments";
-import { usePeerLinkHosts } from "~/state/peerLinks";
-import { useEnvironmentQuery } from "~/state/query";
-import { environmentUpdateStatesAtom, serverEnvironment } from "~/state/server";
-import {
-  readEnvironmentScope,
-  useEnvironmentScope,
-  useEnvironmentSessionState,
-} from "~/state/session";
-import { useUiStateStore } from "~/uiStateStore";
-import {
-  resolveServerConfigVersionMismatch,
-  resolveServerSelfUpdateCapability,
-  supportsDesktopAppUpdate,
-} from "~/versionSkew";
 import { isLocalEnvironmentDisabled } from "../../localEnvironment";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { RemoveT3ConnectEnvironmentDialog } from "../clerk/RemoveT3ConnectEnvironmentDialog";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { ManagedByOrganization } from "../ManagedPolicy";
 import {
-  ServerUpdateAction,
-  ServerUpdateProgress,
-  ServerUpdatesAction,
-  type ServerUpdateTarget,
-} from "../ServerUpdateAction";
+  applyWslEnableSelection,
+  connectDeviceName,
+  isWslSettingsRowVisible,
+  missingTailscaleEndpointDescription,
+  resolveLocalVersionStatusLabel,
+  resolveTailscaleServeBaseUrl,
+} from "./ConnectionsSettings.logic";
+import { settingsScopeEnvironmentLabel } from "./settingsScopeAxis";
+import { useAccessEnvironment } from "./useAccessEnvironment";
+import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
+import { ManagedByOrganization } from "../ManagedPolicy";
+import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
+import { searchableSetting } from "./settingsSearch";
+import { ConnectDeviceApprovalSettings } from "./ConnectDeviceApprovalSettings";
+import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
+import { FoldedSettingsSection } from "./FoldedSettingsSection";
+import { LinkedEnvironmentsSettings } from "./LinkedEnvironmentsSettings";
+import { usePeerLinkHosts } from "~/state/peerLinks";
+import { LoadBalancingSettings } from "./LoadBalancingSettings";
+import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
+import { Input } from "../ui/input";
+import {
+  Dialog,
+  DialogClose,
+  DialogFooter,
+  DialogDescription,
+  DialogHeader,
+  DialogPanel,
+  DialogPopup,
+  DialogTitle,
+} from "../ui/dialog";
+import { ScrollArea } from "../ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -81,64 +68,87 @@ import {
   AlertDialogPopup,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Button } from "../ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogPanel,
-  DialogPopup,
-  DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
-import { ScrollArea } from "../ui/scroll-area";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { Spinner } from "../ui/spinner";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Menu, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Switch } from "../ui/switch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { AddEnvironmentDialog } from "./AddEnvironmentDialog";
+import { Button } from "../ui/button";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
+import { type ServerClientSessionRecord } from "~/environments/primary";
+import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
+import { useUiStateStore } from "~/uiStateStore";
+import {
+  resolveServerConfigVersionMismatch,
+  resolveServerSelfUpdateCapability,
+  supportsDesktopAppUpdate,
+} from "~/versionSkew";
+import { hasCloudPublicConfig } from "~/cloud/publicConfig";
+import { RemoveT3ConnectEnvironmentDialog } from "../clerk/RemoveT3ConnectEnvironmentDialog";
+import { authEnvironment } from "~/state/auth";
+import { environmentCatalog } from "~/connection/catalog";
+import {
+  readEnvironmentScope,
+  useEnvironmentScope,
+  useEnvironmentSessionState,
+} from "~/state/session";
+import { useEnvironmentQuery } from "~/state/query";
+import {
+  desktopNetworkAccessStateAtom,
+  refreshDesktopNetworkAccessState,
+} from "~/state/desktopNetworkAccess";
+import { desktopWslStateAtom, refreshDesktopWslState } from "~/state/desktopWslState";
+import { useDesktopUpdateState } from "~/state/desktopUpdate";
+import {
+  type EnvironmentPresentation,
+  useEnvironment,
+  useEnvironments,
+  usePrimaryEnvironment,
+} from "~/state/environments";
+import { requestConfirmDialog } from "~/confirmDialog";
+import { useUpdateEnvironmentSettings } from "~/hooks/useSettings";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import { environmentUpdateStatesAtom, serverEnvironment } from "~/state/server";
+import {
+  ServerUpdateAction,
+  ServerUpdateProgress,
+  ServerUpdatesAction,
+  type ServerUpdateTarget,
+} from "../ServerUpdateAction";
+import {
+  sortDesktopPairingLinks,
+  summarizeAuthorizedClients,
+  sortDesktopClientSessions,
+  toDesktopPairingLinkRecord,
+  toDesktopClientSessionRecord,
+  selectPairingEndpoint,
+  isServerNetworkAccessible,
+  isTailscaleHttpsEndpoint,
+  endpointDefaultPreferenceKey,
+} from "./ConnectionsSettings.logic";
 import {
   AdvertisedEndpointListRow,
   AuthorizedClientsHeaderAction,
   NetworkAccessDescription,
   PairingClientsList,
 } from "./AuthorizedClientsSettings";
-import {
-  applyWslEnableSelection,
-  endpointDefaultPreferenceKey,
-  isTailscaleHttpsEndpoint,
-  isWslSettingsRowVisible,
-  missingTailscaleEndpointDescription,
-  resolveAccessEnvironmentId,
-  resolveLocalVersionStatusLabel,
-  resolveTailscaleServeBaseUrl,
-  selectPairingEndpoint,
-  sortDesktopClientSessions,
-  sortDesktopPairingLinks,
-  summarizeAuthorizedClients,
-  toDesktopClientSessionRecord,
-  toDesktopPairingLinkRecord,
-} from "./ConnectionsSettings.logic";
-import { EnvironmentIconMenu } from "./EnvironmentIconPicker";
-import { FoldedSettingsSection } from "./FoldedSettingsSection";
 import { ITEM_ROW_CLASSNAME } from "./itemRows";
-import { LinkedEnvironmentsSettings } from "./LinkedEnvironmentsSettings";
-import { LoadBalancingSettings } from "./LoadBalancingSettings";
-import { LocalEnvironmentSetting } from "./LocalEnvironmentSetting";
-import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
 import {
   CloudLinkRow,
   CloudRemoteEnvironmentRows,
   SavedBackendListRow,
 } from "./SavedEnvironmentRows";
-import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
-import { settingsScopeEnvironmentLabel } from "./settingsScopeAxis";
-import { searchableSetting } from "./settingsSearch";
+import { AddEnvironmentDialog } from "./AddEnvironmentDialog";
+import {
+  type ConnectDeviceRevokeRequest,
+  RevokeConnectDeviceDialog,
+} from "./RevokeConnectDeviceDialog";
+import { UiText, useUiLanguage } from "../../i18n";
 
+// Sessions T3 Connect minted for a device signed in to the linked account.
+const CLOUD_CONNECT_SESSION_SUBJECT = "cloud-connect";
 const DEFAULT_TAILSCALE_SERVE_PORT = 443;
 const EMPTY_ADVERTISED_ENDPOINTS: ReadonlyArray<AdvertisedEndpoint> = [];
 
@@ -167,22 +177,18 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
 
 function AccessSettings() {
   const { t: uiT } = useUiLanguage();
-  const { environments } = useEnvironments();
-  const primaryEnvironmentId = usePrimaryEnvironmentId();
-  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<EnvironmentId | null>(null);
-  const candidates = environments.filter(
-    (environment) =>
-      environment.environmentId === primaryEnvironmentId ||
-      (environment.entry.enabled && !isDesktopLocalConnectionTarget(environment.entry.target)),
-  );
-  const accessEnvironmentId = resolveAccessEnvironmentId({
-    primaryEnvironmentId,
-    environments: candidates.map((environment) => ({
-      environmentId: environment.environmentId,
-      connected: environment.connection.phase === "connected",
-    })),
-    selected: selectedEnvironmentId,
+
+  // A link that names an environment, such as the MCP wizard's, opens the page on it. The
+  // settings layout remounts this page when the link changes.
+  const linkedEnvironmentId = useSearch({
+    strict: false,
+    select: (search) =>
+      typeof search.machine === "string" ? EnvironmentId.make(search.machine) : null,
   });
+  const [selectedEnvironmentId, setSelectedEnvironmentId] = useState(linkedEnvironmentId);
+  const { candidates, environment: accessEnvironment } =
+    useAccessEnvironment(selectedEnvironmentId);
+  const accessEnvironmentId = accessEnvironment?.environmentId ?? null;
   const picker =
     candidates.length > 1 && accessEnvironmentId !== null ? (
       <div className="flex min-w-0 items-center gap-1.5 px-3 text-sm text-muted-foreground sm:px-4">
@@ -450,7 +456,10 @@ function ConnectionsSettingsContent({
   })();
   const isLocalBackendNetworkAccessible = desktopBridge
     ? desktopServerExposureState?.mode === "network-accessible"
-    : currentAuthPolicy === "remote-reachable";
+    : isServerNetworkAccessible({
+        authPolicy: currentAuthPolicy,
+        directEndpoints: accessEnvironment?.serverConfig?.directEndpoints,
+      });
   const trimmedTailscaleServePortInput = tailscaleServePortInput.trim();
   const parsedTailscaleServePort = Number(trimmedTailscaleServePortInput);
   const isTailscaleServePortValid =
@@ -590,7 +599,8 @@ function ConnectionsSettingsContent({
     const result = await revokePairingLink({ environmentId: accessEnvironmentId, input: { id } });
     if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      const message = error instanceof Error ? error.message : "Failed to revoke pairing link.";
+      const message =
+        error instanceof Error ? error.message : uiT("Failed to revoke pairing link.");
       setDesktopAccessManagementMutationError(message);
       toastManager.add(
         stackedThreadToast({
@@ -616,7 +626,8 @@ function ConnectionsSettingsContent({
     const result = await revokeClient({ environmentId: accessEnvironmentId, input: { sessionId } });
     if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      const message = error instanceof Error ? error.message : "Failed to revoke client access.";
+      const message =
+        error instanceof Error ? error.message : uiT("Failed to revoke client access.");
       setDesktopAccessManagementMutationError(message);
       toastManager.add(
         stackedThreadToast({
@@ -642,12 +653,15 @@ function ConnectionsSettingsContent({
       toastManager.add({
         type: "success",
         title:
-          result.value === 1 ? uiT("Revoked 1 other client") : `Revoked ${result.value} clients`,
+          result.value === 1
+            ? uiT("Revoked 1 other client")
+            : uiT("Revoked {0} clients", { "0": result.value }),
         description: uiT("Other paired clients will need a new pairing link before reconnecting."),
       });
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      const message = error instanceof Error ? error.message : "Failed to revoke other clients.";
+      const message =
+        error instanceof Error ? error.message : uiT("Failed to revoke other clients.");
       setDesktopAccessManagementMutationError(message);
       toastManager.add(
         stackedThreadToast({
@@ -716,7 +730,58 @@ function ConnectionsSettingsContent({
     if (confirmed === true) await removeSavedBackend(environment);
   };
 
-  const visibleDesktopPairingLinks = desktopPairingLinks;
+  // T3 Connect devices waiting for approval have their own list.
+  const visibleDesktopPairingLinks = desktopPairingLinks.filter(
+    (pairingLink) => pairingLink.connectDeviceRequest === undefined,
+  );
+  const connectDeviceRequests = desktopPairingLinks.filter(
+    (pairingLink) => pairingLink.connectDeviceRequest !== undefined,
+  );
+  // Older servers omit the list; they cannot hold devices for approval.
+  const connectDevices =
+    authAccessChanges.data?.type === "snapshot"
+      ? (authAccessChanges.data.payload.connectDevices ?? null)
+      : null;
+  const updateAccessSettings = useUpdateEnvironmentSettings(accessEnvironmentId);
+  const [pendingConnectRevoke, setPendingConnectRevoke] =
+    useState<ConnectDeviceRevokeRequest | null>(null);
+  // With approval off a revoked T3 Connect device signs straight back in, so offer to turn it
+  // on. Older servers have no such setting, and revoking there goes ahead as before.
+  const connectApprovalOff =
+    accessEnvironment?.serverConfig?.settings.requireConnectDeviceApproval === false;
+  const requestConnectRevoke = (title: string, revoke: () => Promise<void>) => {
+    if (connectApprovalOff && canWriteAccess) setPendingConnectRevoke({ title, revoke });
+    else void revoke();
+  };
+  const requireConnectApproval = () =>
+    new Promise<boolean>((resolve) =>
+      updateAccessSettings(
+        { requireConnectDeviceApproval: true },
+        { onSaved: () => resolve(true), onFailed: () => resolve(false) },
+      ),
+    );
+  const requestRevokeClientSession = (sessionId: ServerClientSessionRecord["sessionId"]) => {
+    const session = desktopClientSessions.find((candidate) => candidate.sessionId === sessionId);
+    if (session?.subject === CLOUD_CONNECT_SESSION_SUBJECT) {
+      requestConnectRevoke(uiT("Revoke {0}?", { "0": connectDeviceName(session) }), () =>
+        handleRevokeDesktopClientSession(sessionId),
+      );
+    } else {
+      void handleRevokeDesktopClientSession(sessionId);
+    }
+  };
+  const requestRevokeOtherClients = () => {
+    const revokesConnectDevices =
+      (connectDevices?.length ?? 0) > 0 ||
+      desktopClientSessions.some(
+        (session) => !session.current && session.subject === CLOUD_CONNECT_SESSION_SUBJECT,
+      );
+    if (revokesConnectDevices) {
+      requestConnectRevoke(uiT("Revoke all other clients?"), handleRevokeOtherDesktopClients);
+    } else {
+      void handleRevokeOtherDesktopClients();
+    }
+  };
   const tailscaleHttpsEndpoint = desktopAdvertisedEndpoints.find(isTailscaleHttpsEndpoint) ?? null;
   const visibleDesktopNetworkAdvertisedEndpoints = isLocalBackendNetworkAccessible
     ? desktopAdvertisedEndpoints.filter((endpoint) => !isTailscaleHttpsEndpoint(endpoint))
@@ -939,9 +1004,9 @@ function ConnectionsSettingsContent({
       : (desktopWslState.distro ?? defaultDistroName ?? BACKEND_VALUE_DEFAULT_WSL);
     const selectLabel =
       selectValue === BACKEND_VALUE_WSL_OFF
-        ? "Off"
+        ? uiT("Off")
         : selectValue === BACKEND_VALUE_DEFAULT_WSL
-          ? "Default distro"
+          ? uiT("Default distro")
           : selectValue;
     return (
       <>
@@ -1024,7 +1089,7 @@ function ConnectionsSettingsContent({
         tailscaleHttpsEndpoint
           ? tailscaleHttpsEndpoint.status === "available"
             ? tailscaleHttpsEndpoint.httpBaseUrl
-            : "Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL."
+            : uiT("Use Tailscale Serve to expose this backend through a MagicDNS HTTPS URL.")
           : missingTailscaleEndpointDescription(desktopServerExposureState)
       }
       control={
@@ -1066,7 +1131,7 @@ function ConnectionsSettingsContent({
       revokingPairingLinkId={revokingDesktopPairingLinkId}
       revokingClientSessionId={revokingDesktopClientSessionId}
       onRevokePairingLink={handleRevokeDesktopPairingLink}
-      onRevokeClientSession={handleRevokeDesktopClientSession}
+      onRevokeClientSession={requestRevokeClientSession}
       canRevoke={canWriteAccess}
     />
   );
@@ -1092,10 +1157,12 @@ function ConnectionsSettingsContent({
             onToggleExpanded={() => setIsAdvertisedEndpointListExpanded((expanded) => !expanded)}
             fallback={
               desktopServerExposureState?.endpointUrl
-                ? `Reachable at ${desktopServerExposureState.endpointUrl}`
+                ? uiT("Reachable at {0}", { "0": desktopServerExposureState.endpointUrl })
                 : desktopServerExposureState?.advertisedHost
-                  ? `Exposed on all interfaces. Pairing links use ${desktopServerExposureState.advertisedHost}.`
-                  : "Exposed on all interfaces."
+                  ? uiT("Exposed on all interfaces. Pairing links use {0}.", {
+                      "0": desktopServerExposureState.advertisedHost,
+                    })
+                  : uiT("Exposed on all interfaces.")
             }
           />
         ) : desktopServerExposureState ? (
@@ -1118,8 +1185,8 @@ function ConnectionsSettingsContent({
       title={searchableSetting("network-access").title}
       description={
         desktopBridge
-          ? "This connection cannot view or change network exposure."
-          : currentAuthPolicy === "remote-reachable"
+          ? uiT("This connection cannot view or change network exposure.")
+          : isLocalBackendNetworkAccessible
             ? uiT(
                 "Remote access is already configured. Change network exposure where the server starts.",
               )
@@ -1165,7 +1232,7 @@ function ConnectionsSettingsContent({
             {...searchableSetting("connections-environment")}
             title={
               accessEnvironment?.label ??
-              (desktopBridge ? "This machine" : uiT("Primary environment"))
+              (desktopBridge ? uiT("This machine") : uiT("Primary environment"))
             }
             icon={
               <EnvironmentMachineIcon
@@ -1229,7 +1296,9 @@ function ConnectionsSettingsContent({
                       size="sm"
                       environmentId={primaryEnvironmentId}
                       serverLabel={
-                        primaryEnvironment ? `${primaryEnvironment.label} server` : "server"
+                        primaryEnvironment
+                          ? uiT("{0} server", { "0": primaryEnvironment.label })
+                          : "server"
                       }
                       selfUpdate={resolveServerSelfUpdateCapability(primaryServerConfig)}
                       installation={
@@ -1239,7 +1308,7 @@ function ConnectionsSettingsContent({
                       targetVersion={primaryVersionMismatch.clientVersion}
                       label={
                         primaryServerUpdateState.status === "failed"
-                          ? "Retry update"
+                          ? uiT("Retry update")
                           : uiT("Update to {0}", { "0": primaryVersionMismatch.clientVersion })
                       }
                     />
@@ -1264,6 +1333,14 @@ function ConnectionsSettingsContent({
                 environmentId={accessEnvironmentId}
                 canReadRelay={canReadRelay}
                 canManageRelay={canManageRelay}
+                connectDeviceApproval={
+                  accessServerConfig?.settings.requireConnectDeviceApproval === undefined
+                    ? null
+                    : {
+                        required: accessServerConfig.settings.requireConnectDeviceApproval,
+                        canManage: canWriteAccess,
+                      }
+                }
               />
             ) : null}
             {accessEnvironment ? (
@@ -1310,7 +1387,7 @@ function ConnectionsSettingsContent({
                         : null
                     }
                     isRevokingOtherClients={isRevokingOtherDesktopClients}
-                    onRevokeOtherClients={handleRevokeOtherDesktopClients}
+                    onRevokeOtherClients={requestRevokeOtherClients}
                   />
                 ) : undefined
               }
@@ -1333,6 +1410,22 @@ function ConnectionsSettingsContent({
               </ScrollArea>
             </FoldedSettingsSection>
           ) : null}
+          {canReadAccess &&
+          connectDevices !== null &&
+          (connectDeviceRequests.length > 0 || connectDevices.length > 0) ? (
+            <ConnectDeviceApprovalSettings
+              environmentId={accessEnvironmentId}
+              requests={connectDeviceRequests}
+              devices={connectDevices}
+              canWrite={canWriteAccess}
+              requestRevoke={requestConnectRevoke}
+            />
+          ) : null}
+          <RevokeConnectDeviceDialog
+            request={pendingConnectRevoke}
+            onClose={() => setPendingConnectRevoke(null)}
+            requireApproval={requireConnectApproval}
+          />
           <AlertDialog
             open={pendingDesktopServerExposureMode !== null && canManageLocalBackend}
             onOpenChange={(open) => {

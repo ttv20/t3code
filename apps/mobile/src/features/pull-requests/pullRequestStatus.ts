@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import type {
   PullRequestActivity,
   PullRequestCheck,
@@ -53,82 +54,93 @@ export function pullRequestConflict(pr: {
   readonly mergeability?: PullRequestMergeability | undefined;
   readonly baseBranch?: string | undefined;
 }) {
+  const uiT = readUiTranslator();
   if (pr.state !== "open" || pr.isDraft || pr.mergeability !== "conflicting") return null;
-  return { label: pr.baseBranch ? `Conflicts with ${pr.baseBranch}` : "Has conflicts" };
+  return {
+    label: pr.baseBranch ? uiT("Conflicts with {0}", { "0": pr.baseBranch }) : uiT("Has conflicts"),
+  };
 }
 
 export function checkStatus(check: PullRequestCheck) {
+  const uiT = readUiTranslator();
   switch (check.status) {
     case "success":
       return {
-        label: "Passed",
+        label: uiT("Passed"),
         icon: "checkmark.circle",
         tint: "accent-adaptive-emerald-600-400",
       } as const;
     case "failure":
       return {
-        label: "Failed",
+        label: uiT("Failed"),
         icon: "exclamationmark.circle",
         tint: "accent-danger-foreground",
       } as const;
     case "action-required":
       return {
-        label: "Action required",
+        label: uiT("Action required"),
         icon: "exclamationmark.circle",
         tint: "accent-warning-foreground",
       } as const;
     case "pending":
-      return { label: "Pending", icon: "clock", tint: "accent-warning-foreground" } as const;
+      return { label: uiT("Pending"), icon: "clock", tint: "accent-warning-foreground" } as const;
     case "cancelled":
-      return { label: "Cancelled", icon: "minus", tint: "accent-icon-muted" } as const;
+      return { label: uiT("Cancelled"), icon: "minus", tint: "accent-icon-muted" } as const;
     case "skipped":
-      return { label: "Skipped", icon: "slash.circle", tint: "accent-icon-muted" } as const;
+      return { label: uiT("Skipped"), icon: "slash.circle", tint: "accent-icon-muted" } as const;
     case "neutral":
-      return { label: "Neutral", icon: "minus", tint: "accent-icon-muted" } as const;
+      return { label: uiT("Neutral"), icon: "minus", tint: "accent-icon-muted" } as const;
   }
 }
 
+export function isFailingCheck(check: PullRequestCheck) {
+  return check.status === "failure" || check.status === "cancelled";
+}
+
 export function pullRequestChecksSummary(pr: Pick<PullRequestDetail, "checks">) {
-  const failed = pr.checks.filter((check) => check.status === "failure").length;
+  const uiT = readUiTranslator();
+  const failed = pr.checks.filter(isFailingCheck).length;
   const required = pr.checks.filter((check) => check.status === "action-required").length;
   const pending = pr.checks.filter((check) => check.status === "pending").length;
   const passed = pr.checks.filter((check) => check.status === "success").length;
   const count = pr.checks.length ? `${passed} of ${pr.checks.length}` : undefined;
   if (failed)
     return {
-      label: `${failed} ${failed === 1 ? "check" : "checks"} failing`,
-      title: `${failed} ${failed === 1 ? "check" : "checks"} failing`,
+      label: uiT("{0} {1} failing", { "0": failed, "1": failed === 1 ? "check" : "checks" }),
+      title: uiT("{0} {1} failing", { "0": failed, "1": failed === 1 ? "check" : "checks" }),
       count,
       icon: "exclamationmark.circle",
       tint: "accent-danger-foreground",
     } as const;
   if (required)
     return {
-      label: `${required} need attention`,
-      title: "Checks need attention",
+      label: uiT("{0} need attention", { "0": required }),
+      title: uiT("Checks need attention"),
       count: `${required} awaiting action`,
       icon: "exclamationmark.circle",
       tint: "accent-warning-foreground",
     } as const;
   if (pending)
     return {
-      label: `${pending} pending`,
-      title: "Checks running",
+      label: uiT("{0} pending", { "0": pending }),
+      title: uiT("Checks running"),
       count: `${pending} pending`,
       icon: "clock",
       tint: "accent-warning-foreground",
     } as const;
   if (passed)
     return {
-      label: `${passed} of ${pr.checks.length} passed`,
-      title: passed === pr.checks.length ? "All checks passed" : "Checks completed",
+      label: uiT("{0} of {1} passed", { "0": passed, "1": pr.checks.length }),
+      title: passed === pr.checks.length ? uiT("All checks passed") : uiT("Checks completed"),
       count,
       icon: "checkmark.circle",
       tint: "accent-adaptive-emerald-600-400",
     } as const;
   return {
-    label: pr.checks.length ? `${pr.checks.length} completed` : "No checks reported",
-    title: pr.checks.length ? "Checks completed" : "No checks reported",
+    label: pr.checks.length
+      ? uiT("{0} completed", { "0": pr.checks.length })
+      : uiT("No checks reported"),
+    title: pr.checks.length ? uiT("Checks completed") : uiT("No checks reported"),
     count,
     icon: "minus",
     tint: "accent-icon-muted",
@@ -144,6 +156,7 @@ export function pullRequestReviewSummary(
   pr: Pick<PullRequestDetail, "reviewers">,
   activity: Pick<PullRequestActivity, "comments" | "commits"> | null,
 ) {
+  const uiT = readUiTranslator();
   const latest = new Map<string, PullRequestActivity["comments"][number]>();
   const comments = new Map<string, PullRequestActivity["comments"][number]>();
   for (const review of activity?.comments ?? []) {
@@ -175,7 +188,7 @@ export function pullRequestReviewSummary(
   );
   if (requested.length)
     return {
-      title: "Changes requested",
+      title: uiT("Changes requested"),
       count: `${requested.length} ${requested.length === 1 ? "reviewer" : "reviewers"}`,
       icon: "xmark.circle.fill",
       tint: "accent-danger-foreground",
@@ -185,8 +198,8 @@ export function pullRequestReviewSummary(
     return {
       title:
         approved.length === 1 && approved[0]?.author
-          ? `Approved by ${approved[0].author.login}`
-          : "Reviews approved",
+          ? uiT("Approved by {0}", { "0": approved[0].author.login })
+          : uiT("Reviews approved"),
       count: `${approved.length} approved`,
       icon: "checkmark.circle",
       tint: "accent-adaptive-emerald-600-400",
@@ -195,14 +208,14 @@ export function pullRequestReviewSummary(
   const commented = reviews.filter((review) => review.reviewState === "COMMENTED");
   if (commented.length && !pr.reviewers.length)
     return {
-      title: "Reviews",
+      title: uiT("Reviews"),
       count: `${commented.length} commented`,
       icon: "bubble.left",
       tint: "accent-icon-muted",
       reviews,
     } as const;
   return {
-    title: pr.reviewers.length ? "Awaiting review" : "Request a review",
+    title: pr.reviewers.length ? uiT("Awaiting review") : uiT("Request a review"),
     count: pr.reviewers.length ? `${pr.reviewers.length} requested` : "None assigned",
     icon: "person.2",
     tint: "accent-icon-muted",

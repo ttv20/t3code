@@ -1,7 +1,7 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { useMemo } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { UiText, useUiLanguage } from "../../i18n";
 
@@ -47,7 +47,7 @@ export function ThreadPullRequestsSheet(
   const title = uiT("Linked {0}", { "0": uiT(actions.terminology.plural) });
 
   const content = (
-    <View className="flex-1 android:bg-sheet-solid ios:bg-screen">
+    <View className="flex-1 bg-screen">
       {/* oxlint-disable-next-line t3code/require-registered-list-scroll -- Sheet content; sheets sit outside workspace columns and keep their own header handling. */}
       <LegendList
         data={lines}
@@ -57,7 +57,7 @@ export function ThreadPullRequestsSheet(
           <LinkedPullRequestRow
             line={item}
             separator={index < lines.length - 1}
-            surfaceClassName={Platform.OS === "ios" ? "text-screen" : "text-sheet-solid"}
+            surfaceClassName="text-screen"
             openPullRequest={openPullRequest}
             actions={actions}
           />

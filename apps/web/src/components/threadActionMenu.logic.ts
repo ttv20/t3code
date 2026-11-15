@@ -1,6 +1,6 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-import type { SnoozePreset } from "@t3tools/client-runtime/state/thread-settled";
 import type { ContextMenuItem } from "@t3tools/contracts";
+import type { SnoozePreset } from "@t3tools/client-runtime/state/thread-settled";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 
 export type ThreadActionMenuId =
   | "find"
@@ -128,7 +128,7 @@ export function buildThreadActionMenuItems(
 ): ReadonlyArray<ContextMenuItem<ThreadActionMenuId>> {
   const items: ReadonlyArray<ContextMenuItem<ThreadActionMenuId>> = [
     ...(state.canFind
-      ? [{ id: "find" as const, label: "Find in thread", icon: "text-search" }]
+      ? [{ id: "find" as const, label: t("Find in thread"), icon: "text-search" }]
       : []),
     ...(state.branch
       ? [
@@ -165,11 +165,12 @@ export function buildThreadActionMenuItems(
                 children: [
                   ...state.snoozePresets.map((preset) => ({
                     id: `snooze:${preset.id}` as const,
-                    label: t("{0} ({1})", { "0": t(preset.label), "1": preset.whenLabel }),
+                    label: preset.label,
+                    detail: preset.whenLabel,
                   })),
                   {
                     id: "snooze:custom" as const,
-                    label: "Custom…",
+                    label: t("Custom…"),
                     separatorBefore: state.snoozePresets.length > 0,
                   },
                 ],
@@ -189,7 +190,7 @@ export function buildThreadActionMenuItems(
       : []),
     { id: "mark-unread", label: t("Mark unread"), icon: "mail-open" },
     ...(state.canShareWithGuest
-      ? [{ id: "share-guest" as const, label: "Share with guest", icon: "user-plus" }]
+      ? [{ id: "share-guest" as const, label: t("Share with guest"), icon: "user-plus" }]
       : []),
     ...(state.projectFilter
       ? [
@@ -206,7 +207,7 @@ export function buildThreadActionMenuItems(
       ? [
           {
             id: "turn-into-project" as const,
-            label: "Turn into project",
+            label: t("Turn into project"),
             icon: "folder-plus",
             disabled: state.isRunning,
           },
@@ -221,12 +222,12 @@ export function buildThreadActionMenuItems(
             children: [
               {
                 id: "auto-settle:enabled" as const,
-                label: t("Enabled"),
+                label: t("Follow settings"),
                 checked: state.autoSettleEnabled,
               },
               {
                 id: "auto-settle:disabled" as const,
-                label: t("Disabled"),
+                label: t("Never"),
                 checked: !state.autoSettleEnabled,
               },
             ],
@@ -243,7 +244,7 @@ export function buildThreadActionMenuItems(
         ...(state.branch
           ? [{ id: "copy-branch" as const, label: t("Branch"), icon: "git-branch" }]
           : []),
-        { id: "copy-thread", label: "Thread", icon: "message-square" },
+        { id: "copy-thread", label: t("Thread"), icon: "message-square" },
         { id: "copy-thread-id", label: t("Thread ID"), icon: "hash" },
       ],
     },

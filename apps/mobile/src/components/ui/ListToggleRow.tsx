@@ -15,15 +15,15 @@ export function ListToggleRow(
   return (
     <ListRowLayout
       icon={props.icon}
-      label={uiT(props.label)}
-      description={uiT(props.description)}
+      label={props.label}
+      description={props.description}
       disabled={props.disabled}
       accessory={
         props.value === null ? (
           <Pressable
             accessibilityLabel={uiT("Set {0} on for selected environments", { "0": props.label })}
             accessibilityRole="button"
-            accessibilityHint={uiT(props.description)}
+            accessibilityHint={props.description}
             accessibilityState={{ disabled: Boolean(props.disabled) }}
             disabled={props.disabled}
             className="rounded-full bg-subtle px-3 py-2 active:opacity-70"
@@ -35,8 +35,8 @@ export function ListToggleRow(
           </Pressable>
         ) : (
           <ThemedSwitch
-            accessibilityLabel={uiT(props.label)}
-            accessibilityHint={uiT(props.description)}
+            accessibilityLabel={props.label}
+            accessibilityHint={props.description}
             disabled={props.disabled}
             onValueChange={props.onValueChange}
             value={props.value}

@@ -223,9 +223,9 @@ function InlineAudio(props: PreviewProps & { readonly resolveUri: () => Promise<
           </View>
           <Text className="text-xs text-foreground-muted" numberOfLines={1}>
             {error || status.error
-              ? "Unavailable · tap play to retry"
+              ? uiT("Unavailable · tap play to retry")
               : busy
-                ? "Loading…"
+                ? uiT("Loading…")
                 : `${timestamp(status.currentTime)} / ${status.isLoaded ? timestamp(status.duration) : "--:--"}`}
           </Text>
         </View>

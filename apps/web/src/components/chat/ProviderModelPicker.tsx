@@ -1,24 +1,38 @@
 import {
   ANTIGRAVITY_DEFAULT_MODEL,
+  type ProviderInstanceId,
   type EnvironmentId,
   type ProviderDriverKind,
-  type ProviderInstanceId,
   type ResolvedKeybindingsConfig,
 } from "@t3tools/contracts";
-import { createContext, memo, useRef, useState, type ReactNode } from "react";
-import { cn } from "~/lib/utils";
-import { useUiLanguage } from "../../i18n";
-import { shortcutLabelForCommand } from "../../keybindings";
-import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../providerInstances";
+import { RegistryContext } from "@effect/atom-react";
+import {
+  createContext,
+  memo,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { Badge } from "../ui/badge";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { ChatGptSharingControl } from "./ChatGptSharingControl";
-import { ComposerControl, type ComposerControlSize } from "./ComposerControl";
+import { cn } from "~/lib/utils";
 import { ModelPickerContent, resolveModelPickerSelectedModel } from "./ModelPickerContent";
+import { retainedModelWhileProviderLocked } from "./ProviderModelPicker.logic";
+import { ChatGptSharingControl } from "./ChatGptSharingControl";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
-import { takeOpenTarget, useComposerMenuProps } from "./composerEventScope";
 import { ModelEsque, getDisplayModelName, getTriggerDisplayModelName } from "./providerIconUtils";
+import { shouldShowInstanceBadge, type ProviderInstanceEntry } from "../../providerInstances";
+import { ComposerControl, type ComposerControlSize } from "./ComposerControl";
+import { takeOpenTarget, useComposerMenuProps } from "./composerEventScope";
+import { shortcutLabelForCommand } from "../../keybindings";
+import { serverEnvironment } from "../../state/server";
+import { useAtomCommand } from "../../state/use-atom-command";
+
+import { useUiLanguage } from "../../i18n";
 
 /** Holds the page still behind the open picker; its lifetime is the popup element's. */
 function lockBackgroundScroll(popup: HTMLElement | null) {
@@ -76,6 +90,7 @@ export const DockedPickerContext = createContext<{ modelLabel: string }>({ model
 
 export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   environmentId: EnvironmentId | null;
+  workspaceCwd?: string | null;
   activeInstanceId: ProviderInstanceId;
   model: string;
   selectedModels?: ReadonlyArray<{ instanceId: ProviderInstanceId; model: string }>;
@@ -118,6 +133,22 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
   const composerFloatingLayerProps = useComposerMenuProps();
   const [uncontrolledIsMenuOpen, setUncontrolledIsMenuOpen] = useState(false);
   const isMenuOpen = props.open ?? uncontrolledIsMenuOpen;
+  const registry = useContext(RegistryContext);
+  const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
+    reportFailure: false,
+  });
+  const refreshModelCatalog = useEffectEvent(() => {
+    const environmentId = props.environmentId;
+    if (environmentId === null) return;
+    // An older server drops the field and probes every provider.
+    const config = registry.get(serverEnvironment.configValueAtom(environmentId));
+    if (config?.environment.capabilities.modelCatalogRefresh !== true) return;
+    void refreshProviders({ environmentId, input: { modelCatalogOnly: true } });
+  });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- asks the server for newly released models on every open; a parent, a keybinding or the palette can open the picker, so no one handler sees them all
+  useEffect(() => {
+    if (isMenuOpen) refreshModelCatalog();
+  }, [isMenuOpen]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
@@ -135,6 +166,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
       model: props.model,
       options: selectedInstanceOptions,
     }) ??
+    retainedModelWhileProviderLocked(activeEntry, props.model) ??
     (activeEntry?.driverKind === "opencode" || activeEntry?.driverKind === "antigravity"
       ? undefined
       : selectedInstanceOptions[0]);
@@ -253,6 +285,7 @@ export const ProviderModelPicker = memo(function ProviderModelPicker(props: {
     <ModelPickerContent
       searchInputRef={searchInputRef}
       environmentId={props.environmentId}
+      workspaceCwd={props.workspaceCwd ?? null}
       activeInstanceId={activeInstanceId}
       model={props.model}
       {...(props.selectedModels !== undefined ? { selectedModels: props.selectedModels } : {})}

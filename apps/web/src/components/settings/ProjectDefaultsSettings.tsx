@@ -1,45 +1,39 @@
 import {
   DEFAULT_SERVER_SETTINGS,
-  managedRuntimeModeDenial,
   type ModelSelection,
   type WorktreeSubmodules,
+  managedRuntimeModeDenial,
 } from "@t3tools/contracts";
-import { createModelSelection } from "@t3tools/shared/model";
+import { createModelSelection, pickModelSelection } from "@t3tools/shared/model";
 import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { useNavigate } from "@tanstack/react-router";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { useClientSettings } from "../../hooks/useSettings";
 import {
   defaultModelSelectionsAreMixed,
   getCustomModelOptionsByInstance,
-  resolveEffectiveDefaultModelSelection,
 } from "../../modelSelection";
-import {
-  providerInstanceEntriesFor,
-  resolveDefaultProviderModelSelection,
-  resolveProjectDefaultProviderModelSelection,
-} from "../../providerInstances";
+import { providerInstanceEntriesFor } from "../../providerInstances";
 import { useEnvironmentProviders, useEnvironments } from "../../state/environments";
 import { firstManagedDenial } from "../../state/managedPolicy";
 import { EMPTY_SERVER_PROVIDERS } from "../../state/server";
 import { resolveEnvModeLabel, WORKTREE_SUBMODULES_LABELS } from "../BranchToolbar.logic";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
-import { TraitsPicker } from "../chat/TraitsPicker";
 import { runtimeModeConfig, runtimeModeOptions } from "../chat/runtimeModeConfig";
 import { PULL_REQUEST_MERGE_METHOD_LABELS } from "../pullRequest/pullRequestDetail.logic";
+import { TraitsPicker } from "../chat/TraitsPicker";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Switch } from "../ui/switch";
 import { toastManager } from "../ui/toast";
+import { Switch } from "../ui/switch";
+import { resolveDefaultModelSettingsPresentation } from "./ProjectDefaultsSettings.logic";
 import type { ProjectSettingsCategory } from "./ProjectSettingsPanel";
+import { searchableSetting } from "./settingsSearch";
 import { useSettingsScope } from "./SettingsScopeContext";
 import {
-  SettingResetButton,
   SETTINGS_PICKER_TRIGGER_CLASSNAME,
+  SettingResetButton,
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
 import { useScopedModelDisabledReason } from "./useScopedModelAvailability";
 import {
   useScopedSettings,
@@ -47,6 +41,8 @@ import {
   useScopedSettingSource,
   useUpdateScopedSettings,
 } from "./useScopedSettings";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const WORKTREE_SUBMODULES_OPTIONS = ["recursive", "top-level", "none"] as const;
 function isWorktreeSubmodules(value: string | null): value is WorktreeSubmodules {
@@ -70,14 +66,14 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
     (representative?.serverConfig
       ? providersByEnvironment.get(representative.environmentId)
       : undefined) ?? EMPTY_SERVER_PROVIDERS;
-  const storedSelection =
-    settings.defaultModelSelection === null
-      ? resolveProjectDefaultProviderModelSelection(providers, settings, target?.projectId ?? null)
-      : resolveDefaultProviderModelSelection(providers, settings.defaultModelSelection);
-  const selection = storedSelection
-    ? resolveEffectiveDefaultModelSelection(settings, providers, storedSelection)
-    : null;
   const entries = providerInstanceEntriesFor(providers, settings, target?.projectId ?? null);
+  const presentation = resolveDefaultModelSettingsPresentation({
+    entries,
+    providers,
+    settings,
+    projectId: target?.projectId ?? null,
+  });
+  const selection = presentation.selection;
   const modelOptions = getCustomModelOptionsByInstance(
     settings,
     providers,
@@ -154,8 +150,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
       }
       status={
         mixedModel
-          ? `${automaticModel ? "Automatic defaults differ." : "Defaults differ."} Select one environment or choose a shared model to edit effort.`
-          : effortDisabledReason
+          ? uiT("{0} Select one environment or choose a shared model to edit effort.", {
+              "0": automaticModel ? "Automatic defaults differ." : "Defaults differ.",
+            })
+          : (presentation.providerNote ?? effortDisabledReason)
       }
       resetAction={
         settings.defaultModelSelection !== null ? (
@@ -163,7 +161,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
         ) : null
       }
       control={
-        selection && activeEntry ? (
+        selection ? (
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
             <ProviderModelPicker
               environmentId={representative?.environmentId ?? null}
@@ -185,10 +183,10 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   });
               }}
               onInstanceModelChange={(instanceId, model) =>
-                setModel(createModelSelection(instanceId, model))
+                setModel(pickModelSelection(mixedModel ? null : selection, instanceId, model))
               }
             />
-            {!mixedModel && !effortDisabledReason ? (
+            {!mixedModel && !presentation.providerNote && !effortDisabledReason && activeEntry ? (
               <TraitsPicker
                 provider={activeEntry.driverKind}
                 models={activeEntry.models}
@@ -242,7 +240,7 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             <SelectValue>
               {(value: string | null) =>
                 value === "local" || value === "worktree"
-                  ? uiT(resolveEnvModeLabel(value))
+                  ? resolveEnvModeLabel(value, uiT)
                   : unavailable
                     ? uiT("Unavailable")
                     : uiT("Mixed")
@@ -250,8 +248,8 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
             </SelectValue>
           </SelectTrigger>
           <SelectPopup align="end" alignItemWithTrigger={false}>
-            <SelectItem value="local">{uiT(resolveEnvModeLabel("local"))}</SelectItem>
-            <SelectItem value="worktree">{uiT(resolveEnvModeLabel("worktree"))}</SelectItem>
+            <SelectItem value="local">{resolveEnvModeLabel("local", uiT)}</SelectItem>
+            <SelectItem value="worktree">{resolveEnvModeLabel("worktree", uiT)}</SelectItem>
           </SelectPopup>
         </Select>
       }
@@ -301,7 +299,13 @@ export function ProjectDefaultsSettings({ category }: { category: ProjectSetting
                   });
                   return;
                 }
-                updateSettings({ fallbackModelSelection: createModelSelection(instanceId, model) });
+                updateSettings({
+                  fallbackModelSelection: pickModelSelection(
+                    mixedFallback ? null : settings.fallbackModelSelection,
+                    instanceId,
+                    model,
+                  ),
+                });
               }}
             />
             {settings.fallbackModelSelection !== null && fallbackEntry && !mixedFallback ? (

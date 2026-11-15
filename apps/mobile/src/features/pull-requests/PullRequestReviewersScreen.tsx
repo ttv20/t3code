@@ -1,3 +1,8 @@
+import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
+import { AppBar, type AppBarSearch } from "../../components/ui/AppBar";
+import { AsyncResult } from "effect/reactivity";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { usePullRequestConnected } from "./usePullRequestConnected";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import {
@@ -8,25 +13,21 @@ import {
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { PullRequestReviewerCandidate } from "@t3tools/contracts";
-import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
-import { FlatList, Pressable, ScrollView, View } from "react-native";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { AppBar, type AppBarSearch } from "../../components/ui/AppBar";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
-import { Button } from "../../components/ui/Button";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { useContentTopInset, useSearchToolbarInset } from "../../components/ui/useBarInset";
-import { UiText, useUiLanguage } from "../../i18n";
+import { Pressable, ScrollView, View } from "react-native";
 import { NativeScrollView } from "../../native/NativeScrollViewMarker";
+import { useContentTopInset, useSearchToolbarInset } from "../../components/ui/useBarInset";
+import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { Button } from "../../components/ui/Button";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { UiText, useUiLanguage } from "../../i18n";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useDebouncedValue } from "../../state/queries";
 import { useEnvironmentQuery } from "../../state/query";
 import { readUiTranslator } from "../../state/ui-language";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { PullRequestAvatar } from "./PullRequestPresentation";
-import { usePullRequestConnected } from "./usePullRequestConnected";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 
 const TRUNCATED_LABELS: Record<ReviewerTruncation, (error: string | null) => string> = {
@@ -53,7 +54,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
 
   const navigation = useNavigation();
   const contentTopInset = useContentTopInset();
-  const listRef = useRef<FlatList<PullRequestReviewerCandidate>>(null);
+  const listRef = useRef<LegendListRef>(null);
   const target = pullRequestTarget(route.params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(target));
   const pr = detail.data;
@@ -163,10 +164,13 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
         search={reviewerSearch}
       />
       {listCandidates ? (
-        <FlatList
+        <LegendList
           ref={listRef}
           data={candidates}
           keyExtractor={(candidate) => `${candidate.kind}:${candidate.id}`}
+          extraData={{ allowed, pending }}
+          estimatedItemSize={64}
+          recycleItems
           renderScrollComponent={NativeScrollView}
           contentInsetAdjustmentBehavior="automatic"
           automaticallyAdjustKeyboardInsets
@@ -276,7 +280,7 @@ export function PullRequestReviewersScreen({ route }: StaticScreenProps<PullRequ
               <AppActivityIndicator />
             ) : (
               <Text className="text-danger-foreground">
-                {detail.error ?? `Couldn't load this ${singular}.`}
+                {detail.error ?? uiT("Couldn't load this {0}.", { "0": singular })}
               </Text>
             )
           ) : (

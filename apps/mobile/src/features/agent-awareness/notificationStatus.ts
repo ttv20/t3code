@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { reportAtomCommandResult, settlePromise } from "@t3tools/client-runtime/state/runtime";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
@@ -8,10 +9,11 @@ export const notificationStatusAtom = makePermissionStatusAtom<NotificationStatu
   label: "mobile:notification-permission",
   initial: "checking",
   read: async () => {
+    const uiT = readUiTranslator();
     if (Platform.OS !== "ios" && Platform.OS !== "android") return "unsupported";
     const result = await settlePromise(() => Notifications.getPermissionsAsync());
     if (result._tag === "Failure") {
-      reportAtomCommandResult(result, { label: "notification permission refresh" });
+      reportAtomCommandResult(result, { label: uiT("notification permission refresh") });
       return "disabled";
     }
     return result.value.granted ? "enabled" : "disabled";

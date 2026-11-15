@@ -1,3 +1,4 @@
+import { createUiTranslator, type UiLocale } from "../i18n.ts";
 import {
   isOrchestrationV2WorkActive,
   isToolLifecycleItemType,
@@ -414,6 +415,13 @@ export function workEntryViewedImagePath(entry: WorkLogPresentationEntry): strin
     : null;
 }
 
+/** Distinct images the agent opened across a tool group, in viewing order. */
+export function workEntriesViewedImagePaths(
+  entries: ReadonlyArray<WorkLogPresentationEntry>,
+): string[] {
+  return [...new Set(entries.flatMap((entry) => workEntryViewedImagePath(entry) ?? []))];
+}
+
 export interface ViewedImageAsset {
   readonly resource: Extract<AssetResource, { readonly _tag: "media-file" }>;
   readonly alt: string;
@@ -460,41 +468,73 @@ function toolGroupActionCount(
   return changedFiles.size + editsWithoutFileDetails;
 }
 
-function toolGroupActionLabel(action: ToolGroupAction, count: number): string {
+function toolGroupActionLabel(action: ToolGroupAction, count: number, locale: UiLocale): string {
+  const translate = createUiTranslator(locale);
   switch (action) {
     case "link-pr":
-      return `Linked ${count} ${count === 1 ? "pull request" : "pull requests"}`;
+      return translate(count === 1 ? "Linked {0} pull request" : "Linked {0} pull requests", {
+        "0": count,
+      });
     case "unlink-pr":
-      return `Unlinked ${count} ${count === 1 ? "pull request" : "pull requests"}`;
+      return translate(count === 1 ? "Unlinked {0} pull request" : "Unlinked {0} pull requests", {
+        "0": count,
+      });
     case "watch-pr":
-      return `Watching ${count} ${count === 1 ? "pull request" : "pull requests"}`;
+      return translate(count === 1 ? "Watching {0} pull request" : "Watching {0} pull requests", {
+        "0": count,
+      });
     case "unwatch-pr":
-      return `Stopped watching ${count} ${count === 1 ? "pull request" : "pull requests"}`;
+      return translate(
+        count === 1 ? "Stopped watching {0} pull request" : "Stopped watching {0} pull requests",
+        { "0": count },
+      );
     case "list-prs":
-      return count === 1
-        ? "Checked linked pull requests"
-        : `Checked linked pull requests ${count} times`;
+      return translate(
+        count === 1 ? "Checked linked pull requests" : "Checked linked pull requests {0} times",
+        { "0": count },
+      );
     case "read":
-      return `Read ${count} ${count === 1 ? "file" : "files"}`;
+      return translate(count === 1 ? "Read {0} file" : "Read {0} files", { "0": count });
     case "edit":
-      return `Changed ${count} ${count === 1 ? "file" : "files"}`;
+      return translate(count === 1 ? "Changed {0} file" : "Changed {0} files", { "0": count });
     case "command":
-      return `Ran ${count} ${count === 1 ? "command" : "commands"}`;
+      return translate(count === 1 ? "Ran {0} command" : "Ran {0} commands", { "0": count });
     case "thread-create":
-      return `Created ${count} ${count === 1 ? "thread" : "threads"}`;
+      return translate(count === 1 ? "Created {0} thread" : "Created {0} threads", { "0": count });
     case "device":
-      return `Used device controls ${count} ${count === 1 ? "time" : "times"}`;
+      return translate(
+        count === 1 ? "Used device controls {0} time" : "Used device controls {0} times",
+        { "0": count },
+      );
     case "browser":
-      return `Used browser ${count} ${count === 1 ? "time" : "times"}`;
+      return translate(count === 1 ? "Used browser {0} time" : "Used browser {0} times", {
+        "0": count,
+      });
     case "search":
-      return `Searched the web ${count} ${count === 1 ? "time" : "times"}`;
+      return translate(count === 1 ? "Searched the web {0} time" : "Searched the web {0} times", {
+        "0": count,
+      });
     case "code-search":
-      return `Searched code ${count} ${count === 1 ? "time" : "times"}`;
+      return translate(count === 1 ? "Searched code {0} time" : "Searched code {0} times", {
+        "0": count,
+      });
     case "other":
-      return `Used ${count} ${count === 1 ? "tool" : "tools"}`;
+      return translate(count === 1 ? "Used {0} tool" : "Used {0} tools", { "0": count });
     case "update":
-      return `Received ${count} ${count === 1 ? "update" : "updates"}`;
+      return translate(count === 1 ? "Received {0} update" : "Received {0} updates", {
+        "0": count,
+      });
   }
+}
+
+function joinSummaryLabels(labels: ReadonlyArray<string>, locale: UiLocale): string {
+  const translate = createUiTranslator(locale);
+  if (labels.length < 2) return labels[0] ?? "";
+  if (labels.length === 2) return translate("{0} and {1}", { "0": labels[0], "1": labels[1] });
+  const leading = labels
+    .slice(0, -1)
+    .reduce((joined, label) => translate("{0}, {1}", { "0": joined, "1": label }));
+  return translate("{0}, and {1}", { "0": leading, "1": labels.at(-1) });
 }
 
 function t3ToolSummaryCall(entry: WorkLogPresentationEntry): T3ToolSummaryCall {
@@ -543,6 +583,7 @@ function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction)
     case "project-delete":
     case "project-clone":
     case "environment-update":
+    case "theme-set":
     case "attachment-prepare":
     case "attachment-discard":
     case "attachment-send":
@@ -555,14 +596,21 @@ function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction)
   }
 }
 
-export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEntry>): {
+export function summarizeToolGroup(
+  entries: ReadonlyArray<WorkLogPresentationEntry>,
+  locale: UiLocale = "en",
+): {
   summary: string;
   hasFailure: boolean;
 } {
+  const translate = createUiTranslator(locale);
   const toolEntries = entries.filter((entry) => entry.itemType !== "reasoning");
   if (entries.length > 0 && toolEntries.length === 0) {
     return {
-      summary: entries.length === 1 ? "Thought" : `Thought (×${entries.length})`,
+      summary:
+        entries.length === 1
+          ? translate("Thought")
+          : translate("Thought (×{0})", { "0": entries.length }),
       hasFailure: false,
     };
   }
@@ -596,11 +644,12 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
     count: group.entries.length,
     priority: summaryActionPriority(action),
     ...(group.t3Action
-      ? summarizeT3ToolCalls(group.t3Action, group.entries.map(t3ToolSummaryCall))
+      ? summarizeT3ToolCalls(group.t3Action, group.entries.map(t3ToolSummaryCall), locale)
       : {
           label: toolGroupActionLabel(
             group.action,
             toolGroupActionCount(group.action, group.entries),
+            locale,
           ),
           failedCount: group.entries.filter(workEntryDisplayIndicatesToolFailure).length,
         }),
@@ -613,15 +662,17 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   if (sources.size > 0) {
     const sourceValues = [...sources.values()];
     const sourceNames = [...new Set(sourceValues.map((source) => source.name))];
-    const formattedNames =
-      sourceNames.length < 2
-        ? sourceNames[0]!
-        : sourceNames.length === 2
-          ? sourceNames.join(" and ")
-          : `${sourceNames.slice(0, -1).join(", ")}, and ${sourceNames.at(-1)}`;
+    const formattedNames = joinSummaryLabels(sourceNames, locale);
     const allIntegrations = sourceValues.every((source) => source.kind === "integration");
     labels.unshift(
-      `Used ${formattedNames}${allIntegrations ? ` ${sourceNames.length === 1 ? "integration" : "integrations"}` : ""}`,
+      translate(
+        allIntegrations
+          ? sourceNames.length === 1
+            ? "Used {0} integration"
+            : "Used {0} integrations"
+          : "Used {0}",
+        { "0": formattedNames },
+      ),
     );
   }
   const sourcedCount = entries.filter(
@@ -632,15 +683,17 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   const remainingCount =
     entries.length - sourcedCount - selected.reduce((count, group) => count + group.count, 0);
   if (remainingCount > 0) {
-    labels.push(`Performed ${remainingCount} other ${remainingCount === 1 ? "action" : "actions"}`);
+    labels.push(
+      translate(
+        remainingCount === 1 ? "Performed {0} other action" : "Performed {0} other actions",
+        { "0": remainingCount },
+      ),
+    );
   }
   const sentenceLabels = labels.map((label, index) =>
-    index === 0 ? label : label.charAt(0).toLowerCase() + label.slice(1),
+    index === 0 || locale !== "en" ? label : label.charAt(0).toLowerCase() + label.slice(1),
   );
-  const summary =
-    sentenceLabels.length < 3
-      ? sentenceLabels.join(" and ")
-      : `${sentenceLabels.slice(0, -1).join(", ")}, and ${sentenceLabels.at(-1)}`;
+  const summary = joinSummaryLabels(sentenceLabels, locale);
   return { summary, hasFailure: summaries.some((group) => group.failedCount > 0) };
 }
 

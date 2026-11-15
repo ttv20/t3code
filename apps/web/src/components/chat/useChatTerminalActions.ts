@@ -1,57 +1,60 @@
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
+import type { Dispatch } from "react";
+import type { ComposerHandleRef } from "../../composerHandleContext";
+import type { selectThreadTerminalUiState } from "../../terminalUiStateStore";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { useThreadTerminalActions } from "../terminal/useThreadTerminalActions";
+import { getTerminalLabel } from "@t3tools/shared/terminalLabels";
 import {
-  AuthTerminalOperateScope,
   AuthTerminalReadScope,
+  AuthTerminalOperateScope,
   type EnvironmentId,
   type ProjectScript,
   type ScopedThreadRef,
   type ThreadId,
 } from "@t3tools/contracts";
 import { projectScriptTerminalInput } from "@t3tools/shared/projectScripts";
-import { getTerminalLabel } from "@t3tools/shared/terminalLabels";
-import type { Dispatch } from "react";
 import { type SetStateAction } from "react";
-import { useLocalStorage } from "~/hooks/useLocalStorage";
-import { resolveDiscoveredServerUrl } from "../../browser/browserTargetResolver";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { MAX_TERMINALS_PER_GROUP } from "../../types";
+import {
+  selectThreadRightPanelState,
+  type RightPanelSurface,
+  useRightPanelStore,
+} from "../../rightPanelStore";
 import { openUrlInPreview } from "../../browser/openFileInPreview";
-import type { ComposerHandleRef } from "../../composerHandleContext";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { useUiLanguage } from "../../i18n";
-import { findReusableProjectScriptTerminal } from "../../lib/projectScriptTerminal";
+import { isPreviewAvailableFor } from "../../browser/previewRuntime";
+import { resolveDiscoveredServerUrl } from "../../browser/browserTargetResolver";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import { confirmTerminalClose } from "../../lib/terminalCloseConfirm";
+import { findReusableProjectScriptTerminal } from "../../lib/projectScriptTerminal";
+import { closingTerminalIds } from "../terminal/closingTerminals";
 import { type TerminalContextSelection } from "../../lib/terminalContext";
 import {
   focusActiveDrawerTerminal,
   focusActivePanelTerminal,
   focusTerminal,
 } from "../../lib/terminalFocus";
-import { isPreviewSupportedInRuntime } from "../../previewStateStore";
-import {
-  selectThreadRightPanelState,
-  useRightPanelStore,
-  type RightPanelSurface,
-} from "../../rightPanelStore";
-import { previewEnvironment } from "../../state/preview";
-import { readEnvironmentScope } from "../../state/session";
-import { useAtomCommand } from "../../state/use-atom-command";
-import type { selectThreadTerminalUiState } from "../../terminalUiStateStore";
 import { useTerminalUiStateStore } from "../../terminalUiStateStore";
-import { MAX_TERMINALS_PER_GROUP } from "../../types";
 import {
   LAST_INVOKED_SCRIPT_BY_PROJECT_KEY,
   LastInvokedScriptByProjectSchema,
   makeThreadErrorSetter,
 } from "../ChatView.logic";
-import { useThreadTerminalActions } from "../terminal/useThreadTerminalActions";
-import { stackedThreadToast, toastManager } from "../ui/toast";
+import { useLocalStorage } from "~/hooks/useLocalStorage";
+import { previewEnvironment } from "../../state/preview";
+import { readEnvironmentScope } from "../../state/session";
+import { useAtomCommand } from "../../state/use-atom-command";
 import type { ChatShortcutCommands } from "./useChatShortcuts";
+
+import { useUiLanguage } from "../../i18n";
+
 const SCRIPT_TERMINAL_COLS = 120;
 const SCRIPT_TERMINAL_ROWS = 30;
 
@@ -155,9 +158,11 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
     if (nextOpen && hasTerminalWriteAccess() && terminalUiState.terminalIds.length === 0) {
       // Server-created setup terminals exist before this client's drawer mounts.
       // Reuse them before allocating a shell from the still-empty UI state.
+      // The server lists a closing terminal until its close finishes, which would end the reopen.
+      const closingIds = new Set(closingTerminalIds(activeThreadRef));
+      const isReusable = (id: string) => !panelTerminalIds.has(id) && !closingIds.has(id);
       const existingTerminalId =
-        runningTerminalIds.find((id) => !panelTerminalIds.has(id)) ??
-        activeServerOrderedTerminalIds.find((id) => !panelTerminalIds.has(id));
+        runningTerminalIds.find(isReusable) ?? activeServerOrderedTerminalIds.find(isReusable);
       if (existingTerminalId !== undefined) {
         storeEnsureTerminal(activeThreadRef, existingTerminalId, { open: true, active: true });
         focusActiveDrawerTerminal(activeThreadRef);
@@ -235,6 +240,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
             activeTerminalId: terminalUiState.activeTerminalId,
             panelTerminalIds,
             runningTerminalIds,
+            closingTerminalIds: activeThreadRef ? closingTerminalIds(activeThreadRef) : [],
           });
     const targetWorktreePath = options?.worktreePath ?? activeThread.worktreePath ?? null;
 
@@ -293,7 +299,11 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       }
       return;
     }
-    if (script.autoOpenPreview && script.previewUrl && isPreviewSupportedInRuntime()) {
+    if (
+      script.autoOpenPreview &&
+      script.previewUrl &&
+      isPreviewAvailableFor(activeThreadRef.environmentId)
+    ) {
       const previewResult = await openUrlInPreview({
         threadRef: activeThreadRef,
         url: resolveDiscoveredServerUrl(activeThreadRef.environmentId, script.previewUrl),

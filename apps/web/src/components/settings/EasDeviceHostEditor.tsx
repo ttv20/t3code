@@ -1,4 +1,8 @@
+import { UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
+import { useId, useRef, useState } from "react";
+import * as Cause from "effect/Cause";
+import * as Option from "effect/Option";
 import {
   isSecretReference,
   type DeviceEasAccount,
@@ -6,12 +10,7 @@ import {
   type EnvironmentId,
   type SettingsSecretValue,
 } from "@t3tools/contracts";
-import * as Cause from "effect/Cause";
-import * as Option from "effect/Option";
 import { XIcon } from "lucide-react";
-import { useId, useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { deviceEasAccountCheck, deviceEnvironment } from "../../state/device";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
@@ -29,6 +28,8 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { Spinner } from "../ui/spinner";
 import { parseEasDeviceHostDraft } from "./easDeviceHostsSettings.logic";
 import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
+
+import { useUiLanguage } from "../../i18n";
 
 const FROM_THREAD_PROJECT = "thread-project";
 
@@ -177,7 +178,7 @@ export function EasDeviceHostEditor(props: {
           }}
         >
           <DialogHeader>
-            <DialogTitle>{props.isNew ? uiT("Add EAS host") : uiT("Edit EAS host")}</DialogTitle>
+            <DialogTitle>{props.isNew ? uiT("Add Expo host") : uiT("Edit Expo host")}</DialogTitle>
             <DialogDescription>
               {uiT(
                 "The environment's server signs in to Expo and starts the sessions. Without a token here it uses EXPO_TOKEN, then its eas login.",
@@ -217,6 +218,7 @@ export function EasDeviceHostEditor(props: {
                         : ""
                   }
                   sources={secretSources}
+                  environmentId={props.environmentId}
                   onValidityChange={(valid) => {
                     setTokenValid(valid);
                     resetAccount();
@@ -262,7 +264,10 @@ export function EasDeviceHostEditor(props: {
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
               <p role="status" className="min-w-0 text-xs text-muted-foreground">
                 {account.status === "signed-in"
-                  ? `Signed in as ${account.account.signedInAs} with ${CREDENTIAL_SOURCES[account.account.credentialSource]}.`
+                  ? uiT("Signed in as {0} with {1}.", {
+                      "0": account.account.signedInAs,
+                      "1": CREDENTIAL_SOURCES[account.account.credentialSource],
+                    })
                   : account.status === "failed"
                     ? account.error
                     : account.status === "checking"
@@ -281,7 +286,9 @@ export function EasDeviceHostEditor(props: {
               </Button>
             </div>
             <div className="space-y-1.5 text-sm">
-              <span>{uiT("EAS project")}</span>
+              <span>
+                <UiText message={"Expo project"} />
+              </span>
               <Select
                 value={draft.appId ?? FROM_THREAD_PROJECT}
                 disabled={props.busy}
@@ -293,7 +300,7 @@ export function EasDeviceHostEditor(props: {
                   });
                 }}
               >
-                <SelectTrigger size="sm" aria-label={uiT("EAS project")}>
+                <SelectTrigger size="sm" aria-label={uiT("Expo project")}>
                   <SelectValue>
                     {(value: string) =>
                       value === FROM_THREAD_PROJECT
@@ -328,12 +335,16 @@ export function EasDeviceHostEditor(props: {
               {limit("idleMinutes", "Idle minutes", 60)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {uiT(
-                "Expo allows sessions of up to 40 minutes on free accounts and 115 on paid ones, and ends one after the idle minutes without activity, so idle minutes must be smaller than session minutes.",
-              )}
-              {props.isNew
-                ? null
-                : uiT(" Saving restarts this host, which stops its running sessions.")}
+              <UiText
+                message={
+                  "Expo Simulators needs a paid Expo account. A session runs for up to 115 minutes and stops early when it is idle for the idle minutes, so idle minutes must be less than session minutes.{0}"
+                }
+                values={{
+                  "0": props.isNew
+                    ? null
+                    : uiT(" Saving restarts this host and stops its running sessions."),
+                }}
+              />
             </p>
             {problem === null ? null : (
               <p className="text-xs text-destructive" role="alert">

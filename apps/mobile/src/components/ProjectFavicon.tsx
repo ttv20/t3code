@@ -1,4 +1,8 @@
-import { useAtomValue } from "@effect/atom-react";
+import { SymbolView } from "./ui/AppSymbol";
+import { AppText } from "./ui/AppText";
+import { Image } from "expo-image";
+import { memo, useLayoutEffect, useMemo, useState } from "react";
+import { View } from "react-native";
 import type { EnvironmentId, ProjectIconOverride } from "@t3tools/contracts";
 import {
   getProjectFaviconCacheKey,
@@ -6,10 +10,8 @@ import {
   isProjectFaviconFallbackUrl,
 } from "@t3tools/shared/projectFavicon";
 import { Atom } from "effect/reactivity";
-import { Image } from "expo-image";
-import { memo, useLayoutEffect, useState } from "react";
-import { View } from "react-native";
-import { useUiLanguage } from "../i18n";
+import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
+import { projectFaviconUrlAtom } from "../state/assets";
 import {
   countGlyphs,
   projectAutoMonogram,
@@ -18,10 +20,7 @@ import {
   resolveProjectIconSymbol,
   type ProjectIconGlyph,
 } from "../lib/projectIcon";
-import { projectFaviconUrlAtom } from "../state/assets";
-import { SymbolView } from "./ui/AppSymbol";
-import { AppText } from "./ui/AppText";
-
+import { resolveProjectFaviconColorScheme } from "../lib/projectFaviconColorScheme";
 import {
   beginProjectFaviconRequest,
   createProjectFaviconRequest,
@@ -29,6 +28,8 @@ import {
   markProjectFaviconFailed,
   markProjectFaviconLoaded,
 } from "../lib/projectFaviconRequests";
+import { useAtomValue } from "@effect/atom-react";
+import { useUiLanguage } from "../i18n";
 
 const EMPTY_FAVICON_URL = Atom.make<string | null>(null);
 
@@ -163,6 +164,16 @@ function ProjectFaviconImage(props: {
       : "loading",
   );
 
+  const { themeAppearance } = useAppearancePreferences();
+  const requestFaviconUrl = faviconRequest?.faviconUrl;
+  const inlineFaviconUrl = useMemo(
+    () =>
+      requestFaviconUrl?.startsWith("data:")
+        ? resolveProjectFaviconColorScheme(requestFaviconUrl, themeAppearance)
+        : null,
+    [requestFaviconUrl, themeAppearance],
+  );
+
   const showImage = faviconRequest !== null && status === "loaded";
   const fallbackGlyph = showImage ? null : projectAutoMonogram(props.projectTitle);
 
@@ -190,11 +201,11 @@ function ProjectFaviconImage(props: {
         <Image
           key={faviconRequest.faviconUrl}
           source={
-            faviconRequest.faviconUrl.startsWith("data:")
-              ? { uri: faviconRequest.faviconUrl }
+            inlineFaviconUrl !== null
+              ? { uri: inlineFaviconUrl }
               : { uri: faviconRequest.faviconUrl, cacheKey: faviconRequest.cacheKey }
           }
-          cachePolicy={faviconRequest.faviconUrl.startsWith("data:") ? "memory" : "memory-disk"}
+          cachePolicy={inlineFaviconUrl !== null ? "memory" : "memory-disk"}
           recyclingKey={faviconRequest.cacheKey}
           accessibilityLabel={uiT("{0} favicon", { "0": props.projectTitle })}
           style={{

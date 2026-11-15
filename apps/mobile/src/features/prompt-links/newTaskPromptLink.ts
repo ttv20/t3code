@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import * as Dialog from "../../components/ui/Dialog";
 import {
   StackActions,
@@ -222,6 +223,7 @@ async function findServerPullRequestThread(
 }
 
 async function openProjectDraft(project: EnvironmentProject, request: LinkedDraftRequest) {
+  const uiT = readUiTranslator();
   try {
     await waitForComposerDraftsLoaded();
   } catch {
@@ -263,7 +265,9 @@ async function openProjectDraft(project: EnvironmentProject, request: LinkedDraf
     StackActions.push("Thread", {
       draft: {
         draftId: draftKey,
-        title: request.pullRequest ? `PR #${request.pullRequest.number}` : project.title,
+        title: request.pullRequest
+          ? uiT("PR #{0}", { "0": request.pullRequest.number })
+          : project.title,
       },
     }),
   );

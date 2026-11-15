@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { AuthFilesystemReadScope } from "@t3tools/contracts";
 import { readEnvironmentScope } from "../../state/session";
 import { executeAtomQuery } from "@t3tools/client-runtime/state/runtime";
@@ -31,6 +32,7 @@ export function preloadWorkspaceFileContents(input: {
   readonly relativePath: string;
   readonly theme: HighlightScheme;
 }): void {
+  const uiT = readUiTranslator();
   if (
     !readEnvironmentScope(input.environmentId, AuthFilesystemReadScope) ||
     isWorkspaceBrowserPreviewPath(input.relativePath) ||
@@ -52,7 +54,7 @@ export function preloadWorkspaceFileContents(input: {
       input: { cwd: input.cwd, relativePath: input.relativePath },
     }),
     {
-      label: "workspace file preload",
+      label: uiT("workspace file preload"),
       reportDefect: false,
       reportFailure: false,
     },
@@ -69,7 +71,7 @@ export function preloadWorkspaceFileContents(input: {
               theme: input.theme,
             }),
             {
-              label: "workspace source highlight preload",
+              label: uiT("workspace source highlight preload"),
               reportDefect: false,
               reportFailure: false,
             },

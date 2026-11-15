@@ -6,14 +6,14 @@ import {
   parsePullRequestQuery,
 } from "@t3tools/client-runtime/pull-request-query";
 import { use, useMemo, useRef, useState, type ReactNode } from "react";
-import { Keyboard, Platform, Pressable, RefreshControl, View } from "react-native";
+import { Keyboard, Platform, Pressable, View } from "react-native";
+import { RefreshControl } from "../../components/ui/RefreshControl";
+import { NativeScrollView } from "../../native/NativeScrollViewMarker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { Button } from "../../components/ui/Button";
 import { usePaneRole } from "../../components/ui/Pane";
 import { useUiLanguage } from "../../i18n";
-import { NativeScrollView } from "../../native/NativeScrollViewMarker";
-
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import { EmptyState } from "../../components/ui/EmptyState";

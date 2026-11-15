@@ -112,10 +112,10 @@ export function ThreadGuestShareBar(props: {
       <SymbolView name="person.2" size={12} tintColorClassName="accent-foreground-muted" />
       <Text className="min-w-0 flex-1 text-xs text-foreground-muted" numberOfLines={1}>
         {expiredAt === share.expiresAt
-          ? "Guest link expired"
+          ? uiT("Guest link expired")
           : share.guestName === null
-            ? "Guest link active"
-            : `${share.guestName} is a guest`}
+            ? uiT("Guest link active")
+            : uiT("{0} is a guest", { "0": share.guestName })}
       </Text>
       <Button label={uiT("Stop sharing")} tone="text" disabled={disabled} onPress={stopSharing} />
     </View>

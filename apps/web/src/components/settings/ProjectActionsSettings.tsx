@@ -1,21 +1,18 @@
+import { useScopedSettingsWriteAllowed } from "./useScopedSettings";
+import { AuthSettingsWriteScope } from "@t3tools/contracts";
+import { EnvironmentId, type T3ProjectFileScript } from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  AuthSettingsWriteScope,
-  EnvironmentId,
-  type T3ProjectFileScript,
-} from "@t3tools/contracts";
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useT3ProjectFileState } from "../../hooks/useT3ProjectFileScripts";
-import { useUiLanguage } from "../../i18n";
 import { useEnvironments } from "../../state/environments";
 import {
-  editorRequestForScript,
   EMPTY_PROJECT_SCRIPT_INPUT,
+  editorRequestForScript,
   ProjectScriptEditorDialog,
   ScriptIcon,
   type NewProjectScriptInput,
@@ -32,10 +29,11 @@ import {
   MenuTrigger,
 } from "../ui/menu";
 import { ProjectActionsList } from "./ProjectActionsList";
+import { useProjectScriptSettings } from "./useProjectScriptSettings";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
 import { useSettingsScope } from "./SettingsScopeContext";
-import { useProjectScriptSettings } from "./useProjectScriptSettings";
-import { useScopedSettingsWriteAllowed } from "./useScopedSettings";
+
+import { useUiLanguage } from "../../i18n";
 
 export function ProjectActionsSettings() {
   const { t: uiT } = useUiLanguage();
@@ -180,9 +178,9 @@ export function ProjectActionsSettings() {
       />
       {mixed ? (
         <SettingsRow
-          title={uiT("Different actions across environments")}
+          title={uiT("Different actions across checkouts")}
           description={uiT(
-            "Choose one environment to edit its list. Adding an action here adds it on every selected environment.",
+            "Narrow the selection above to one checkout to edit its list. Adding an action here adds it to every selected checkout.",
           )}
         />
       ) : (

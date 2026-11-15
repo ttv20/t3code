@@ -46,14 +46,15 @@ import {
   WorkspaceSidebarTabsFooter,
 } from "./workspace/WorkspaceNativeTabs.ios";
 import { useWorkspaceTabs, WorkspaceTabsProvider } from "./workspace/WorkspaceTabsContext";
-
-import { PaneContext } from "../../components/ui/Pane";
+import { useAdaptiveWorkspaceLayout, useWorkspacePaneState } from "./AdaptiveWorkspaceLayout";
+import { WorkspacePaneDivider } from "./workspace-pane-divider";
+import { WorkspaceEmptyDetail } from "./WorkspaceEmptyDetail";
+import { NativeColumnContent as ColumnContent } from "../../native/NativeColumnContent.ios";
 import {
   modalEnvelopeOptions,
   V5CardStackView,
   V5StackView,
 } from "../../native/createV5StackNavigator.ios";
-import { NativeColumnContent as ColumnContent } from "../../native/NativeColumnContent.ios";
 import {
   useNativeWorkspaceColumnsReady,
   useNativeWorkspaceColumnsSupported,
@@ -76,11 +77,9 @@ import {
   reconcileStackScreens,
   type CollapsedSplitColumn,
 } from "../../native/workspace-stack-projection";
-import { useAdaptiveWorkspaceLayout } from "./AdaptiveWorkspaceLayout";
 import { InspectorColumnScreens } from "./inspector-host";
 import { useWorkspaceSidebarHeaderItem } from "./useWorkspaceSidebarHeaderItem";
-import { WorkspacePaneDivider } from "./workspace-pane-divider";
-import { WorkspaceEmptyDetail } from "./WorkspaceEmptyDetail";
+import { PaneContext } from "../../components/ui/Pane";
 
 type ViewProps = ComponentProps<typeof NativeStackView>;
 type Descriptor = ViewProps["descriptors"][string];
@@ -90,6 +89,12 @@ const isPullRequestRoute = (route: Route) =>
   route.name === "PullRequest" ||
   route.name === "PullRequestFile" ||
   route.name === "PullRequestFiles";
+
+// Every step of starting a task, from the project picker to the draft thread itself.
+const isNewTaskRoute = (route: Route) =>
+  route.name.startsWith("NewTask") ||
+  route.name.startsWith("AddProject") ||
+  (route.params !== undefined && "draft" in route.params && Boolean(route.params.draft));
 
 /** Beside the list, the first Settings page shows on one native screen that swaps its content. */
 const SETTINGS_DETAIL_SCREEN = "settings-detail";
@@ -102,7 +107,10 @@ function ColumnScreen(props: {
   readonly selectedThreadKey?: string | null;
   readonly selectedPullRequestKey?: string | null;
   readonly onDismiss: (routeKey: string, native: boolean) => void;
-  readonly onAppearance: (type: "willAppear" | "didAppear" | "willDisappear", key: string) => void;
+  readonly onAppearance: (
+    type: "willAppear" | "didAppear" | "willDisappear" | "didDisappear",
+    key: string,
+  ) => void;
   readonly onCompose?: () => void;
   readonly navigation: ViewProps["navigation"];
   readonly footer?: ReactNode;
@@ -147,9 +155,10 @@ function ColumnScreen(props: {
         props.onAppearance("willDisappear", key);
         props.navigation.emit({ type: "transitionStart", target: key, data: { closing: true } });
       }}
-      onDidDisappear={() =>
-        props.navigation.emit({ type: "transitionEnd", target: key, data: { closing: true } })
-      }
+      onDidDisappear={() => {
+        props.onAppearance("didDisappear", key);
+        props.navigation.emit({ type: "transitionEnd", target: key, data: { closing: true } });
+      }}
     >
       <PaneContext value={sidebar ? "sidebar" : "content"}>
         <NavigationContext value={descriptor.navigation}>
@@ -158,13 +167,7 @@ function ColumnScreen(props: {
               options={options}
               canGoBack={!props.primary}
               column={props.primary ? "primary" : "detail"}
-              onCompose={
-                descriptor.route.params &&
-                "draft" in descriptor.route.params &&
-                descriptor.route.params.draft
-                  ? undefined
-                  : props.onCompose
-              }
+              onCompose={isNewTaskRoute(descriptor.route) ? undefined : props.onCompose}
             />
             <ColumnContent
               primary={sidebar}
@@ -208,15 +211,14 @@ function WorkspaceColumns(
 
   const {
     layout,
-    panes,
     setPrimarySidebarVisible,
     toggleAuxiliaryPane,
     startNewTask,
     openWorkspaceTab,
-    sidebarByOrientation,
     nativeInspectorWidth,
     setNativeInspectorWidth,
   } = useAdaptiveWorkspaceLayout();
+  const { panes, sidebarByOrientation } = useWorkspacePaneState();
   const deviceType = useDeviceType();
   const inspectorWidth = nativeInspectorWidth;
   const resizeStartWidth = useRef(inspectorWidth);
@@ -311,7 +313,7 @@ function WorkspaceColumns(
     }
   };
   const followCollapsedSplit = (
-    type: "willAppear" | "didAppear" | "willDisappear",
+    type: "willAppear" | "didAppear" | "willDisappear" | "didDisappear",
     key: string,
   ) => {
     if (!collapsed.current || layout.usesSplitView) return;
@@ -335,6 +337,7 @@ function WorkspaceColumns(
 
   const primary = props.descriptors[props.primary.key];
   if (!primary) return null;
+  const primaryColumnWidth = (layout.listPaneWidth ?? 320) + (layout.listPaneGap ?? 0) / 2;
   return (
     <Split.Host
       ref={hostRef}
@@ -392,8 +395,8 @@ function WorkspaceColumns(
       onInspectorHide={hideInspector}
       columnMetrics={{
         minimumPrimaryColumnWidth: 280,
-        maximumPrimaryColumnWidth: Math.max(380, layout.listPaneWidth ?? 0),
-        preferredPrimaryColumnWidthOrFraction: layout.listPaneWidth ?? 320,
+        maximumPrimaryColumnWidth: Math.max(380, primaryColumnWidth),
+        preferredPrimaryColumnWidthOrFraction: primaryColumnWidth,
         minimumSecondaryColumnWidth: NATIVE_INSPECTOR_MIN_MAIN_WIDTH,
         // UIKit can retain its automatic width despite a new preference; constrain both edges.
         minimumInspectorColumnWidth: inspectorWidth,

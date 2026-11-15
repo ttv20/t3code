@@ -21,6 +21,8 @@ import { NAVIGATION_TAB_ORDER } from "./navigation-tab-order";
 import { useEnabledNavigationTabs } from "./navigation-tabs";
 import { PullRequestToolbar } from "./PullRequestToolbar.android";
 import type { WorkspaceTab } from "./workspace-tabs-state";
+import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
+import { useHardwareBack } from "../../../lib/backHandler";
 import { WorkspaceExtraTab } from "./WorkspaceExtraTab";
 import { WorkspaceNoTabs } from "./WorkspaceNoTabs";
 import { WorkspaceTabPanes } from "./WorkspaceTabPanes";
@@ -52,6 +54,18 @@ function WorkspaceRoot() {
           : 16,
   };
   const tab = workspace.state.selectedTab;
+  const selectTab = useSelectWorkspaceTab();
+  // Tabs are panes of Home, not routes, so Back has nothing to pop and would leave the app.
+  // An open search keeps Back for itself.
+  useHardwareBack(
+    tab !== "threads" &&
+      enabled.includes("threads") &&
+      workspace.state.tabs[tab].searchMode === "resting",
+    () => {
+      selectTab("threads");
+      return true;
+    },
+  );
 
   return (
     <WorkspaceTabsContext value={context}>

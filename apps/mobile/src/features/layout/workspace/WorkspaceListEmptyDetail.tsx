@@ -1,10 +1,9 @@
 import { Platform } from "react-native";
 import { useUiLanguage } from "../../../i18n";
-
 import { AppBar } from "../../../components/ui/AppBar";
 import { Toolbar } from "../../../components/ui/Toolbar";
 import { NativeStackScreenOptions } from "../../../native/StackHeader";
-import { useAdaptiveWorkspaceLayout } from "../adaptive-workspace-context";
+import { useWorkspacePaneState } from "../adaptive-workspace-context";
 import { WorkspaceEmptyDetail } from "../WorkspaceEmptyDetail";
 
 /**
@@ -17,8 +16,7 @@ export function WorkspaceListEmptyDetail(props: {
   readonly onStartNewTask: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const { panes } = useAdaptiveWorkspaceLayout();
+  const { panes } = useWorkspacePaneState();
   return (
     <>
       <NativeStackScreenOptions

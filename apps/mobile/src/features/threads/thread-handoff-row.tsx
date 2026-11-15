@@ -115,8 +115,6 @@ export function ThreadHandoffDivider(props: {
   label: string;
   failed?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const config = useAtomValue(serverEnvironment.configValueAtom(props.environmentId));
   const { endpoints } = props;
   const endpointProps = {
@@ -138,7 +136,7 @@ export function ThreadHandoffDivider(props: {
   };
   return (
     <ThreadContextDivider
-      label={uiT(props.label)}
+      label={props.label}
       icon="arrow.left.arrow.right"
       iconColor={props.iconColor}
       failed={props.failed}

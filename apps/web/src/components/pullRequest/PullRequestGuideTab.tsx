@@ -1,10 +1,7 @@
 import type { EnvironmentId, PullRequestRef, PullRequestReviewGuideStop } from "@t3tools/contracts";
-import { SparklesIcon, TriangleAlertIcon } from "lucide-react";
+import { ScrollTextIcon, TriangleAlertIcon } from "lucide-react";
 import { useEffect, useEffectEvent } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import type { ReviewCommentContext } from "~/reviewCommentContext";
-
 import { Alert, AlertAction, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
@@ -12,13 +9,15 @@ import type { ExcerptCommenting } from "./guide/GuideExcerpt";
 import { GuideProseContext } from "./guide/GuideProse";
 import { GuideTour } from "./guide/GuideTour";
 import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
-import type { PullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import {
   nextPendingReviewCommentId,
   pullRequestReviewKey,
   usePendingReviewComments,
   usePullRequestReviewStore,
 } from "./pullRequestReviewStore";
+import type { PullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 export function PullRequestGuideTab({
   environmentId,
@@ -96,8 +95,8 @@ export function PullRequestGuideTab({
   const writeButton = (label: string, size: "sm" | "xs") =>
     canWrite ? (
       <Button size={size} variant="outline" disabled={running} onClick={() => void write()}>
-        {running ? <Spinner /> : <SparklesIcon aria-hidden className="size-3.5" />}
-        {running ? uiT("Reading the change...") : uiT(label)}
+        {running ? <Spinner /> : <ScrollTextIcon aria-hidden className="size-3.5" />}
+        {running ? uiT("Reading the change...") : label}
       </Button>
     ) : null;
 
@@ -125,7 +124,9 @@ export function PullRequestGuideTab({
               )
             : failure === null
               ? (query.error ??
-                "A guide is a tour of the change: stops through the code in reading order, with the calls only a maintainer can make.")
+                uiT(
+                  "A guide is a tour of the change: stops through the code in reading order, with the calls only a maintainer can make.",
+                ))
               : FAILURE_HINT}
         </p>
         {writeButton(failure === null ? "Write guide" : "Try again", "sm")}
@@ -145,7 +146,7 @@ export function PullRequestGuideTab({
             uiT("Written before the latest push.")
           ) : (
             <>
-              {`Could not rewrite this guide. ${FAILURE_HINT}`}
+              {uiT("Could not rewrite this guide. {0}", { "0": FAILURE_HINT })}
               <FailureDetails detail={failure} />
             </>
           )}

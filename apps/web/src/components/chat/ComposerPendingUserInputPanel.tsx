@@ -1,23 +1,20 @@
-import {
-  countMarkdownDirectionCharacters,
-  resolveMarkdownDirection,
-} from "@t3tools/client-runtime/markdown-direction";
-import type { PendingUserInputDraftAnswer } from "@t3tools/client-runtime/state/pending-user-input";
 import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
-import { memo, use, useEffect, useEffectEvent, useRef, useState } from "react";
-import { useStableCallback } from "~/hooks/useStableCallback";
-import { isInSideChatPane } from "~/lib/sideChatPane";
-import { cn } from "~/lib/utils";
 import { markdownProseDirection, textDirection } from "~/textDirection";
-import { useUiLanguage } from "../../i18n";
-import { derivePendingUserInputProgress } from "../../pendingUserInput";
+import { memo, use, useEffect, useEffectEvent, useRef, useState } from "react";
+import { BackgroundThreadContext } from "./backgroundThread";
+import { useStableCallback } from "~/hooks/useStableCallback";
 import { type PendingUserInput } from "../../session-logic";
-import ChatMarkdown from "../ChatMarkdown";
+import type { PendingUserInputDraftAnswer } from "@t3tools/client-runtime/state/pending-user-input";
+import { derivePendingUserInputProgress } from "../../pendingUserInput";
 import { CheckboxMark } from "../ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { Kbd } from "../ui/kbd";
-import { BackgroundThreadContext } from "./backgroundThread";
+import { cn } from "~/lib/utils";
+import { isInSideChatPane } from "~/lib/sideChatPane";
 import { ComposerBanner } from "./ComposerBanner";
+import ChatMarkdown from "../ChatMarkdown";
+
+import { useUiLanguage } from "../../i18n";
 
 interface PendingUserInputPanelProps {
   pendingUserInputs: PendingUserInput[];
@@ -166,7 +163,9 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       }
       if (
         target instanceof HTMLElement &&
-        target.closest('[contenteditable]:not([contenteditable="false"])')
+        target.closest(
+          'select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [aria-modal="true"], [role="menu"], [role="combobox"], [data-slot$="popup"]',
+        )
       ) {
         return;
       }
@@ -215,7 +214,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
             : uiT("Hide the question and its options")
         }
         data-pending-user-input-toggle={isCollapsed ? "collapsed" : "expanded"}
-        className="px-4 pt-1.5"
+        className="px-4 py-1.5"
       >
         <ComposerBanner.Content>
           <span
@@ -275,7 +274,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
               text={activeQuestion.question}
               cwd={cwd}
               threadRef={threadRef}
-              className={cn("pt-2 text-foreground/85", questionTextAlign)}
+              lineBreaks
+              className={cn("pt-0.5 text-foreground/85", questionTextAlign)}
             />
             {/* Rows span the header row's width so the radios align with the question text and the shortcut column sits under the dismiss button. */}
             <div className="-ms-2 mt-1.5 sm:-ms-1.5">
@@ -298,21 +298,21 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                   <>
                     <span className="pointer-events-none flex h-5 shrink-0 items-center">
                       {activeQuestion.multiSelect ? (
-                        <CheckboxMark checked={isSelected} />
+                        <CheckboxMark checked={isSelected} variant="contrast" />
                       ) : (
                         <OptionRadio checked={isSelected} />
                       )}
                     </span>
                     <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                       <span className="text-sm font-medium" dir={textDirection(option.label)}>
-                        {uiT(option.label)}
+                        {option.label}
                       </span>
                       {option.description && option.description !== option.label ? (
                         <span
                           className="text-secondary-label text-2xs"
                           dir={textDirection(option.description)}
                         >
-                          {uiT(option.description)}
+                          {option.description}
                         </span>
                       ) : null}
                     </div>
@@ -323,25 +323,30 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                     ) : null}
                   </>
                 );
+                // The preview sits outside the button: it can hold links, and a click on a single-select option advances.
                 return (
-                  <button
-                    key={`${activeQuestion.id}:${optionValue}`}
-                    dir={resolveMarkdownDirection(
-                      countMarkdownDirectionCharacters(
-                        `${option.label}\n${option.description ?? ""}`,
-                      ),
-                      questionDirection,
-                    )}
-                    type="button"
-                    aria-pressed={isSelected}
-                    disabled={disabled || isResponding}
-                    onClick={() => {
-                      handleOptionSelection(activeQuestion.id, optionValue);
-                    }}
-                    className={className}
-                  >
-                    {content}
-                  </button>
+                  <div key={`${activeQuestion.id}:${optionValue}`}>
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
+                      disabled={disabled || isResponding}
+                      onClick={() => {
+                        handleOptionSelection(activeQuestion.id, optionValue);
+                      }}
+                      className={className}
+                    >
+                      {content}
+                    </button>
+                    {option.preview ? (
+                      <ChatMarkdown
+                        text={option.preview}
+                        cwd={cwd}
+                        threadRef={threadRef}
+                        lineBreaks
+                        className="ps-9 pe-2 pb-1.5 text-xs text-foreground/70 sm:ps-8"
+                      />
+                    ) : null}
+                  </div>
                 );
               })}
             </div>
@@ -359,7 +364,7 @@ function OptionRadio({ checked }: { checked: boolean }) {
     <span
       aria-hidden
       className={cn(
-        "relative inline-flex size-4.5 shrink-0 items-center justify-center rounded-full border border-input bg-background not-dark:bg-clip-padding sm:size-4 dark:bg-input/32",
+        "relative inline-flex size-4.5 shrink-0 items-center justify-center rounded-full border border-foreground/55 bg-background not-dark:bg-clip-padding sm:size-4 dark:bg-input/32",
         checked ? "shadow-none" : "shadow-xs/5",
       )}
     >

@@ -69,6 +69,21 @@ describe("client settings hydration", () => {
     });
   });
 
+  it.each([
+    [{ interfaceLanguage: "he" as const }, "he"],
+    [{ language: "fr" }, "fr"],
+    [{ language: "system" }, "system"],
+  ])("keeps both language settings synchronized for %j", async (patch, language) => {
+    __setClientSettingsForTests(DEFAULT_CLIENT_SETTINGS);
+    await persistClientSettingsPatch(patch);
+    expect(getClientSettings()).toMatchObject({ language, interfaceLanguage: language });
+    expect(persistenceMocks.setClientSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ language, interfaceLanguage: language }),
+    );
+    await persistClientSettingsUpdate((current) => ({ ...current, language: "ar" }));
+    expect(getClientSettings()).toMatchObject({ language: "ar", interfaceLanguage: "ar" });
+  });
+
   // regression: #16816 a failed read could overwrite synced model favorites with defaults
   it("does not prepare a model preference write after a failed legacy read", async () => {
     const failure = new Error("storage unavailable");
@@ -194,6 +209,28 @@ describe("persistClientSettingsPatch", () => {
 
     expect(persistenceMocks.setClientSettings).toHaveBeenNthCalledWith(1, firstSettings);
     expect(persistenceMocks.setClientSettings).toHaveBeenNthCalledWith(2, secondSettings);
+  });
+
+  // regression: #35010 a save in one tab reverted settings another tab saved after it loaded
+  it("keeps a setting another tab saved after this tab loaded", async () => {
+    vi.stubGlobal("window", new EventTarget());
+    try {
+      await ensureClientSettingsHydrated();
+      const otherTabSettings = { ...DEFAULT_CLIENT_SETTINGS, timestampFormat: "12-hour" as const };
+      persistenceMocks.getClientSettings.mockResolvedValue(otherTabSettings);
+      window.dispatchEvent(
+        Object.assign(new Event("storage"), { key: "t3code:client-settings:v1" }),
+      );
+
+      await persistClientSettingsPatch({ wordWrap: false });
+
+      expect(persistenceMocks.setClientSettings).toHaveBeenLastCalledWith({
+        ...otherTabSettings,
+        wordWrap: false,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

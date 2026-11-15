@@ -1,20 +1,22 @@
+import { UiText } from "../../i18n";
+import { useLegendListRef } from "~/hooks/useLegendListRef";
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useLegendListRef } from "~/hooks/useLegendListRef";
 import { isMonospaceFamily, queryInstalledFontFamilies } from "../../appearanceFonts";
-import { useUiLanguage } from "../../i18n";
 import {
   Combobox,
   ComboboxEmpty,
+  ComboboxSearchInput,
   ComboboxItem,
   ComboboxListVirtualized,
   ComboboxPopup,
-  ComboboxSearchInput,
   ComboboxTrigger,
 } from "../ui/combobox";
 import { SelectButton } from "../ui/select";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+
+import { useUiLanguage } from "../../i18n";
 
 const DEFAULT_FONT_VALUE = "__default__";
 
@@ -204,9 +206,12 @@ export function FontFamilyPicker({
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <ComboboxEmpty>{uiT("No fonts found.")}</ComboboxEmpty>
-          <div className="relative min-h-0 max-h-72 w-full flex-1 overflow-hidden">
-            <ComboboxListVirtualized>
+          <ComboboxEmpty>
+            <UiText message={"No fonts found."} />
+          </ComboboxEmpty>
+          {/* Short windows cap the popup; every level down to the list must shrink or rows are clipped unreachably. */}
+          <div className="relative flex min-h-0 max-h-72 w-full flex-1 flex-col overflow-hidden">
+            <ComboboxListVirtualized className="flex min-h-0 flex-col">
               <LegendList<string>
                 ref={scrollRef}
                 data={items}
@@ -222,6 +227,7 @@ export function FontFamilyPicker({
                 onScroll={handleMetricsChange}
                 onLayout={handleMetricsChange}
                 onReady={handleMetricsChange}
+                className="min-h-0"
                 style={{ height: listHeight }}
               />
             </ComboboxListVirtualized>

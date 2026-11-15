@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import {
   AlertDialog,
   Button,
@@ -10,7 +11,7 @@ import {
   useNativeState,
 } from "@expo/ui/jetpack-compose";
 import { verticalScroll } from "@expo/ui/jetpack-compose/modifiers";
-import { useUiLanguage } from "../../i18n";
+
 import { NativeThemeHost } from "./NativeThemeHost.android";
 
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
@@ -50,7 +51,10 @@ function setPresented(next: PresentedDialog | null) {
 }
 
 function submitRequest(dialog: DialogRequest) {
+  const replaced = presented;
   setPresented({ ...dialog, id: ++nextPresentationId });
+  // A replaced alert closed without an answer, which its owner hears as a dismissal.
+  if (replaced?.kind === "alert") replaced.request.options?.onDismiss?.();
 }
 
 /** Closes the dialog only if it is still the one the action came from. */
@@ -70,9 +74,10 @@ function getPresented() {
 }
 
 export function alert(...[title, message, buttons, options]: Parameters<typeof Alert.alert>): void {
-  const actions = buttons?.length ? buttons.slice(0, 3) : [{ text: "OK" }];
+  const uiT = readUiTranslator();
+  const actions = buttons?.length ? buttons.slice(0, 3) : [{ text: uiT("OK") }];
   const normalized = actions.map((action, index) =>
-    index === actions.length - 1 ? { ...action, text: action.text || "OK" } : action,
+    index === actions.length - 1 ? { ...action, text: action.text || uiT("OK") } : action,
   );
   submitRequest({
     kind: "alert",
@@ -81,11 +86,17 @@ export function alert(...[title, message, buttons, options]: Parameters<typeof A
 }
 
 export function confirm(request: ConfirmDialogRequest): void {
-  submitRequest({ kind: "confirm", request });
+  submitRequest({
+    kind: "confirm",
+    request: { ...request, cancelText: request.cancelText ?? readUiTranslator()("Cancel") },
+  });
 }
 
 export function prompt(request: TextInputDialogRequest): void {
-  submitRequest({ kind: "text-input", request });
+  submitRequest({
+    kind: "text-input",
+    request: { ...request, cancelText: request.cancelText ?? readUiTranslator()("Cancel") },
+  });
 }
 
 export function Host() {
@@ -144,7 +155,6 @@ export function Host() {
 }
 
 function DialogPresentation(props: DialogPresentationProps) {
-  const { t: uiT } = useUiLanguage();
   const { themeVariables: colors } = useAppearancePreferences();
   const titleTypography = useScaledTextRole("title");
   const bodyTypography = useScaledTextRole("footnote");
@@ -156,7 +166,7 @@ function DialogPresentation(props: DialogPresentationProps) {
     props.onConfirm(value);
   };
   const actions = props.alertActions ?? [
-    { text: props.request.cancelText ?? "Cancel", onPress: props.onCancel },
+    { text: props.request.cancelText, onPress: props.onCancel },
     {
       text: props.request.confirmText,
       style: props.request.destructive ? ("destructive" as const) : ("default" as const),
@@ -187,7 +197,7 @@ function DialogPresentation(props: DialogPresentationProps) {
               : colors["--color-foreground"],
         }}
       >
-        <Text style={bodyTypography}>{uiT(action.text ?? "")}</Text>
+        <Text style={bodyTypography}>{action.text ?? ""}</Text>
       </Component>
     );
   };
@@ -215,14 +225,14 @@ function DialogPresentation(props: DialogPresentationProps) {
                 size={24}
               />
             ) : null}
-            <Text style={titleTypography}>{uiT(props.request.title)}</Text>
+            <Text style={titleTypography}>{props.request.title}</Text>
           </Column>
         </AlertDialog.Title>
         {props.inputInitialValue !== undefined ? (
           <AlertDialog.Text>
             <Column verticalArrangement={{ spacedBy: 16 }}>
               {props.request.message ? (
-                <Text style={bodyTypography}>{uiT(props.request.message)}</Text>
+                <Text style={bodyTypography}>{props.request.message}</Text>
               ) : null}
               <OutlinedTextField
                 autoFocus
@@ -243,7 +253,7 @@ function DialogPresentation(props: DialogPresentationProps) {
                 }}
               >
                 <OutlinedTextField.Label>
-                  <Text style={bodyTypography}>{uiT(props.request.title)}</Text>
+                  <Text style={bodyTypography}>{props.request.title}</Text>
                 </OutlinedTextField.Label>
                 {props.inputPlaceholder ? (
                   <OutlinedTextField.Placeholder>
@@ -256,7 +266,7 @@ function DialogPresentation(props: DialogPresentationProps) {
         ) : props.request.message ? (
           <AlertDialog.Text>
             <Text modifiers={[verticalScroll()]} style={bodyTypography}>
-              {uiT(props.request.message)}
+              {props.request.message}
             </Text>
           </AlertDialog.Text>
         ) : null}

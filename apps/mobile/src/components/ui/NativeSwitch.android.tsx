@@ -1,6 +1,6 @@
 import { Switch as ComposeSwitch } from "@expo/ui/jetpack-compose";
 import { Pressable, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
+
 import type { ThemedSwitchProps } from "./NativeSwitch.types";
 import { NativeThemeHost } from "./NativeThemeHost.android";
 
@@ -8,15 +8,13 @@ import { useControlTheme } from "./useControlTheme";
 
 /** RN Pressable must own touch: Compose-handled switch taps can activate the parent row instead. */
 export function NativeSwitch(props: ThemedSwitchProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { colors } = useControlTheme();
 
   return (
     <Pressable
       disabled={props.disabled}
       onPress={() => props.onValueChange?.(!props.value)}
-      accessibilityLabel={uiT(props.accessibilityLabel)}
+      accessibilityLabel={props.accessibilityLabel}
       accessibilityHint={props.accessibilityHint}
       accessibilityRole="switch"
       accessibilityState={{ checked: Boolean(props.value), disabled: Boolean(props.disabled) }}

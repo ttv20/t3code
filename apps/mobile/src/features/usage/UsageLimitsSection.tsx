@@ -1,10 +1,10 @@
-import { formatUiResetCreditChoices } from "@t3tools/client-runtime/usage-localization";
-import { RegistryContext, useAtomMount, useAtomValue } from "@effect/atom-react";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
+  formatUiResetCreditChoices,
   formatUiUsageReset,
   formatUiUsageWindowLabel,
 } from "@t3tools/client-runtime/usage-localization";
+import { RegistryContext, useAtomMount, useAtomValue } from "@effect/atom-react";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   AuthProvidersManageScope,
   type EnvironmentId,
@@ -26,7 +26,6 @@ import { type ReactNode, useContext, useRef, useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { UiText, useUiLanguage } from "../../i18n";
-
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { AppText as Text } from "../../components/ui/AppText";
 import { useNowMinuteMs } from "../../lib/clock";
@@ -202,7 +201,7 @@ export function AccountLimits(props: {
       <View className="flex-row items-center gap-2">
         <ProviderIcon provider={props.driver} size={16} />
         <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-          <Text className="text-base font-t3-medium text-foreground">{uiT(props.label)}</Text>
+          <Text className="text-base font-t3-medium text-foreground">{props.label}</Text>
           {props.instanceLabel !== props.label ? (
             <AccountInstanceLabel key={props.instanceLabel} value={props.instanceLabel} />
           ) : null}

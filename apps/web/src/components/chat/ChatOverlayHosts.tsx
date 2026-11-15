@@ -1,16 +1,16 @@
-import { useAtomValue } from "@effect/atom-react";
+import { UiText } from "../../i18n";
 import type {
   DeviceServiceState,
   EnvironmentId,
   MessageId,
+  OrchestrationV2ThreadProjection,
   ScopedThreadRef,
   ThreadId,
 } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
-import { useUiLanguage } from "../../i18n";
-
-import { useRightPanelStore } from "~/rightPanelStore";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { useRightPanelStore } from "~/rightPanelStore";
 import { DeviceSetup } from "../device/DeviceSetup";
 import { PullRequestThreadDialog } from "../PullRequestThreadDialog";
 import {
@@ -25,7 +25,10 @@ import {
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { WizardPopup } from "../ui/wizard";
+import { findRevertCheckpoint } from "../../session-logic";
 import { registerThreadOverlay } from "./threadOverlayRetention";
+
+import { useUiLanguage } from "../../i18n";
 
 /**
  * Open state for overlays the chat view hosts. It lives in atoms rather than
@@ -76,6 +79,7 @@ export function PullRequestThreadDialogHost(props: {
   readonly onPrepared: (input: {
     branch: string;
     worktreePath: string | null;
+    pullRequestUrl: string;
   }) => Promise<void> | void;
 }) {
   const state = useThreadOverlay(pullRequestThreadDialogAtom, props.threadKey);
@@ -197,13 +201,20 @@ export function openRevertConfirm(threadKey: string, pending: PendingRevert): vo
 
 export function RevertConfirmHost(props: {
   readonly threadKey: string;
+  readonly checkpoints: OrchestrationV2ThreadProjection["checkpoints"] | undefined;
+  readonly worktreePath: string | null;
   readonly onConfirm: (turnCount: number, messageId: MessageId, restoreFiles: boolean) => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
   const pending = useThreadOverlay(revertConfirmAtom, props.threadKey);
+  // The server refuses file restore outside an isolated worktree.
+  const canRestoreFiles =
+    pending !== null &&
+    props.worktreePath !== null &&
+    findRevertCheckpoint(props.checkpoints ?? [], pending.turnCount)?.status === "ready";
   const confirm = (restoreFiles: boolean) => {
-    if (pending === null) return;
+    if (pending === null || (restoreFiles && !canRestoreFiles)) return;
     closeThreadOverlay(revertConfirmAtom);
     props.onConfirm(pending.turnCount, pending.messageId, restoreFiles);
   };
@@ -224,9 +235,15 @@ export function RevertConfirmHost(props: {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogClose render={<Button variant="outline" />}>{uiT("Cancel")}</AlertDialogClose>
-          <Button variant="destructive-outline" onClick={() => confirm(true)}>
-            {uiT("Revert files too")}
+          <AlertDialogClose render={<Button variant="outline" />}>
+            <UiText message={"Cancel"} />
+          </AlertDialogClose>
+          <Button
+            variant="destructive-outline"
+            disabled={!canRestoreFiles}
+            onClick={() => confirm(true)}
+          >
+            <UiText message={"Revert files too"} />
           </Button>
           <Button onClick={() => confirm(false)}>{uiT("Revert and keep changes")}</Button>
         </AlertDialogFooter>

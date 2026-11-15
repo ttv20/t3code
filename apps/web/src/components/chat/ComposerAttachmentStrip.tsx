@@ -1,4 +1,3 @@
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type {
   ChatAttachment,
   ChatFileAttachment,
@@ -6,20 +5,18 @@ import type {
   ScopedThreadRef,
   SnapShotSource,
 } from "@t3tools/contracts";
-import { CircleAlertIcon, PaperclipIcon, PlayIcon, XIcon } from "lucide-react";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { CircleAlertIcon, ImageIcon, PaperclipIcon, PlayIcon, XIcon } from "lucide-react";
 import { type ComponentProps, useLayoutEffect, useRef } from "react";
-import { useUiLanguage } from "../../i18n";
-
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { cn } from "~/lib/utils";
 import {
   type ComposerFileAttachment,
-  composerFileNeedsReattach,
   type ComposerImageAttachment,
   type DraftId,
+  composerFileNeedsReattach,
 } from "../../composerDraftStore";
 import { retryAttachmentUpload, useAttachmentUploadStore } from "../../lib/attachmentUploadQueue";
-import { formatAttachmentUploadProgress } from "../../lib/attachmentUploadState";
+import type { AttachmentUploadState } from "../../lib/attachmentUploadState";
+import { useAttachmentUploadProgress } from "../../hooks/useAttachmentUploadProgress";
 import { isHeicImageFile } from "../../lib/imageCompression";
 import {
   type PendingSnapShotAnimation,
@@ -27,14 +24,17 @@ import {
   setSnapShotAnimationDestination,
   shouldAnimateSnapShotArrival,
 } from "../../lib/snapShotAnimation";
-import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
+import { cn } from "~/lib/utils";
 import { getRestingComposerImagePreviewCounts } from "../composerFooterLayout";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
 import { AttachmentImage } from "../media/AttachmentImage";
 import { Button } from "../ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ComposerImageThumbnail } from "./ComposerImageThumbnail";
+import { composerFloatingLayerProps } from "./composerEventScope";
+import type { PreparingComposerImage } from "./preparingComposerImages";
 import {
   attachVideoThumbnail,
   buildExpandedImagePreview,
@@ -45,8 +45,35 @@ import {
   SNAP_SHOT_ATTACHMENT_FRAME_CLASS,
   SnapShotAttachmentDetails,
 } from "./SnapShotAttachmentDetails";
-import { composerFloatingLayerProps } from "./composerEventScope";
-import type { PreparingComposerImage } from "./preparingComposerImages";
+import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
+
+import { useUiLanguage } from "../../i18n";
+
+function ComposerAttachmentUploadProgress({
+  id,
+  upload,
+  fallback,
+}: {
+  id: string;
+  upload: AttachmentUploadState | undefined;
+  fallback?: string;
+}) {
+  return useAttachmentUploadProgress(id, upload) ?? fallback ?? null;
+}
+
+function ComposerImageFallback() {
+  const { t: uiT } = useUiLanguage();
+
+  return (
+    <span
+      role="img"
+      aria-label={uiT("Image attachment")}
+      className="flex size-full items-center justify-center p-3 text-secondary-label"
+    >
+      <ImageIcon aria-hidden="true" className="size-4" />
+    </span>
+  );
+}
 
 function ComposerVideoThumbnail({ file }: { file: File }) {
   const setVideo = (video: HTMLVideoElement | null) => {
@@ -217,21 +244,17 @@ export function ComposerAttachmentMediaRow({
                           name={ready.name}
                           mimeType={ready.mimeType}
                           src={ready.previewUrl}
-                          alt={image.name}
+                          alt=""
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="flex h-full items-center justify-center px-1 text-3xs text-secondary-label">
-                          {image.name}
-                        </span>
+                        <ComposerImageFallback />
                       )
                     }
                   />
                 </button>
               ) : (
-                <div className="flex h-full w-full items-center justify-center px-1 text-center text-3xs text-secondary-label">
-                  {image.name}
-                </div>
+                <ComposerImageFallback />
               )}
               {source?.kind === "snap-shot" ? (
                 <SnapShotAttachmentDetails
@@ -262,10 +285,12 @@ export function ComposerAttachmentMediaRow({
                   </TooltipPopup>
                 </Tooltip>
               )}
-              {(ready ? upload?.status === "uploading" : supportsAttachmentUploads) && (
+              {(!ready || upload?.status === "uploading") && (
                 <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-background/85 px-1 text-center text-3xs text-foreground">
-                  {formatAttachmentUploadProgress(
-                    upload?.status === "uploading" ? upload.progress : 0,
+                  {upload?.status === "uploading" ? (
+                    <ComposerAttachmentUploadProgress id={image.id} upload={upload} />
+                  ) : (
+                    uiT("Preparing")
                   )}
                 </span>
               )}
@@ -364,7 +389,7 @@ export function ComposerAttachmentMediaRow({
             </button>
             {upload?.status === "uploading" && (
               <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-background/85 px-1 text-center text-3xs text-foreground">
-                {formatAttachmentUploadProgress(upload.progress)}
+                <ComposerAttachmentUploadProgress id={file.id} upload={upload} />
               </span>
             )}
             {upload?.status === "failed" && (
@@ -460,13 +485,21 @@ export function ComposerAttachmentFileList({
               {file.name}
             </button>
             <span className="shrink-0 text-xs text-secondary-label">
-              {needsReattach
-                ? canReattachFile
-                  ? uiT("Attach again")
-                  : uiT("Remove to send")
-                : upload?.status === "uploading"
-                  ? formatAttachmentUploadProgress(upload.progress)
-                  : formatAttachmentSize(file.sizeBytes)}
+              {needsReattach ? (
+                canReattachFile ? (
+                  uiT("Attach again")
+                ) : (
+                  uiT("Remove to send")
+                )
+              ) : upload?.status === "uploading" ? (
+                <ComposerAttachmentUploadProgress
+                  id={file.id}
+                  upload={upload}
+                  fallback={formatAttachmentSize(file.sizeBytes)}
+                />
+              ) : (
+                formatAttachmentSize(file.sizeBytes)
+              )}
             </span>
             {!needsReattach && upload?.status === "failed" ? (
               <Tooltip>

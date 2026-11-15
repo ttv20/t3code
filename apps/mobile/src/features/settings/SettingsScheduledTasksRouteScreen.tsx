@@ -1,9 +1,10 @@
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { DateTimePicker } from "@expo/ui/community/datetime-picker";
 import type { MenuAction } from "@react-native-menu/menu";
 import { useFocusEffect, useNavigation, usePreventRemove } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { createUiTranslator, formatUiDateTime, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { formatUiDateTime, UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";
 import {
   DEFAULT_WEBHOOK_PROMPT,
   emptyWebhookFilterDraft,
@@ -13,6 +14,65 @@ import {
   WEBHOOK_FILTER_OPS,
   type WebhookFilterDraft,
 } from "@t3tools/client-runtime/scheduled-task-webhook";
+import { scheduleTimeZoneLabel } from "@t3tools/client-runtime/scheduled-task-time-zone";
+import { useRef, useState, type ReactNode } from "react";
+import { AppState, Platform, Pressable, TextInput as RNTextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Dialog from "../../components/ui/Dialog";
+import { UiText, useUiLanguage } from "../../i18n";
+import { readEnvironmentScope, usePreparedConnection } from "../../state/session";
+import { readUiTranslator } from "../../state/ui-language";
+import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
+import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
+import type { ComposerEditorSelection } from "../../components/ComposerEditor";
+import {
+  ENVIRONMENT_MACHINE_SYMBOLS,
+  EnvironmentMachineSymbol,
+} from "../../components/EnvironmentMachineSymbol";
+import { SymbolView } from "../../components/ui/AppSymbol";
+import { AppText as Text } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { Menu } from "../../components/ui/Menu";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { SegmentedControl } from "../../components/ui/SegmentedControl";
+import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
+import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
+import { buildModelOptions } from "../../lib/modelOptions";
+import { withImplicitFastModeSelection } from "../../lib/providerOptions";
+import { useProjects, useEnvironmentServerConfig } from "../../state/entities";
+import { useEnvironmentQuery } from "../../state/query";
+import { serverEnvironment } from "../../state/server";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { resolveNewTaskBranchLabel } from "../threads/new-task-context-presentation";
+import { useVoiceInputController } from "../voice-input/useVoiceInputController";
+import { ScheduledTaskPromptField } from "./components/ScheduledTaskPromptField";
+import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
+import { SettingsScreen } from "./components/SettingsScreen";
+import { SettingsSection } from "./components/SettingsSection";
+import {
+  useScheduledTaskDestinationLabel,
+  useScheduledTaskEditor,
+  useScheduledTaskThread,
+} from "./scheduled-task-editor";
+import {
+  discardScheduledTaskEditor,
+  markScheduledTaskEditorSaved,
+} from "./scheduled-task-editor-state";
+import {
+  changeDraftProject,
+  editDraft,
+  parseIntervalMinutes,
+  scheduledTaskDefaultModel,
+  scheduleFromDraft,
+  unbindDraftFromThread,
+  type ScheduledTaskDraft as Draft,
+} from "./scheduledTaskDraft";
+import { settingsTargetsForProject } from "./settings-environment-filter.logic";
+import {
+  formatNextScheduledTaskRun,
+  formatScheduledTaskInterval,
+} from "./scheduledTaskPresentation";
+import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -36,63 +96,6 @@ import {
   scheduledTaskThreadMode,
 } from "@t3tools/contracts";
 import { resolvePastedPath } from "@t3tools/shared/path";
-import { useRef, useState, type ReactNode } from "react";
-import { AppState, Platform, Pressable, TextInput as RNTextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Dialog from "../../components/ui/Dialog";
-import { UiText, useUiLanguage } from "../../i18n";
-import { readEnvironmentScope } from "../../state/session";
-import { readUiTranslator } from "../../state/ui-language";
-import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
-
-import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
-import type { ComposerEditorSelection } from "../../components/ComposerEditor";
-import {
-  ENVIRONMENT_MACHINE_SYMBOLS,
-  EnvironmentMachineSymbol,
-} from "../../components/EnvironmentMachineSymbol";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import { AppText as Text } from "../../components/ui/AppText";
-import { Button } from "../../components/ui/Button";
-import { Menu } from "../../components/ui/Menu";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { SegmentedControl } from "../../components/ui/SegmentedControl";
-import { ThemedSwitch } from "../../components/ui/ThemedSwitch";
-import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
-import { buildModelOptions } from "../../lib/modelOptions";
-import { appAtomRegistry } from "../../state/atom-registry";
-import { useEnvironmentServerConfig, useProjects } from "../../state/entities";
-import { useEnvironmentQuery } from "../../state/query";
-import { serverEnvironment } from "../../state/server";
-import { usePreparedConnection } from "../../state/session";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { resolveNewTaskBranchLabel } from "../threads/new-task-context-presentation";
-import { useVoiceInputController } from "../voice-input/useVoiceInputController";
-import { ScheduledTaskPromptField } from "./components/ScheduledTaskPromptField";
-import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
-import { SettingsScreen } from "./components/SettingsScreen";
-import { SettingsSection } from "./components/SettingsSection";
-import { useScheduledTaskDestinationLabel, useScheduledTaskEditor } from "./scheduled-task-editor";
-import {
-  discardScheduledTaskEditor,
-  markScheduledTaskEditorSaved,
-  scheduledTaskEditorSessionAtom,
-} from "./scheduled-task-editor-state";
-import {
-  changeDraftProject,
-  editDraft,
-  parseIntervalMinutes,
-  scheduledTaskDefaultModel,
-  scheduleFromDraft,
-  unbindDraftFromThread,
-  type ScheduledTaskDraft as Draft,
-} from "./scheduledTaskDraft";
-import {
-  formatNextScheduledTaskRun,
-  formatScheduledTaskInterval,
-} from "./scheduledTaskPresentation";
-import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
-import { settingsTargetsForProject } from "./settings-environment-filter.logic";
 
 type ScheduledTaskRoutes = {
   SettingsScheduledTaskNew: undefined;
@@ -118,40 +121,41 @@ const THREAD_MODE_LABELS: Record<ScheduledTaskThreadMode, string> = {
   fresh_session: "One thread, fresh session",
 };
 
-function describeSchedule(task: ScheduledTask, locale: UiLocale): string {
-  const t = createUiTranslator(locale);
-
-  if (task.schedule.type === "webhook") return t("On webhook");
+function describeSchedule(task: ScheduledTask, locale: UiLocale, timeZone?: string): string {
+  const uiT = createUiTranslator(locale);
+  if (task.schedule.type === "webhook") return uiT("On webhook");
   if (task.schedule.type === "once") {
-    return t("Once, {0}", { "0": formatUiDateTime(Date.parse(task.schedule.runAt), locale) });
+    return uiT("Once, {0}", { "0": formatUiDateTime(Date.parse(task.schedule.runAt), locale) });
   }
   if (task.schedule.type === "interval") return formatScheduledTaskInterval(task.schedule.everyMs);
-  const weekdays = task.schedule.weekdays ?? [];
-  const days =
-    weekdays.length === 0
-      ? t("Every day")
-      : weekdays.length === 5 && weekdays.every((day) => day >= 1 && day <= 5)
-        ? t("Weekdays")
-        : weekdays
-            .map((day) => t(DAYS.find((entry) => entry.index === day)?.label ?? ""))
-            .join(", ");
-  return t("{0} at {1}", { "0": days, "1": formatTime(task.schedule.timeOfDay) });
+  const days = task.schedule.weekdays?.length
+    ? repeatLabel(task.schedule.weekdays)
+    : uiT("Every day");
+  const zone = scheduleTimeZoneLabel(timeZone, task.nextRunAt);
+  return (
+    uiT("{0} at {1}", { "0": days, "1": formatTime(task.schedule.timeOfDay, locale) }) +
+    (zone === undefined ? "" : ` ${zone}`)
+  );
 }
 
-function formatTime(value: string): string {
+function formatTime(value: string, locale: UiLocale): string {
   const [hours, minutes] = value.split(":").map(Number);
   if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return value;
   const time = new Date();
   time.setHours(hours ?? 9, minutes ?? 0, 0, 0);
-  return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return time.toLocaleTimeString(UI_DATE_LOCALES[locale], { hour: "numeric", minute: "2-digit" });
 }
 
-function formatRunAtDate(value: Date): string {
-  return value.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+function formatRunAtDate(value: Date, locale: UiLocale): string {
+  return value.toLocaleDateString(UI_DATE_LOCALES[locale], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-function formatRunAtTime(value: Date): string {
-  return value.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+function formatRunAtTime(value: Date, locale: UiLocale): string {
+  return value.toLocaleTimeString(UI_DATE_LOCALES[locale], { hour: "numeric", minute: "2-digit" });
 }
 
 function timePickerValue(value: string): Date {
@@ -188,23 +192,21 @@ function FormField(props: {
   readonly placeholder?: string;
   readonly borderTop?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <View
       className={
         props.borderTop ? "gap-2 border-t border-border-subtle px-4 py-3" : "gap-2 px-4 py-3"
       }
     >
-      <Text className="text-sm text-foreground-muted">{uiT(props.label)}</Text>
+      <Text className="text-sm text-foreground-muted">{props.label}</Text>
       <RNTextInput
-        accessibilityLabel={uiT(props.label)}
+        accessibilityLabel={props.label}
         value={props.value}
         readOnly={props.disabled}
         onChangeText={props.onChange}
         textAlignVertical="center"
         keyboardType={props.keyboardType}
-        placeholder={uiT(props.placeholder)}
+        placeholder={props.placeholder}
         placeholderTextColorClassName="accent-foreground-muted"
         className="min-h-8 font-sans text-base text-foreground"
       />
@@ -220,7 +222,6 @@ function SelectRow(props: {
   readonly onSelect: (id: string) => void;
   readonly borderTop?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
   const value = (
     <View className="min-w-0 flex-1 flex-row items-center justify-end gap-2">
       {props.valueIcon}
@@ -243,7 +244,7 @@ function SelectRow(props: {
         }
       >
         <Text textRole="body" className="text-foreground">
-          {uiT(props.label)}
+          {props.label}
         </Text>
         {value}
       </View>
@@ -264,7 +265,7 @@ function SelectRow(props: {
         }
       >
         <Text textRole="body" className="text-foreground">
-          {uiT(props.label)}
+          {props.label}
         </Text>
         {value}
         <SymbolView
@@ -281,13 +282,14 @@ function SelectRow(props: {
 function WebhookFilterRows(props: {
   readonly filters: ReadonlyArray<WebhookFilterDraft>;
   readonly disabled: boolean;
-  readonly onChange: (filters: ReadonlyArray<WebhookFilterDraft>) => void;
+  readonly onChange: (
+    update: (filters: ReadonlyArray<WebhookFilterDraft>) => ReadonlyArray<WebhookFilterDraft>,
+  ) => void;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const update = (index: number, patch: Partial<WebhookFilterDraft>) =>
-    props.onChange(
-      props.filters.map((filter, at) => (at === index ? { ...filter, ...patch } : filter)),
+  const update = (id: WebhookFilterDraft["id"], patch: Partial<WebhookFilterDraft>) =>
+    props.onChange((filters) =>
+      filters.map((filter) => (filter.id === id ? { ...filter, ...patch } : filter)),
     );
   return (
     <>
@@ -302,7 +304,9 @@ function WebhookFilterRows(props: {
               accessibilityLabel={uiT("Remove filter {0}", { "0": index + 1 })}
               disabled={props.disabled}
               hitSlop={8}
-              onPress={() => props.onChange(removeWebhookFilterDraft(props.filters, filter.id))}
+              onPress={() =>
+                props.onChange((filters) => removeWebhookFilterDraft(filters, filter.id))
+              }
               className="active:opacity-70"
             >
               <SymbolView name="trash" size={16} tintColorClassName="accent-danger-foreground" />
@@ -313,7 +317,7 @@ function WebhookFilterRows(props: {
             value={filter.path}
             placeholder={"body.action"}
             disabled={props.disabled}
-            onChange={(path) => update(index, { path })}
+            onChange={(path) => update(filter.id, { path })}
           />
           <SelectRow
             label={uiT("Test")}
@@ -325,7 +329,7 @@ function WebhookFilterRows(props: {
             }))}
             onSelect={(id) => {
               const known = WEBHOOK_FILTER_OPS.find((option) => option.op === id);
-              if (known) update(index, { op: known.op });
+              if (known) update(filter.id, { op: known.op });
             }}
           />
           {filter.op === "exists" ? null : (
@@ -334,7 +338,7 @@ function WebhookFilterRows(props: {
               value={filter.value}
               placeholder={filter.op === "in" ? uiT("opened, reopened") : uiT("opened")}
               disabled={props.disabled}
-              onChange={(value) => update(index, { value })}
+              onChange={(value) => update(filter.id, { value })}
             />
           )}
         </View>
@@ -343,7 +347,13 @@ function WebhookFilterRows(props: {
         <Pressable
           accessibilityRole="button"
           disabled={props.disabled}
-          onPress={() => props.onChange([...props.filters, emptyWebhookFilterDraft()])}
+          onPress={() =>
+            props.onChange((filters) =>
+              filters.length < MAX_WEBHOOK_FILTERS
+                ? [...filters, emptyWebhookFilterDraft()]
+                : filters,
+            )
+          }
           className="min-h-14 flex-row items-center gap-3 border-t border-border-subtle px-4 py-3 active:opacity-70"
         >
           <Text textRole="body" className="min-w-0 flex-1 text-foreground">
@@ -370,7 +380,6 @@ function PickerRow(props: {
   readonly disabled?: boolean;
   readonly borderTop?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       accessibilityRole="button"
@@ -385,7 +394,7 @@ function PickerRow(props: {
       }
     >
       <Text textRole="body" className="text-foreground">
-        {uiT(props.label)}
+        {props.label}
       </Text>
       <Text
         textRole="footnote"
@@ -545,8 +554,6 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
   const voiceInput = useVoiceInputController({
     ownerKey,
     label: editor?.draft.title.trim() || title,
-    subscribeToDraftChanges: (onChange) =>
-      appAtomRegistry.subscribe(scheduledTaskEditorSessionAtom, onChange),
     selection,
     readDraftMessage: () => {
       const current = readEditor();
@@ -620,8 +627,19 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
                 voiceInput={voiceInput}
               />
             }
-            setDraft={(draft) => {
-              if (!saving) setEditor({ ...editor, draft });
+            setDraft={(update) => {
+              if (!saving)
+                setEditor((current) =>
+                  current ? { ...current, draft: update(current.draft) } : current,
+                );
+            }}
+            setEnvironmentDraft={(update) => {
+              if (!saving)
+                setEditor((current) =>
+                  current && current.environmentId === editor.environmentId
+                    ? { ...current, draft: update(current.draft) }
+                    : current,
+                );
             }}
             onSaved={() => {
               saved.current = true;
@@ -629,18 +647,21 @@ function SettingsScheduledTaskEditorScreen({ title }: { readonly title: string }
               if (navigation.isFocused()) navigation.goBack();
             }}
             onChangeEnvironment={(target) => {
-              if (target.environmentId === editor.environmentId) return;
-              setEditor({
-                environmentId: target.environmentId,
-                environmentLabel: target.label,
-                draft: {
-                  ...draftForEnvironment(target.environmentId),
-                  title: editor.draft.title,
-                  prompt: editor.draft.prompt,
-                  schedule: editor.draft.schedule,
-                  enabled: editor.draft.enabled,
-                },
-              });
+              setEditor((current) =>
+                !current || target.environmentId === current.environmentId
+                  ? current
+                  : {
+                      environmentId: target.environmentId,
+                      environmentLabel: target.label,
+                      draft: {
+                        ...draftForEnvironment(target.environmentId),
+                        title: current.draft.title,
+                        prompt: current.draft.prompt,
+                        schedule: current.draft.schedule,
+                        enabled: current.draft.enabled,
+                      },
+                    },
+              );
             }}
           />
         ) : (
@@ -667,6 +688,7 @@ function TaskForm({
   dictationPending,
   promptField,
   setDraft,
+  setEnvironmentDraft,
   onSaved,
   onChangeEnvironment,
 }: {
@@ -678,12 +700,13 @@ function TaskForm({
   readonly setSaving: (saving: boolean) => void;
   readonly dictationPending: boolean;
   readonly promptField: ReactNode;
-  readonly setDraft: (draft: Draft) => void;
+  readonly setDraft: (update: (current: Draft) => Draft) => void;
+  readonly setEnvironmentDraft: (update: (current: Draft) => Draft) => void;
   readonly onSaved: () => void;
   readonly onChangeEnvironment: (target: SettingsTarget) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const { t: uiT, locale } = useUiLanguage();
+  const { readEditor } = useScheduledTaskEditor();
   const navigation = useNavigation<NativeStackNavigationProp<ScheduledTaskRoutes>>();
   const tasks = useEnvironmentQuery(
     serverEnvironment.scheduledTasksLive({ environmentId, input: {} }),
@@ -700,6 +723,10 @@ function TaskForm({
     .sort((left, right) => Number(right.pinnedAt != null) - Number(left.pinnedAt != null));
   const config = useEnvironmentServerConfig(environmentId);
   const destinationLabel = useScheduledTaskDestinationLabel(environmentId, draft.threadId);
+  const boundThread = useScheduledTaskThread(environmentId, draft.threadId);
+  // Bound runs use the thread's current model, so the locked row shows that one.
+  const shownSelection =
+    draft.threadId === null ? draft.modelSelection : (boundThread?.modelSelection ?? null);
   const modelOptions = buildModelOptions(config, null, undefined, draft.projectId);
   // Existing webhook tasks keep the option so they can still switch to a timer.
   const webhookDenial = managedCapabilityDenial(config?.managedPolicy, "webhookTasks");
@@ -717,6 +744,7 @@ function TaskForm({
     draft.task !== null &&
     tasks.data !== null &&
     !tasks.data.tasks.some((task) => task.id === draft.task?.id);
+  const runAtZone = scheduleTimeZoneLabel(tasks.data?.timeZone);
   const environmentUnavailable = !availableTargets.some(
     (target) => target.environmentId === environmentId,
   );
@@ -732,6 +760,9 @@ function TaskForm({
     draft.task?.schedule.type === "once";
   const offersThreadModes = config?.environment.capabilities.scheduledTaskThreadModes === true;
   const save = async () => {
+    const current = readEditor();
+    if (!current || current.environmentId !== environmentId) return;
+    const draft = current.draft;
     if (
       !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope) ||
       submissionPending.current ||
@@ -806,7 +837,7 @@ function TaskForm({
       title: draft.title.trim(),
       prompt: draft.prompt.trim(),
       projectId: draft.projectId,
-      modelSelection: draft.modelSelection,
+      modelSelection: withImplicitFastModeSelection(draft.modelSelection, config?.providers ?? []),
       schedule,
       enabled: draft.enabled,
       threadId: draft.threadId,
@@ -894,7 +925,7 @@ function TaskForm({
             disabled={saving}
             value={draft.title}
             placeholder={uiT("Check for issues")}
-            onChange={(title) => setDraft({ ...draft, title })}
+            onChange={(title) => setDraft((current) => ({ ...current, title }))}
           />
           {promptField}
         </SettingsSection>
@@ -914,21 +945,23 @@ function TaskForm({
             onSelect={(id) => {
               const project = projects.find((item) => item.id === id);
               if (!project) return;
-              const keepsExplicitModel =
-                draft.modelSelectionIsExplicit &&
-                (draft.modelSelection === null ||
-                  !config?.settings ||
-                  resolveProjectProviderInstanceEnabled(
-                    config.settings,
-                    project.id,
-                    draft.modelSelection.instanceId,
-                  ));
-              setDraft({
-                ...changeDraftProject(draft, project.id),
-                modelSelection: keepsExplicitModel
-                  ? draft.modelSelection
-                  : scheduledTaskDefaultModel(config, project),
-                modelSelectionIsExplicit: keepsExplicitModel,
+              setEnvironmentDraft((current) => {
+                const keepsExplicitModel =
+                  current.modelSelectionIsExplicit &&
+                  (current.modelSelection === null ||
+                    !config?.settings ||
+                    resolveProjectProviderInstanceEnabled(
+                      config.settings,
+                      project.id,
+                      current.modelSelection.instanceId,
+                    ));
+                return {
+                  ...changeDraftProject(current, project.id),
+                  modelSelection: keepsExplicitModel
+                    ? current.modelSelection
+                    : scheduledTaskDefaultModel(config, project),
+                  modelSelectionIsExplicit: keepsExplicitModel,
+                };
               });
             }}
           />
@@ -938,14 +971,17 @@ function TaskForm({
             value={
               modelOptions.find(
                 (option) =>
-                  option.selection.instanceId === draft.modelSelection?.instanceId &&
-                  option.selection.model === draft.modelSelection?.model,
+                  option.selection.instanceId === shownSelection?.instanceId &&
+                  option.selection.model === shownSelection?.model,
               )?.label ??
-              draft.modelSelection?.model ??
+              shownSelection?.model ??
               (modelOptions.length ? "Choose model" : "No models available")
             }
             onPress={() => navigation.navigate("SettingsScheduledTaskModel")}
-            disabled={saving || dictationPending || environmentUnavailable}
+            // The saved selection only seeds new threads; bound runs ignore it.
+            disabled={
+              saving || dictationPending || environmentUnavailable || draft.threadId !== null
+            }
           />
         </SettingsSection>
 
@@ -978,9 +1014,9 @@ function TaskForm({
               )}
               onSelect={(id) => {
                 if (id === "new_thread")
-                  setDraft({ ...unbindDraftFromThread(draft), threadMode: id });
+                  setDraft((current) => ({ ...unbindDraftFromThread(current), threadMode: id }));
                 else if (id === "continue" || id === "fresh_session")
-                  setDraft({ ...draft, threadMode: id });
+                  setDraft((current) => ({ ...current, threadMode: id }));
               }}
             />
           ) : null}
@@ -1028,7 +1064,7 @@ function TaskForm({
             ]}
             onSelect={(id) => {
               if (id === "worktree" || id === "root" || id === "existing_worktree")
-                setDraft({ ...draft, workspace: id });
+                setDraft((current) => ({ ...current, workspace: id }));
             }}
           />
           {draft.workspace === "worktree" ? (
@@ -1051,10 +1087,10 @@ function TaskForm({
               value={draft.checkoutPath}
               borderTop
               onChange={(checkoutPath) =>
-                setDraft({
-                  ...draft,
-                  checkoutPath: resolvePastedPath(draft.checkoutPath, checkoutPath),
-                })
+                setEnvironmentDraft((current) => ({
+                  ...current,
+                  checkoutPath: resolvePastedPath(current.checkoutPath, checkoutPath),
+                }))
               }
             />
           ) : null}
@@ -1079,21 +1115,21 @@ function TaskForm({
               onSelect={(mode) => {
                 setTimePickerOpen(false);
                 setRunAtPicker(null);
-                setDraft({
-                  ...draft,
+                setDraft((current) => ({
+                  ...current,
                   prompt:
-                    mode === "webhook" && !draft.prompt.trim()
+                    mode === "webhook" && !current.prompt.trim()
                       ? DEFAULT_WEBHOOK_PROMPT
-                      : draft.prompt,
+                      : current.prompt,
                   schedule: {
-                    ...draft.schedule,
+                    ...current.schedule,
                     mode,
                     runAt:
-                      mode === "once" && !draft.schedule.runAt
+                      mode === "once" && !current.schedule.runAt
                         ? new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000).toISOString()
-                        : draft.schedule.runAt,
+                        : current.schedule.runAt,
                   },
-                });
+                }));
               }}
             />
           </View>
@@ -1101,7 +1137,10 @@ function TaskForm({
             <>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={uiT("Time, {0}", { "0": formatTime(draft.schedule.timeOfDay) })}
+                accessibilityLabel={uiT("Time, {0}{1}", {
+                  "0": formatTime(draft.schedule.timeOfDay, locale),
+                  "1": runAtZone ? ` ${runAtZone}` : "",
+                })}
                 onPress={() => setTimePickerOpen((open) => !open)}
                 className="min-h-14 flex-row items-center gap-3 border-t border-border-subtle px-4 py-3 active:opacity-70"
               >
@@ -1112,7 +1151,8 @@ function TaskForm({
                   textRole="footnote"
                   className="min-w-0 flex-1 text-right text-foreground-muted"
                 >
-                  {formatTime(draft.schedule.timeOfDay)}
+                  {formatTime(draft.schedule.timeOfDay, locale)}
+                  {runAtZone ? ` ${runAtZone}` : ""}
                 </Text>
                 <SymbolView
                   name="chevron.right"
@@ -1129,7 +1169,10 @@ function TaskForm({
                   onDismiss={() => setTimePickerOpen(false)}
                   onValueChange={(_, selected) => {
                     const timeOfDay = `${String(selected.getHours()).padStart(2, "0")}:${String(selected.getMinutes()).padStart(2, "0")}`;
-                    setDraft({ ...draft, schedule: { ...draft.schedule, timeOfDay } });
+                    setDraft((current) => ({
+                      ...current,
+                      schedule: { ...current.schedule, timeOfDay },
+                    }));
                   }}
                 />
               ) : null}
@@ -1158,30 +1201,35 @@ function TaskForm({
                   })),
                 ]}
                 onSelect={(id) => {
-                  const weekdays =
-                    id === "every_day"
-                      ? DAYS.map((day) => day.index)
-                      : id === "weekdays"
-                        ? [1, 2, 3, 4, 5]
-                        : (() => {
-                            const day = DAYS.find((item) => String(item.index) === id);
-                            if (!day) return draft.schedule.weekdays;
-                            return draft.schedule.weekdays.includes(day.index)
-                              ? draft.schedule.weekdays.filter((index) => index !== day.index)
-                              : [...draft.schedule.weekdays, day.index];
-                          })();
-                  setDraft({ ...draft, schedule: { ...draft.schedule, weekdays } });
+                  setDraft((current) => {
+                    const weekdays =
+                      id === "every_day"
+                        ? DAYS.map((day) => day.index)
+                        : id === "weekdays"
+                          ? [1, 2, 3, 4, 5]
+                          : (() => {
+                              const day = DAYS.find((item) => String(item.index) === id);
+                              if (!day) return current.schedule.weekdays;
+                              return current.schedule.weekdays.includes(day.index)
+                                ? current.schedule.weekdays.filter((index) => index !== day.index)
+                                : [...current.schedule.weekdays, day.index];
+                            })();
+                    return { ...current, schedule: { ...current.schedule, weekdays } };
+                  });
                 }}
               />
             </>
           ) : draft.schedule.mode === "webhook" && webhookDenial !== undefined && draft.enabled ? (
             <Text className="border-t border-border-subtle px-4 py-3 text-sm text-foreground-muted">
-              {`${webhookDenial} Switch the task to a timer, or turn it off, to save it.`}
+              {uiT("{0} Switch the task to a timer, or turn it off, to save it.", {
+                "0": webhookDenial,
+              })}
             </Text>
           ) : draft.schedule.mode === "once" ? (
             (["date", "time"] as const).map((field) => {
               const runAt = new Date(draft.schedule.runAt);
-              const label = field === "date" ? formatRunAtDate(runAt) : formatRunAtTime(runAt);
+              const label =
+                field === "date" ? formatRunAtDate(runAt, locale) : formatRunAtTime(runAt, locale);
               return (
                 <View key={field}>
                   <Pressable
@@ -1215,10 +1263,10 @@ function TaskForm({
                       onValueChange={(_, selected) => {
                         // Android shows a dialog that closes on pick; iOS stays inline.
                         if (Platform.OS === "android") setRunAtPicker(null);
-                        setDraft({
-                          ...draft,
-                          schedule: { ...draft.schedule, runAt: selected.toISOString() },
-                        });
+                        setDraft((current) => ({
+                          ...current,
+                          schedule: { ...current.schedule, runAt: selected.toISOString() },
+                        }));
                       }}
                     />
                   ) : null}
@@ -1246,14 +1294,20 @@ function TaskForm({
                 disabled={saving}
                 borderTop
                 onChange={(maxDeliveryAgeMinutes) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, maxDeliveryAgeMinutes } })
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, maxDeliveryAgeMinutes },
+                  }))
                 }
               />
               <WebhookFilterRows
                 filters={draft.schedule.filters}
                 disabled={saving}
-                onChange={(filters) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, filters } })
+                onChange={(update) =>
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, filters: update(current.schedule.filters) },
+                  }))
                 }
               />
               <FormField
@@ -1263,7 +1317,10 @@ function TaskForm({
                 disabled={saving}
                 borderTop
                 onChange={(replayKey) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, replayKey } })
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, replayKey },
+                  }))
                 }
               />
               <Text className="px-4 pb-3 text-sm text-foreground-muted">
@@ -1276,7 +1333,10 @@ function TaskForm({
                 disabled={saving}
                 borderTop
                 onChange={(coalesceKey) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, coalesceKey } })
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, coalesceKey },
+                  }))
                 }
               />
               <FormField
@@ -1287,7 +1347,10 @@ function TaskForm({
                 disabled={saving}
                 borderTop
                 onChange={(coalesceWindowSeconds) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, coalesceWindowSeconds } })
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, coalesceWindowSeconds },
+                  }))
                 }
               />
               <Text className="px-4 pb-3 text-sm text-foreground-muted">
@@ -1307,7 +1370,10 @@ function TaskForm({
                 disabled={saving}
                 borderTop
                 onChange={(intervalMinutes) =>
-                  setDraft({ ...draft, schedule: { ...draft.schedule, intervalMinutes } })
+                  setDraft((current) => ({
+                    ...current,
+                    schedule: { ...current.schedule, intervalMinutes },
+                  }))
                 }
               />
               {!(parseIntervalMinutes(draft.schedule.intervalMinutes) >= 1) ? (
@@ -1331,7 +1397,7 @@ function TaskForm({
             <ThemedSwitch
               accessibilityLabel={uiT("Task enabled")}
               value={draft.enabled}
-              onValueChange={(enabled) => setDraft({ ...draft, enabled })}
+              onValueChange={(enabled) => setDraft((current) => ({ ...current, enabled }))}
             />
           </View>
         </SettingsSection>
@@ -1548,7 +1614,7 @@ function EnvironmentTasks({
                 {task.title}
               </Text>
               <Text className="text-sm text-foreground-muted" numberOfLines={2}>
-                {describeSchedule(task, locale)}
+                {describeSchedule(task, locale, tasks.data?.timeZone)}
                 {!task.enabled
                   ? uiT(" · Paused")
                   : task.nextRunAt

@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import * as Updates from "expo-updates";
 // Metro namespace imports evaluate unrelated React Native getters, including unavailable native modules.
 import { AppState } from "react-native";
@@ -452,11 +453,12 @@ function reportUpdateFailure(
   fallback: string,
   onFailure: AppUpdateCheckOptions["onFailure"],
 ): void {
+  const uiT = readUiTranslator();
   if (result._tag !== "Failure" || isAtomCommandInterrupted(result)) return;
   const error = squashAtomCommandFailure(result);
   if (isAppUpdateUnavailableError(error)) return;
 
-  reportAtomCommandResult(result, { label: "app update check" });
+  reportAtomCommandResult(result, { label: uiT("app update check") });
   onFailure?.(error instanceof Error ? error.message : fallback);
 }
 

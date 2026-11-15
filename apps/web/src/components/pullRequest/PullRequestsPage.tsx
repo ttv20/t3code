@@ -1,9 +1,12 @@
-import { UiText, useUiLanguage } from "../../i18n";
-
-import { useAtomValue } from "@effect/atom-react";
-import { applyPullRequestDraftFilterChange } from "@t3tools/client-runtime/pull-request-query";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { applyPullRequestDraftFilterChange } from "@t3tools/client-runtime/pull-request-query";
+import { Spinner } from "~/components/ui/spinner";
+import type { PullRequestSpeedActionResult } from "~/components/pullRequest/PullRequestSpeedActions";
+import { usePullRequestCloseBatch } from "~/components/pullRequest/usePullRequestActions";
+import { SidebarPointerSensor } from "~/components/Sidebar.pointer";
+import { resolveSidebarSweepKeys } from "~/components/Sidebar.logic";
 import { sortProjectsByGroupOrder } from "@t3tools/client-runtime/state/project-grouping";
+import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
 import type {
   EnvironmentId,
   ProjectId,
@@ -15,26 +18,79 @@ import type {
   PullRequestListState,
   PullRequestSummary,
 } from "@t3tools/contracts";
-import { resolveEnvironmentMachineKind } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowDownUpIcon, LayersIcon, Plug2Icon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
-import type { PullRequestSpeedActionResult } from "~/components/pullRequest/PullRequestSpeedActions";
-import { usePullRequestCloseBatch } from "~/components/pullRequest/usePullRequestActions";
-import { resolveSidebarSweepKeys } from "~/components/Sidebar.logic";
-import { SidebarPointerSensor } from "~/components/Sidebar.pointer";
-import { Spinner } from "~/components/ui/spinner";
-
+import {
+  collectPullRequestListFacets,
+  narrowPullRequestsToFilters,
+  mergePullRequestDiffStats,
+  pullRequestDiffStatKey,
+  pullRequestEntryKey,
+  rankPullRequestMatches,
+  pullRequestStatsRefreshBatches,
+  pullRequestStatsRequestBatches,
+  retainVisiblePullRequestStatsBatches,
+  type EnvironmentPullRequestEntry,
+  type MergedPullRequestList,
+  type PullRequestDiffStats,
+  type PullRequestStatsBatch,
+  type PullRequestStatsPolicy,
+  type PullRequestStatsScope,
+  type PullRequestPartitionsSnapshot,
+  type PullRequestListOverride,
+  pullRequestOverrideAfterAction,
+  reusePullRequestEntries,
+  settlePullRequestOverrides,
+  comparePullRequestsByRecency,
+  largestPullRequestReadCount,
+} from "./pullRequestList.logic";
+import {
+  pullRequestListPreferences,
+  type PullRequestListPreferencePatch,
+  writePullRequestListPreferences,
+} from "./pullRequestListPreferences";
+import { environmentMachineIcon } from "../EnvironmentMachineIcon";
+import { PullRequestDetailPanel } from "./PullRequestDetailPanel";
+import {
+  PullRequestFiltersMenu,
+  PullRequestSearchInput,
+  pullRequestHostLabel,
+  pullRequestProjectKey,
+  type PullRequestFilterOption,
+} from "./PullRequestListFilters";
+import { PullRequestCompactFilterMenu } from "./PullRequestCompactFilterMenu";
+import { INVOLVEMENT_TABS, SORT_OPTIONS, STATE_TABS } from "./pullRequestListOptions";
+import { PullRequestsColumn } from "./PullRequestsColumn";
+import { PullRequestListGroups } from "./PullRequestListGroups";
+import { pullRequestPanelReference } from "./usePullRequestDetail";
+import { usePullRequestIntentPrefetch } from "./usePullRequestIntentPrefetch";
+import {
+  usePullRequestDisplayGroups,
+  usePullRequestQueryFilters,
+  usePullRequestScope,
+  type PullRequestsSearch,
+} from "./usePullRequestListView";
+import { pullRequestGroups, pullRequestListEntryId } from "./pullRequestListGroups.logic";
+import { PullRequestListEmptyState } from "./PullRequestListEmptyState";
+import { PullRequestListGhost } from "./PullRequestGhosts";
+import { type PullRequestRowTarget } from "./PullRequestRow";
+import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+import { RightPanelTabs } from "../RightPanelTabs";
 import { isCommandPaletteOpen } from "~/commandPaletteBus";
 import { isElectron } from "~/env";
-import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
-import { useLiveRefresh } from "~/hooks/useLiveRefresh";
-import { useOpenPanelPullRequestUrl } from "~/hooks/useOpenPanelPullRequestUrl";
-import { useSidebarProjectGroups } from "~/hooks/useSidebarProjectGroups";
-import { useStableCallback } from "~/hooks/useStableCallback";
 import { resolveShortcutCommand, shortcutLabelForCommand } from "~/keybindings";
+import { registerCommands } from "~/shortcuts/dispatcher";
 import { isTerminalFocused } from "~/lib/terminalFocus";
-import { cn } from "~/lib/utils";
+import { PanelLayoutControls, RightPanelMaximizeControl } from "../chat/PanelLayoutControls";
+import { Button } from "../ui/button";
+import { SidebarInset, useMobileSidebarSheetMounted } from "../ui/sidebar";
+import { useLiveRefresh } from "~/hooks/useLiveRefresh";
+import { useStableCallback } from "~/hooks/useStableCallback";
+import { useOpenPanelPullRequestUrl } from "~/hooks/useOpenPanelPullRequestUrl";
+import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
+import { toastManager } from "../ui/toast";
 import { usePanelAnimationSettings, usePanelPresence } from "~/panelAnimations";
 import {
   PULL_REQUESTS_PANEL_REF,
@@ -44,79 +100,26 @@ import {
   useRightPanelStore,
   type PullRequestSurface,
 } from "~/rightPanelStore";
-import { registerCommands } from "~/shortcuts/dispatcher";
-import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
+import { useSidebarProjectGroups } from "~/hooks/useSidebarProjectGroups";
 import {
   pullRequestEnvironment,
-  restoredPullRequestList,
   usePullRequestList,
   usePullRequestListStats,
+  restoredPullRequestList,
   usePullRequestTurnRefreshes,
   useSharedPullRequestSummary,
   type EnvironmentQueryTarget,
 } from "~/state/pullRequests";
-import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { PanelLayoutControls, RightPanelMaximizeControl } from "../chat/PanelLayoutControls";
-import { environmentMachineIcon } from "../EnvironmentMachineIcon";
-import { RightPanelTabs } from "../RightPanelTabs";
-import { Button } from "../ui/button";
-import { SidebarInset } from "../ui/sidebar";
-import { toastManager } from "../ui/toast";
-import { PullRequestCompactFilterMenu } from "./PullRequestCompactFilterMenu";
-import { PullRequestDetailPanel } from "./PullRequestDetailPanel";
-import { PullRequestListGhost } from "./PullRequestGhosts";
+import { cn } from "~/lib/utils";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import { getSourceControlPresentationForKind } from "~/sourceControlPresentation";
 import {
-  collectPullRequestListFacets,
-  comparePullRequestsByRecency,
-  largestPullRequestReadCount,
-  mergePullRequestDiffStats,
-  narrowPullRequestsToFilters,
-  pullRequestDiffStatKey,
-  pullRequestEntryKey,
-  pullRequestOverrideAfterAction,
-  pullRequestStatsRefreshBatches,
-  pullRequestStatsRequestBatches,
-  rankPullRequestMatches,
-  retainVisiblePullRequestStatsBatches,
-  reusePullRequestEntries,
-  settlePullRequestOverrides,
-  type EnvironmentPullRequestEntry,
-  type MergedPullRequestList,
-  type PullRequestDiffStats,
-  type PullRequestListOverride,
-  type PullRequestPartitionsSnapshot,
-  type PullRequestStatsBatch,
-  type PullRequestStatsPolicy,
-  type PullRequestStatsScope,
-} from "./pullRequestList.logic";
-import { PullRequestListEmptyState } from "./PullRequestListEmptyState";
-import {
-  PullRequestFiltersMenu,
-  PullRequestSearchInput,
-  pullRequestHostLabel,
-  pullRequestProjectKey,
-  type PullRequestFilterOption,
-} from "./PullRequestListFilters";
-import { PullRequestListGroups } from "./PullRequestListGroups";
-import { pullRequestGroups, pullRequestListEntryId } from "./pullRequestListGroups.logic";
-import { INVOLVEMENT_TABS, SORT_OPTIONS, STATE_TABS } from "./pullRequestListOptions";
-import {
-  pullRequestListPreferences,
-  writePullRequestListPreferences,
-  type PullRequestListPreferencePatch,
-} from "./pullRequestListPreferences";
-import { type PullRequestRowTarget } from "./PullRequestRow";
-import { PullRequestsColumn } from "./PullRequestsColumn";
-import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
-import { pullRequestPanelReference } from "./usePullRequestDetail";
-import { usePullRequestIntentPrefetch } from "./usePullRequestIntentPrefetch";
-import {
-  usePullRequestDisplayGroups,
-  usePullRequestQueryFilters,
-  usePullRequestScope,
-  type PullRequestsSearch,
-} from "./usePullRequestListView";
+  rememberPullRequestHosts,
+  resetPullRequestHosts,
+  type PullRequestHostRead,
+} from "./pullRequestProjectAssignment.logic";
+import { UiText, useUiLanguage } from "../../i18n";
 
 function getShortcutContext() {
   return {
@@ -153,6 +156,9 @@ export function PullRequestsPage() {
     sort === "ready" || sort === "largest" || sort === "smallest" ? "eager" : "visible";
   const navigate = useNavigate({ from: "/pull-requests" });
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
+  const [hostReads, setHostReads] = useState<ReadonlyMap<EnvironmentId, PullRequestHostRead>>(
+    () => new Map(),
+  );
   const {
     capableEnvironments,
     scopedEnvironmentId,
@@ -167,11 +173,12 @@ export function PullRequestsPage() {
     selectedProject,
     queryEnvironmentIds,
     environmentQueries,
+    preferredEnvironmentQueries,
     assignmentKey,
     linkedSelection,
     expectedHosts,
     projectsKnown,
-  } = usePullRequestScope(search);
+  } = usePullRequestScope(search, hostReads);
   const rightPanelRef = capableEnvironments.length === 0 ? null : PULL_REQUESTS_PANEL_REF;
   const openPanelPullRequestUrl = useOpenPanelPullRequestUrl(rightPanelRef);
   const rightPanelState = useRightPanelStore((state) =>
@@ -276,9 +283,9 @@ export function PullRequestsPage() {
     localFilters,
     hasLocalFilters,
   } = usePullRequestQueryFilters(search, typedQuery);
-  const turnRefreshes = usePullRequestTurnRefreshes(
-    environmentQueries.map(({ environmentId }) => environmentId),
-  );
+  const turnRefreshes = usePullRequestTurnRefreshes([
+    ...new Set(environmentQueries.map(({ environmentId }) => environmentId)),
+  ]);
   const turnRefreshToken = turnRefreshes
     .map(([environmentId, revision]) => `${environmentId}:${revision}`)
     .join("|");
@@ -312,28 +319,30 @@ export function PullRequestsPage() {
     });
   }
 
-  const listTargets = environmentQueries.flatMap(({ environmentId, projectIds }) => {
-    const cursors = sentCursors?.[environmentId];
-    if (sentCursors !== null && cursors === undefined && !sentRegrown.includes(environmentId)) {
-      return [];
-    }
-    return [
-      {
-        environmentId,
-        input: {
-          state: search.state,
-          involvement: search.involvement,
-          limit: pageSize,
-          ...(scopedProjectId ? { projectId: scopedProjectId } : {}),
-          ...(projectIds ? { projectIds } : {}),
-          ...(search.host ? { host: search.host } : {}),
-          ...(hasFilters ? { filters } : {}),
-          ...(sentParsed.text ? { query: sentParsed.text } : {}),
-          ...(cursors === undefined ? {} : { cursors }),
-        } satisfies PullRequestListInput,
-      },
-    ];
-  });
+  const listTargetsFor = (queries: typeof environmentQueries) =>
+    queries.flatMap(({ environmentId, projectIds }) => {
+      const cursors = sentCursors?.[environmentId];
+      if (sentCursors !== null && cursors === undefined && !sentRegrown.includes(environmentId)) {
+        return [];
+      }
+      return [
+        {
+          environmentId,
+          input: {
+            state: search.state,
+            involvement: search.involvement,
+            limit: pageSize,
+            ...(scopedProjectId ? { projectId: scopedProjectId } : {}),
+            ...(projectIds ? { projectIds } : {}),
+            ...(search.host ? { host: search.host } : {}),
+            ...(hasFilters ? { filters } : {}),
+            ...(sentParsed.text ? { query: sentParsed.text } : {}),
+            ...(cursors === undefined ? {} : { cursors }),
+          } satisfies PullRequestListInput,
+        },
+      ];
+    });
+  const listTargets = listTargetsFor(environmentQueries);
   const listQuery = usePullRequestList(listTargets);
 
   /**
@@ -341,19 +350,26 @@ export function PullRequestsPage() {
    * say which question it belongs to: mid-switch the text has already changed and the data has
    * not, and a search's answer would file itself under the workspace.
    */
-  const baselineTargets = environmentQueries.map(({ environmentId, projectIds }) => ({
-    environmentId,
-    input: {
-      state: search.state,
-      involvement: search.involvement,
-      limit: PAGE_SIZE,
-      ...(scopedProjectId ? { projectId: scopedProjectId } : {}),
-      ...(projectIds ? { projectIds } : {}),
-      ...(search.host ? { host: search.host } : {}),
-      ...(menuFiltered ? { filters: menuFilters } : {}),
-    } satisfies PullRequestListInput,
-  }));
+  const baselineTargetsFor = (queries: typeof environmentQueries) =>
+    queries.map(({ environmentId, projectIds }) => ({
+      environmentId,
+      input: {
+        state: search.state,
+        involvement: search.involvement,
+        limit: PAGE_SIZE,
+        ...(scopedProjectId ? { projectId: scopedProjectId } : {}),
+        ...(projectIds ? { projectIds } : {}),
+        ...(search.host ? { host: search.host } : {}),
+        ...(menuFiltered ? { filters: menuFilters } : {}),
+      } satisfies PullRequestListInput,
+    }));
+  const baselineTargets = baselineTargetsFor(environmentQueries);
   const baselineQuery = usePullRequestList(baselineTargets);
+  const observedHosts = rememberPullRequestHosts(
+    rememberPullRequestHosts(hostReads, baselineQuery.observations),
+    listQuery.observations,
+  );
+  if (observedHosts !== hostReads) setHostReads(observedHosts);
   const baselineEmpty =
     baselineQuery.data?.entries.length === 0 &&
     baselineQuery.data.errors.length === 0 &&
@@ -698,6 +714,8 @@ export function PullRequestsPage() {
     heldPullRequestsBySurface,
   } = pullRequestGroups({
     known: ordered?.key === filterKey ? ordered.entries : (listData?.entries ?? []),
+    // The baseline was read without typed qualifiers, and rows cannot be checked for `checks:`.
+    baseline: typedParsed.filters.checks === undefined ? baselineQuery.data?.entries : undefined,
     providers: baselineQuery.data?.providers ?? listData?.providers ?? [],
     viewers,
     involvement: search.involvement,
@@ -899,6 +917,11 @@ export function PullRequestsPage() {
     await Promise.all(
       queryEnvironmentIds.map((environmentId) => invalidate({ environmentId, input: {} })),
     );
+    listQuery.refresh([
+      ...listTargetsFor(preferredEnvironmentQueries),
+      ...baselineTargetsFor(preferredEnvironmentQueries),
+    ]);
+    setHostReads(resetPullRequestHosts);
     setInvalidating(false);
     refreshListAndStats(requestedStatsScope);
     setDetailRefreshToken((token) => token + 1);
@@ -1024,6 +1047,7 @@ export function PullRequestsPage() {
     },
   );
   const rightPanelAvailable = selectedPullRequestSurface !== null;
+  const mobileSidebarSheetMounted = useMobileSidebarSheetMounted();
   const [maximized, setMaximized] = useState(false);
   const rightPanelMaximized = rightPanelState.isOpen && maximized;
   if (!rightPanelState.isOpen && maximized) setMaximized(false);
@@ -1031,10 +1055,13 @@ export function PullRequestsPage() {
     if (rightPanelState.isOpen) setMaximized((value) => !value);
   };
   const onGuideShown = () => setMaximized(true);
+  // updateSearch leaves selectedUrl out, so a reload does not reveal the link again.
+  const consumeLinkedUrl = useEffectEvent(() => updateSearch({}));
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- opens the URL-linked pull request in the right panel store
   useEffect(() => {
     if (!pullRequestsSupported || rightPanelRef === null || linkedSelection === null) return;
     useRightPanelStore.getState().openPullRequest(rightPanelRef, linkedSelection);
+    if (linkedSelection.revealUrl !== undefined) consumeLinkedUrl();
   }, [linkedSelection, pullRequestsSupported, rightPanelRef]);
 
   const selected =
@@ -1129,14 +1156,17 @@ export function PullRequestsPage() {
       rightPanelAvailable={rightPanelAvailable}
       rightPanelOpen={rightPanelState.isOpen}
       rightPanelShortcutLabel={shortcutLabelForCommand(keybindings, "rightPanel.toggle")}
-      rightPanelUnavailableLabel="Select a pull request first"
+      rightPanelUnavailableLabel={uiT("Select a pull request first")}
       onToggleTerminal={() => undefined}
       onToggleRightPanel={toggleRightPanel}
     />
   );
   const openPanelControls = (
     <div
-      className="absolute top-[var(--workspace-controls-top)] right-[var(--workspace-controls-right)] z-50 mr-px flex h-[var(--workspace-topbar-height)] items-center gap-1 [-webkit-app-region:no-drag]"
+      className={cn(
+        "absolute top-[var(--workspace-controls-top)] right-[var(--workspace-controls-right)] z-50 mr-px flex h-[var(--workspace-topbar-height)] items-center gap-1 [-webkit-app-region:no-drag]",
+        mobileSidebarSheetMounted && "hidden",
+      )}
       data-workspace-titlebar-controls
     >
       {rightPanelState.isOpen ? (
@@ -1148,6 +1178,9 @@ export function PullRequestsPage() {
       {panelToggleControls}
     </div>
   );
+  const listError = listQuery.error
+    ? `${environmentLabels.get(listQuery.error.environmentId) || uiT("Environment")}: ${listQuery.error.message}`
+    : null;
   const carriedToNothing =
     shownCount === 0 &&
     typedQuery.length === 0 &&
@@ -1163,9 +1196,9 @@ export function PullRequestsPage() {
         />
       ) : firstLoad ? (
         <PullRequestListGhost rows={7} caption="Loading pull requests…" />
-      ) : listQuery.error && shownCount === 0 ? (
+      ) : listError && shownCount === 0 ? (
         <PullRequestsUnavailableState
-          error={listQuery.error}
+          error={listError}
           refreshing={listQuery.isPending}
           onRetry={() => listQuery.refresh()}
         />
@@ -1208,12 +1241,12 @@ export function PullRequestsPage() {
         />
       )}
 
-      {listQuery.error && shownCount > 0 ? (
+      {listError && shownCount > 0 ? (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-surface px-3 py-2 text-xs">
           <span>
             <UiText
-              message={"{0}  Showing the last pull requests loaded."}
-              values={{ "0": listQuery.error }}
+              message={"{0} Showing the last pull requests loaded."}
+              values={{ "0": listError }}
             />
           </span>
           <Button size="xs" variant="outline" onClick={() => listQuery.refresh()}>
@@ -1271,7 +1304,7 @@ export function PullRequestsPage() {
     <PullRequestCompactFilterMenu
       label={uiT("Sort pull requests")}
       triggerIcon={<ArrowDownUpIcon aria-hidden className="size-4" />}
-      triggerLabel="Sort"
+      triggerLabel={uiT("Sort")}
       outlined
       value={sort}
       options={SORT_OPTIONS}
@@ -1417,23 +1450,13 @@ export function PullRequestsPage() {
     const { shortLabel, singular } = (
       sourceControlClients.findByChangeRequestUrl(url) ?? sourceControlClients.get(undefined)
     ).changeRequest;
-    void writeTextToClipboard(url, `${singular} link`).then(
-      (didCopy) => {
-        if (didCopy)
-          toastManager.add({
-            type: "success",
-            title: uiT("{0} link copied", { "0": uiT(shortLabel) }),
-            description: url,
-          });
-      },
-      (error) => {
-        toastManager.add({
-          type: "error",
-          title: uiT("Failed to copy {0} link", { "0": uiT(shortLabel) }),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
-        });
-      },
-    );
+    void writeTextToClipboard(url, `${singular} link`).then(undefined, (error) => {
+      toastManager.add({
+        type: "error",
+        title: uiT("Failed to copy {0} link", { "0": shortLabel }),
+        description: error instanceof Error ? error.message : uiT("An error occurred."),
+      });
+    });
   });
   const closeActiveSurfaceFromShortcut = useEffectEvent((event: KeyboardEvent) => {
     if (activePullRequestSurface === null) return;
@@ -1530,6 +1553,13 @@ export function PullRequestsPage() {
               getShortcutContext={getShortcutContext}
               shortcutsEnabled={activePullRequestSurface?.id === renderedPullRequestSurface.id}
               key={renderedPullRequestSurface.id}
+              revealUrl={renderedPullRequestSurface.revealUrl}
+              onRevealSettled={(revealUrl) => {
+                if (rightPanelRef === null) return;
+                useRightPanelStore
+                  .getState()
+                  .settlePullRequestReveal(rightPanelRef, renderedPullRequestSurface.id, revealUrl);
+              }}
               environmentId={panelEnvironmentId}
               onGuideShown={onGuideShown}
               onSelectPullRequest={(reference) => {

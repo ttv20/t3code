@@ -66,7 +66,7 @@ export function SecretRequestCard(props: {
     <View className="mb-3 min-h-9 flex-row items-center gap-2 px-1">
       <SymbolView name={icon} size={13} tintColor={props.iconColor} type="monochrome" />
       <Text className="flex-1 font-sans text-sm text-foreground-muted" numberOfLines={2}>
-        {uiT(item.label)} · {uiT(display.label)}
+        {item.label} · {uiT(display.label)}
       </Text>
     </View>
   );
@@ -131,7 +131,7 @@ function PendingSecretRequestForm(props: {
   return (
     <View className="mb-3 gap-3 rounded-[20px] border border-border bg-card-alt p-4">
       <View className="gap-1">
-        <Text className="font-t3-bold text-base text-foreground">{uiT(item.label)}</Text>
+        <Text className="font-t3-bold text-base text-foreground">{item.label}</Text>
         {item.reason.trim() ? (
           <Text className="font-sans text-sm leading-5 text-foreground-muted" selectable>
             {item.reason}

@@ -13,12 +13,12 @@ export function confirm(request: ConfirmDialogRequest): void {
   const translateAction = readUiTranslator();
   Alert.alert(request.title, request.message, [
     {
-      text: translateAction(request.cancelText ?? "Cancel"),
+      text: request.cancelText ?? translateAction("Cancel"),
       style: "cancel",
       onPress: request.onCancel,
     },
     {
-      text: translateAction(request.confirmText),
+      text: request.confirmText,
       style: request.destructive ? "destructive" : "default",
       onPress: request.onConfirm,
     },
@@ -32,12 +32,12 @@ export function prompt(request: TextInputDialogRequest): void {
     request.message,
     [
       {
-        text: translateAction(request.cancelText ?? "Cancel"),
+        text: request.cancelText ?? translateAction("Cancel"),
         style: "cancel",
         onPress: request.onCancel,
       },
       {
-        text: translateAction(request.confirmText),
+        text: request.confirmText,
         onPress: (value) => request.onConfirm(value ?? ""),
       },
     ],

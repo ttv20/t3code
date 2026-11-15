@@ -7,10 +7,8 @@ import {
 import type { EnvironmentId } from "@t3tools/contracts";
 import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
 import { type ReactNode, useRef, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
-import { readUiTranslator } from "../../state/ui-language";
-
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { RefreshControl } from "../../components/ui/RefreshControl";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import * as Dialog from "../../components/ui/Dialog";
@@ -22,6 +20,8 @@ import {
   deregisterManagedRelayEnvironmentCommand,
   useManagedRelayEnvironments,
 } from "./managedRelayState";
+import { useUiLanguage } from "../../i18n";
+import { readUiTranslator } from "../../state/ui-language";
 
 const linkedAtFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
@@ -176,7 +176,10 @@ export function T3ConnectProfilePage() {
                 />
               ) : (
                 <Menu
-                  actions={ENVIRONMENT_MENU_ACTIONS}
+                  actions={ENVIRONMENT_MENU_ACTIONS.map((action) => ({
+                    ...action,
+                    title: uiT(action.title),
+                  }))}
                   isAnchoredToRight
                   onPressAction={() =>
                     confirmDeregister(environment, () => void handleDeregister(environment))
@@ -252,14 +255,13 @@ function ClerkRow(props: {
 }
 
 function ClerkButtonRow(props: { readonly label: string; readonly onPress: () => void }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Pressable
       accessibilityRole="button"
       onPress={props.onPress}
       className="border-b border-clerk-border px-6 py-4 active:opacity-60"
     >
-      <Text className="text-base font-semibold text-clerk-foreground">{uiT(props.label)}</Text>
+      <Text className="text-base font-semibold text-clerk-foreground">{props.label}</Text>
     </Pressable>
   );
 }

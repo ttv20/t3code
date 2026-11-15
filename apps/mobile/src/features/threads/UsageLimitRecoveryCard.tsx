@@ -154,13 +154,17 @@ export function UsageLimitRecoveryCard({
         >
           {workspaceLimit
             ? copied
-              ? "Request copied. Send it to your workspace admin."
-              : "You've reached your workspace's limit for using your ChatGPT plan in other apps. Copy a request to ask your workspace admin for increased usage limits."
+              ? uiT("Request copied. Send it to your workspace admin.")
+              : uiT(
+                  "You've reached your workspace's limit for using your ChatGPT plan in other apps. Copy a request to ask your workspace admin for increased usage limits.",
+                )
             : chatGptLimit
-              ? (resetText ?? "Review your usage settings in ChatGPT.")
+              ? (resetText ?? uiT("Review your usage settings in ChatGPT."))
               : resetText
-                ? `Usage limit reached. ${resetText}`
-                : "Usage limit reached. The provider did not report a reset time. Retry manually when your limit is available."}
+                ? uiT("Usage limit reached. {0}", { "0": resetText })
+                : uiT(
+                    "Usage limit reached. The provider did not report a reset time. Retry manually when your limit is available.",
+                  )}
         </Text>
         {chatGptLimit || canSchedule ? (
           // The margins cancel the 44pt touch height so the links sit 8pt under the text.

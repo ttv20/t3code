@@ -1,34 +1,31 @@
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import ChatMarkdown from "./ChatMarkdown";
+import { isSvgAttachment } from "@t3tools/shared/image";
+import { ReadOnlySourcePreview } from "./files/AttachmentFilePreview";
 import type {
   EnvironmentContextRecord,
   PreviewAnnotationPayload,
   ThreadContextRecord,
 } from "@t3tools/contracts";
-import { isSvgAttachment } from "@t3tools/shared/image";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { videoMimeType } from "@t3tools/shared/video";
 import { MessageCircleIcon, MousePointerClickIcon } from "lucide-react";
-import { createContext, use, type ReactElement, type ReactNode } from "react";
-import { useUiLanguage } from "../i18n";
-import ChatMarkdown from "./ChatMarkdown";
+import { createContext, type ReactElement, type ReactNode, use } from "react";
 import { ComposerContextActionsContext } from "./composerContextActions";
-import { ReadOnlySourcePreview } from "./files/AttachmentFilePreview";
-
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import type { ComposerFileAttachment, ComposerImageAttachment } from "~/composerDraftStore";
 import { composerFileNeedsReattach } from "~/composerDraftStore";
 import { useTheme } from "~/hooks/useTheme";
-import {
-  formatAttachmentUploadProgress,
-  type AttachmentUploadState,
-} from "~/lib/attachmentUploadState";
+import type { AttachmentUploadState } from "~/lib/attachmentUploadState";
+import { useAttachmentUploadProgress } from "~/hooks/useAttachmentUploadProgress";
+import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import {
   fileContextReference,
   imageContextReference,
   isPullRequestSummaryContext,
-  previewAnnotationContextId,
-  previewAnnotationContextLabel,
   pullRequestContextDisplayState,
   pullRequestContextKindLabel,
+  previewAnnotationContextId,
+  previewAnnotationContextLabel,
   reviewCommentContextId,
   reviewCommentContextLabel,
   terminalContextReference,
@@ -36,9 +33,16 @@ import {
 } from "~/lib/composerContextRecords";
 import type { TerminalContextDraft } from "~/lib/terminalContext";
 import type { ReviewCommentContext } from "~/reviewCommentContext";
-import { useLinkedEnvironments } from "~/state/peerLinks";
 import { ComposerPendingTerminalContextChip } from "./chat/ComposerPendingTerminalContexts";
+import { EnvironmentContextChip } from "./EnvironmentContextChip";
+import { ThreadContextChip } from "./ThreadContextChip";
+import { useLinkedEnvironments } from "~/state/peerLinks";
+import {
+  createContextPresentationRegistry,
+  type ContextPresentationCapability,
+} from "./contextPresentationRegistry";
 import type { ContextChipKind } from "./ContextChip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 import {
   ContextChipPopover,
   ContextChipShell,
@@ -48,13 +52,8 @@ import {
   PullRequestChip,
   UnresolvedChip,
 } from "./contextChipParts";
-import {
-  createContextPresentationRegistry,
-  type ContextPresentationCapability,
-} from "./contextPresentationRegistry";
-import { EnvironmentContextChip } from "./EnvironmentContextChip";
-import { ThreadContextChip } from "./ThreadContextChip";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+
+import { useUiLanguage } from "../i18n";
 
 export type ComposerDraftContextRecord =
   | { kind: "terminal"; record: TerminalContextDraft }
@@ -150,7 +149,7 @@ function ContextChip(props: {
       <ContextChipPopover
         kind={props.kind}
         icon={props.icon}
-        label={uiT(props.label)}
+        label={props.label}
         accessibleLabel={props.kindLabel + ", " + props.label}
       >
         {props.details}
@@ -161,19 +160,24 @@ function ContextChip(props: {
     <ContextChipShell
       kind={props.kind}
       icon={props.icon}
-      label={uiT(props.label)}
+      label={props.label}
       aria-label={
-        props.detailsMode === "tooltip" ? `${props.kindLabel}, ${props.label}` : undefined
+        props.detailsMode === "tooltip"
+          ? uiT("{0}, {1}", { "0": props.kindLabel, "1": props.label })
+          : undefined
       }
       tooltip={props.detailsMode === "tooltip" ? props.details : undefined}
     />
   );
 }
 
-function uploadStatusSuffix(upload: AttachmentUploadState | undefined): string | null {
-  if (upload?.status === "uploading") return formatAttachmentUploadProgress(upload.progress);
+function useUploadStatusSuffix(
+  key: string,
+  upload: AttachmentUploadState | undefined,
+): string | null {
+  const progress = useAttachmentUploadProgress(key, upload);
   if (upload?.status === "failed") return "upload failed";
-  return null;
+  return progress;
 }
 
 function attachmentTooltip(
@@ -190,6 +194,7 @@ function ImageContextChip(props: {
   upload: AttachmentUploadState | undefined;
 }) {
   const actions = use(ComposerContextActionsContext);
+  const suffix = useUploadStatusSuffix(props.record.id, props.upload);
   return (
     <Tooltip>
       <TooltipTrigger
@@ -198,7 +203,7 @@ function ImageContextChip(props: {
             name={props.record.name}
             previewUrl={props.record.previewUrl}
             size={formatAttachmentSize(props.record.sizeBytes)}
-            suffix={uploadStatusSuffix(props.upload)}
+            suffix={suffix}
             onClick={() => actions.expandImage(props.record.id)}
           />
         }
@@ -218,7 +223,8 @@ function FileContextChip(props: {
   const actions = use(ComposerContextActionsContext);
   const { resolvedTheme } = useTheme();
   const needsReattach = composerFileNeedsReattach(props.record);
-  const suffix = needsReattach ? "attach again" : uploadStatusSuffix(props.upload);
+  const uploadSuffix = useUploadStatusSuffix(props.record.id, props.upload);
+  const suffix = needsReattach ? "attach again" : uploadSuffix;
   const size = formatAttachmentSize(props.record.sizeBytes);
   const isVideo = videoMimeType(props.record) !== null;
   return (
@@ -360,13 +366,14 @@ function UnresolvedContextChip(props: { label: string }) {
   const { t: uiT } = useUiLanguage();
   return (
     <UnresolvedChip
-      label={uiT(props.label)}
+      label={props.label}
       tooltip={uiT("This context is no longer available. Remove it or attach it again.")}
     />
   );
 }
 
 interface ComposerContextRenderContext {
+  translate: ReturnType<typeof createUiTranslator>;
   label: string;
 }
 
@@ -439,7 +446,11 @@ const composerContextPresentationRegistry = createContextPresentationRegistry<
           <ContextChip
             icon={isPullRequest ? <PullRequestGlyph.pullRequest /> : <MessageCircleIcon />}
             label={reviewCommentContextLabel(entry.record)}
-            kindLabel={isPullRequest ? pullRequestContextKindLabel(entry.record) : "Review comment"}
+            kindLabel={
+              isPullRequest
+                ? pullRequestContextKindLabel(entry.record)
+                : context.translate("Review comment")
+            }
             details={<ComposerReviewCommentDetails comment={entry.record} />}
             detailsMode={definition.capabilities.details}
             kind={isPullRequest ? PULL_REQUEST_CHIP_KINDS[pullRequestState] : "review-comment"}
@@ -455,7 +466,7 @@ const composerContextPresentationRegistry = createContextPresentationRegistry<
           <ContextChip
             icon={<MousePointerClickIcon />}
             label={previewAnnotationContextLabel(entry.record)}
-            kindLabel="Preview annotation"
+            kindLabel={context.translate("Preview annotation")}
             details={
               <ComposerPreviewAnnotationDetails
                 annotation={entry.record}
@@ -498,8 +509,10 @@ export function ComposerContextReferenceChip(props: {
   contextId: string;
   label: string;
 }): ReactElement {
+  const { t: uiT } = useUiLanguage();
   const records = use(ComposerContextRecordsContext);
   return composerContextPresentationRegistry.render(props.kind, records.get(props.contextId), {
     label: props.label,
+    translate: uiT,
   });
 }

@@ -21,6 +21,7 @@ export function LanguageSettingsSection() {
           <SettingsChoiceRow
             key={option.value}
             label={uiT(option.label)}
+            disabled={!AsyncResult.isSuccess(result) || result.waiting}
             separated={index > 0}
             selected={(preferences?.interfaceLanguage ?? "system") === option.value}
             onPress={() => update({ interfaceLanguage: option.value })}
@@ -37,6 +38,7 @@ export function LanguageSettingsSection() {
           <SettingsChoiceRow
             key={option.value}
             label={uiT(option.label)}
+            disabled={!AsyncResult.isSuccess(result) || result.waiting}
             separated={index > 0}
             selected={(preferences?.interfaceDirection ?? "auto") === option.value}
             onPress={() => update({ interfaceDirection: option.value })}

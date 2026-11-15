@@ -239,7 +239,10 @@ function ClaudeAccountForm({
   return (
     <View className="gap-2 px-4 py-3">
       <Text textRole="footnote" className="text-foreground-muted">
-        {`Point at a CLAUDE_CONFIG_DIR folder on ${environment.label} where Claude Code is already signed in. Sign in there with the Claude CLI first.`}
+        {uiT(
+          "Point at a CLAUDE_CONFIG_DIR folder on {0} where Claude Code is already signed in. Sign in there with the Claude CLI first.",
+          { "0": environment.label },
+        )}
       </Text>
       {field("name", "Account name", "Name, e.g. Work")}
       {field("configDir", "Claude config folder", "Config folder, e.g. ~/.claude-work")}

@@ -1,23 +1,5 @@
-import { useAtomRefresh } from "@effect/atom-react";
-import {
-  formatComposerModelMention,
-  rankComposerModelMentions,
-} from "@t3tools/client-runtime/composer-model-mentions";
-import {
-  matchComposerEnvironmentItems,
-  matchComposerThreadItems,
-  type ComposerEnvironmentCandidate,
-} from "@t3tools/client-runtime/composerThreadItems";
-import {
-  createProviderWorkspaceSnapshotRefreshAtomFamily,
-  dedupeProviderSkillsByName,
-  getProviderSkillsForSlashMenu,
-  getProviderSlashCommandsForSlashMenu,
-  isProviderSkillUserInvocable,
-  resolveProviderSkillsForCwd,
-  resolveProviderSlashCommandsForCwd,
-} from "@t3tools/client-runtime/providerSkills";
-import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
+import { threadPullRequestKeyOf } from "@t3tools/client-runtime/thread-pull-requests";
+import * as Dialog from "../../components/ui/Dialog";
 import type {
   EnvironmentId,
   ProjectId,
@@ -41,10 +23,21 @@ import {
   normalizeSearchQuery,
   scoreQueryMatch,
 } from "@t3tools/shared/searchRanking";
-import { USAGE_LIMITS_COMMAND } from "@t3tools/shared/usageLimits";
+import {
+  dedupeProviderSkillsByName,
+  getProviderSkillsForSlashMenu,
+  getProviderSlashCommandsForSlashMenu,
+  isProviderSkillUserInvocable,
+  resolveProviderSkillsForCwd,
+  resolveProviderSlashCommandsForCwd,
+} from "@t3tools/client-runtime/providerSkills";
+import {
+  formatComposerModelMention,
+  rankComposerModelMentions,
+} from "@t3tools/client-runtime/composer-model-mentions";
+import { useAtomRefresh } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 import { useEffect, useState } from "react";
-import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { environmentComposerContext, pullRequestComposerContext } from "../../lib/composerContext";
 import { uuidv4 } from "../../lib/uuid";
@@ -54,26 +47,28 @@ import {
   setComposerDraftContext,
   useComposerDraftSelection,
 } from "../../state/use-composer-drafts";
-
-const EMPTY_THREAD_SHELLS: ReadonlyArray<EnvironmentThreadShell> = [];
-const EMPTY_ENVIRONMENTS: ReadonlyArray<ComposerEnvironmentCandidate> = [];
-const NO_LINKED_ENVIRONMENTS: ReadonlyMap<EnvironmentId, string> = new Map();
-
 import type { ComposerEditorSelection } from "../../components/ComposerEditor";
-import type { ModelOption } from "../../lib/modelOptions";
+import { providerWorkspaceSnapshotRefresh } from "../../state/provider-workspace-snapshot-refresh";
 import {
   useComposerPathSearch,
   useComposerPullRequestSearch,
   useThreadSearch,
 } from "../../state/queries";
-import { serverEnvironment } from "../../state/server";
+
 import type { ComposerCommandItem } from "./ComposerCommandPopover";
 import { matchesSlashSkillQuery } from "./composerSlashSkillSearch";
+import {
+  matchComposerEnvironmentItems,
+  matchComposerThreadItems,
+  type ComposerEnvironmentCandidate,
+} from "@t3tools/client-runtime/composerThreadItems";
+import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/models";
+import { USAGE_LIMITS_COMMAND } from "@t3tools/shared/usageLimits";
+import type { ModelOption } from "../../lib/modelOptions";
 
-const providerWorkspaceSnapshotRefresh = createProviderWorkspaceSnapshotRefreshAtomFamily({
-  providers: serverEnvironment.providersValueAtom,
-  refreshProviders: serverEnvironment.refreshProviders,
-});
+const EMPTY_THREAD_SHELLS: ReadonlyArray<EnvironmentThreadShell> = [];
+const EMPTY_ENVIRONMENTS: ReadonlyArray<ComposerEnvironmentCandidate> = [];
+const NO_LINKED_ENVIRONMENTS: ReadonlyMap<EnvironmentId, string> = new Map();
 
 const idleWorkspaceSnapshotRefreshAtom: Atom.Atom<unknown> = Atom.make<void>(undefined).pipe(
   Atom.withLabel("mobile:provider-workspace-snapshot-refresh:idle"),
@@ -370,7 +365,7 @@ export function useComposerCommandMenu({
 
     if (trigger.kind === "pull-request") {
       return pullRequestSearch.entries.map((entry) => ({
-        id: `pr:${entry.projectId}:${entry.repository}:${entry.number}`,
+        id: `pr:${entry.projectId}:${threadPullRequestKeyOf(entry)}`,
         type: "pull-request",
         pullRequest: {
           number: entry.number,

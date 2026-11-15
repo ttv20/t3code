@@ -1,54 +1,58 @@
+import { ProcessSignalActions } from "./ProcessSignalActions";
+import { resolveUsageAccess } from "@t3tools/client-runtime/state/usage-access";
+import { environmentSession } from "../../state/session";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
+import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import {
+  AlertTriangleIcon,
+  CopyIcon,
+  FolderOpenIcon,
+  InfoIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { resolveUsageAccess } from "@t3tools/client-runtime/state/usage-access";
+import { useRef, useState, type ReactNode } from "react";
 import type {
   ServerProcessDiagnosticsEntry,
   ServerProcessResourceHistorySummary,
   ServerProcessSignal,
 } from "@t3tools/contracts";
-import { AuthEnvironmentMaintainScope, AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
-import { ChevronDown, ChevronRight } from "lucide";
-import { AlertTriangleIcon, CopyIcon, FolderOpenIcon, InfoIcon } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { useUiLanguage } from "../../i18n";
-import { environmentSession, readEnvironmentScope, useEnvironmentScope } from "../../state/session";
-import { ProcessSignalActions } from "./ProcessSignalActions";
-
-import { MorphIcon } from "~/components/MorphIcon";
-import { useOpenInPreferredEditor } from "../../editorPreferences";
-import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import { formatBytes } from "../../lib/formatBytes";
 import { cn } from "../../lib/utils";
 import { ensureLocalApi } from "../../localApi";
+import { useOpenInPreferredEditor } from "../../editorPreferences";
+import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
-import { toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { toastManager } from "../ui/toast";
+import { formatDiagnosticsDuration } from "./DiagnosticsSettings.logic";
 import { ExpandableText } from "./ExpandableText";
 import { ResourceTelemetryDiagnostics } from "./ResourceTelemetryDiagnostics";
+import { formatCpuTime } from "./ResourceTelemetryDiagnostics.logic";
 import { SettingsPageContainer, SettingsSection } from "./settingsLayout";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { useSettingsScope } from "./SettingsScopeContext";
 import { TelemetryExportSettings } from "./TelemetryExportSettings";
+
+import { useUiLanguage } from "../../i18n";
 
 const NUMBER_FORMAT = new Intl.NumberFormat();
 
 function formatCount(value: number): string {
   return NUMBER_FORMAT.format(value);
-}
-
-function formatDuration(value: number): string {
-  if (value < 1_000) return `${Math.round(value)} ms`;
-  return `${(value / 1_000).toFixed(value >= 10_000 ? 1 : 2).replace(/\.0+$/, "")} s`;
 }
 
 function RelativeTimeNoWrap(props: { value: DateTime.Utc }) {
@@ -84,7 +88,7 @@ function StatBlock({
   return (
     <div className="min-w-0 border-border/60 px-4 py-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-1.5 text-2xs font-medium uppercase tracking-widest text-muted-foreground/70">
-        <span className="min-w-0 truncate">{uiT(label)}</span>
+        <span className="min-w-0 truncate">{label}</span>
         {tooltip ? (
           <Tooltip>
             <TooltipTrigger
@@ -140,9 +144,7 @@ function StatsGrid({ children }: { children: ReactNode }) {
 }
 
 function EmptyRows({ label }: { label: string }) {
-  const { t: uiT } = useUiLanguage();
-
-  return <div className="px-4 py-4 text-xs text-muted-foreground sm:px-5">{uiT(label)}</div>;
+  return <div className="px-4 py-4 text-xs text-muted-foreground sm:px-5">{label}</div>;
 }
 
 function DiagnosticsTable({
@@ -278,7 +280,11 @@ function ProcessNameCell({
           }
           onClick={() => onToggle(process.pid)}
         >
-          <MorphIcon className="size-3.5" icon={isExpanded ? ChevronDown : ChevronRight} />
+          {isExpanded ? (
+            <ChevronDownIcon className="size-3.5" />
+          ) : (
+            <ChevronRightIcon className="size-3.5" />
+          )}
         </Button>
       ) : (
         <span className="size-5 shrink-0" aria-hidden="true" />
@@ -438,13 +444,6 @@ const RESOURCE_HISTORY_WINDOWS = [
   { label: "30m", windowMs: 30 * 60_000, bucketMs: 2 * 60_000 },
   { label: "1h", windowMs: 60 * 60_000, bucketMs: 5 * 60_000 },
 ] as const;
-
-function formatCpuTime(seconds: number): string {
-  if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2).replace(/\.0+$/, "")}s`;
-  const minutes = seconds / 60;
-  if (minutes < 60) return `${minutes.toFixed(minutes >= 10 ? 1 : 2).replace(/\.0+$/, "")}m`;
-  return `${(minutes / 60).toFixed(2).replace(/\.0+$/, "")}h`;
-}
 
 function formatShortProcessName(command: string): string {
   const name = formatProcessName(command);
@@ -715,8 +714,6 @@ function DiagnosticsRefreshButton({
   label: string;
   onClick: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <Tooltip>
       <TooltipTrigger
@@ -726,13 +723,13 @@ function DiagnosticsRefreshButton({
             variant="ghost-muted"
             disabled={isPending}
             onClick={onClick}
-            aria-label={uiT(label)}
+            aria-label={label}
           >
             <RefreshIcon refreshing={isPending} />
           </Button>
         }
       />
-      <TooltipPopup side="top">{uiT(label)}</TooltipPopup>
+      <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -1060,7 +1057,7 @@ function DiagnosticsSettingsBody() {
               resourceData
                 ? resourceData.sampleIntervalMs === 0
                   ? "On demand"
-                  : formatDuration(resourceData.sampleIntervalMs)
+                  : formatDiagnosticsDuration(resourceData.sampleIntervalMs)
                 : "..."
             }
           />
@@ -1142,7 +1139,7 @@ function DiagnosticsSettingsBody() {
             tooltip={
               data
                 ? uiT("Spans with a duration of {0} or longer.", {
-                    "0": formatDuration(data.slowSpanThresholdMs),
+                    "0": formatDiagnosticsDuration(data.slowSpanThresholdMs),
                   })
                 : uiT("Spans at or above the configured slow-span threshold.")
             }
@@ -1192,7 +1189,7 @@ function DiagnosticsSettingsBody() {
 
       <SettingsSection title={uiT("Latest Failures")}>
         {data && data.latestFailures.length > 0 ? (
-          <DiagnosticsTable headers={["Span", "Cause", "Duration", "Ended"]}>
+          <DiagnosticsTable headers={[uiT("Span"), uiT("Cause"), uiT("Duration"), uiT("Ended")]}>
             {data.latestFailures.map((failure) => (
               <tr key={`${failure.traceId}:${failure.spanId}`}>
                 <td className="px-4 py-3 align-top text-xs font-medium text-foreground first:sm:pl-5">
@@ -1202,7 +1199,7 @@ function DiagnosticsSettingsBody() {
                   <ExpandableText text={failure.cause} />
                 </td>
                 <td className="px-4 py-3 align-top font-mono tabular-nums">
-                  {formatDuration(failure.durationMs)}
+                  {formatDiagnosticsDuration(failure.durationMs)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 align-top font-mono tabular-nums text-muted-foreground last:sm:pr-5">
                   <RelativeTimeNoWrap value={failure.endedAt} />
@@ -1220,7 +1217,7 @@ function DiagnosticsSettingsBody() {
       <SettingsSection title={uiT("Most Common Failures")}>
         {data && data.commonFailures.length > 0 ? (
           <DiagnosticsTable
-            headers={["Span", "Count", "Cause", "Last Seen"]}
+            headers={[uiT("Span"), uiT("Count"), uiT("Cause"), uiT("Last Seen")]}
             minTableWidth="min-w-[760px]"
           >
             {data.commonFailures.map((failure) => (
@@ -1254,7 +1251,7 @@ function DiagnosticsSettingsBody() {
       <SettingsSection title={uiT("Slowest Spans")}>
         {data && data.slowestSpans.length > 0 ? (
           <DiagnosticsTable
-            headers={["Span", "Duration", "Ended", "Trace"]}
+            headers={[uiT("Span"), uiT("Duration"), uiT("Ended"), uiT("Trace")]}
             minTableWidth="min-w-[900px]"
             columnWidths={["w-[44%]", "w-[14%]", "w-[12%]", "w-[30%]"]}
           >
@@ -1264,7 +1261,7 @@ function DiagnosticsSettingsBody() {
                   {span.name}
                 </td>
                 <td className="px-4 py-3 align-top font-mono tabular-nums">
-                  {formatDuration(span.durationMs)}
+                  {formatDiagnosticsDuration(span.durationMs)}
                 </td>
                 <td className="w-px whitespace-nowrap px-4 py-3 align-top font-mono tabular-nums text-muted-foreground">
                   <RelativeTimeNoWrap value={span.endedAt} />
@@ -1332,7 +1329,7 @@ function DiagnosticsSettingsBody() {
                     <td className="px-4 py-3 align-top text-muted-foreground">
                       <ExpandableText
                         collapsedClassName="line-clamp-2"
-                        expandLabel="Show full message"
+                        expandLabel={uiT("Show full message")}
                         text={event.message}
                       />
                     </td>
@@ -1356,7 +1353,7 @@ function DiagnosticsSettingsBody() {
       <SettingsSection title={uiT("Top Span Names")}>
         {data && data.topSpansByCount.length > 0 ? (
           <DiagnosticsTable
-            headers={["Span", "Count", "Failures", "Average", "Max"]}
+            headers={[uiT("Span"), uiT("Count"), uiT("Failures"), uiT("Average"), uiT("Max")]}
             minTableWidth="min-w-[760px]"
             columnWidths={["w-[48%]", "w-[13%]", "w-[13%]", "w-[13%]", "w-[13%]"]}
           >
@@ -1372,10 +1369,10 @@ function DiagnosticsSettingsBody() {
                   {formatCount(span.failureCount)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 align-top font-mono tabular-nums">
-                  {formatDuration(span.averageDurationMs)}
+                  {formatDiagnosticsDuration(span.averageDurationMs)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 align-top font-mono tabular-nums last:sm:pr-5">
-                  {formatDuration(span.maxDurationMs)}
+                  {formatDiagnosticsDuration(span.maxDurationMs)}
                 </td>
               </tr>
             ))}

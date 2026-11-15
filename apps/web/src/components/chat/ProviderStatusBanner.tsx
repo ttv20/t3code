@@ -1,19 +1,21 @@
-import { useAtomValue } from "@effect/atom-react";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import {
   type EnvironmentId,
   type ProviderInstanceId,
   type ServerProvider,
 } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
+import { memo, useRef, useState, useSyncExternalStore } from "react";
 import { InfoIcon, XIcon } from "lucide-react";
-import { memo, useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-import { formatProviderDriverKindLabel } from "../../providerModels";
-import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "../ui/alert";
 import { Button, InlineButton } from "../ui/button";
-import { RefreshIcon } from "../ui/refresh-icon";
+import { formatProviderDriverKindLabel } from "../../providerModels";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { serverEnvironment } from "../../state/server";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { RefreshIcon } from "../ui/refresh-icon";
+
+import { useUiLanguage } from "../../i18n";
 
 function getIncompatibleVersion(status: ServerProvider) {
   const compatibility = status.compatibilityAdvisory;
@@ -52,10 +54,43 @@ export function getProviderStatusBannerKey(status: ServerProvider | null): strin
 
 export function shouldShowProviderStatusBanner(
   status: ServerProvider | null,
-  dismissedBannerKey: string | null,
+  isDismissed: boolean,
 ): boolean {
+  return getProviderStatusBannerKey(status) !== null && !isDismissed;
+}
+
+// Built-in instance ids such as `codex` repeat across environments.
+export function getProviderStatusDismissalKey(
+  environmentId: string | undefined,
+  status: ServerProvider | null,
+): string | null {
   const bannerKey = getProviderStatusBannerKey(status);
-  return bannerKey !== null && bannerKey !== dismissedBannerKey;
+  return bannerKey === null ? null : `${environmentId ?? ""}\u0000${bannerKey}`;
+}
+
+// A dismissal lasts the session, not one view, so opening another thread cannot bring it back.
+const sessionDismissedProviderStatusBannerKeys = new Set<string>();
+const dismissalListeners = new Set<() => void>();
+
+export function dismissProviderStatusBannerForSession(bannerKey: string | null): void {
+  if (bannerKey === null || sessionDismissedProviderStatusBannerKeys.has(bannerKey)) return;
+  sessionDismissedProviderStatusBannerKeys.add(bannerKey);
+  for (const listener of dismissalListeners) listener();
+}
+
+export function isProviderStatusBannerDismissedForSession(bannerKey: string | null): boolean {
+  return bannerKey !== null && sessionDismissedProviderStatusBannerKeys.has(bannerKey);
+}
+
+function subscribeToDismissals(listener: () => void) {
+  dismissalListeners.add(listener);
+  return () => dismissalListeners.delete(listener);
+}
+
+export function useProviderStatusBannerDismissed(bannerKey: string | null): boolean {
+  return useSyncExternalStore(subscribeToDismissals, () =>
+    isProviderStatusBannerDismissedForSession(bannerKey),
+  );
 }
 
 export function hasProviderSetup(status: ServerProvider): boolean {
@@ -66,7 +101,10 @@ export function hasProviderSetup(status: ServerProvider): boolean {
   );
 }
 
-export function getProviderStatusMessage(status: ServerProvider): string {
+export function getProviderStatusMessage(
+  status: ServerProvider,
+  translate = createUiTranslator("en"),
+): string {
   if (
     status.auth.status !== "unauthenticated" &&
     status.compatibilityAdvisory?.status === "broken" &&
@@ -77,21 +115,23 @@ export function getProviderStatusMessage(status: ServerProvider): string {
   if (status.message) return status.message;
   const providerName = status.displayName?.trim() || formatProviderDriverKindLabel(status.driver);
   if (!status.installed && hasProviderSetup(status)) {
-    return `Open provider setup to install ${formatProviderDriverKindLabel(status.driver)} on this environment.`;
+    return translate("Open provider setup to install {0} on this environment.", {
+      "0": formatProviderDriverKindLabel(status.driver),
+    });
   }
   if (status.auth.status === "unauthenticated") {
     if (hasProviderSetup(status)) {
       return status.driver === "antigravity"
-        ? "Open provider setup to sign in with Google."
-        : "Open provider setup to sign in.";
+        ? translate("Open provider setup to sign in with Google.")
+        : translate("Open provider setup to sign in.");
     }
-    return "Sign in via the CLI to authenticate again.";
+    return translate("Sign in via the CLI to authenticate again.");
   }
   return status.status === "ready"
-    ? "No models are available for this provider."
+    ? translate("No models are available for this provider.")
     : status.status === "error"
-      ? `${providerName} provider is unavailable.`
-      : `${providerName} provider has limited availability.`;
+      ? translate("{0} provider is unavailable.", { "0": providerName })
+      : translate("{0} provider has limited availability.", { "0": providerName });
 }
 
 export const ProviderStatusBanner = memo(function ProviderStatusBanner({
@@ -135,13 +175,17 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
   const title = isUnauthenticated
     ? uiT("{0} is unauthenticated", { "0": providerName })
     : incompatible
-      ? uiT("{0} {1} is {2}", {
-          "0": providerName,
-          "1": status.version ?? "",
-          "2": incompatible.status === "broken" ? "known to be broken" : "unsupported",
-        })
+      ? uiT(
+          incompatible.status === "broken"
+            ? "{0} {1} is known to be broken"
+            : "{0} {1} is unsupported",
+          {
+            "0": providerName,
+            "1": status.version ?? "",
+          },
+        )
       : uiT("{0} provider status", { "0": providerName });
-  const message = incompatible?.message ?? getProviderStatusMessage(status);
+  const message = incompatible?.message ?? getProviderStatusMessage(status, uiT);
   const isWarning =
     incompatible?.status !== "broken" && (status.status === "warning" || incompatible !== null);
 
@@ -154,7 +198,7 @@ export const ProviderStatusBanner = memo(function ProviderStatusBanner({
         controlAlignment="first-line"
       >
         <InfoIcon />
-        <AlertTitle>{uiT(title)}</AlertTitle>
+        <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
           <div className="flex flex-col gap-2">
             <Tooltip>

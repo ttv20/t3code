@@ -1,17 +1,15 @@
 import { Pressable } from "react-native";
-import { useUiLanguage } from "../../i18n";
+
 import { cn } from "../../lib/cn";
 import { SymbolView } from "./AppSymbol";
 import { AppText } from "./AppText";
 import type { FloatingActionButtonProps } from "./FloatingActionButton.types";
 
 export function FloatingActionButton(props: FloatingActionButtonProps) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={uiT(props.label)}
+      accessibilityLabel={props.label}
       onPress={props.onPress}
       className={cn(
         "min-h-14 min-w-14 flex-row items-center justify-center gap-2 rounded-2xl px-4",
@@ -34,7 +32,7 @@ export function FloatingActionButton(props: FloatingActionButtonProps) {
             props.tone === "primary" ? "text-primary-foreground" : "text-secondary-foreground",
           )}
         >
-          {uiT(props.label)}
+          {props.label}
         </AppText>
       ) : null}
     </Pressable>

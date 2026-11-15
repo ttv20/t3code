@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../state/ui-language";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import type {
   PullRequestSummary,
@@ -36,13 +37,14 @@ export interface ThreadPrPresentation {
 const PR_STATE_TEXT_CLASS: Record<ThreadPr["state"], string> = {
   open: "text-adaptive-emerald-600-400",
   merged: "text-adaptive-violet-600-400",
-  closed: "text-foreground-muted",
+  closed: "text-adaptive-rose-600-400",
 };
 
 export function presentThreadPr(
   pr: ThreadPr,
   provider: VcsStatusResult["sourceControlProvider"] | null | undefined,
 ): ThreadPrPresentation {
+  const uiT = readUiTranslator();
   const { changeRequest } = sourceControlClients.get(provider?.kind);
   const isDraft = pr.state === "open" && pr.isDraft === true;
   return {
@@ -55,7 +57,11 @@ export function presentThreadPr(
     url: pr.url,
     changeRequest,
     label: String(pr.number),
-    accessibilityLabel: `#${pr.number} ${changeRequest.singular} ${isDraft ? "draft" : pr.state}`,
+    accessibilityLabel: uiT("{0} #{1}: {2}", {
+      "0": uiT(changeRequest.singular),
+      "1": pr.number,
+      "2": uiT(isDraft ? "draft" : pr.state),
+    }),
     textClassName: isDraft ? "text-foreground-muted" : PR_STATE_TEXT_CLASS[pr.state],
   };
 }
@@ -63,6 +69,7 @@ export function presentThreadPr(
 export function presentThreadLinkedPullRequests(
   links: ReadonlyArray<ThreadPullRequestLink>,
 ): ThreadPrPresentation | null {
+  const uiT = readUiTranslator();
   const link = resolveThreadCurrentPullRequestLink(links);
   const badge = resolveThreadPullRequestBadge(links);
   if (link === null || badge === null) return null;
@@ -97,16 +104,23 @@ export function presentThreadLinkedPullRequests(
     label,
     accessibilityLabel:
       badge.kind === "stack"
-        ? `${badge.layers} ${changeRequest.singular}s in stack, ${isDraft ? "draft" : (state ?? "status pending")}`
+        ? uiT("{0} {1} in stack, {2}", {
+            "0": badge.layers,
+            "1": uiT(changeRequest.plural),
+            "2": uiT(isDraft ? "draft" : (state ?? "Status pending")),
+          })
         : linkedCount !== null
-          ? `${linkedCount} linked ${changeRequest.plural}, overall ${badge.state}`
-          : `#${link.number} ${changeRequest.singular} ${state === null ? "status pending" : isDraft ? "draft" : state}`,
-    textClassName:
-      state === null || isDraft
-        ? "text-foreground-muted"
-        : isMultiple && state === "closed"
-          ? "text-adaptive-rose-600-400"
-          : PR_STATE_TEXT_CLASS[state],
+          ? uiT("{0} linked {1}, overall {2}", {
+              "0": linkedCount,
+              "1": uiT(changeRequest.plural),
+              "2": uiT(badge.state),
+            })
+          : uiT("{0} #{1}: {2}", {
+              "0": uiT(changeRequest.singular),
+              "1": link.number,
+              "2": uiT(state === null ? "Status pending" : isDraft ? "draft" : state),
+            }),
+    textClassName: state === null || isDraft ? "text-foreground-muted" : PR_STATE_TEXT_CLASS[state],
   };
 }
 
@@ -128,9 +142,13 @@ export function resolveThreadPrSource(
 }
 
 export function resolveThreadPrBadgeAction(pr: ThreadPrPresentation) {
+  const uiT = readUiTranslator();
   return pr.kind === "stack" || pr.others > 0
-    ? { kind: "list" as const, accessibilityLabel: `Show ${pr.accessibilityLabel}` }
-    : { kind: "open" as const, accessibilityLabel: `Open ${pr.accessibilityLabel}` };
+    ? { kind: "list" as const, accessibilityLabel: uiT("Show {0}", { "0": pr.accessibilityLabel }) }
+    : {
+        kind: "open" as const,
+        accessibilityLabel: uiT("Open {0}", { "0": pr.accessibilityLabel }),
+      };
 }
 
 /** Records `value` as the newest entry, evicting the least recently answered beyond `limit`. */

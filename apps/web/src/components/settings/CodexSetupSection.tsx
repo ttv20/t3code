@@ -1,4 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
+import { AuthProvidersManageScope, ProviderDriverKind } from "@t3tools/contracts";
+import { readPreparedConnection, useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -11,10 +13,9 @@ import type {
   ProviderInstanceId,
   ServerProvider,
 } from "@t3tools/contracts";
-import { AuthProvidersManageScope, ProviderDriverKind } from "@t3tools/contracts";
 import { codexAuthHandoffUrl } from "@t3tools/shared/codexAuthHandoff";
-import { isLoopbackHost } from "@t3tools/shared/preview";
 import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
+import { isLoopbackHost } from "@t3tools/shared/preview";
 import { CheckIcon, ChevronRightIcon, ExternalLinkIcon } from "lucide-react";
 import {
   Children,
@@ -25,36 +26,35 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-import { readPreparedConnection, useEnvironmentScope } from "../../state/session";
-
 import { ensureLocalApi } from "../../localApi";
-import { getOnboardingProviderState } from "../../onboarding/providerReadiness.logic";
-import { appAtomRegistry } from "../../rpc/atomRegistry";
-import { useEnvironmentHttpBaseUrl } from "../../state/environments";
 import { managedInstanceLocks, useManagedPolicy } from "../../state/managedPolicy";
+import { ManagedControl } from "../ManagedPolicy";
+import { useEnvironmentHttpBaseUrl } from "../../state/environments";
 import { environmentPresentations } from "../../state/presentation";
 import { primaryEnvironmentIdAtom } from "../../state/primaryEnvironment";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { waitForQuerySettled } from "../../state/waitForQuerySettled";
-import { OpenAI } from "../Icons";
-import { ManagedControl } from "../ManagedPolicy";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { AddCodexAccountDialog } from "./AddCodexAccountDialog";
-import { ChatGptAccountPicker } from "./ChatGptAccountPicker";
 import { ChatGptConnectionButton } from "./ChatGptConnectionButton";
 import { ChatGptUsageButton } from "./ChatGptUsageButton";
+import { ChatGptAccountPicker } from "./ChatGptAccountPicker";
+import { Input } from "../ui/input";
+import { OpenAI } from "../Icons";
+import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { SettingsRow } from "./settingsLayout";
+import { AddCodexAccountDialog } from "./AddCodexAccountDialog";
+import { getOnboardingProviderState } from "../../onboarding/providerReadiness.logic";
+import { getProviderSummary } from "./providerStatus";
 import {
   settleAuthorizationPage,
   settleHandoffAuthorizationPage,
   settleProviderInstall,
 } from "./CodexSetupSection.logic";
-import { getProviderSummary } from "./providerStatus";
-import { RedactedSensitiveText } from "./RedactedSensitiveText";
-import { SettingsRow } from "./settingsLayout";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const noop = () => undefined;
 
@@ -96,6 +96,8 @@ interface CodexSetupSectionProps {
   readonly mode: "managed" | "existing";
   readonly enabled: boolean;
   readonly readOnly?: boolean;
+  // Onboarding's "Use existing CLI" opens a terminal, which this session may not be allowed.
+  readonly existingCliDisabled?: boolean;
   readonly presentation?: "settings" | "onboarding";
   readonly onModeChange: (mode: "managed" | "existing") => void;
   readonly autoStart?: boolean;
@@ -130,8 +132,8 @@ export function CodexSetupSection(props: CodexSetupSectionProps) {
                 <RedactedSensitiveText
                   value={props.provider.auth.email.trim()}
                   ariaLabel={uiT("Toggle account email visibility")}
-                  revealTooltip="Click to reveal email"
-                  hideTooltip="Click to hide email"
+                  revealTooltip={uiT("Click to reveal email")}
+                  hideTooltip={uiT("Click to hide email")}
                   className="break-all"
                 />
                 .
@@ -174,8 +176,13 @@ export function CodexSetupSection(props: CodexSetupSectionProps) {
         }
         secondaryControl={
           !existingAuthenticated && !existingReady && !existingChecking ? (
-            <Button size="sm" variant="ghost-muted" onClick={() => props.onModeChange("existing")}>
-              {uiT("Use existing CLI")}
+            <Button
+              size="sm"
+              variant="ghost-muted"
+              disabled={props.existingCliDisabled}
+              onClick={() => props.onModeChange("existing")}
+            >
+              <UiText message={"Use existing CLI"} />
             </Button>
           ) : null
         }
@@ -260,6 +267,7 @@ function ManagedCodexSetup({
   autoStart,
   onAutoStartConsumed,
   allowExistingCli = true,
+  existingCliDisabled,
   presentation,
   displayName,
   onSignInCancelled,
@@ -478,9 +486,7 @@ function ManagedCodexSetup({
         await ensureLocalApi().shell.openExternal(authorizationUrl);
       }
     } catch {
-      setError(
-        "Could not finish sign-in on this computer. Try again or paste the redirect URL below.",
-      );
+      setError(uiT("Could not finish sign-in on this computer. Try again."));
     }
   };
 
@@ -616,11 +622,17 @@ function ManagedCodexSetup({
               : ` of ${(installation.totalBytes / 1_000_000).toFixed(1)}`,
         })
       : installation?.phase === "extracting"
-        ? "Installing Codex."
+        ? uiT("Installing Codex.")
         : installation?.phase === "verifying"
-          ? "Checking Codex."
+          ? uiT("Checking Codex.")
           : installed
-            ? `${installation?.source === "local" ? "Using your installed Codex" : "Managed by T3 Code"}${installation?.installedVersion ? ` · v${installation.installedVersion}` : ""}.`
+            ? uiT("{0}{1}.", {
+                "0":
+                  installation?.source === "local"
+                    ? "Using your installed Codex"
+                    : "Managed by T3 Code",
+                "1": installation?.installedVersion ? ` · v${installation.installedVersion}` : "",
+              })
             : (installation?.message ?? uiT("T3 Code downloads and manages Codex for you."));
   const accountDescription = finishingSignIn ? (
     uiT("Finishing sign-in...")
@@ -639,8 +651,8 @@ function ManagedCodexSetup({
         <RedactedSensitiveText
           value={provider.auth.email.trim()}
           ariaLabel={uiT("Toggle account email visibility")}
-          revealTooltip="Click to reveal email"
-          hideTooltip="Click to hide email"
+          revealTooltip={uiT("Click to reveal email")}
+          hideTooltip={uiT("Click to hide email")}
         />
         .
       </>
@@ -833,8 +845,8 @@ function ManagedCodexSetup({
                   <RedactedSensitiveText
                     value={provider.auth.email.trim()}
                     ariaLabel={uiT("Toggle account email visibility")}
-                    revealTooltip="Click to reveal email"
-                    hideTooltip="Click to hide email"
+                    revealTooltip={uiT("Click to reveal email")}
+                    hideTooltip={uiT("Click to hide email")}
                     className="break-all"
                   />
                   .
@@ -922,7 +934,7 @@ function ManagedCodexSetup({
               <Button
                 size="sm"
                 variant="ghost-muted"
-                disabled={readOnly || busy}
+                disabled={readOnly || busy || existingCliDisabled}
                 onClick={() => onModeChange("existing")}
               >
                 {uiT("Use existing CLI")}
@@ -988,6 +1000,18 @@ function ManagedCodexSetup({
               </Button>
             ) : authenticated ? (
               <>
+                {updateAvailable ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={unavailable || busy}
+                    onClick={() =>
+                      void run(() => startInstall({ environmentId, input: { instanceId } }))
+                    }
+                  >
+                    <UiText message={"Update Codex"} />
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
                   variant="outline"
@@ -1102,7 +1126,7 @@ export function CodexManagedRuntimeFields({
               value={executablePath}
               title={executablePath}
               placeholder={
-                installation.error ? "Could not read runtime path" : uiT("Not installed")
+                installation.error ? uiT("Could not read runtime path") : uiT("Not installed")
               }
               disabled
             />
@@ -1128,7 +1152,7 @@ export function CodexManagedRuntimeFields({
         title={uiT("Shadow home path")}
         description={
           provider?.runtimePaths?.shadowHomePath
-            ? "Account-specific home sharing the Codex state above."
+            ? uiT("Account-specific home sharing the Codex state above.")
             : uiT("This instance uses the shared Codex home directly.")
         }
         control={
@@ -1137,7 +1161,7 @@ export function CodexManagedRuntimeFields({
               aria-label={uiT("Codex shadow home path")}
               value={provider?.runtimePaths?.shadowHomePath ?? ""}
               title={provider?.runtimePaths?.shadowHomePath ?? undefined}
-              placeholder={provider?.runtimePaths ? "Not used" : uiT("Unavailable")}
+              placeholder={provider?.runtimePaths ? uiT("Not used") : uiT("Unavailable")}
               disabled
             />
           </div>
@@ -1159,7 +1183,7 @@ function CodexSignInDescription({
   readonly onToggle?: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
-  if (!onToggle) return <div className="leading-relaxed">{uiT(label)}</div>;
+  if (!onToggle) return <div className="leading-relaxed">{label}</div>;
   return (
     <button
       type="button"
@@ -1169,7 +1193,7 @@ function CodexSignInDescription({
       aria-controls={controls}
       onClick={onToggle}
     >
-      {uiT(label)}
+      {label}
       <ChevronRightIcon aria-hidden className={`size-3 shrink-0 ${expanded ? "rotate-90" : ""}`} />
     </button>
   );
@@ -1188,17 +1212,14 @@ function CodexWelcomeCard({
   readonly secondaryControl?: ReactNode;
   readonly children?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   const footer = Children.toArray(children);
   return (
     <div className="rounded-lg border border-border bg-background px-4 py-4">
       <div className="flex flex-wrap items-center gap-3">
         <OpenAI className="size-5 shrink-0 fill-foreground" />
         <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
-          <h3 className="text-sm font-medium">{uiT(title)}</h3>
-          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            {uiT(description)}
-          </div>
+          <h3 className="text-sm font-medium">{title}</h3>
+          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</div>
         </div>
         {control || secondaryControl ? (
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 has-[button]:w-full has-[button]:flex-col-reverse has-[button]:items-end sm:has-[button]:w-auto sm:has-[button]:flex-row sm:has-[button]:items-center">

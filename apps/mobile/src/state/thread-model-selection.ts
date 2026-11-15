@@ -41,7 +41,7 @@ export function selectThreadModel(
     appAtomRegistry,
     threadEnvironment.setModelSelection,
     { environmentId: ref.environmentId, input: { threadId: ref.threadId, modelSelection } },
-    { label: "change model", reportFailure: true, reportDefect: true },
+    { label: uiT("change model"), reportFailure: true, reportDefect: true },
   ).then((result) => {
     // Released on the reply, so a later change from another client shows.
     if (result._tag === "Success") {

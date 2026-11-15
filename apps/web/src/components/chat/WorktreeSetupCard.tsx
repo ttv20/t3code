@@ -1,10 +1,10 @@
+import { UiText } from "../../i18n";
 import {
   worktreeSetupStageLabel,
   type WorktreeSetupSnapshot,
   type WorktreeSetupStage,
 } from "@t3tools/contracts";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
-import { ChevronDown, ChevronRight } from "lucide";
 import {
   CheckIcon,
   CircleAlertIcon,
@@ -13,18 +13,19 @@ import {
   MinusIcon,
   TerminalIcon,
   XIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
-
-import { MorphIcon } from "~/components/MorphIcon";
 import { Button } from "~/components/ui/button";
 import { Spinner } from "~/components/ui/spinner";
-import { useNowSecond } from "~/hooks/useNowSecond";
-import { cn } from "~/lib/utils";
-import { observeVisibleAnimation } from "~/lib/visibleAnimation";
 import { MiddleTruncate } from "../ui/middle-truncate";
+import { observeVisibleAnimation } from "~/lib/visibleAnimation";
+import { cn } from "~/lib/utils";
+import { useNowSecond } from "~/hooks/useNowSecond";
 import { WorkLogRow } from "./WorkLog";
+
+import { useUiLanguage } from "../../i18n";
 
 interface WorktreeSetupCardProps {
   snapshot: WorktreeSetupSnapshot;
@@ -204,7 +205,7 @@ function StageRow({
       trailing={
         <>
           {trailing ? (
-            <span className="min-w-0 truncate text-xs text-muted-foreground tabular-nums">
+            <span className="max-w-1/2 min-w-0 truncate text-xs text-muted-foreground tabular-nums">
               {trailing}
             </span>
           ) : null}
@@ -373,8 +374,12 @@ export function WorktreeSetupCard({
           aria-expanded={detailsOpen}
           onClick={() => setDetailsOpen((open) => !open)}
         >
-          <MorphIcon aria-hidden icon={detailsOpen ? ChevronDown : ChevronRight} />
-          {uiT("Details")}
+          <UiText
+            message={"{0}Details"}
+            values={{
+              "0": detailsOpen ? <ChevronDownIcon aria-hidden /> : <ChevronRightIcon aria-hidden />,
+            }}
+          />
         </Button>
         {showTerminal ? (
           <Button type="button" size="xs" variant="ghost-muted" onClick={onOpenTerminal}>

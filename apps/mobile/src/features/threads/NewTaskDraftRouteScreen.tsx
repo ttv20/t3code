@@ -95,7 +95,7 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
   const { t: uiT } = useUiLanguage();
 
   const currentRoute = useRoute();
-  const goBack = useWorkspaceBackNavigation("threads");
+  const goBack = useWorkspaceBackNavigation();
   const params = route.params ?? {};
   const draftId = Array.isArray(params.draftId) ? params.draftId[0] : params.draftId;
   const projects = useProjects();

@@ -1,27 +1,28 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { assert, describe, expect, it } from "vite-plus/test";
 import type { ResolvedKeybindingsConfig } from "@t3tools/contracts";
-import {
-  compileResolvedKeybindingsConfig,
-  DEFAULT_RESOLVED_KEYBINDINGS,
-} from "@t3tools/shared/keybindings";
-import { describe, expect, it } from "vite-plus/test";
+import { compileResolvedKeybindingsConfig } from "@t3tools/shared/keybindings";
 
 import {
-  buildKeybindingCommandOptions,
   buildKeybindingRows,
   buildWhenVariableOptions,
-  commandLabel,
-  filterKeybindingRows,
-  groupKeybindingRows,
   keybindingConflictLabels,
   keybindingFromKeyboardEvent,
   parseWhenExpressionDraft,
   shortcutToKeybindingInput,
   unknownWhenVariables,
   whenAstToExpression,
+} from "./KeybindingsSettings.logic";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+
+import {
+  buildKeybindingCommandOptions,
+  commandLabel,
+  filterKeybindingRows,
+  groupKeybindingRows,
   whenNodeRemoveLabel,
 } from "./KeybindingsSettings.logic";
-
 describe("KeybindingsSettings.logic", () => {
   it("finds shortcuts by the translated label while retaining command identifiers", () => {
     const t = createUiTranslator("he");
@@ -276,6 +277,10 @@ describe("KeybindingsSettings.logic", () => {
         },
       },
     });
+    const previewOpenDraft = parseWhenExpressionDraft("previewOpen && !previewFocus");
+    assert(previewOpenDraft.ok);
+    expect(unknownWhenVariables(previewOpenDraft.value)).toEqual([]);
+    expect(buildWhenVariableOptions()).toContain("previewOpen");
     expect(parseWhenExpressionDraft("editorFocus &&")).toEqual({
       ok: false,
       message: "Use variables with !, &&, ||, and parentheses.",

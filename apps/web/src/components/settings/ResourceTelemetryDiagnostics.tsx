@@ -1,8 +1,18 @@
-import { RegistryContext } from "@effect/atom-react";
+import { ProcessSignalActions } from "./ProcessSignalActions";
+import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+  ActivityIcon,
+  AlertTriangleIcon,
+  BatteryIcon,
+  CpuIcon,
+  DatabaseIcon,
+  GaugeIcon,
+  HardDriveIcon,
+  MemoryStickIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 import type {
   BackgroundBooleanState,
   EnvironmentId,
@@ -17,43 +27,32 @@ import type {
   ResourceTelemetrySourceStatus,
   ServerProcessSignal,
 } from "@t3tools/contracts";
-import { AuthEnvironmentMaintainScope } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
-import { ChevronDown, ChevronRight } from "lucide";
-import {
-  ActivityIcon,
-  AlertTriangleIcon,
-  BatteryIcon,
-  CpuIcon,
-  DatabaseIcon,
-  GaugeIcon,
-  HardDriveIcon,
-  MemoryStickIcon,
-} from "lucide-react";
+import { RegistryContext } from "@effect/atom-react";
 import { useContext, useRef, useState, type ReactNode } from "react";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { UiText, useUiLanguage } from "../../i18n";
-import { ProcessSignalActions } from "./ProcessSignalActions";
-
-import { MorphIcon } from "~/components/MorphIcon";
-import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
-import { formatBytes } from "../../lib/formatBytes";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import {
   useResourceTelemetry,
   useResourceTelemetryHistory,
 } from "../../lib/resourceTelemetryState";
 import { cn } from "../../lib/utils";
+import { formatBytes } from "../../lib/formatBytes";
 import { ensureLocalApi } from "../../localApi";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { useRelativeTimeState } from "../../hooks/useRelativeTimeState";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
-import { toastManager } from "../ui/toast";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { toastManager } from "../ui/toast";
 import {
+  formatCpuTime,
   processIdentityKey,
   resourceHistoryBarHeight,
   resourceHistoryCpuScaleMax,
@@ -61,6 +60,8 @@ import {
   visibleResourceTelemetryProcesses,
 } from "./ResourceTelemetryDiagnostics.logic";
 import { SettingsSection } from "./settingsLayout";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const HISTORY_WINDOWS = [
   { label: "5m", windowMs: 5 * 60_000, bucketMs: 15_000 },
@@ -71,14 +72,6 @@ const HISTORY_WINDOWS = [
 
 function formatRate(value: number): string {
   return `${formatBytes(value)}/s`;
-}
-
-function formatCpuTime(valueMs: number): string {
-  const seconds = valueMs / 1_000;
-  if (seconds < 60) return `${seconds.toFixed(seconds >= 10 ? 1 : 2).replace(/\.0+$/, "")}s`;
-  const minutes = seconds / 60;
-  if (minutes < 60) return `${minutes.toFixed(minutes >= 10 ? 1 : 2).replace(/\.0+$/, "")}m`;
-  return `${(minutes / 60).toFixed(2).replace(/\.0+$/, "")}h`;
 }
 
 function formatDurationMicros(value: number): string {
@@ -176,7 +169,6 @@ function SourceStatusBadge({
       }
     | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
   const tone = presentation?.tone ?? sourceStatusTone(status);
   return (
     <span
@@ -197,7 +189,7 @@ function SourceStatusBadge({
           tone === "danger" && "bg-destructive",
         )}
       />
-      {uiT(label)} {presentation?.label ?? status}
+      {label} {presentation?.label ?? status}
     </span>
   );
 }
@@ -235,14 +227,13 @@ function IconStat({
   detail?: string | undefined;
   tone?: "default" | "warning" | "danger";
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div className="group min-w-0 px-4 py-4 sm:px-5">
       <div className="flex items-center gap-2 text-3xs font-semibold uppercase tracking-widest text-muted-foreground/70">
         <span className="text-muted-foreground/55 transition-colors group-hover:text-foreground/65">
           {icon}
         </span>
-        <span className="truncate">{uiT(label)}</span>
+        <span className="truncate">{label}</span>
       </div>
       <div
         className={cn(
@@ -275,7 +266,7 @@ function AggregateCard({
       <span className={cn("absolute inset-x-5 top-0 h-0.5 rounded-full opacity-75", accentClass)} />
       <div className="flex items-center justify-between gap-3">
         <div className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground/75">
-          {uiT(label)}
+          {label}
         </div>
         <div className="rounded-md bg-muted/55 px-1.5 py-0.5 font-mono text-3xs tabular-nums text-muted-foreground/70">
           {aggregate.processCount}{" "}
@@ -293,11 +284,10 @@ function AggregateCard({
 }
 
 function MetricPair({ label, value }: { label: string; value: string }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div className="min-w-0 [unicode-bidi:plaintext]">
       <div className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground/45">
-        {uiT(label)}
+        {label}
       </div>
       <div className="truncate font-mono text-xs font-medium tabular-nums text-foreground/90">
         {value}
@@ -314,7 +304,7 @@ function HealthSource({ label, health }: { label: string; health: ResourceTeleme
   return (
     <div className="flex items-start justify-between gap-4 border-t border-border/50 py-3 first:border-t-0">
       <div className="min-w-0 [unicode-bidi:plaintext]">
-        <div className="text-sm font-medium text-foreground">{uiT(label)}</div>
+        <div className="text-sm font-medium text-foreground">{label}</div>
         <div className="mt-1 text-2xs leading-relaxed text-muted-foreground/65">
           {expectedInBrowser
             ? uiT("Available when this page runs inside the desktop app.")
@@ -349,10 +339,9 @@ function DetailRow({
   value: ReactNode;
   valueClassName?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div className="flex items-center justify-between gap-4 border-t border-border/50 py-2.5 first:border-t-0">
-      <span className="text-2xs text-muted-foreground/75">{uiT(label)}</span>
+      <span className="text-2xs text-muted-foreground/75">{label}</span>
       <span
         className={cn(
           "min-w-0 truncate text-right font-mono text-2xs tabular-nums text-foreground/85",
@@ -511,7 +500,11 @@ function ProcessTreeName({
             collapsed ? uiT("Expand {0}", { "0": name }) : uiT("Collapse {0}", { "0": name })
           }
         >
-          <MorphIcon className="size-3.5" icon={collapsed ? ChevronRight : ChevronDown} />
+          {collapsed ? (
+            <ChevronRightIcon className="size-3.5" />
+          ) : (
+            <ChevronDownIcon className="size-3.5" />
+          )}
         </Button>
       ) : (
         <span className="size-5" aria-hidden />
@@ -642,13 +635,13 @@ function ProcessTable({
                   />
                 </td>
                 <td className="truncate px-3 py-2 text-2xs text-muted-foreground">
-                  {categoryLabel(process.category)}
+                  {uiT(categoryLabel(process.category))}
                 </td>
                 <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {process.cpuPercent.toFixed(1)}%
                 </td>
                 <td className="px-3 py-2 text-right font-mono tabular-nums">
-                  {formatCpuTime(process.cpuTimeMs)}
+                  {formatCpuTime(process.cpuTimeMs / 1_000)}
                 </td>
                 <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {formatBytes(process.residentBytes)}
@@ -752,10 +745,10 @@ function HistoryProcessTable({
                   </Tooltip>
                 </td>
                 <td className="truncate px-3 py-2 text-2xs text-muted-foreground">
-                  {categoryLabel(process.category)}
+                  {uiT(categoryLabel(process.category))}
                 </td>
                 <td className="px-3 py-2 text-right font-mono tabular-nums">
-                  {formatCpuTime(process.cpuTimeMs)}
+                  {formatCpuTime(process.cpuTimeMs / 1_000)}
                 </td>
                 <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {process.maxCpuPercent.toFixed(1)}%
@@ -829,7 +822,10 @@ function AttributionTable({ entries }: { entries: ReadonlyArray<ResourceAttribut
               </td>
               <td className="px-3 py-2 text-right font-mono tabular-nums">{entry.count}</td>
               <td className="px-3 py-2 text-right font-mono tabular-nums text-muted-foreground sm:pr-5">
-                {(entry.durationMs / 1_000).toFixed(2).replace(/\.0+$/, "")}s
+                <UiText
+                  message={"{0}s"}
+                  values={{ "0": (entry.durationMs / 1_000).toFixed(2).replace(/\.0+$/, "") }}
+                />
               </td>
             </tr>
           ))}
@@ -1062,7 +1058,7 @@ function ResourceTelemetryDiagnosticsBody({
               value={allT3 ? `${allT3.currentCpuPercent.toFixed(1)}%` : "..."}
               detail={
                 allT3
-                  ? uiT("{0} observed CPU time", { "0": formatCpuTime(allT3.cpuTimeMs) })
+                  ? uiT("{0} observed CPU time", { "0": formatCpuTime(allT3.cpuTimeMs / 1_000) })
                   : undefined
               }
             />

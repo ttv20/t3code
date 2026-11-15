@@ -7,29 +7,27 @@ import {
   TextGeneratorConfig,
   type TextGeneratorModel,
 } from "@t3tools/contracts";
-import { createModelSelection } from "@t3tools/shared/model";
-import * as Option from "effect/Option";
+import { pickModelSelection } from "@t3tools/shared/model";
 import { AsyncResult } from "effect/reactivity";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { CheckIcon, MoreVertical, PlusIcon, ServerIcon } from "lucide-react";
 import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { useEnvironmentSettings, useUpdateEnvironmentSettings } from "../../hooks/useSettings";
-import { getCustomModelOptionsByInstance } from "../../modelSelection";
 import {
   checkTextGeneratorConfig,
+  rereadTextGeneratorModels,
   nextTextGeneratorId,
   refreshTextGeneratorModels,
-  rereadTextGeneratorModels,
   testTextGeneratorModel,
-  TEXT_GENERATOR_PRESETS,
-  textGeneratorBrand,
-  textGeneratorDisplayName,
-  type TextGeneratorPreset,
   useTextGenerationTargets,
   useTextGeneratorModels,
+  TEXT_GENERATOR_PRESETS,
+  type TextGeneratorPreset,
+  textGeneratorBrand,
+  textGeneratorDisplayName,
 } from "../../textGenerators";
+import { getTextGenerationModelOptionsByInstance } from "../../modelSelection";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { ProviderModelPicker } from "../chat/ProviderModelPicker";
 import {
@@ -42,6 +40,8 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
+import { RefreshIcon } from "../ui/refresh-icon";
+import { toastManager } from "../ui/toast";
 import {
   Dialog,
   DialogDescription,
@@ -52,16 +52,16 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
-import { RefreshIcon } from "../ui/refresh-icon";
+import { Label } from "../ui/label";
 import { Spinner } from "../ui/spinner";
 import { Switch } from "../ui/switch";
-import { toastManager } from "../ui/toast";
 import { WizardFooter, WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "../ui/wizard";
 import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
-import { SETTINGS_PICKER_TRIGGER_CLASSNAME, SettingsRow, SettingsSection } from "./settingsLayout";
 import { searchableSetting } from "./settingsSearch";
+import { SETTINGS_PICKER_TRIGGER_CLASSNAME, SettingsRow, SettingsSection } from "./settingsLayout";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const decodeTextGenerator = Schema.decodeUnknownOption(TextGeneratorConfig);
 
@@ -343,7 +343,11 @@ function TextGeneratorWizard({
     >
       <WizardPopup>
         <WizardHeader
-          title={existing ? `Edit ${textGeneratorDisplayName(existing)}` : "Add a text generator"}
+          title={
+            existing
+              ? uiT("Edit {0}", { "0": textGeneratorDisplayName(existing) })
+              : uiT("Add a text generator")
+          }
           description={uiT(
             "Writes thread titles, commit messages, and other short text without starting a coding agent. Your API key is stored on this environment.",
           )}
@@ -417,7 +421,7 @@ function TextGeneratorWizard({
                     </Label>
                     <Input
                       id="text-generator-url"
-                      placeholder="http://localhost:11434/v1"
+                      placeholder={"http://localhost:11434/v1"}
                       value={baseUrl}
                       onChange={(event) => {
                         setBaseUrl(event.target.value);
@@ -457,7 +461,7 @@ function TextGeneratorWizard({
                       existing !== null
                         ? textGeneratorDisplayName(existing)
                         : preset.id === "custom"
-                          ? "e.g. My local model"
+                          ? uiT("e.g. My local model")
                           : preset.label
                     }
                     value={label}
@@ -603,7 +607,7 @@ function TextGenerationTaskPicker({
           model={selection.model}
           lockedProvider={null}
           instanceEntries={targets.entries}
-          modelOptionsByInstance={getCustomModelOptionsByInstance(
+          modelOptionsByInstance={getTextGenerationModelOptionsByInstance(
             settings,
             targets.providers,
             selection.instanceId,
@@ -611,7 +615,7 @@ function TextGenerationTaskPicker({
           )}
           triggerClassName={SETTINGS_PICKER_TRIGGER_CLASSNAME}
           onInstanceModelChange={(instanceId, model) =>
-            updateSettings({ [settingKey]: createModelSelection(instanceId, model) })
+            updateSettings({ [settingKey]: pickModelSelection(selection, instanceId, model) })
           }
         />
       </div>

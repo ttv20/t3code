@@ -10,7 +10,6 @@ import { createContext, useContext, useId, useState } from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import { parse, SvgAst, type JsxAST } from "react-native-svg";
 import { useUiLanguage } from "../../i18n";
-
 import { MediaActionsMenu } from "../../components/MediaActionsMenu";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -20,14 +19,15 @@ import { PresentationSource } from "../../components/ui/NativePresentation";
 import { assetImageCacheKey } from "../../lib/assetImageSource";
 import type { MediaActionsSource } from "../../lib/mediaActionsSource";
 import { useAssetUrlState } from "../../state/assets";
-import { useMediaActions } from "../../state/mediaActions";
+import { WorkspaceMutationIdContext } from "./workspaceMutationIdContext";
+import { ZoomableImagePressable } from "./ZoomableImagePressable";
 import {
   MARKDOWN_IMAGE_MAX_WIDTH,
   resolveMarkdownImageDisplaySize,
   resolveSvgImageSize,
   type MarkdownImageDisplaySize,
 } from "./markdownImageSize";
-import { WorkspaceMutationIdContext } from "./workspaceMutationIdContext";
+import { useMediaActions } from "../../state/mediaActions";
 
 /** Use known feed width immediately; later image measurement would move already-positioned rows. */
 export const MarkdownImageAvailableWidthContext = createContext(0);
@@ -169,7 +169,8 @@ export function ThreadMarkdownImageView(props: {
       ) : (
         <PresentationSource identifier={sourceIdentifier} style={{ alignSelf: "flex-start" }}>
           <MediaActionsMenu media={mediaActions}>
-            <Pressable
+            <ZoomableImagePressable
+              key={props.sourceKey}
               accessibilityRole="imagebutton"
               accessibilityLabel={props.alt ?? uiT("Markdown image")}
               accessibilityHint={
@@ -188,34 +189,29 @@ export function ThreadMarkdownImageView(props: {
                   }),
                 )
               }
-              style={{ alignSelf: "flex-start" }}
+              className="overflow-hidden rounded-[10px] bg-md-code-bg"
+              style={{ alignSelf: "flex-start", ...frameStyle }}
             >
-              <View
-                className="items-center justify-center overflow-hidden rounded-[10px] bg-md-code-bg"
-                style={frameStyle}
-              >
-                {props.format === "svg" ? (
-                  <ThreadMarkdownSvg ast={svgDocument?.ast ?? null} />
-                ) : (
-                  <ThreadMarkdownImageRequest
-                    key={props.sourceKey}
-                    uri={props.uri}
-                    cacheKey={props.cacheKey}
-                    onLoad={(size) =>
-                      // Only the first decode counts: later loads report the bitmap
-                      // downsampled for the current frame (969 vs 970 wide), so keeping
-                      // them resizes the frame, which reloads the image, and so on.
-                      setDecoded((current) =>
-                        current?.sourceKey === props.sourceKey
-                          ? current
-                          : { sourceKey: props.sourceKey, size },
-                      )
-                    }
-                    onError={() => setFailure({ uri: props.uri, failed: true })}
-                  />
-                )}
-              </View>
-            </Pressable>
+              {props.format === "svg" ? (
+                <ThreadMarkdownSvg ast={svgDocument?.ast ?? null} />
+              ) : (
+                <ThreadMarkdownImageRequest
+                  uri={props.uri}
+                  cacheKey={props.cacheKey}
+                  onLoad={(size) =>
+                    // Only the first decode counts: later loads report the bitmap
+                    // downsampled for the current frame (969 vs 970 wide), so keeping
+                    // them resizes the frame, which reloads the image, and so on.
+                    setDecoded((current) =>
+                      current?.sourceKey === props.sourceKey
+                        ? current
+                        : { sourceKey: props.sourceKey, size },
+                    )
+                  }
+                  onError={() => setFailure({ uri: props.uri, failed: true })}
+                />
+              )}
+            </ZoomableImagePressable>
           </MediaActionsMenu>
         </PresentationSource>
       )}

@@ -1,47 +1,40 @@
-import { useAtomValue } from "@effect/atom-react";
-import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
-import { isScratchProject } from "@t3tools/client-runtime/state/projects";
-import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
-import { FolderPlusIcon } from "lucide-react";
-import { useRef, useState } from "react";
 import type { DraftId } from "~/composerDraftStore";
 import { composerDraftHasUserContent, useComposerDraftStore } from "~/composerDraftStore";
-import { useUiLanguage } from "../../i18n";
-
+import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
+import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { isScratchProject } from "@t3tools/client-runtime/state/projects";
+import { FolderPlusIcon } from "lucide-react";
+import { useAtomValue } from "@effect/atom-react";
+import { useRef, useState } from "react";
+import { openCommandPalette } from "~/commandPaletteBus";
+import { shortcutLabelForCommand } from "~/keybindings";
+import { primaryServerKeybindingsAtom } from "~/state/server";
+import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
+import { useOrderWhileOpen } from "~/hooks/useOrderWhileOpen";
+import { useProjectPin } from "~/hooks/useProjectGroupUpdate";
+import { useScratchProject } from "~/hooks/useScratchProject";
+import { isTriagePrompt } from "@t3tools/shared/triagePrompt";
+import { useClientSettings } from "~/hooks/useSettings";
+import { hasExplicitComposerModelSelection } from "~/lib/chatThreadActions";
 import {
   deriveLogicalProjectKeyFromSettings,
   pickableProjectGroups,
   selectProjectGroupingSettings,
 } from "@t3tools/client-runtime/state/project-grouping";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
-import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
-import { openCommandPalette } from "~/commandPaletteBus";
-import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
-import { useOrderWhileOpen } from "~/hooks/useOrderWhileOpen";
-import { useProjectPin } from "~/hooks/useProjectGroupUpdate";
-import { useScratchProject } from "~/hooks/useScratchProject";
-import { useClientSettings } from "~/hooks/useSettings";
-import { isTriagePrompt } from "~/hooks/useStartTriage";
-import { shortcutLabelForCommand } from "~/keybindings";
-import { hasExplicitComposerModelSelection } from "~/lib/chatThreadActions";
 import {
   buildSidebarProjectPickerEntries,
-  buildSidebarProjectSnapshots,
   projectGroupsSpanEnvironments,
 } from "~/sidebarProjectGrouping";
-import { useProjects, useVisibleThreadShells } from "~/state/entities";
+import { useProjects } from "~/state/entities";
 import {
-  useEnvironmentProviders,
   useEnvironments,
   usePrimaryEnvironmentId,
+  useEnvironmentProviders,
 } from "~/state/environments";
-import { primaryServerKeybindingsAtom } from "~/state/server";
-import { resolveProjectDefaultProviderModelSelection } from "../../providerInstances";
 import { ProjectEnvironmentBadge } from "../ProjectEnvironmentBadge";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { isProjectPinShortcut, ProjectPinButton } from "../ProjectPinButton";
-import { sortLogicalProjectsForSidebar } from "../Sidebar.logic";
-import { InlineButton } from "../ui/button";
+import { useSortedProjectGroups } from "../CommandPaletteLookups";
 import {
   Combobox,
   ComboboxEmpty,
@@ -53,9 +46,15 @@ import {
   useComboboxFilter,
 } from "../ui/combobox";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { DraftHeroProjectHeading } from "./DraftHeroProjectHeading";
+import { InlineButton } from "../ui/button";
 import { DraftProjectName } from "./DraftProjectName";
+import { DraftHeroProjectHeading } from "./DraftHeroProjectHeading";
 import { TriageDraftHero } from "./TriageDraftHero";
+import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { resolveProjectDefaultProviderModelSelection } from "../../providerInstances";
+import { resolveNewThreadModelSelection } from "@t3tools/shared/usageLimits";
+
+import { useUiLanguage } from "../../i18n";
 
 const ADD_PROJECT_VALUE = "add-project";
 
@@ -78,12 +77,10 @@ export function DraftHeroHeadline({
   const { t: uiT } = useUiLanguage();
 
   const projects = useProjects();
-  const threads = useVisibleThreadShells();
   const { environments } = useEnvironments();
   const providersByEnvironment = useEnvironmentProviders();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const projectGroupingSettings = useClientSettings(selectProjectGroupingSettings);
-  const projectSortOrder = useClientSettings((settings) => settings.sidebarProjectSortOrder);
   const setLogicalProjectDraftThreadId = useComposerDraftStore(
     (store) => store.setLogicalProjectDraftThreadId,
   );
@@ -107,16 +104,7 @@ export function DraftHeroHeadline({
   const environmentLabelById = new Map(
     environments.map((environment) => [environment.environmentId, environment.label] as const),
   );
-  const projectGroups = sortLogicalProjectsForSidebar(
-    buildSidebarProjectSnapshots({
-      projects,
-      settings: projectGroupingSettings,
-      primaryEnvironmentId,
-      resolveEnvironmentLabel: (environmentId) => environmentLabelById.get(environmentId) ?? null,
-    }),
-    threads,
-    projectSortOrder,
-  );
+  const projectGroups = useSortedProjectGroups(environmentLabelById);
   const showProjectEnvironments = projectGroupsSpanEnvironments(projectGroups);
   const environmentMachineById = new Map(
     environments.map(
@@ -342,9 +330,9 @@ export function DraftHeroHeadline({
                 ) : null}
                 <Tooltip>
                   <TooltipTrigger render={<span className="min-w-0 flex-1 text-sm" />}>
-                    <DraftProjectName value={uiT(item.label)} />
+                    <DraftProjectName value={item.label} />
                   </TooltipTrigger>
-                  <TooltipPopup side="top">{uiT(item.label)}</TooltipPopup>
+                  <TooltipPopup side="top">{item.label}</TooltipPopup>
                 </Tooltip>
                 {entry && canPinProjectGroup(entry.group) ? (
                   <ProjectPinButton
@@ -417,7 +405,7 @@ export function DraftHeroHeadline({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col items-center">
       {hasResolvedProject && !isScratchDraft ? (
-        <DraftHeroProjectHeading projectName={activeProjectTitle ?? "Choose a project"}>
+        <DraftHeroProjectHeading projectName={activeProjectTitle ?? uiT("Choose a project")}>
           {projectSelector}
         </DraftHeroProjectHeading>
       ) : (

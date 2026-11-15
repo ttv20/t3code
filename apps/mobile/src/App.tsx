@@ -1,3 +1,15 @@
+import "../global.css";
+import { installPermissionUpdateNotice } from "./features/connection/permissionUpdateNotice";
+import { installComposerAttachmentUploads } from "./state/composer-attachment-uploads";
+import { installThreadOutboxDelivery } from "./state/threadOutboxDelivery";
+import * as Linking from "expo-linking";
+import * as SplashScreen from "expo-splash-screen";
+import { requireNativeModule } from "expo";
+import { useEffect, useRef, useState } from "react";
+import { Platform, StatusBar } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   CommonActions,
   createPathConfigForStaticNavigation,
@@ -9,29 +21,35 @@ import {
 } from "@react-navigation/native";
 import { DEFAULT_HOSTED_APP_URL } from "@t3tools/shared/connectAuth";
 import { pipe } from "effect/Function";
-import { requireNativeModule } from "expo";
-import * as Linking from "expo-linking";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { Platform, StatusBar } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import { installLocalCompletionNotifications } from "./features/agent-awareness/localCompletionRuntime";
 import { CloudAuthProvider } from "./features/cloud/CloudAuthProvider";
-import { installPermissionUpdateNotice } from "./features/connection/permissionUpdateNotice";
 import { useUiLanguage } from "./i18n";
-import { installComposerAttachmentUploads } from "./state/composer-attachment-uploads";
-import { installThreadOutboxDelivery } from "./state/threadOutboxDelivery";
 import { UiLanguageProvider } from "./UiLanguageProvider";
-
-import { RegistryContext } from "@effect/atom-react";
+import { I18nProvider } from "./i18n/I18nProvider";
+import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import { ProjectChipIconRasterizer } from "./native/ProjectChipIconImages";
+import { ThreadArrangementHost } from "./features/threads/ThreadArrangementSheet";
 import * as Dialog from "./components/ui/Dialog";
 import { OverlayPortalHost } from "./components/ui/OverlayPortal";
 import {
   installAgentNotificationNavigation,
   setAgentNotificationPathname,
 } from "./features/agent-awareness/notificationNavigation";
+import {
+  installAppShortcuts,
+  recordAppShortcutNavigationState,
+} from "./features/shortcuts/appShortcutsRuntime";
+import {
+  AppearancePreferencesProvider,
+  installAppearanceRuntime,
+  useAppearancePreferences,
+} from "./features/settings/appearance/AppearancePreferencesProvider";
+import { RootStack, rootPathnameFromState, workspaceLocationFromState } from "./Stack";
+import { appAtomRegistry } from "./state/atom-registry";
+import { subscribeComposerDraftModelReconciliation } from "./state/use-composer-drafts";
+import { environmentThreadShells, threadEnvironment } from "./state/threads";
+import { environmentShell, shellCachesReadAtom } from "./state/shell";
+import { shouldHandleAppLink, restoreDraftLinkState } from "./lib/appLinking";
 import { hasCloudPublicConfig } from "./features/cloud/publicConfig";
 import {
   pairingFormLinkAction,
@@ -53,53 +71,44 @@ import {
   resolvePendingThreadPromptLink,
   takeThreadPromptLink,
 } from "./features/prompt-links/threadPromptLink";
-import {
-  AppearancePreferencesProvider,
-  installAppearanceRuntime,
-  useAppearancePreferences,
-} from "./features/settings/appearance/AppearancePreferencesProvider";
 import { takeScheduledTaskNewLink } from "./features/settings/scheduled-task-editor-state";
-import { restoreSettingsLinkState } from "./features/settings/settings-navigation";
+import {
+  restoreSettingsLinkState,
+  settingsLinkAction,
+} from "./features/settings/settings-navigation";
 import {
   presentPendingIncomingShare,
   pruneIncomingShareImports,
   startIncomingShareInbox,
 } from "./features/sharing/IncomingShareProvider";
-import {
-  installAppShortcuts,
-  recordAppShortcutNavigationState,
-} from "./features/shortcuts/appShortcutsRuntime";
 import { prepareNativeShowcaseCapture } from "./features/showcase/nativeShowcaseScene";
 import { installShowcaseCapture } from "./features/showcase/ShowcaseCaptureCoordinator";
 import { pruneNewTaskFlowStates } from "./features/threads/new-task-flow-state";
 import { pruneNewTaskBranchCheckouts } from "./features/threads/NewTaskDraftRouteScreen";
-import { ThreadArrangementHost } from "./features/threads/ThreadArrangementSheet";
 import { installAppUpdateChecks } from "./features/updates/app-updates";
 import { GlobalVoiceInputControl } from "./features/voice-input/GlobalVoiceInputControl";
-import { restoreDraftLinkState, shouldHandleAppLink } from "./lib/appLinking";
 import {
   disposeOnFoundationReplace,
   type FoundationHotModule,
 } from "./lib/foundation-fast-refresh";
+import { useMobileNavigationTheme } from "./lib/useMobileNavigationTheme";
+import { installUiRuntimeMemoryWarningGc } from "./lib/useUiRuntimeMemoryWarningGc";
+import { SubscriptionUsageCoordinator } from "./widgets/SubscriptionUsageCoordinator";
+import { ConnectDeviceApprovalCoordinator } from "./features/connection/ConnectDeviceApprovalCoordinator";
+import { installSubscriptionUsageRefresh } from "./widgets/useSubscriptionUsage";
+import {
+  launchSplashHomeRowsPending,
+  settleLaunchSplashHomeRows,
+  splashCanHide,
+  useLaunchSplashHomeRowsPending,
+} from "./features/home/home-launch-splash";
+import { NativeLayoutMetricsProvider } from "./native/native-layout-metrics";
 import {
   attachRootNavigation,
   flushRootNavigationQueue,
   linkToRootPath,
   rootNavigationRef,
 } from "./lib/rootNavigation";
-import { useMobileNavigationTheme } from "./lib/useMobileNavigationTheme";
-import { installUiRuntimeMemoryWarningGc } from "./lib/useUiRuntimeMemoryWarningGc";
-import { NativeLayoutMetricsProvider } from "./native/native-layout-metrics";
-import { ProjectChipIconRasterizer } from "./native/ProjectChipIconImages";
-import { RootStack, rootPathnameFromState, workspaceLocationFromState } from "./Stack";
-import { appAtomRegistry } from "./state/atom-registry";
-import { environmentShell } from "./state/shell";
-import { environmentThreadShells, threadEnvironment } from "./state/threads";
-import { subscribeComposerDraftModelReconciliation } from "./state/use-composer-drafts";
-import { SubscriptionUsageCoordinator } from "./widgets/SubscriptionUsageCoordinator";
-import { installSubscriptionUsageRefresh } from "./widgets/useSubscriptionUsage";
-
-import "../global.css";
 
 if (process.env.EXPO_PUBLIC_SHOWCASE === "1") {
   prepareNativeShowcaseCapture();
@@ -140,14 +149,16 @@ const appLinking = {
   getActionFromState: (
     state: Parameters<typeof getActionFromState>[0],
     options: Parameters<typeof getActionFromState>[1],
-  ): ReturnType<typeof getActionFromState> =>
-    // Our router handles the selection; React Navigation's type only lists its own actions.
-    (workspaceDetailLinkAction(state) as ReturnType<typeof getActionFromState>) ??
-    pairingFormLinkAction(
-      state,
-      rootNavigationRef.isReady() ? rootNavigationRef.getRootState() : undefined,
-    ) ??
-    getActionFromState(state, options),
+  ): ReturnType<typeof getActionFromState> => {
+    const current = rootNavigationRef.isReady() ? rootNavigationRef.getRootState() : undefined;
+    return (
+      // Our router handles the selection; React Navigation's type only lists its own actions.
+      (workspaceDetailLinkAction(state) as ReturnType<typeof getActionFromState>) ??
+      pairingFormLinkAction(state, current) ??
+      settingsLinkAction(state, current) ??
+      getActionFromState(state, options)
+    );
+  },
   getStateFromPath: getAppStateFromPath,
 };
 
@@ -169,6 +180,8 @@ function handleNavigationStateChange(state: NavigationState | undefined): void {
   resolvePendingNewTaskPromptLink(state);
   resolvePendingThreadPromptLink(state);
   if (!state) return;
+  // A launch that opens another route has no Home rows for the splash to wait for.
+  if (state.routes[state.index]?.name !== "Home") settleLaunchSplashHomeRows();
   setAgentNotificationPathname(workspaceLocationFromState(state).pathname);
   recordAppShortcutNavigationState(state);
   pruneNewTaskFlowStates(state);
@@ -208,13 +221,38 @@ disposeOnFoundationReplace(typeof module === "undefined" ? undefined : module.ho
   for (const dispose of appServiceDisposers) dispose();
 });
 
+// Cached shells are local reads that end in a fraction of this time; the limit keeps a failed
+// read, or a list that does not lay out, from holding the splash screen.
+const SPLASH_WAIT_MS = 1_500;
+
 function SplashScreenCoordinator() {
   const { isReady } = useAppearancePreferences();
+  const shellCachesRead = useAtomValue(shellCachesReadAtom);
+  const homeRowsPending = useLaunchSplashHomeRowsPending();
+  const [waitEnded, setWaitEnded] = useState(false);
+  const hidden = useRef(false);
 
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- hides the native splash screen once appearance preferences have loaded
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- starts the limit on how long the native splash screen waits for cached shells and their rows
   useEffect(() => {
-    if (isReady) void SplashScreen.hide();
-  }, [isReady]);
+    const timer = setTimeout(() => setWaitEnded(true), SPLASH_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- hides the native splash screen once preferences have loaded and the cached rows are laid out
+  useEffect(() => {
+    const canHide = splashCanHide({
+      preferencesReady: isReady,
+      shellCachesRead,
+      // Home holds the splash in a layout effect of the commit that gives it rows. That can be
+      // this commit, after this render read the store.
+      homeRowsPending: homeRowsPending || launchSplashHomeRowsPending(),
+      waitEnded,
+    });
+    if (!canHide || hidden.current) return;
+    hidden.current = true;
+    settleLaunchSplashHomeRows();
+    void SplashScreen.hide();
+  }, [isReady, shellCachesRead, homeRowsPending, waitEnded]);
 
   return null;
 }
@@ -225,7 +263,9 @@ export default function App() {
       <CloudAuthProvider>
         <AppearancePreferencesProvider>
           <UiLanguageProvider>
-            <AppContent />
+            <I18nProvider>
+              <AppContent />
+            </I18nProvider>
           </UiLanguageProvider>
         </AppearancePreferencesProvider>
       </CloudAuthProvider>
@@ -250,6 +290,7 @@ function AppContent() {
     <>
       <SplashScreenCoordinator />
       <SubscriptionUsageCoordinator />
+      <ConnectDeviceApprovalCoordinator />
       <GestureHandlerRootView className="flex-1">
         <KeyboardProvider statusBarTranslucent>
           <SafeAreaProvider>

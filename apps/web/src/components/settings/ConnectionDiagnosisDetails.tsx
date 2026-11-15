@@ -10,8 +10,6 @@ import {
 import * as Option from "effect/Option";
 import { AsyncResult } from "effect/reactivity";
 import { ChevronRightIcon } from "lucide-react";
-import { useUiLanguage } from "../../i18n";
-
 import { APP_VERSION } from "~/branding";
 import { environmentCatalog } from "~/connection/catalog";
 import { type EnvironmentPresentation, useRelayEnvironmentDiscovery } from "~/state/environments";
@@ -21,6 +19,8 @@ import { useNowSecond } from "../../hooks/useNowSecond";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+
+import { useUiLanguage } from "../../i18n";
 
 /**
  * What failed on the way to an environment, or null while it is connected, off,
@@ -72,7 +72,7 @@ function RetryCountdown({ retryAt }: { readonly retryAt: number }) {
 function RetryCountdownTicker({ retryAt }: { readonly retryAt: number }) {
   const { t: uiT } = useUiLanguage();
   const seconds = Math.ceil((retryAt - useNowSecond()) / 1_000);
-  return <>{seconds > 0 ? `retrying in ${seconds}s` : uiT("retrying")}</>;
+  return <>{seconds > 0 ? uiT("retrying in {0}s", { "0": seconds }) : uiT("retrying")}</>;
 }
 
 /** The collapsed failure: the full headline, then the retry state and a Details toggle. */
@@ -140,7 +140,6 @@ export function ConnectionDiagnosisPanel({
 
   const { copyToClipboard } = useCopyToClipboard({
     target: "connection diagnostics",
-    onCopy: () => toastManager.add({ type: "success", title: uiT("Diagnostics copied") }),
     onError: (error) =>
       toastManager.add(
         stackedThreadToast({

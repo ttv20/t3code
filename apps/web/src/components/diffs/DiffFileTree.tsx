@@ -1,6 +1,6 @@
 import type { GitStatusEntry } from "@pierre/trees";
 import { FileTree, useFileTree, useFileTreeSelector } from "@pierre/trees/react";
-import { ChevronsDownUp, ChevronsUpDown } from "lucide";
+import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useUiLanguage } from "../../i18n";
 
@@ -9,7 +9,6 @@ import { useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
 import { PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
 
-import { MorphIcon } from "~/components/MorphIcon";
 import { areAllDirectoriesExpanded, setAllDirectoriesExpanded } from "../files/fileTreeExpansion";
 import { Button } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
@@ -208,10 +207,11 @@ export function DiffFileTree({
                 />
               }
             >
-              <MorphIcon
-                className="size-3.5"
-                icon={allDirectoriesExpanded ? ChevronsDownUp : ChevronsUpDown}
-              />
+              {allDirectoriesExpanded ? (
+                <ChevronsDownUpIcon className="size-3.5" />
+              ) : (
+                <ChevronsUpDownIcon className="size-3.5" />
+              )}
             </TooltipTrigger>
             <TooltipPopup>
               {allDirectoriesExpanded ? uiT("Collapse all folders") : uiT("Expand all folders")}

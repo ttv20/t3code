@@ -36,15 +36,15 @@ function AccountSummary({ account }: { readonly account: UsageLimitsReport["acco
     <>
       {label.includes("@") ? (
         <RedactedSensitiveText
-          key={uiT(label)}
-          value={uiT(label)}
+          key={label}
+          value={label}
           ariaLabel={uiT("Toggle account label visibility")}
           revealTooltip="Click to reveal account"
           hideTooltip="Click to hide account"
           className="max-w-full truncate align-bottom font-sans text-xs leading-normal"
         />
       ) : (
-        uiT(label)
+        label
       )}
       {account.plan ? ` · ${account.plan}` : null}
     </>

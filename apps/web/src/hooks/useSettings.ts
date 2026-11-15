@@ -1,3 +1,4 @@
+import { resolveInterfaceLanguage } from "@t3tools/client-runtime/i18n";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
 import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
 import {
@@ -53,6 +54,7 @@ import {
   useEnvironmentScope,
 } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { subscribeBrowserClientSettingsWrites } from "~/clientPersistenceStorage";
 import {
   getThemeDefinition,
   getThemePreviewSidebarArtwork,
@@ -76,6 +78,7 @@ let clientSettingsHydrationPromise: Promise<void> | null = null;
 let clientSettingsHydrationGeneration = 0;
 let clientSettingsPersistenceQueue: Promise<void> = Promise.resolve();
 let deferredClientSettingsPatchCount = 0;
+let unsubscribeOtherTabClientSettings: (() => void) | null = null;
 
 function emitClientSettingsChange() {
   for (const listener of clientSettingsListeners) {
@@ -91,6 +94,21 @@ function emitClientSettingsHydrationChange() {
 
 function getClientSettingsSnapshot(): ClientSettings {
   return clientSettingsSnapshot;
+}
+
+function synchronizeLanguagePatch(patch: ClientSettingsPatch): ClientSettingsPatch {
+  const language =
+    patch.interfaceLanguage ??
+    (patch.language === undefined ? undefined : resolveInterfaceLanguage(patch.language));
+  return language === undefined ? patch : { ...patch, language, interfaceLanguage: language };
+}
+
+function hydrateLanguageSettings(settings: ClientSettings): ClientSettings {
+  const interfaceLanguage =
+    settings.interfaceLanguage === "system"
+      ? resolveInterfaceLanguage(settings.language)
+      : settings.interfaceLanguage;
+  return { ...settings, language: interfaceLanguage, interfaceLanguage };
 }
 
 function replaceClientSettingsSnapshot(settings: ClientSettings): void {
@@ -151,8 +169,13 @@ async function hydrateClientSettings(): Promise<void> {
         return;
       }
       if (persistedSettings) {
-        replaceClientSettingsSnapshot({ ...DEFAULT_CLIENT_SETTINGS, ...persistedSettings });
+        replaceClientSettingsSnapshot(
+          hydrateLanguageSettings({ ...DEFAULT_CLIENT_SETTINGS, ...persistedSettings }),
+        );
       }
+      unsubscribeOtherTabClientSettings ??= subscribeBrowserClientSettingsWrites(
+        refreshClientSettingsFromOtherTab,
+      );
       setClientSettingsHydrationStatus("ready");
     } catch (error) {
       if (hydrationGeneration === clientSettingsHydrationGeneration) {
@@ -176,6 +199,22 @@ async function hydrateClientSettings(): Promise<void> {
   return clientSettingsHydrationPromise;
 }
 
+function refreshClientSettingsFromOtherTab(): void {
+  void enqueueClientSettingsPersistence(async () => {
+    const persistedSettings = await ensureLocalApi().persistence.getClientSettings();
+    if (persistedSettings) {
+      replaceClientSettingsSnapshot(
+        hydrateLanguageSettings({ ...DEFAULT_CLIENT_SETTINGS, ...persistedSettings }),
+      );
+    }
+  }).catch((error) => {
+    console.error(`${CLIENT_SETTINGS_PERSISTENCE_ERROR_SCOPE} refresh failed`, {
+      operation: "refresh",
+      ...safeErrorLogAttributes(error),
+    });
+  });
+}
+
 const defaultClientSettingsPersistence = (settings: ClientSettings): Promise<void> =>
   ensureLocalApi().persistence.setClientSettings(settings);
 
@@ -192,6 +231,7 @@ export function persistClientSettingsPatch(
   patch: ClientSettingsPatch,
   persist: (settings: ClientSettings) => Promise<void> = defaultClientSettingsPersistence,
 ): Promise<void> {
+  patch = synchronizeLanguagePatch(patch);
   // Patches queued before hydration must publish before newer optimistic patches.
   const deferPatch =
     clientSettingsHydrationStatus !== "ready" || deferredClientSettingsPatchCount > 0;
@@ -206,10 +246,16 @@ export function persistClientSettingsPatch(
         if (clientSettingsHydrationStatus !== "ready") {
           await hydrateClientSettings();
         }
-        replaceClientSettingsSnapshot({ ...getClientSettingsSnapshot(), ...patch });
       } finally {
         deferredClientSettingsPatchCount -= 1;
       }
+    }
+    // Also reapplies an optimistic patch that a refresh from another tab replaced.
+    const current = getClientSettingsSnapshot();
+    if (
+      !Object.entries(patch).every(([key, value]) => current[key as keyof ClientSettings] === value)
+    ) {
+      replaceClientSettingsSnapshot({ ...current, ...patch });
     }
     await persist(getClientSettingsSnapshot());
   }).catch((error) => {
@@ -231,7 +277,14 @@ export async function persistClientSettingsUpdate(
     }
     for (;;) {
       const current = getClientSettingsSnapshot();
-      const next = update(current);
+      const updated = update(current);
+      const languagePatch =
+        updated.interfaceLanguage !== current.interfaceLanguage
+          ? { interfaceLanguage: updated.interfaceLanguage }
+          : updated.language !== current.language
+            ? { language: updated.language }
+            : {};
+      const next = { ...updated, ...synchronizeLanguagePatch(languagePatch) };
       await persist(next);
       if (getClientSettingsSnapshot() === current) {
         replaceClientSettingsSnapshot(next);
@@ -602,7 +655,13 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       toastManager.add({
         type: "error",
         title: uiT("Setting not saved"),
-        description: `Could not save on ${label}: ${error instanceof Error ? error.message : "The save failed. Try reconnecting and saving again."}`,
+        description: uiT("Could not save on {0}: {1}", {
+          "0": label,
+          "1":
+            error instanceof Error
+              ? error.message
+              : uiT("The save failed. Try reconnecting and saving again."),
+        }),
       });
     }
     return result;
@@ -624,13 +683,17 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       toastManager.add({
         type: "warning",
         title: uiT("Setting not saved"),
-        description: `This connection lacks permission to change settings on ${environments.find((target) => target.environmentId === environmentId)?.label ?? "the selected environment"}.`,
+        description: uiT("This connection lacks permission to change settings on {0}.", {
+          "0":
+            environments.find((target) => target.environmentId === environmentId)?.label ??
+            uiT("the selected environment"),
+        }),
       });
     }
     if (Object.keys(serverPatch).length > 0 && canWriteServerPatch) {
       const { sharedPatch, localPatch } = splitSharedServerPatch(serverPatch);
       // Dropping the write silently leaves the control looking saved.
-      const warnUnsaved = (description = PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE) => {
+      const warnUnsaved = (description = uiT(PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE)) => {
         options?.onFailed?.();
         return toastManager.add({
           type: "warning",
@@ -686,9 +749,11 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
         if (writes.length === 0) {
           warnUnsaved(
             deniedLabels.length > 0
-              ? `This connection lacks permission to change settings on ${deniedLabels.join(", ")}.`
+              ? uiT("This connection lacks permission to change settings on {0}.", {
+                  "0": deniedLabels.join(", "),
+                })
               : targets.size > 0
-                ? "Update older servers to save this setting."
+                ? uiT("Update older servers to save this setting.")
                 : undefined,
           );
         } else {
@@ -710,7 +775,13 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
               if (result._tag !== "Failure" || isAtomCommandInterrupted(result)) return [];
               const error = squashAtomCommandFailure(result);
               return [
-                `Could not save on ${label}: ${error instanceof Error ? error.message : "The save failed. Try reconnecting and saving again."}`,
+                uiT("Could not save on {0}: {1}", {
+                  "0": label,
+                  "1":
+                    error instanceof Error
+                      ? error.message
+                      : uiT("The save failed. Try reconnecting and saving again."),
+                }),
               ];
             });
             if (
@@ -731,7 +802,7 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
                   : uiT("Setting not saved"),
               description: [
                 ...failures,
-                ...(saved.length > 0 ? [`Saved on ${saved.join(", ")}.`] : []),
+                ...(saved.length > 0 ? [uiT("Saved on {0}.", { "0": saved.join(", ") })] : []),
               ].join("\n"),
             });
           });
@@ -765,6 +836,8 @@ export function __resetClientSettingsPersistenceForTests(): void {
   clientSettingsHydrationPromise = null;
   clientSettingsPersistenceQueue = Promise.resolve();
   deferredClientSettingsPatchCount = 0;
+  unsubscribeOtherTabClientSettings?.();
+  unsubscribeOtherTabClientSettings = null;
   clientSettingsListeners.clear();
   clientSettingsHydrationListeners.clear();
 }

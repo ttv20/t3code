@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { deriveThreadTitleSeed } from "@t3tools/client-runtime/operations";
 import {
@@ -27,6 +28,7 @@ import { useOpenLinkedThread } from "./useOpenLinkedThread";
  * what the parent's composer would send, which its thread gets only on its next send.
  */
 export function useStartSideChat() {
+  const { t: uiT } = useUiLanguage();
   const forkSideChat = useAtomCommand(threadEnvironment.forkSideChat, { reportFailure: false });
   const deleteThread = useAtomCommand(threadEnvironment.delete, { reportFailure: false });
   const setRuntimeMode = useAtomCommand(threadEnvironment.setRuntimeMode, { reportFailure: false });
@@ -53,7 +55,7 @@ export function useStartSideChat() {
       input: {
         sourceThreadId: source.threadId,
         targetThreadId,
-        title: "Side chat",
+        title: uiT("Side chat"),
         creationSource: "mobile",
       },
     });

@@ -14,7 +14,6 @@ import { AsyncResult } from "effect/reactivity";
 import { type ReactNode, useEffect, useState } from "react";
 import { Text as NativeText, Platform, View } from "react-native";
 import { useUiLanguage } from "../../i18n";
-
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
@@ -30,7 +29,6 @@ import {
   voiceSpeechModelsAtom,
   voiceSpeechStatusAtom,
 } from "../voice-input/voiceDestination";
-import { SettingsSection } from "./components/SettingsSection";
 
 const isDownloading = (model: EnvironmentSpeechModel) =>
   model.state === "downloading" || model.state === "verifying";
@@ -150,16 +148,15 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
           ],
         ] as const)
       : []),
-    ...(data && data.secondsPer30s !== null
+    ...(data && data.secondsPer30s.accelerated !== null
       ? ([
           [
             "speed",
             <>
               <Text className="font-t3-medium text-foreground">
-                {uiT("{0} s", { "0": data.secondsPer30s })}
-              </Text>
-              {" / "}
-              {uiT("{0} s", { "0": 30 })}
+                {data.secondsPer30s.accelerated} {uiT("s")}{" "}
+              </Text>{" "}
+              / 30 s
             </>,
           ],
         ] as const)
@@ -282,59 +279,64 @@ export function VoiceModelRow(props: {
   );
 }
 
-export function VoiceModelSection(props: {
+/** The environment's local-model method: chosen by its mark, opens the model list. */
+export function LocalModelChoice(props: {
   readonly environmentId: EnvironmentId;
   readonly label: string;
+  readonly selected: boolean;
+  readonly onSelect: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
 
   const navigation = useNavigation();
   const voice = useVoiceModels(props.environmentId, props.label);
   const { status } = voice;
-  if (!voice.connection || !status) return null;
-  const title = uiT("Transcription model on {0}", { "0": props.label });
-  if (!status.supported) {
+  const open = () =>
+    navigation.navigate("SettingsVoiceModels", { environmentId: props.environmentId });
+  if (!voice.connection || !status || !status.supported)
     return (
-      <SettingsSection title={title} footer={status.reason}>
-        {null}
-      </SettingsSection>
+      <ListChoiceRow
+        label={uiT("Local model")}
+        description={
+          !voice.connection
+            ? uiT("Not available on this environment")
+            : status?.supported === false
+              ? status.reason
+              : uiT("Checking…")
+        }
+        selected={props.selected}
+        disabled
+        onPress={() => {}}
+      />
     );
-  }
 
   const active = status.state === "missing-model" ? null : status;
   const pending = voice.models.find(isDownloading);
   const progress =
     pending?.downloaded === undefined ? undefined : pending.downloaded / pending.size;
   return (
-    <SettingsSection
-      title={title}
-      footer={
-        voice.canManage
-          ? undefined
-          : uiT(
-              "This connection can’t change settings on {0}. Add a transcription model using T3 Code on that machine.",
-              { "0": props.label },
-            )
+    <ListRow
+      label={active?.model ?? uiT("Local model")}
+      description={
+        pending
+          ? pending.state === "verifying"
+            ? uiT("Verifying {0}…", { "0": pending.name })
+            : uiT("Downloading {0} · {1}%", {
+                "0": pending.name,
+                "1": Math.round((progress ?? 0) * 100),
+              })
+          : active
+            ? uiT("Local model · {0}", { "0": formatBytes(active.size) })
+            : voice.canManage
+              ? uiT("No model installed · Choose one to download")
+              : uiT("No model installed · Add one using T3 Code on {0}", { "0": props.label })
       }
-    >
-      <ListRow
-        label={active?.model ?? uiT("No model selected")}
-        description={
-          pending
-            ? pending.state === "verifying"
-              ? uiT("Verifying {0}…", { "0": pending.name })
-              : uiT("Downloading {0} · {1}%", {
-                  "0": pending.name,
-                  "1": Math.round((progress ?? 0) * 100),
-                })
-            : active
-              ? formatBytes(active.size)
-              : uiT("Choose a transcription model to dictate on this environment.")
-        }
-        onPress={() =>
-          navigation.navigate("SettingsVoiceModels", { environmentId: props.environmentId })
-        }
-      />
-    </SettingsSection>
+      selected={props.selected}
+      onPress={() => {
+        if (!props.selected) props.onSelect();
+        // Switching to an installed model needs no further step.
+        if (props.selected || !active) open();
+      }}
+    />
   );
 }

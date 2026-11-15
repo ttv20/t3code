@@ -157,12 +157,10 @@ function InlineConfirmation({
 }
 
 function InlineSheetHeader(props: SheetHeaderProps) {
-  const { t: uiT } = useUiLanguage();
-
   const close = (
     <SheetCloseButton
       {...(props.onCancel ? { onCancel: props.onCancel } : { onClose: props.onClose })}
-      accessibilityLabel={uiT(props.accessibilityLabel)}
+      accessibilityLabel={props.accessibilityLabel}
       disabled={props.dismissDisabled}
     />
   );

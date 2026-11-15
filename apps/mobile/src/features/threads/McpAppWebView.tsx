@@ -36,6 +36,7 @@ import { shareGeneratedAttachment } from "../../lib/attachmentDownload";
 import { mobileHtmlRenderTheme } from "../../lib/htmlRenderTheme";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { uuidv4 } from "../../lib/uuid";
+import { webViewDecelerationRate } from "../../lib/webViewDecelerationRate";
 import { useAssetUrlState } from "../../state/assets";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { useThreadShell } from "../../state/entities";
@@ -557,6 +558,7 @@ export function ThreadMcpApp(props: {
           accessibilityLabel={uiT("{0} app", { "0": app.server })}
           style={{ flex: 1, backgroundColor: "transparent" }}
           nestedScrollEnabled
+          decelerationRate={webViewDecelerationRate}
           originWhitelist={["*"]}
           // Android misreports nested frames as top-level; rely on iframe sandboxing there and gate navigation elsewhere.
           onShouldStartLoadWithRequest={(request) =>

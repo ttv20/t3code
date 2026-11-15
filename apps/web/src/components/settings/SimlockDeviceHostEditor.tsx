@@ -1,4 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
+import { useId, useState, type ReactNode } from "react";
 import {
   isSecretReference,
   type EnvironmentId,
@@ -9,12 +10,8 @@ import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { XIcon } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { deviceSimlockIdentityCheck } from "../../state/device";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
-
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -34,6 +31,8 @@ import {
   type SimlockHostEnvironment,
   type SimlockTokenEntry,
 } from "./simlockDeviceHostsSettings.logic";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const failureMessage = (cause: Cause.Cause<unknown>) => {
   const error = Cause.squash(cause);
@@ -177,7 +176,7 @@ export function SimlockDeviceHostEditor(props: {
               <Input
                 required
                 type="url"
-                placeholder="https://gateway.example.ts.net:4700"
+                placeholder={"https://gateway.example.ts.net:4700"}
                 value={gatewayUrl}
                 disabled={props.busy}
                 onChange={(event) => {
@@ -194,7 +193,11 @@ export function SimlockDeviceHostEditor(props: {
                   environmentId={environment.environmentId}
                   hostId={props.isNew ? null : props.host.id}
                   gatewayUrl={checkUrl}
-                  label={several ? `Agent token · ${environment.label}` : "Agent token"}
+                  label={
+                    several
+                      ? uiT("Agent token · {0}", { "0": environment.label })
+                      : uiT("Agent token")
+                  }
                   token={tokens.get(environment.environmentId) ?? { kind: "cleared" }}
                   saved={savedValue(environment)}
                   busy={props.busy}
@@ -299,8 +302,8 @@ function SimlockTokenField(props: {
     ) : identity ? (
       <span className="text-muted-foreground">
         {identity.tokenSource === "env"
-          ? `Using this machine's agent-device token (${identity.signedInAs}).`
-          : `Accepted as ${identity.signedInAs}.`}
+          ? uiT("Using this machine's agent-device token ({0}).", { "0": identity.signedInAs })
+          : uiT("Accepted as {0}.", { "0": identity.signedInAs })}
       </span>
     ) : AsyncResult.isFailure(check) ? (
       <span
@@ -319,6 +322,7 @@ function SimlockTokenField(props: {
           key={inputKey}
           id={id}
           aria-label={uiT("Agent token")}
+          environmentId={props.environmentId}
           className="min-w-0 flex-1"
           configured={props.token.kind === "saved" && typeof props.saved === "string"}
           value={

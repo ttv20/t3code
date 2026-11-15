@@ -1,4 +1,4 @@
-import { LegendList } from "@legendapp/list/react";
+import type { ProjectId, ScopedThreadRef, ThreadPullRequestLink } from "@t3tools/contracts";
 import {
   sourceControlClients,
   UNKNOWN_SOURCE_CONTROL_CLIENT,
@@ -9,7 +9,7 @@ import {
   resolveThreadPullRequestChains,
   visibleThreadPullRequests,
 } from "@t3tools/client-runtime/thread-pull-requests";
-import type { ProjectId, ScopedThreadRef, ThreadPullRequestLink } from "@t3tools/contracts";
+import { canStartThreadPullRequestWatch } from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import {
   ArrowUpRightIcon,
   EyeIcon,
@@ -18,30 +18,28 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
 } from "lucide-react";
+import { LegendList } from "@legendapp/list/react";
 import { memo, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
-import { findProjectForChangeRequest } from "@t3tools/client-runtime/change-request-links";
 import {
   COMPOSER_PULL_REQUEST_DRAG_TYPE,
   encodePullRequestDragPayload,
 } from "~/components/chat/composerMentionDrag";
-import { RelativeTime } from "~/components/RelativeTime";
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
+import { findProjectForChangeRequest } from "@t3tools/client-runtime/change-request-links";
 import { useOpenPrLink } from "~/lib/openPullRequestLink";
 import { cn } from "~/lib/utils";
 import { useShortcutModifierState } from "~/shortcutModifierState";
 import { useProjects, useServerConfigs, useThreadShell } from "~/state/entities";
+import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
+import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
 import { threadEnvironment } from "~/state/threads";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { RelativeTime } from "~/components/RelativeTime";
 import { Button } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { MiddleTruncate } from "../ui/middle-truncate";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { openLinkPullRequestDialog } from "./LinkPullRequestDialog";
-import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
-import { PullRequestGlyph } from "./pullRequestIcons";
-import { pullRequestQuickActions } from "./pullRequestList.logic";
 import {
   PULL_REQUEST_ROW_CLASS,
   PULL_REQUEST_ROW_NUMBER_CLASS,
@@ -51,12 +49,15 @@ import {
   PullRequestRowLines,
 } from "./PullRequestListRow";
 import {
-  pullRequestChecksStatePresentation,
   PullRequestDiffStat,
   PullRequestReviewDecisionGlyph,
+  pullRequestChecksStatePresentation,
 } from "./pullRequestPresentation";
+import { PullRequestGlyph } from "./pullRequestIcons";
+import { pullRequestQuickActions } from "./pullRequestList.logic";
 import { PullRequestSpeedActions, PullRequestSpeedModeContext } from "./PullRequestSpeedActions";
-import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+
+import { useUiLanguage } from "../../i18n";
 
 const SOURCE_LABELS: Record<ThreadPullRequestLink["source"], string> = {
   manual: "Linked by you",
@@ -95,6 +96,7 @@ function LinkRowImpl({
   speedMode,
   onUnlink,
   onSetWatching,
+  canStartWatch,
 }: {
   line: PullRequestListLine;
   threadRef: ScopedThreadRef;
@@ -102,6 +104,7 @@ function LinkRowImpl({
   speedMode: boolean;
   onUnlink: (link: ThreadPullRequestLink) => void;
   onSetWatching: ((link: ThreadPullRequestLink, watching: boolean) => void) | null;
+  canStartWatch: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -251,8 +254,14 @@ function LinkRowImpl({
                   </TooltipTrigger>
                   <TooltipPopup>
                     {stack.kind === "native"
-                      ? `${sourceControlClients.hostLabelForChangeRequestUrl(link.url)} stack of ${stack.size}: merging a layer lands the ones below it.`
-                      : `${stack.size} ${linkHost.changeRequest.plural} chained by base branch.`}
+                      ? uiT("{0} stack of {1}: merging a layer lands the ones below it.", {
+                          "0": sourceControlClients.hostLabelForChangeRequestUrl(link.url),
+                          "1": stack.size,
+                        })
+                      : uiT("{0} {1} chained by base branch.", {
+                          "0": stack.size,
+                          "1": linkHost.changeRequest.plural,
+                        })}
                   </TooltipPopup>
                 </Tooltip>
               ) : null}
@@ -336,7 +345,7 @@ function LinkRowImpl({
               <ArrowUpRightIcon className="size-3.5" />
               {uiT("Open")}
             </MenuItem>
-            {onSetWatching !== null && open ? (
+            {onSetWatching !== null && open && (watching || canStartWatch) ? (
               <MenuItem onClick={() => onSetWatching(link, !watching)}>
                 {watching ? <EyeOffIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
                 {watching ? uiT("Stop watching") : uiT("Watch for changes")}
@@ -408,6 +417,7 @@ function EnabledThreadPullRequestsPanel({ threadRef }: { threadRef: ScopedThread
   const watch = useAtomCommand(threadEnvironment.watchPullRequest, { reportFailure: true });
   const capabilities = useServerConfigs().get(threadRef.environmentId)?.environment.capabilities;
   const supportsWatch = capabilities?.threadPullRequestWatch === true;
+  const canStartWatch = thread !== null && canStartThreadPullRequestWatch(thread);
   const handleUnlink = (link: ThreadPullRequestLink) => {
     void unlink({
       environmentId: threadRef.environmentId,
@@ -476,6 +486,7 @@ function EnabledThreadPullRequestsPanel({ threadRef }: { threadRef: ScopedThread
               speedMode={speedMode}
               onUnlink={handleUnlink}
               onSetWatching={supportsWatch ? handleSetWatching : null}
+              canStartWatch={canStartWatch}
             />
           )}
           estimatedItemSize={44}

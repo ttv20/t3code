@@ -2,7 +2,7 @@ import { Pressable } from "react-native";
 import { Chip } from "../../../components/ui/Chip";
 import { Menu } from "../../../components/ui/Menu";
 import type { MenuProps } from "../../../components/ui/Menu.types";
-import { useUiLanguage } from "../../../i18n";
+
 import { useAppearancePreferences } from "../../settings/appearance/AppearancePreferencesProvider";
 
 export function ListFilterMenu(props: {
@@ -13,22 +13,21 @@ export function ListFilterMenu(props: {
   readonly actions: MenuProps["actions"];
   readonly onSelect: (id: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const { themeAppearance } = useAppearancePreferences();
   return (
     <Menu
-      title={uiT(props.accessibilityLabel)}
+      title={props.accessibilityLabel}
       actions={props.actions}
       onPressAction={({ nativeEvent }) => props.onSelect(nativeEvent.event)}
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={uiT(props.accessibilityLabel)}
+        accessibilityLabel={props.accessibilityLabel}
         accessibilityState={{ selected: Boolean(props.active) }}
         hitSlop={6}
       >
         <Chip
-          label={uiT(props.label)}
+          label={props.label}
           selected={props.active}
           icon={props.icon ? "line.3.horizontal.decrease" : undefined}
           trailingIcon={props.icon ? undefined : "chevron.down"}

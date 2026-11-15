@@ -186,7 +186,7 @@ function ThemeLibraryCard({
                     const isActive = selected.option.activeModes.includes(mode);
                     const modeLabel = mode === "light" ? uiT("Light") : uiT("Dark");
                     return (
-                      <div className="contents" key={uiT(mode)}>
+                      <div className="contents" key={mode}>
                         <ThemeVariantTooltip label={`${modeLabel}: ${selected.option.label}`}>
                           <button
                             aria-label={
@@ -254,7 +254,7 @@ function ThemeLibraryCard({
                               const optionIsActive = option.activeModes.includes(mode);
                               return (
                                 <ThemeVariantTooltip
-                                  key={uiT(option.label)}
+                                  key={option.label}
                                   label={uiT("Use {0} for {1} mode", {
                                     "0": option.label,
                                     "1": uiT(mode),
@@ -714,7 +714,7 @@ export function ThemeLibrary({
                 ? "border-transparent bg-accent/30 ring-2 ring-inset ring-ring"
                 : "border-border/70 bg-card/60 hover:bg-accent/10",
             )}
-            key={uiT(mode)}
+            key={mode}
             onClick={() => setMode(mode)}
             type="button"
           >

@@ -58,15 +58,20 @@ describe("interface localization", () => {
   });
 
   it("selects the first supported system locale and falls back to English", () => {
-    expect(resolveUiLocale("system", ["fr-FR", "he-IL", "en-US"])).toBe("he");
+    expect(resolveUiLocale("system", ["zz-ZZ", "he-IL", "en-US"])).toBe("he");
     expect(resolveUiLocale("system", ["en-GB", "he-IL"])).toBe("en");
-    expect(resolveUiLocale("system", ["fr-FR"])).toBe("en");
+    expect(resolveUiLocale("system", ["zz-ZZ"])).toBe("en");
     expect(resolveUiLocale("system")).toBe("en");
+    expect(resolveUiLocale("system", ["zh-Hant", "he-IL"])).toBe("he");
+    expect(resolveUiLocale("system", ["zh_CN"])).toBe("zh");
   });
 
   it("follows the interface language until direction is overridden", () => {
     expect(resolveUiDirection("he", "auto")).toBe("rtl");
     expect(resolveUiDirection("en", "auto")).toBe("ltr");
+    expect(resolveUiDirection("de", "auto")).toBe("ltr");
+    expect(resolveUiLocale("system", ["fr-FR", "he-IL"])).toBe("fr");
+    expect(resolveUiLocale("system", ["pt_BR"])).toBe("pt-BR");
     expect(resolveUiDirection("he", "ltr")).toBe("ltr");
     expect(resolveUiDirection("en", "rtl")).toBe("rtl");
   });

@@ -103,7 +103,7 @@ function ToastContent(props: ToastProps & { readonly glassReady?: boolean }) {
           </AppText>
           {props.description && !props.singleLine ? (
             <AppText textRole="label" className="text-foreground-muted">
-              {uiT(props.description)}
+              {props.description}
             </AppText>
           ) : null}
         </View>

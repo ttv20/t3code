@@ -1,3 +1,4 @@
+import { INTERFACE_LANGUAGES } from "@t3tools/client-runtime/i18n";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -12,11 +13,14 @@ import * as MobilePreferences from "./mobile-preferences";
 import * as MobileSecureStorage from "./mobile-secure-storage";
 
 describe("saved interface language", () => {
-  it.effect.each(["system", "en", "he", "ar", "fa"] as const)(
+  it.effect.each(INTERFACE_LANGUAGES.map((entry) => entry.value))(
     "restores %s after creating a new preferences store",
     (language) =>
       Effect.gen(function* () {
-        let saved: MobileDatabase.StoredPreferencesJson | null = null;
+        let saved: MobileDatabase.StoredPreferencesJson | null = {
+          payload: JSON.stringify({ interfaceLanguage: language, language: "en" }),
+          updatedAt: 1,
+        };
         const dependencies = Layer.mergeAll(
           Layer.mock(MobileDatabase.MobileDatabase)({
             loadPreferencesJson: Effect.sync(() =>
@@ -36,12 +40,26 @@ describe("saved interface language", () => {
           const first = yield* MobilePreferences.MobilePreferencesStore.pipe(
             Effect.provide(MobilePreferences.layer),
           );
+          expect(yield* first.load).toMatchObject({ interfaceLanguage: language, language });
+          yield* first.savePatch({ language: "en", interfaceDirection: "rtl" });
+          expect(yield* first.load).toMatchObject({
+            interfaceLanguage: "en",
+            language: "en",
+            interfaceDirection: "rtl",
+          });
+          yield* first.update(() => ({ language }));
+          expect(yield* first.load).toMatchObject({
+            interfaceLanguage: language,
+            language,
+            interfaceDirection: "rtl",
+          });
           yield* first.savePatch({ interfaceLanguage: language, interfaceDirection: "auto" });
           const reopened = yield* MobilePreferences.MobilePreferencesStore.pipe(
             Effect.provide(MobilePreferences.layer),
           );
           expect(yield* reopened.load).toMatchObject({
             interfaceLanguage: language,
+            language,
             interfaceDirection: "auto",
           });
         }).pipe(Effect.provide(dependencies));

@@ -55,14 +55,14 @@ export function WorkspaceEmptyDetail(props: {
             />
             <Text className="text-center text-xl font-t3-bold">
               {settings
-                ? "Select a setting"
+                ? uiT("Select a setting")
                 : pullRequests
                   ? uiT("Select a pull request")
                   : uiT("Select a thread")}
             </Text>
             <Text className="text-center text-base text-foreground-muted">
               {settings
-                ? "Choose a page from the sidebar."
+                ? uiT("Choose a page from the sidebar.")
                 : pullRequests
                   ? uiT("Choose a pull request from the sidebar to review it.")
                   : Platform.OS === "android"

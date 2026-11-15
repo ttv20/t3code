@@ -1,6 +1,8 @@
+import { readUiTranslator } from "../../state/ui-language";
 import {
   formatSubagentDisplayTitle,
   resolveSubagentMetadata,
+  subagentCardDetail,
   subagentDetailPreview,
 } from "@t3tools/client-runtime/state/subagent-display";
 import {
@@ -16,8 +18,6 @@ import type {
   ThreadId,
 } from "@t3tools/contracts";
 import { resolveSelectableModel } from "@t3tools/shared/model";
-
-import { subagentCardDetail } from "./subagent-card-presentation";
 
 const PROMPT_TITLE_LIMIT = 80;
 
@@ -130,6 +130,7 @@ function railTone(members: ReadonlyArray<RuntimeSubagent>): WorkflowRailTone {
 }
 
 export function workflowRail(group: SubagentWorkflowGroup): ReadonlyArray<WorkflowRailItem> {
+  const uiT = readUiTranslator();
   const items = group.phases.map((phase) => ({
     key: String(phase.index),
     title: phase.title,
@@ -138,7 +139,7 @@ export function workflowRail(group: SubagentWorkflowGroup): ReadonlyArray<Workfl
   if (group.unphasedMembers.length > 0) {
     items.push({
       key: "unphased",
-      title: items.length === 0 ? "Agents" : "Other",
+      title: items.length === 0 ? uiT("Agents") : uiT("Other"),
       members: group.unphasedMembers,
     });
   }

@@ -1,4 +1,10 @@
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+import type {
+  EnvironmentId,
+  OrchestrationV2PendingBackgroundTask,
+  OrchestrationV2ProviderGoal,
+  OrchestrationV2ProviderSession,
+  ThreadId,
+} from "@t3tools/contracts";
 import type { EnvironmentThreadShell, ThreadStructure } from "@t3tools/client-runtime/state/shell";
 import {
   presentPendingBackgroundWork,
@@ -7,13 +13,6 @@ import {
 } from "@t3tools/client-runtime/state/thread-execution";
 import { childThreadInputsTitle } from "@t3tools/client-runtime/state/threads";
 import { commandDisplayText } from "@t3tools/client-runtime/work-log/command-label";
-import type {
-  EnvironmentId,
-  OrchestrationV2PendingBackgroundTask,
-  OrchestrationV2ProviderGoal,
-  OrchestrationV2ProviderSession,
-  ThreadId,
-} from "@t3tools/contracts";
 import { formatDuration } from "@t3tools/shared/orchestrationTiming";
 import * as DateTime from "effect/DateTime";
 import {
@@ -28,11 +27,15 @@ import {
 } from "lucide-react";
 import { Fragment } from "react";
 import { tickTextContent } from "~/lib/tickTextContent";
-import { UiText } from "../../i18n";
+import { BackgroundWorkDetails } from "./BackgroundWorkDetails";
 import { Button, InlineButton } from "../ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import type { ComposerBannerStackItem } from "./ComposerBannerStack";
 import type { ThreadNowItem } from "./ThreadNow";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+
+import { UiText } from "../../i18n";
 
 export function extensionStatusBannerItem(
   statuses: NonNullable<OrchestrationV2ProviderSession["extensionStatuses"]>,
@@ -83,7 +86,7 @@ export function childInputNowItem(input: {
     )),
     actions: (
       <InlineButton onClick={() => onOpenThread(first.id, first.environmentId)}>
-        {first.hasPendingApprovals ? "Open approval" : "Open question"}
+        {first.hasPendingApprovals ? t("Open approval") : t("Open question")}
       </InlineButton>
     ),
   };
@@ -103,10 +106,17 @@ export function goalNowItem(input: {
   return {
     id: `goal:${input.threadId}`,
     icon: <TargetIcon />,
-    title:
-      presentation.usage === null
-        ? presentation.title
-        : `${presentation.title} · ${presentation.usage}`,
+    title: (
+      <Popover>
+        <PopoverTrigger openOnHover render={<InlineButton />}>
+          {presentation.title}
+          {presentation.usage === null ? null : t(" · {0}", { "0": presentation.usage })}
+        </PopoverTrigger>
+        <PopoverPopup side="top" width="md" padding="compact" aria-label={t("Goal objective")}>
+          <p className="whitespace-pre-wrap wrap-anywhere text-sm">{presentation.objective}</p>
+        </PopoverPopup>
+      </Popover>
+    ),
     description: presentation.objective,
     // Clear stops goal work; Resume would stop unrelated work, so it waits.
     actions: (
@@ -134,12 +144,14 @@ export function goalNowItem(input: {
 
 /** A Stop the provider has not finished; Force stop once it stops answering. */
 export function runStopNowItem(input: {
+  readonly locale?: UiLocale;
   readonly threadId: ThreadId;
   readonly stop: RunStopPresentation;
   readonly canForceStop: boolean;
   readonly forceStopping: boolean;
   readonly onForceStop: () => void;
 }): ThreadNowItem {
+  const t = createUiTranslator(input.locale ?? "en");
   const unresponsive = input.stop.state === "unresponsive";
   const requestedAtMs = Date.parse(input.stop.requestedAt);
   return {
@@ -149,9 +161,9 @@ export function runStopNowItem(input: {
     ) : (
       <CircleStopIcon />
     ),
-    title: unresponsive ? "Agent not responding to Stop" : "Stopping",
+    title: unresponsive ? t("Agent not responding to Stop") : t("Stopping"),
     description: unresponsive
-      ? "It may be short on memory. Force stop kills its processes."
+      ? t("It may be short on memory. Force stop kills its processes.")
       : undefined,
     actions: (
       <>
@@ -164,7 +176,7 @@ export function runStopNowItem(input: {
         />
         {unresponsive && input.canForceStop ? (
           <InlineButton disabled={input.forceStopping} onClick={input.onForceStop}>
-            {input.forceStopping ? "Force stopping..." : "Force stop"}
+            {input.forceStopping ? t("Force stopping...") : t("Force stop")}
           </InlineButton>
         ) : null}
       </>
@@ -175,6 +187,7 @@ export function runStopNowItem(input: {
 /** Background commands and subagents, for the end of the timeline. */
 export function backgroundWorkNowItem(input: {
   readonly locale?: UiLocale;
+  readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
   readonly tasks: ReadonlyArray<OrchestrationV2PendingBackgroundTask>;
   readonly turnItems: ThreadStructure["turnItems"];
@@ -188,9 +201,11 @@ export function backgroundWorkNowItem(input: {
   const presentation = presentPendingBackgroundWork(input.tasks, input.locale);
   if (presentation === null) return null;
   const rows = presentation.items.map((task) => {
+    const itemKey =
+      input.tasks.find((pending) => pending.taskId === task.taskId)?.nativeItemId ?? task.taskId;
     // Same key derivePendingBackgroundWork gives turn-item tasks; subagent items carry progress.
     const item = input.turnItems.findLast(
-      (candidate) => (candidate.nativeItemRef?.nativeId || candidate.id) === task.taskId,
+      (candidate) => (candidate.nativeItemRef?.nativeId || candidate.id) === itemKey,
     );
     const subagent = item?.type === "subagent" ? item : undefined;
     return {
@@ -224,7 +239,7 @@ export function backgroundWorkNowItem(input: {
     title:
       only && typeof only.label !== "string" && only.task.label !== only.task.kind ? (
         <>
-          {presentation.waiting ? "Waiting" : "Running"} · {only.label}
+          {presentation.waiting ? t("Waiting") : t("Running")} · {only.label}
         </>
       ) : (
         presentation.title
@@ -254,6 +269,13 @@ export function backgroundWorkNowItem(input: {
             className="tabular-nums"
           />
         )}
+        <BackgroundWorkDetails
+          environmentId={input.environmentId}
+          threadId={input.threadId}
+          tasks={input.tasks}
+          turnItems={input.turnItems}
+          onOpenThread={onOpenThread}
+        />
         {onlyThreadId === undefined ? null : (
           <InlineButton tone="muted" onClick={() => onOpenThread(onlyThreadId)}>
             <UiText message={"Open"} />

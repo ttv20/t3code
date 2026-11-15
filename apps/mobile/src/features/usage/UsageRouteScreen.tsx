@@ -25,7 +25,8 @@ import {
   type MergedUsage,
 } from "@t3tools/shared/usageMerge";
 import { useRef, useState, type ReactNode } from "react";
-import { RefreshControl, View } from "react-native";
+import { View } from "react-native";
+import { RefreshControl } from "../../components/ui/RefreshControl";
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
@@ -252,7 +253,7 @@ function UsageScreen(props: {
                 onSelect={setView}
                 size="compact"
                 role="tab"
-                className="w-60"
+                className="flex-1"
               />
             </View>
           ) : (
@@ -502,7 +503,7 @@ function UsageSummary(props: { readonly merged: MergedUsage; readonly metric: Us
       <Text className="text-sm text-foreground-muted">
         {metric === "cost"
           ? uiT("* if billed at full API rate")
-          : `Across ${formatCount(merged.sessions)} sessions`}
+          : uiT("Across {0} sessions", { "0": formatCount(merged.sessions) })}
       </Text>
     </View>
   );
@@ -722,7 +723,7 @@ function ShareBar(props: {
   return (
     <View className="gap-3 p-4">
       <View className="flex-row items-baseline justify-between gap-3">
-        <Text className="text-sm text-foreground-muted">{uiT(props.label)}</Text>
+        <Text className="text-sm text-foreground-muted">{props.label}</Text>
         {props.aside ? (
           <Text className="text-sm tabular-nums text-foreground-muted">{props.aside}</Text>
         ) : null}
@@ -730,7 +731,7 @@ function ShareBar(props: {
       <View className="h-2 flex-row gap-0.5">
         {visible.map((segment) => (
           <View
-            key={uiT(segment.label)}
+            key={segment.label}
             className="h-full rounded-sm"
             style={{ flex: segment.value, backgroundColor: segment.color }}
           />
@@ -738,7 +739,7 @@ function ShareBar(props: {
       </View>
       <View className="flex-row flex-wrap gap-x-4 gap-y-1.5">
         {visible.map((segment) => (
-          <View key={uiT(segment.label)} className="flex-row items-center gap-1.5">
+          <View key={segment.label} className="flex-row items-center gap-1.5">
             <View className="size-2 rounded-sm" style={{ backgroundColor: segment.color }} />
             <Text className="text-sm text-foreground-muted">{uiT(segment.label)}</Text>
             <Text className="text-sm tabular-nums text-foreground">{formatUsd(segment.value)}</Text>
@@ -755,11 +756,9 @@ function MetricCell(props: {
   readonly detail: string;
   readonly columns: number;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <View className="gap-0.5 p-4" style={{ width: `${100 / props.columns}%` }}>
-      <Text className="text-sm text-foreground-muted">{uiT(props.label)}</Text>
+      <Text className="text-sm text-foreground-muted">{props.label}</Text>
       <Text className="text-xl font-t3-medium tabular-nums text-foreground">{props.value}</Text>
       <Text className="text-xs text-foreground-tertiary">{props.detail}</Text>
     </View>
@@ -807,12 +806,16 @@ function ModelsSection(props: {
               </Text>
               <Text className="text-sm text-foreground-muted">
                 {metric === "tokens"
-                  ? `${formatPercent(model.tokenShare)} of tokens · ${
-                      isModelCostUnknown(model) ? "no known rates" : formatUsd(model.costUsd)
-                    }`
+                  ? uiT("{0} of tokens · {1}", {
+                      "0": formatPercent(model.tokenShare),
+                      "1": isModelCostUnknown(model) ? "no known rates" : formatUsd(model.costUsd),
+                    })
                   : isModelCostUnknown(model)
-                    ? `no known rates · ${formatTokens(model.totalTokens)} tokens`
-                    : `${formatPercent(model.costShare)} of cost · ${formatTokens(model.totalTokens)} tokens`}
+                    ? uiT("no known rates · {0} tokens", { "0": formatTokens(model.totalTokens) })
+                    : uiT("{0} of cost · {1} tokens", {
+                        "0": formatPercent(model.costShare),
+                        "1": formatTokens(model.totalTokens),
+                      })}
               </Text>
             </View>
             <Text className="text-base tabular-nums text-foreground">

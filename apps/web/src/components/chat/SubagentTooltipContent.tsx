@@ -172,7 +172,7 @@ export function SubagentTooltipContent(props: {
       {metadata.map(({ label, value }) => {
         const Icon = label === "Branch" ? GitBranchIcon : FolderIcon;
         return (
-          <div key={uiT(label)} className="flex min-w-0 items-center gap-2">
+          <div key={label} className="flex min-w-0 items-center gap-2">
             <Icon aria-hidden className="size-3 shrink-0" />
             <span className="sr-only">{uiT(label)}</span>
             <MiddleTruncate value={value} className="flex" showTitle={false} />

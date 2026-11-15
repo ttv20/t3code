@@ -8,14 +8,9 @@ export const CLI_RELEASES_PAGE_URL = `https://github.com/${CLI_RELEASE_REPOSITOR
 export const CLI_RELEASE_CHECKSUMS_FILE = "SHA256SUMS";
 export const CLI_RELEASE_BASE_URL_ENV = "T3CODE_RELEASE_BASE_URL";
 
-/**
- * Kept in step with the build_linux_cli matrix, build_windows_arm64_cli, and
- * the `cli_archive` rows in .github/workflows/release.yml: a key here without a
- * build there produces download URLs that 404, and a build there without a key
- * here is unreachable from every installer.
- */
-// No darwin-x64: Node single-executables are unsupported on x64 macOS (the
-// SEA docs list macOS as arm64 only) and the binary segfaults on start.
+// Keep archive keys aligned with the Linux matrix, Windows ARM64 build, and cli_archive rows in release.yml,
+// and with the SSH runner's host check in packages/ssh/src/tunnel.ts.
+// Node single-executables do not support darwin-x64 and segfault at startup.
 export const CLI_ARCHIVE_PLATFORM_KEYS = [
   "darwin-arm64",
   "linux-arm64",

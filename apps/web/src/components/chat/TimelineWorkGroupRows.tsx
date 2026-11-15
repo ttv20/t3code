@@ -6,6 +6,15 @@ import { type ToolActivityIcon } from "@t3tools/contracts";
 import { type TimestampFormat } from "@t3tools/contracts/settings";
 import { Minimize2Icon, XIcon } from "lucide-react";
 import { memo, use, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+import { WorkLogButton, WorkLogList, WorkLogRow } from "./WorkLog";
+
+import {
+  resolveViewedImageAsset,
+  workEntriesViewedImagePaths,
+} from "@t3tools/client-runtime/work-log/presentation";
+
+import { useAssetUrls } from "~/assets/assetUrls";
 import { observeResize } from "~/lib/observeResize";
 import { tickTextContent } from "~/lib/tickTextContent";
 import { cn } from "~/lib/utils";
@@ -13,6 +22,8 @@ import { useUiLanguage } from "../../i18n";
 import { observeVisibleAnimation } from "../../lib/visibleAnimation";
 import { workEntryDisplayIndicatesToolFailure } from "../../session-logic";
 import ChatMarkdown from "../ChatMarkdown";
+import { assetMediaActionsSource } from "./ChatMarkdownMedia";
+
 import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
@@ -24,13 +35,14 @@ import {
   workEntryIsVisibleInGroup,
   type MessagesTimelineRow,
 } from "./MessagesTimeline.logic";
-import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
+
 import {
   TimelineRowActivityCtx,
   TimelineRowCtx,
   WorkGroupViewCtx,
-  type TimelineRow,
+  type WorkGroupViewedImage,
   type TimelineWorkEntry,
+  type TimelineRow,
 } from "./timelineRowContext";
 import { ActivityShimmerOverlay, TimelineRowTimestamp } from "./TimelineRowParts";
 import {
@@ -49,11 +61,12 @@ import {
 import {
   THINKING_PREVIEW_PLUGINS,
   THOUGHT_PREVIEW_PLUGINS,
+  THOUGHT_PREVIEW_SOURCE_MAX_LENGTH,
   toolGroupSummaryIconName,
   workEntryIconName,
 } from "./TimelineWorkEntryRow.logic";
 import { formatWorkingTimerNow } from "./TimelineWorkGroupRows.logic";
-import { WorkLogButton, WorkLogList, WorkLogRow } from "./WorkLog";
+
 import { WorktreeSetupCard } from "./WorktreeSetupCard";
 
 export const WorkGroupSection = memo(function WorkGroupSection({
@@ -70,11 +83,13 @@ export const WorkGroupSection = memo(function WorkGroupSection({
   displayLabel?: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const { workspaceRoot, routeThreadKey, onToggleWorkEntry, pendingApprovals } =
-    use(TimelineRowCtx);
-  const onToggleStandaloneEntry = (collapsed: boolean) =>
-    onToggleWorkEntry(disclosureAnchorKey, collapsed);
+  const {
+    workspaceRoot,
+    routeThreadKey,
+    onToggleWorkEntry,
+    onWorkEntryContentReady,
+    pendingApprovals,
+  } = use(TimelineRowCtx);
   const nonEmptyEntries = groupedEntries.filter((entry) => {
     const item = entry.projectedItem?.item;
     return (
@@ -94,6 +109,7 @@ export const WorkGroupSection = memo(function WorkGroupSection({
         anchorKey={anchorKey}
         disclosureAnchorKey={disclosureAnchorKey}
         entries={nonEmptyEntries}
+        groupedEntries={groupedEntries}
         workspaceRoot={workspaceRoot}
       />
     );
@@ -107,7 +123,10 @@ export const WorkGroupSection = memo(function WorkGroupSection({
           workEntry={workEntry}
           workspaceRoot={workspaceRoot}
           displayLabel={displayLabel}
-          onToggleEntry={onToggleStandaloneEntry}
+          onToggleEntry={(collapsed) =>
+            onToggleWorkEntry(disclosureAnchorKey, collapsed, workEntry.id)
+          }
+          onContentReady={() => onWorkEntryContentReady?.(disclosureAnchorKey, workEntry.id)}
         />
       ))}
     </section>
@@ -115,9 +134,10 @@ export const WorkGroupSection = memo(function WorkGroupSection({
 });
 
 function WorkingTimer({ createdAt }: { createdAt: string }) {
+  const { activeThreadEnvironmentId } = use(TimelineRowCtx);
   return (
     <span
-      ref={tickTextContent(() => formatWorkingTimerNow(createdAt), true)}
+      ref={tickTextContent(() => formatWorkingTimerNow(createdAt, activeThreadEnvironmentId), true)}
       className="tabular-nums"
     />
   );
@@ -125,20 +145,68 @@ function WorkingTimer({ createdAt }: { createdAt: string }) {
 
 const compactWorkEntryHeight = 24;
 
+// The thumbnail strip below the group is its own virtualized row, so the gallery an expanded
+// entry opens is built from the same entries rather than from the strip's mounted images.
+function useWorkGroupViewedImages(
+  groupedEntries: ReadonlyArray<TimelineWorkEntry>,
+): ReadonlyArray<WorkGroupViewedImage> {
+  const { threadRef, workspaceRoot, activeThreadEnvironmentId } = use(TimelineRowCtx);
+  const viewed = threadRef
+    ? workEntriesViewedImagePaths(groupedEntries).flatMap((path) => {
+        const asset = resolveViewedImageAsset(path, {
+          threadId: threadRef.threadId,
+          workspaceRoot,
+        });
+        return asset ? [{ path, asset }] : [];
+      })
+    : [];
+  const environmentId = threadRef?.environmentId ?? activeThreadEnvironmentId;
+  const urls = useAssetUrls(
+    environmentId,
+    viewed.map(({ asset }) => asset.resource),
+  );
+  return viewed.map(({ path, asset }, index) => {
+    const url = urls[index];
+    if (!url) return { path, item: null };
+    const src = url + asset.srcFragment;
+    const name = asset.alt.trim() || "image";
+    return {
+      path,
+      item: {
+        src,
+        name,
+        actionsSource: assetMediaActionsSource({
+          environmentId,
+          resource: asset.resource,
+          kind: "image",
+          name: asset.alt || "image",
+          src,
+          workspaceRoot,
+        }),
+      },
+    };
+  });
+}
+
 function ExpandedWorkGroupEntries({
   anchorKey,
   disclosureAnchorKey,
   entries,
+  groupedEntries,
   workspaceRoot,
 }: {
   anchorKey: string;
   disclosureAnchorKey: string;
   entries: TimelineWorkEntry[];
+  groupedEntries: ReadonlyArray<TimelineWorkEntry>;
   workspaceRoot: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const { workGroupViewState: viewState, onToggleWorkEntry } = use(TimelineRowCtx);
+  const {
+    workGroupViewState: viewState,
+    onToggleWorkEntry,
+    onWorkEntryContentReady,
+  } = use(TimelineRowCtx);
   const [initialScrollIndex] = useState(() =>
     resolveWorkGroupScrollIndex(entries, viewState.scrollPositions.get(anchorKey)),
   );
@@ -158,9 +226,13 @@ function ExpandedWorkGroupEntries({
     });
   }
 
+  const viewedImages = useWorkGroupViewedImages(groupedEntries);
   const groupView = {
     state: viewState,
-    onToggleEntry: (collapsed: boolean) => onToggleWorkEntry(disclosureAnchorKey, collapsed),
+    viewedImages,
+    onToggleEntry: (collapsed: boolean, entryId: string) =>
+      onToggleWorkEntry(disclosureAnchorKey, collapsed, entryId),
+    onContentReady: (entryId: string) => onWorkEntryContentReady?.(disclosureAnchorKey, entryId),
   };
   const updateScrollFades = () => {
     const element = listRef.current?.getScrollableNode();
@@ -376,13 +448,14 @@ export function ThinkingTimelineRow({ row }: { row: Extract<TimelineRow, { kind:
   const { t: uiT } = useUiLanguage();
 
   const ctx = use(TimelineRowCtx);
-  const { isCompacting, isPreparingWorktree, liveAnswerPreview } = use(TimelineRowActivityCtx);
+  const { isCompacting, isPreparingWorktree, liveAnswerPreview, providerStartingLabel } =
+    use(TimelineRowActivityCtx);
   if (isPreparingWorktree || isCompacting) return <WorkLogRow label="" />;
   // A failed group keeps this disclosure while an approval waits, but nothing is thinking then.
   const live = ctx.pendingApprovals.size === 0;
   const activity = (
     <LiveActivityRow
-      label={liveAnswerPreview ?? uiT("Thinking")}
+      label={providerStartingLabel ?? row.label ?? liveAnswerPreview ?? uiT("Thinking")}
       iconName="brain"
       active={live}
       shimmer={live}
@@ -524,7 +597,10 @@ export function LiveWorkEntryTimelineRow({
   if (pendingApproval) return <TimelinePendingApprovalRow approval={pendingApproval} />;
 
   const failed = workEntryDisplayIndicatesToolFailure(row.entry);
-  const thoughtLine = row.thought && !row.expanded ? liveThoughtLine(row.thought.detail ?? "") : "";
+  const thoughtLine =
+    row.thought && !row.expanded
+      ? liveThoughtLine((row.thought.detail ?? "").slice(0, THOUGHT_PREVIEW_SOURCE_MAX_LENGTH))
+      : "";
   const thoughtIsStatus = thoughtLine !== "" && row.entry === row.thought;
 
   return (
@@ -582,7 +658,7 @@ export function LiveWorkEntryTimelineRow({
           ) : row.entry.itemType === "reasoning" ? (
             <ChatMarkdown
               inline
-              text={row.entry.detail ?? label}
+              text={(row.entry.detail ?? label).slice(0, THOUGHT_PREVIEW_SOURCE_MAX_LENGTH)}
               cwd={ctx.markdownCwd}
               parseRawHtml={false}
               extraRemarkPlugins={row.active ? THINKING_PREVIEW_PLUGINS : THOUGHT_PREVIEW_PLUGINS}

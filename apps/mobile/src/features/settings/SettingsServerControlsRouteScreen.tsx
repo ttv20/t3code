@@ -17,7 +17,6 @@ import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScroll
 import { UiText, useUiLanguage } from "../../i18n";
 import { readEnvironmentScope, useEnvironmentsWithScope } from "../../state/session";
 import { SettingsRow } from "./components/SettingsRow";
-
 import { supportsSharedSettingsSync } from "@t3tools/client-runtime/state/shared-settings";
 import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
@@ -43,6 +42,8 @@ import {
   type ScopedMobileSettingsTarget,
 } from "./settings-scoped-server";
 import { AutoSettleSettingsRows } from "./ThreadSettingsSections";
+import { isSourceControlProviderOffered } from "@t3tools/client-runtime/operations/projects";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { useSettingsWriter } from "./useSettingsWriter";
 
 type SettingsPage = "threads" | "source-control" | "worktrees" | "maintenance";
@@ -328,8 +329,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                   ).map((choice, index) => (
                     <SettingsChoiceRow
                       key={choice.mode ?? "inherit"}
-                      label={choice.label}
-                      description={choice.description}
+                      label={uiT(choice.label)}
+                      description={uiT(choice.description)}
                       selected={
                         !isMixed("defaultThreadEnvMode") &&
                         uniform("defaultThreadEnvMode") === choice.mode
@@ -352,7 +353,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                   {runtimeModeChoices.map((choice, index) => (
                     <SettingsChoiceRow
                       key={choice.mode}
-                      label={choice.label}
+                      label={uiT(choice.label)}
                       description={choice.disabledReason ?? choice.description}
                       selected={uniform("defaultRuntimeMode") === choice.mode}
                       separated={index > 0}
@@ -375,8 +376,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                   {STREAMING_CHOICES.map((choice, index) => (
                     <SettingsChoiceRow
                       key={choice.mode}
-                      label={choice.label}
-                      description={choice.description}
+                      label={uiT(choice.label)}
+                      description={uiT(choice.description)}
                       selected={uniform("responseStreamingMode") === choice.mode}
                       separated={index > 0}
                       disabled={disabledFor("responseStreamingMode")}
@@ -408,6 +409,31 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                     environments={selectedTargets}
                     canWrite={(environmentId) => writableEnvironments.has(environmentId)}
                   />
+                )}
+                {projectSelected ? null : (
+                  <SettingsSection title={uiT("Project sources")}>
+                    {sourceControlClients.definitions.map((definition) => {
+                      const offered = displayTargets.map((target) =>
+                        isSourceControlProviderOffered(
+                          target.settings.offeredSourceControlProviders,
+                          definition.kind,
+                        ),
+                      );
+                      return (
+                        <SettingsSwitchRow
+                          key={definition.kind}
+                          label={definition.pickerLabel}
+                          value={
+                            offered.every((value) => value === offered[0]) ? offered[0]! : null
+                          }
+                          disabled={disabledFor("offeredSourceControlProviders")}
+                          onValueChange={(value) =>
+                            write({ offeredSourceControlProviders: { [definition.kind]: value } })
+                          }
+                        />
+                      );
+                    })}
+                  </SettingsSection>
                 )}
                 <SettingsSection title={uiT("Pull requests")}>
                   <SettingsSwitchRow
@@ -483,8 +509,8 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                   ).map((choice, index) => (
                     <SettingsChoiceRow
                       key={choice.mode ?? "inherit"}
-                      label={choice.label}
-                      description={choice.description}
+                      label={uiT(choice.label)}
+                      description={uiT(choice.description)}
                       selected={
                         !isMixed("worktreeSubmodules") &&
                         uniform("worktreeSubmodules") === choice.mode
@@ -564,6 +590,21 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       value={uniform("continueThreadsAfterServerUpdate")}
                       disabled={disabledFor("continueThreadsAfterServerUpdate")}
                       onValueChange={(value) => write({ continueThreadsAfterServerUpdate: value })}
+                    />
+                  </View>
+                  <View className="border-t border-border-subtle">
+                    <SettingsSwitchRow
+                      icon="bolt.circle"
+                      label={uiT("Keep awake while agents work")}
+                      subtitle={managedSubtitle(
+                        "keepAwakeWhileAgentsWork",
+                        projectSelected
+                          ? uiT("Environment-wide setting. Select All projects to change it.")
+                          : "Stop the computer from sleeping while agents work. Closing a laptop lid still sleeps it.",
+                      )}
+                      value={uniform("keepAwakeWhileAgentsWork")}
+                      disabled={disabledFor("keepAwakeWhileAgentsWork")}
+                      onValueChange={(value) => write({ keepAwakeWhileAgentsWork: value })}
                     />
                   </View>
                 </SettingsSection>

@@ -60,12 +60,13 @@ export function createMobilePreferencesState(
     .fn(
       (update: PreferencesUpdate, get) => {
         const currentPreferences = get(preferencesAtom);
-        const patch =
+        const patch = MobilePreferences.normalizeLanguagePatch(
           "transform" in update
             ? update.transform(
                 AsyncResult.isSuccess(currentPreferences) ? currentPreferences.value : {},
               )
-            : update;
+            : update,
+        );
         const version = ++nextPatchVersion;
         const current = get(optimisticPatchAtom);
         const versions = { ...current.versions };

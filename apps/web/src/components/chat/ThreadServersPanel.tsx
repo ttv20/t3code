@@ -1,35 +1,34 @@
 import { useAtomValue } from "@effect/atom-react";
 import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import {
   AuthPreviewOperateScope,
   type DiscoveredLocalServer,
   type EnvironmentId,
   type ThreadId,
 } from "@t3tools/contracts";
-import { ChevronDown, ChevronUp } from "lucide";
-import { GlobeIcon, LoaderCircleIcon, SquareIcon } from "lucide-react";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { GlobeIcon, SquareIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { type MouseEvent, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { resolveDiscoveredServerUrl } from "../../browser/browserTargetResolver";
-import { cn, isMacPlatform } from "../../lib/utils";
 import { readLocalApi } from "../../localApi";
+import { cn, isMacPlatform } from "../../lib/utils";
 import { useThreadDiscoveredPorts } from "../../portDiscoveryState";
 import { useEnvironment } from "../../state/environments";
 import { previewEnvironment } from "../../state/preview";
 import { useEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { MorphIcon } from "../MorphIcon";
 import { openDiscoveredPort } from "../preview/openDiscoveredPort";
+import { Spinner } from "../ui/spinner";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { THREAD_DETAILS_PANEL_ICON_CLASS } from "./threadDetailsPanelStyles";
+
+import { useUiLanguage } from "../../i18n";
 
 const SERVER_PAGE_COUNT = 4;
 
@@ -138,7 +137,7 @@ function ThreadServersList(props: ThreadServersPanelProps) {
                   {/* The end padding keeps text clear of the stop button. */}
                   <span className={cn("flex min-w-0 flex-1 flex-col gap-0.5", stoppable && "pe-6")}>
                     <span className="truncate text-sm font-medium leading-4 text-foreground/85">
-                      {uiT("localhost:")}
+                      {"localhost:"}
                       {server.port}
                     </span>
                     <span className="truncate text-2xs font-normal leading-4 text-muted-foreground">
@@ -170,7 +169,7 @@ function ThreadServersList(props: ThreadServersPanelProps) {
                       }
                     >
                       {stoppingKey === key ? (
-                        <LoaderCircleIcon aria-hidden className="size-3 animate-spin" />
+                        <Spinner aria-hidden size="xs" />
                       ) : (
                         <SquareIcon aria-hidden className="size-3 fill-current" />
                       )}
@@ -194,13 +193,13 @@ function ThreadServersList(props: ThreadServersPanelProps) {
           tone="muted"
           className="w-full active:scale-100"
         >
-          <MorphIcon
-            aria-hidden
-            className="size-4 shrink-0"
-            icon={hiddenCount > 0 ? ChevronDown : ChevronUp}
-          />
+          {hiddenCount > 0 ? (
+            <ChevronDownIcon aria-hidden className="size-4 shrink-0" />
+          ) : (
+            <ChevronUpIcon aria-hidden className="size-4 shrink-0" />
+          )}
           {hiddenCount > 0
-            ? `Show ${Math.min(hiddenCount, SERVER_PAGE_COUNT)} more`
+            ? uiT("Show {0} more", { "0": Math.min(hiddenCount, SERVER_PAGE_COUNT) })
             : uiT("Show less")}
         </ThreadDetailsControl>
       ) : null}

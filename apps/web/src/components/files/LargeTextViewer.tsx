@@ -1,13 +1,28 @@
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
+import { parseDelimitedPreview } from "@t3tools/shared/delimitedPreview";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { useClientSettings } from "~/hooks/useSettings";
-import { useUiLanguage } from "../../i18n";
 import { FileSurfaceFailure, FileSurfaceLoading, FileSurfaceNotice } from "./fileSurfaceChrome";
 import { PREVIEW_PAGE_ROWS, type TextPreviewResult } from "./largeTextProtocol";
 import VirtualTablePreview from "./VirtualTablePreview";
 
+import { useUiLanguage } from "../../i18n";
+
 const FIRST_SCREEN_BYTES = 16 * 1024;
+
+function countLabel(
+  count: number,
+  noun: "row" | "column" | "line",
+  translate = createUiTranslator("en"),
+) {
+  const templates = {
+    row: ["{0} row", "{0} rows"],
+    column: ["{0} column", "{0} columns"],
+    line: ["{0} line", "{0} lines"],
+  } as const;
+  return translate(templates[noun][count === 1 ? 0 : 1], { "0": count.toLocaleString() });
+}
 
 function firstScreen(text: string, delimiter: "," | "\t" | null, complete: boolean) {
   if (!text || text.includes("\0")) return [];
@@ -219,11 +234,16 @@ export default function LargeTextViewer(props: {
         className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-1 border-b border-border/60 px-3 py-2 text-xs text-muted-foreground tabular-nums"
         role="status"
       >
-        {Math.max(0, meta.count - (props.delimiter && meta.count ? 1 : 0)).toLocaleString()}{" "}
-        {props.delimiter ? uiT("rows") : uiT("lines")}
-        {props.delimiter ? ` · ${meta.count ? meta.columns.toLocaleString() : 0} columns` : ""}
+        {props.delimiter
+          ? uiT("{0} · {1}", {
+              "0": countLabel(Math.max(0, meta.count - 1), "row", uiT),
+              "1": countLabel(meta.count ? meta.columns : 0, "column", uiT),
+            })
+          : countLabel(meta.count, "line", uiT)}
         {meta.complete && meta.sizeBytes !== undefined
-          ? ` · ${meta.sizeBytes === 0 ? "0 bytes" : formatAttachmentSize(meta.sizeBytes)}`
+          ? uiT(" · {0}", {
+              "0": meta.sizeBytes === 0 ? "0 bytes" : formatAttachmentSize(meta.sizeBytes),
+            })
           : uiT(" · Indexing…")}
       </div>
       {!meta.complete ? (

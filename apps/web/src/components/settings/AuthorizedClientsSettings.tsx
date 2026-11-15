@@ -1,75 +1,79 @@
+import { UiText } from "../../i18n";
+import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { PlugIcon, PlusIcon, QrCodeIcon } from "lucide-react";
+import { type ReactNode, memo, useId, useState } from "react";
+import {
+  AuthAccessWriteScope,
+  AuthDiagnosticsReadScope,
+  AuthOrchestrationReadScope,
+  AuthFilesystemReadScope,
+  AuthStandardClientScopes,
+  AuthTerminalReadScope,
+  managedCapabilityDenial,
+  type AuthEnvironmentScope,
+  type AuthGrantScope,
+  type AuthPairingCredentialResult,
+  type AdvertisedEndpoint,
+  type EnvironmentId,
+} from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  AuthAccessWriteScope,
-  AuthDiagnosticsReadScope,
-  AuthFilesystemReadScope,
-  AuthOrchestrationReadScope,
-  AuthStandardClientScopes,
-  AuthTerminalReadScope,
-  managedCapabilityDenial,
-  type AdvertisedEndpoint,
-  type AuthEnvironmentScope,
-  type AuthGrantScope,
-  type AuthPairingCredentialResult,
-  type EnvironmentId,
-} from "@t3tools/contracts";
-import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
-import { PlusIcon, QrCodeIcon } from "lucide-react";
-import { memo, useId, useState, type ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
-
-import {
-  isLoopbackHostname,
-  type ServerClientSessionRecord,
-  type ServerPairingLinkRecord,
-} from "~/environments/primary";
-import { authEnvironment } from "~/state/auth";
-import { useManagedPolicy, usePrimaryManagedPolicy } from "~/state/managedPolicy";
-import { readEnvironmentScope } from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
-import { useNowSecond } from "../../hooks/useNowSecond";
 import { cn } from "../../lib/utils";
 import { formatElapsedDurationLabel, formatExpiresInLabel } from "../../timestampFormat";
-import { ConnectionStatusDot } from "../ConnectionStatusDot";
-import { ManagedControl } from "../ManagedPolicy";
-import { Button } from "../ui/button";
+import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
+import {
+  canRevokeOtherClients,
+  isQrShareableEndpoint,
+  selectQrEndpointOption,
+  togglePairingScopeSelection,
+} from "./ConnectionsSettings.logic";
+import { useNowSecond } from "../../hooks/useNowSecond";
+import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import {
   Dialog,
-  DialogDescription,
   DialogFooter,
+  DialogDescription,
   DialogHeader,
   DialogPanel,
   DialogPopup,
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog";
-import { Input } from "../ui/input";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { QRCodeSvg } from "../ui/qr-code";
-import { Textarea } from "../ui/textarea";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Button } from "../ui/button";
+import { Textarea } from "../ui/textarea";
 import {
-  canRevokeOtherClients,
-  endpointDefaultPreferenceKey,
-  endpointShareHint,
+  isLoopbackHostname,
+  type ServerClientSessionRecord,
+  type ServerPairingLinkRecord,
+} from "~/environments/primary";
+import { authEnvironment } from "~/state/auth";
+import { readEnvironmentScope } from "~/state/session";
+import { useManagedPolicy, usePrimaryManagedPolicy } from "~/state/managedPolicy";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { ManagedControl } from "../ManagedPolicy";
+import { openUseInAnotherApp } from "../mcp/UseInAnotherAppDialog";
+import { ConnectionStatusDot } from "../ConnectionStatusDot";
+import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
+import {
   formatAccessTimestamp,
-  isHostedAppPairingUrl,
-  isQrShareableEndpoint,
+  selectPairingEndpoint,
   isTailscaleHttpsEndpoint,
+  endpointDefaultPreferenceKey,
   resolveAdvertisedEndpointPairingUrl,
   resolveCurrentOriginPairingUrl,
-  selectPairingEndpoint,
-  selectQrEndpointOption,
-  togglePairingScopeSelection,
+  isHostedAppPairingUrl,
+  endpointShareHint,
 } from "./ConnectionsSettings.logic";
-import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
-import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
+
+import { useUiLanguage } from "../../i18n";
 
 function AccessScopeSummary({
   scopes,
@@ -80,7 +84,10 @@ function AccessScopeSummary({
 }) {
   const { t: uiT } = useUiLanguage();
 
-  const scopeCountLabel = `${scopes.length} ${scopes.length === 1 ? "scope" : "scopes"}`;
+  const scopeCountLabel = uiT("{0} {1}", {
+    "0": scopes.length,
+    "1": scopes.length === 1 ? "scope" : "scopes",
+  });
 
   return (
     <Popover>
@@ -218,23 +225,6 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
     value: string;
     kind: "code" | "hosted-link" | "link";
   }>({
-    onCopy: ({ kind }) => {
-      toastManager.add({
-        type: "success",
-        title:
-          kind === "hosted-link"
-            ? uiT("Hosted app link copied")
-            : kind === "link"
-              ? uiT("Pairing URL copied")
-              : uiT("Pairing code copied"),
-        description:
-          kind === "hosted-link"
-            ? uiT("Open it in the browser on the device you want to connect.")
-            : kind === "link"
-              ? uiT("Open it in the client you want to pair to this environment.")
-              : uiT("Paste it into another client to finish pairing."),
-      });
-    },
     onError: (error, { value, kind }) => {
       // Captured per attempt so concurrent copies cannot make the dialog
       // reveal a different value than the one that failed.
@@ -287,7 +277,9 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex min-h-5 items-center gap-1.5">
             <ConnectionStatusDot
-              tooltipText={`Link created at ${formatAccessTimestamp(pairingLink.createdAt)}`}
+              tooltipText={uiT("Link created at {0}", {
+                "0": formatAccessTimestamp(pairingLink.createdAt),
+              })}
               dotClassName="bg-warning"
             />
             <h3 className="text-sm font-medium text-foreground">{primaryLabel}</h3>
@@ -640,7 +632,7 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
       setDialogOpen(false);
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      const message = error instanceof Error ? error.message : "Failed to create pairing URL.";
+      const message = error instanceof Error ? error.message : uiT("Failed to create pairing URL.");
       toastManager.add(
         stackedThreadToast({
           type: "error",
@@ -657,7 +649,11 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <Button size="xs" variant="outline" onClick={() => openUseInAnotherApp(environmentId)}>
+        <PlugIcon className="size-3" />
+        <UiText message={"Use in another app (MCP)"} />
+      </Button>
       <Button
         size="xs"
         variant="destructive-outline"
@@ -920,7 +916,7 @@ export const AdvertisedEndpointListRow = memo(function AdvertisedEndpointListRow
       <div className="flex min-h-7 min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div className="flex min-h-7 min-w-0 flex-1 items-center gap-3">
           <h3 className="shrink-0 text-sm leading-5 font-medium text-foreground">
-            {uiT(endpoint.label)}
+            {endpoint.label}
           </h3>
           {shouldShowEndpointUrl ? (
             <Tooltip>

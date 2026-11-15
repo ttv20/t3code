@@ -1,4 +1,8 @@
-import { formatUiResetCreditChoices } from "@t3tools/client-runtime/usage-localization";
+import { UiText } from "~/i18n";
+import {
+  formatUiResetCreditChoices,
+  formatUiUsageReset,
+} from "@t3tools/client-runtime/usage-localization";
 import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
@@ -9,7 +13,6 @@ import {
   collectLimitPools,
   cursorUsageWindowDetails,
   displayLimitWindows,
-  formatResetsIn,
   type LimitAccount,
   type LimitPool,
   type LimitPoolMember,
@@ -151,7 +154,7 @@ function SegmentPopover({
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   const where =
     account.environments.length > 0
       ? account.environments.map((environment) => environment.label).join(", ")
@@ -179,24 +182,24 @@ function SegmentPopover({
           <RedactedSensitiveText
             value={account.email}
             ariaLabel={uiT("Toggle account email visibility")}
-            revealTooltip="Click to reveal email"
-            hideTooltip="Click to hide email"
+            revealTooltip={uiT("Click to reveal email")}
+            hideTooltip={uiT("Click to hide email")}
             className="w-fit"
           />
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
-        {account.plan ? <Row label={uiT("Plan")}>{uiT(account.plan)}</Row> : null}
+        {account.plan ? <Row label={uiT("Plan")}>{account.plan}</Row> : null}
         {where ? (
-          <Row label={account.environments.length > 0 ? "Signed in" : uiT("Via")}>{where}</Row>
+          <Row label={account.environments.length > 0 ? uiT("Signed in") : uiT("Via")}>{where}</Row>
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
         <Row label={uiT("Left")}>{remaining}%</Row>
         {window.resetsAt ? (
           <Row label={uiT("Resets")}>
-            {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)}
-            {resetsIn ? ` · ${resetsIn.replace("resets in ", "in ")}` : ""}
+            {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now, undefined, locale)}
+            {resetsIn ? ` · ${formatUiUsageReset(window, now, locale, true)}` : ""}
           </Row>
         ) : null}
         {timeLeft !== null ? (
@@ -363,14 +366,14 @@ function SegmentTriggers({
   readonly index: number;
   readonly showAccountName: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const popover = use(SegmentPopoverContext) ?? undefined;
   const payload: SegmentPayload = { account, window, reset, redeem };
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const [segmentRef, paceMark] = usePaceMark(timeLeft);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   const credits = account.limits.resetCredits?.availableCount ?? 0;
   return (
     <>
@@ -480,12 +483,12 @@ function LegendRow({
   readonly now: number;
   readonly index: number;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const popover = use(SegmentPopoverContext) ?? undefined;
   const { account, window } = payload;
   const remaining = remainingPercent(window);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   const credits = account.limits.resetCredits?.availableCount ?? 0;
   return (
     <PopoverTrigger
@@ -558,6 +561,18 @@ function PoolBar({
               index={position + 1}
               showAccountName={pool.columns.length > 1}
             />
+          ) : pool.kind === "monthly" && member.account.limits.zeroSpendCap ? (
+            <div
+              key={member.account.key}
+              style={{ gridColumn: position + 1, gridRow: 1 }}
+              className="flex h-5 min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-dashed border-border text-3xs whitespace-nowrap text-muted-foreground @2xl/pool:h-8 @2xl/pool:justify-start @2xl/pool:px-2 @2xl/pool:text-xs"
+            >
+              <AccountName
+                account={member.account}
+                className="hidden min-w-0 truncate @2xl/pool:inline-flex"
+              />
+              <UiText message="$0 cap" />
+            </div>
           ) : null,
         )}
       </div>
@@ -575,7 +590,7 @@ function PoolWindowCard({
   readonly pool: LimitPoolWindow;
   readonly color: string;
   readonly now: number;
-  readonly label?: string | undefined;
+  readonly label?: string | null | undefined;
   readonly description?: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -584,7 +599,9 @@ function PoolWindowCard({
   return (
     <div className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border/60 p-4 md:grid-cols-[11rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-foreground">{label ?? pool.label}</span>
+        {label !== null ? (
+          <span className="text-sm font-medium text-foreground">{label ?? pool.label}</span>
+        ) : null}
         <span className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold text-foreground tabular-nums">
             {pool.remainingPercent}%
@@ -625,7 +642,8 @@ function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: nu
         {label}
       </h2>
       {windows.map((window) => {
-        const details = pool.driver === "cursor" ? cursorUsageWindowDetails(window.id) : undefined;
+        const details =
+          pool.driver === "cursor" ? cursorUsageWindowDetails(window.id, pool) : undefined;
         return (
           <PoolWindowCard
             key={`${window.kind}:${window.id}`}

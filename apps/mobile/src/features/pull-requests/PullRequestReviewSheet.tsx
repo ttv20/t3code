@@ -10,7 +10,10 @@ import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime
 import type { PullRequestReviewVerdict } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { clearSubmittedReview } from "./pullRequestReviewDrafts";
+import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
+import { reviewPositionLabel } from "./pullRequestDiffComments";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { SegmentedControl } from "../../components/ui/SegmentedControl";
@@ -19,13 +22,10 @@ import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { PullRequestCompletionSuggestions } from "./PullRequestCompletionSuggestions";
-import { reviewPositionLabel } from "./pullRequestDiffComments";
-import { clearSubmittedReview } from "./pullRequestReviewDrafts";
 import { PullRequestSheetContent as SheetContent } from "./PullRequestSheetContent";
 import { usePullRequestCompletions } from "./usePullRequestCompletions";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
-import { usePullRequestReviewDraft } from "./usePullRequestReviewDraft";
 
 function useActionSubmission(params: PullRequestParams) {
   const navigation = useNavigation();
@@ -165,7 +165,7 @@ export function PullRequestReviewSheet({
                 : uiT("Post comment")
           }
           fullWidth
-          tone={Platform.OS === "android" ? "primary" : "contrast"}
+          tone="contrast"
           loading={submission.busy}
           disabled={!canSubmit || result.isPending || result.error !== null}
           onPress={() => void perform()}

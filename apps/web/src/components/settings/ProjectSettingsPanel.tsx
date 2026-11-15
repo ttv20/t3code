@@ -1,39 +1,34 @@
+import { useComposerMenuState } from "../chat/useComposerMenuState";
+import { useOrchestrationCommand } from "../../state/use-orchestration-command";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+import { useEnvironmentsWithScope } from "../../state/session";
+import { mapAtomCommandResult, settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { planProjectRemoval } from "@t3tools/client-runtime/state/projects";
-import { mapAtomCommandResult, settlePromise } from "@t3tools/client-runtime/state/runtime";
-import {
-  AuthOrchestrationOperateScope,
-  type EnvironmentId,
-  type SidebarProjectGroupingMode,
-} from "@t3tools/contracts";
-import { Navigate, useLocation, useNavigate } from "@tanstack/react-router";
-import { InfoIcon, Trash2Icon } from "lucide-react";
-import { lazy, Suspense, useRef, useState, type ReactNode } from "react";
+import { type EnvironmentId, type SidebarProjectGroupingMode } from "@t3tools/contracts";
 import {
   checkProjectAccess,
   reportProjectFailure,
   useProjectGroupUpdate,
   type ProjectGroupUpdate,
 } from "../../hooks/useProjectGroupUpdate";
-import { UiText, useUiLanguage } from "../../i18n";
-import { useEnvironmentsWithScope } from "../../state/session";
-import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { useComposerMenuState } from "../chat/useComposerMenuState";
-
-import { derivePhysicalProjectKey } from "@t3tools/client-runtime/state/project-grouping";
+import { Navigate, useLocation, useNavigate } from "@tanstack/react-router";
+import { InfoIcon, Trash2Icon } from "lucide-react";
+import { lazy, Suspense, useRef, useState, type ReactNode } from "react";
 import { useComposerDraftStore } from "../../composerDraftStore";
-import { persistClientSettingsUpdate, useClientSettings } from "../../hooks/useSettings";
 import { releaseProjectDraftUploads } from "../../lib/composerDraftUploads";
+import { persistClientSettingsUpdate, useClientSettings } from "../../hooks/useSettings";
 import { readLocalApi } from "../../localApi";
+import { derivePhysicalProjectKey } from "@t3tools/client-runtime/state/project-grouping";
 import {
   PROJECT_GROUPING_MODE_LABELS,
   withProjectGroupingOverride,
   type SidebarProjectGroupMember,
   type SidebarProjectSnapshot,
 } from "../../sidebarProjectGrouping";
-import { useThreadShells, waitForProjectRemoval } from "../../state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
-import { readUnloadedThreadCount } from "../../state/olderSettledShelf";
+import { useThreadShells, waitForProjectRemoval } from "../../state/entities";
+import { refreshProjectFaviconUrl } from "../../state/assets";
 import { projectEnvironment } from "../../state/projects";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -43,26 +38,30 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { Switch } from "../ui/switch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { ProjectActionsSettings } from "./ProjectActionsSettings";
-import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
-import {
-  canPickExternalProjectFavicon,
-  ProjectFaviconPickerDialog,
-} from "./ProjectFaviconPickerDialog";
-import {
-  defaultProjectIcon,
-  hasDefaultProjectIcon,
-  projectGroupTitleNeedsUpdate,
-  SCRATCH_PROJECT_TITLE,
-} from "./ProjectSettingsPanel.logic";
 import {
   SettingResetButton,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
 } from "./settingsLayout";
-import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+import {
+  canPickExternalProjectFavicon,
+  ProjectFaviconPickerDialog,
+} from "./ProjectFaviconPickerDialog";
+import { ProjectActionsSettings } from "./ProjectActionsSettings";
+import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
+import {
+  defaultProjectIcon,
+  hasDefaultProjectIcon,
+  projectGroupTitleNeedsUpdate,
+  SCRATCH_PROJECT_TITLE,
+  scopeProjectSettingsGroup,
+} from "./ProjectSettingsPanel.logic";
 import { useSettingsProjectGroups } from "./useSettingsProjectGroups";
+import { readUnloadedThreadCount } from "../../state/olderSettledShelf";
+import { settingsScopeEnvironmentLabels } from "./settingsScopeAxis";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const ProjectIconPickerDialog = lazy(() =>
   import("./ProjectIconPickerDialog").then((module) => ({
@@ -122,7 +121,7 @@ function CheckoutGroupingSelect({ member }: { member: SidebarProjectGroupMember 
       >
         <SelectValue>
           {selection === "inherit"
-            ? `Default (${PROJECT_GROUPING_MODE_LABELS[globalMode]})`
+            ? uiT("Default ({0})", { "0": PROJECT_GROUPING_MODE_LABELS[globalMode] })
             : PROJECT_GROUPING_MODE_LABELS[selection]}
         </SelectValue>
       </SelectTrigger>
@@ -243,12 +242,7 @@ export function ProjectSettingsPanel({
         {uiT("This checkout is no longer available in the selected project and environment.")}
       </p>
     );
-  const scopedGroup = {
-    ...selected,
-    memberProjects: members,
-    environmentId: members[0]!.environmentId,
-    id: members[0]!.id,
-  };
+  const scopedGroup = scopeProjectSettingsGroup(selected, members);
   return (
     <ProjectDetail
       key={`${selected.projectKey}:${environmentId ?? "all"}:${checkoutKey ?? "all"}`}
@@ -281,7 +275,7 @@ function ProjectDetail({
   const canEditGroup = group.memberProjects.every((member) =>
     editableIds.has(member.environmentId),
   );
-  const representative =
+  const filePickerProject =
     group.memberProjects.find(
       (member) => environmentById.get(member.environmentId)?.serverConfig != null,
     ) ?? group.memberProjects[0]!;
@@ -291,8 +285,8 @@ function ProjectDetail({
   });
   const projectNameEditedRef = useRef(false);
 
-  const faviconPath = representative.faviconPath ?? null;
-  const projectIcon = representative.projectIcon ?? null;
+  const faviconPath = group.faviconPath ?? null;
+  const projectIcon = group.projectIcon ?? null;
   const pickProjectFavicon =
     typeof window !== "undefined" &&
     group.memberProjects.every(
@@ -324,15 +318,7 @@ function ProjectDetail({
       toastManager.add({ type: "warning", title: uiT("Project title cannot be empty") });
       return;
     }
-    if (
-      !projectGroupTitleNeedsUpdate(
-        group.memberProjects.map((member) => member.title),
-        title,
-        wasEdited,
-      )
-    ) {
-      return;
-    }
+    if (!projectGroupTitleNeedsUpdate(group.memberProjects, title, wasEdited)) return;
     await updateAllMembers({ title }, "Failed to rename project");
   };
 
@@ -345,6 +331,15 @@ function ProjectDetail({
     savingFaviconRef.current = true;
     setIsSavingFavicon(true);
     await updateAllMembers(input, "Failed to update project icon");
+    for (const member of group.memberProjects) {
+      const update = typeof input === "function" ? input(member) : input;
+      if (update.faviconPath === undefined || update.projectIcon) continue;
+      refreshProjectFaviconUrl({
+        environmentId: member.environmentId,
+        cwd: member.workspaceRoot,
+        faviconPath: update.faviconPath,
+      });
+    }
     savingFaviconRef.current = false;
     setIsSavingFavicon(false);
   };
@@ -374,6 +369,13 @@ function ProjectDetail({
     if (checkProjectAccess(members, "Failed to remove project")) return;
 
     const draftStore = useComposerDraftStore.getState();
+    const remainingMember = allMembers.find(
+      (candidate) =>
+        !members.some(
+          (member) =>
+            member.environmentId === candidate.environmentId && member.id === candidate.id,
+        ),
+    );
     for (const member of members) {
       if (checkProjectAccess([member], "Failed to remove project")) return;
       const memberThreads = projectThreads.filter(
@@ -400,7 +402,13 @@ function ProjectDetail({
         memberThreads.map((thread) => scopeThreadRef(thread.environmentId, thread.id)),
       );
       const projectDraftThread = draftStore.getDraftThreadByProjectRef(projectRef);
-      if (projectDraftThread) {
+      if (projectDraftThread && remainingMember) {
+        draftStore.setDraftThreadContext(projectDraftThread.draftId, {
+          projectRef: scopeProjectRef(remainingMember.environmentId, remainingMember.id),
+          environmentSelection: "manual",
+          loadBalancedEnvironmentId: null,
+        });
+      } else if (projectDraftThread) {
         draftStore.clearDraftThread(projectDraftThread.draftId);
       }
       draftStore.clearProjectDraftThreadId(projectRef);
@@ -581,9 +589,9 @@ function ProjectDetail({
             title={uiT("Project icon")}
             description={
               projectIcon?.kind === "lucide"
-                ? `${projectIcon.name} · ${projectIcon.color}`
+                ? uiT("{0} · {1}", { "0": projectIcon.name, "1": projectIcon.color })
                 : projectIcon?.kind === "monogram"
-                  ? `${projectIcon.text} · ${projectIcon.color}`
+                  ? uiT("{0} · {1}", { "0": projectIcon.text, "1": projectIcon.color })
                   : projectIcon?.kind === "emoji"
                     ? projectIcon.emoji
                     : (faviconPath ?? uiT("Automatic"))
@@ -599,7 +607,7 @@ function ProjectDetail({
             }
             control={
               <div className="flex items-center gap-2">
-                <ProjectFavicon project={representative} className="size-6" />
+                <ProjectFavicon project={group} className="size-6" />
                 <Button
                   size="sm"
                   variant="outline"
@@ -646,8 +654,8 @@ function ProjectDetail({
                 title={uiT("Archive")}
                 description={
                   group.archived
-                    ? "Hidden from project pickers. Threads and files are kept."
-                    : "Hides the project from project pickers. Threads and files are kept."
+                    ? uiT("Hidden from project pickers. Threads and files are kept.")
+                    : uiT("Hides the project from project pickers. Threads and files are kept.")
                 }
                 control={
                   <Button
@@ -677,9 +685,9 @@ function ProjectDetail({
           <SettingsRow
             title={
               hasOtherMembers
-                ? "Remove checkout"
+                ? uiT("Remove checkout")
                 : group.memberProjects.length > 1
-                  ? "Remove this project everywhere"
+                  ? uiT("Remove this project everywhere")
                   : uiT("Remove project")
             }
             description={
@@ -714,12 +722,12 @@ function ProjectDetail({
       </SettingsPageContainer>
 
       <ProjectFaviconPickerDialog
-        key={`${representative.environmentId}:${representative.workspaceRoot}:${faviconPickerOpen}`}
-        cwd={representative.workspaceRoot}
-        environmentId={representative.environmentId}
+        key={`${filePickerProject.environmentId}:${filePickerProject.workspaceRoot}:${faviconPickerOpen}`}
+        cwd={filePickerProject.workspaceRoot}
+        environmentId={filePickerProject.environmentId}
         onOpenChange={setFaviconPickerOpen}
         {...(pickProjectFavicon
-          ? { onPickExternal: () => pickProjectFavicon(representative.workspaceRoot) }
+          ? { onPickExternal: () => pickProjectFavicon(filePickerProject.workspaceRoot) }
           : {})}
         onSelect={(path) => void setProjectIcon({ faviconPath: path, projectIcon: null })}
         open={faviconPickerOpen && canEditGroup}
@@ -729,7 +737,7 @@ function ProjectDetail({
         <Suspense fallback={null}>
           <ProjectIconPickerDialog
             current={projectIcon}
-            projectName={representative.title}
+            projectName={group.title}
             open
             onOpenChange={setIconPickerOpen}
             onSelect={(icon) => void setProjectIcon({ faviconPath: null, projectIcon: icon })}

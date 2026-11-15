@@ -1,30 +1,28 @@
+import { UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { linkRequestFailureMessage } from "@t3tools/client-runtime/link-request";
-import { peerLinkHealth } from "@t3tools/client-runtime/state/peerLinks";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { ANOTHER_ADDRESS, linkRequestFailureMessage } from "@t3tools/client-runtime/link-request";
 import {
   AuthAccessWriteScope,
   type AuthMcpClientAccess,
   type EnvironmentId,
   type PeerLinkSummary,
 } from "@t3tools/contracts";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { peerLinkHealth } from "@t3tools/client-runtime/state/peerLinks";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 import * as Result from "effect/Result";
 import { PlusIcon } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { requestConfirmDialog } from "~/confirmDialog";
-import { peerLinkEnvironment, useLinkableMachines } from "~/state/peerLinks";
 import { mintPairingCodeOn } from "~/state/peerPairingCode";
+import { peerLinkEnvironment, useLinkableMachines } from "~/state/peerLinks";
 import { useEnvironmentQuery } from "~/state/query";
 import { useEnvironmentScope, usePreparedConnection } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { useNowMinute } from "../../hooks/useNowMinute";
 import { accessConfig } from "../auth/ConnectAgentSurface";
 import { ConnectionStatusDot } from "../ConnectionStatusDot";
 import { Button } from "../ui/button";
@@ -43,9 +41,13 @@ import { Input } from "../ui/input";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { ITEM_ROW_CLASSNAME, ITEM_ROW_INNER_CLASSNAME } from "./itemRows";
 import { LinkAccessPicker } from "./LinkAccessPicker";
-import { ANOTHER_ADDRESS, LinkMachineSelect } from "./LinkMachineSelect";
+import { LinkAddressWarning, LinkMachineSelect } from "./LinkMachineSelect";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
+import { useLiveRefresh } from "../../hooks/useLiveRefresh";
+import { useNowMinute } from "../../hooks/useNowMinute";
 import { searchableSetting } from "./settingsSearch";
+
+import { useUiLanguage } from "../../i18n";
 
 const failureToast = (title: string, description: string) =>
   toastManager.add(stackedThreadToast({ type: "error", title, description }));
@@ -62,12 +64,29 @@ export function LinkedEnvironmentsSettings({
   const { t: uiT } = useUiLanguage();
 
   const links = useEnvironmentQuery(peerLinkEnvironment.list({ environmentId, input: {} }));
+  // Links made outside this client bump nothing the shared list reads, so showing the panel
+  // asks again. Listing probes every linked environment, too costly for a timer nobody asked for.
+  // A list still loading counts as read now, so the next return to the window asks again.
+  useLiveRefresh(
+    () => {
+      if (!links.isPending) links.refresh();
+    },
+    {
+      key: `linked-environments:${environmentId}`,
+      intervalMs: null,
+      refreshOnShow: true,
+    },
+  );
   const canLink = useAtomValue(peerLinkEnvironment.link.permissionAtom(environmentId));
   const search = searchableSetting("linked-environments");
   return (
     <SettingsSection
       {...(isSearchTarget ? { id: search.id } : {})}
-      title={environmentLabel === null ? search.title : `${search.title} · ${environmentLabel}`}
+      title={
+        environmentLabel === null
+          ? search.title
+          : uiT("{0} · {1}", { "0": search.title, "1": environmentLabel })
+      }
       headerAction={canLink ? <LinkEnvironmentAction environmentId={environmentId} /> : null}
     >
       {links.error ? (
@@ -110,7 +129,10 @@ function LinkedEnvironmentRow({
   const [busy, setBusy] = useState(false);
   const forget = async () => {
     const confirmed = await (requestConfirmDialog(
-      `Forget ${link.label}? Agents here stop working there. Revoke "T3 Code · …" in ${link.label}'s Connections to end the session there too.`,
+      uiT(
+        'Forget {0}? Agents here stop working there. Revoke "T3 Code · …" in {0}\'s Sharing & access to end the session there too.',
+        { "0": link.label },
+      ),
       { variant: "destructive" },
     ) ?? Promise.resolve(false));
     if (!confirmed) return;
@@ -192,14 +214,20 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
   const link = useAtomCommand(peerLinkEnvironment.link, { label: uiT("link environment") });
   const selected = choice ?? (machines.length === 0 ? ANOTHER_ADDRESS : null);
   const machine = machines.find((candidate) => candidate.environmentId === selected) ?? null;
-  // This client can mint a code there when it is connected to that
-  // environment with a session that may create pairing links.
   const targetId = machine?.environmentId ?? null;
   const connected = usePreparedConnection(targetId);
   const mayMint = useEnvironmentScope(targetId, AuthAccessWriteScope);
+  // A picked machine that left the list has no address here either.
+  const needsAddress = selected !== null && (machine === null || machine.urls.length === 0);
+  // This client mints a code there when it is connected with a session that may
+  // create pairing links, and only for its own addresses: anything can answer
+  // as that machine at one typed in, so that one gets a code the user fetched.
   const canMint =
-    targetId !== null && Option.isSome(connected) && mayMint && !mintFailed.has(targetId);
-  const needsAddress = selected === ANOTHER_ADDRESS || machine?.urls.length === 0;
+    targetId !== null &&
+    !needsAddress &&
+    Option.isSome(connected) &&
+    mayMint &&
+    !mintFailed.has(targetId);
   const ready =
     selected !== null &&
     (!needsAddress || address.trim().length > 0) &&
@@ -238,7 +266,8 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
             input: {
               url,
               ...(alternateUrls.length > 0 ? { alternateUrls } : {}),
-              ...(machine === null
+              // A typed address links alone: only this app's own addresses name a machine.
+              ...(machine === null || needsAddress
                 ? {}
                 : { expectedEnvironmentId: machine.environmentId, expectedLabel: machine.label }),
               pairingCode: code,
@@ -275,9 +304,11 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
         <DialogHeader>
           <DialogTitle>{uiT("Link an environment")}</DialogTitle>
           <DialogDescription>
-            {uiT(
-              "Agents here can then launch, message and wait on threads there. It appears in that environment's Connections, where it can be revoked.",
-            )}
+            <UiText
+              message={
+                "Agents here can then launch, message and wait on threads there. It appears under Authorized clients in that environment's Sharing & access, where it can be revoked."
+              }
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
@@ -313,7 +344,7 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
                     // Machines found after typing began must not hide the address being typed.
                     if (choice === null) setChoice(ANOTHER_ADDRESS);
                   }}
-                  placeholder="https://box.example.ts.net"
+                  placeholder={"https://box.example.ts.net"}
                   disabled={busy}
                   autoFocus={machines.length === 0}
                   nativeInput
@@ -327,6 +358,7 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
                 ) : null}
               </label>
             ) : null}
+            {needsAddress && address.trim() ? <LinkAddressWarning address={address} /> : null}
             {selected === null || canMint ? null : (
               <label className="block space-y-1.5">
                 <span className="block text-xs font-medium text-foreground">
@@ -337,7 +369,7 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
                   onChange={(event) => setPairingCode(event.target.value)}
                   placeholder={
                     machine === null
-                      ? uiT("From that environment's Connections, or t3 pair there")
+                      ? uiT("From Sharing & access there, or t3 pair")
                       : uiT("Paste the code")
                   }
                   disabled={busy}
@@ -347,8 +379,12 @@ function LinkEnvironmentAction({ environmentId }: { readonly environmentId: Envi
                 />
                 {machine !== null ? (
                   <span className="block text-xs text-muted-foreground">
-                    {uiT("Create a link on")} {machine.label}
-                    {uiT(": Settings → Connections → Create link, then paste its code here.")}
+                    <UiText
+                      message={
+                        "Create a link on {0}: Settings → Sharing & access → Authorized clients → Create link, then paste its code here."
+                      }
+                      values={{ "0": machine.label }}
+                    />
                   </span>
                 ) : null}
               </label>

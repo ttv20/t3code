@@ -1,22 +1,24 @@
+import { UiText } from "../i18n";
 import { useAuth } from "@clerk/react";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { Link } from "@tanstack/react-router";
 import { CheckIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { useUiLanguage } from "../i18n";
-
 import { APP_DISPLAY_NAME, DESKTOP_DOWNLOAD_URL } from "~/branding";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { isElectron } from "../env";
 import { isLocalEnvironmentDisabled } from "../localEnvironment";
 import { useRelayEnvironmentDiscovery } from "../state/environments";
+import { InstallT3Commands } from "./InstallT3Commands";
+import { retryClerkLoad, useClerkLoadFailed } from "./clerk/clerkLoadFailure";
 import { useT3ConnectAuthPrompt } from "./clerk/useT3ConnectAuthPrompt";
 import { CloudEnvironmentConnectRows } from "./cloud/CloudEnvironmentConnectList";
-import { InstallT3Commands } from "./InstallT3Commands";
 import { Button } from "./ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "./ui/empty";
 import { SidebarInset } from "./ui/sidebar";
 import { WorkspacePageHeader } from "./WorkspacePageHeader";
+
+import { useUiLanguage } from "../i18n";
 
 /** Home screen for the hosted app before any computer is added. */
 export function HostedEmptyState() {
@@ -70,6 +72,7 @@ function T3ConnectSteps() {
   const { t: uiT } = useUiLanguage();
 
   const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
+  const loadFailed = useClerkLoadFailed();
   const { openAuthPrompt } = useT3ConnectAuthPrompt();
   // Adding the first computer unmounts this screen. Wait for all health checks
   // so every compatible registration is queued before that happens.
@@ -81,7 +84,11 @@ function T3ConnectSteps() {
   return (
     <>
       <SetupStep number={1}>
-        {isSignedIn ? (
+        {loadFailed ? (
+          <Button size="sm" onClick={retryClerkLoad}>
+            <UiText message={"Retry sign-in"} />
+          </Button>
+        ) : isSignedIn ? (
           <p className="flex items-center gap-1.5 text-muted-foreground">
             <CheckIcon className="size-4" />
             {uiT("Signed in")}

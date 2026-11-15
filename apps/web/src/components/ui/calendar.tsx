@@ -1,5 +1,5 @@
 import { DayPicker } from "@daypicker/react";
-import { ar, faIR, he } from "@daypicker/react/locale";
+import { ar, de, es, faIR, fr, he, ja, ko, ptBR, ru, zhCN } from "@daypicker/react/locale";
 import { UI_DATE_LOCALES } from "@t3tools/client-runtime/i18n";
 import { ChevronLeftIcon, ChevronRightIcon, ChevronsUpDownIcon } from "lucide-react";
 import type * as React from "react";
@@ -107,7 +107,9 @@ export function Calendar({
         date.toLocaleString(UI_DATE_LOCALES[locale], { month: "short" }),
     } as React.ComponentProps<typeof DayPicker>["formatters"],
     mode,
-    locale: { en: undefined, he, ar, fa: faIR }[locale],
+    locale: { en: undefined, he, ar, fa: faIR, de, es, fr, ja, ko, "pt-BR": ptBR, ru, zh: zhCN }[
+      locale
+    ],
     dir: direction,
     showOutsideDays,
     ...props,

@@ -21,7 +21,7 @@ export type ModelRowProps = {
 
 export type ChoiceRowProps = {
   readonly label: string;
-  readonly showOriginalLabel?: boolean;
+  readonly originalLabel?: string;
   readonly description?: string;
   readonly selected: boolean;
   readonly disabled?: boolean;
@@ -148,14 +148,12 @@ export function ModelRowContent(
 }
 
 export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
-  const { t: uiT } = useUiLanguage();
-  const translatedLabel = uiT(props.label);
-  const showOriginalLabel = props.showOriginalLabel && translatedLabel !== props.label;
+  const { direction } = useUiLanguage();
+  const showOriginalLabel =
+    props.originalLabel !== undefined && props.originalLabel !== props.label;
   return (
     <Pressable
-      accessibilityLabel={
-        props.description ? `${props.label}. ${props.description}` : uiT(props.label)
-      }
+      accessibilityLabel={props.description ? `${props.label}. ${props.description}` : props.label}
       accessibilityRole="radio"
       accessibilityState={{ checked: props.selected, disabled: props.disabled === true }}
       disabled={props.disabled}
@@ -170,22 +168,22 @@ export function ChoiceRowContent(props: ChoiceRowProps & RowSelectionProps) {
       <View className={cn("min-w-0 flex-1 gap-0.5", props.disabled && "opacity-50")}>
         <View
           className="flex-row items-center justify-between gap-3"
-          style={showOriginalLabel ? { direction: "rtl" } : undefined}
+          style={showOriginalLabel ? { direction } : undefined}
         >
           <Text className="min-w-0 shrink text-base font-t3-medium text-foreground">
-            {translatedLabel}
+            {props.label}
           </Text>
           {showOriginalLabel ? (
             <Text
               className="shrink-0 text-sm text-foreground-muted"
               style={{ writingDirection: "ltr", textAlign: "left" }}
             >
-              {props.label}
+              {props.originalLabel}
             </Text>
           ) : null}
         </View>
         {props.description ? (
-          <Text className="text-sm leading-5 text-foreground-muted">{uiT(props.description)}</Text>
+          <Text className="text-sm leading-5 text-foreground-muted">{props.description}</Text>
         ) : null}
       </View>
       {props.trailingSelection}

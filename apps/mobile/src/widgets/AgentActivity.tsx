@@ -351,8 +351,8 @@ function AgentActivity(
       >
         {attentionRow
           ? attentionRow.phase === "waiting_for_approval"
-            ? (props.messages?.["Approval"] ?? "Approval")
-            : (props.messages?.["Input"] ?? "Input")
+            ? (props.messages?.["Approval"] ?? uiT("Approval"))
+            : (props.messages?.["Input"] ?? uiT("Input"))
           : failedRow
             ? uiT("Failed")
             : activeLabel}

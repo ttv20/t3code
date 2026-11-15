@@ -1,16 +1,5 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useAtomValue } from "@effect/atom-react";
-import {
-  isAtomCommandInterrupted,
-  settlePromise,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import type { ServerUpdateStage, ServerUpdateState } from "@t3tools/client-runtime/state/server";
-import type {
-  DesktopUpdateChannel,
-  EnvironmentId,
-  ServerInstallation,
-  ServerSelfUpdateCapability,
-} from "@t3tools/contracts";
 import {
   AuthEnvironmentMaintainScope,
   type AuthSessionState,
@@ -18,25 +7,37 @@ import {
   sessionGrantsScope,
 } from "@t3tools/contracts";
 import type { AsyncResult } from "effect/reactivity";
+import { environmentSession } from "~/state/session";
+import type {
+  DesktopUpdateChannel,
+  EnvironmentId,
+  ServerInstallation,
+  ServerSelfUpdateCapability,
+} from "@t3tools/contracts";
+import type { ServerUpdateStage, ServerUpdateState } from "@t3tools/client-runtime/state/server";
+import {
+  isAtomCommandInterrupted,
+  settlePromise,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import { CircleArrowUpIcon } from "lucide-react";
 import { type ComponentProps, useRef, useState } from "react";
-import { environmentSession } from "~/state/session";
-import { useUiLanguage } from "../i18n";
-
-import { crossesReleaseTrack } from "@t3tools/shared/cliRelease";
 import { requestConfirmDialog } from "~/confirmDialog";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { serverEnvironment, updateOutdatedServer } from "~/state/server";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { useServerConfigs } from "~/state/entities";
 import { useManagedPolicy } from "~/state/managedPolicy";
 import { environmentPresentations } from "~/state/presentation";
-import { serverEnvironment, updateOutdatedServer } from "~/state/server";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { manualServerUpdateCommand } from "~/versionSkew";
 import { ManagedControl } from "./ManagedPolicy";
+import { manualServerUpdateCommand } from "~/versionSkew";
+import { crossesReleaseTrack } from "@t3tools/shared/cliRelease";
 import { Button } from "./ui/button";
 import { toastManager } from "./ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+
+import { useUiLanguage } from "../i18n";
 
 const UPDATE_STAGE_LABELS: Record<ServerUpdateStage, string> = {
   downloading: "Downloading…",
@@ -45,8 +46,11 @@ const UPDATE_STAGE_LABELS: Record<ServerUpdateStage, string> = {
 };
 const pendingUpdateEnvironmentIds = new Set<EnvironmentId>();
 
-export function serverUpdateStageLabel(stage: ServerUpdateStage): string {
-  return UPDATE_STAGE_LABELS[stage];
+export function serverUpdateStageLabel(
+  stage: ServerUpdateStage,
+  translate = createUiTranslator("en"),
+): string {
+  return translate(UPDATE_STAGE_LABELS[stage]);
 }
 
 /** Why the environment's policy refuses server updates, read outside render. */
@@ -77,17 +81,22 @@ function refusedCrossing(
 }
 
 function CrossTrackNote() {
-  return <span className="text-muted-foreground text-xs">{CROSS_TRACK_NOTE}</span>;
+  const { t: uiT } = useUiLanguage();
+  return <span className="text-muted-foreground text-xs">{uiT(CROSS_TRACK_NOTE)}</span>;
 }
 
-function updateFailureMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Server update failed.";
+function updateFailureMessage(error: unknown, translate = createUiTranslator("en")): string {
+  return error instanceof Error ? error.message : translate("Server update failed.");
 }
 
-function serverUpdateMethodLabel(capability: ServerSelfUpdateCapability | null): string {
-  if (capability === "desktop-managed") return "desktop updater, using its own release feed";
-  if (capability === "boot-service") return "existing standalone installation";
-  return "existing server updater";
+function serverUpdateMethodLabel(
+  capability: ServerSelfUpdateCapability | null,
+  translate = createUiTranslator("en"),
+): string {
+  if (capability === "desktop-managed")
+    return translate("desktop updater, using its own release feed");
+  if (capability === "boot-service") return translate("existing standalone installation");
+  return translate("existing server updater");
 }
 
 export interface ServerUpdateTarget {
@@ -132,7 +141,7 @@ export function useServerUpdate() {
       if (!quiet) {
         toastManager.add({
           type: "error",
-          title: `${serverLabel} not updated`,
+          title: uiT("{0} not updated", { "0": serverLabel }),
           description: denial,
         });
       }
@@ -157,7 +166,7 @@ export function useServerUpdate() {
     pendingUpdateEnvironmentIds.delete(environmentId);
     if (result._tag === "Failure") {
       if (isAtomCommandInterrupted(result)) return { status: "skipped" };
-      const message = updateFailureMessage(squashAtomCommandFailure(result));
+      const message = updateFailureMessage(squashAtomCommandFailure(result), uiT);
       if (!quiet) {
         toastManager.add({
           type: "error",
@@ -183,7 +192,7 @@ export function useServerUpdate() {
 
 export function ServerUpdatesAction({
   targets,
-  label = "Update all",
+  label,
   variant = "outline",
   size = "xs",
   className,
@@ -216,8 +225,30 @@ export function ServerUpdatesAction({
       if (confirmRestart || desktopTargets.length > 0) {
         const confirmation = requestConfirmDialog(
           confirmRestart
-            ? `Update T3 Code on these machines?\n\n${available.map((target) => `${target.serverLabel}: ${target.selfUpdate === "desktop-managed" ? serverUpdateMethodLabel(target.selfUpdate) : `${target.targetVersion} via the ${serverUpdateMethodLabel(target.selfUpdate)}`}`).join("\n")}\n\nOnly T3 Code is updated, not provider CLIs. These servers or desktop apps will restart, potentially interrupting active agents and terminals.`
-            : `Update the T3 Code desktop apps on ${desktopTargets.map((target) => target.serverLabel).join(", ")}? They will close and relaunch on those machines.`,
+            ? uiT(
+                "Update T3 Code on these machines?\n\n{0}\n\nOnly T3 Code is updated, not provider CLIs. These servers or desktop apps will restart, potentially interrupting active agents and terminals.",
+                {
+                  "0": available
+                    .map((target) =>
+                      uiT("{0}: {1}", {
+                        "0": target.serverLabel,
+                        "1":
+                          target.selfUpdate === "desktop-managed"
+                            ? serverUpdateMethodLabel(target.selfUpdate, uiT)
+                            : uiT("{0} via the {1}", {
+                                "0": target.targetVersion,
+                                "1": serverUpdateMethodLabel(target.selfUpdate, uiT),
+                              }),
+                      }),
+                    )
+                    .join("\n"),
+                },
+              )
+            : uiT(
+                "Update the T3 Code desktop apps on {0}? They will close and relaunch on those machines.",
+                { "0": desktopTargets.map((target) => target.serverLabel).join(", ") },
+              ),
+          { initialFocus: "confirm" },
         );
         const confirmed = (await confirmation) ?? !confirmRestart;
         if (!confirmed) return;
@@ -235,7 +266,7 @@ export function ServerUpdatesAction({
       disabled={isPending || eligible.length === 0}
       onClick={() => void handleUpdate()}
     >
-      {uiT(label)}
+      {label ?? uiT("Update all")}
     </Button>
   );
 }
@@ -252,6 +283,7 @@ export function ServerUpdateProgress({
 }: {
   readonly state: Exclude<ServerUpdateState, { status: "idle" }>;
 }) {
+  const { t: uiT } = useUiLanguage();
   if (state.status === "failed") {
     return (
       <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-destructive" role="alert">
@@ -266,7 +298,7 @@ export function ServerUpdateProgress({
   return (
     <div className="mt-1 flex items-center gap-2 text-xs font-medium text-foreground">
       <span className="size-1.5 shrink-0 rounded-full bg-foreground" aria-hidden="true" />
-      <span>{serverUpdateStageLabel(state.stage)}</span>
+      <span>{serverUpdateStageLabel(state.stage, uiT)}</span>
     </div>
   );
 }
@@ -281,7 +313,7 @@ export function ServerUpdateAction({
   targetVersion,
   currentVersion,
   channel,
-  label = "Update",
+  label,
   variant = "outline",
   size = "xs",
   className,
@@ -296,25 +328,23 @@ export function ServerUpdateAction({
   const canUpdate = useAtomValue(sessionStateAtom, canUpdateServer);
   const updatesDenial = managedUpdatesDenial(useManagedPolicy(environmentId));
   const update = useServerUpdate();
+  const updatesInstall =
+    installation?.kind === "npm-global" || installation?.kind === "t3-launcher";
   const { copyToClipboard } = useCopyToClipboard<{ command: string }>({
-    target: installation?.kind === "npm-global" ? "update command" : "relaunch command",
+    target: updatesInstall ? "update command" : "relaunch command",
     onCopy: ({ command }) => {
       toastManager.add({
         type: "success",
-        title:
-          installation?.kind === "npm-global"
-            ? uiT("Update command copied")
-            : uiT("Relaunch command copied"),
-        description:
-          installation?.kind === "npm-global"
-            ? uiT("Run `{0}` on {1}, then restart t3 with your usual options.", {
-                "0": command,
-                "1": serverLabel,
-              })
-            : uiT(
-                "Stop t3 on {0}, then relaunch with `{1}` using the same subcommand and options. This does not update an installed t3 command.",
-                { "0": serverLabel, "1": command },
-              ),
+        title: updatesInstall ? uiT("Update command copied") : uiT("Relaunch command copied"),
+        description: updatesInstall
+          ? uiT("Run `{0}` on {1}, then restart t3 with your usual options.", {
+              "0": command,
+              "1": serverLabel,
+            })
+          : uiT(
+              "Stop t3 on {0}, then relaunch with `{1}` using the same subcommand and options. This does not update an installed t3 command.",
+              { "0": serverLabel, "1": command },
+            ),
       });
     },
     onError: (error) => {
@@ -338,8 +368,22 @@ export function ServerUpdateAction({
       // desktop fallback for callers that do not request confirmation.
       const confirmation = requestConfirmDialog(
         isDesktopAppUpdate
-          ? `Update T3 Code on ${serverLabel} using its desktop updater? Its own release feed selects the version. The desktop app will close and relaunch on that machine. Provider CLIs are not updated.`
-          : `Update T3 Code on ${serverLabel}${currentVersion ? ` from ${currentVersion}` : ""} to ${targetVersion} using the ${serverUpdateMethodLabel(selfUpdate)}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals. Provider CLIs are not updated.`,
+          ? uiT(
+              "Update T3 Code on {0} using its desktop updater? Its own release feed selects the version. The desktop app will close and relaunch on that machine. Provider CLIs are not updated.",
+              { "0": serverLabel },
+            )
+          : uiT(
+              currentVersion
+                ? "Update T3 Code on {0} from {1} to {2} using the {3}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals. Provider CLIs are not updated."
+                : "Update T3 Code on {0} to {2} using the {3}? The server will restart, briefly disconnecting clients and potentially interrupting active agents and terminals. Provider CLIs are not updated.",
+              {
+                "0": serverLabel,
+                "1": currentVersion ?? "",
+                "2": targetVersion,
+                "3": serverUpdateMethodLabel(selfUpdate, uiT),
+              },
+            ),
+        { initialFocus: "confirm" },
       );
       const confirmed = (await confirmation) ?? !confirmRestart;
       if (!confirmed) {
@@ -384,10 +428,10 @@ export function ServerUpdateAction({
     selfUpdate === null ? manualServerUpdateCommand(targetVersion, installation) : null;
   const actionLabel =
     manualCommand !== null
-      ? installation?.kind === "npm-global"
+      ? updatesInstall
         ? uiT("Copy update command")
-        : "Copy relaunch command"
-      : label;
+        : uiT("Copy relaunch command")
+      : (label ?? uiT("Update"));
   const onClick =
     manualCommand !== null
       ? () => copyToClipboard(manualCommand, { command: manualCommand })
@@ -434,7 +478,7 @@ export function OutdatedServerUpdateAction({
   serverLabel,
   fromVersion,
   targetVersion,
-  label = "Update",
+  label,
 }: {
   readonly environmentId: EnvironmentId;
   readonly serverLabel: string;
@@ -473,7 +517,7 @@ export function OutdatedServerUpdateAction({
   }
   return (
     <Button size="xs" variant="outline" onClick={() => void handleUpdate()}>
-      {uiT(label)}
+      {label ?? uiT("Update")}
     </Button>
   );
 }

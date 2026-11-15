@@ -1,12 +1,9 @@
-import { useUiLanguage } from "../../i18n";
-/* oxlint-disable react/no-array-index-key -- Spreadsheet rows and columns retain their source positions. */
+import { UiText } from "../../i18n";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type { OfficePreviewKind } from "@t3tools/shared/filePreview";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-
 import VirtualTablePreview from "./VirtualTablePreview";
-
 import {
   Select,
   SelectItem,
@@ -14,9 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-
 import { FileSurfaceAction, FileSurfaceLoading, FileSurfaceNotice } from "./fileSurfaceChrome";
 import { OFFICE_PREVIEW_MAX_BYTES, type OfficeWorkerResult } from "./officePreviewProtocol";
+import { useUiLanguage } from "../../i18n";
+
+/* oxlint-disable react/no-array-index-key -- Spreadsheet rows and columns retain their source positions. */
 
 const DocumentPages = lazy(() => import("./DocumentPages"));
 const NotebookPreview = lazy(() => import("./NotebookPreview"));
@@ -253,11 +252,23 @@ function ExtendedOfficeViewer(props: {
           className="flex min-h-10 shrink-0 flex-wrap items-center gap-x-1 border-b border-border/60 px-3 py-2 text-xs text-muted-foreground tabular-nums"
           role="status"
         >
-          {uiT("Sheet")} {page + 1} {uiT("of")} {count} · {sheet.rowCount.toLocaleString()}{" "}
-          {uiT("rows ·")} {sheet.columns.toLocaleString()} {uiT("columns")}
-          {fileSize !== undefined
-            ? ` · ${fileSize === 0 ? "0 bytes" : formatAttachmentSize(fileSize)}`
-            : ""}
+          <UiText
+            message={"Sheet {0} of {1} · {2} · {3}{4}"}
+            values={{
+              "0": page + 1,
+              "1": count,
+              "2": uiT(sheet.rowCount === 1 ? "{0} row" : "{0} rows", {
+                "0": sheet.rowCount.toLocaleString(),
+              }),
+              "3": uiT(sheet.columns === 1 ? "{0} column" : "{0} columns", {
+                "0": sheet.columns.toLocaleString(),
+              }),
+              "4":
+                fileSize !== undefined
+                  ? ` · ${fileSize === 0 ? "0 bytes" : formatAttachmentSize(fileSize)}`
+                  : "",
+            }}
+          />
         </div>
       ) : null}
       {documentPage ? (

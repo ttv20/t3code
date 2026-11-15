@@ -92,7 +92,7 @@ export function UsageModelDialog({
           <div className="flex flex-col gap-8">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
               {stats.map((stat) => (
-                <div key={uiT(stat.label)} className="flex min-w-0 flex-col gap-0.5">
+                <div key={stat.label} className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground">{uiT(stat.label)}</span>
                   <span className="text-2xl font-semibold text-foreground">{stat.value}</span>
                 </div>

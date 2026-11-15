@@ -1,4 +1,9 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { useAtomValue } from "@effect/atom-react";
+import { Fragment, useState, type ReactNode } from "react";
+import * as Cause from "effect/Cause";
+import * as Option from "effect/Option";
+import { AsyncResult } from "effect/reactivity";
 import {
   AuthSettingsWriteScope,
   type DevicePlatform,
@@ -10,46 +15,37 @@ import {
   type SimlockDeviceHostConfig,
   type SshDeviceHostConfig,
 } from "@t3tools/contracts";
-import * as Cause from "effect/Cause";
-import * as Option from "effect/Option";
-import { AsyncResult } from "effect/reactivity";
 import { ChevronDownIcon, MoreVertical, PlusIcon } from "lucide-react";
-import { Fragment, useState, type ReactNode } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { cn, randomUUID } from "../../lib/utils";
 import { deviceEnvironment } from "../../state/device";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { incompleteListings } from "../device/DeviceSetup";
 import { AndroidIcon, AppleIcon } from "../Icons";
 import { Button, InlineButton } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { Spinner } from "../ui/spinner";
 import { toastManager } from "../ui/toast";
+import { incompleteListings } from "../device/DeviceSetup";
 import { DeviceHostEditor } from "./DeviceHostEditor";
-import { groupDeviceHosts, updateDeviceHosts } from "./deviceHostsSettings.logic";
+import { updateDeviceHosts, groupDeviceHosts } from "./deviceHostsSettings.logic";
 import { EasDeviceHostEditor } from "./EasDeviceHostEditor";
-import {
-  easSessionLimits,
-  newEasDeviceHost,
-  updateEasDeviceHosts,
-} from "./easDeviceHostsSettings.logic";
+import { newEasDeviceHost, updateEasDeviceHosts } from "./easDeviceHostsSettings.logic";
+import { useSettingsScope } from "./SettingsScopeContext";
 import { SettingsSection } from "./settingsLayout";
 import { settingsScopeEnvironmentLabel } from "./settingsScopeAxis";
-import { useSettingsScope } from "./SettingsScopeContext";
 import { SimlockDeviceHostEditor } from "./SimlockDeviceHostEditor";
 import {
   newSimlockDeviceHost,
   planSimlockDeviceHostSave,
-  simlockLeaseLimits,
   updateSimlockDeviceHosts,
   type SimlockTokenEntry,
 } from "./simlockDeviceHostsSettings.logic";
 import { useHostConnectionChecks } from "./useHostConnectionChecks";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const deviceHostStatesAtom = environmentAtomList("web-device-host-states", (environmentId) =>
   deviceEnvironment.state({ environmentId, input: {} }),
@@ -85,7 +81,7 @@ interface SourceRow {
   readonly description: ReactNode;
   readonly environments: ReadonlyArray<SourceEnvironment>;
   /**
-   * One machine or account every environment reaches the same way (an SSH host, EAS, a Simlock
+   * One machine or account every environment reaches the same way (an SSH host, Expo, a Simlock
    * pool), so its platforms are the same for all of them. Local simulators differ per machine.
    */
   readonly shared: boolean;
@@ -113,21 +109,28 @@ type Editing =
 function hostStatus(
   state: DeviceServiceState | undefined,
   hostId: string,
+  translate = createUiTranslator("en"),
 ): SourceStatus | undefined {
-  if (!state) return { tone: "pending", label: "Loading" };
+  if (!state) return { tone: "pending", label: translate("Loading") };
   const status = state.hostStatuses[hostId];
   switch (status?.status) {
     case "ready": {
       const incomplete = incompleteListings(status);
       if (incomplete.length === 0) return undefined;
       const list = incomplete.length > 1 ? "Device" : incomplete[0] === "ios" ? "iOS" : "Android";
-      return { tone: "warning", label: `${list} list may be incomplete`, detail: status.detail };
+      return {
+        tone: "warning",
+        label: translate("{0} list may be incomplete", {
+          "0": list === "Device" ? translate("Device") : list,
+        }),
+        detail: status.detail,
+      };
     }
     case "installing":
     case "starting":
-      return { tone: "pending", label: "Starting", detail: status.detail };
+      return { tone: "pending", label: translate("Starting"), detail: status.detail };
     case "failed":
-      return { tone: "error", label: "Failed", detail: status.detail };
+      return { tone: "error", label: translate("Failed"), detail: status.detail };
     default:
       return undefined;
   }
@@ -266,7 +269,7 @@ export function DeviceSourcesSettings(props: {
           ),
         },
       })),
-      remove ? "EAS host not removed everywhere" : "EAS host not saved everywhere",
+      remove ? uiT("Expo host not removed everywhere") : uiT("Expo host not saved everywhere"),
     );
     if (saved) setEditing(null);
   };
@@ -317,8 +320,12 @@ export function DeviceSourcesSettings(props: {
     toastManager.add({
       type: failed.length ? "error" : "success",
       title: failed.length
-        ? `${host.label}: ${failed.length} of ${targets.length} environments failed`
-        : `${host.label}: connection checks passed`,
+        ? uiT("{0}: {1} of {2} environments failed", {
+            "0": host.label,
+            "1": failed.length,
+            "2": targets.length,
+          })
+        : uiT("{0}: connection checks passed", { "0": host.label }),
       description: failed.length
         ? failed
             .map((target) => {
@@ -373,7 +380,9 @@ export function DeviceSourcesSettings(props: {
         : uiT("Simulators and emulators installed on this environment's machine."),
     environments: active.map((member) => {
       const local = member.state?.hosts.find((host) => host.kind === "local");
-      const status = local ? hostStatus(member.state, local.id) : hostStatus(member.state, "");
+      const status = local
+        ? hostStatus(member.state, local.id, uiT)
+        : hostStatus(member.state, "", uiT);
       return {
         environmentId: member.environmentId,
         label: member.label,
@@ -426,7 +435,7 @@ export function DeviceSourcesSettings(props: {
           return { environmentId: member.environmentId, label: member.label, added: false };
         const status = testing.has(host.id)
           ? ({ tone: "pending", label: uiT("Testing connection") } as const)
-          : hostStatus(member.state, held.host.id);
+          : hostStatus(member.state, held.host.id, uiT);
         return {
           environmentId: member.environmentId,
           label: member.label,
@@ -474,8 +483,13 @@ export function DeviceSourcesSettings(props: {
         key: `eas:${host.id}`,
         shared: true,
         title: host.label,
-        kind: "EAS",
-        description: easSessionLimits(host),
+        kind: "Expo",
+        description: uiT(
+          host.maxConcurrentSessions === 1
+            ? "Up to {0} session at once, each stopped after {1} min or {2} idle min"
+            : "Up to {0} sessions at once, each stopped after {1} min or {2} idle min",
+          { "0": host.maxConcurrentSessions, "1": host.maxSessionMinutes, "2": host.idleMinutes },
+        ),
         environments: active.map((member) => {
           const added = (member.settings?.easDeviceHosts ?? []).some(
             (candidate) => candidate.id === host.id,
@@ -486,7 +500,7 @@ export function DeviceSourcesSettings(props: {
             added,
             ...(added
               ? {
-                  status: hostStatus(member.state, host.id),
+                  status: hostStatus(member.state, host.id, uiT),
                   platforms: hostPlatforms(member.state, host.id),
                 }
               : {}),
@@ -512,7 +526,15 @@ export function DeviceSourcesSettings(props: {
         shared: true,
         title: host.label,
         kind: "Simlock",
-        description: `${host.gatewayUrl.replace(/^https?:\/\//, "")} · ${simlockLeaseLimits(host)}`,
+        description: uiT("{0} · {1}", {
+          "0": host.gatewayUrl.replace(/^https?:\/\//, ""),
+          "1": uiT(
+            host.maxLeases === 1
+              ? "Up to {0} device at once, each released after {1} min"
+              : "Up to {0} devices at once, each released after {1} min",
+            { "0": host.maxLeases, "1": host.maxLeaseMinutes },
+          ),
+        }),
         environments: active.map((member) => {
           const held = (member.settings?.simlockDeviceHosts ?? []).find(
             (candidate) => candidate.id === host.id,
@@ -525,7 +547,7 @@ export function DeviceSourcesSettings(props: {
             added: true,
             platforms: hostPlatforms(member.state, host.id),
             // A blank token can still resolve to the machine's own, so the host's answer decides.
-            status: hostStatus(member.state, host.id),
+            status: hostStatus(member.state, host.id, uiT),
           };
         }),
         actions: rowActions(edit, () => removeSimlock(host)),
@@ -565,7 +587,7 @@ export function DeviceSourcesSettings(props: {
               })
             }
           >
-            <UiText message={"EAS Simulator"} />
+            <UiText message={"Expo Simulators"} />
           </MenuItem>
         ) : null}
         {props.supportsSimlock && simlockEnabled ? (
@@ -671,7 +693,11 @@ function PlatformIcon(props: {
         render={
           <button
             type="button"
-            aria-label={`${props.row.title}: ${props.label} ${available ? "available" : "not available"}`}
+            aria-label={uiT("{0}: {1} {2}", {
+              "0": props.row.title,
+              "1": props.label,
+              "2": available ? uiT("available") : uiT("not available"),
+            })}
             className={cn(
               "relative grid size-6 shrink-0 place-items-center rounded-md outline-hidden hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
               available ? "text-foreground" : "text-muted-foreground/45",
@@ -745,7 +771,7 @@ function PlatformIcon(props: {
                 <Fragment key={environment.environmentId}>
                   <dt className="text-muted-foreground">{environment.label}</dt>
                   <dd className={entry?.available ? "" : "text-muted-foreground"}>
-                    {entry?.available ? uiT("Available") : (entry?.reason ?? "Not available")}
+                    {entry?.available ? uiT("Available") : (entry?.reason ?? uiT("Not available"))}
                   </dd>
                 </Fragment>
               );
@@ -753,7 +779,7 @@ function PlatformIcon(props: {
           </dl>
         ) : !available ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            {availability(props.known[0]!)?.reason ?? "Not set up on this machine."}
+            {availability(props.known[0]!)?.reason ?? uiT("Not set up on this machine.")}
           </p>
         ) : null}
       </PopoverPopup>
@@ -762,6 +788,8 @@ function PlatformIcon(props: {
 }
 
 function DeviceSourceRow(props: { row: SourceRow }) {
+  const { t: uiT } = useUiLanguage();
+
   const { row } = props;
   const several = row.environments.length > 1;
   const issues = row.environments.filter(
@@ -792,7 +820,7 @@ function DeviceSourceRow(props: { row: SourceRow }) {
             )}
           >
             <span className="min-w-0 break-words">
-              {several ? `${environment.label}: ` : ""}
+              {several ? uiT("{0}: ", { "0": environment.label }) : ""}
               {environment.status.tone === "error" && !several && environment.status.detail
                 ? environment.status.detail
                 : environment.status.label}

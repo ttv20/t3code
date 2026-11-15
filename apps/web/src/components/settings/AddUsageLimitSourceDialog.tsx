@@ -1,7 +1,5 @@
 import type { EnvironmentId, SecretReference, UnifiedSettings } from "@t3tools/contracts";
-import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
+import { useId, useState } from "react";
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import { Button } from "../ui/button";
 import {
@@ -14,9 +12,11 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { sourceIdFromUrl } from "./AddUsageLimitSourceDialog.logic";
 import { SecretSourceInput, useSecretSources } from "./SecretSourceInput";
+import { Label } from "../ui/label";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 /** Send the management key once to server secret storage; settings retain only a redaction marker. */
 export function AddUsageLimitSourceDialog({
@@ -33,6 +33,7 @@ export function AddUsageLimitSourceDialog({
   readonly sources: UnifiedSettings["usageLimitSources"];
 }) {
   const { t: uiT } = useUiLanguage();
+  const formId = useId();
   const updateSettings = useUpdateEnvironmentSettings(environmentId);
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
@@ -90,6 +91,7 @@ export function AddUsageLimitSourceDialog({
         </DialogHeader>
         <DialogPanel>
           <form
+            id={formId}
             className="grid gap-4"
             onSubmit={(event) => {
               event.preventDefault();
@@ -100,7 +102,7 @@ export function AddUsageLimitSourceDialog({
               <Label htmlFor="usage-source-url">{uiT("Hub URL")}</Label>
               <Input
                 id="usage-source-url"
-                placeholder="https://hub.example.ts.net:8318"
+                placeholder={"https://hub.example.ts.net:8318"}
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 autoFocus
@@ -113,6 +115,7 @@ export function AddUsageLimitSourceDialog({
                 aria-label={uiT("Management key")}
                 value={keyDraft}
                 sources={secretSources}
+                environmentId={environmentId}
                 onChange={(event) => setKeyDraft(event.target.value)}
                 onSecretChange={(secret) => setKeyDraft(secret ?? "")}
                 onValidityChange={setKeyValid}
@@ -139,8 +142,8 @@ export function AddUsageLimitSourceDialog({
           >
             {uiT("Cancel")}
           </Button>
-          <Button onClick={save} disabled={!canSave}>
-            {uiT("Add hub")}
+          <Button type="submit" form={formId} disabled={!canSave}>
+            <UiText message={"Add hub"} />
           </Button>
         </DialogFooter>
       </DialogPopup>

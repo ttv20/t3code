@@ -78,6 +78,8 @@ describe("searchSettings", () => {
     expect(searchSettings("גלישת שורות", ITEMS, "en")).toEqual([]);
     expect(searchSettings("גלישת שורות", ITEMS, "he")[0]?.title).toBe("Word wrap");
 
+    const spanish = (message: string) => (message === "Word wrap" ? "Ajuste de línea" : message);
+    expect(searchSettings("ajuste", ITEMS, spanish).map((item) => item.id)).toEqual(["word-wrap"]);
     for (const query of ["fallback", "fallback agent", "fallback model"]) {
       expect(searchSettings(query)[0]).toMatchObject({
         id: "fallback-model",
@@ -90,6 +92,13 @@ describe("searchSettings", () => {
   it("hides the Secrets page from nav and search while the secrets feature is disabled", () => {
     expect(SETTINGS_NAV_GROUPS.flatMap((group) => group.paths)).not.toContain("/settings/secrets");
     expect(searchSettings("1password").map((item) => item.to)).not.toContain("/settings/secrets");
+  });
+
+  it("finds the Scheduled tasks page", () => {
+    expect(searchSettings("scheduled tasks")[0]).toMatchObject({
+      id: "scheduled-tasks",
+      to: "/settings/scheduled-tasks",
+    });
   });
 
   it("matches normalized title substrings", () => {
@@ -180,6 +189,25 @@ describe("searchSettings", () => {
         targetId: "linked-environments",
       }),
     );
+  });
+
+  it("finds the Welcome page only where a primary computer can open it", () => {
+    const availability = {
+      hasCloudPublicConfig: true,
+      hasEnvironment: true,
+      hasProviderSettingsEnvironment: true,
+      canManageLocalBackend: false,
+      isWslSettingsRowVisible: false,
+      hasThreadAutoSettlement: false,
+    };
+    const ids = (hasPrimaryEnvironment: boolean) =>
+      searchSettings(
+        "welcome page",
+        filterAvailableSettingsSearchItems({ ...availability, hasPrimaryEnvironment }),
+      ).map((item) => item.id);
+    // Hosted web reaches remote computers but has no primary one to set up.
+    expect(ids(false)).not.toContain("welcome-page");
+    expect(ids(true)).toContain("welcome-page");
   });
 
   it("finds keybinding commands by label, command id, and default key", () => {

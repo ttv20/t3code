@@ -1,18 +1,17 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
+import { usePermissionStatus } from "../permissions/usePermissionStatus";
 import type { BrowserImportSource } from "@t3tools/contracts";
 import { BROWSER_IMPORT_FAILURE_COPY } from "@t3tools/contracts";
 import { ArrowDownIcon, ArrowRightIcon, CheckIcon, HardDriveIcon } from "lucide-react";
 import { useRef, useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
-import { usePermissionStatus } from "../permissions/usePermissionStatus";
-
 import { cn, randomUUID } from "~/lib/utils";
-
 import { Button } from "../ui/button";
 import {
   Dialog,
   DialogClose,
   DialogDescription,
+  DialogAction,
   DialogFooter,
   DialogHeader,
   DialogPanel,
@@ -21,22 +20,24 @@ import {
 } from "../ui/dialog";
 import { Spinner } from "../ui/spinner";
 import {
+  initialWizardStep,
+  initialTargetSelection,
   canCloseWizard,
+  isRetryableReason,
   formatSkippedDomains,
   fullDiskAccessRecheckStep,
-  initialTargetSelection,
-  initialWizardStep,
-  isRetryableReason,
   outcomeToStep,
   refreshedSourceProfileDirectory,
   refreshedSourceStep,
   resolveWizardTarget,
   type ImportOutcome,
-  type WizardStep,
   type WizardTarget,
   type WizardTargetProfile,
   type WizardTargetSelection,
+  type WizardStep,
 } from "./browserImportWizard.logic";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 export type { WizardTarget } from "./browserImportWizard.logic";
 
@@ -208,20 +209,25 @@ function QuitStep({
         <Button variant="outline" onClick={onCancel}>
           {uiT("Cancel")}
         </Button>
-        <Button onClick={onRechecked}>{uiT("I’ve quit it")}</Button>
+        <DialogAction onClick={onRechecked}>
+          <UiText message={"I’ve quit it"} />
+        </DialogAction>
       </DialogFooter>
     </>
   );
 }
 
-function cookieCountLabel(count: number | undefined): string | undefined {
+function cookieCountLabel(
+  count: number | undefined,
+  translate = createUiTranslator("en"),
+): string | undefined {
   if (count === undefined) return undefined;
-  if (count === 0) return "no cookies";
-  return `${count.toLocaleString()} ${count === 1 ? "cookie" : "cookies"}`;
+  if (count === 0) return translate("no cookies");
+  return translate(count === 1 ? "{0} cookie" : "{0} cookies", { "0": count.toLocaleString() });
 }
 
-function cookieResultCount(count: number): string {
-  return `${count.toLocaleString()} ${count === 1 ? "cookie" : "cookies"}`;
+function cookieResultCount(count: number, translate = createUiTranslator("en")): string {
+  return translate(count === 1 ? "{0} cookie" : "{0} cookies", { "0": count.toLocaleString() });
 }
 
 type ConfigureStepProps = {
@@ -381,7 +387,7 @@ function ConfigureStep({
                 key={profile.directory}
                 selected={sourceProfileDirectory === profile.directory}
                 title={profile.name}
-                subtitle={cookieCountLabel(profile.cookieCount)}
+                subtitle={cookieCountLabel(profile.cookieCount, uiT)}
                 onSelect={() => onSourceProfileChange(profile.directory)}
               />
             ))}
@@ -445,7 +451,6 @@ function SelectableTile({
   readonly subtitle?: string | undefined;
   readonly onSelect: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <button
       type="button"
@@ -459,7 +464,7 @@ function SelectableTile({
       )}
     >
       <span className="min-w-0 [unicode-bidi:plaintext]">
-        <span className="block truncate text-sm font-medium text-foreground">{uiT(title)}</span>
+        <span className="block truncate text-sm font-medium text-foreground">{title}</span>
         {subtitle ? (
           <span className="block truncate text-xs tabular-nums text-muted-foreground">
             {subtitle}
@@ -549,9 +554,9 @@ function DoneStep({
       <DialogHeader>
         <DialogTitle>
           {imported > 0
-            ? uiT("Imported {0}", { "0": cookieResultCount(imported) })
+            ? uiT("Imported {0}", { "0": cookieResultCount(imported, uiT) })
             : skipped > 0
-              ? uiT("Skipped {0}", { "0": cookieResultCount(skipped) })
+              ? uiT("Skipped {0}", { "0": cookieResultCount(skipped, uiT) })
               : uiT("No cookies found")}
         </DialogTitle>
         <DialogDescription>
@@ -559,7 +564,8 @@ function DoneStep({
             ? uiT("Added to {0} for {1}.{2}", {
                 "0": targetName,
                 "1": destinationEnvironmentName,
-                "2": skipped > 0 ? ` ${cookieResultCount(skipped)} skipped.` : "",
+                "2":
+                  skipped > 0 ? uiT(" {0} skipped.", { "0": cookieResultCount(skipped, uiT) }) : "",
               })
             : skipped > 0
               ? uiT("No cookies were imported for {0}.", { "0": destinationEnvironmentName })
@@ -611,7 +617,11 @@ function BlockedStep({
         <Button variant="outline" onClick={onClose}>
           {uiT("Close")}
         </Button>
-        {onRetry ? <Button onClick={onRetry}>{uiT("Try again")}</Button> : null}
+        {onRetry ? (
+          <DialogAction onClick={onRetry}>
+            <UiText message={"Try again"} />
+          </DialogAction>
+        ) : null}
       </DialogFooter>
     </>
   );

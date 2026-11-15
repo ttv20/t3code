@@ -44,11 +44,6 @@ export function simlockDeviceHostProblem(host: SimlockDeviceHostConfigType): str
     : "Keep the limits within the ranges shown.";
 }
 
-export function simlockLeaseLimits(host: SimlockDeviceHostConfigType) {
-  const devices = host.maxLeases === 1 ? "1 device" : `${host.maxLeases} devices`;
-  return `Up to ${devices} at once, each released after ${host.maxLeaseMinutes} min`;
-}
-
 export interface SimlockHostEnvironment {
   readonly environmentId: EnvironmentId;
   readonly label: string;

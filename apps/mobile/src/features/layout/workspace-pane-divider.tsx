@@ -64,7 +64,7 @@ export function WorkspacePaneDivider(props: WorkspacePaneDividerProps) {
           { name: "increment", label: uiT("Make pane wider") },
           { name: "decrement", label: uiT("Make pane narrower") },
         ]}
-        accessibilityLabel={uiT(props.accessibilityLabel)}
+        accessibilityLabel={props.accessibilityLabel}
         accessibilityRole="adjustable"
         accessibilityValue={{
           now: Math.round(props.currentWidth),

@@ -4,6 +4,7 @@ import { ThreadId, TurnItemId, type OrchestrationV2TurnItem } from "@t3tools/con
 import * as DateTime from "effect/DateTime";
 
 import {
+  summarizeToolGroup,
   resolveWorkEntryToolPresentation,
   toolItemForDisplay,
   type WorkLogPresentationEntry,
@@ -202,5 +203,44 @@ describe("resolveWorkEntryToolPresentation", () => {
         toolData: { server: "another-server", tool: "preview_click" },
       }),
     ).toBeNull();
+  });
+});
+
+describe("summarizeToolGroup", () => {
+  it("keeps integration identities opaque while deduplicating sources and file edits", () => {
+    const base = { id: "work", createdAt: "2026-01-01T00:00:00.000Z", tone: "tool" as const };
+    const entries: WorkLogPresentationEntry[] = [
+      {
+        ...base,
+        label: "Custom tool",
+        toolSource: { key: "settings", kind: "integration", name: "Settings" },
+      },
+      {
+        ...base,
+        label: "Custom tool",
+        toolSource: { key: "settings", kind: "integration", name: "Settings" },
+      },
+      {
+        ...base,
+        label: "Custom tool",
+        toolSource: { key: "default", kind: "integration", name: "Default" },
+      },
+      {
+        ...base,
+        label: "Edit",
+        itemType: "file_change",
+        changedFiles: ["a", "b"],
+        toolLifecycleStatus: "failed",
+      },
+      { ...base, label: "Edit", itemType: "file_change", changedFiles: ["a"] },
+    ];
+    expect(summarizeToolGroup(entries)).toEqual({
+      summary: "Used Settings and Default integrations and changed 2 files",
+      hasFailure: true,
+    });
+    expect(summarizeToolGroup(entries, "he")).toEqual({
+      summary: "נעשה שימוש בשילובים Settings ו־Default ו־שונו 2 קבצים",
+      hasFailure: true,
+    });
   });
 });

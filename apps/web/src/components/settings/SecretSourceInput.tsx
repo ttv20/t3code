@@ -1,4 +1,3 @@
-import { useAtomValue } from "@effect/atom-react";
 import {
   SecretReference,
   type EnvironmentId,
@@ -7,20 +6,25 @@ import {
   type SecretProviderKind,
 } from "@t3tools/contracts";
 import { builtInSecretProviderDefinitions } from "@t3tools/secret-provider-definitions/registry";
+import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { KeyRoundIcon, TypeIcon } from "lucide-react";
+import { AlertTriangleIcon, CheckIcon, KeyRoundIcon, RefreshCwIcon, TypeIcon } from "lucide-react";
 import { useState, type ComponentProps, type ComponentType, type ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { isSecretsFeatureEnabled } from "../../env";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
-import { serverEnvironment } from "../../state/server";
 import { OnePasswordIcon } from "../Icons";
+import { serverEnvironment } from "../../state/server";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { Button } from "../ui/button";
 import { DraftInput } from "../ui/draft-input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Spinner } from "../ui/spinner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { SecretInput } from "./SecretInput";
 import { classifySecretProvider } from "./SecretProviderDialog.logic";
+
+import { useUiLanguage } from "../../i18n";
 
 export interface SecretSource {
   readonly id: SecretProviderId;
@@ -73,7 +77,7 @@ export function SecretSourceSelect(props: {
   const { value, sources } = props;
   const known = value === null || sources.some((source) => source.id === value);
   const title =
-    value === null ? "Value" : (sources.find((source) => source.id === value)?.label ?? value);
+    value === null ? uiT("Value") : (sources.find((source) => source.id === value)?.label ?? value);
   return (
     <Select
       value={value ?? STORED_VALUE}
@@ -87,7 +91,7 @@ export function SecretSourceSelect(props: {
       <SelectTrigger
         size="sm"
         className="w-auto min-w-0 shrink-0"
-        aria-label={`${props.label} source`}
+        aria-label={uiT("{0} source", { "0": props.label })}
         title={title}
       >
         <SelectValue>
@@ -113,8 +117,99 @@ export function SecretSourceSelect(props: {
   );
 }
 
+type SecretCheck =
+  | { readonly status: "checking" }
+  | { readonly status: "resolved" }
+  | { readonly status: "failed"; readonly detail: string };
+
+/** Asks the server to resolve the committed reference, so a typo shows here and not at provider start. */
+function SecretCheckButton(props: {
+  readonly environmentId: EnvironmentId;
+  readonly secret: SecretReference;
+  readonly label: string;
+  readonly disabled?: boolean | undefined;
+}) {
+  const { t: uiT } = useUiLanguage();
+
+  const { environmentId, secret } = props;
+  const supported = useAtomValue(
+    serverEnvironment.configValueAtom(environmentId),
+    (config) => config?.environment.capabilities.secretSourceCheck === true,
+  );
+  const canCheck = useAtomValue(serverEnvironment.checkSecretSource.permissionAtom(environmentId));
+  const checkSecretSource = useAtomCommand(serverEnvironment.checkSecretSource);
+  const secretKey = `${secret.provider}\u0000${secret.reference}`;
+  const [check, setCheck] = useState<{
+    readonly secretKey: string;
+    readonly state: SecretCheck;
+  } | null>(null);
+  const state = check?.secretKey === secretKey ? check.state : undefined;
+
+  const run = async () => {
+    setCheck({ secretKey, state: { status: "checking" } });
+    const response = await checkSecretSource({ environmentId, input: { source: secret } });
+    const next: SecretCheck =
+      response._tag !== "Success"
+        ? { status: "failed", detail: uiT("Could not reach the server") }
+        : response.value._tag === "Resolved"
+          ? { status: "resolved" }
+          : { status: "failed", detail: response.value.detail };
+    setCheck((previous) =>
+      previous?.secretKey === secretKey ? { secretKey, state: next } : previous,
+    );
+  };
+
+  if (!supported) return null;
+  const description = !canCheck
+    ? uiT("You cannot check secrets on this environment")
+    : state === undefined
+      ? uiT("Check that the secret resolves")
+      : state.status === "checking"
+        ? uiT("Checking the secret")
+        : state.status === "resolved"
+          ? uiT("Secret resolved")
+          : state.detail;
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span className="inline-flex">
+            <Button
+              type="button"
+              size="icon-micro"
+              variant="ghost-muted"
+              disabled={props.disabled === true || !canCheck || state?.status === "checking"}
+              onClick={() => void run()}
+              aria-label={
+                state?.status === "failed"
+                  ? uiT("{0} failed: {1}", { "0": props.label, "1": state.detail })
+                  : state?.status === "resolved"
+                    ? uiT("{0} resolved", { "0": props.label })
+                    : props.label
+              }
+            >
+              {state?.status === "checking" ? (
+                <Spinner />
+              ) : state?.status === "resolved" ? (
+                <CheckIcon className="text-success-foreground" />
+              ) : state?.status === "failed" ? (
+                <AlertTriangleIcon className="text-destructive" />
+              ) : (
+                <RefreshCwIcon />
+              )}
+            </Button>
+          </span>
+        }
+      />
+      <TooltipPopup side="top">{description}</TooltipPopup>
+    </Tooltip>
+  );
+}
+
 type SecretSourceInputProps = Omit<ComponentProps<typeof SecretInput>, "value" | "children"> & {
   readonly value: string | SecretReference;
+  /** Offers a check of the committed reference on this environment. */
+  readonly environmentId?: EnvironmentId | undefined;
   readonly sources: ReadonlyArray<SecretSource>;
   readonly onSecretChange: (secret: SecretReference | undefined) => void;
   /** Whether the selected source and committed field can be saved or used. */
@@ -129,12 +224,15 @@ type SecretSourceInputProps = Omit<ComponentProps<typeof SecretInput>, "value" |
 /** A secret entered here, or read from a secret provider when one is configured. */
 export function SecretSourceInput({
   value,
+  environmentId,
   sources,
   onSecretChange,
   onValidityChange,
   children,
   ...rest
 }: SecretSourceInputProps) {
+  const { t: uiT } = useUiLanguage();
+
   // A provider picked here applies once a reference for it is committed.
   const [pendingProvider, setPendingProvider] = useState<SecretProviderId | null>(null);
   const [rejectedReference, setRejectedReference] = useState<string | null>(null);
@@ -144,7 +242,7 @@ export function SecretSourceInput({
   const reference = secret !== undefined && secret.provider === provider ? secret.reference : "";
   const providerSource = sources.find((source) => source.id === provider);
   const definition = providerSource && builtInSecretProviderDefinitions.find(providerSource.kind);
-  const label = input["aria-label"] ?? "Secret";
+  const label = input["aria-label"] ?? uiT("Secret");
   const source =
     sources.length === 0 && provider === null ? null : (
       <SecretSourceSelect
@@ -170,41 +268,55 @@ export function SecretSourceInput({
       <SecretInput {...input} />
     ) : (
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <DraftInput
-          {...(input.id !== undefined ? { id: input.id } : {})}
-          size="sm"
-          font="mono"
-          value={rejectedReference ?? reference}
-          onCommit={(next) => {
-            if (next.trim().length === 0) {
+        <div className="flex min-w-0 items-center gap-1.5">
+          <DraftInput
+            {...(input.id !== undefined ? { id: input.id } : {})}
+            size="sm"
+            font="mono"
+            className="min-w-0 flex-1"
+            value={rejectedReference ?? reference}
+            onCommit={(next) => {
+              if (next.trim().length === 0) {
+                setRejectedReference(null);
+                onValidityChange?.(pendingProvider === null && secret !== undefined);
+                if (pendingProvider === null && secret !== undefined) onSecretChange(undefined);
+                return;
+              }
+              const decoded = decodeSecretReference({ provider, reference: next });
+              if (
+                Option.isNone(decoded) ||
+                definition?.isReference(decoded.value.reference) === false
+              ) {
+                setRejectedReference(next);
+                onValidityChange?.(false);
+                return;
+              }
               setRejectedReference(null);
-              onValidityChange?.(pendingProvider === null && secret !== undefined);
-              if (pendingProvider === null && secret !== undefined) onSecretChange(undefined);
-              return;
-            }
-            const decoded = decodeSecretReference({ provider, reference: next });
-            if (
-              Option.isNone(decoded) ||
-              definition?.isReference(decoded.value.reference) === false
-            ) {
-              setRejectedReference(next);
-              onValidityChange?.(false);
-              return;
-            }
-            setRejectedReference(null);
-            setPendingProvider(null);
-            onValidityChange?.(true);
-            onSecretChange(decoded.value);
-          }}
-          autoComplete="off"
-          placeholder={definition?.referencePlaceholder}
-          spellCheck={false}
-          aria-label={`${label} reference`}
-          aria-invalid={rejectedReference !== null}
-        />
+              setPendingProvider(null);
+              onValidityChange?.(true);
+              onSecretChange(decoded.value);
+            }}
+            autoComplete="off"
+            placeholder={definition?.referencePlaceholder}
+            spellCheck={false}
+            aria-label={uiT("{0} reference", { "0": label })}
+            aria-invalid={rejectedReference !== null}
+          />
+          {environmentId !== undefined &&
+          secret !== undefined &&
+          pendingProvider === null &&
+          rejectedReference === null ? (
+            <SecretCheckButton
+              environmentId={environmentId}
+              secret={secret}
+              label={uiT("Check {0}", { "0": label })}
+              disabled={input.disabled}
+            />
+          ) : null}
+        </div>
         {rejectedReference !== null ? (
           <p className="text-2xs text-destructive">
-            {definition?.invalidReferenceMessage ?? "Enter a valid secret reference."}
+            {definition?.invalidReferenceMessage ?? uiT("Enter a valid secret reference.")}
           </p>
         ) : null}
       </div>

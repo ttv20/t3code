@@ -1,11 +1,9 @@
-import { Check, Copy } from "lucide";
-import { useUiLanguage } from "../i18n";
-
-import { MorphIcon } from "~/components/MorphIcon";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { cn } from "~/lib/utils";
-
 import { Button } from "./ui/button";
+
+import { useUiLanguage } from "../i18n";
 
 export function CommandBlock({
   command,
@@ -39,7 +37,7 @@ export function CommandBlock({
         aria-label={uiT("Copy command")}
         onClick={() => copyToClipboard(command, undefined)}
       >
-        <MorphIcon className="size-3.5" icon={isCopied ? Check : Copy} />
+        {isCopied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
       </Button>
     </div>
   );

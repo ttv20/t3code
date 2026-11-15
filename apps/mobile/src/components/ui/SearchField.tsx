@@ -1,6 +1,5 @@
 import type { RefObject } from "react";
 import { Pressable, TextInput, type TextInputInstance, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "./AppSymbol";
 import { useAndroidControlSizing } from "./useAndroidControlSizing";
@@ -24,7 +23,6 @@ export function SearchField({
   value,
   onChangeText,
 }: SearchFieldProps) {
-  const { t: uiT } = useUiLanguage();
   const { scale, mediumIconSize } = useAndroidControlSizing();
   return (
     <View
@@ -47,7 +45,7 @@ export function SearchField({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        placeholder={uiT(placeholder)}
+        placeholder={placeholder}
         placeholderTextColorClassName="accent-placeholder"
         selectionColorClassName="accent-focus/32"
         cursorColorClassName="accent-focus"

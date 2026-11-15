@@ -33,12 +33,10 @@ import { Sheet } from "./ui/Sheet";
 import { VideoPreviewModal } from "./ui/VideoPreviewModal";
 
 function ContextField(props: { label: string; value: string | null | undefined; code?: boolean }) {
-  const { t: uiT } = useUiLanguage();
-
   if (!props.value) return null;
   return (
     <View className="gap-1">
-      <Text className="text-xs text-foreground-muted">{uiT(props.label)}</Text>
+      <Text className="text-xs text-foreground-muted">{props.label}</Text>
       {props.code && (props.label === "HTML" || props.label === "Styles") ? (
         <View
           className="overflow-hidden rounded-xl border border-border"

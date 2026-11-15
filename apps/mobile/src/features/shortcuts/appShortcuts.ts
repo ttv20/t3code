@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import type { Action } from "expo-quick-actions";
 import type { NavigationState } from "@react-navigation/native";
 import { EnvironmentId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
@@ -89,10 +90,11 @@ export function withRecentThreadShortcut(
 }
 
 export function buildShortcutActions(recents: ReadonlyArray<RecentThreadShortcut>): Action[] {
+  const uiT = readUiTranslator();
   return [
     {
       id: NEW_TASK_SHORTCUT_ID,
-      title: "New task",
+      title: uiT("New task"),
       icon: SHORTCUT_ICON,
       params: { href: NEW_TASK_SHORTCUT_HREF },
     },

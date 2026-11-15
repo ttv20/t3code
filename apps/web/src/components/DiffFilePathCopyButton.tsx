@@ -1,22 +1,16 @@
-import { Check, Copy } from "lucide";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useRef } from "react";
-import { MorphIcon } from "~/components/MorphIcon";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
-import { useUiLanguage } from "../i18n";
-import { cn } from "../lib/utils";
-import {
-  ANCHORED_COPY_TOAST_TIMEOUT_MS,
-  showAnchoredCopyErrorToast,
-  showAnchoredCopySuccessToast,
-} from "./ui/anchoredCopyToast";
+import { ANCHORED_COPY_TOAST_TIMEOUT_MS, showAnchoredCopyErrorToast } from "./ui/anchoredCopyToast";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+
+import { useUiLanguage } from "../i18n";
 
 export function DiffFilePathCopyButton({ filePath }: { filePath: string }) {
   const { t: uiT } = useUiLanguage();
   const ref = useRef<HTMLButtonElement>(null);
   const { copyToClipboard, isCopied } = useCopyToClipboard<void>({
-    onCopy: () => showAnchoredCopySuccessToast(ref),
     onError: (error) => showAnchoredCopyErrorToast(ref, error),
     timeout: ANCHORED_COPY_TOAST_TIMEOUT_MS,
   });
@@ -34,10 +28,7 @@ export function DiffFilePathCopyButton({ filePath }: { filePath: string }) {
           />
         }
       >
-        <MorphIcon
-          className={cn("size-3", isCopied && "text-success")}
-          icon={isCopied ? Check : Copy}
-        />
+        {isCopied ? <CheckIcon className="size-3 text-success" /> : <CopyIcon className="size-3" />}
       </TooltipTrigger>
       <TooltipPopup>
         <p>{isCopied ? uiT("Copied") : uiT("Copy path")}</p>

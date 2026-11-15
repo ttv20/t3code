@@ -1,24 +1,31 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useStableCallback } from "../../hooks/useStableCallback";
+import { type EnvironmentId } from "@t3tools/contracts";
 import { type EnvironmentConnectionPresentation } from "@t3tools/client-runtime/connection";
+import { useAtomValue } from "@effect/atom-react";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { type EnvironmentId } from "@t3tools/contracts";
-import { useNavigate } from "@tanstack/react-router";
 import { WifiOffIcon } from "lucide-react";
-import { useState } from "react";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import { environmentCatalog } from "../../connection/catalog";
+import { ConnectionDiagnosisHeadline } from "../settings/ConnectionDiagnosisDetails";
 import { isDesktopLocalConnectionTarget } from "../../connection/desktopLocal";
 import {
   useEnvironmentDisconnectDelay,
   useEnvironmentStateHeldFor,
 } from "../../hooks/useEnvironmentDisconnectDelay";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { useUiLanguage } from "../../i18n";
-import { type EnvironmentPresentation } from "../../state/environments";
 import { serverEnvironment } from "../../state/server";
+import { type EnvironmentPresentation } from "../../state/environments";
+import type { ComposerBannerStackItem } from "./ComposerBannerStack";
+import { ENVIRONMENT_RECONNECT_WARNING_GRACE_MS } from "../ChatView.logic";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { Button } from "../ui/button";
+import { ServerUpdateAction, serverUpdateStageLabel } from "../ServerUpdateAction";
+import { useAutoBalanceUpdateBanner } from "./useAutoBalanceUpdateBanner";
+import { ComposerServerUpdateIcon } from "./ComposerServerUpdateStatus";
 import {
   dismissServerUpdateFailure,
   isServerUpdateFailureDismissed,
@@ -26,14 +33,8 @@ import {
   resolveServerSelfUpdateCapability,
   supportsDesktopAppUpdate,
 } from "../../versionSkew";
-import { ENVIRONMENT_RECONNECT_WARNING_GRACE_MS } from "../ChatView.logic";
-import { ServerUpdateAction, serverUpdateStageLabel } from "../ServerUpdateAction";
-import { ConnectionDiagnosisHeadline } from "../settings/ConnectionDiagnosisDetails";
-import { Button } from "../ui/button";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import type { ComposerBannerStackItem } from "./ComposerBannerStack";
-import { ComposerServerUpdateIcon } from "./ComposerServerUpdateStatus";
-import { useAutoBalanceUpdateBanner } from "./useAutoBalanceUpdateBanner";
+
+import { useUiLanguage } from "../../i18n";
 
 export type EnvironmentUnavailableState = {
   readonly environmentId: EnvironmentId;
@@ -185,8 +186,11 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
       unavailableConnection !== null &&
       (unavailableConnection.phase === "connecting" ||
         unavailableConnection.phase === "reconnecting");
+    const awaitingApproval = unavailableConnection?.awaitingApproval === true;
     const suppressUnavailableBanner =
-      environmentReconnecting && (updateRunning || !reconnectWarningGraceElapsed);
+      environmentReconnecting &&
+      !awaitingApproval &&
+      (updateRunning || !reconnectWarningGraceElapsed);
     const showUnavailableBanner =
       activeEnvironmentUnavailableState !== null &&
       unavailableConnection !== null &&
@@ -197,16 +201,22 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
         variant: unavailableConnection.phase === "error" ? "error" : "warning",
         group: "environment",
         icon: <WifiOffIcon />,
-        title: uiT("{0} is {1}", {
-          "0": activeEnvironmentUnavailableState.label,
-          "1": environmentReconnecting ? "reconnecting" : "offline",
-        }),
-        description: activeEnvironment ? (
+        title: awaitingApproval
+          ? uiT("{0} is waiting to approve this device", {
+              "0": activeEnvironmentUnavailableState.label,
+            })
+          : uiT("{0} is {1}", {
+              "0": activeEnvironmentUnavailableState.label,
+              "1": environmentReconnecting ? "reconnecting" : "offline",
+            }),
+        description: awaitingApproval ? (
+          (unavailableConnection.error ?? undefined)
+        ) : activeEnvironment ? (
           <ConnectionDiagnosisHeadline environment={activeEnvironment} />
         ) : undefined,
         actions: (
           <>
-            {!environmentReconnecting ? (
+            {unavailableConnection.phase !== "connecting" ? (
               <Button
                 size="xs"
                 variant="ghost"
@@ -216,7 +226,7 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
                   )
                 }
               >
-                {uiT("Reconnect")}
+                {environmentReconnecting ? uiT("Retry now") : uiT("Reconnect")}
               </Button>
             ) : null}
             {disconnectAction}
@@ -238,7 +248,10 @@ export function useSystemComposerBanners(input: SystemComposerBannersInput) {
         variant: updateFailed ? "error" : "default",
         group: "environment",
         icon: <ComposerServerUpdateIcon status={serverUpdateState.status} />,
-        title: `${updateFailed ? "Could not update" : "Updating"} ${versionMismatchServerLabel}`,
+        title: uiT("{0} {1}", {
+          "0": updateFailed ? "Could not update" : "Updating",
+          "1": versionMismatchServerLabel,
+        }),
         description:
           serverUpdateState.status === "failed"
             ? serverUpdateState.message

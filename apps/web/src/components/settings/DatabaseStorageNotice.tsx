@@ -10,8 +10,6 @@ import {
 } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 import { type ReactNode, useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
@@ -29,6 +27,8 @@ import {
 import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const DismissedEnvironmentIds = Schema.Array(Schema.String);
 const reclaimPermissionsAtom = environmentAtomList(
@@ -101,7 +101,7 @@ export function DatabaseStorageNotice({
         ) : (
           <SettingsRow
             key={environmentId}
-            title={`${formatGiB(status.reclaimableBytes)} on ${label}`}
+            title={uiT("{0} on {1}", { "0": formatGiB(status.reclaimableBytes), "1": label })}
             description={<code className="select-text break-all">{status.compactCommand}</code>}
             control={
               <div className="flex flex-wrap items-center gap-1.5">
@@ -164,11 +164,11 @@ function ReclaimRow({
   };
   return (
     <SettingsRow
-      title={`${amount} on ${label}`}
+      title={uiT("{0} on {1}", { "0": amount, "1": label })}
       description={
         status.reclaimFailure === undefined
-          ? `Restarts T3 Code there. It is offline for about ${minutes} min.`
-          : `The last attempt failed: ${status.reclaimFailure}`
+          ? uiT("Restarts T3 Code there. It will be offline for about {0} min.", { "0": minutes })
+          : uiT("The last attempt failed: {0}", { "0": status.reclaimFailure })
       }
       control={
         <div className="flex flex-wrap items-center gap-1.5">
@@ -190,9 +190,9 @@ function ReclaimRow({
                 <AlertDialogDescription>
                   <UiText
                     message={
-                      "T3 Code on {0} stops, rebuilds its database, and starts again. It is offline for about {1} min. Running agents stop when it restarts."
+                      "T3 Code on {0} stops, rebuilds its database, and starts again. It will be offline for about {1} min. Running agents stop when it restarts."
                     }
-                    values={{ 0: label, 1: minutes }}
+                    values={{ "0": label, "1": minutes }}
                   />
                 </AlertDialogDescription>
               </AlertDialogHeader>

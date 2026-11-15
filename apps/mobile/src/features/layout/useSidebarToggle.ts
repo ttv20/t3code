@@ -1,13 +1,14 @@
 import { usePaneRole } from "../../components/ui/Pane";
+import { useAdaptiveWorkspaceLayout, useWorkspacePaneState } from "./adaptive-workspace-context";
 import { useUiLanguage } from "../../i18n";
-import { useAdaptiveWorkspaceLayout } from "./adaptive-workspace-context";
 
 /** The content pane's sidebar button, or null where there's no sidebar beside it to toggle. */
 export function useSidebarToggle() {
   const { t: uiT } = useUiLanguage();
 
   const role = usePaneRole();
-  const { layout, panes, sidebarToggleable, togglePrimarySidebar } = useAdaptiveWorkspaceLayout();
+  const { layout, togglePrimarySidebar } = useAdaptiveWorkspaceLayout();
+  const { panes, sidebarToggleable } = useWorkspacePaneState();
   if (role !== "content" || !sidebarToggleable) return null;
   const maximizes = panes.primarySidebarVisible && layout.variant !== "medium";
   return {

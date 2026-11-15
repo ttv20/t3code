@@ -1,22 +1,23 @@
 import { type RefObject, use, useRef, useState } from "react";
 import { Keyboard, type TextInputInstance, View } from "react-native";
+import { useHardwareBack } from "../../lib/backHandler";
+import { useToolbarLayout } from "./useToolbarLayout";
+import { BottomSheetContext } from "./BottomSheetContext";
+import { RoutedFormSheetContext } from "./RoutedFormSheetContext";
+import { NativeStackScreenOptions } from "../../native/StackHeader";
+import { useSidebarToggle } from "../../features/layout/useSidebarToggle";
 import { useAdaptiveWorkspaceLayout } from "../../features/layout/adaptive-workspace-context";
 import { InspectorCloseContext } from "../../features/layout/inspector-bar-store";
-import { useSidebarToggle } from "../../features/layout/useSidebarToggle";
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
 import { useUiLanguage } from "../../i18n";
-import { useHardwareBack } from "../../lib/backHandler";
-import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { AndroidHeaderIconButton, AndroidScreenHeader } from "./AndroidScreenHeader.android";
 import type { AppBarMenuItem, AppBarProps, AppBarSearch } from "./AppBar.types";
 import { Button } from "./Button";
 import { Menu } from "./Menu";
-import { RoutedFormSheetContext } from "./RoutedFormSheetContext";
 import { ScreenHeaderButton } from "./ScreenHeaderButton.android";
 import { SearchField } from "./SearchField";
 import { useHasWorkspaceAppBar, WorkspaceAppBar } from "./WorkspaceAppBar.android";
 import { findAppBarMenuItem, menuActionsFromAppBarItems } from "./menuActionItems";
-import { useToolbarLayout } from "./useToolbarLayout";
 
 function selectMenuItem(items: ReadonlyArray<AppBarMenuItem>, id: string) {
   const action = findAppBarMenuItem(items, id);
@@ -85,12 +86,14 @@ function AppBarView(props: AppBarProps & { readonly searchState?: SearchState })
   const inWorkspace = useHasWorkspaceAppBar();
   const sidebarToggle = useSidebarToggle();
   const closeInspector = use(InspectorCloseContext);
+  // A bottom sheet owns the pull at its top, so refresh needs a button there.
+  const inBottomSheet = use(BottomSheetContext);
   const inline = search?.mode === "inline";
   const searching = searchState?.searching === true;
   const actions = props.refresh
     ? [
         ...(props.actions ?? []),
-        { ...props.refresh, icon: "arrow.clockwise" as const, overflowOnly: true },
+        { ...props.refresh, icon: "arrow.clockwise" as const, overflowOnly: !inBottomSheet },
       ]
     : props.actions;
   const openSearch = () => searchState?.open();
@@ -207,7 +210,6 @@ function AppBarView(props: AppBarProps & { readonly searchState?: SearchState })
       }
       embedded={props.sheet}
       hideBottomBorder={props.hideBottomBorder}
-      compact={props.compact}
       actions={
         search && !inline
           ? [

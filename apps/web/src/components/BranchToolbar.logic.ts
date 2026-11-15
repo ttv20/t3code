@@ -1,15 +1,18 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-import { toSortableTimestamp } from "@t3tools/client-runtime/state/thread-sort";
 import type {
   EnvironmentId,
   EnvironmentMachineKind,
-  ProjectId,
   VcsRef,
+  ProjectId,
   WorktreeSubmodules,
 } from "@t3tools/contracts";
+import type { ThreadStructureRuntime } from "@t3tools/client-runtime/state/shell";
+import * as Schema from "effect/Schema";
 import { sanitizeNewRefName } from "@t3tools/shared/git";
 import { workspaceRelativeFilePath } from "@t3tools/shared/path";
-import * as Schema from "effect/Schema";
+import { toSortableTimestamp } from "@t3tools/client-runtime/state/thread-sort";
+import { deriveCanInterruptRunningThread } from "../session-logic";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+
 export { deriveLocalBranchNameFromRemoteRef, sanitizeNewRefName } from "@t3tools/shared/git";
 
 export interface EnvironmentOption {
@@ -90,8 +93,8 @@ export function resolveContextStripLabelsCompact(input: {
     : input.neededWidth > input.availableWidth;
 }
 
-export function resolveEnvModeLabel(mode: EnvMode): string {
-  return mode === "worktree" ? "New worktree" : "Current checkout";
+export function resolveEnvModeLabel(mode: EnvMode, translate = createUiTranslator("en")): string {
+  return mode === "worktree" ? translate("New worktree") : translate("Current checkout");
 }
 
 export const WORKTREE_SUBMODULES_LABELS: Record<WorktreeSubmodules, string> = {
@@ -100,16 +103,25 @@ export const WORKTREE_SUBMODULES_LABELS: Record<WorktreeSubmodules, string> = {
   none: "Skip",
 };
 
-export function resolveCurrentWorkspaceLabel(activeWorktreePath: string | null): string {
-  return activeWorktreePath ? "Current worktree" : resolveEnvModeLabel("local");
+export function resolveCurrentWorkspaceLabel(
+  activeWorktreePath: string | null,
+  translate = createUiTranslator("en"),
+): string {
+  return activeWorktreePath
+    ? translate("Current worktree")
+    : resolveEnvModeLabel("local", translate);
 }
 
 export function resolveLockedWorkspaceLabel(
   activeWorktreePath: string | null,
   effectiveEnvMode: EnvMode,
+  translate = createUiTranslator("en"),
 ): string {
-  if (activeWorktreePath) return "Worktree";
-  return effectiveEnvMode === "worktree" ? resolveEnvModeLabel("worktree") : "Local checkout";
+  if (activeWorktreePath)
+    return activeWorktreePath.split(/[\\/]/).findLast(Boolean) ?? translate("Worktree");
+  return effectiveEnvMode === "worktree"
+    ? resolveEnvModeLabel("worktree", translate)
+    : translate("Local checkout");
 }
 
 export interface PreviousWorktreeSeed {
@@ -198,6 +210,46 @@ export function resolveBranchToolbarValue(input: {
   return currentGitBranch ?? activeThreadBranch;
 }
 
+export interface BranchHold {
+  readonly branch: string | null;
+  readonly environmentId: EnvironmentId;
+  /**
+   * Each checkout the thread can show before it catches up, with the branch its status reported
+   * before the switch. A move from a worktree to the project root lists both.
+   */
+  readonly checkouts: ReadonlyArray<{ readonly cwd: string; readonly replaces: string | null }>;
+}
+
+/**
+ * A finished checkout's branch stays on screen until status reports any change, because the status
+ * stream and the RPC reply are not ordered and showing status first would flip back to the old branch.
+ */
+export function isBranchHoldCurrent(
+  hold: BranchHold,
+  current: {
+    readonly canonicalBranch: string | null;
+    readonly environmentId: EnvironmentId;
+    readonly cwd: string | null;
+  },
+): boolean {
+  return (
+    hold.environmentId === current.environmentId &&
+    hold.checkouts.some(
+      (checkout) => checkout.cwd === current.cwd && checkout.replaces === current.canonicalBranch,
+    )
+  );
+}
+
+/**
+ * The base a New worktree thread gets without the user picking one. Only a listed ref qualifies:
+ * during a clone the status names an unborn HEAD that no ref backs.
+ */
+export function resolveDefaultWorktreeBaseBranch(
+  refs: ReadonlyArray<Pick<VcsRef, "name" | "isDefault" | "current">>,
+): string | null {
+  return (refs.find((ref) => ref.isDefault) ?? refs.find((ref) => ref.current))?.name ?? null;
+}
+
 export function resolveBranchTriggerLabel(
   input: {
     activeWorktreePath: string | null;
@@ -249,6 +301,20 @@ export function resolveLocalCheckoutBranchMismatch(input: {
   return { threadBranch: activeThreadBranch, currentBranch: currentGitBranch };
 }
 
+/**
+ * Keeps a picked ref's worktree claim only when a read in that worktree finds it checked out.
+ * `freshRead` is `null` when the read failed.
+ */
+export function resolveConfirmedSelectedRef(
+  listedRef: VcsRef,
+  freshRead: { readonly refs: ReadonlyArray<VcsRef> } | null,
+): VcsRef {
+  const checkedOut =
+    freshRead?.refs.some((ref) => ref.name === listedRef.name && !ref.isRemote && ref.current) ??
+    false;
+  return checkedOut ? listedRef : { ...listedRef, worktreePath: null };
+}
+
 export function resolveBranchSelectionTarget(input: {
   activeProjectCwd: string;
   activeProjectCheckoutRoot?: string | undefined;
@@ -258,6 +324,7 @@ export function resolveBranchSelectionTarget(input: {
   checkoutCwd: string;
   nextWorktreePath: string | null;
   reuseExistingWorktree: boolean;
+  staysInActiveCheckout: boolean;
 } {
   const { activeProjectCwd, activeWorktreePath, refName } = input;
 
@@ -267,10 +334,13 @@ export function resolveBranchSelectionTarget(input: {
       input.activeProjectCheckoutRoot === undefined
         ? workspaceRelativeFilePath(activeProjectCwd, refName.worktreePath) !== null
         : workspaceRelativeFilePath(input.activeProjectCheckoutRoot, refName.worktreePath) === ".";
+    const nextWorktreePath = isProjectCheckout ? null : refName.worktreePath;
     return {
       checkoutCwd: refName.worktreePath,
-      nextWorktreePath: isProjectCheckout ? null : refName.worktreePath,
+      nextWorktreePath,
       reuseExistingWorktree: true,
+      // Listed refs can predate a checkout made outside the picker, so only Git can confirm this one.
+      staysInActiveCheckout: nextWorktreePath === activeWorktreePath,
     };
   }
 
@@ -281,7 +351,19 @@ export function resolveBranchSelectionTarget(input: {
     checkoutCwd: nextWorktreePath ?? activeProjectCwd,
     nextWorktreePath,
     reuseExistingWorktree: false,
+    staysInActiveCheckout: nextWorktreePath === activeWorktreePath,
   };
+}
+
+export function isWorktreeChangeBlocked(input: {
+  runtime: ThreadStructureRuntime | null;
+  currentWorktreePath: string | null;
+  nextWorktreePath: string | null;
+}): boolean {
+  return (
+    input.nextWorktreePath !== input.currentWorktreePath &&
+    deriveCanInterruptRunningThread(true, input.runtime)
+  );
 }
 
 export function shouldIncludeBranchPickerItem(input: {

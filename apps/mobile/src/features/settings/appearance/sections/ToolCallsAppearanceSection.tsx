@@ -34,7 +34,7 @@ export function ToolCallsAppearanceSection() {
         {TOOL_CALL_VISIBILITY_OPTIONS.map((option, index) => (
           <ListChoiceRow
             key={option.value}
-            label={option.label}
+            label={uiT(option.label)}
             selected={selected === option.value}
             separated={index > 0}
             disabled={selected === null}

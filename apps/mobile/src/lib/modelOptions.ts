@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../state/ui-language";
 import {
   normalizeProviderAccentColor,
   resolveProviderInstanceDisplayName,
@@ -22,6 +23,7 @@ import {
   getProviderOptionDescriptors,
 } from "@t3tools/shared/model";
 import { resolveModelShortName } from "@t3tools/client-runtime/provider-clients";
+import { resolveProvidersForCwd } from "@t3tools/client-runtime/providerSkills";
 
 export type ModelOption = {
   readonly key: string;
@@ -159,6 +161,16 @@ function normalizeSelectionOptions(
       };
 }
 
+/** The config as a project at `cwd` sees it, with that project's own provider models. */
+export function serverConfigForCwd<C extends T3ServerConfig | null | undefined>(
+  config: C,
+  cwd: string | null,
+): C {
+  if (!config) return config;
+  const providers = resolveProvidersForCwd(config.providers, cwd);
+  return providers === config.providers ? config : { ...config, providers };
+}
+
 /** Require explicit projectId or null so omissions cannot bypass project provider disablement. */
 export function isModelSelectionUnavailable(
   config: T3ServerConfig | null | undefined,
@@ -194,6 +206,7 @@ export function describeUnavailableModelSelection(
   selection: ModelSelection,
   projectId: ProjectId | null,
 ): { readonly title: string; readonly detail: string } {
+  const uiT = readUiTranslator();
   const provider = config?.providers.find(
     (candidate) => candidate.instanceId === selection.instanceId,
   );
@@ -207,18 +220,20 @@ export function describeUnavailableModelSelection(
       instanceId: selection.instanceId,
     });
     return {
-      title: "Provider not allowed",
-      detail: `${disallowedProviderMessage(config?.managedPolicy?.organization, label)} Choose another model.`,
+      title: uiT("Provider not allowed"),
+      detail: uiT("{0} Choose another model.", {
+        "0": disallowedProviderMessage(config?.managedPolicy?.organization, label),
+      }),
     };
   }
   return isDisabledForProject(config, provider, selection.instanceId, projectId)
     ? {
-        title: "Model turned off for this project",
-        detail: "Turn it back on from web or desktop, or choose another model.",
+        title: uiT("Model turned off for this project"),
+        detail: uiT("Turn it back on from web or desktop, or choose another model."),
       }
     : {
-        title: "Antigravity model unavailable",
-        detail: "Set up Antigravity on web or desktop, or choose another model.",
+        title: uiT("Antigravity model unavailable"),
+        detail: uiT("Set up Antigravity on web or desktop, or choose another model."),
       };
 }
 

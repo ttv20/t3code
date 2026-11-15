@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { formatFilePathForClipboard } from "@t3tools/client-runtime/media-actions";
 import { fileBasename } from "@t3tools/shared/path";
 import type { ThreadId } from "@t3tools/contracts";
@@ -68,17 +69,20 @@ export function fileChipShareSource(target: FileChipTarget, threadId: ThreadId) 
 }
 
 export function fileChipMenu(target: FileChipTarget): MarkdownFileContextMenu {
+  const uiT = readUiTranslator();
   return {
     title: target.fullPath ?? target.relativePath ?? "",
     actions: [
-      ...(target.fullPath ? [{ id: "copy-full-path", title: "Copy full path" }] : []),
-      ...(target.relativePath ? [{ id: "copy-relative-path", title: "Copy relative path" }] : []),
-      { id: "open-file", title: "Open in file viewer" },
+      ...(target.fullPath ? [{ id: "copy-full-path", title: uiT("Copy full path") }] : []),
+      ...(target.relativePath
+        ? [{ id: "copy-relative-path", title: uiT("Copy relative path") }]
+        : []),
+      { id: "open-file", title: uiT("Open in file viewer") },
       ...(fileChipMetadata(target)
         ? [
             {
               id: "save",
-              title: "Save or share",
+              title: uiT("Save or share"),
             },
           ]
         : []),

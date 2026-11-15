@@ -23,6 +23,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -33,6 +34,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text as RNText,
   useAnimatedValue,
   View,
   type ColorValue,
@@ -44,10 +46,17 @@ import { useUiLanguage } from "../../i18n";
 import { environmentThreadDetails, threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useMarkdownCodeHighlight } from "./markdownCodeHighlightState";
-import { ProposedPlanCard } from "./ProposedPlanCard";
-import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
-import { ThreadCommandOutput, useCommandOutputStreaming } from "./thread-command-output";
-import { ThreadSubagentGroup } from "./thread-subagent-group";
+import { highlightCommand, type HighlightedLines } from "../../lib/highlights";
+import {
+  commandHighlightLanguage,
+  withVisibleControlCharacters,
+} from "@t3tools/client-runtime/work-log/command-label";
+import { AppText as Text } from "../../components/ui/AppText";
+import { T3Wordmark } from "../../components/T3Wordmark";
+import { BrowserAppIcon } from "./BrowserAppIcon";
+import { useAppActive, useReduceMotionEnabled } from "../../lib/appState";
+import { cn } from "../../lib/cn";
+import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
 import {
   WorkLogBlock,
   WorkLogIconSlot,
@@ -55,7 +64,6 @@ import {
   WorkLogPressable,
   WorkLogRows,
 } from "./work-log-layout";
-
 import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
 import {
   isJsonToolText,
@@ -79,13 +87,8 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { T3Wordmark } from "../../components/T3Wordmark";
-import { AppText as Text } from "../../components/ui/AppText";
 import { FilePreviewGallery } from "../../components/ui/FilePreviewGallery";
 import type { FilePreviewSource } from "../../components/ui/FilePreviewModal";
-import { useAppActive, useReduceMotionEnabled } from "../../lib/appState";
-import { cn } from "../../lib/cn";
-import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
 import {
   formatItemFullDetail,
   workEntryRowLabel,
@@ -95,7 +98,6 @@ import type { MarkdownImageRenderer } from "../../native/SelectableMarkdownText"
 import { useAssetUrl } from "../../state/assets";
 import { useTurnItemDetail } from "../../state/queries";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
-import { BrowserAppIcon } from "./BrowserAppIcon";
 import {
   resolveThreadWorkGroupInitialScroll,
   type ThreadWorkGroupScrollPosition,
@@ -103,6 +105,10 @@ import {
 import { ThreadMarkdownImage } from "./ThreadMarkdownImage";
 import { useOpenLinkedThread } from "./useOpenLinkedThread";
 import { startShimmerSteps } from "./work-shimmer-steps";
+import { ProposedPlanCard } from "./ProposedPlanCard";
+import { QuestionAnswerHistory } from "./QuestionAnswerHistory";
+import { ThreadCommandOutput, useCommandOutputStreaming } from "./thread-command-output";
+import { ThreadSubagentGroup } from "./thread-subagent-group";
 
 const SHIMMER_WIDTH = 72;
 const SHIMMER_ICON_AND_GAP_WIDTH = 30;
@@ -211,8 +217,6 @@ function ShimmerWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <View className="flex-row items-center gap-1.5">
       {props.showIcon ? (
@@ -244,7 +248,7 @@ function ShimmerWorkContent(props: {
         numberOfLines={1}
         onTextLayout={props.onTextLayout}
       >
-        {uiT(props.label)}
+        {props.label}
       </Text>
     </View>
   );
@@ -262,7 +266,7 @@ export function ShimmeringWorkContent(props: {
   readonly themeAppearance?: "light" | "dark";
   readonly toolIcon?: ToolActivityIcon;
 }) {
-  const { direction, t: uiT } = useUiLanguage();
+  const { direction } = useUiLanguage();
 
   const [availableWidth, setAvailableWidth] = useState(0);
   const [textWidth, setTextWidth] = useState(0);
@@ -316,7 +320,7 @@ export function ShimmeringWorkContent(props: {
         highlighted={false}
         icon={props.icon}
         iconSubtleColor={props.iconSubtleColor}
-        label={uiT(props.label)}
+        label={props.label}
         showIcon={props.showIcon}
         themeAppearance={props.themeAppearance}
         toolIcon={props.toolIcon}
@@ -373,7 +377,7 @@ export function ShimmeringWorkContent(props: {
                 highlighted
                 icon={props.icon}
                 iconSubtleColor={props.iconSubtleColor}
-                label={uiT(props.label)}
+                label={props.label}
                 showIcon={props.showIcon}
                 themeAppearance={props.themeAppearance}
                 toolIcon={props.toolIcon}
@@ -389,7 +393,7 @@ export function ShimmeringWorkContent(props: {
 function workRowSymbolName(icon: ThreadFeedActivity["icon"]): WorkContentIcon {
   switch (icon) {
     case "agent":
-      return { ios: "sparkles", android: "auto_awesome" };
+      return "robot";
     case "alert":
       return { ios: "exclamationmark.triangle", android: "error" };
     case "browser":
@@ -826,6 +830,31 @@ function ToolCodeText({
   readonly theme: "light" | "dark";
 }) {
   const lines = useMarkdownCodeHighlight({ code, language, theme, enabled: true });
+  return <HighlightedCodeText code={code} lines={lines} />;
+}
+
+function CommandCodeText({
+  command,
+  theme,
+}: {
+  readonly command: string;
+  readonly theme: "light" | "dark";
+}) {
+  const code = withVisibleControlCharacters(command.trim());
+  const lines = useMemo(
+    () => highlightCommand(code, commandHighlightLanguage(code), theme),
+    [code, theme],
+  );
+  return <HighlightedCodeText code={code} lines={lines} />;
+}
+
+function HighlightedCodeText({
+  code,
+  lines,
+}: {
+  readonly code: string;
+  readonly lines: HighlightedLines | null;
+}) {
   let offset = 0;
   const highlighted = lines?.flatMap((line, lineIndex) => {
     const separator = lineIndex > 0 ? "\n" : "";
@@ -835,10 +864,11 @@ function ToolCodeText({
       ...line.map((token) => {
         const start = offset;
         offset += token.content.length;
+        // Plain RN Text inherits the mono font; AppText would reset it to sans.
         return (
-          <Text key={start} style={token.color ? { color: token.color } : undefined}>
+          <RNText key={start} style={token.color ? { color: token.color } : undefined}>
             {token.content}
-          </Text>
+          </RNText>
         );
       }),
     ];
@@ -1205,7 +1235,13 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
               props.renderReasoning(reasoning.text)
             ) : call ? (
               [
-                call.command,
+                call.command ? (
+                  <CommandCodeText
+                    key="command"
+                    command={call.command}
+                    theme={props.themeAppearance}
+                  />
+                ) : null,
                 ...(call.args ?? []).map(([key, value]) => {
                   const language =
                     key === "html"
@@ -1411,10 +1447,11 @@ export function ThreadThinkingRow(props: {
   readonly rowSizing: ReturnType<typeof deriveThreadWorkLogSizing>;
   readonly iconSubtleColor: ColorValue;
   readonly label?: string;
+  /** Replaces "Thinking" while the provider has not started a turn. */
+  readonly providerStartingLabel?: string | undefined;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const label = props.label ?? uiT("Thinking");
+  const label = props.providerStartingLabel ?? props.label ?? uiT("Thinking");
   return (
     <View
       accessible
@@ -1570,7 +1607,7 @@ function toolGroupSummarySymbolName(kind: ToolGroupSummaryKind): AppSymbolName {
     case "reasoning":
       return { ios: "brain", android: "psychology" };
     case "agent-tool":
-      return { ios: "sparkles", android: "auto_awesome" };
+      return "robot";
     case "tone-tool":
       return { ios: "bolt", android: "bolt" };
     case "dynamic-tool":

@@ -1,12 +1,9 @@
-import {
-  countMarkdownDirectionCharacters,
-  resolveMarkdownDirection,
-} from "@t3tools/client-runtime/markdown-direction";
+import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
   resolveProviderSkillSourceKind,
   type ProviderSkillSourceKind,
 } from "@t3tools/client-runtime/providerSkills";
-import type { ComposerPathSearchTarget } from "@t3tools/client-runtime/state/threads";
 import {
   type EnvironmentId,
   type EnvironmentMachineKind,
@@ -18,7 +15,6 @@ import {
   type ServerProviderSkill,
   type ServerProviderSlashCommand,
 } from "@t3tools/contracts";
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
 import {
   BlocksIcon,
   FolderIcon,
@@ -28,18 +24,23 @@ import {
   UserRoundIcon,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useLayoutEffect, useRef } from "react";
-import { useUiLanguage } from "../../i18n";
-
-import { cn } from "~/lib/utils";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 import { type ComposerSlashCommand, type ComposerTriggerKind } from "../../composer-logic";
-import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
-import { resolvePullRequestState } from "../pullRequest/pullRequestPresentation";
+import { cn } from "~/lib/utils";
 import { Badge } from "../ui/badge";
 import { Command, CommandGroup, CommandItem, CommandList } from "../ui/command";
-import { ComposerBanner } from "./ComposerBanner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
 import { PierreEntryIcon } from "./PierreEntryIcon";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
+import { ComposerBanner } from "./ComposerBanner";
+import { resolvePullRequestState } from "../pullRequest/pullRequestPresentation";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
+
+import { useUiLanguage } from "../../i18n";
 
 export type ComposerCommandItem =
   | {
@@ -200,24 +201,33 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
   onHighlight: (itemId: string | null) => void;
   onSelect: (item: ComposerCommandItem) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const label = props.item.label;
+  const followsContent =
+    props.item.type === "thread" ||
+    props.item.type === "pull-request" ||
+    props.item.type === "skill" ||
+    props.item.type === "slash-command" ||
+    props.item.type === "provider-slash-command";
+  const itemDirection = followsContent
+    ? resolveMarkdownDirection(
+        countMarkdownDirectionCharacters(`${label} ${props.item.description}`),
+      )
+    : undefined;
   const skillSourceKind =
     props.item.type === "skill" ? resolveProviderSkillSourceKind(props.item.skill) : null;
   const isSlashSkill =
     props.triggerKind === "slash-command" && props.item.type === "skill" ? props.item.skill : null;
   const pullRequestPresentation =
     props.item.type === "pull-request" ? resolvePullRequestState(props.item.pullRequest) : null;
-  const label = isSlashSkill
-    ? `/skill:${formatProviderSkillDisplayName(isSlashSkill)}`
-    : uiT(props.item.label);
-  const description = uiT(props.item.description);
-  const followsContent =
-    props.item.type === "skill" ||
-    props.item.type === "slash-command" ||
-    props.item.type === "provider-slash-command";
-  const itemDirection = followsContent
-    ? resolveMarkdownDirection(countMarkdownDirectionCharacters(`${label} ${description}`))
-    : undefined;
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const [descriptionTruncated, setDescriptionTruncated] = useState(false);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- measures the rendered description so only cut-off text gets a tooltip
+  useLayoutEffect(() => {
+    const description = descriptionRef.current;
+    setDescriptionTruncated(
+      props.isActive && !!description && description.scrollWidth > description.clientWidth,
+    );
+  }, [props.isActive]);
 
   return (
     <CommandItem
@@ -289,19 +299,20 @@ const ComposerCommandMenuItem = memo(function ComposerCommandMenuItem(props: {
             label
           )}
         </span>
-        <span
-          dir={
-            followsContent
-              ? resolveMarkdownDirection(
-                  countMarkdownDirectionCharacters(description),
-                  itemDirection,
-                )
-              : undefined
-          }
-          className="min-w-0 flex-1 truncate text-start text-secondary-label text-xs"
-        >
-          {description}
-        </span>
+        <Tooltip open={descriptionTruncated}>
+          <TooltipTrigger
+            tabIndex={-1}
+            render={
+              <span
+                ref={descriptionRef}
+                className="min-w-0 flex-1 truncate text-left text-secondary-label text-xs"
+              />
+            }
+          >
+            {props.item.description}
+          </TooltipTrigger>
+          <TooltipPopup>{props.item.description}</TooltipPopup>
+        </Tooltip>
         {skillSourceKind ? <SkillSourceBadge kind={skillSourceKind} /> : null}
       </span>
     </CommandItem>

@@ -4,6 +4,7 @@ import { WebView } from "react-native-webview";
 import { useUiLanguage } from "../i18n";
 
 import { FilePreviewLoading, FilePreviewNotice } from "../features/files/FilePreviewFeedback";
+import { webViewDecelerationRate } from "../lib/webViewDecelerationRate";
 
 export function PdfPreview(props: { readonly uri: string }) {
   const { t: uiT } = useUiLanguage();
@@ -18,6 +19,7 @@ export function PdfPreview(props: { readonly uri: string }) {
         source={{ uri: props.uri }}
         originWhitelist={["*"]}
         automaticallyAdjustContentInsets={false}
+        decelerationRate={webViewDecelerationRate}
         contentInsetAdjustmentBehavior="never"
         startInLoadingState
         onError={(event) =>

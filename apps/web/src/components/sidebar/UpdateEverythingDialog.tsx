@@ -1,10 +1,9 @@
+import { UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 import { ChevronRightIcon } from "lucide-react";
 import { Fragment, type RefObject, useRef } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { environmentThreadShells } from "~/state/threads";
 import {
   AlertDialog,
@@ -20,6 +19,8 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collaps
 import { MiddleTruncate } from "../ui/middle-truncate";
 import { ScrollArea } from "../ui/scroll-area";
 import type { RestartingMachine, UpdateEverythingRow } from "./updateEverything.logic";
+
+import { useUiLanguage } from "../../i18n";
 
 const isRunning = (status: string) =>
   status === "preparing" || status === "starting" || status === "running";
@@ -56,6 +57,8 @@ interface UpdateEverythingDialogProps {
   readonly disabledReason?: string | null;
   /** The confirmed work is starting; it cannot be cancelled from here. */
   readonly busy?: boolean;
+  /** Machines are still looking for provider updates, so more rows can appear. */
+  readonly checking?: boolean;
 }
 
 type UpdateEverythingDialogContentProps = Omit<
@@ -103,6 +106,7 @@ function UpdateEverythingDialogContent({
   notes = [],
   disabledReason = null,
   busy = false,
+  checking = false,
 }: UpdateEverythingDialogContentProps) {
   const { t: uiT } = useUiLanguage();
 
@@ -151,6 +155,11 @@ function UpdateEverythingDialogContent({
                 "0": providerCount,
               })
             : null}
+          {checking
+            ? uiT("{0}Checking for more…", {
+                "0": version !== null || providerCount > 0 ? " · " : "",
+              })
+            : null}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <ScrollArea scrollFade>
@@ -161,27 +170,37 @@ function UpdateEverythingDialogContent({
             </p>
           ))}
           {/* Machine names truncate first. Provider lists wrap between names, never inside one. */}
-          <div className="grid grid-cols-[minmax(4rem,max-content)_max-content_minmax(min-content,1fr)_max-content] gap-x-4 text-sm">
-            <div className="col-span-full grid grid-cols-subgrid border-b pb-1.5 text-muted-foreground text-xs">
-              <span>{uiT("Machine")}</span>
-              <span>{uiT("T3 Code")}</span>
-              <span>{uiT("Providers")}</span>
-              <span />
+          <div
+            role="table"
+            className="grid grid-cols-[minmax(4rem,max-content)_max-content_minmax(min-content,1fr)_max-content] gap-x-4 text-sm"
+          >
+            <div
+              role="row"
+              className="col-span-full grid grid-cols-subgrid border-b pb-1.5 text-muted-foreground text-xs"
+            >
+              <span role="columnheader">
+                <UiText message={"Machine"} />
+              </span>
+              <span role="columnheader">
+                <UiText message={"T3 Code"} />
+              </span>
+              <span role="columnheader">
+                <UiText message={"Providers"} />
+              </span>
+              <span role="columnheader" />
             </div>
             {updating.map((row) => (
               <div
                 key={row.environmentId ?? "this-app"}
+                role="row"
                 className="col-span-full grid grid-cols-subgrid border-b border-border/50 py-1.5 last:border-b-0"
               >
-                <span className="max-w-32 min-w-0">
-                  <bdi>
-                    <MiddleTruncate
-                      value={row.environmentId === null ? uiT("This app") : row.label}
-                    />
-                  </bdi>
+                <span role="cell" className="max-w-32 min-w-0">
+                  <span className="sr-only">{row.label}</span>
+                  <MiddleTruncate value={row.label} aria-hidden />
                 </span>
-                <span>
-                  {row.app !== null ? uiT(APP_LABELS[row.app]) : null}
+                <span role="cell">
+                  {row.app !== null ? APP_LABELS[row.app] : null}
                   {row.app === null && row.skipped !== null ? (
                     <span className="text-muted-foreground">{uiT("Skipped")}</span>
                   ) : null}
@@ -191,7 +210,7 @@ function UpdateEverythingDialogContent({
                     </span>
                   ) : null}
                 </span>
-                <span dir="ltr">
+                <span role="cell">
                   {row.providers.map((provider, index) => (
                     <Fragment key={provider}>
                       <bdi className="whitespace-nowrap">{provider}</bdi>
@@ -199,7 +218,7 @@ function UpdateEverythingDialogContent({
                     </Fragment>
                   ))}
                 </span>
-                <span className="text-right">
+                <span role="cell" className="text-right">
                   {row.environmentId !== null && restarting.has(row.environmentId) ? (
                     <RunningThreads environmentId={row.environmentId} />
                   ) : null}
@@ -220,7 +239,7 @@ function UpdateEverythingDialogContent({
                       <span className="max-w-32 min-w-0">
                         <bdi>
                           <MiddleTruncate
-                            value={row.environmentId === null ? uiT("This app") : row.label}
+                            value={row.environmentId === null ? "This app" : row.label}
                           />
                         </bdi>
                       </span>
@@ -269,7 +288,7 @@ function UpdateEverythingDialogContent({
           {uiT("Cancel")}
         </AlertDialogClose>
         <Button disabled={disabledReason !== null || busy} onClick={onConfirm}>
-          {uiT(confirmLabel)}
+          {confirmLabel}
         </Button>
       </AlertDialogFooter>
     </>

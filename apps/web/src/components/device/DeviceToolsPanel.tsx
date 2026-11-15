@@ -508,7 +508,7 @@ function LocationSection(props: {
           </SelectTrigger>
           <SelectPopup align="start" alignItemWithTrigger={false}>
             {LOCATION_PRESETS.map((preset) => (
-              <SelectItem key={uiT(preset.label)} value={uiT(preset.label)}>
+              <SelectItem key={preset.label} value={preset.label}>
                 {uiT(preset.label)}
               </SelectItem>
             ))}

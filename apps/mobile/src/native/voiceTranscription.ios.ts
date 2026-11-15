@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../state/ui-language";
 import * as Schema from "effect/Schema";
 import AppleTranscription from "@react-native-ai/apple/src/NativeAppleTranscription";
 import { File } from "expo-file-system";
@@ -55,11 +56,12 @@ async function prepareVoiceTranscription(
   locales: readonly string[],
   { signal }: VoiceTranscriptionOptions,
 ): Promise<PreparedVoiceTranscription> {
+  const uiT = readUiTranslator();
   throwIfVoiceTranscriptionAborted(signal);
   if (!AppleTranscription.isAvailable(locales[0]!)) {
     throw new VoiceTranscriptionError({
       code: "unavailable",
-      message: "Voice transcription requires a supported device with iOS 26 or later.",
+      message: uiT("Voice transcription requires a supported device with iOS 26 or later."),
     });
   }
 
@@ -111,6 +113,7 @@ async function prepareLocales(locales: readonly string[], signal: AbortSignal): 
 }
 
 async function prepareLocale(locale: string, signal: AbortSignal): Promise<string> {
+  const uiT = readUiTranslator();
   try {
     const supportedLocale = await AppleTranscription.prepare(locale);
     throwIfVoiceTranscriptionAborted(signal);
@@ -120,7 +123,7 @@ async function prepareLocale(locale: string, signal: AbortSignal): Promise<strin
     if (getNativeErrorCode(error) === "AppleTranscriptionUnsupportedLocale") {
       throw new VoiceTranscriptionError({
         code: "unsupported-locale",
-        message: "Voice transcription does not support any of your languages.",
+        message: uiT("Voice transcription does not support any of your languages."),
         cause: error,
       });
     }

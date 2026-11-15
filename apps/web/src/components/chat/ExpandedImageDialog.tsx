@@ -1,33 +1,38 @@
-import { useAtomValue } from "@effect/atom-react";
-import { mediaReferenceFileName } from "@t3tools/client-runtime/media-reference";
-import { mediaMimeType, mediaMimeTypeFromExtension } from "@t3tools/shared/mediaPreview";
-import { Atom } from "effect/reactivity";
-import { Image as ImageGlyph, Text as TextGlyph } from "lucide";
-import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
-import { memo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { memo, useRef, useState, type ReactNode, type KeyboardEvent } from "react";
 import { flushSync } from "react-dom";
-import { MorphIcon } from "~/components/MorphIcon";
-import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { useAssetUrlRefresh, useAssetUrlState } from "../../assets/assetUrls";
-import { isContextMenuOpen } from "../../contextMenuFallback";
-import { UiText, useUiLanguage } from "../../i18n";
-import { MediaActions, type MediaActionSource } from "../media/MediaActions";
-import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
-import { OpenMediaLink } from "../media/OpenMediaLink";
+import {
+  ArrowLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ImageIcon,
+  TextIcon,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import type { ExpandedImageItem, ExpandedImagePreview } from "./ExpandedImagePreview";
-import { expandedImageKey } from "./ExpandedImagePreview";
+import { resolveExternalWebLinkHost } from "./externalLinkContextMenu";
+import { useAssetUrlRefresh, useAssetUrlState } from "../../assets/assetUrls";
+import { OpenMediaLink } from "../media/OpenMediaLink";
+import { MediaActions, type MediaActionSource } from "../media/MediaActions";
+import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
+import { isContextMenuOpen } from "../../contextMenuFallback";
 import {
   SnapShotAccessibilityData,
   SnapShotContentsButton,
   snapShotAccessibilityDetails,
 } from "./SnapShotAttachmentDetails";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { ZoomableImage, type ZoomableImageHandle } from "./ZoomableImage";
 import { composerFloatingLayerProps } from "./composerEventScope";
-import { resolveExternalWebLinkHost } from "./externalLinkContextMenu";
+import { useAtomValue } from "@effect/atom-react";
+import { Atom } from "effect/reactivity";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
+import { expandedImageKey } from "./ExpandedImagePreview";
 import { registerThreadOverlay } from "./threadOverlayRetention";
+import { mediaReferenceFileName } from "@t3tools/client-runtime/media-reference";
+import { mediaMimeType, mediaMimeTypeFromExtension } from "@t3tools/shared/mediaPreview";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 interface ExpandedImageDialogProps {
   preview: ExpandedImagePreview;
@@ -89,15 +94,17 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
   const [failedImageSrc, setFailedImageSrc] = useState<string | null>(null);
   const [accessibilityDetailsSrc, setAccessibilityDetailsSrc] = useState<string | null>(null);
   const zoomableImageRef = useRef<ZoomableImageHandle>(null);
-  const [returnFocusTarget] = useState(() =>
-    document.activeElement instanceof HTMLElement ? document.activeElement : null,
-  );
+  const [returnFocus] = useState(() => {
+    const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return { target, focusVisible: target?.matches(":focus-visible") ?? false };
+  });
   // The host unmounts the dialog outright, so Base UI never runs finalFocus. Without
   // this, focus stays on the removed dialog, and the composer that owned the opener
-  // reads that as a blur and rests.
+  // reads that as a blur and rests. Preserve mouse focus when Escape closes it.
   const close = () => {
     flushSync(onClose);
-    if (returnFocusTarget?.isConnected) returnFocusTarget.focus({ preventScroll: true });
+    const { target, focusVisible } = returnFocus;
+    if (target?.isConnected) target.focus({ preventScroll: true, focusVisible });
   };
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const imageCount = preview.images.length;
@@ -176,12 +183,13 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
       <DialogPopup
         {...composerFloatingLayerProps}
         variant="media"
+        mediaControlsPlacement="inside"
         showCloseButton={false}
         bottomStickOnMobile={false}
         className="row-start-1 h-full max-h-[92vh] w-[92vw] max-w-[92vw] items-center justify-center overflow-visible [--media-width:92vw] [--media-height:min(calc((100vh-var(--native-titlebar-height,0px))*0.86),calc(100vh-var(--native-titlebar-height,0px)-160px))] sm:[--media-width:calc(92vw-96px)]"
         onKeyDown={onKeyDown}
         initialFocus={closeButtonRef}
-        finalFocus={() => returnFocusTarget}
+        finalFocus={() => returnFocus.target}
         onClick={(event) => {
           if (event.target === event.currentTarget) close();
         }}
@@ -192,13 +200,14 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
         <Button
           type="button"
           ref={closeButtonRef}
-          size="icon-sm"
+          size="sm"
           variant="media-close"
-          className="absolute right-0 top-0 z-20"
+          className="absolute left-0 top-0 z-20 max-[8rem]:left-1/2 max-[8rem]:-translate-x-1/2"
           onClick={close}
-          aria-label={uiT("Close {0} preview", { "0": mediaLabel })}
+          aria-label={uiT("Back, close {0} preview", { "0": mediaLabel })}
         >
-          <XIcon />
+          <ArrowLeftIcon aria-hidden="true" />
+          <UiText message={"Back"} />
         </Button>
         {preview.images.length > 1 && (
           <Button
@@ -245,7 +254,9 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
             <div className="mt-2 flex max-w-[var(--media-width)] items-center justify-center gap-1.5 text-xs text-white/80 max-sm:px-10">
               <span className="truncate" aria-live="polite" aria-atomic="true">
                 {item.name}
-                {preview.images.length > 1 ? ` (${index + 1}/${preview.images.length})` : ""}
+                {preview.images.length > 1
+                  ? uiT(" ({0}/{1})", { "0": index + 1, "1": preview.images.length })
+                  : ""}
               </span>
               {accessibilityDetails && item.source ? (
                 <Tooltip>
@@ -262,11 +273,11 @@ export const ExpandedImageDialog = memo(function ExpandedImageDialog({
                       />
                     }
                   >
-                    <MorphIcon
-                      className="size-3"
-                      aria-hidden="true"
-                      icon={showingAccessibilityDetails ? ImageGlyph : TextGlyph}
-                    />
+                    {showingAccessibilityDetails ? (
+                      <ImageIcon className="size-3" aria-hidden="true" />
+                    ) : (
+                      <TextIcon className="size-3" aria-hidden="true" />
+                    )}
                   </TooltipTrigger>
                   <TooltipPopup side="top">{contentsLabel}</TooltipPopup>
                 </Tooltip>

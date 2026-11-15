@@ -72,35 +72,35 @@ export function TerminalAppearancePreview(props: { readonly fontSize: number }) 
     <View className="p-4" style={{ direction: "ltr" }}>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.palette[2])}>→ </Text>
-        <Text style={span(theme.palette[6])}>{"t3code"} </Text>
-        <Text style={span(theme.palette[4])}>{"git:("}</Text>
+        <Text style={span(theme.palette[6])}>{uiT("t3code")} </Text>
+        <Text style={span(theme.palette[4])}>{uiT("git:(")}</Text>
         <Text style={span(theme.palette[1])}>{"main"}</Text>
         <Text style={span(theme.palette[4])}>)</Text>
         <Text style={span(theme.palette[3])}> ✗</Text>
-        <Text style={span(theme.foreground)}> {"vpr dev"}</Text>
+        <Text style={span(theme.foreground)}> {uiT("vpr dev")}</Text>
       </Text>
       <Text style={span(theme.foreground)}>
-        <Text style={span(theme.palette[2])}>{"VITE v7.1.1"}</Text>
-        <Text style={span(theme.mutedForeground)}> {"ready in"}</Text>
+        <Text style={span(theme.palette[2])}>{uiT("VITE v7.1.1")}</Text>
+        <Text style={span(theme.mutedForeground)}> {uiT("ready in")}</Text>
         <Text style={span(theme.foreground)}> 1.24s</Text>
       </Text>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.palette[2])}>→ </Text>
-        <Text style={span(theme.mutedForeground)}>{"Local:"} </Text>
+        <Text style={span(theme.mutedForeground)}>{uiT("Local:")} </Text>
         <Text style={span(theme.palette[6], { textDecorationLine: "underline" })}>
-          http://127.0.0.1:5173/
+          {"http://127.0.0.1:5173/"}{" "}
         </Text>
       </Text>
       <Text style={span(theme.foreground)}>
-        <Text style={span(theme.palette[2])}>{"✓ 85 passed"}</Text>
-        <Text style={span(theme.palette[3])}> {"△ 2 warnings"}</Text>
-        <Text style={span(theme.palette[1])}> {"✗ 0 failed"}</Text>
+        <Text style={span(theme.palette[2])}>{uiT("✓ 85 passed")}</Text>
+        <Text style={span(theme.palette[3])}> {uiT("△ 2 warnings")}</Text>
+        <Text style={span(theme.palette[1])}> {uiT("✗ 0 failed")}</Text>
       </Text>
       <Text style={span(theme.foreground)}>
         <Text style={span(theme.background, { backgroundColor: theme.palette[2] })}>
           {uiT(" READY ")}
         </Text>
-        <Text style={span(theme.mutedForeground)}> {"watching for changes"}</Text>{" "}
+        <Text style={span(theme.mutedForeground)}> {uiT("watching for changes")}</Text>{" "}
         <Text style={span(theme.cursorForeground)}>▏</Text>
       </Text>
     </View>

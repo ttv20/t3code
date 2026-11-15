@@ -1,15 +1,13 @@
 import { useAtomValue } from "@effect/atom-react";
 import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
-import { useUiLanguage } from "../../i18n";
-
 import { APP_VERSION } from "~/branding";
 import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
 import { isElectron } from "~/env";
-import { environmentIdsKey } from "~/state/environmentAtomList";
 import { useEnvironments } from "~/state/environments";
-import { useForkReleasePublished } from "~/state/forkRelease";
-import { environmentUpdateStatesAtom } from "~/state/server";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import { environmentUpdateStatesAtom, serverEnvironment } from "~/state/server";
 import { environmentSessionStatesAtom } from "~/state/session";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { getProviderUpdateRunOutcome } from "../ProviderUpdateLaunchNotification.logic";
 import { useProviderUpdates } from "../ProviderUpdatesAction";
 import { canUpdateServer, type ServerUpdateOutcome, useServerUpdate } from "../ServerUpdateAction";
@@ -27,12 +25,16 @@ import {
 import {
   clearSavedUpdateEverythingResult,
   saveUpdateEverythingResult,
-  settleUpdateRunMachine,
   setUpdateEverythingRun,
+  settleUpdateRunMachine,
   showUpdateEverythingResult,
   waitForServerUpdateHandoff,
   waitForUpdateRestart,
 } from "./updateEverythingRun";
+
+import { useUiLanguage } from "../../i18n";
+
+import { useForkReleasePublished } from "~/state/forkRelease";
 
 const UPDATE_RESTART_DELAY_MS = 5_000;
 
@@ -101,6 +103,9 @@ export function useUpdateEverything(
   // A track switch moves app and servers only; provider updates stay a separate choice.
   const providers = channelSwitch ? { machines: [], updateAll: async () => [] } : providerUpdates;
   const updateServer = useServerUpdate();
+  const stageServerUpdate = useAtomCommand(serverEnvironment.stageServerUpdate, {
+    reportFailure: false,
+  });
 
   const view = describeUpdateEverything(
     {
@@ -211,8 +216,29 @@ export function useUpdateEverything(
             );
             return outcomes;
           },
-          updateServers: async () => {
+          ...(providers.machines.length > 0
+            ? {
+                stageServers: () =>
+                  new Map(
+                    servers
+                      .filter(
+                        (server) =>
+                          machines.find((machine) => machine.environmentId === server.environmentId)
+                            ?.serverConfig?.environment.capabilities.serverUpdateStaging === true,
+                      )
+                      .map((server) => [
+                        server.environmentId,
+                        stageServerUpdate({
+                          environmentId: server.environmentId,
+                          input: { targetVersion: server.targetVersion, stageOnly: true },
+                        }),
+                      ]),
+                  ),
+              }
+            : {}),
+          updateServers: async (staged) => {
             const runs = servers.map(async (server) => {
+              await staged.get(server.environmentId);
               const serverOutcome = await updateServer(server, { quiet: true });
               settleUpdateRunMachine(
                 server.environmentId,

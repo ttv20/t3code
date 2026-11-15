@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import {
   AuthOrchestrationOperateScope,
   type CloudSpeechModelId,
@@ -116,6 +117,7 @@ export function runSpeech<A, E>(
   signal?: AbortSignal,
   canSend: () => boolean = () => true,
 ) {
+  const uiT = readUiTranslator();
   return Effect.runPromise(
     AtomRegistry.getResult(appAtomRegistry, connectionAtomRuntime).pipe(
       Effect.flatMap((context) =>
@@ -124,7 +126,7 @@ export function runSpeech<A, E>(
             if (signal?.aborted || !canSend())
               throw new VoiceTranscriptionError({
                 code: "cancelled",
-                message: "Your transcription choice changed.",
+                message: uiT("Your transcription choice changed."),
               });
             return expoFetch(url, { ...options, redirect: "error" });
           }),
@@ -140,6 +142,7 @@ function environmentTranscriber(
   canSend: () => boolean,
   cloud?: CloudDestination,
 ) {
+  const uiT = readUiTranslator();
   const provider = cloud?.provider;
   const model = cloud?.provider === "openrouter" ? cloud.model : undefined;
   return createEnvironmentTranscriber({
@@ -155,8 +158,9 @@ function environmentTranscriber(
       if (status.state === "missing-model")
         throw new VoiceTranscriptionError({
           code: "unavailable",
-          message:
+          message: uiT(
             "Install a transcription model for this environment in Settings → Voice, then try again.",
+          ),
         });
       return status.languages
         ? effectiveSpeechLanguage(
@@ -172,7 +176,7 @@ function environmentTranscriber(
       if (!native?.decodeRecording)
         throw new VoiceTranscriptionError({
           code: "unavailable",
-          message: "Update T3 Code to transcribe on an environment.",
+          message: uiT("Update T3 Code to transcribe on an environment."),
         });
       return native.decodeRecording(uri);
     },

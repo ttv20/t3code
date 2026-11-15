@@ -1,56 +1,38 @@
-import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
+import { useAuth } from "@clerk/react";
 import { findErrorTraceId } from "@t3tools/client-runtime/errors";
+import { AuthRelayReadScope, AuthRelayWriteScope, type EnvironmentId } from "@t3tools/contracts";
 import { ManagedRelay } from "@t3tools/client-runtime/relay";
 import {
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  AuthRelayReadScope,
-  AuthRelayWriteScope,
-  type EnvironmentCloudLinkStateResult,
-  type EnvironmentId,
-} from "@t3tools/contracts";
-import type { RelayManagedEndpointProviderKind } from "@t3tools/contracts/relay";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
-import { useUiLanguage } from "../i18n";
-
 import { toastManager } from "../components/ui/toast";
 import { stackedThreadToast } from "../components/ui/toastHelpers";
+import { relayFailureReason } from "./relayFailureReason";
 import { relayEnvironmentDiscovery } from "../state/relay";
 import { readEnvironmentScope } from "../state/session";
 import { useAtomCommand } from "../state/use-atom-command";
-import { readCachedCloudLinkState, useCloudLinkState } from "./cloudLinkState";
 import { isCloudEnvironmentLinkError } from "./linkEnvironment";
+import { refreshManagedTunnelUsage } from "./managedRelayState";
 import {
   linkEnvironment as linkEnvironmentAtom,
   unlinkEnvironment as unlinkEnvironmentAtom,
   updateEnvironmentPreferences as updateEnvironmentPreferencesAtom,
 } from "./linkEnvironmentAtoms";
-import { refreshManagedTunnelUsage } from "./managedRelayState";
+import { readCachedCloudLinkState, useCloudLinkState } from "./cloudLinkState";
 import { resolveRelayClerkTokenOptions } from "./publicConfig";
-import { relayFailureReason } from "./relayFailureReason";
+import { isManagedTunnelActive } from "./t3ConnectState";
+
+import { useUiLanguage } from "../i18n";
 
 export interface CloudLinkDesiredState {
   readonly managedTunnel: boolean;
   readonly publish: boolean;
   readonly holdWebhooksWhileOffline?: boolean;
-}
-
-// Require managed discovery: stale tunnel config after a publish-only switch causes endpoint_provider_not_managed.
-function isManagedTunnelActive(
-  linkState: EnvironmentCloudLinkStateResult,
-  relayProviderKind: RelayManagedEndpointProviderKind | undefined,
-) {
-  const localManagedTunnel = linkState.managedTunnelActive ?? linkState.linked;
-  return (
-    linkState.linkRevoked !== true &&
-    localManagedTunnel &&
-    (relayProviderKind === undefined || relayProviderKind === "cloudflare_tunnel")
-  );
 }
 
 const isManagedRelayRequestFailedError = Schema.is(ManagedRelay.ManagedRelayRequestFailedError);

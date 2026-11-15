@@ -1,28 +1,25 @@
 import { useAtomValue } from "@effect/atom-react";
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { ThreadDetailsControl } from "./ThreadDetailsControl";
+import { useNavigate } from "@tanstack/react-router";
+import { CalendarClockIcon, PencilIcon, PlayIcon, Settings2Icon } from "lucide-react";
+import { useState } from "react";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
   type ScheduledTask,
   type ThreadId,
 } from "@t3tools/contracts";
-import { useNavigate } from "@tanstack/react-router";
-import { CalendarClockIcon, PencilIcon, PlayIcon, Settings2Icon } from "lucide-react";
-import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-import { ThreadDetailsControl } from "./ThreadDetailsControl";
-
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { cn } from "../../lib/utils";
+import { ScheduledRelativeLabel } from "../settings/ScheduledTasksSettings";
+import { scheduleLabel } from "../settings/ScheduledTasksSettings";
 import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { ScheduledRelativeLabel, scheduleLabel } from "../settings/ScheduledTasksSettings";
-import { ThreadDetailsSection } from "./ThreadDetailsSection";
-
 import { readEnvironmentScope } from "../../state/session";
 import { Switch } from "../ui/switch";
 import { stackedThreadToast, toastManager } from "../ui/toast";
@@ -32,6 +29,10 @@ import {
   THREAD_DETAILS_PANEL_ROW_CONTENT_CLASS,
 } from "./threadDetailsPanelStyles";
 
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+
+import { UiText, useUiLanguage } from "../../i18n";
+
 const STATUS_DOT_CLASS: Record<ScheduledTask["lastRunStatus"], string> = {
   never: "bg-muted-foreground/40",
   running: "bg-sky-500",
@@ -39,11 +40,15 @@ const STATUS_DOT_CLASS: Record<ScheduledTask["lastRunStatus"], string> = {
   failed: "bg-destructive",
 };
 
-function taskScheduleLine(task: ScheduledTask, locale: UiLocale) {
+function taskScheduleLine(
+  task: ScheduledTask,
+  timeZone: string | undefined,
+  locale: UiLocale = "en",
+) {
   const t = createUiTranslator(locale);
   return (
     <>
-      {scheduleLabel(task.schedule, locale)}
+      {scheduleLabel(task.schedule, timeZone, task.nextRunAt, locale)}
       {task.blockedByPolicy !== undefined ? (
         ` · ${task.blockedByPolicy}`
       ) : task.enabled && task.nextRunAt !== null ? (
@@ -185,12 +190,14 @@ export function ThreadAutomationsPanel(props: {
                   {task.title}
                 </span>
                 <p className="truncate text-2xs text-muted-foreground">
-                  {taskScheduleLine(task, locale)}
+                  {taskScheduleLine(task, tasksQuery.data?.timeZone, locale)}
                 </p>
               </TooltipTrigger>
               <TooltipPopup side="left">
                 <p className="font-medium">{task.title}</p>
-                <p className="text-muted-foreground">{taskScheduleLine(task, locale)}</p>
+                <p className="text-muted-foreground">
+                  {taskScheduleLine(task, tasksQuery.data?.timeZone, locale)}
+                </p>
               </TooltipPopup>
             </Tooltip>
             <Tooltip>

@@ -1,67 +1,70 @@
-import { FileDiff } from "@pierre/diffs/react";
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
-import type { ComposerContextId, KnownComposerContextRecord } from "@t3tools/contracts";
-import { COMPOSER_CONTEXT_KINDS } from "@t3tools/contracts";
-import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
-import { isSvgAttachment } from "@t3tools/shared/image";
-import { MessageCircleIcon, MousePointerClickIcon, PaintbrushIcon } from "lucide-react";
-import { use, type ReactNode } from "react";
-import {
-  isPullRequestSummaryContext,
-  pullRequestContextDisplayState,
-  pullRequestContextKindLabel,
-  reviewCommentContextLabel,
-} from "~/lib/composerContextRecords";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { documentChipKindForFileName } from "~/pierre-icons";
-import { useRightPanelStore } from "~/rightPanelStore";
-import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import { isSvgAttachment } from "@t3tools/shared/image";
 import { useRenderedAppearance } from "../../hooks/useTheme";
-import { useUiLanguage } from "../../i18n";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
+import { useRightPanelStore } from "~/rightPanelStore";
+import { COMPOSER_CONTEXT_KINDS } from "@t3tools/contracts";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
+import { use, type ReactNode } from "react";
+import { FileDiff } from "@pierre/diffs/react";
+import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import {
+  type ChatFileAttachment,
+  type ChatImageAttachment,
+  isImageAttachment,
+  isVideoAttachment,
+} from "../../types";
 import {
   getRenderablePatch,
   resolveDiffThemeName,
   resolveFileDiffPath,
 } from "../../lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import {
-  buildReviewCommentRenderablePatch,
-  formatReviewCommentFence,
-  type ReviewCommentContext,
-} from "../../reviewCommentContext";
-import {
-  isImageAttachment,
-  isVideoAttachment,
-  type ChatFileAttachment,
-  type ChatImageAttachment,
-} from "../../types";
-import type { ChatMarkdownContextReference } from "../ChatMarkdown";
 import ChatMarkdown from "../ChatMarkdown";
-import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
+import { EnvironmentContextChip } from "../EnvironmentContextChip";
+import { ThreadContextChip } from "../ThreadContextChip";
+import { ResponseReplyCard } from "./AssistantCitationChip";
+import { MessageCircleIcon, MousePointerClickIcon, PaintbrushIcon } from "lucide-react";
+import type { ComposerContextId, KnownComposerContextRecord } from "@t3tools/contracts";
+import { buildExpandedImagePreview } from "./ExpandedImagePreview";
+import { WorkspaceEntryIcon, WorkspaceEntryTooltip } from "./WorkspaceEntryIcon";
+import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
+  ContextChipPopover as UserMessageContextPopover,
   FileChip,
   ImageChipButton,
   PULL_REQUEST_CHIP_KINDS,
   PullRequestChip,
   UnresolvedChip,
-  ContextChipPopover as UserMessageContextPopover,
 } from "../contextChipParts";
+import {
+  isPullRequestSummaryContext,
+  pullRequestContextDisplayState,
+  pullRequestContextKindLabel,
+  reviewCommentContextLabel,
+} from "~/lib/composerContextRecords";
+import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
+import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
 import { createContextPresentationRegistry } from "../contextPresentationRegistry";
-import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
-import { EnvironmentContextChip } from "../EnvironmentContextChip";
-import { ReadOnlySourcePreview } from "../files/AttachmentFilePreview";
-import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
-import { ThreadContextChip } from "../ThreadContextChip";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { buildExpandedImagePreview } from "./ExpandedImagePreview";
+import type { ChatMarkdownContextReference } from "../ChatMarkdown";
 import {
   SkillChipPopover,
   skillInstructionsOpener,
   skillPopoverDescription,
 } from "./SkillInlineText";
-import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
+import { formatWorkspaceRelativePath } from "../../filePathDisplay";
+import {
+  buildReviewCommentRenderablePatch,
+  formatReviewCommentFence,
+  type ReviewCommentContext,
+} from "../../reviewCommentContext";
 import { TimelineRowCtx } from "./timelineRowContext";
 import { userMessageFileLabel } from "./TimelineUserMessageRow.logic";
-import { WorkspaceEntryIcon, WorkspaceEntryTooltip } from "./WorkspaceEntryIcon";
+
+import { useUiLanguage } from "../../i18n";
 
 function UserMessageMentionChip(props: {
   record: Extract<KnownComposerContextRecord, { kind: "mention" }>;
@@ -90,7 +93,7 @@ function UserMessageMentionChip(props: {
               cwd={ctx.workspaceRoot}
               theme={ctx.resolvedTheme}
             />
-            <ContextChipLabel>{uiT(props.record.label)}</ContextChipLabel>
+            <ContextChipLabel>{props.record.label}</ContextChipLabel>
           </ContextChip>
         }
       />
@@ -270,6 +273,7 @@ function UserMessageElementDetails({
 }
 
 interface UserMessageContextRenderContext {
+  translate: ReturnType<typeof createUiTranslator>;
   environmentId: import("@t3tools/contracts").EnvironmentId;
   reference: ChatMarkdownContextReference;
   annotationImage: ChatImageAttachment | null;
@@ -286,7 +290,7 @@ function UnavailableUserMessageContextChip(props: UserMessageContextRenderContex
 
   return (
     <UnresolvedChip
-      label={uiT(props.reference.label)}
+      label={props.reference.label}
       copyMarkdown={props.copyMarkdown}
       tooltip={uiT("This context is no longer available.")}
     />
@@ -326,6 +330,21 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
       render: (record, context) =>
         record.kind === "thread" ? (
           <ThreadContextChip record={record} copyMarkdown={context.copyMarkdown} />
+        ) : (
+          <UnavailableUserMessageContextChip {...context} />
+        ),
+    },
+    {
+      kind: "response",
+      canRender: (record) => record.kind === "response",
+      render: (record, context) =>
+        record.kind === "response" ? (
+          <ResponseReplyCard
+            record={record}
+            copyMarkdown={context.copyMarkdown}
+            leading={context.reference.leading ?? false}
+            trailing={context.reference.trailing ?? false}
+          />
         ) : (
           <UnavailableUserMessageContextChip {...context} />
         ),
@@ -384,7 +403,9 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         const disabled =
           attachment.downloadable === false && (!isVideo || attachment.previewUrl === undefined);
         const size =
-          attachment.downloadable === false ? "Sending…" : formatAttachmentSize(record.sizeBytes);
+          attachment.downloadable === false
+            ? context.translate("Sending…")
+            : formatAttachmentSize(record.sizeBytes);
         return (
           <FileChip
             name={label}
@@ -397,7 +418,10 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
             isVideo={isVideo}
             theme={context.resolvedTheme}
             disabled={disabled}
-            accessibleLabel={`${isVideo ? "Video" : "File"} attachment, ${label}, ${size}`}
+            accessibleLabel={context.translate(
+              isVideo ? "Video attachment, {0}, {1}" : "File attachment, {0}, {1}",
+              { "0": label, "1": size },
+            )}
             copyMarkdown={context.copyMarkdown}
             onOpen={() =>
               isVideo ? context.onExpandVideo(attachment) : context.onOpenFile(attachment)
@@ -433,7 +457,7 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         record.kind === "element" ? (
           <UserMessageContextPopover
             copyMarkdown={context.copyMarkdown}
-            accessibleLabel={`Browser element, ${record.label}`}
+            accessibleLabel={context.translate("Browser element, {0}", { "0": record.label })}
             kind="element"
             icon={<MousePointerClickIcon />}
             label={record.label}
@@ -453,7 +477,9 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         }
         const isPullRequest = isPullRequestSummaryContext(record);
         const label = reviewCommentContextLabel(record);
-        const kindLabel = isPullRequest ? pullRequestContextKindLabel(record) : "Review comment";
+        const kindLabel = isPullRequest
+          ? pullRequestContextKindLabel(record)
+          : context.translate("Review comment");
         const pullRequestState = pullRequestContextDisplayState(record) ?? "unknown";
         if (isPullRequest && record.pullRequest !== undefined) {
           return (
@@ -500,7 +526,7 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         record.kind === "preview-annotation" ? (
           <UserMessageContextPopover
             copyMarkdown={context.copyMarkdown}
-            accessibleLabel={`Preview annotation, ${record.label}`}
+            accessibleLabel={context.translate("Preview annotation, {0}", { "0": record.label })}
             kind="preview-annotation"
             icon={<MousePointerClickIcon />}
             label={record.label}
@@ -524,6 +550,7 @@ export function UserMessageContextReferenceChip(props: {
   onExpandVideo: (file: ChatFileAttachment) => void;
   onOpenFile: (file: ChatFileAttachment) => void;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { resolvedTheme, activeThreadEnvironmentId } = use(TimelineRowCtx);
   const copyMarkdown = formatComposerContextReference({
     kind: props.reference.kind,
@@ -531,6 +558,7 @@ export function UserMessageContextReferenceChip(props: {
     label: props.reference.label,
   });
   return userMessageContextPresentationRegistry.render(props.reference.kind, props.record, {
+    translate: uiT,
     environmentId: activeThreadEnvironmentId,
     reference: props.reference,
     annotationImage: props.annotationImage,

@@ -1,13 +1,13 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 import { BookmarkIcon, FileIcon, FileTextIcon } from "lucide-react";
 import { memo, useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
+import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
+import { RelativeTime } from "../RelativeTime";
 import { cn } from "~/lib/utils";
 import { type PromptStashEntry } from "../../promptStashStore";
-import { RelativeTime } from "../RelativeTime";
 import { ComposerBanner } from "./ComposerBanner";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const SNIPPET_MAX_CHARS = 90;
 
@@ -32,15 +32,15 @@ function stashEntrySnippet(
   const message =
     imageCount > 0 && fileCount > 0
       ? attachmentCount === 1
-        ? "{0} attachment"
-        : "{0} attachments"
+        ? t("{0} attachment")
+        : t("{0} attachments")
       : fileCount > 0
         ? attachmentCount === 1
-          ? "{0} file"
-          : "{0} files"
+          ? t("{0} file")
+          : t("{0} files")
         : attachmentCount === 1
-          ? "{0} image"
-          : "{0} images";
+          ? t("{0} image")
+          : t("{0} images");
   return `(${t(message, { "0": attachmentCount })})`;
 }
 
@@ -142,7 +142,11 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
   }, []);
 
   return (
-    <ComposerBanner.Root ref={drawerRef} data-composer-stash-drawer="true">
+    <ComposerBanner.Root
+      ref={drawerRef}
+      className="flex min-h-0 flex-col after:shrink-0"
+      data-composer-stash-drawer="true"
+    >
       <ComposerBanner.Row
         render={<button type="button" />}
         aria-label={uiT("Close stash")}
@@ -161,7 +165,7 @@ export const ComposerStashMenu = memo(function ComposerStashMenu(props: {
           <ComposerBanner.ToggleIcon expanded />
         </ComposerBanner.Actions>
       </ComposerBanner.Row>
-      <ComposerBanner.Scroll>
+      <ComposerBanner.Scroll className="flex flex-col">
         <ComposerBanner.Children render={<ul role="list" />} aria-label={uiT("Stashed prompts")}>
           {entries.length === 0 ? (
             <ComposerBanner.Row render={<li />}>

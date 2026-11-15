@@ -167,7 +167,7 @@ export function ThemePreviewCircles({
         const mode = preview.mode;
         const isPicked = activeModes.includes(mode);
         return (
-          <Tooltip key={uiT(mode)}>
+          <Tooltip key={mode}>
             <TooltipTrigger
               render={
                 <button

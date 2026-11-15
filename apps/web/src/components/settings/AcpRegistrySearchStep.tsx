@@ -1,3 +1,10 @@
+import { pipe } from "effect/Function";
+import {
+  ACP_REGISTRY_MAX_AGENTS,
+  ACP_REGISTRY_SEARCH_QUERY_MAX_LENGTH,
+  AuthProvidersManageScope,
+} from "@t3tools/contracts";
+import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -8,26 +15,23 @@ import type {
   EnvironmentId,
   ProviderInstanceConfig,
 } from "@t3tools/contracts";
-import { ACP_REGISTRY_MAX_AGENTS, AuthProvidersManageScope } from "@t3tools/contracts";
-import { pipe } from "effect/Function";
 import { ExternalLinkIcon, SearchIcon } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-import { readEnvironmentScope, useEnvironmentScope } from "../../state/session";
-
-import { ProviderDriverKind } from "@t3tools/contracts";
 import { useDeadlinePassed } from "../../hooks/useDeadline";
-import { useEnvironmentQuery } from "../../state/query";
 import { serverEnvironment } from "../../state/server";
+import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
-import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { isConfiguredAcpRegistryAgent } from "./AddProviderInstanceDialog.logic";
+import { ProviderDriverKind } from "@t3tools/contracts";
+import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { providerClients } from "./providerDriverMeta";
+
+import { useUiLanguage } from "../../i18n";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim()
@@ -91,7 +95,11 @@ export function useAcpRegistrySearch(environmentId: EnvironmentId, enabled: bool
     prepareError,
     type: (text: string) => {
       setPrepareError(null);
-      setInput({ text, submitted: submittedQuery, typedAt: Date.now() });
+      setInput({
+        text: text.slice(0, ACP_REGISTRY_SEARCH_QUERY_MAX_LENGTH),
+        submitted: submittedQuery,
+        typedAt: Date.now(),
+      });
     },
     submit: () => {
       const trimmed = input.text.trim();
@@ -171,6 +179,7 @@ export function AcpRegistrySearchStep({
           </InputGroupAddon>
           <InputGroupInput
             aria-label={uiT("Search ACP Registry")}
+            maxLength={ACP_REGISTRY_SEARCH_QUERY_MAX_LENGTH}
             disabled={preparingId !== null}
             onChange={(event) => registry.type(event.currentTarget.value)}
             placeholder={uiT("Search agents…")}
@@ -286,9 +295,7 @@ function AcpRegistryAgentRow({
               <h4 className="min-w-0 truncate text-sm font-medium text-foreground">{agent.name}</h4>
             </div>
             {agent.description ? (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {uiT(agent.description)}
-              </p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{agent.description}</p>
             ) : null}
           </div>
         </div>
@@ -314,7 +321,10 @@ function AcpRegistryAgentRow({
             </Tooltip>
           ) : null}
           <Button
-            aria-label={`${alreadyAdded ? "Already added" : isPreparing ? progressLabel : "Add"} ${agent.name}`}
+            aria-label={uiT("{0} {1}", {
+              "0": alreadyAdded ? "Already added" : isPreparing ? progressLabel : "Add",
+              "1": agent.name,
+            })}
             disabled={!canAdd || alreadyAdded}
             onClick={() => onAdd(agent)}
             size="xs"

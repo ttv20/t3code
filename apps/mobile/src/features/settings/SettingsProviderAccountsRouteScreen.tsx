@@ -61,7 +61,9 @@ export function SettingsProviderAccountsRouteScreen() {
                 <View className="gap-1 p-4">
                   <Text className="text-base text-foreground">{uiT("Limited permissions")}</Text>
                   <Text className="text-sm text-foreground-muted">
-                    {`This session can view ${environment.label}'s providers but can't change their settings.`}
+                    {uiT("This session can view {0}'s providers but can't change their settings.", {
+                      "0": environment.label,
+                    })}
                   </Text>
                 </View>
               ) : (

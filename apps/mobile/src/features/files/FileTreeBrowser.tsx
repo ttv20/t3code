@@ -1,14 +1,12 @@
 import { LegendList } from "@legendapp/list/react-native";
 import type { ProjectEntry } from "@t3tools/contracts";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, RefreshControl, View } from "react-native";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { SymbolView } from "../../components/ui/AppSymbol";
+import { Pressable, View } from "react-native";
+import { RefreshControl } from "../../components/ui/RefreshControl";
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import { useUiLanguage } from "../../i18n";
 import { NativeScrollView } from "../../native/NativeScrollViewMarker";
-
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { useContentBottomInset, useContentTopInset } from "../../components/ui/useBarInset";
 import { cn } from "../../lib/cn";
@@ -18,6 +16,8 @@ import {
   type FileTreeNode,
   type VisibleFileTreeNode,
 } from "./fileTree";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { SymbolView } from "../../components/ui/AppSymbol";
 
 const fileTreeCache = new WeakMap<ReadonlyArray<ProjectEntry>, ReadonlyArray<FileTreeNode>>();
 const OPTIMISTIC_SELECTION_TIMEOUT_MS = 1_000;
@@ -223,6 +223,7 @@ export function FileTreeBrowser(props: {
   return (
     <LegendList
       renderScrollComponent={NativeScrollView}
+      nestedScrollEnabled={false}
       contentInset={{ top: headerInset, bottom: bottomInset }}
       alwaysBounceVertical
       className="flex-1"

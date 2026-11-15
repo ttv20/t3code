@@ -29,7 +29,6 @@ import { useUiLanguage } from "../../i18n";
 import { useNativeColumnLayoutMetrics } from "../../native/native-layout-metrics";
 import { TerminalContextSheet } from "./TerminalContextSheet";
 import { hasNativeTerminalSurface, supportsNativeTerminalOutput } from "./nativeTerminalModule";
-
 import {
   ComposerToolbarButton,
   ComposerToolbarRow,
@@ -40,31 +39,29 @@ import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { GlassSurface } from "../../components/ui/GlassSurface";
 import { IconButton } from "../../components/ui/IconButton";
-import { ScreenContent } from "../../components/ui/ScreenContent";
-import { environmentCatalog } from "../../connection/catalog";
+import { useEnvironmentPresentation } from "../../state/presentation";
+import { terminalEnvironment } from "../../state/terminal";
+import { environmentSession, readEnvironmentScope } from "../../state/session";
+import { useEnvironmentQuery } from "../../state/query";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { uuidv4 } from "../../lib/uuid";
+import { useServerConfigs } from "../../state/entities";
+import { useConnectionsReady } from "../../state/workspace";
 import {
   MAX_TERMINAL_FONT_SIZE,
   MIN_TERMINAL_FONT_SIZE,
   TERMINAL_FONT_SIZE_STEP,
   stepTerminalFontSize,
 } from "../../lib/appearancePreferences";
-import { uuidv4 } from "../../lib/uuid";
-import { appAtomRegistry } from "../../state/atom-registry";
-import { useServerConfigs } from "../../state/entities";
-import { useEnvironmentPresentation } from "../../state/presentation";
-import { useEnvironmentQuery } from "../../state/query";
-import { environmentSession, readEnvironmentScope } from "../../state/session";
-import { terminalEnvironment } from "../../state/terminal";
-import { useAtomCommand } from "../../state/use-atom-command";
 import {
   useAttachedTerminalSession,
   useKnownTerminalSessions,
 } from "../../state/use-terminal-session";
 import { useSelectedThreadProjection } from "../../state/use-thread-detail";
 import { useThreadSelection } from "../../state/use-thread-selection";
-import { useConnectionsReady } from "../../state/workspace";
 import { EnvironmentConnectionNotice } from "../connection/EnvironmentConnectionNotice";
-import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
+import { useRetryEnvironment } from "../connection/useRetryEnvironment";
 import { TerminalSurface, type TerminalSurfaceHandle } from "./NativeTerminalSurface";
 import {
   hostPlatformFromOs,
@@ -91,6 +88,9 @@ import { createTerminalPasteSession } from "./terminalPaste";
 import { getMobileTerminalTheme } from "./terminalTheme";
 import { cacheTerminalGridSize, getCachedTerminalGridSize } from "./terminalUiState";
 import { useTerminalExitNavigation } from "./useTerminalExitNavigation";
+import { ScreenContent } from "../../components/ui/ScreenContent";
+
+import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 
 function TerminalHeader(props: {
   readonly subtitle: string;
@@ -400,7 +400,7 @@ function ThreadTerminal(props: {
   const navigation = useNavigation();
   const writeTerminal = useAtomCommand(terminalEnvironment.write, "terminal write");
   const clearTerminal = useAtomCommand(terminalEnvironment.clear, "terminal clear");
-  const retryEnvironment = useAtomCommand(environmentCatalog.retryNow, "environment retry");
+  const retryEnvironment = useRetryEnvironment();
   const selectedThreadDetail = useSelectedThreadProjection();
   const selectedThreadDetailWorktreePath =
     selectedThreadDetail?.projection.thread.worktreePath ?? null;

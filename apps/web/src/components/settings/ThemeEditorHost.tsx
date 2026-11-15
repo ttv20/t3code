@@ -1,6 +1,4 @@
 import { lazy, Suspense, useSyncExternalStore } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { useTheme } from "../../hooks/useTheme";
 import {
   getThemeDefinition,
@@ -10,6 +8,8 @@ import {
 } from "../../themePalette";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { useThemeEditorStore } from "./themeEditorStore";
+
+import { useUiLanguage } from "../../i18n";
 
 const ThemeEditorPanel = lazy(() =>
   import("./ThemeEditorPanel").then((module) => ({ default: module.ThemeEditorPanel })),
@@ -46,13 +46,6 @@ export function ThemeEditorHost() {
         );
         return false;
       }
-      toastManager.add(
-        stackedThreadToast({
-          type: "success",
-          title: uiT("{0} updated", { "0": savedTheme.label }),
-          description: uiT("Its {0} palette was added.", { "0": mergedAppearance }),
-        }),
-      );
       return true;
     }
     if (!created) {
@@ -62,15 +55,6 @@ export function ThemeEditorHost() {
         themeHalves?.light === savedTheme.id ||
         themeHalves?.dark === savedTheme.id;
       if (wasActive) refreshTheme();
-      toastManager.add(
-        stackedThreadToast({
-          type: "success",
-          title: uiT("{0} saved", { "0": savedTheme.label }),
-          description: wasActive
-            ? uiT("Your changes are now active.")
-            : uiT("Your changes are saved."),
-        }),
-      );
       return true;
     }
 
@@ -84,13 +68,6 @@ export function ThemeEditorHost() {
       );
       return false;
     }
-    toastManager.add(
-      stackedThreadToast({
-        type: "success",
-        title: uiT("{0} created", { "0": savedTheme.label }),
-        description: uiT("It’s now active."),
-      }),
-    );
     return true;
   };
 

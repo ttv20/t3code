@@ -2,19 +2,20 @@ import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
 import { PlayIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
 import { useState, type CSSProperties } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { observeIntersection } from "../../lib/observeIntersection";
 import { cn } from "../../lib/utils";
 import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
 import { Button } from "../ui/button";
-import { MediaActions, type MediaActionSource } from "./MediaActions";
 import { OpenMediaLink } from "./OpenMediaLink";
+import { MediaActions, type MediaActionSource } from "./MediaActions";
+
+import { useUiLanguage } from "../../i18n";
 
 interface MediaVideoPlayerProps {
   readonly src: string | null;
   readonly label: string;
   readonly sourceFailed?: boolean | undefined;
+  readonly unavailableDetail?: string | undefined;
   readonly originalUrl?: string | undefined;
   readonly revision?: string | null | undefined;
   readonly preload?: "visible" | "metadata" | undefined;
@@ -33,6 +34,7 @@ export function MediaVideoPlayer({
   src: latestSrc,
   label,
   sourceFailed = false,
+  unavailableDetail,
   originalUrl,
   revision = null,
   preload = "visible",
@@ -139,10 +141,9 @@ export function MediaVideoPlayer({
             stateClassName,
           )}
         >
-          <span className="inline-flex items-center gap-1.5">
+          <span data-thread-find-ignore className="inline-flex items-center gap-1.5">
             <TriangleAlertIcon aria-hidden className="size-3.5 shrink-0" />
-            {uiT("Video unavailable")}
-            {label ? ` · ${label}` : ""}
+            {["Video unavailable", label, unavailableDetail].filter(Boolean).join(" · ")}
           </span>
           <span className="flex flex-wrap items-center justify-center gap-2">
             {latestSrc !== null || onRetry ? (
@@ -196,7 +197,7 @@ export function MediaVideoPlayer({
       ) : (
         <span
           role="status"
-          aria-label={failed ? "Video preview unavailable" : uiT("Loading video")}
+          aria-label={failed ? uiT("Video preview unavailable") : uiT("Loading video")}
           className={cn("block aspect-video w-full rounded-lg bg-muted/60", stateClassName)}
           style={style}
         />

@@ -1,11 +1,11 @@
-import { LegendList, type LegendListRef } from "@legendapp/list/react";
+import { startPaletteThreadDrag } from "./CommandPalette.drag";
+import { useLegendListRef } from "~/hooks/useLegendListRef";
 import { type ResolvedKeybindingsConfig } from "@t3tools/contracts";
+import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import { ChevronRightIcon } from "lucide-react";
 import { type ReactNode, type RefObject, useState } from "react";
-import { useLegendListRef } from "~/hooks/useLegendListRef";
 import { cn } from "~/lib/utils";
 import { textDirection } from "~/textDirection";
-import { useUiLanguage } from "../i18n";
 import { shortcutLabelForCommand } from "../keybindings";
 import {
   type CommandPaletteActionItem,
@@ -13,8 +13,6 @@ import {
   type CommandPaletteRow,
   type CommandPaletteSubmenuItem,
 } from "./CommandPalette.logic";
-import { ProjectPinButton } from "./ProjectPinButton";
-import { SearchMatchHintLine, ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
 import {
   CommandCollection,
   CommandGroup,
@@ -26,6 +24,10 @@ import {
   CommandShortcut,
 } from "./ui/command";
 import { getVirtualizedScrollFadeClassName } from "./ui/scroll-area";
+import { ProjectPinButton } from "./ProjectPinButton";
+import { SearchMatchHintLine, ThreadSearchMatchExcerpt } from "./ThreadSearchMatch";
+
+import { useUiLanguage } from "../i18n";
 
 interface CommandPaletteResultsProps {
   emptyStateMessage?: string;
@@ -49,7 +51,6 @@ function CommandPaletteEmptyState(props: { emptyStateMessage?: string; isActions
 }
 
 export function CommandPaletteResults(props: CommandPaletteResultsProps) {
-  const { t: uiT } = useUiLanguage();
   if (props.groups.length === 0) {
     return <CommandPaletteEmptyState {...props} />;
   }
@@ -58,7 +59,7 @@ export function CommandPaletteResults(props: CommandPaletteResultsProps) {
     <CommandList>
       {props.groups.map((group) => (
         <CommandGroup items={group.items} key={group.value}>
-          {group.label ? <CommandGroupLabel>{uiT(group.label)}</CommandGroupLabel> : null}
+          {group.label ? <CommandGroupLabel>{group.label}</CommandGroupLabel> : null}
           <CommandCollection>
             {(item) =>
               item.disabled ? (
@@ -80,7 +81,15 @@ export function CommandPaletteResults(props: CommandPaletteResultsProps) {
   );
 }
 
-export function scrollCommandPaletteRowIntoView(list: LegendListRef | null, rowIndex: number) {
+export function scrollCommandPaletteRowIntoView(
+  list: LegendListRef | null,
+  rowIndex: number,
+  isFirstItem: boolean,
+) {
+  if (isFirstItem) {
+    void list?.scrollToOffset({ offset: 0, animated: false });
+    return;
+  }
   void list?.scrollIndexIntoView({
     index: rowIndex,
     animated: false,
@@ -96,7 +105,6 @@ interface CommandPaletteVirtualizedResultsProps extends Omit<CommandPaletteResul
 /** Pass flat items with virtualized to Command, scroll highlights via listRef, and handle Enter for
  * unmounted rows. */
 export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualizedResultsProps) {
-  const { t: uiT } = useUiLanguage();
   const { listRef } = props;
   const [scrollFade, setScrollFade] = useState({ top: false, bottom: false });
   const updateScrollFade = () => {
@@ -126,7 +134,7 @@ export function CommandPaletteVirtualizedResults(props: CommandPaletteVirtualize
         renderItem={({ item: row }) =>
           row.kind === "label" ? (
             <div className={row.first ? undefined : "pt-1.5"}>
-              <CommandListHeading>{uiT(row.label)}</CommandListHeading>
+              <CommandListHeading>{row.label}</CommandListHeading>
             </div>
           ) : row.itemIndex === null ? (
             <DisabledCommandPaletteResultRow item={row.item} />
@@ -198,7 +206,6 @@ function ThreadRowContext({
 function DisabledCommandPaletteResultRow(props: {
   item: CommandPaletteActionItem | CommandPaletteSubmenuItem;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div className="flex min-h-8 select-none items-center gap-2 rounded-sm px-2 py-1.5 text-base opacity-64 sm:min-h-7 sm:text-sm">
       <CommandPaletteTitleIcon>{props.item.icon}</CommandPaletteTitleIcon>
@@ -215,7 +222,7 @@ function DisabledCommandPaletteResultRow(props: {
             <SearchMatchHintLine hint={props.item.matchHint} />
           ) : props.item.description ? (
             <span className="min-w-0 text-muted-foreground/70 text-xs">
-              {uiT(props.item.description)}
+              {props.item.description}
             </span>
           ) : null}
         </span>
@@ -237,7 +244,6 @@ function CommandPaletteResultRow(props: {
   keybindings: ResolvedKeybindingsConfig;
   onExecuteItem: (item: CommandPaletteActionItem | CommandPaletteSubmenuItem) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const shortcutLabel = props.item.shortcutCommand
     ? shortcutLabelForCommand(props.keybindings, props.item.shortcutCommand)
     : null;
@@ -247,6 +253,19 @@ function CommandPaletteResultRow(props: {
       {...(props.index === undefined ? {} : { index: props.index })}
       value={props.item.value}
       active={props.isActive}
+      {...(props.item.kind === "action" && props.item.checked !== undefined
+        ? { "aria-checked": props.item.checked }
+        : {})}
+      onPointerDown={(event) => {
+        if (props.item.threadRef) {
+          startPaletteThreadDrag(
+            event.nativeEvent,
+            props.item.threadRef,
+            props.item.searchTitle ??
+              (typeof props.item.title === "string" ? props.item.title : "Thread"),
+          );
+        }
+      }}
       onMouseDown={(event) => {
         event.preventDefault();
       }}
@@ -268,7 +287,7 @@ function CommandPaletteResultRow(props: {
             <SearchMatchHintLine hint={props.item.matchHint} />
           ) : props.item.description ? (
             <span className="min-w-0 text-muted-foreground/70 text-xs">
-              {uiT(props.item.description)}
+              {props.item.description}
             </span>
           ) : null}
         </span>

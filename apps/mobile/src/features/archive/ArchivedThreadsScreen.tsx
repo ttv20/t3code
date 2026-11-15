@@ -11,7 +11,8 @@ import {
   type EnvironmentMachineKind,
 } from "@t3tools/contracts";
 import { useMemo, useRef, type ComponentProps } from "react";
-import { RefreshControl, useWindowDimensions, View } from "react-native";
+import { useWindowDimensions, View } from "react-native";
+import { RefreshControl } from "../../components/ui/RefreshControl";
 import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";

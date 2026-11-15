@@ -3,7 +3,7 @@ import { useUiLanguage } from "../../i18n";
 
 import { Toast } from "@base-ui/react/toast";
 import { type ScopedThreadRef, type ThreadId } from "@t3tools/contracts";
-import { Check, ChevronDown, ChevronUp, Copy } from "lucide";
+
 import { CircleAlertIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import {
   useEffect,
@@ -14,12 +14,14 @@ import {
   type ReactNode,
 } from "react";
 
-import { MorphIcon } from "~/components/MorphIcon";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CopyIcon } from "lucide-react";
+
+import { cn } from "~/lib/utils";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { useComposerDraftStore } from "~/composerDraftStore";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useThreadRouteTarget } from "~/hooks/useThreadRouteTarget";
-import { cn } from "~/lib/utils";
+
 import {
   buildVisibleToastLayout,
   hasVisibleToastAction,
@@ -154,10 +156,7 @@ function CopyErrorButton({ text }: { text: string }) {
           />
         }
       >
-        <MorphIcon
-          className={cn("size-3", isCopied && "text-success")}
-          icon={isCopied ? Check : Copy}
-        />
+        {isCopied ? <CheckIcon className="size-3 text-success" /> : <CopyIcon className="size-3" />}
       </TooltipTrigger>
       <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
@@ -188,11 +187,11 @@ function ToastExpandableSection({
         onClick={() => setOpen((prev) => !prev)}
         type="button"
       >
-        <MorphIcon
-          className="size-3.5 shrink-0 opacity-80"
-          icon={open ? ChevronUp : ChevronDown}
-          strokeWidth={2.25}
-        />
+        {open ? (
+          <ChevronUpIcon className="size-3.5 shrink-0 opacity-80" strokeWidth={2.25} />
+        ) : (
+          <ChevronDownIcon className="size-3.5 shrink-0 opacity-80" strokeWidth={2.25} />
+        )}
         {open ? collapseLabel : expandLabel}
       </button>
       {open ? <div className={toastExpandablePanelClassName}>{children}</div> : null}
@@ -274,12 +273,19 @@ function ToastDescriptionAndExpandable({
               data-slot="toast-description"
             />
           </div>
-          <MorphIcon
-            aria-hidden
-            className="size-3.5 h-lh shrink-0 text-muted-foreground opacity-80"
-            icon={open ? ChevronUp : ChevronDown}
-            strokeWidth={2.25}
-          />
+          {open ? (
+            <ChevronUpIcon
+              aria-hidden
+              className="size-3.5 h-lh shrink-0 text-muted-foreground opacity-80"
+              strokeWidth={2.25}
+            />
+          ) : (
+            <ChevronDownIcon
+              aria-hidden
+              className="size-3.5 h-lh shrink-0 text-muted-foreground opacity-80"
+              strokeWidth={2.25}
+            />
+          )}
         </TooltipTrigger>
         <TooltipPopup side="top">{open ? collapseLabel : expandLabel}</TooltipPopup>
       </Tooltip>

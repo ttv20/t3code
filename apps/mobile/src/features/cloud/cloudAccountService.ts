@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import type { getClerkInstance } from "@clerk/expo";
 import {
   createCloudAccountService,
@@ -55,6 +56,7 @@ const cleanUpCloudAccount = async (
   accountId: string | null,
   wasActive: boolean,
 ) => {
+  const uiT = readUiTranslator();
   const removal = await runAtomCommand(appAtomRegistry, removeCloudEnvironments, accountId, {
     reportFailure: false,
     reportDefect: false,
@@ -77,7 +79,7 @@ const cleanUpCloudAccount = async (
       : []),
   ]);
   for (const result of results) {
-    reportAtomCommandResult(result, { label: "cloud account cleanup" });
+    reportAtomCommandResult(result, { label: uiT("cloud account cleanup") });
   }
 };
 

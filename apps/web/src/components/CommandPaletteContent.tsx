@@ -1,6 +1,7 @@
+import { UiText } from "../i18n";
+
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, type RefObject } from "react";
-import { useUiLanguage } from "../i18n";
 
 import { Command, CommandFooter, CommandInput, CommandPanel } from "./ui/command";
 import { Kbd, KbdGroup } from "./ui/kbd";
@@ -65,8 +66,6 @@ export function CommandPaletteContent({
   testId,
   ...commandProps
 }: CommandPaletteContentProps) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <div className="contents" data-testid={testId}>
       <Command {...commandProps}>
@@ -94,34 +93,42 @@ export function CommandPaletteContent({
           {children}
         </CommandPanel>
         <CommandFooter className="max-sm:flex-col max-sm:items-start">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="inline-flex items-center gap-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+            <KbdGroup>
+              <Kbd>
+                <ArrowUpIcon />
+              </Kbd>
+              <Kbd>
+                <ArrowDownIcon />
+              </Kbd>
+              <span>
+                <UiText message={"Navigate"} />
+              </span>
+            </KbdGroup>
+            {footerActionLabel !== undefined ? (
               <KbdGroup>
                 <Kbd>
-                  <ArrowUpIcon />
+                  <UiText message={"Enter"} />
                 </Kbd>
-                <Kbd>
-                  <ArrowDownIcon />
-                </Kbd>
+                <span>{footerActionLabel}</span>
               </KbdGroup>
-              <span>{uiT("Navigate")}</span>
-            </span>
-            {footerActionLabel !== undefined ? (
-              <span className="inline-flex items-center gap-1">
-                <Kbd>{uiT("Enter")}</Kbd>
-                <span>{uiT(footerActionLabel)}</span>
-              </span>
             ) : null}
             {showBackHint ? (
-              <span className="inline-flex items-center gap-1">
-                <Kbd>{uiT("Backspace")}</Kbd>
-                <span>{uiT("Back")}</span>
-              </span>
+              <KbdGroup>
+                <Kbd>
+                  <UiText message={"Backspace"} />
+                </Kbd>
+                <span>
+                  <UiText message={"Back"} />
+                </span>
+              </KbdGroup>
             ) : null}
-            <span className="inline-flex items-center gap-1">
-              <Kbd>{uiT("Esc")}</Kbd>
-              <span>{uiT(escapeLabel)}</span>
-            </span>
+            <KbdGroup>
+              <Kbd>
+                <UiText message={"Esc"} />
+              </Kbd>
+              <span>{escapeLabel}</span>
+            </KbdGroup>
           </div>
           {footerTrailing}
         </CommandFooter>

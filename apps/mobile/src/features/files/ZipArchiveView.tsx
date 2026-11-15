@@ -18,10 +18,9 @@ import { File } from "expo-file-system";
 import { fetch } from "expo/fetch";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Keyboard, Pressable, ScrollView, TextInput, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
+import { UiText, useUiLanguage } from "../../i18n";
 import { attachmentDocumentPresentation } from "../../lib/attachmentDocumentPresentation";
 import { readUiTranslator } from "../../state/ui-language";
-
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { AppBar } from "../../components/ui/AppBar";
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -289,7 +288,7 @@ function ZipTreeRowView(props: {
         {entry
           ? formatAttachmentSize(entry.sizeBytes)
           : props.collapsed
-            ? `${node.fileCount} ${node.fileCount === 1 ? "file" : "files"}`
+            ? `${node.fileCount} ${node.fileCount === 1 ? uiT("file") : uiT("files")}`
             : ""}
       </Text>
     </Pressable>
@@ -342,19 +341,32 @@ function ZipArchiveProgress(props: {
   return (
     <View className="flex-1 justify-center gap-3 bg-sheet px-8">
       <Text className="text-xl font-t3-semibold text-foreground">
-        {formatAttachmentSize(props.receivedBytes)}
         {props.totalBytes > 0 ? (
-          <Text className="text-xl text-foreground-muted">
-            {` of ${formatAttachmentSize(props.totalBytes)}`}
-          </Text>
-        ) : null}
+          <UiText
+            message="{0} of {1}"
+            values={{
+              "0": formatAttachmentSize(props.receivedBytes),
+              "1": (
+                <Text className="text-xl text-foreground-muted">
+                  {formatAttachmentSize(props.totalBytes)}
+                </Text>
+              ),
+            }}
+          />
+        ) : (
+          formatAttachmentSize(props.receivedBytes)
+        )}
       </Text>
       <Progress
         value={props.totalBytes > 0 ? props.receivedBytes / props.totalBytes : undefined}
         label={uiT("ZIP download progress")}
       />
       <Text className="text-sm text-foreground-muted">
-        {`Downloading the ZIP so its files can be listed.${timeLeft ? ` ${timeLeft} on this connection.` : ""}`}
+        {timeLeft
+          ? uiT("Downloading the ZIP so its files can be listed. {0} on this connection.", {
+              "0": timeLeft,
+            })
+          : uiT("Downloading the ZIP so its files can be listed.")}
       </Text>
       <Button label={uiT("Cancel")} onPress={props.onCancel} />
     </View>
@@ -694,11 +706,6 @@ function ZipEntryView(props: {
       () => {
         if (controller.signal.aborted) return;
         setBusy(null);
-        if (kind === "attach")
-          Dialog.alert(
-            uiT("Added to chat"),
-            uiT("{0} is attached to your message.", { "0": entry.name }),
-          );
       },
       (cause: unknown) => {
         if (controller.signal.aborted) return;

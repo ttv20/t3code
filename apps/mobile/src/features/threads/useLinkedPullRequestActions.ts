@@ -1,3 +1,4 @@
+import { useUiLanguage } from "../../i18n";
 import {
   pullRequestLinkProject,
   resolveLinkPullRequestInput,
@@ -11,7 +12,10 @@ import {
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
-import { planThreadPullRequestMutation } from "@t3tools/client-runtime/thread-pull-request-compatibility";
+import {
+  canStartThreadPullRequestWatch,
+  planThreadPullRequestMutation,
+} from "@t3tools/client-runtime/thread-pull-request-compatibility";
 import {
   capitalizeTerm,
   sourceControlClients,
@@ -34,6 +38,7 @@ export function useLinkedPullRequestActions(input: {
   readonly project: EnvironmentProject | null;
   readonly runtime: EnvironmentRuntimeState | null;
 }) {
+  const { t: uiT } = useUiLanguage();
   const { thread, project, runtime } = input;
   const terminology = sourceControlClients.get(project?.repositoryIdentity?.provider).changeRequest;
   const capabilities = runtime?.serverConfig?.environment.capabilities;
@@ -43,13 +48,7 @@ export function useLinkedPullRequestActions(input: {
   );
   const canEdit = canOperate && capabilities !== undefined;
   const canWatch = canOperate && capabilities?.threadPullRequestWatch === true;
-  const canStartWatch =
-    canWatch &&
-    thread !== null &&
-    thread.archivedAt === null &&
-    thread.settledAt === null &&
-    thread.settledOverride !== "settled" &&
-    thread.lineage.relationshipToParent !== "subagent";
+  const canStartWatch = canWatch && thread !== null && canStartThreadPullRequestWatch(thread);
   const link = useAtomCommand(threadEnvironment.linkPullRequest, { reportFailure: false });
   const unlink = useAtomCommand(threadEnvironment.unlinkPullRequest, { reportFailure: false });
   const watch = useAtomCommand(threadEnvironment.watchPullRequest, { reportFailure: false });
@@ -90,11 +89,13 @@ export function useLinkedPullRequestActions(input: {
   const promptLink = () => {
     const { singular } = terminology;
     Dialog.prompt({
-      title: `Link ${singular}`,
-      message: `Paste a ${singular} URL, or enter 123 / #123 for this thread's repository.`,
-      placeholder: `${capitalizeTerm(singular)} URL or #42`,
+      title: uiT("Link {0}", { "0": singular }),
+      message: uiT("Paste a {0} URL, or enter 123 / #123 for this thread's repository.", {
+        "0": singular,
+      }),
+      placeholder: uiT("{0} URL or #42", { "0": capitalizeTerm(singular) }),
       initialValue: "",
-      confirmText: "Link",
+      confirmText: uiT("Link"),
       onConfirm: (reference) => {
         const resolved = resolveLinkPullRequestInput({
           reference,
@@ -118,13 +119,13 @@ export function useLinkedPullRequestActions(input: {
     const open = link.snapshot === null || link.snapshot.state === "open";
     const watching = link.watch !== undefined;
     return [
-      { id: "copy", title: "Copy link", image: "link" },
-      { id: "browser", title: "Open in browser", image: "safari" },
+      { id: "copy", title: uiT("Copy link"), image: "link" },
+      { id: "browser", title: uiT("Open in browser"), image: "safari" },
       ...((watching ? canWatch : canStartWatch) && open
         ? [
             {
               id: "watch",
-              title: watching ? "Stop watching" : "Watch for changes",
+              title: watching ? uiT("Stop watching") : uiT("Watch for changes"),
               image: watching ? "eye.slash" : "eye",
             },
           ]
@@ -133,7 +134,8 @@ export function useLinkedPullRequestActions(input: {
         ? [
             {
               id: "unlink",
-              title: link.source === "stack" ? "Dismiss from thread" : "Unlink from thread",
+              title:
+                link.source === "stack" ? uiT("Dismiss from thread") : uiT("Unlink from thread"),
               image: "xmark",
               attributes: { destructive: true },
             },

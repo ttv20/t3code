@@ -1,3 +1,4 @@
+import { resolveLocale } from "./locales.ts";
 import { HEBREW_UI_MESSAGES } from "./locales/he.ts";
 import { ARABIC_UI_MESSAGES } from "./locales/ar.ts";
 import { PERSIAN_UI_MESSAGES } from "./locales/fa.ts";
@@ -12,6 +13,14 @@ export const INTERFACE_LANGUAGES = [
   { value: "he", label: "עברית" },
   { value: "ar", label: "العربية" },
   { value: "fa", label: "فارسی" },
+  { value: "de", label: "Deutsch" },
+  { value: "es", label: "Español" },
+  { value: "fr", label: "Français" },
+  { value: "ja", label: "日本語" },
+  { value: "ko", label: "한국어" },
+  { value: "pt-BR", label: "Português (Brasil)" },
+  { value: "ru", label: "Русский" },
+  { value: "zh", label: "中文" },
 ] as const;
 
 export const INTERFACE_DIRECTIONS = [
@@ -26,21 +35,30 @@ export function resolveUiLocale(
   systemLanguages: readonly string[] = [],
 ): UiLocale {
   if (language !== "system") return language;
-  for (const tag of systemLanguages) {
-    const base = tag.toLowerCase().split(/[-_]/)[0];
-    if (base === "he" || base === "iw") return "he";
-    if (base === "en") return "en";
-    if (base === "ar" || base === "fa") return base;
-  }
-  return "en";
+  const supported = INTERFACE_LANGUAGES.flatMap(({ value }) => (value === "system" ? [] : [value]));
+  const normalized = systemLanguages.map((tag) => {
+    const languageTag = tag.replaceAll("_", "-");
+    const base = languageTag.toLowerCase().split("-")[0];
+    return base === "iw" ? "he" : base === "pt" ? "pt-BR" : languageTag;
+  });
+  const resolved = resolveLocale(language, normalized, supported, "en");
+  return supported.find((locale) => locale === resolved) ?? "en";
 }
 
 export function resolveUiDirection(locale: UiLocale, direction: InterfaceDirection): UiDirection {
-  return direction === "auto" ? (locale === "en" ? "ltr" : "rtl") : direction;
+  return direction === "auto" ? (["he", "ar", "fa"].includes(locale) ? "rtl" : "ltr") : direction;
 }
 
 const UI_MESSAGES: Readonly<Record<UiLocale, Readonly<Record<string, string>>>> = {
   en: {},
+  de: {},
+  es: {},
+  fr: {},
+  ja: {},
+  ko: {},
+  "pt-BR": {},
+  ru: {},
+  zh: {},
   he: HEBREW_UI_MESSAGES,
   ar: ARABIC_UI_MESSAGES,
   fa: PERSIAN_UI_MESSAGES,
@@ -86,6 +104,14 @@ export function uiSearchTerms(locale: UiLocale, terms: readonly string[]): reado
 // the server's date values describe the same day, including in Persian.
 export const UI_DATE_LOCALES = {
   en: "en-US",
+  de: "de-DE",
+  es: "es-ES",
+  fr: "fr-FR",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  "pt-BR": "pt-BR",
+  ru: "ru-RU",
+  zh: "zh-CN",
   he: "he-IL",
   ar: "ar-u-ca-gregory",
   fa: "fa-IR-u-ca-gregory",
@@ -169,4 +195,13 @@ export function splitUiTextSlots(message: string) {
     occurrences.set(slot, occurrence + 1);
     return { key: `slot-${slot}-${occurrence}`, text, slot };
   });
+}
+
+export function createGtSourceCatalog(source: Readonly<Record<string, string>>, locale: UiLocale) {
+  const t = createUiTranslator(locale);
+  return Object.fromEntries(Object.entries(source).map(([key, message]) => [key, t(message)]));
+}
+
+export function resolveInterfaceLanguage(value: string): InterfaceLanguage {
+  return INTERFACE_LANGUAGES.find(({ value: supported }) => supported === value)?.value ?? "system";
 }

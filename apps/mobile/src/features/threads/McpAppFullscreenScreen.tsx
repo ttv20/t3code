@@ -59,6 +59,44 @@ function descendsFrom(
 export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
   const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
+  const { environmentId, threadId, itemId } = route.params;
+  if (!environmentId?.trim() || !threadId?.trim() || !itemId?.trim()) {
+    return (
+      <View className="flex-1 bg-screen">
+        <AppBar
+          title={uiT("App")}
+          onClose={() => navigation.goBack()}
+          closeAccessibilityLabel={uiT("Exit full screen")}
+        />
+        <Text className="m-6 text-sm text-foreground-muted">
+          {uiT("This app cannot be shown.")}
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <McpAppFullscreen
+      params={route.params}
+      environmentId={EnvironmentId.make(environmentId)}
+      threadId={ThreadId.make(threadId)}
+      itemId={TurnItemId.make(itemId)}
+    />
+  );
+}
+
+function McpAppFullscreen({
+  params,
+  environmentId,
+  threadId,
+  itemId,
+}: {
+  readonly params: McpAppFullscreenScreenProps["route"]["params"];
+  readonly environmentId: EnvironmentId;
+  readonly threadId: ThreadId;
+  readonly itemId: TurnItemId;
+}) {
+  const { t: uiT } = useUiLanguage();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   // Wait for focus before goBack; an exit under another screen must not pop that screen.
   const focused = useIsFocused();
@@ -76,10 +114,6 @@ export function McpAppFullscreenScreen({ route }: McpAppFullscreenScreenProps) {
     });
   };
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const params = route.params;
-  const environmentId = EnvironmentId.make(params.environmentId);
-  const threadId = ThreadId.make(params.threadId);
-  const itemId = TurnItemId.make(params.itemId);
   const conversationThreadId = useConversationThreadId(
     environmentId,
     threadId,

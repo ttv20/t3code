@@ -84,7 +84,7 @@ function NativeChild(props: { readonly child: OrchestrationV2NativeChildWork }) 
   const { child } = props;
   return (
     <View className="gap-2">
-      <Text className="font-t3-bold text-sm text-foreground">{child.role || "Subagent"}</Text>
+      <Text className="font-t3-bold text-sm text-foreground">{child.role || uiT("Subagent")}</Text>
       <Text selectable className="font-sans text-sm text-foreground-secondary">
         {child.prompt}
       </Text>

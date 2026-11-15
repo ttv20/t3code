@@ -2,6 +2,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { PullRequestDetail, PullRequestMergeMethod } from "@t3tools/contracts";
+import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState } from "react";
 import { View } from "react-native";
@@ -10,7 +11,7 @@ import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
 import { SplitButton } from "../../components/ui/SplitButton";
-import { useUiLanguage } from "../../i18n";
+import { useEnvironmentServerConfig } from "../../state/entities";
 import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -21,6 +22,7 @@ import {
   mergeUnavailableReason,
   PR_ACTION_ICONS,
   pullRequestActionLabel,
+  resolveMergeMethod,
 } from "./pullRequestActions";
 import { PullRequestGlyph } from "./pullRequestGlyphs";
 import { pullRequestStackMerge, singlePullRequestMergeAllowed } from "./pullRequestStack";
@@ -28,6 +30,7 @@ import { usePullRequestAction } from "./usePullRequestAction";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
 import type { PullRequestStackState } from "./usePullRequestStack";
+import { useUiLanguage } from "../../i18n";
 
 export function PullRequestMergeControls(props: {
   readonly pr: PullRequestDetail;
@@ -42,6 +45,7 @@ export function PullRequestMergeControls(props: {
   const permissions = usePullRequestPermissions(props.params, pr);
   const stateAction = usePullRequestAction(props.params, pr);
   const preferences = useAtomValue(mobilePreferencesAtom);
+  const serverSettings = useEnvironmentServerConfig(target.environmentId)?.settings;
   const savePreferences = useAtomSet(updateMobilePreferencesAtom);
   const runAction = useAtomCommand(composerPullRequests.runAction, { reportFailure: false });
   const refreshDetail = useAtomRefresh(composerPullRequests.detail(target));
@@ -50,15 +54,15 @@ export function PullRequestMergeControls(props: {
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const methods = allowedMergeMethods(pr);
-  const preferred =
-    selectedMethod ??
-    (AsyncResult.isSuccess(preferences) ? preferences.value.pullRequestMergeMethod : undefined) ??
-    "squash";
-  const method = methods.includes(preferred)
-    ? preferred
-    : methods.includes("squash")
-      ? "squash"
-      : methods[0];
+  const method = resolveMergeMethod(
+    pr,
+    selectedMethod,
+    serverSettings
+      ? resolveProjectSettings(serverSettings, target.input.projectId).settings
+          .pullRequestMergeMethod
+      : null,
+    AsyncResult.isSuccess(preferences) ? preferences.value.pullRequestMergeMethod : undefined,
+  );
   const scope = stack.stack ? pullRequestStackMerge(stack.stack, pr.number, terminology) : null;
   const canMergeSingle = singlePullRequestMergeAllowed({
     supportsStackActions: stack.supportsStackActions,

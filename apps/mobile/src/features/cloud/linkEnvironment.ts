@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { HttpClient } from "effect/http";
@@ -113,10 +114,11 @@ function findEnvironmentCloudApiError(cause: unknown): { readonly message: strin
 }
 
 function requireRelayUrl(): Effect.Effect<string, CloudEnvironmentLinkError> {
+  const uiT = readUiTranslator();
   const relayUrl = readRelayUrl();
   return relayUrl
     ? Effect.succeed(relayUrl)
-    : Effect.fail(new CloudEnvironmentLinkError({ message: "Relay URL is not configured." }));
+    : Effect.fail(new CloudEnvironmentLinkError({ message: uiT("Relay URL is not configured.") }));
 }
 
 function endpointOrigin(httpBaseUrl: string) {
@@ -132,14 +134,15 @@ function ensureLinkedEnvironmentMatches(input: {
   readonly expectedProviderKind: RelayManagedEndpointProviderKind;
   readonly link: RelayEnvironmentLinkResponseType;
 }): Effect.Effect<void, CloudEnvironmentLinkError> {
+  const uiT = readUiTranslator();
   if (input.link.environmentId !== input.expectedEnvironmentId) {
     return new CloudEnvironmentLinkError({
-      message: "Relay returned credentials for a different environment.",
+      message: uiT("Relay returned credentials for a different environment."),
     });
   }
   if (input.link.endpoint.providerKind !== input.expectedProviderKind) {
     return new CloudEnvironmentLinkError({
-      message: "Relay returned credentials for a different endpoint provider.",
+      message: uiT("Relay returned credentials for a different endpoint provider."),
     });
   }
   return Effect.void;
@@ -160,9 +163,10 @@ export const linkEnvironmentToCloudWithPreference = Effect.fn(
 )(function* (
   input: LinkEnvironmentToCloudInput & { readonly liveActivitiesEnabled: boolean },
 ): Effect.fn.Return<void, CloudEnvironmentLinkError, LinkEnvironmentToCloudRequirements> {
+  const uiT = readUiTranslator();
   if (!input.connection.bearerToken) {
     return yield* new CloudEnvironmentLinkError({
-      message: "Only a locally paired bearer connection can be linked to the cloud.",
+      message: uiT("Only a locally paired bearer connection can be linked to the cloud."),
     });
   }
   const localBearerToken = input.connection.bearerToken;

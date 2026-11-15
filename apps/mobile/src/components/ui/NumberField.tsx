@@ -63,7 +63,7 @@ export function NumberField(props: NumberFieldProps) {
             ]}
           >
             <Picker
-              label={uiT(props.label)}
+              label={props.label}
               selection={draft}
               onSelectionChange={setDraft}
               modifiers={[pickerStyle("wheel"), frame({ height: 180 })]}

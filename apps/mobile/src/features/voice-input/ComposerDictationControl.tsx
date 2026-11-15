@@ -260,8 +260,6 @@ function VoiceActionButton(props: {
   readonly onPress: () => void;
   readonly variant?: "plain" | "primary";
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const { scale } = useAndroidControlSizing();
   const variant = props.variant ?? "plain";
   const loading = props.loading === true;
@@ -276,7 +274,7 @@ function VoiceActionButton(props: {
 
   return (
     <Pressable
-      accessibilityLabel={uiT(props.accessibilityLabel)}
+      accessibilityLabel={props.accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ busy: props.loading, disabled: props.disabled }}
       className="size-[44px] shrink-0 items-center justify-center active:opacity-70"

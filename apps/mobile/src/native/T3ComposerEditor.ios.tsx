@@ -17,8 +17,7 @@ import { useUiLanguage } from "../i18n";
 import { composerContextEditorTokens, composerSkillLabels } from "../lib/composerContext";
 import { DEFAULT_COMPOSER_ENTER_BEHAVIOR } from "../lib/composerEnterBehavior";
 import { useComposerModelTokens } from "./useComposerModelTokens";
-
-import { useScaledTextRole } from "../features/settings/appearance/useScaledTextRole";
+import { useComposerTextRole } from "../features/settings/appearance/useScaledTextRole";
 import {
   composerChipSizeSuffix,
   contextChipAccent,
@@ -28,8 +27,6 @@ import {
 } from "../lib/composerChipPresentation";
 import { contextChipIconUri, modelChipIcon, modelChipIconUri } from "../lib/contextChipIconSource";
 import { FONT_FAMILIES } from "../lib/fontFamilies";
-import { createNativeComposerTheme } from "../lib/nativeComposerTheme";
-import { useUniwindTheme } from "../lib/useUniwindTheme";
 import {
   acknowledgeComposerNativeEvent,
   assumeComposerControlledState,
@@ -39,6 +36,8 @@ import {
   type ComposerNativeEventSnapshot,
 } from "./composerEditorRevision";
 import type { ComposerEditorProps, ComposerEditorSelection } from "./T3ComposerEditor.types";
+import { createNativeComposerTheme } from "../lib/nativeComposerTheme";
+import { useUniwindTheme } from "../lib/useUniwindTheme";
 
 const NATIVE_MODULE_NAME = "T3ComposerEditor";
 const EMPTY_SKILLS: NonNullable<ComposerEditorProps["skills"]> = [];
@@ -179,7 +178,7 @@ export function ComposerEditor({
     });
     setConfirmedTokens({ value: props.value, tokens });
   }
-  const bodyText = useScaledTextRole("body");
+  const bodyText = useComposerTextRole();
   const theme = useUniwindTheme();
   const fontFamily = FONT_FAMILIES.regular;
 

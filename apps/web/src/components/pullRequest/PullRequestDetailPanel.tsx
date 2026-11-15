@@ -1,25 +1,31 @@
-import { UiText, useUiLanguage } from "../../i18n";
-
-import { useAtomValue } from "@effect/atom-react";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import {
+  parsePullRequestAnchor,
+  pullRequestLinkCommit,
+  resolvePullRequestReviewAnchor,
+  type PullRequestAnchor,
+} from "@t3tools/shared/pullRequestAnchor";
 import { projectChangeRequestUrl } from "@t3tools/client-runtime/change-request-links";
+import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
+import { useAtomValue } from "@effect/atom-react";
+import { usePullRequestStack } from "~/state/usePullRequestStack";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import { normalizeThreadPullRequestKey } from "@t3tools/client-runtime/thread-pull-requests";
 import {
   AuthOrchestrationOperateScope,
   AuthSourceControlWriteScope,
   type EnvironmentId,
   type PullRequestAction,
   type PullRequestDetail,
-  type PullRequestListEntry,
   type PullRequestMergeMethod,
+  type PullRequestListEntry,
+  type PullRequestUpdateMethod,
   type PullRequestRef,
   type PullRequestReviewGuideStop,
   type PullRequestSummary,
-  type PullRequestUpdateMethod,
   resolveEnvironmentMachineKind,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
@@ -41,81 +47,75 @@ import {
   useRef,
   useState,
 } from "react";
-import { usePullRequestStack } from "~/state/usePullRequestStack";
-
-import {
-  capitalizeTerm,
-  sourceControlClients,
-} from "@t3tools/client-runtime/source-control-clients";
-import { isCommandPaletteOpen } from "~/commandPaletteBus";
-import { RelativeTime } from "~/components/RelativeTime";
 import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
-import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
-import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
-import { useLiveRefresh } from "~/hooks/useLiveRefresh";
-import { useEnvironmentSettings } from "~/hooks/useSettings";
-import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
-import { cn } from "~/lib/utils";
-import { readLocalApi } from "~/localApi";
-import type { ReviewCommentContext } from "~/reviewCommentContext";
 import { type PullRequestDetailTab, useRightPanelStore } from "~/rightPanelStore";
-import { useProjects, useServerConfigs } from "~/state/entities";
-import { useEnvironments } from "~/state/environments";
-import { pullRequestEnvironment, usePullRequestTurnRefresh } from "~/state/pullRequests";
-import { useEnvironmentQuery } from "~/state/query";
+import { useEnvironmentSettings } from "~/hooks/useSettings";
+import { useNewThreadHandler } from "~/hooks/useHandleNewThread";
+import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { isCommandPaletteOpen } from "~/commandPaletteBus";
+import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
 import { primaryServerKeybindingsAtom } from "~/state/server";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { vcsEnvironment } from "~/state/vcs";
-import { useUiStateStore } from "~/uiStateStore";
-import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
-import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
-import { PullRequestStackMenu } from "./PullRequestStackMenu";
-import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
-import { offHeadPullRequestCheckoutToast } from "./pullRequestCheckoutToast";
 import {
   usePullRequestDefaultMergeMethodResolver,
   writeHandoffToComposer,
 } from "./usePullRequestActions";
-
-import { DiffPanelLoadingState } from "../DiffPanelShell";
-import { SourceControlAppAccessNotice } from "../SourceControlAppAccessNotice";
+import { offHeadPullRequestCheckoutToast } from "./pullRequestCheckoutToast";
+import { usePreparePullRequestThreadAction } from "~/state/sourceControlActions";
+import { cn } from "~/lib/utils";
+import { readLocalApi } from "~/localApi";
+import type { ReviewCommentContext } from "~/reviewCommentContext";
+import { useProjects, useServerConfigs } from "~/state/entities";
+import { useEnvironments } from "~/state/environments";
+import { useEnvironmentQuery } from "~/state/query";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { useLiveRefresh } from "~/hooks/useLiveRefresh";
+import { pullRequestEnvironment, usePullRequestTurnRefresh } from "~/state/pullRequests";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { PullRequestStackMenu } from "./PullRequestStackMenu";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
+import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
+import {
+  capitalizeTerm,
+  sourceControlClients,
+} from "@t3tools/client-runtime/source-control-clients";
+import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
+import { vcsEnvironment } from "~/state/vcs";
+import { RelativeTime } from "~/components/RelativeTime";
+import { useUiStateStore } from "~/uiStateStore";
 import { Button } from "../ui/button";
-import { MiddleTruncate } from "../ui/middle-truncate";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { PullRequestActionsMenu } from "./PullRequestActionsMenu";
-import { PullRequestActivityUnavailableState } from "./PullRequestActivityUnavailableState";
-import { PullRequestBaseBranch } from "./PullRequestBaseBranch";
-import { PullRequestChecksPopover } from "./PullRequestChecksPopover";
-import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
-import { PullRequestComposer } from "./PullRequestComposer";
-import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
-import {
-  PullRequestApproveWorkflowsButton,
-  PullRequestCheckoutMenu,
-  PullRequestPrimaryAction,
-  PullRequestResolveConflictsButton,
-} from "./PullRequestDetailActions";
-import { PullRequestDetailCrumbs } from "./PullRequestDetailCrumbs";
+import { MiddleTruncate } from "../ui/middle-truncate";
 import {
   PullRequestChecksStatusLine,
   PullRequestDetailHeaderBody,
   PullRequestDetailTabBar,
 } from "./PullRequestDetailLayout";
 import { PullRequestDetailGhost, PullRequestTimelineGhost } from "./PullRequestGhosts";
-import { PullRequestGuideTab } from "./PullRequestGuideTab";
+import { PullRequestCopyableCode } from "./PullRequestCopyableCode";
+import { pullRequestRefKey, usePullRequestDetail } from "./usePullRequestDetail";
+import { PullRequestActionsMenu } from "./PullRequestActionsMenu";
+import {
+  PullRequestApproveWorkflowsButton,
+  PullRequestCheckoutMenu,
+  PullRequestPrimaryAction,
+  PullRequestResolveConflictsButton,
+} from "./PullRequestDetailActions";
+import { PullRequestBaseBranch } from "./PullRequestBaseBranch";
+import { PullRequestDetailCrumbs } from "./PullRequestDetailCrumbs";
+import { PullRequestTitleEditor } from "./PullRequestTitleEditor";
+import { PullRequestActivityUnavailableState } from "./PullRequestActivityUnavailableState";
+import { SourceControlAppAccessNotice } from "../SourceControlAppAccessNotice";
+import { DiffPanelLoadingState } from "../DiffPanelShell";
+import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+import type { PullRequestAgentSelectionInput } from "./PullRequestCodeTab";
+import { openOnHostLabel } from "./pullRequestLinkContextMenu";
 import { PullRequestMarkdownContext } from "./PullRequestMarkdown";
+import { pullRequestMarkdownPlugins } from "./pullRequestMarkdown.logic";
+import { PullRequestComposer } from "./PullRequestComposer";
 import { PullRequestSummaryTab } from "./PullRequestSummaryTab";
 import { PullRequestTimelineTab } from "./PullRequestTimelineTab";
-import { PullRequestTitleEditor } from "./PullRequestTitleEditor";
-import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
-import { guideRunKey, useGuideRunStore } from "./guide/guideRunStore";
-import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
 import {
-  allowedPullRequestMergeMethods,
-  allowsSinglePullRequestMerge,
   buildAddSelectionToAgentHandoff,
   buildAskAboutGuideStopHandoff,
   buildAskAboutPullRequestHandoff,
@@ -125,41 +125,47 @@ import {
   buildPullRequestCommentContext,
   buildPullRequestContext,
   buildResolveConflictsPrompt,
-  canDeletePullRequestBranch,
-  checkoutFailureDescription,
-  isPullRequestConflicting,
-  isPullRequestNotFound,
-  isStackedPullRequestBase,
   latestPullRequestReviewOutcomes,
   loadingPullRequestCheckoutCommand,
-  PULL_REQUEST_MERGE_METHOD_LABELS,
+  isPullRequestNotFound,
+  isStackedPullRequestBase,
   pullRequestActionNeedsHostRefresh,
-  type PullRequestChatSubject,
   pullRequestCheckoutCommand,
-  type PullRequestFinding,
+  pullRequestTimelineEventMatches,
+  buildPullRequestTimeline,
   pullRequestFindingKey,
   pullRequestHandoffLabels,
+  PULL_REQUEST_MERGE_METHOD_LABELS,
+  checkoutFailureDescription,
   readableFailure,
+  resolvePullRequestReferenceHost,
+  resolvePullRequestPrimaryControl,
+  allowedPullRequestMergeMethods,
+  allowsSinglePullRequestMerge,
+  canDeletePullRequestBranch,
+  isPullRequestConflicting,
   resolveBaseFreshness,
   resolvePullRequestMergeMethod,
-  resolvePullRequestPrimaryControl,
-  resolvePullRequestReferenceHost,
+  type PullRequestChatSubject,
+  type PullRequestFinding,
   shouldRefreshPullRequestActivity,
 } from "./pullRequestDetail.logic";
-import { openOnHostLabel } from "./pullRequestLinkContextMenu";
-import { pullRequestMarkdownPlugins } from "./pullRequestMarkdown.logic";
+import { resolvePickableEnvironments } from "./pullRequestProjectAssignment.logic";
+import { PullRequestChecksPopover } from "./PullRequestChecksPopover";
 import {
   PullRequestActorLabel,
-  pullRequestChecksState,
-  pullRequestChecksStatePresentation,
   PullRequestMetaLine,
   PullRequestReviewOutcomeIcon,
+  pullRequestChecksState,
+  pullRequestChecksStatePresentation,
   pullRequestReviewOutcomeToneClassName,
   resolvePullRequestState,
   summarizePullRequestChecks,
 } from "./pullRequestPresentation";
-import { resolvePickableEnvironments } from "./pullRequestProjectAssignment.logic";
-import { pullRequestRefKey, usePullRequestDetail } from "./usePullRequestDetail";
+import { PullRequestGuideTab } from "./PullRequestGuideTab";
+import { guideRunKey, useGuideRunStore } from "./guide/guideRunStore";
+import { useReviewGuideWriter } from "./guide/useReviewGuideWriter";
+import { UiText, useUiLanguage } from "../../i18n";
 
 const actionFailureLabels = (term: string): Record<PullRequestAction, string> => ({
   merge: `Could not merge this ${term}`,
@@ -210,10 +216,10 @@ const TABS: ReadonlyArray<{ value: PullRequestDetailTab; label: string }> = [
 const loadCodeTab = () => import("./PullRequestCodeTab");
 const PullRequestCodeTab = lazy(loadCodeTab);
 
-function reportCheckoutCommandError(error: Error) {
+function reportCheckoutCommandError(error: Error, translate = createUiTranslator("en")) {
   toastManager.add({
     type: "error",
-    title: "Could not copy checkout command",
+    title: translate("Could not copy checkout command"),
     description: error.message,
   });
 }
@@ -257,6 +263,22 @@ function pullRequestStackReference(
       };
 }
 
+function linkedTab(anchor: PullRequestAnchor | null): PullRequestDetailTab | null {
+  switch (anchor?.kind) {
+    case "code":
+    case "diff":
+      return "code";
+    case "commits":
+    case "timeline":
+      return "timeline";
+    case "checks":
+    case "summary":
+      return "summary";
+    default:
+      return null;
+  }
+}
+
 export function PullRequestDetailPanel({
   environmentId,
   shortcutsEnabled,
@@ -273,6 +295,8 @@ export function PullRequestDetailPanel({
   onBack,
   onSelectPullRequest,
   onGuideShown,
+  revealUrl,
+  onRevealSettled,
   initialTab = "summary",
   onTabChange,
 }: {
@@ -299,6 +323,10 @@ export function PullRequestDetailPanel({
   composerDraftTarget?: ScopedThreadRef | DraftId;
   onBack?: (() => void) | undefined;
   onGuideShown?: (() => void) | undefined;
+  /** A clicked link into this pull request, waiting to be shown. */
+  revealUrl?: string | undefined;
+  /** Reports the link it was given shown or missing, so a newer link stays pending. */
+  onRevealSettled?: ((revealUrl: string) => void) | undefined;
   initialTab?: PullRequestDetailTab;
   onTabChange?: ((tab: PullRequestDetailTab) => void) | undefined;
 }) {
@@ -359,7 +387,10 @@ export function PullRequestDetailPanel({
     coreDetail,
     detail,
   } = usePullRequestDetail(environmentId, reference, matchingListEntry);
-  const [selectedTab, setTab] = useState<PullRequestDetailTab>(initialTab);
+  const revealAnchor = parsePullRequestAnchor(revealUrl);
+  const [selectedTab, setTab] = useState<PullRequestDetailTab>(
+    () => linkedTab(revealAnchor) ?? initialTab,
+  );
   const reviewGuidesEnabled = useEnvironmentSettings(
     environmentId,
     (settings) => settings.reviewGuidesEnabled,
@@ -383,7 +414,7 @@ export function PullRequestDetailPanel({
   const [codeCommitScope, setCodeCommitScope] = useState<{
     readonly pullRequestKey: string;
     readonly oid: string | null;
-  }>(() => ({ pullRequestKey, oid: null }));
+  }>(() => ({ pullRequestKey, oid: pullRequestLinkCommit(revealUrl) }));
   const selectedCodeCommitOid =
     codeCommitScope.pullRequestKey === pullRequestKey ? codeCommitScope.oid : null;
   const selectCodeCommit = (oid: string | null) => {
@@ -403,6 +434,33 @@ export function PullRequestDetailPanel({
     void loadCodeTab();
     selectTab("code");
   };
+  // Cached activity can predate a linked comment, so a miss waits for one host read. `after` is
+  // when that read's invalidation finished; null while it runs.
+  const revealHostRead = useRef<{ readonly url: string; readonly after: number | null } | null>(
+    null,
+  );
+  const settleReveal = (url: string) => {
+    revealHostRead.current = null;
+    onRevealSettled?.(url);
+  };
+  const followLink = useEffectEvent(() => {
+    if (revealUrl === undefined) return;
+    const next = linkedTab(revealAnchor);
+    if (next === null) return settleReveal(revealUrl);
+    if (next === "code") {
+      selectCodeCommit(pullRequestLinkCommit(revealUrl));
+      void loadCodeTab();
+    }
+    selectTab(next);
+    // These name a tab, not a place in it.
+    if (revealAnchor?.kind === "code" || revealAnchor?.kind === "commits") settleReveal(revealUrl);
+  });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a clicked link lives in the panel store and selects its tab even when the panel is already mounted
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- link navigation selects the PR tab and commit scope
+    followLink();
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- each clicked link is a navigation request
+  }, [revealUrl]);
   const tabScopeKey = `${environmentId}:${pullRequestKey}`;
   const [tabMountState, setTabMountState] = useState(() => ({
     key: tabScopeKey,
@@ -479,8 +537,6 @@ export function PullRequestDetailPanel({
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const { copyToClipboard: copyReference } = useCopyToClipboard<string>({
     target: `${terminology.singular} reference`,
-    onCopy: (label) =>
-      toastManager.add({ type: "success", title: uiT("{0} copied", { "0": label }) }),
     onError: (error, label) =>
       toastManager.add({
         type: "error",
@@ -606,14 +662,72 @@ export function PullRequestDetailPanel({
   const invalidate = useAtomCommand(pullRequestEnvironment.invalidate, { reportFailure: false });
   const [isInvalidating, setIsInvalidating] = useState(false);
   const refreshing = isInvalidating || detailQuery.isPending;
-  const refreshFromHost = async () => {
+  /** Resolves whether the host cache was invalidated before the refetch. */
+  const refetchFromHost = async () => {
     setIsInvalidating(true);
     // Atom commands settle without throwing, so reset always runs.
-    await invalidate({ environmentId, input: { reference } });
+    const invalidated = await invalidate({ environmentId, input: { reference } });
     refreshDetail();
     setRefreshToken((token) => token + 1);
     setIsInvalidating(false);
+    return invalidated._tag === "Success";
   };
+  const refreshFromHost = async () => {
+    await refetchFromHost();
+  };
+  const timelineAnchor =
+    revealAnchor?.kind !== "timeline"
+      ? null
+      : detail === null
+        ? revealAnchor.anchor
+        : resolvePullRequestReviewAnchor(
+            revealAnchor.anchor,
+            detail.comments,
+            detail.reviewThreads,
+          );
+  // Loaded activity without the linked item, keyed by load so a refetch is checked again.
+  const revealMissedAt =
+    timelineAnchor !== null &&
+    detail !== null &&
+    !activityQuery.isPending &&
+    !buildPullRequestTimeline(detail).some((event) =>
+      pullRequestTimelineEventMatches(event, timelineAnchor),
+    )
+      ? activityQuery.dataUpdatedAt
+      : null;
+  const revealReadFailed = revealMissedAt !== null && activityQuery.error !== null;
+  const readHostForReveal = useEffectEvent(() => {
+    if (revealUrl === undefined || revealMissedAt === null) return;
+    const read = revealHostRead.current;
+    if (read?.url !== revealUrl) {
+      const request = { url: revealUrl, after: null };
+      revealHostRead.current = request;
+      void refetchFromHost().then((invalidated) => {
+        if (revealHostRead.current !== request) return;
+        // Without an invalidation the refetch could only repeat the cached read.
+        if (!invalidated) return settleReveal(request.url);
+        revealHostRead.current = { url: request.url, after: Date.now() };
+      });
+      return;
+    }
+    // A read that finished before the invalidation cannot show the item is missing. `after` is
+    // stamped once the refetch was requested, so a read in that same millisecond is the new one.
+    if (read.after !== null && (revealReadFailed || revealMissedAt >= read.after)) {
+      settleReveal(revealUrl);
+    }
+  });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a linked comment missing from cached activity asks the host once before the link settles
+  useEffect(() => {
+    readHostForReveal();
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- each load that misses the linked item is checked against the host read
+  }, [revealMissedAt, revealReadFailed, revealUrl]);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a host read outliving the panel must not settle a later link
+  useEffect(
+    () => () => {
+      revealHostRead.current = null;
+    },
+    [],
+  );
   const refreshFromHostOnRequest = useEffectEvent(() => void refreshFromHost());
   const appliedForcedToken = useRef(forcedRefreshToken);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- a new forced refresh token invalidates the host cache and refetches
@@ -908,10 +1022,10 @@ export function PullRequestDetailPanel({
       worktreePath: prepared.value.worktreePath,
       envMode: prepared.value.worktreePath === null ? "local" : "worktree",
     }).then(
-      (session) => session !== null,
-      () => false,
+      (session) => session,
+      () => null,
     );
-    if (!pointed) {
+    if (pointed === null) {
       setHandoff(null);
       // Sending after failed rebinding would use the previous checkout.
       toastManager.update(toastId, {
@@ -924,6 +1038,13 @@ export function PullRequestDetailPanel({
       });
       return;
     }
+    // The draft carries the pull request until its first send makes it a thread, which links it.
+    useComposerDraftStore.getState().setDraftThreadContext(pointed.draftId, {
+      checkoutPullRequest: {
+        url: prepared.value.pullRequest.url,
+        branch: prepared.value.branch,
+      },
+    });
     setHandoff(null);
     if (task === null) {
       toastManager.update(
@@ -945,7 +1066,9 @@ export function PullRequestDetailPanel({
       );
       return;
     }
-    await openThreadWithTask(projectRef, task, opened);
+    // The task goes on the checkout draft: if the user typed into `opened` while the
+    // checkout ran, that is no longer the draft the user is looking at.
+    await openThreadWithTask(projectRef, task, pointed);
     toastManager.update(
       toastId,
       prepared.value.isOnPullRequestHead
@@ -1090,6 +1213,7 @@ export function PullRequestDetailPanel({
         state: detail.state,
         isDraft: detail.isDraft,
         finding,
+        inThisThread: attachTarget !== null,
       }),
     );
   };
@@ -1110,6 +1234,7 @@ export function PullRequestDetailPanel({
         comments: detail.comments,
         checks: checksStale ? [] : detail.checks,
         commentsTruncated: detail.commentsTruncated,
+        inThisThread: attachTarget !== null,
       }),
     );
   };
@@ -1122,6 +1247,7 @@ export function PullRequestDetailPanel({
         url: handoffSummary.url,
         headBranch: handoffSummary.headBranch,
         baseBranch: handoffSummary.baseBranch,
+        inThisThread: attachTarget !== null,
       }),
     });
   };
@@ -1156,7 +1282,10 @@ export function PullRequestDetailPanel({
   const workflowApprovalsRequired =
     detail?.state === "open" ? (detail.workflowApprovalsRequired ?? 0) : 0;
   const freshness = detail === null ? null : resolveBaseFreshness(detail);
-  const visibleTabs = TABS.filter((item) => isTabAvailable(item.value));
+  const visibleTabs = TABS.filter((item) => isTabAvailable(item.value)).map((item) => ({
+    ...item,
+    label: uiT(item.label),
+  }));
   const can = (action: PullRequestAction) =>
     detail?.capabilities.actions.includes(action) === true &&
     detail.viewerPermissions.actions.includes(action);
@@ -1275,7 +1404,7 @@ export function PullRequestDetailPanel({
         seed={matchingListEntry}
         summary={sharedSummary}
         checkoutCommand={checkoutCommand}
-        onCheckoutError={reportCheckoutCommandError}
+        onCheckoutError={(error) => reportCheckoutCommandError(error, uiT)}
         number={reference.number}
         tabs={visibleTabs}
         activeTab={tab}
@@ -1564,12 +1693,12 @@ export function PullRequestDetailPanel({
                     <PullRequestCopyableCode
                       key={checkoutCommand}
                       value={checkoutCommand}
-                      target={`${terminology.singular} checkout command`}
-                      copyLabel="Copy checkout command"
-                      copiedLabel="Checkout command copied"
+                      target={uiT("{0} checkout command", { "0": terminology.singular })}
+                      copyLabel={uiT("Copy checkout command")}
+                      copiedLabel={uiT("Checkout command copied")}
                       className="ml-auto font-mono"
                       tooltipSide="bottom"
-                      onError={reportCheckoutCommandError}
+                      onError={(error) => reportCheckoutCommandError(error, uiT)}
                     />
                   ) : null
                 }
@@ -1587,11 +1716,14 @@ export function PullRequestDetailPanel({
                     key={detail.headBranch}
                     value={detail.headBranch}
                     target="branch name"
-                    copyLabel={`Copy ${terminology.singular} branch`}
-                    copiedLabel="Branch name copied"
+                    copyLabel={uiT("Copy {0} branch", { "0": terminology.singular })}
+                    copiedLabel={uiT("Branch name copied")}
                   />
                 }
-                files={`${detail.changedFiles.toLocaleString()} ${detail.changedFiles === 1 ? "file" : "files"}`}
+                files={uiT("{0} {1}", {
+                  "0": detail.changedFiles.toLocaleString(),
+                  "1": detail.changedFiles === 1 ? "file" : "files",
+                })}
                 diffStat={
                   <PullRequestChangeBreakdownStat
                     environmentId={environmentId}
@@ -1656,10 +1788,11 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? "Comments unavailable"
-                        : `${detail.commentCount.toLocaleString()} ${
-                            detail.commentCount === 1 ? "comment" : "comments"
-                          }`
+                        ? uiT("Comments unavailable")
+                        : uiT("{0} {1}", {
+                            "0": detail.commentCount.toLocaleString(),
+                            "1": detail.commentCount === 1 ? "comment" : "comments",
+                          })
                     }
                   >
                     <MessageSquareIcon aria-hidden className="size-3" />
@@ -1673,10 +1806,11 @@ export function PullRequestDetailPanel({
                     className="inline-flex items-center gap-1"
                     aria-label={
                       activityError
-                        ? "Commits unavailable"
-                        : `${detail.commits.length.toLocaleString()} ${
-                            detail.commits.length === 1 ? "commit" : "commits"
-                          }`
+                        ? uiT("Commits unavailable")
+                        : uiT("{0} {1}", {
+                            "0": detail.commits.length.toLocaleString(),
+                            "1": detail.commits.length === 1 ? "commit" : "commits",
+                          })
                     }
                   >
                     <GitCommitHorizontalIcon aria-hidden className="size-3" />
@@ -1706,7 +1840,7 @@ export function PullRequestDetailPanel({
                   variant="ghost-muted"
                   aria-label={
                     timelineOrder === "newest"
-                      ? "Show oldest activity first"
+                      ? uiT("Show oldest activity first")
                       : uiT("Show newest activity first")
                   }
                   onClick={() =>
@@ -1756,7 +1890,10 @@ export function PullRequestDetailPanel({
                     "0": uiT(capitalizeTerm(terminology.singular)),
                     "1": reference.number,
                   }),
-                  error: `It may be an issue rather than a ${terminology.singular}, or this account can't see it.`,
+                  error: uiT(
+                    "It may be an issue rather than a {0}, or this account can't see it.",
+                    { "0": uiT(terminology.singular) },
+                  ),
                 }
               : { error: detailQuery.error })}
             refreshing={detailQuery.isPending}
@@ -1778,6 +1915,8 @@ export function PullRequestDetailPanel({
               <div className={cn("absolute inset-0", tab !== "summary" && "invisible")}>
                 <PullRequestSummaryTab
                   scrollerRef={scrollerRefs.summary}
+                  revealUrl={tab === "summary" ? revealUrl : undefined}
+                  onRevealSettled={settleReveal}
                   environmentId={environmentId}
                   threadRef={threadRef}
                   reference={reference}
@@ -1841,6 +1980,8 @@ export function PullRequestDetailPanel({
                 ) : (
                   <PullRequestTimelineTab
                     scrollerRef={scrollerRefs.timeline}
+                    revealUrl={tab === "timeline" ? revealUrl : undefined}
+                    onRevealSettled={settleReveal}
                     detail={detail}
                     environmentId={environmentId}
                     threadRef={threadRef}
@@ -1878,6 +2019,8 @@ export function PullRequestDetailPanel({
                     refreshToken={refreshToken}
                     backgroundRefreshToken={turnRefresh ?? 0}
                     revealRequest={codeRevealRequest}
+                    revealUrl={tab === "code" ? revealUrl : undefined}
+                    onRevealSettled={settleReveal}
                   />
                 </Suspense>
               </div>

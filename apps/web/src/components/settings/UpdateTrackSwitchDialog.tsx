@@ -3,14 +3,12 @@ import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime
 import type { DesktopUpdateChannel } from "@t3tools/contracts";
 import { acceptsTrackSwitchRelease, desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
 import { isMacPlatform } from "@t3tools/shared/keybindings";
-import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
+import { AsyncResult } from "effect/reactivity";
 import { APP_VERSION } from "~/branding";
 import { useDesktopUpdateState } from "~/state/desktopUpdate";
 import { useEnvironments } from "~/state/environments";
-import { forkTrackReleaseAtom } from "~/state/forkRelease";
+
 import { downloadLocalUpdate, installLocalUpdate } from "../sidebar/SidebarUpdatePill";
 import { UpdateEverythingDialog } from "../sidebar/UpdateEverythingDialog";
 import {
@@ -19,6 +17,11 @@ import {
   type ChannelSwitchRelease,
 } from "../sidebar/updateEverything.logic";
 import { isHostedByThisApp, useUpdateEverything } from "../sidebar/useUpdateEverything";
+import {
+  localUpdaterStaysPut,
+  nothingToMove,
+  prepareLocalTrackSwitch,
+} from "./updateTrackSwitch.logic";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -30,7 +33,10 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { stackedThreadToast, toastManager } from "../ui/toast";
-import { localUpdaterStaysPut, prepareLocalTrackSwitch } from "./updateTrackSwitch.logic";
+
+import { UiText, useUiLanguage } from "../../i18n";
+
+import { forkTrackReleaseAtom } from "~/state/forkRelease";
 
 /** Moves this app and every connected machine to `channel`. */
 export function UpdateTrackSwitchDialog({
@@ -85,7 +91,16 @@ function SwitchPlan({
   const switchesLocal = crossesLocal && !updatesOff;
   const [checking, setChecking] = useState(false);
   const everything = useUpdateEverything(switchesLocal ? release.version : null, release);
-  const label = uiT(channelSwitchLabel(release.channel));
+  const label = channelSwitchLabel(release.channel);
+  const idle = nothingToMove({
+    label,
+    channel: release.channel,
+    savedChannel: updateState?.channel ?? null,
+    switchesLocal,
+    crossesLocal,
+    rows: everything.rows,
+    hasTargets: everything.hasUpdates,
+  });
   // This app's reinstall restarts every server it hosts, so each of their databases must allow it.
   const localBlocked = localSwitchBlockReason(
     APP_VERSION,
@@ -173,13 +188,7 @@ function SwitchPlan({
       providerCount={0}
       rows={everything.rows}
       notes={[
-        ...(everything.rows.length === 0 && !crossesLocal
-          ? [
-              uiT("Every connected machine is already on {0}. This only saves the track.", {
-                "0": label,
-              }),
-            ]
-          : []),
+        ...(idle.note === null ? [] : [idle.note]),
         ...(crossesLocal && updatesOff
           ? [uiT("This app's updates are off here, so reinstall it yourself to switch.")]
           : []),
@@ -191,9 +200,9 @@ function SwitchPlan({
       confirmLabel={checking ? uiT("Checking…") : uiT("Switch to {0}", { "0": label })}
       busy={checking}
       disabledReason={
-        !switchesLocal || localBlocked === null
-          ? null
-          : uiT("This app cannot switch: {0}.", { "0": localBlocked })
+        switchesLocal && localBlocked !== null
+          ? uiT("This app cannot switch: {0}.", { "0": localBlocked })
+          : idle.disabledReason
       }
       onConfirm={() => void run()}
     />

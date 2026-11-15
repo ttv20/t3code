@@ -17,7 +17,6 @@ import { useUiLanguage } from "../../i18n";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope } from "../../state/session";
-
 import {
   isAtomCommandInterrupted,
   reportAtomCommandResult,
@@ -38,6 +37,7 @@ import { setLiveActivityUpdatesEnabled } from "../agent-awareness/liveActivityPr
 import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
 import { notificationStatusAtom } from "../agent-awareness/notificationStatus";
 import {
+  agentAwarenessNotificationsReady,
   getAgentAwarenessRegistrationStatus,
   refreshAgentAwarenessRegistration,
   subscribeAgentAwarenessRegistrationStatus,
@@ -92,6 +92,14 @@ function useDeviceRegistered(): boolean {
     () => "unknown" as const,
   );
   return status === "registered";
+}
+
+function useNotificationsReady(): boolean {
+  return useSyncExternalStore(
+    subscribeAgentAwarenessRegistrationStatus,
+    agentAwarenessNotificationsReady,
+    () => false,
+  );
 }
 
 export function SettingsNotificationsRouteScreen() {
@@ -151,6 +159,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     setLiveActivityOverride({ status, basis: liveActivityBasis });
   const liveActivityWriteInFlight = useRef(false);
   const deviceRegistered = useDeviceRegistered();
+  const notificationsReady = useNotificationsReady();
   const liveActivitiesPreferenceEnabled = AsyncResult.isSuccess(preferencesResult)
     ? preferencesResult.value.liveActivitiesEnabled !== false
     : true;
@@ -185,12 +194,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
     }
     if (result.value.type === "granted") {
       setNotificationStatus("enabled");
-      if (getAgentAwarenessRegistrationStatus() === "registered") {
-        Dialog.alert(
-          uiT("Notifications enabled"),
-          uiT("Agent notifications are enabled for this device."),
-        );
-      } else {
+      if (!agentAwarenessNotificationsReady()) {
         Dialog.alert(
           uiT("Couldn't finish enabling notifications"),
           uiT(
@@ -443,7 +447,7 @@ function ConfiguredSettingsNotificationsRouteScreen() {
             }
             subtitle={agentAwarenessSubtitle}
             value={
-              agentAwarenessPushAvailable && notificationStatus === "enabled" && deviceRegistered
+              agentAwarenessPushAvailable && notificationStatus === "enabled" && notificationsReady
             }
             onValueChange={handleDeviceNotificationsChange}
           />

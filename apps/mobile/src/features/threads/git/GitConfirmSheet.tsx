@@ -5,18 +5,15 @@ import { resolveAutoFeatureBranchName } from "@t3tools/shared/git";
 import * as Arr from "effect/Array";
 import * as Result from "effect/Result";
 import { useCallback, useMemo } from "react";
-import { Platform, ScrollView, useWindowDimensions, View } from "react-native";
-import { useUiLanguage } from "../../../i18n";
-
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { AppText as Text } from "../../../components/ui/AppText";
-import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { View } from "react-native";
 import { SheetHeader } from "../../../components/ui/SheetHeader";
+import { FitSheet } from "../../../components/ui/FitSheet";
+import { SheetIntro } from "../../../components/ui/SheetIntro";
 import { useSelectedThreadGitActions } from "../../../state/use-selected-thread-git-actions";
 import { useSelectedThreadGitState } from "../../../state/use-selected-thread-git-state";
 import { useThreadSelection } from "../../../state/use-thread-selection";
 import { SheetActionButton } from "./gitSheetComponents";
+import { useUiLanguage } from "../../../i18n";
 
 type GitConfirmSheetProps = StaticScreenProps<{
   readonly environmentId: string;
@@ -31,8 +28,6 @@ type GitConfirmSheetProps = StaticScreenProps<{
 export function GitConfirmSheet(props: GitConfirmSheetProps) {
   const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
   const gitState = useSelectedThreadGitState();
   const gitActions = useSelectedThreadGitActions();
   const { canWriteSourceControl, canChangeThreadBranch } = gitActions;
@@ -117,62 +112,31 @@ export function GitConfirmSheet(props: GitConfirmSheetProps) {
   ]);
 
   return (
-    <View
-      collapsable={false}
-      className="bg-sheet ios:flex-1 android:flex-col-reverse"
-      style={Platform.OS === "android" ? { maxHeight: windowHeight * 0.92 } : undefined}
+    <FitSheet
+      header={<SheetHeader title={uiT("Confirm action")} onClose={() => navigation.goBack()} />}
+      showsVerticalScrollIndicator={false}
     >
-      <ScreenContent fitToContents>
-        <ScrollView
-          nestedScrollEnabled
-          className="android:shrink android:grow-0 ios:flex-1"
-          showsVerticalScrollIndicator={false}
-          contentContainerClassName="android:gap-2 android:p-2"
-          contentContainerStyle={
-            Platform.OS === "android"
-              ? { paddingBottom: Math.max(insets.bottom, 18) + 8 }
-              : undefined
-          }
-        >
-          <View className="android:gap-2 android:rounded-[20px] android:bg-card android:p-3 ios:items-center ios:gap-1 ios:px-5 ios:pb-3 ios:pt-4">
-            {Platform.OS !== "android" ? (
-              <Text className="text-xs font-t3-bold tracking-[1px] uppercase text-foreground-muted">
-                {uiT("Confirm")}
-              </Text>
-            ) : null}
-            <Text className="android:text-xl android:font-t3-medium ios:text-center ios:text-3xl ios:font-t3-bold">
-              {copy?.title ?? uiT("Run action on default branch?")}
-            </Text>
-            <Text className="text-foreground-secondary leading-normal android:text-base ios:text-center ios:text-sm ios:font-medium">
-              {copy?.description ?? uiT("Choose how to continue.")}
-            </Text>
-          </View>
+      <SheetIntro
+        eyebrow={uiT("Confirm")}
+        title={copy?.title ?? uiT("Run action on default branch?")}
+        description={copy?.description ?? uiT("Choose how to continue.")}
+      />
 
-          <View
-            className="android:gap-2 ios:gap-3 ios:px-5 ios:pt-2"
-            style={
-              Platform.OS === "android"
-                ? undefined
-                : { paddingBottom: Math.max(insets.bottom, 18) + 8 }
-            }
-          >
-            <SheetActionButton
-              icon="arrow.right.circle"
-              label={copy?.continueLabel ?? uiT("Continue")}
-              disabled={!canWriteSourceControl}
-              onPress={() => void continuePendingAction()}
-            />
-            <SheetActionButton
-              icon="arrow.branch"
-              label={uiT("Feature branch & continue")}
-              disabled={!canChangeThreadBranch}
-              tone="primary"
-              onPress={() => void movePendingActionToFeatureBranch()}
-            />
-          </View>
-        </ScrollView>
-      </ScreenContent>
-      <SheetHeader title={uiT("Confirm action")} onClose={() => navigation.goBack()} />
-    </View>
+      <View className="gap-3">
+        <SheetActionButton
+          icon="arrow.right.circle"
+          label={copy?.continueLabel ?? uiT("Continue")}
+          disabled={!canWriteSourceControl}
+          onPress={() => void continuePendingAction()}
+        />
+        <SheetActionButton
+          icon="arrow.branch"
+          label={uiT("Feature branch & continue")}
+          disabled={!canChangeThreadBranch}
+          tone="primary"
+          onPress={() => void movePendingActionToFeatureBranch()}
+        />
+      </View>
+    </FitSheet>
   );
 }

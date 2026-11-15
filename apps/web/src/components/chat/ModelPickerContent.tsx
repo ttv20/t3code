@@ -1,63 +1,30 @@
-import { useAtomValue } from "@effect/atom-react";
-import { LegendList, type LegendListRef } from "@legendapp/list/react";
-import { rankModelPickerSearch } from "@t3tools/client-runtime/model-search";
-import { formatProviderUpdateRequiredNotice } from "@t3tools/client-runtime/providerUpdateRequiredModels";
+import { useLegendListRef } from "~/hooks/useLegendListRef";
 import {
   ANTIGRAVITY_DEFAULT_MODEL,
-  MODEL_PICKER_JUMP_KEYBINDING_COMMANDS,
+  type ProviderInstanceId,
   type EnvironmentId,
   type ProviderDriverKind,
-  type ProviderInstanceId,
   type ResolvedKeybindingsConfig,
+  MODEL_PICKER_JUMP_KEYBINDING_COMMANDS,
 } from "@t3tools/contracts";
 import { resolveSelectableModel } from "@t3tools/shared/model";
+import { useAtomValue } from "@effect/atom-react";
+import { formatProviderUpdateRequiredNotice } from "@t3tools/client-runtime/providerUpdateRequiredModels";
 import { useNavigate } from "@tanstack/react-router";
+import { LegendList, type LegendListRef } from "@legendapp/list/react";
 import {
   memo,
+  useState,
   useEffect,
   useEffectEvent,
   useLayoutEffect,
   useRef,
-  useState,
   type ReactNode,
   type RefObject,
 } from "react";
-import { useLegendListRef } from "~/hooks/useLegendListRef";
-import {
-  useEnvironmentModelPreferences,
-  useToggleEnvironmentModelFavorite,
-} from "~/hooks/useSettings";
-import { announce } from "~/lib/announce";
-import { cn } from "~/lib/utils";
-import { isCommandPaletteOpen } from "../../commandPaletteBus";
-import { useUiLanguage } from "../../i18n";
-import {
-  modelPickerJumpCommandForIndex,
-  modelPickerJumpIndexFromCommand,
-  resolveShortcutCommand,
-  shortcutLabelForCommand,
-} from "../../keybindings";
-import { providerModelKey, sortProviderModelItems } from "../../modelOrdering";
-import { registerModelPickerContent } from "../../modelPickerVisibility";
-import {
-  isProviderInstancePickerReady,
-  isProviderInstancePickerVisible,
-  shouldShowInstanceBadge,
-  type ProviderInstanceEntry,
-} from "../../providerInstances";
-import { primaryServerKeybindingsAtom } from "../../state/server";
-import { InlineButton } from "../ui/button";
-import {
-  Combobox,
-  ComboboxEmpty,
-  ComboboxItem,
-  ComboboxListVirtualized,
-  ComboboxSearchInput,
-} from "../ui/combobox";
-import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
-import { TooltipProvider } from "../ui/tooltip";
 import { ModelListRow } from "./ModelListRow";
 import { ModelPickerSidebar } from "./ModelPickerSidebar";
+import { useProviderWorkspaceSnapshotRefresh } from "./useProviderWorkspaceSnapshotRefresh";
 import { getProviderStatusMessage, hasProviderSetup } from "./ProviderStatusBanner";
 import {
   modelPickerLegacySectionKey,
@@ -65,7 +32,42 @@ import {
   parseModelPickerLegacySectionKey,
   parseModelPickerModelKey,
 } from "./modelPickerKeys";
+import { rankModelPickerSearch } from "@t3tools/client-runtime/model-search";
+import {
+  Combobox,
+  ComboboxEmpty,
+  ComboboxSearchInput,
+  ComboboxItem,
+  ComboboxListVirtualized,
+} from "../ui/combobox";
 import { ModelEsque } from "./providerIconUtils";
+import { isCommandPaletteOpen } from "../../commandPaletteBus";
+import { registerModelPickerContent } from "../../modelPickerVisibility";
+import { primaryServerKeybindingsAtom } from "../../state/server";
+import {
+  modelPickerJumpCommandForIndex,
+  modelPickerJumpIndexFromCommand,
+  resolveShortcutCommand,
+  shortcutLabelForCommand,
+} from "../../keybindings";
+import {
+  useEnvironmentModelPreferences,
+  useToggleEnvironmentModelFavorite,
+} from "~/hooks/useSettings";
+import { announce } from "~/lib/announce";
+import { cn } from "~/lib/utils";
+import { getVirtualizedScrollFadeClassName } from "../ui/scroll-area";
+import { TooltipProvider } from "../ui/tooltip";
+import { InlineButton } from "../ui/button";
+import {
+  isProviderInstancePickerReady,
+  isProviderInstancePickerVisible,
+  shouldShowInstanceBadge,
+  type ProviderInstanceEntry,
+} from "../../providerInstances";
+import { providerModelKey, sortProviderModelItems } from "../../modelOrdering";
+
+import { useUiLanguage } from "../../i18n";
 
 type ModelPickerItem = {
   slug: string;
@@ -113,7 +115,9 @@ function shouldIncludeModelPickerOption(input: {
   if (isProviderInstancePickerReady(input.entry)) return true;
   return (
     input.entry.enabled &&
-    (input.entry.driverKind === "opencode" || input.entry.driverKind === "antigravity") &&
+    (input.entry.driverKind === "opencode" ||
+      input.entry.driverKind === "antigravity" ||
+      input.entry.driverKind === "cursor") &&
     input.entry.instanceId === input.activeInstanceId &&
     input.option.slug === input.activeModel &&
     input.option.isUnavailable === true
@@ -328,6 +332,8 @@ function WindowKeyDownListener({ onKeyDown }: { onKeyDown: (event: KeyboardEvent
 
 export const ModelPickerContent = memo(function ModelPickerContent(props: {
   environmentId: EnvironmentId | null;
+  /** Keeps the open provider tab's catalog fresh for this directory. */
+  workspaceCwd?: string | null;
   activeInstanceId: ProviderInstanceId;
   model: string;
   selectedModels?: ReadonlyArray<{ instanceId: ProviderInstanceId; model: string }>;
@@ -423,9 +429,30 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
       ) {
         return props.activeInstanceId;
       }
-      return favorites.length > 0 ? "favorites" : props.activeInstanceId;
+      const hasPickableFavorite = favorites.some((favorite) => {
+        const entry = instanceEntries.find((entry) => entry.instanceId === favorite.provider);
+        return (
+          entry !== undefined &&
+          (modelOptionsByInstance.get(favorite.provider) ?? []).some(
+            (option) =>
+              option.slug === favorite.model &&
+              shouldIncludeModelPickerOption({
+                entry,
+                option,
+                activeInstanceId: props.activeInstanceId,
+                activeModel: activeModelSlug,
+              }),
+          )
+        );
+      });
+      return hasPickableFavorite ? "favorites" : props.activeInstanceId;
     },
   );
+  const { scanning: workspaceModelsScanning } = useProviderWorkspaceSnapshotRefresh({
+    environmentId: props.environmentId,
+    gitCwd: props.workspaceCwd ?? null,
+    instanceId: selectedInstanceId === "favorites" ? undefined : selectedInstanceId,
+  });
   const favoritesSet = new Set(favorites.map((fav) => providerModelKey(fav.provider, fav.model)));
   const [expandedLegacyInstances, setExpandedLegacyInstances] = useState(
     () =>
@@ -1054,7 +1081,9 @@ export const ModelPickerContent = memo(function ModelPickerContent(props: {
               emptyLabel={
                 selectedInstanceId === "favorites" && !isSearching
                   ? uiT("No favorites yet")
-                  : uiT("No models found")
+                  : workspaceModelsScanning
+                    ? uiT("Searching project models...")
+                    : uiT("No models found")
               }
               onRequestClose={onRequestClose}
               onOpenProviderSetup={onOpenProviderSetup}

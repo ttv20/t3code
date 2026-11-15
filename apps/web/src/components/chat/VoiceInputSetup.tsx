@@ -1,24 +1,34 @@
+import { useStableCallback } from "~/hooks/useStableCallback";
+import {
+  listBrowserMicrophones,
+  updateMicrophoneOrder,
+  type BrowserMicrophone,
+} from "../../speech/browserMicrophones";
 import type {
   EnvironmentId,
   EnvironmentSpeechModel,
   EnvironmentSpeechStatus,
 } from "@t3tools/contracts";
 import { useNavigate } from "@tanstack/react-router";
-import { RefreshCwIcon } from "lucide-react";
+import { CircleAlertIcon, MicIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useStableCallback } from "~/hooks/useStableCallback";
-import { UiText, useUiLanguage } from "../../i18n";
-import { listBrowserMicrophones, type BrowserMicrophone } from "../../speech/browserMicrophones";
-
-import { AuthSettingsWriteScope } from "@t3tools/contracts";
-import { updateClientSettings, useClientSettings } from "../../hooks/useSettings";
+import { useClientSettings } from "../../hooks/useSettings";
+import {
+  isSystemDefaultDeviceId,
+  microphoneOrder,
+  preferMicrophone,
+  preferredMicrophoneId,
+} from "../../speech/microphoneOrder";
 import { useEnvironment } from "../../state/environments";
+import { AuthSettingsWriteScope } from "@t3tools/contracts";
 import { useEnvironmentScope } from "../../state/session";
 import { languageLabel } from "../settings/SpeechLanguageSelect";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { WizardFooter, WizardHeader, WizardPanel, WizardPopup, WizardSteps } from "../ui/wizard";
+import { WizardFooter, WizardHeader, WizardPanel, WizardPopup } from "../ui/wizard";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 export function VoiceInputSetup(props: {
   environmentId: EnvironmentId | null;
@@ -40,8 +50,9 @@ export function VoiceInputSetup(props: {
   const navigate = useNavigate();
   const environment = useEnvironment(props.environmentId);
   const canManage = useEnvironmentScope(props.environmentId, AuthSettingsWriteScope);
-  const selectedMicrophone = useClientSettings((settings) => settings.voiceMicrophone);
+  const order = useClientSettings(microphoneOrder);
   const [microphones, setMicrophones] = useState<BrowserMicrophone[]>([]);
+  const selectedMicrophone = preferredMicrophoneId(order, microphones);
   const [loadingMicrophones, setLoadingMicrophones] = useState(false);
   const [microphoneError, setMicrophoneError] = useState<string | null>(null);
   const refreshMicrophones = useStableCallback(async () => {
@@ -51,7 +62,7 @@ export function VoiceInputSetup(props: {
       setMicrophones(await listBrowserMicrophones());
       setMicrophoneError(null);
     } catch {
-      setMicrophoneError(uiT("Could not list microphones. You can still use the system default."));
+      setMicrophoneError(uiT("Couldn’t list microphones. The system default still works."));
     }
     setLoadingMicrophones(false);
   });
@@ -79,53 +90,47 @@ export function VoiceInputSetup(props: {
     void navigate({ to: "/settings/voice", hash });
   };
 
+  const destination = environment?.label ?? "your transcription environment";
+
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <WizardPopup>
         <WizardHeader
-          title={uiT("Set up voice input")}
-          description={uiT("Transcribe speech on {0} and use voice input across environments.", {
-            "0": environment?.label ?? "your transcription environment",
-          })}
-        >
-          <WizardSteps steps={["Model", "Ready to dictate"]} currentStep={props.step} />
-        </WizardHeader>
+          title={props.step === 0 ? uiT("Set up voice input") : uiT("Voice input is ready")}
+          description={
+            props.step === 0
+              ? uiT("Download a speech model once. Your audio is transcribed on {0}.", {
+                  "0": destination,
+                })
+              : uiT("Pick a microphone, then start talking.")
+          }
+        />
         <WizardPanel>
           {props.step === 0 ? (
             <section className="space-y-3 text-sm">
               {model ? (
-                <div className="rounded-lg border border-border/70 bg-card/60 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-medium">{model.name}</h3>
-                    {model?.recommended && props.language ? (
-                      <span className="text-xs font-medium text-primary">
-                        <UiText
-                          message={"Recommended for {0}"}
-                          values={{ 0: languageLabel(props.language) }}
-                        />
-                      </span>
-                    ) : null}
+                <div className="space-y-3 rounded-lg border border-border/70 bg-card/60 p-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h3 className="min-w-0 truncate font-medium">{model.name}</h3>
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      <UiText
+                        message={"{0} MB"}
+                        values={{ "0": Math.round(model.size / 1024 / 1024) }}
+                      />
+                    </span>
                   </div>
-                  <p className="mt-2 text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     <UiText
                       message={
-                        "Download the {0} MB model to  {1}. Microphone audio is sent there for transcription, as chosen in Voice settings."
+                        model.recommended && props.language
+                          ? "Recommended for {0}. Includes a 1.2 MB silence detector."
+                          : "Includes a 1.2 MB silence detector."
                       }
-                      values={{
-                        0: Math.round(model.size / 1024 / 1024),
-                        1: environment?.label ?? "your transcription environment",
-                      }}
-                    />
-                  </p>
-                  <p className="mt-2 text-muted-foreground">
-                    <UiText
-                      message={
-                        "Silero (1.2 MB), used for silence filtering and pause detection, downloads alongside the speech model. An installed copy is reused."
-                      }
+                      values={{ "0": props.language ? languageLabel(props.language) : "" }}
                     />
                   </p>
                   {props.downloading ? (
-                    <div role="status" className="mt-4 space-y-1 text-muted-foreground">
+                    <div role="status" className="space-y-1.5">
                       <div
                         role="progressbar"
                         aria-label={uiT("Speech model download progress")}
@@ -139,9 +144,9 @@ export function VoiceInputSetup(props: {
                           style={{ width: `${progress ?? 0}%` }}
                         />
                       </div>
-                      <p className="text-xs">
-                        {model?.state === "verifying"
-                          ? uiT("Verifying download…")
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {model.state === "verifying"
+                          ? uiT("Verifying…")
                           : progress === null
                             ? uiT("Starting download…")
                             : uiT("{0}% downloaded", { "0": progress })}
@@ -155,133 +160,132 @@ export function VoiceInputSetup(props: {
                 </p>
               ) : null}
               {props.error ? (
-                <p role="alert" className="text-destructive">
+                <p role="alert" className="flex items-start gap-1.5 text-destructive">
+                  <CircleAlertIcon aria-hidden className="mt-0.5 size-3.5 shrink-0" />
                   {props.error}
                 </p>
               ) : null}
             </section>
           ) : (
-            <section className="space-y-4 text-sm">
-              <div className="space-y-2">
-                <label className="font-medium" htmlFor="voice-setup-microphone">
-                  <UiText message={"Microphone"} />
-                </label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={selectedMicrophone ? `device:${selectedMicrophone}` : "system-default"}
-                    disabled={loadingMicrophones}
-                    onValueChange={(value) => {
-                      if (value)
-                        void updateClientSettings({
-                          voiceMicrophone:
-                            value === "system-default" ? "" : value.slice("device:".length),
-                        });
-                    }}
+            <section className="space-y-2 text-sm">
+              <label className="sr-only" htmlFor="voice-setup-microphone">
+                <UiText message={"Microphone"} />
+              </label>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={selectedMicrophone ? `device:${selectedMicrophone}` : "system-default"}
+                  disabled={loadingMicrophones}
+                  onValueChange={(value) => {
+                    if (!value) return;
+                    const deviceId = value.slice("device:".length);
+                    const label =
+                      microphones.find((device) => device.deviceId === deviceId)?.label ?? "";
+                    updateMicrophoneOrder((order) =>
+                      preferMicrophone(
+                        order,
+                        value === "system-default" || isSystemDefaultDeviceId(deviceId)
+                          ? { kind: "default" }
+                          : { kind: "device", deviceId, label },
+                      ),
+                    );
+                  }}
+                >
+                  <SelectTrigger
+                    id="voice-setup-microphone"
+                    size="sm"
+                    aria-label={uiT("Microphone")}
+                    className="min-w-0 flex-1"
                   >
-                    <SelectTrigger
-                      id="voice-setup-microphone"
-                      size="sm"
-                      aria-label={uiT("Microphone")}
-                      className="min-w-0 flex-1"
-                    >
-                      <SelectValue>{selectedMicrophoneLabel}</SelectValue>
-                    </SelectTrigger>
-                    <SelectPopup align="end" alignItemWithTrigger={false}>
-                      <SelectItem value="system-default">
-                        <UiText message={"System default"} />
+                    <MicIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+                    <SelectValue>{selectedMicrophoneLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectPopup align="end" alignItemWithTrigger={false}>
+                    <SelectItem value="system-default">
+                      <UiText message={"System default"} />
+                    </SelectItem>
+                    {selectedIsUnavailable ? (
+                      <SelectItem value={`device:${selectedMicrophone}`}>
+                        <UiText message={"Selected microphone (Unavailable)"} />
                       </SelectItem>
-                      {selectedIsUnavailable ? (
-                        <SelectItem value={`device:${selectedMicrophone}`}>
-                          <UiText message={"Selected microphone (Unavailable)"} />
-                        </SelectItem>
-                      ) : null}
-                      {microphones.map((device) => (
-                        <SelectItem key={device.deviceId} value={`device:${device.deviceId}`}>
-                          {device.label}
-                        </SelectItem>
-                      ))}
-                    </SelectPopup>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={loadingMicrophones}
-                    aria-label={uiT("Refresh microphones")}
-                    onClick={() => void refreshMicrophones()}
-                  >
-                    <RefreshCwIcon className="size-3.5" />
-                  </Button>
-                </div>
-                {selectedIsUnavailable ? (
-                  <p className="text-xs text-destructive">
-                    <UiText
-                      message={
-                        "The selected microphone is unavailable. Choose another or use the system default."
-                      }
-                    />
-                  </p>
-                ) : null}
-                {microphoneError ? (
-                  <p role="alert" className="text-xs text-muted-foreground">
-                    {microphoneError}
-                  </p>
-                ) : null}
+                    ) : null}
+                    {microphones.map((device) => (
+                      <SelectItem key={device.deviceId} value={`device:${device.deviceId}`}>
+                        {device.label}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={loadingMicrophones}
+                  aria-label={uiT("Refresh microphones")}
+                  onClick={() => void refreshMicrophones()}
+                >
+                  <RefreshCwIcon className="size-3.5" />
+                </Button>
               </div>
-              <p className="text-muted-foreground">
-                <UiText
-                  message={
-                    "Speak and transcribe in multiple languages or translate into English, and get names and technical terms right with the dictionary in Voice settings."
-                  }
-                />
-              </p>
+              {selectedIsUnavailable ? (
+                <p className="text-xs text-destructive">
+                  <UiText message={"That microphone is unplugged. Pick another one."} />
+                </p>
+              ) : null}
+              {microphoneError ? (
+                <p role="alert" className="text-xs text-muted-foreground">
+                  {microphoneError}
+                </p>
+              ) : null}
             </section>
           )}
         </WizardPanel>
-        <WizardFooter>
-          {props.step === 0 ? (
-            <>
-              <Button variant="outline" onClick={() => openSettings("speech-models")}>
-                {model
-                  ? uiT("Choose another model or language")
-                  : uiT("Choose a model or language")}
+        {props.step === 0 ? (
+          <WizardFooter
+            leading={
+              <Button variant="ghost" onClick={() => openSettings("speech-models")}>
+                {model ? uiT("Other models") : uiT("Choose a model")}
               </Button>
-              {props.onRetryCatalog ? (
-                <Button onClick={props.onRetryCatalog}>
-                  <UiText message={"Retry loading models"} />
-                </Button>
-              ) : null}
-              {props.downloading ? (
-                <Button variant="outline" disabled={!canManage} onClick={props.onCancelDownload}>
-                  <UiText message={"Cancel download"} />
-                </Button>
-              ) : null}
-              {model ? (
-                <Button
-                  disabled={!canManage || props.downloading || !status}
-                  onClick={props.onDownload}
-                >
-                  {props.downloading
-                    ? uiT("Downloading…")
-                    : props.error
-                      ? uiT("Try again")
-                      : canManage
-                        ? uiT("Download model")
-                        : uiT("Ask an environment admin to download")}
-                </Button>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => openSettings("")}>
-                <UiText message={"Customize in Voice settings"} />
+            }
+          >
+            {props.onRetryCatalog ? (
+              <Button onClick={props.onRetryCatalog}>
+                <UiText message={"Retry loading models"} />
               </Button>
-              <Button onClick={props.onStartRecording}>
-                <UiText message={"Start dictating"} />
+            ) : null}
+            {props.downloading ? (
+              <Button variant="outline" disabled={!canManage} onClick={props.onCancelDownload}>
+                <UiText message={"Cancel download"} />
               </Button>
-            </>
-          )}
-        </WizardFooter>
+            ) : null}
+            {model ? (
+              <Button
+                disabled={!canManage || props.downloading || !status}
+                onClick={props.onDownload}
+              >
+                {props.downloading
+                  ? uiT("Downloading…")
+                  : props.error
+                    ? uiT("Try again")
+                    : canManage
+                      ? uiT("Download model")
+                      : uiT("Needs an admin to download")}
+              </Button>
+            ) : null}
+          </WizardFooter>
+        ) : (
+          <WizardFooter
+            leading={
+              <Button variant="ghost" onClick={() => openSettings("")}>
+                <UiText message={"Voice settings"} />
+              </Button>
+            }
+          >
+            <Button onClick={props.onStartRecording}>
+              <MicIcon />
+              <UiText message={"Start dictating"} />
+            </Button>
+          </WizardFooter>
+        )}
       </WizardPopup>
     </Dialog>
   );

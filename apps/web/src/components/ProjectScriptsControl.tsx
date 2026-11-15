@@ -1,36 +1,27 @@
-import { useAtomValue } from "@effect/atom-react";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { UiText } from "../i18n";
+import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
 import {
   AuthSettingsWriteScope,
   type EnvironmentId,
   type ProjectScript,
   type T3ProjectFileScript,
 } from "@t3tools/contracts";
+import { useAtomValue } from "@effect/atom-react";
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import { projectScriptMenuLabel } from "@t3tools/shared/projectScripts";
 import { ChevronDownIcon, DownloadIcon, PlusIcon, SettingsIcon, WrenchIcon } from "lucide-react";
 import React, { useState } from "react";
-import { useUiLanguage } from "../i18n";
-import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
-
-import { shortcutLabelForCommand } from "~/keybindings";
-import { cn } from "~/lib/utils";
 import { commandForProjectScript, primaryProjectScript } from "~/projectScripts";
+import { shortcutLabelForCommand } from "~/keybindings";
 import { serverEnvironment } from "~/state/server";
 import { readEnvironmentScope } from "~/state/session";
 import {
-  THREAD_DETAILS_PANEL_CHEVRON_CLASS,
-  THREAD_DETAILS_PANEL_ICON_CLASS,
-  THREAD_DETAILS_PANEL_LABEL_CLASS,
-  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
-  THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
-} from "./chat/threadDetailsPanelStyles";
-import {
-  editorRequestForScript,
   EMPTY_PROJECT_SCRIPT_INPUT,
+  editorRequestForScript,
   ProjectScriptEditorDialog,
   ScriptIcon,
   type NewProjectScriptInput,
@@ -48,12 +39,22 @@ import {
   MenuPopup,
   MenuSeparator,
   MenuShortcut,
-  MenuSub,
-  MenuSubPopup,
-  MenuSubTrigger,
   MenuTrigger,
+  MenuSub,
+  MenuSubTrigger,
+  MenuSubPopup,
 } from "./ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { cn } from "~/lib/utils";
+import {
+  THREAD_DETAILS_PANEL_CHEVRON_CLASS,
+  THREAD_DETAILS_PANEL_ICON_CLASS,
+  THREAD_DETAILS_PANEL_LABEL_CLASS,
+  THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS,
+  THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS,
+} from "./chat/threadDetailsPanelStyles";
+
+import { useUiLanguage } from "../i18n";
 
 export type { NewProjectScriptInput, ProjectScriptActionResult };
 
@@ -335,21 +336,31 @@ export default function ProjectScriptsControl({
               setActionsMenuOpen({ presentation, scripts: open, imports: false })
             }
           >
-            <MenuTrigger
-              render={
-                <ThreadDetailsControl
-                  size={isPanel ? "sm" : "icon-xs"}
-                  variant={isPanel ? "ghost" : "outline"}
-                  part="secondary"
-                  panel={isPanel}
-                  aria-label={uiT("Script actions")}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <MenuTrigger
+                    render={
+                      <ThreadDetailsControl
+                        size={isPanel ? "sm" : "icon-xs"}
+                        variant={isPanel ? "ghost" : "outline"}
+                        part="secondary"
+                        panel={isPanel}
+                        aria-label={uiT("Script actions")}
+                        data-toolbar-control=""
+                      />
+                    }
+                  />
+                }
+              >
+                <ChevronDownIcon
+                  className={isPanel ? THREAD_DETAILS_PANEL_CHEVRON_CLASS : "size-4"}
                 />
-              }
-            >
-              <ChevronDownIcon
-                className={isPanel ? THREAD_DETAILS_PANEL_CHEVRON_CLASS : "size-4"}
-              />
-            </MenuTrigger>
+              </TooltipTrigger>
+              <TooltipPopup side="top">
+                <UiText message={"Script actions"} />
+              </TooltipPopup>
+            </Tooltip>
             <MenuPopup
               align="end"
               {...(isPanel ? { anchor: panelAnchorRef } : {})}
@@ -434,7 +445,7 @@ export default function ProjectScriptsControl({
                 part="row"
                 panel={isPanel}
                 className={isPanel ? undefined : "w-7 sm:w-6 @3xl/header-actions:w-auto!"}
-                aria-label={isPanel ? "Add project script" : uiT("Add action")}
+                aria-label={isPanel ? uiT("Add project script") : uiT("Add action")}
                 data-toolbar-control=""
                 onClick={openAddDialog}
               />

@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import {
   VoiceTranscriptionError,
   VOICE_RECORDING_LIMIT_SECONDS,
@@ -14,12 +15,13 @@ export function createEnvironmentTranscriber(input: {
   readonly decode: (uri: string) => Promise<Uint8Array>;
   readonly upload: (pcm: Uint8Array, signal: AbortSignal) => Promise<string>;
 }): VoiceTranscriber {
+  const uiT = readUiTranslator();
   function check(signal: AbortSignal) {
     throwIfVoiceTranscriptionAborted(signal);
     if (!input.canSend()) {
       throw new VoiceTranscriptionError({
         code: "cancelled",
-        message: "Your transcription choice changed.",
+        message: uiT("Your transcription choice changed."),
       });
     }
   }
@@ -41,7 +43,7 @@ export function createEnvironmentTranscriber(input: {
           ) {
             throw new VoiceTranscriptionError({
               code: "transcription-failed",
-              message: "This recording couldn’t be read. Try recording again.",
+              message: uiT("This recording couldn’t be read. Try recording again."),
             });
           }
           // A timed native stop can include a final encoder packet beyond the recording limit.

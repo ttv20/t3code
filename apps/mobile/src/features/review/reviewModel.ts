@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
 import type { ChangeTypes, FileDiffMetadata } from "@pierre/diffs/types";
 import {
@@ -265,13 +266,14 @@ function countReviewRenderableCharacters(file: ReviewRenderableFile): number {
 }
 
 export function getReviewFilePreviewState(file: ReviewRenderableFile): ReviewFilePreviewState {
+  const uiT = readUiTranslator();
   const extension = getFileExtension(file.path);
   if (extension && NON_TEXT_FILE_EXTENSIONS.has(extension)) {
     return {
       kind: "suppressed",
       reason: "non-text",
-      title: "Non-text file",
-      message: "Diff preview is not available for this file format.",
+      title: uiT("Non-text file"),
+      message: uiT("Diff preview is not available for this file format."),
       actionLabel: null,
     };
   }
@@ -282,8 +284,8 @@ export function getReviewFilePreviewState(file: ReviewRenderableFile): ReviewFil
     return {
       kind: "suppressed",
       reason: "large",
-      title: "Large diff",
-      message: "Large diffs are not rendered by default.",
+      title: uiT("Large diff"),
+      message: uiT("Large diffs are not rendered by default."),
       actionLabel: "Load diff",
     };
   }
@@ -609,7 +611,9 @@ export function buildReviewParsedDiff(
   try {
     const cacheKey = buildPatchCacheKey(text, cacheScope);
     const patchId = getReviewPatchId(cacheKey);
-    const parsedPatches = runDiffParserSilently(() => parsePatchFiles(text, cacheKey));
+    const parsedPatches = runDiffParserSilently(() =>
+      parsePatchFiles(text, { cacheKeyPrefix: cacheKey }),
+    );
     const rawFiles = new Map<string, string | null>();
     if (!truncated) {
       for (const rawFile of text.split(/(?=^diff --git )/m)) {

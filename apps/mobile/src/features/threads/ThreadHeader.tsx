@@ -1,15 +1,18 @@
 import { AppBar } from "../../components/ui/AppBar";
 import type { AppBarAction, AppBarMenu } from "../../components/ui/AppBar.types";
-import { ContentText } from "../../components/ui/AppText";
-import { useUiLanguage } from "../../i18n";
-import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
-import { useWorkspaceBackNavigation } from "../layout/workspace/useAndroidWorkspaceNavigation";
+import {
+  useAdaptiveWorkspaceLayout,
+  useWorkspacePaneState,
+} from "../layout/AdaptiveWorkspaceLayout";
 import type { ThreadInspectorMode } from "./thread-inspector-navigation";
+import { useWorkspaceBackNavigation } from "../layout/workspace/useAndroidWorkspaceNavigation";
 import {
   threadTerminalMenu,
   useThreadGitMenuDefinition,
   type ThreadGitControlsProps,
 } from "./ThreadGitControls";
+import { ContentText } from "../../components/ui/AppText";
+import { useUiLanguage } from "../../i18n";
 
 export function ThreadHeader(props: {
   readonly title: string;
@@ -22,10 +25,9 @@ export function ThreadHeader(props: {
   readonly onOpenFilesInspector: () => void;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const goBack = useWorkspaceBackNavigation("threads");
-  const { panes, toggleAuxiliaryPane, composerKeyboardActive, startNewTask } =
-    useAdaptiveWorkspaceLayout();
+  const goBack = useWorkspaceBackNavigation();
+  const { toggleAuxiliaryPane, startNewTask } = useAdaptiveWorkspaceLayout();
+  const { panes } = useWorkspacePaneState();
   const gitMenu = useThreadGitMenuDefinition(props.gitControls);
   const terminalMenu = threadTerminalMenu(props.gitControls);
   const filesVisible = props.inspectorMode === "files" && panes.auxiliaryPaneVisible;
@@ -66,7 +68,6 @@ export function ThreadHeader(props: {
       actions={actions}
       menus={menus}
       hideBottomBorder
-      compact={composerKeyboardActive}
     />
   );
 }

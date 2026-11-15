@@ -1,4 +1,11 @@
 import { resolveUserMessagePresentation } from "@t3tools/client-runtime/user-message";
+import { InlineAudioPreview } from "../files/InlineAudioPreview";
+import { filePreviewKind } from "@t3tools/shared/filePreview";
+import {
+  CHAT_USER_MARKDOWN_REMARK_PLUGINS,
+  remarkEnableOrderedListNumbers,
+} from "@t3tools/shared/markdownPipeline";
+import { findRevealRef } from "./markdownFindContext";
 import {
   type EnvironmentId,
   type MessageId,
@@ -16,9 +23,28 @@ import {
   formatComposerContextReference,
   replaceComposerContextReferences,
 } from "@t3tools/shared/composerContextReferences";
-import { filePreviewKind } from "@t3tools/shared/filePreview";
+
 import { Link } from "@tanstack/react-router";
-import { Link as LinkIconNode } from "lucide";
+
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+
+import { useQuietThreadShell } from "../../state/entities";
+import { useEnvironment } from "../../state/environments";
+import { useEnvironmentQuery } from "../../state/query";
+import { serverEnvironment } from "../../state/server";
+
+import { memo, use, useState, type ReactNode } from "react";
+import {
+  createMessageAttachmentPreviewProjector,
+  selectMessageImageResources,
+} from "../../session-logic";
+import {
+  type ChatFileAttachment,
+  isFileAttachment,
+  isImageAttachment,
+  isVideoAttachment,
+} from "../../types";
+import ChatMarkdown from "../ChatMarkdown";
 import {
   CalendarClockIcon,
   ChevronDownIcon,
@@ -28,8 +54,28 @@ import {
   MessagesSquareIcon,
   PencilIcon,
   Redo2Icon,
+  LinkIcon,
 } from "lucide-react";
-import { memo, type ReactNode, use, useState } from "react";
+import { Button, InlineButton } from "../ui/button";
+import { FreshSessionRow, ModelSwitchRow } from "./V2LifecycleRow";
+import { useAssetUrlRefresh, useAssetUrls, useAssetUrlState } from "../../assets/assetUrls";
+import { AttachmentImage } from "../media/AttachmentImage";
+import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
+import {
+  buildAttachmentVideoAsset,
+  buildAttachmentVideoPreview,
+  buildExpandedImagePreview,
+} from "./ExpandedImagePreview";
+import {
+  SNAP_SHOT_ATTACHMENT_FRAME_CLASS,
+  SnapShotAttachmentDetails,
+} from "./SnapShotAttachmentDetails";
+import { GuestMessageName, guestBubbleClassName } from "./guestMessageStyle";
+import { MessageCopyButton } from "./MessageCopyButton";
+import { promptLinkFor } from "../promptLinks/copyPromptLink";
+import { PierreEntryIcon } from "./PierreEntryIcon";
+import { formatBytes } from "../../lib/formatBytes";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import {
   asKnownContextRecord,
@@ -38,47 +84,19 @@ import {
 } from "~/lib/composerContextRecords";
 import { cn } from "~/lib/utils";
 import { markdownProseDirection } from "~/textDirection";
-import { useAssetUrlRefresh, useAssetUrls, useAssetUrlState } from "../../assets/assetUrls";
+
 import { UiText, useUiLanguage } from "../../i18n";
-import { formatBytes } from "../../lib/formatBytes";
+
 import { chatMarkdownClipboardPayload } from "../../markdown-clipboard";
-import {
-  createMessageAttachmentPreviewProjector,
-  selectMessageImageResources,
-} from "../../session-logic";
-import { useQuietThreadShell } from "../../state/entities";
-import { useEnvironmentQuery } from "../../state/query";
-import { serverEnvironment } from "../../state/server";
+
 import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../timestampFormat";
-import {
-  type ChatFileAttachment,
-  isFileAttachment,
-  isImageAttachment,
-  isVideoAttachment,
-} from "../../types";
+
 import type { ChatMarkdownContextReference } from "../ChatMarkdown";
-import ChatMarkdown from "../ChatMarkdown";
-import { InlineAudioPreview } from "../files/InlineAudioPreview";
-import { AttachmentImage } from "../media/AttachmentImage";
-import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
-import { promptLinkFor } from "../promptLinks/copyPromptLink";
-import { Button, InlineButton } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import {
-  buildAttachmentVideoAsset,
-  buildAttachmentVideoPreview,
-  buildExpandedImagePreview,
-} from "./ExpandedImagePreview";
-import { guestBubbleClassName, GuestMessageName } from "./guestMessageStyle";
-import { findRevealRef } from "./markdownFindContext";
-import { MessageCopyButton } from "./MessageCopyButton";
-import { shouldCollapseUserMessage } from "./MessagesTimeline.logic";
-import { PierreEntryIcon } from "./PierreEntryIcon";
-import {
-  SNAP_SHOT_ATTACHMENT_FRAME_CLASS,
-  SnapShotAttachmentDetails,
-} from "./SnapShotAttachmentDetails";
+
 import { type TimelineRow, TimelineRowActivityCtx, TimelineRowCtx } from "./timelineRowContext";
+import { WorkflowOpeningBlock } from "./WorkflowOpeningBlock";
+import { useTallEnoughToFold } from "./useTallEnoughToFold";
+
 import {
   MESSAGE_HEADING_LEVEL,
   MessageAuthorHeading,
@@ -89,8 +107,6 @@ import {
   userMessageFileLabel,
 } from "./TimelineUserMessageRow.logic";
 import { UserMessageContextReferenceChip } from "./UserMessageContextChips";
-import { FreshSessionRow, ModelSwitchRow } from "./V2LifecycleRow";
-import { WorkflowOpeningBlock } from "./WorkflowOpeningBlock";
 
 // Drawn inside the media so dark screenshots keep an edge on the dark background.
 const MEDIA_EDGE_CLASS_NAME =
@@ -307,7 +323,10 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
     <div className="group flex flex-col items-end gap-1" data-user-message-attribution="automation">
       {row.message.inputIntent === "steer" ||
       row.message.inputIntent === "promoted_queued_to_steer" ? (
-        <UserMessageIntentMarker intent={row.message.inputIntent} />
+        <UserMessageIntentMarker
+          intent={row.message.inputIntent}
+          unread={row.projectedItem?.item.status === "pending"}
+        />
       ) : null}
       <div
         className={cn(
@@ -315,6 +334,7 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
           BUBBLE_CHIP_CLASS_NAME,
           expanded && "w-full",
         )}
+        data-user-message-bubble=""
       >
         <MessageAuthorHeading>{uiT("Automation")}</MessageAuthorHeading>
         <FoldedMessageHeader
@@ -363,7 +383,7 @@ function AutomationMessageRow({ row }: { row: Extract<TimelineRow, { kind: "mess
                 <MessageCopyButton
                   text={promptLink}
                   label={uiT("Copy prompt link")}
-                  icon={LinkIconNode}
+                  icon={LinkIcon}
                   variant="ghost"
                 />
               )}
@@ -438,7 +458,12 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
   const ctx = use(TimelineRowCtx);
   const { onImageExpand, onFileOpen } = ctx;
   const coarsePointer = useMediaQuery({ pointer: "coarse" });
-  const senderThreadId = row.message.senderThreadId;
+  // A linked environment's agent sent it from a thread there.
+  const senderRef =
+    row.message.linkedSender ??
+    (row.message.senderThreadId === undefined
+      ? null
+      : scopeThreadRef(ctx.activeThreadEnvironmentId, row.message.senderThreadId));
   const resources = selectMessageImageResources(row.message.attachments);
   const previewUrls = useAssetUrls(ctx.activeThreadEnvironmentId, resources);
   const [projectPreviews] = useState(createMessageAttachmentPreviewProjector);
@@ -468,12 +493,14 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
   const folded = userMessage.attribution === "agent";
   const [expanded, setExpanded] = useState(false);
   const revealFoldRef = findRevealRef(() => setExpanded(true));
-  const senderShell = useQuietThreadShell(
-    folded && senderThreadId
-      ? { environmentId: ctx.activeThreadEnvironmentId, threadId: senderThreadId }
-      : null,
-  );
-  const senderLabel = senderShell?.title.trim() || "Agent";
+  const senderShell = useQuietThreadShell(folded ? senderRef : null);
+  const senderLabel =
+    senderShell?.title.trim() || row.message.linkedSender?.title.trim() || "Agent";
+  // Only an environment this client is connected to can open the sender's thread there.
+  const linkedSenderEnvironment = useEnvironment(row.message.linkedSender?.environmentId ?? null);
+  const canOpenSender =
+    senderRef !== null &&
+    (row.message.linkedSender === undefined || linkedSenderEnvironment !== null);
   const resolvedContext = resolveUserMessageContext({ ...row.message, text: userMessage.text });
   const previewImages = userImages.filter((image) => image.name.startsWith("preview-annotation-"));
   const revertTurnCount = row.revertTurnCount;
@@ -795,8 +822,11 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
         floatActions ? "flex-wrap" : "shrink-0",
       )}
     >
-      {folded && senderThreadId ? (
-        <InlineButton onClick={() => ctx.onOpenThread(senderThreadId)} tone="muted">
+      {folded && senderRef && canOpenSender ? (
+        <InlineButton
+          onClick={() => ctx.onOpenThread(senderRef.threadId, senderRef.environmentId)}
+          tone="muted"
+        >
           <UiText message={"Open thread"} />
         </InlineButton>
       ) : null}
@@ -829,7 +859,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
           <MessageCopyButton
             text={promptLink}
             label={uiT("Copy prompt link")}
-            icon={LinkIconNode}
+            icon={LinkIcon}
             variant="ghost"
           />
         )}
@@ -858,7 +888,10 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
       {(row.message.inputIntent === "steer" ||
         row.message.inputIntent === "promoted_queued_to_steer") &&
       !row.continuesSteer ? (
-        <UserMessageIntentMarker intent={row.message.inputIntent} />
+        <UserMessageIntentMarker
+          intent={row.message.inputIntent}
+          unread={row.projectedItem?.item.status === "pending"}
+        />
       ) : null}
       {mediaAboveText ? (
         <div className="flex max-w-[80%] justify-end">
@@ -879,6 +912,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
           !folded && !mediaOnly && !fileCardsOnly && !audioOnly && "p-3",
           folded && expanded && "w-full",
         )}
+        data-user-message-bubble=""
       >
         {/* Outside the fold so a collapsed message still has a heading to navigate to. */}
         {mediaAboveText ? null : (
@@ -887,7 +921,7 @@ function UserTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "message" 
               ? senderLabel
               : userMessage.guestName === undefined
                 ? uiT("You")
-                : `${userMessage.guestName} (guest)`}
+                : uiT("{0} (guest)", { "0": userMessage.guestName })}
           </MessageAuthorHeading>
         )}
         {folded ? (
@@ -1065,8 +1099,10 @@ const ACTIONS_REVEAL_CLASS_NAME =
 
 function UserMessageIntentMarker({
   intent,
+  unread,
 }: {
   readonly intent: "steer" | "promoted_queued_to_steer";
+  readonly unread: boolean;
 }) {
   const { t: uiT } = useUiLanguage();
 
@@ -1081,12 +1117,16 @@ function UserMessageIntentMarker({
         }
       >
         <Redo2Icon aria-hidden="true" className="size-3" />
-        {uiT("Steer")}
+        {unread ? uiT("Steer · waiting to be read") : uiT("Steer")}
       </TooltipTrigger>
       <TooltipPopup side="top">
-        {intent === "promoted_queued_to_steer"
-          ? uiT("Originally queued, then promoted to steer the active turn")
-          : uiT("Steered the active turn")}
+        {unread
+          ? uiT(
+              "Waiting for the agent to read this. It reads steers between steps, after a running command finishes.",
+            )
+          : intent === "promoted_queued_to_steer"
+            ? uiT("Originally queued, then promoted to steer the active turn")
+            : uiT("Steered the active turn")}
       </TooltipPopup>
     </Tooltip>
   );
@@ -1142,8 +1182,9 @@ const CollapsibleUserMessageBody = memo(function CollapsibleUserMessageBody(prop
   const revealForFind = () => setExpanded(true);
   const revealRef = findRevealRef(revealForFind);
   const hasVisibleBody = props.text.trim().length > 0;
-  const canCollapse =
-    props.collapsible !== false && hasVisibleBody && shouldCollapseUserMessage(props.text);
+  const { ref: contentRef, tallEnough: canCollapse } = useTallEnoughToFold(
+    props.collapsible !== false && hasVisibleBody,
+  );
   const isCollapsed = canCollapse && !expanded;
   const showCollapseControl = canCollapse;
 
@@ -1168,12 +1209,14 @@ const CollapsibleUserMessageBody = memo(function CollapsibleUserMessageBody(prop
               : undefined
           }
         >
-          <UserMessageBody
-            text={props.text}
-            renderContextReference={props.renderContextReference}
-            skills={props.skills}
-            markdownCwd={props.markdownCwd}
-          />
+          <div ref={contentRef}>
+            <UserMessageBody
+              text={props.text}
+              renderContextReference={props.renderContextReference}
+              skills={props.skills}
+              markdownCwd={props.markdownCwd}
+            />
+          </div>
         </div>
       ) : null}
       {showCollapseControl ? (
@@ -1197,6 +1240,11 @@ const CollapsibleUserMessageBody = memo(function CollapsibleUserMessageBody(prop
   );
 });
 
+const USER_MESSAGE_REMARK_PLUGINS = [
+  ...CHAT_USER_MARKDOWN_REMARK_PLUGINS,
+  remarkEnableOrderedListNumbers,
+];
+
 const UserMessageBody = memo(function UserMessageBody(props: {
   text: string;
   renderContextReference?: (reference: ChatMarkdownContextReference) => ReactNode;
@@ -1213,9 +1261,10 @@ const UserMessageBody = memo(function UserMessageBody(props: {
       cwd={props.markdownCwd}
       threadRef={ctx.threadRef ?? undefined}
       skills={props.skills}
-      className="text-foreground"
+      className="text-message-foreground user-message-markdown"
       lineBreaks
       parseRawHtml={false}
+      extraRemarkPlugins={USER_MESSAGE_REMARK_PLUGINS}
       renderContextReference={props.renderContextReference}
       headingLevelOffset={MESSAGE_HEADING_LEVEL}
     />

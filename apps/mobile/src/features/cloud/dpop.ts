@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { DpopProof } from "@t3tools/client-runtime/relay";
 import { DpopPublicJwk } from "@t3tools/shared/dpopCommon";
 import * as Digest from "effect/crypto/Digest";
@@ -142,6 +143,7 @@ export const generateDpopProofKeyPair = Effect.fn("dpop.generateDpopProofKeyPair
 
 export const loadOrCreateDpopProofKeyPair = Effect.fn("dpop.loadOrCreateDpopProofKeyPair")(
   function* (): Effect.fn.Return<DpopProofKeyPair, CloudDpopError> {
+    const uiT = readUiTranslator();
     const stored = yield* Effect.tryPromise({
       try: () => SecureStore.getItemAsync(DPOP_PROOF_KEY_STORAGE_KEY),
       catch: cloudDpopError("Could not read the DPoP proof key."),
@@ -160,7 +162,7 @@ export const loadOrCreateDpopProofKeyPair = Effect.fn("dpop.loadOrCreateDpopProo
         catch: cloudDpopError("Stored DPoP proof key is invalid."),
       });
       if (!matches) {
-        return yield* new CloudDpopError({ message: "Stored DPoP proof key is invalid." });
+        return yield* new CloudDpopError({ message: uiT("Stored DPoP proof key is invalid.") });
       }
       return { privateJwk: storedPrivateJwk, publicJwk };
     }
@@ -178,6 +180,7 @@ export const loadOrCreateDpopProofKeyPair = Effect.fn("dpop.loadOrCreateDpopProo
 
 /** The installation's DPoP key, signing with the platform's P-256. */
 export const loadOrCreateProofKey = Effect.fn("dpop.loadOrCreateProofKey")(function* () {
+  const uiT = readUiTranslator();
   const keyPair = yield* loadOrCreateDpopProofKeyPair();
   const privateKey = yield* Effect.try({
     try: () => base64UrlToBytes(keyPair.privateJwk.d),
@@ -189,7 +192,7 @@ export const loadOrCreateProofKey = Effect.fn("dpop.loadOrCreateProofKey")(funct
       Effect.tryPromise({
         try: async () => (await nativeDpopKeys()).signDpop(privateKey, signingInput),
         catch: (cause) =>
-          new DpopProof.DpopProofError({ message: "Could not sign DPoP proof.", cause }),
+          new DpopProof.DpopProofError({ message: uiT("Could not sign DPoP proof."), cause }),
       }),
   } satisfies DpopProof.DpopProofKey;
 });

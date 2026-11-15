@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../state/ui-language";
 import {
   ConnectionCatalogDocument,
   type ConnectionCatalogDocument as ConnectionCatalogDocumentType,
@@ -17,9 +18,13 @@ export const CONNECTION_CATALOG_KEY = "t3code.connection-catalog.v1";
 export const LEGACY_CONNECTIONS_KEY = "t3code.connections";
 
 function catalogError(operation: string, cause: unknown) {
+  const uiT = readUiTranslator();
   return new ConnectionTransientError({
     reason: "remote-unavailable",
-    detail: `Could not ${operation} the local connection catalog: ${String(cause)}`,
+    detail: uiT("Could not {0} the local connection catalog: {1}", {
+      "0": operation,
+      "1": String(cause),
+    }),
   });
 }
 

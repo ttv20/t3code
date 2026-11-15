@@ -4,7 +4,6 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useUiLanguage } from "../i18n";
-
 import { createAudioPlaybackSession } from "../lib/audioSession";
 import { type MediaActionsSource } from "../lib/mediaActionsSource";
 import { useMediaVideoPlayback } from "../lib/useMediaVideoPlayback";
@@ -143,6 +142,7 @@ interface MediaVideoPlayerProps {
   readonly thumbnailVisible?: boolean;
   readonly visible?: boolean;
   readonly unavailable?: boolean;
+  readonly unavailableDetail?: string | undefined;
   readonly expanded?: boolean;
   /** Fill the parent and size the frame to the video's shape instead of a fixed 16:9 slot. */
   readonly fitToVideo?: boolean;
@@ -160,6 +160,9 @@ function MediaVideoPlayerContent(props: MediaVideoPlayerProps) {
   const [playbackUri, setPlaybackUri] = useState<string | null>(props.expanded ? props.uri : null);
   // Keep an opened player mounted while signing or reconnecting temporarily has no usable URL.
   if (playbackUri === null && props.expanded && props.uri !== null) setPlaybackUri(props.uri);
+  const unavailableText = props.unavailableDetail
+    ? `Video unavailable. ${props.unavailableDetail}`
+    : uiT("Video unavailable");
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null);
   const [bounds, setBounds] = useState<{ width: number; height: number } | null>(null);
   const sizeSource = props.fitToVideo && isFocused && videoSize === null ? props.uri : null;
@@ -207,7 +210,11 @@ function MediaVideoPlayerContent(props: MediaVideoPlayerProps) {
         <MediaActionsMenu media={mediaActions} inModal={props.expanded} style={{ flex: 1 }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={uiT("Play {0}", { "0": props.name })}
+            accessibilityLabel={
+              props.unavailable
+                ? `${props.name}. ${unavailableText}`
+                : uiT("Play {0}", { "0": props.name })
+            }
             accessibilityHint={
               mediaActions.actions.length > 0 ? uiT("Touch and hold for media actions") : undefined
             }
@@ -229,7 +236,7 @@ function MediaVideoPlayerContent(props: MediaVideoPlayerProps) {
               />
             ) : null}
             {props.unavailable ? (
-              <AppText className="text-sm text-white/80">{uiT("Video unavailable")}</AppText>
+              <AppText className="text-center text-sm text-white/80">{unavailableText}</AppText>
             ) : props.uri === null ? (
               <AppActivityIndicator color="#ffffff" accessibilityLabel={uiT("Loading video")} />
             ) : (

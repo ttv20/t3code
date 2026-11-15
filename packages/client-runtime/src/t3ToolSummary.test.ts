@@ -44,6 +44,10 @@ describe("summarizeT3ToolCalls", () => {
     expect(summarizeT3ToolCalls("link-pr", [completed({ urls }, {})]).label).toBe(
       "Linked pull requests",
     );
+    expect(summarizeT3ToolCalls("link-pr", [links, completed({ number: 3 })], "he")).toEqual({
+      label: "קושרו 2 בקשות מיזוג",
+      failedCount: 0,
+    });
     const batch = completed({ states: ["merged"] }, { unlinkedCount: 2 });
     expect(summarizeT3ToolCalls("unlink-pr", [batch, completed({ number: 3 })]).label).toBe(
       "Unlinked 3 pull requests",

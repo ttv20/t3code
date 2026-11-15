@@ -1,7 +1,9 @@
-import { NavigationContext } from "@react-navigation/native";
-import { use, useId, useLayoutEffect } from "react";
+import { Toolbar } from "./Toolbar";
+import { AppActivityIndicator } from "./AppActivityIndicator";
+import type { HeaderBarButtonMailSearchToolbarItem, SearchBarCommands } from "react-native-screens";
+import { NavigationContext, NavigationRouteContext } from "@react-navigation/native";
+import { use, useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { View } from "react-native";
-import type { HeaderBarButtonMailSearchToolbarItem } from "react-native-screens";
 import { useAdaptiveWorkspaceLayout } from "../../features/layout/AdaptiveWorkspaceLayout";
 import { InspectorCloseContext } from "../../features/layout/inspector-bar-store";
 import {
@@ -16,12 +18,10 @@ import { useDeviceType } from "../../native/native-layout-metrics";
 import { useNativeWorkspaceColumnsSupported } from "../../native/NativeWorkspaceColumns";
 import { NativeStackScreenOptions, useScreenOptionsWriter } from "../../native/StackHeader";
 import { useNativeMailSearchToolbar } from "../../native/use-native-mail-search-toolbar";
-import { AppActivityIndicator } from "./AppActivityIndicator";
 import type { AppBarMenuItem, AppBarProps } from "./AppBar.types";
 import type { AppSymbolName } from "./AppSymbol";
 import { createNativeHeaderMenu } from "./nativeHeaderMenu.ios";
 import { ScreenHeaderButton } from "./ScreenHeaderButton";
-import { Toolbar } from "./Toolbar";
 import { useControlTheme } from "./useControlTheme";
 
 function iosIcon(icon: AppSymbolName) {
@@ -72,6 +72,17 @@ export function AppBar(props: AppBarProps) {
         }
       : null;
   const navigation = use(NavigationContext);
+  const route = use(NavigationRouteContext);
+  // A thread opened from another thread sits on it, not beside the list, so it keeps Back.
+  const threadBelow = useSyncExternalStore(
+    (onChange) => navigation?.addListener("state", onChange) ?? (() => {}),
+    () => {
+      const routes = navigation?.getState()?.routes;
+      const index = routes?.findIndex((candidate) => candidate.key === route?.key) ?? -1;
+      return route?.name === "Thread" && index > 0 && routes?.[index - 1]?.name === "Thread";
+    },
+  );
+  const listBeside = layout.usesSplitView && props.onBackToList !== undefined && !threadBelow;
   const rootBack =
     !layout.usesSplitView && props.onBackToList && navigation?.canGoBack() === false
       ? props.onBackToList
@@ -87,6 +98,19 @@ export function AppBar(props: AppBarProps) {
   const usesNativeMailSearchToolbar = useNativeMailSearchToolbar();
   const { search, menus } = props;
   const menu = menus?.[0];
+  const searchBarRef = useRef<SearchBarCommands>(null);
+  const nativeSearchText = useRef(search?.value ?? "");
+  const searchValue = search?.value;
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- the native search bar keeps its own text; a value the caller changes (a reset) has to be pushed into it
+  useLayoutEffect(() => {
+    if (searchValue === undefined || searchValue === nativeSearchText.current) return;
+    nativeSearchText.current = searchValue;
+    searchBarRef.current?.setText(searchValue);
+  }, [searchValue]);
+  const reportSearchText = (text: string) => {
+    nativeSearchText.current = text;
+    search?.onChangeText(text);
+  };
   const compactSearch =
     search !== undefined &&
     (search.compactToolbar ?? !layout.usesSplitView) &&
@@ -109,7 +133,7 @@ export function AppBar(props: AppBarProps) {
           headerBackVisible:
             props.onClose === undefined &&
             splitBack === null &&
-            !(layout.usesSplitView && props.onBackToList) &&
+            !listBeside &&
             !(props.guardBack && props.onBack),
           ...(props.guardBack ? { gestureEnabled: false } : undefined),
           title: props.title,
@@ -151,8 +175,9 @@ export function AppBar(props: AppBarProps) {
                         ? { obscureBackground: false }
                         : undefined),
                       placeholder: search.placeholder,
-                      onChangeText: (event) => search.onChangeText(event.nativeEvent.text),
-                      onCancelButtonPress: () => search.onChangeText(""),
+                      ref: searchBarRef,
+                      onChangeText: (event) => reportSearchText(event.nativeEvent.text),
+                      onCancelButtonPress: () => reportSearchText(""),
                     },
               }
             : undefined),

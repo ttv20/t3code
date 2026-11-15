@@ -1,11 +1,10 @@
 import type { DeviceHostSummary, DevicePlatform } from "@t3tools/contracts";
-import { Moon, Sun } from "lucide";
 import {
-  Box,
   Camera,
   ChevronLeft,
   Home,
   Keyboard,
+  Box,
   Maximize,
   MoreHorizontal,
   PictureInPicture2,
@@ -16,24 +15,26 @@ import {
   Square,
   Type,
   X,
+  MoonIcon,
+  SunIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { MorphIcon } from "~/components/MorphIcon";
 import { Button } from "~/components/ui/button";
 import {
   Menu,
   MenuItem,
   MenuPopup,
+  MenuSeparator,
+  MenuTrigger,
   MenuRadioGroup,
   MenuRadioItem,
   MenuRadioItemIndicator,
-  MenuSeparator,
-  MenuTrigger,
 } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { useUiLanguage } from "../../i18n";
 import type { DeviceStreamHandle, DeviceViewControls } from "./DeviceStreamView";
 import type { DeviceControls } from "./useDeviceControls";
+
+import { useUiLanguage } from "../../i18n";
 
 export function DeviceControlsRail(props: {
   platform: DevicePlatform;
@@ -139,7 +140,7 @@ export function DeviceControlsRail(props: {
               disabled={controls.disabled || !settings?.appearance}
               onClick={() => void controls.act({ type: "setAppearance", value: nextAppearance })}
             >
-              <MorphIcon icon={settings?.appearance === "dark" ? Sun : Moon} />
+              {settings?.appearance === "dark" ? <SunIcon /> : <MoonIcon />}
             </RailButton>
             <Menu>
               <MenuTrigger
@@ -199,7 +200,7 @@ export function DeviceControlsRail(props: {
         {props.hostKind === "simlock" ? null : (
           <RailButton
             tooltipSide={popupSide}
-            label={props.screenshotPending ? uiT("Capturing screenshot") : "Save screenshot"}
+            label={props.screenshotPending ? uiT("Capturing screenshot") : uiT("Save screenshot")}
             disabled={!view.streaming || props.screenshotPending}
             onClick={props.onScreenshot}
           >
@@ -297,12 +298,11 @@ function RailButton(props: {
   onClick: () => void;
   children: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   const button = (
     <Button
       size="icon-sm"
       variant={props.pressed ? "secondary" : "ghost"}
-      aria-label={uiT(props.label)}
+      aria-label={props.label}
       aria-pressed={props.pressed}
       disabled={props.disabled}
       onClick={props.onClick}
@@ -315,7 +315,7 @@ function RailButton(props: {
       {props.disabled && props.description ? (
         <TooltipTrigger
           render={
-            <span className="inline-flex" tabIndex={0} role="group" aria-label={uiT(props.label)} />
+            <span className="inline-flex" tabIndex={0} role="group" aria-label={props.label} />
           }
         >
           {button}
@@ -323,7 +323,7 @@ function RailButton(props: {
       ) : (
         <TooltipTrigger render={button} />
       )}
-      <TooltipPopup side={props.tooltipSide}>{props.description ?? uiT(props.label)}</TooltipPopup>
+      <TooltipPopup side={props.tooltipSide}>{props.description ?? props.label}</TooltipPopup>
     </Tooltip>
   );
 }

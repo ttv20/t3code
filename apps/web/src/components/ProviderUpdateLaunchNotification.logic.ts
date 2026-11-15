@@ -1,4 +1,3 @@
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import {
   defaultInstanceIdForDriver,
   PROVIDER_DISPLAY_NAMES,
@@ -12,6 +11,7 @@ import {
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 
 export type ProviderUpdateCandidate = ServerProvider & {
   readonly versionAdvisory: NonNullable<ServerProvider["versionAdvisory"]> & {
@@ -81,14 +81,27 @@ function dedupeProvidersByDriver<T extends ServerProvider>(providers: ReadonlyAr
 }
 
 function getProviderUpdatedTitle(
-  provider: Pick<ServerProvider, "driver" | "version">,
-  locale: UiLocale,
+  provider: Pick<ServerProvider, "driver" | "version" | "installedVersion">,
+  locale: UiLocale = "en",
 ): string {
   const t = createUiTranslator(locale);
   const providerName = PROVIDER_DISPLAY_NAMES[provider.driver] ?? provider.driver;
-  return provider.version
-    ? t("{0} updated: {1}", { "0": providerName, "1": formatVersion(provider.version) })
+  const version = provider.installedVersion ?? provider.version;
+  return version
+    ? t("{0} updated: {1}", { "0": providerName, "1": formatVersion(version) })
     : t("{0} updated", { "0": providerName });
+}
+
+// Only OpenCode reports an installed CLI apart from a running external server.
+export function getProviderRestartNotice(
+  provider: Pick<ServerProvider, "version" | "installedVersion" | "updateState">,
+): string | null {
+  return provider.updateState?.status === "succeeded" &&
+    provider.installedVersion != null &&
+    provider.version != null &&
+    provider.installedVersion !== provider.version
+    ? provider.updateState.message
+    : null;
 }
 
 function getProviderUpdatedDescription(providerCount: number, locale: UiLocale): string {
@@ -215,11 +228,15 @@ export function getProviderUpdateRunOutcome(
   run: ProviderUpdateRun,
   locale: UiLocale = "en",
 ):
-  | { readonly status: "interrupted" | "updated" }
+  | { readonly status: "interrupted" }
+  | { readonly status: "updated"; readonly message: string | null }
   | { readonly status: "failed"; readonly line: string } {
   const t = createUiTranslator(locale);
   if (isAtomCommandInterrupted(run.result)) return { status: "interrupted" };
-  const label = `${run.machineLabel} · ${PROVIDER_DISPLAY_NAMES[run.driver] ?? run.driver}`;
+  const label = t("{0} · {1}", {
+    "0": run.machineLabel,
+    "1": PROVIDER_DISPLAY_NAMES[run.driver] ?? run.driver,
+  });
   if (run.result._tag === "Failure") {
     const error = squashAtomCommandFailure(run.result);
     return {
@@ -227,11 +244,13 @@ export function getProviderUpdateRunOutcome(
       line: `${label}: ${error instanceof Error ? error.message : t("Provider update failed.")}`,
     };
   }
-  const updateState = run.result.value.providers.find(
-    (provider) => provider.instanceId === run.instanceId,
-  )?.updateState;
+  const provider = run.result.value.providers.find(
+    (candidate) => candidate.instanceId === run.instanceId,
+  );
+  const updateState = provider?.updateState;
+  const restartNotice = provider ? getProviderRestartNotice(provider) : null;
   return updateState?.status === "succeeded"
-    ? { status: "updated" }
+    ? { status: "updated", message: restartNotice ? `${label}: ${restartNotice}` : null }
     : {
         status: "failed",
         line: `${label}: ${updateState?.message ?? t("Provider update did not finish.")}`,
@@ -256,6 +275,13 @@ export function getProviderUpdateRunToastView(
   const failureLines = settled.flatMap((outcome) =>
     outcome.status === "failed" ? [outcome.line] : [],
   );
+  const successMessages = [
+    ...new Set(
+      settled.flatMap((outcome) =>
+        outcome.status === "updated" && outcome.message ? [outcome.message] : [],
+      ),
+    ),
+  ];
   if (failureLines.length === 0) {
     return {
       type: "success",
@@ -263,7 +289,8 @@ export function getProviderUpdateRunToastView(
         settled.length === 1
           ? t("Provider updated")
           : t("{0} providers updated", { "0": settled.length }),
-      description: getProviderUpdatedDescription(settled.length, locale),
+      description:
+        successMessages.join("\n") || getProviderUpdatedDescription(settled.length, locale),
     };
   }
   return {
@@ -274,7 +301,7 @@ export function getProviderUpdateRunToastView(
         : settled.length === 1
           ? t("Provider update failed")
           : t("Provider updates failed"),
-    description: failureLines.join("\n"),
+    description: [...failureLines, ...successMessages].join("\n"),
   };
 }
 
@@ -426,7 +453,9 @@ export function getProviderUpdateSidebarPillView(
         succeededProviders.length === 1
           ? getProviderUpdatedTitle(succeededProvider, locale)
           : t("{0} providers updated", { "0": succeededProviders.length }),
-      description: getProviderUpdatedDescription(succeededProviders.length, locale),
+      description:
+        [...new Set(succeededProviders.map(getProviderRestartNotice).filter(Boolean))].join("\n") ||
+        getProviderUpdatedDescription(succeededProviders.length, locale),
       dismissAfterVisibleMs: PROVIDER_UPDATE_SUCCESS_VISIBLE_MS,
     });
   }

@@ -7,17 +7,16 @@ import {
 } from "@t3tools/shared/htmlRender";
 import { Maximize2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { useAssetUrlRefresh } from "~/assets/assetUrls";
 import { useLongLivedAssetUrl } from "~/assets/longLivedAssetUrls";
-
-import { observeResize } from "~/lib/observeResize";
 import { HtmlRenderDocument } from "../files/BrowserDocumentFrame";
 import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { HtmlRenderDialog } from "./HtmlRenderDialog";
+import { observeResize } from "~/lib/observeResize";
+
+import { useUiLanguage } from "../../i18n";
 
 const MIN_URL_LIFE_MS = 5 * 60_000;
 
@@ -74,7 +73,7 @@ export function HtmlRenderFrame(props: {
         <>
           <HtmlRenderDocument
             src={src}
-            title={uiT(title)}
+            title={title}
             threadRef={props.threadRef}
             className="block size-full"
             onContentHeight={setContentHeight}
@@ -112,7 +111,7 @@ export function HtmlRenderFrame(props: {
           {expandedSrc !== null ? (
             <HtmlRenderDialog
               src={expandedSrc}
-              title={uiT(title)}
+              htmlRender={props.htmlRender}
               threadRef={props.threadRef}
               onClose={() => setExpandedSrc(null)}
             />
@@ -120,7 +119,7 @@ export function HtmlRenderFrame(props: {
         </>
       ) : failed ? (
         <p className="flex size-full items-center justify-center text-muted-foreground text-xs">
-          {uiT("Unable to load")} {uiT(title)}
+          {uiT("Unable to load")} {title}
         </p>
       ) : null}
     </div>

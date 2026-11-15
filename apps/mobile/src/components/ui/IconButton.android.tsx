@@ -5,7 +5,7 @@ import {
 } from "@expo/ui/jetpack-compose";
 import { size } from "@expo/ui/jetpack-compose/modifiers";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
+
 import type { IconButtonProps } from "./IconButton.types";
 import { NativeThemeHost } from "./NativeThemeHost.android";
 
@@ -14,8 +14,6 @@ import { useAndroidControlSizing } from "./useAndroidControlSizing";
 import { useControlTheme } from "./useControlTheme";
 
 export function IconButton(props: IconButtonProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { colors } = useControlTheme();
   const { iconSize, buttonSize } = useAndroidControlSizing();
   const variant = props.variant ?? "standard";
@@ -43,7 +41,7 @@ export function IconButton(props: IconButtonProps) {
   return (
     <View
       accessible
-      accessibilityLabel={uiT(props.accessibilityLabel)}
+      accessibilityLabel={props.accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(props.disabled), selected: props.selected }}
       accessibilityActions={[{ name: "activate" }]}

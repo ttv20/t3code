@@ -1,5 +1,5 @@
 import type { MenuAction } from "@react-native-menu/menu";
-import type { UiLocale } from "@t3tools/client-runtime/i18n";
+import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
 import { resolveThreadProviderStack } from "@t3tools/client-runtime/state/models";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import {
@@ -22,6 +22,7 @@ import {
   resolveSnoozePresets,
   snoozeWakeLabel,
   threadWokeAt,
+  hasUnseenRunFailure,
 } from "@t3tools/client-runtime/state/thread-settled";
 import {
   resolveSettledThreadTimestamp,
@@ -33,14 +34,10 @@ import {
 import { isListedThreadLineage, type EnvironmentId, type ProjectId } from "@t3tools/contracts";
 import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { foldSearchQuery, rankSearchItems, scoreThreadSearch } from "@t3tools/shared/paletteSearch";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-
 import type { ThreadListProvider } from "../../state/thread-list-environments";
 import type { ThreadMoveAvailability } from "./threadOrder";
-
 import { relativeTime } from "../../lib/time";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
-
 import {
   applyPendingThreadOrder,
   reconcilePendingThreadOrder,
@@ -303,12 +300,54 @@ export function resolveThreadListV2Status(
   return "ready";
 }
 
+export function threadListV2RowAccessibilityLabel(input: {
+  readonly title: string;
+  readonly locale?: UiLocale;
+  readonly variant: "card" | "slim";
+  readonly woke: boolean;
+  readonly statusLabel: string | undefined;
+  readonly timeLabel: string;
+  readonly snoozeWakeLabel: string | undefined;
+  readonly providerNameLabel: string | null;
+  readonly hasQueuedMessages: boolean;
+  readonly regeneratingTitle: boolean;
+}): string {
+  const uiT = createUiTranslator(input.locale ?? "en");
+  // Mirrors the row's meta line: a card shows Woke, else its status, else the time.
+  const meta =
+    input.variant === "slim"
+      ? (input.snoozeWakeLabel ?? input.timeLabel)
+      : input.woke
+        ? uiT("Woke")
+        : (input.statusLabel ?? input.timeLabel);
+  return [
+    input.title,
+    meta,
+    input.providerNameLabel,
+    input.hasQueuedMessages ? uiT("messages queued to send") : null,
+    input.regeneratingTitle ? uiT("regenerating title") : null,
+  ]
+    .filter((part) => part !== null)
+    .join(", ");
+}
+
+/** Row status: a failure the user has already opened settles to ready, like Done. */
+export function resolveThreadListV2RowStatus(
+  thread: Parameters<typeof resolveThreadListV2Status>[0] &
+    Pick<EnvironmentThreadShell, "latestRun" | "lastVisitedAt">,
+): ThreadListV2Status {
+  const status = resolveThreadListV2Status(thread);
+  // A runtime failure without a failed run has nothing to date it, so it stays.
+  if (status !== "failed" || thread.latestRun?.status !== "failed") return status;
+  return hasUnseenRunFailure(thread) ? status : "ready";
+}
+
 function parseTimestampMs(isoDate: string): number {
   const parsed = Date.parse(isoDate);
   return Number.isNaN(parsed) ? 0 : parsed;
 }
 
-export function sortThreadsForListV2<
+function sortThreadsForListV2<
   T extends {
     readonly id: string;
     readonly createdAt: string;
@@ -545,7 +584,7 @@ function resolveThreadListV2ItemTimeLabel(
   if (showSnoozeWakeLabel) return "";
   if (
     variant === "card" &&
-    (resolveThreadListV2Status(thread) !== "ready" ||
+    (resolveThreadListV2RowStatus(thread) !== "ready" ||
       item.wokeAt !== null ||
       threadHasUnseenCompletion(thread))
   )

@@ -18,7 +18,7 @@ export type { SegmentedControlProps } from "./SegmentedControl.types";
 export function SegmentedControl<Value extends string | number>(
   props: SegmentedControlProps<Value>,
 ) {
-  const { t: uiT, direction } = useUiLanguage();
+  const { direction } = useUiLanguage();
   const { colorScheme, colors, themeId } = useControlTheme();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const { width } = layout;
@@ -72,7 +72,7 @@ export function SegmentedControl<Value extends string | number>(
             <Pressable
               key={`${typeof option.value}:${option.value}`}
               accessibilityRole={props.role ?? "button"}
-              accessibilityLabel={uiT(option.accessibilityLabel ?? option.label)}
+              accessibilityLabel={option.accessibilityLabel ?? option.label}
               accessibilityState={{ selected }}
               onPress={() => props.onSelect(option.value)}
               className="flex-1 items-center justify-center rounded-full px-2 py-1 active:opacity-70"
@@ -85,7 +85,7 @@ export function SegmentedControl<Value extends string | number>(
                   color: selected ? selectedTextColor : mutedColor,
                 }}
               >
-                {uiT(option.label)}
+                {option.label}
               </AppText>
             </Pressable>
           );

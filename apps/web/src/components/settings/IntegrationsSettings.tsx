@@ -1,69 +1,65 @@
+import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
+import { DeviceToolVersions } from "../device/DeviceToolVersions";
+import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
+import { ScopedSwitch } from "./ScopedSwitch";
+import { DeviceSourcesSettings } from "./DeviceSourcesSettings";
 import {
   AuthSettingsWriteScope,
-  BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH,
-  BROWSER_PROFILE_MAX_COUNT,
-  BROWSER_PROFILE_NAME_MAX_LENGTH,
-  BROWSER_RECORDING_FRAME_RATES,
   BrowserImportFailureReason,
-  type BrowserImportSource,
+  BROWSER_PROFILE_MAX_COUNT,
   type BrowserLinkTarget,
   type BrowserProfile,
   BrowserSearchEngine,
+  BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH,
+  type EnvironmentId,
+  BROWSER_PROFILE_NAME_MAX_LENGTH,
+  BROWSER_RECORDING_FRAME_RATES,
   DEFAULT_BROWSER_AUTO_SHOW_FLOATING_PREVIEW,
-  DEFAULT_BROWSER_LINK_TARGET,
   DEFAULT_BROWSER_PROFILE_ID,
+  DEFAULT_BROWSER_LINK_TARGET,
   DEFAULT_BROWSER_RECORDING_FRAME_RATE,
   DEFAULT_BROWSER_SEARCH_ENGINE,
   DEFAULT_BROWSER_VIEWPORT,
   DEFAULT_PREVIEW_APPEARANCE,
   DEFAULT_PREVIEW_ZOOM_FACTOR,
   DEFAULT_SERVER_SETTINGS,
-  type EnvironmentId,
   FILL_PREVIEW_VIEWPORT,
   PREVIEW_VIEWPORT_MAX_AREA,
   PREVIEW_VIEWPORT_MAX_DIMENSION,
   PREVIEW_VIEWPORT_MIN_DIMENSION,
   PREVIEW_ZOOM_LEVELS,
-  type PreviewAppearancePreference,
-  type PreviewViewportSetting,
   findBrowserProfile,
   isBuiltInBrowserProfileId,
-  managedCapabilityDenial,
   resolveBrowserProfiles,
+  type BrowserImportSource,
+  type PreviewAppearancePreference,
+  type PreviewViewportSetting,
+  managedCapabilityDenial,
 } from "@t3tools/contracts";
+import { usePrimaryManagedPolicy } from "~/state/managedPolicy";
 import { isValidSearchUrlTemplate } from "@t3tools/shared/preview";
 import { PREVIEW_VIEWPORT_PRESETS } from "@t3tools/shared/previewViewport";
-import * as Schema from "effect/Schema";
 import { MoreVertical, Plus as PlusIcon } from "lucide-react";
+import * as Schema from "effect/Schema";
 import { useRef, useState } from "react";
-import { usePrimaryManagedPolicy } from "~/state/managedPolicy";
-import { UiText, useUiLanguage } from "../../i18n";
-import { DeviceHostUpdates } from "../device/DeviceHostUpdates";
-import { DeviceToolVersions } from "../device/DeviceToolVersions";
-import { DeviceSourcesSettings } from "./DeviceSourcesSettings";
-import { ScopedSwitch } from "./ScopedSwitch";
-import { useScopedSettings, useUpdateScopedSettings } from "./useScopedSettings";
-
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import { ScreenRotationIcon } from "~/browser/ScreenRotationIcon";
 import { resolveEnvironmentOptionLabel } from "~/components/BranchToolbar.logic";
+import { previewBridge } from "~/components/preview/previewBridge";
+import { cn, randomUUID } from "~/lib/utils";
+import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
+import { deviceEnvironment, useDeviceState } from "~/state/device";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { formatEnvironmentQueryError } from "~/state/query";
+import { previewEnvironment } from "~/state/preview";
+import { useServerConfigs } from "~/state/entities";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AgentDeviceSetupStatus,
   DeviceHubSetupStatus,
   deviceHubReadiness,
 } from "~/components/device/DeviceSetup";
-import { previewBridge } from "~/components/preview/previewBridge";
-import { cn, randomUUID } from "~/lib/utils";
-import { deviceEnvironment, useDeviceState } from "~/state/device";
-import { useServerConfigs } from "~/state/entities";
-import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
-import { previewEnvironment } from "~/state/preview";
-import { formatEnvironmentQueryError } from "~/state/query";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { isElectron } from "../../env";
-
-import { readLocalApi } from "~/localApi";
 import { Badge } from "../ui/badge";
 import {
   Menu,
@@ -74,14 +70,8 @@ import {
   MenuSeparator,
   MenuTrigger,
 } from "../ui/menu";
-
-import {
-  getClientSettings,
-  persistClientSettingsUpdate,
-  useClientSettings,
-  useClientSettingsHydrated,
-  useUpdatePrimarySettings,
-} from "~/hooks/useSettings";
+import { readLocalApi } from "~/localApi";
+import { toastManager } from "../ui/toast";
 import {
   AlertDialog,
   AlertDialogClose,
@@ -104,21 +94,28 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Switch } from "../ui/switch";
-import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-
-import { AdvancedSettings } from "./AdvancedSettings";
-import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
-import type { ImportOutcome } from "./browserImportWizard.logic";
 import {
+  getClientSettings,
+  persistClientSettingsUpdate,
+  useClientSettings,
+  useClientSettingsHydrated,
+  useUpdatePrimarySettings,
+} from "~/hooks/useSettings";
+import {
+  SettingsUnavailableGroup,
   SettingResetButton,
   SettingsPageContainer,
   SettingsRow,
   SettingsSection,
-  SettingsUnavailableGroup,
 } from "./settingsLayout";
-import { useSettingsScope } from "./SettingsScopeContext";
 import { searchableSetting } from "./settingsSearch";
+import { AdvancedSettings } from "./AdvancedSettings";
+import { useSettingsScope } from "./SettingsScopeContext";
+import { BrowserImportWizard, type WizardTarget } from "./BrowserImportWizard";
+import type { ImportOutcome } from "./browserImportWizard.logic";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const FILL_VALUE = "fill";
 const RESPONSIVE_VALUE = "responsive";
@@ -325,7 +322,7 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
   const { t: uiT } = useUiLanguage();
 
   const viewport = useClientSettings((settings) => settings.browserDefaultViewport);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   const sized = viewport._tag === "fill" ? null : viewport;
   const presentedSize = {
@@ -372,6 +369,7 @@ function BrowserViewportSetting({ disabled }: { readonly disabled: boolean }) {
   return (
     <SettingsRow
       {...searchableSetting("browser-default-viewport")}
+      devicePreference
       description={uiT(
         "Tab size for you and agents. Fill fits the panel; other sizes show the device toolbar.",
       )}
@@ -479,11 +477,12 @@ function BrowserZoomSetting({ disabled }: { readonly disabled: boolean }) {
   const { t: uiT } = useUiLanguage();
 
   const zoomFactor = useClientSettings((settings) => settings.browserDefaultZoomFactor);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-default-zoom")}
+      devicePreference
       description={uiT("Page zoom applied to new browser tabs.")}
       resetAction={
         !disabled && zoomFactor !== DEFAULT_PREVIEW_ZOOM_FACTOR ? (
@@ -528,11 +527,12 @@ function BrowserAppearanceSetting({ disabled }: { readonly disabled: boolean }) 
   const { t: uiT } = useUiLanguage();
 
   const appearance = useClientSettings((settings) => settings.browserDefaultAppearance);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-default-appearance")}
+      devicePreference
       description={uiT(
         "The color scheme pages are told to prefer. System follows your OS setting.",
       )}
@@ -579,11 +579,12 @@ function BrowserRecordingInputSettings({ disabled }: { readonly disabled: boolea
 
   const showKeys = useClientSettings((settings) => settings.browserRecordingShowKeyPresses);
   const showMouse = useClientSettings((settings) => settings.browserRecordingShowMousePresses);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
   return (
     <>
       <SettingsRow
         {...searchableSetting("browser-recording-key-presses")}
+        devicePreference
         description={uiT(
           "Show pressed keys and shortcuts in new recordings. Password fields are excluded.",
         )}
@@ -600,6 +601,7 @@ function BrowserRecordingInputSettings({ disabled }: { readonly disabled: boolea
       />
       <SettingsRow
         {...searchableSetting("browser-recording-mouse-presses")}
+        devicePreference
         description={uiT("Highlight mouse presses and held buttons in new recordings.")}
         control={
           <Switch
@@ -620,11 +622,12 @@ function BrowserRecordingFrameRateSetting({ disabled }: { readonly disabled: boo
   const { t: uiT } = useUiLanguage();
 
   const frameRate = useClientSettings((settings) => settings.browserRecordingFrameRate);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-recording-frame-rate")}
+      devicePreference
       description={uiT("Maximum recording rate. 30 fps saves CPU and storage; 60 fps is smoother.")}
       resetAction={
         !disabled && frameRate !== DEFAULT_BROWSER_RECORDING_FRAME_RATE ? (
@@ -678,11 +681,12 @@ function BrowserLinkTargetSetting({ disabled }: { readonly disabled: boolean }) 
   const { t: uiT } = useUiLanguage();
 
   const linkTarget = useClientSettings((settings) => settings.browserLinkTarget);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-link-target")}
+      devicePreference
       description={uiT(
         "Where links in the chat and terminal open. Hold ⌘ or Ctrl while clicking a link to open it in your default browser either way.",
       )}
@@ -735,12 +739,13 @@ function BrowserSearchEngineSetting() {
 
   const engine = useClientSettings((settings) => settings.browserSearchEngine);
   const customUrl = useClientSettings((settings) => settings.browserCustomSearchUrl);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <>
       <SettingsRow
         {...searchableSetting("browser-search-engine")}
+        devicePreference
         description={uiT("What the address bar searches when you type something that isn't a URL.")}
         resetAction={
           engine !== DEFAULT_BROWSER_SEARCH_ENGINE || customUrl !== "" ? (
@@ -781,11 +786,12 @@ function BrowserSearchEngineSetting() {
       {engine === "custom" ? (
         <SettingsRow
           title={uiT("Custom search URL")}
+          devicePreference
           description={uiT("Use %s where the search terms go.")}
           status={
             isValidSearchUrlTemplate(customUrl)
               ? undefined
-              : "Enter an http or https URL containing %s. Searches use DuckDuckGo until then."
+              : uiT("Enter an http or https URL containing %s. Searches use DuckDuckGo until then.")
           }
           control={
             <DraftInput
@@ -793,7 +799,7 @@ function BrowserSearchEngineSetting() {
               size="sm"
               className="w-full sm:w-64"
               aria-label={uiT("Custom search URL")}
-              placeholder="https://example.com/search?q=%s"
+              placeholder={"https://example.com/search?q=%s"}
               autoCapitalize="none"
               spellCheck={false}
               maxLength={BROWSER_CUSTOM_SEARCH_URL_MAX_LENGTH}
@@ -1122,11 +1128,12 @@ function BrowserAutoShowFloatingPreviewSetting({ disabled }: { readonly disabled
   const { t: uiT } = useUiLanguage();
 
   const autoShow = useClientSettings((settings) => settings.browserAutoShowFloatingPreview);
-  const updateSettings = useUpdatePrimarySettings();
+  const updateSettings = useUpdateScopedSettings();
 
   return (
     <SettingsRow
       {...searchableSetting("browser-auto-show-floating-preview")}
+      devicePreference
       description={uiT(
         "Show the floating preview when an agent opens a browser or device unless the agent says otherwise.",
       )}
@@ -1162,7 +1169,12 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
   const userProfiles = useClientSettings((settings) => settings.browserProfiles);
   const defaultProfileId = useClientSettings((settings) => settings.browserDefaultProfileId);
   const settingsHydrated = useClientSettingsHydrated();
+  // Profile edits pair with profile data on disk, so they save for this device in every scope.
   const updateSettings = useUpdatePrimarySettings();
+  const updateDefaultProfile = useUpdateScopedSettings();
+  const { scope } = useSettingsScope();
+  // The default profile is a device preference, which a project cannot override.
+  const defaultProfileReadOnly = scope.kind === "project" || scope.kind === "checkout";
   const { environments, isReady: environmentsReady } = useEnvironments();
   const primaryEnvironment = usePrimaryEnvironment();
   // Cookie import runs on this desktop, whose policy the primary environment reports.
@@ -1480,10 +1492,10 @@ function BrowserProfilesSetting({ disabled }: { readonly disabled: boolean }) {
                 </MenuTrigger>
                 <MenuPopup align="end">
                   <MenuItem
-                    disabled={!settingsHydrated || isDefault}
+                    disabled={!settingsHydrated || isDefault || defaultProfileReadOnly}
                     onClick={() => {
                       if (settingsHydrated) {
-                        updateSettings({ browserDefaultProfileId: profile.id });
+                        updateDefaultProfile({ browserDefaultProfileId: profile.id });
                       }
                     }}
                   >
@@ -1651,7 +1663,7 @@ export function BrowserSettingsPanel() {
   const { t: uiT } = useUiLanguage();
 
   const desktopOnly = !isElectron;
-  const desktopOnlyMessage = desktopOnly ? "Only available in the desktop app." : undefined;
+  const desktopOnlyMessage = desktopOnly ? uiT("Only available in the desktop app.") : undefined;
 
   return (
     <SettingsPageContainer>

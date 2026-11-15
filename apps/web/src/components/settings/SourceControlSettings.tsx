@@ -1,18 +1,23 @@
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
+import { ChevronDownIcon } from "lucide-react";
+import { useAtomValue } from "@effect/atom-react";
+import * as Option from "effect/Option";
+import { useState, type ReactNode } from "react";
 import type {
   SourceControlDiscoveryResult,
   SourceControlProviderAuth,
   SourceControlProviderDiscoveryItem,
-  VcsDiscoveryItem,
   VcsDriverKind,
+  VcsDiscoveryItem,
 } from "@t3tools/contracts";
-import * as Option from "effect/Option";
-import { ChevronDownIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { UiText, useUiLanguage } from "../../i18n";
+import { useSettingsScope } from "./SettingsScopeContext";
+import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
 import { cn } from "../../lib/utils";
 import { useEnvironmentQuery } from "../../state/query";
+import { serverEnvironment } from "../../state/server";
 import { sourceControlEnvironment } from "../../state/sourceControl";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
@@ -27,18 +32,12 @@ import {
 import { Skeleton } from "../ui/skeleton";
 import { Switch } from "../ui/switch";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { ProjectDefaultsSettings } from "./ProjectDefaultsSettings";
-import { useSettingsScope } from "./SettingsScopeContext";
-
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
-import { sourceControlIcon } from "~/sourceControlPresentation";
 import { GitIcon, JujutsuIcon, type Icon } from "../Icons";
-import { RedactedSensitiveText } from "./RedactedSensitiveText";
+import { SourceControlHostSettings } from "./SourceControlHostSettings";
 import { SourceControlAccountSettings } from "./SourceControlAccountSettings";
 import { SourceControlAppSignInSettings } from "./SourceControlAppSignInSettings";
-import { SourceControlHostSettings } from "./SourceControlHostSettings";
 import { SourceControlTokenSettings } from "./SourceControlTokenSettings";
+import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import { SourceControlWritingSettingsSection } from "./SourceControlWritingSettings";
 import {
   SettingsPageContainer,
@@ -47,6 +46,12 @@ import {
   useSettingsSearchTargetId,
 } from "./settingsLayout";
 import { searchableSetting, sourceControlHostSettingsSearchId } from "./settingsSearch";
+import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { isSourceControlProviderOffered } from "@t3tools/client-runtime/operations/projects";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlIcon } from "~/sourceControlPresentation";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 const EMPTY_DISCOVERY_RESULT: SourceControlDiscoveryResult = {
   versionControlSystems: [],
@@ -92,8 +97,8 @@ function RedactedAccount(props: { readonly account: string | null }) {
     <RedactedSensitiveText
       value={props.account}
       ariaLabel={uiT("Toggle source control account visibility")}
-      revealTooltip="Click to reveal account"
-      hideTooltip="Click to hide account"
+      revealTooltip={uiT("Click to reveal account")}
+      hideTooltip={uiT("Click to hide account")}
     />
   );
 }
@@ -151,7 +156,7 @@ function itemSummary({
   authAccount,
   translate,
 }: {
-  readonly translate: (message: string) => string;
+  readonly translate: ReturnType<typeof createUiTranslator>;
   readonly item: VcsDiscoveryItem | SourceControlProviderDiscoveryItem;
   readonly auth: SourceControlProviderAuth | null;
   readonly authAccount: string | null;
@@ -167,10 +172,7 @@ function itemSummary({
   if (item.status !== "available") {
     return (
       <span>
-        <UiText
-          message={"Not available on this server: {0}"}
-          values={{ "0": translate(item.installHint) }}
-        />
+        <UiText message={"Not available on this server: {0}"} values={{ "0": item.installHint }} />
       </span>
     );
   }
@@ -189,7 +191,7 @@ function itemSummary({
               <RedactedAccount account={authAccount} />
             </>
           ) : null}
-          {authDetail ? <span>· {translate(authDetail)}</span> : null}
+          {authDetail ? <span>· {authDetail}</span> : null}
         </>
       );
     }
@@ -197,13 +199,18 @@ function itemSummary({
     if (!item.executable && auth.status === "unauthenticated") {
       return (
         <span>
-          <UiText message={"Available. {0}"} values={{ "0": translate(item.installHint) }} />
+          <UiText message={"Available. {0}"} values={{ "0": item.installHint }} />
         </span>
       );
     }
 
     if (auth.status === "unauthenticated" && auth.accounts?.some((entry) => entry.authenticated)) {
-      return <span>{optionLabel(auth.detail) ?? `Every ${item.label} host is turned off.`}</span>;
+      return (
+        <span>
+          {optionLabel(auth.detail) ??
+            translate("Every {0} host is turned off.", { "0": item.label })}
+        </span>
+      );
     }
 
     if (auth.status === "unauthenticated") {
@@ -226,7 +233,7 @@ function itemSummary({
       <span>
         <UiText
           message={"Could not verify {0}. {1}"}
-          values={{ "0": item.label, "1": translate(authDetail ?? item.installHint) }}
+          values={{ "0": item.label, "1": authDetail ?? item.installHint }}
         />
       </span>
     );
@@ -241,16 +248,20 @@ function itemSummary({
 
 function DiscoveryItemRow({
   item,
+  offered,
   children,
 }: {
   readonly item: VcsDiscoveryItem | SourceControlProviderDiscoveryItem;
+  /** A provider's switch chooses whether the project pickers offer it; a VCS switch only reports. */
+  readonly offered?: {
+    readonly checked: boolean;
+    readonly disabled: boolean;
+    readonly onChange: (checked: boolean) => void;
+  };
   readonly children?: ReactNode;
 }) {
   const { t: uiT } = useUiLanguage();
   const version = optionLabel(item.version);
-  const enabled = isProviderDiscoveryItem(item)
-    ? item.status === "available" && item.auth.status === "authenticated"
-    : item.status === "available" && item.implemented;
   const auth = isProviderDiscoveryItem(item) ? item.auth : null;
   const authStatus = auth ? authPresentation(auth) : null;
   const authAccount = auth ? optionLabel(auth.account) : null;
@@ -276,9 +287,7 @@ function DiscoveryItemRow({
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <SourceControlItemMark item={item} />
-              <span className="truncate text-sm font-medium text-foreground">
-                {uiT(item.label)}
-              </span>
+              <span className="truncate text-sm font-medium text-foreground">{item.label}</span>
               {version ? <code className="text-xs text-muted-foreground">{version}</code> : null}
               {isVcsNotReady(item) ? (
                 <Badge variant="warning" size="sm">
@@ -309,9 +318,27 @@ function DiscoveryItemRow({
                 />
               </Button>
             ) : null}
-            {!isVcsNotReady(item) ? (
+            {offered ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Switch
+                      checked={offered.checked}
+                      disabled={offered.disabled}
+                      onCheckedChange={offered.onChange}
+                      aria-label={uiT("Offer {0} when adding or publishing a project", {
+                        "0": item.label,
+                      })}
+                    />
+                  }
+                />
+                <TooltipPopup side="top">
+                  <UiText message={"Offer when adding or publishing a project"} />
+                </TooltipPopup>
+              </Tooltip>
+            ) : !isVcsNotReady(item) ? (
               <Switch
-                checked={enabled}
+                checked={item.status === "available"}
                 disabled
                 aria-label={uiT("{0} availability", { "0": item.label })}
               />
@@ -338,9 +365,8 @@ function SourceControlSectionSkeleton({
   readonly title: string;
   readonly headerAction?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
-    <SettingsSection title={uiT(title)} headerAction={headerAction}>
+    <SettingsSection title={title} headerAction={headerAction}>
       {SOURCE_CONTROL_SKELETON_ROWS.map((row) => (
         <div key={row} className="first:rounded-t-xl last:rounded-b-xl px-3 py-3 sm:px-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -434,6 +460,13 @@ export function SourceControlSettingsPanel() {
   const handleScan = () => {
     discovery.refresh();
   };
+  const offeredProviders = environment?.serverConfig?.settings.offeredSourceControlProviders;
+  const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
+    label: uiT("save source control providers"),
+  });
+  const canUpdateSettings = useAtomValue(
+    serverEnvironment.updateSettings.permissionAtom(environmentId),
+  );
   const hostSettingsPanel = (item: SourceControlProviderDiscoveryItem) => {
     const definition = sourceControlClients.find(item.kind);
     if (!definition?.settings || environmentId === null) return undefined;
@@ -557,7 +590,21 @@ export function SourceControlSettingsPanel() {
               headerAction={hasVersionControlSystems ? null : scanButton}
             >
               {result.sourceControlProviders.map((item) => (
-                <DiscoveryItemRow key={`provider:${item.kind}`} item={item}>
+                <DiscoveryItemRow
+                  key={`provider:${item.kind}`}
+                  item={item}
+                  offered={{
+                    checked: isSourceControlProviderOffered(offeredProviders, item.kind),
+                    disabled: !canUpdateSettings,
+                    onChange: (checked) =>
+                      void updateSettings({
+                        environmentId,
+                        input: {
+                          patch: { offeredSourceControlProviders: { [item.kind]: checked } },
+                        },
+                      }),
+                  }}
+                >
                   {hostSettingsPanel(item)}
                 </DiscoveryItemRow>
               ))}

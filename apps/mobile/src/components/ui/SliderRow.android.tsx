@@ -3,7 +3,6 @@ import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import * as Haptics from "expo-haptics";
 import { useRef } from "react";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "./AppSymbol";
 import { AppText as Text } from "./AppText";
@@ -12,8 +11,6 @@ import type { SliderRowProps } from "./SliderRow.types";
 import { useControlTheme } from "./useControlTheme";
 
 export function SliderRow(props: SliderRowProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { colors } = useControlTheme();
   // The value of the drag in progress; null between drags.
   const draft = useRef<number | null>(null);
@@ -31,12 +28,12 @@ export function SliderRow(props: SliderRowProps) {
     <View className={props.disabled ? "gap-2 p-4 opacity-45" : "gap-2 p-4"}>
       <View className="flex-row items-center gap-4">
         <SymbolView name={props.icon} size={24} tintColorClassName="accent-icon" />
-        <Text className="min-w-0 flex-1 text-base">{uiT(props.label)}</Text>
+        <Text className="min-w-0 flex-1 text-base">{props.label}</Text>
         <Text className="text-sm text-foreground-muted">{props.valueLabel}</Text>
       </View>
       <View
         accessible
-        accessibilityLabel={uiT(props.label)}
+        accessibilityLabel={props.label}
         accessibilityRole="adjustable"
         accessibilityState={{ disabled: Boolean(props.disabled) }}
         accessibilityValue={{

@@ -10,16 +10,14 @@ import { resolveAssetUrl } from "@t3tools/client-runtime/state/assets";
 import { settlePromise, squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
   AuthFilesystemReadScope,
-  sessionGrantsScope,
   type AssetResource,
   type ContextMenuItem,
   type EnvironmentId,
+  sessionGrantsScope,
   type SessionGrantInput,
 } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { useRef, useState, type ReactElement } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { readLocalApi } from "../../localApi";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
@@ -30,6 +28,8 @@ import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { downloadMedia, readMediaPng } from "./mediaContent";
+
+import { useUiLanguage } from "../../i18n";
 
 export interface MediaActionSource {
   readonly kind: "image" | "video";
@@ -176,10 +176,6 @@ export function MediaActions({
         const clipboardText =
           reference?.kind === "file" ? formatFilePathForClipboard(text, reference.path) : text;
         await writeTextToClipboard(clipboardText, reference?.kind === "file" ? "file path" : "URL");
-        toastManager.add({
-          type: "success",
-          title: action === "copy-url" ? uiT("URL copied") : uiT("Path copied"),
-        });
       } else if (action === "open-file") {
         assertCanReadMedia();
         source.onOpenFile?.();
@@ -192,10 +188,7 @@ export function MediaActions({
               : uiT("Copying image…"),
         });
         await (action === "save" ? save() : copyImage());
-        toastManager.update(progressToast, {
-          type: "success",
-          title: action === "save" ? uiT("Download started") : uiT("Image copied"),
-        });
+        toastManager.close(progressToast);
       }
     });
     if (AsyncResult.isFailure(result)) {

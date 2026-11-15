@@ -71,13 +71,11 @@ export function ProjectCloneBanner(props: {
 }
 
 function BannerAction(props: { readonly label: string; readonly onPress: () => void }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <Button
-      label={uiT(props.label)}
+      label={props.label}
       tone="secondary"
-      accessibilityLabel={uiT(props.label)}
+      accessibilityLabel={props.label}
       onPress={props.onPress}
     />
   );

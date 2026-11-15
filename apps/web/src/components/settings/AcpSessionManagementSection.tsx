@@ -1,8 +1,9 @@
 import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-  type AtomCommandResult,
-} from "@t3tools/client-runtime/state/runtime";
+  AuthOrchestrationOperateScope,
+  AuthProvidersManageScope,
+  AuthOrchestrationReadScope,
+} from "@t3tools/contracts";
+import { useEnvironmentScope, readEnvironmentScope } from "~/state/session";
 import type {
   AcpRegistryConfigurableProvider,
   AcpRegistrySession,
@@ -12,14 +13,11 @@ import type {
   ServerProvider,
 } from "@t3tools/contracts";
 import {
-  AuthOrchestrationOperateScope,
-  AuthOrchestrationReadScope,
-  AuthProvidersManageScope,
-} from "@t3tools/contracts";
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+  type AtomCommandResult,
+} from "@t3tools/client-runtime/state/runtime";
 import { useLayoutEffect, useRef, useState } from "react";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useUiLanguage } from "../../i18n";
-
 import { ensureLocalApi } from "../../localApi";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -29,10 +27,16 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { toastManager } from "../ui/toast";
 import { SettingsRow } from "./settingsLayout";
 
+import { useUiLanguage } from "../../i18n";
+
 interface AcpSessionProject {
   readonly id: ProjectId;
   readonly title: string;
   readonly workspaceRoot: string;
+}
+
+function needsImport(session: AcpRegistrySession) {
+  return session.importedThreadId === null || session.nativeHistoryPending === true;
 }
 
 function reportFailure(title: string, result: AtomCommandResult<unknown, unknown>) {
@@ -225,7 +229,7 @@ function InstanceSessionManagement(
       setSessions((current) =>
         current.map((candidate) =>
           candidate.sessionId === session.sessionId
-            ? { ...candidate, importedThreadId: result.value.threadId }
+            ? { ...candidate, importedThreadId: result.value.threadId, nativeHistoryPending: false }
             : candidate,
         ),
       );
@@ -265,7 +269,6 @@ function InstanceSessionManagement(
       setSessions((current) =>
         current.filter((candidate) => candidate.sessionId !== session.sessionId),
       );
-      toastManager.add({ type: "success", title: uiT("ACP session deleted") });
       return;
     }
     reportFailure("Could not delete ACP session", result);
@@ -338,7 +341,6 @@ function InstanceSessionManagement(
     if (generation !== projectGeneration.current) return;
     setSavingProviderId(null);
     if (result._tag === "Success") {
-      toastManager.add({ type: "success", title: uiT("ACP provider configured") });
       await loadProviders(provider.providerId);
       return;
     }
@@ -367,7 +369,6 @@ function InstanceSessionManagement(
     if (generation !== projectGeneration.current) return;
     setSavingProviderId(null);
     if (result._tag === "Success") {
-      toastManager.add({ type: "success", title: uiT("ACP provider disabled") });
       await loadProviders(provider.providerId);
       return;
     }
@@ -385,7 +386,6 @@ function InstanceSessionManagement(
     if (result._tag === "Success") {
       setSessions([]);
       setNextCursor(null);
-      toastManager.add({ type: "success", title: uiT("Logged out of ACP agent") });
       return;
     }
     reportFailure("Could not log out of ACP agent", result);
@@ -398,7 +398,7 @@ function InstanceSessionManagement(
         description={uiT("Resume agent-owned conversations as T3 threads.")}
         status={
           canList && props.projects.length === 0
-            ? "Add a project before importing sessions."
+            ? uiT("Add a project before importing sessions.")
             : undefined
         }
         control={
@@ -484,12 +484,12 @@ function InstanceSessionManagement(
                         disabled={
                           !canOperate ||
                           !canImport ||
-                          session.importedThreadId !== null ||
+                          !needsImport(session) ||
                           importingSessionId !== null
                         }
                         onClick={() => void importNativeSession(session)}
                       >
-                        {session.importedThreadId !== null
+                        {!needsImport(session)
                           ? uiT("Imported")
                           : importingSessionId === session.sessionId
                             ? uiT("Importing")
@@ -670,7 +670,7 @@ function InstanceSessionManagement(
                         size="sm"
                         type="url"
                         aria-label={uiT("{0} base URL", { "0": provider.providerId })}
-                        placeholder="https://api.example.com"
+                        placeholder={"https://api.example.com"}
                         value={draft.baseUrl}
                         disabled={props.readOnly || savingProviderId !== null}
                         onValueChange={(value) => updateDraft({ baseUrl: value })}

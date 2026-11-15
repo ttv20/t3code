@@ -1,8 +1,7 @@
-import type { RelayClientInstallProgressStage } from "@t3tools/contracts";
+import { UiText } from "../../i18n";
 import { DownloadIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
-import { useUiLanguage } from "../../i18n";
-
+import type { RelayClientInstallProgressStage } from "@t3tools/contracts";
 import {
   completeRelayClientInstallDialogClose,
   readRelayClientInstallDialogState,
@@ -13,12 +12,16 @@ import { Button } from "../ui/button";
 import {
   Dialog,
   DialogDescription,
+  DialogAction,
   DialogFooter,
   DialogHeader,
   DialogPanel,
   DialogPopup,
   DialogTitle,
 } from "../ui/dialog";
+
+import { useUiLanguage } from "../../i18n";
+
 const installSteps: ReadonlyArray<{
   readonly stage: RelayClientInstallProgressStage;
   readonly label: string;
@@ -116,9 +119,9 @@ export function RelayClientInstallDialog() {
             >
               {uiT("Cancel")}
             </Button>
-            <Button onClick={() => respondToRelayClientInstallConfirmation(true)}>
-              {uiT("Download and install")}
-            </Button>
+            <DialogAction onClick={() => respondToRelayClientInstallConfirmation(true)}>
+              <UiText message={"Download and install"} />
+            </DialogAction>
           </DialogFooter>
         ) : null}
       </DialogPopup>

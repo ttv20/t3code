@@ -1,3 +1,5 @@
+import { UiText } from "../../i18n";
+import type * as React from "react";
 import type {
   EnvironmentId,
   PullRequestCheck,
@@ -5,20 +7,16 @@ import type {
   PullRequestRef,
   ScopedThreadRef,
 } from "@t3tools/contracts";
-import type * as React from "react";
 import { useState } from "react";
-import { useUiLanguage } from "../../i18n";
-
 import { useOpenLink } from "~/browser/useOpenLink";
 import { cn } from "~/lib/utils";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
-
-import { Button } from "../ui/button";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
+import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
-import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { toastManager } from "../ui/toast";
 import { groupPullRequestChecks } from "./pullRequestDetail.logic";
 import {
   PullRequestCheckStatusIcon,
@@ -26,6 +24,8 @@ import {
   pullRequestChecksStatePresentation,
   summarizePullRequestChecks,
 } from "./pullRequestPresentation";
+
+import { useUiLanguage } from "../../i18n";
 
 // Fetch only on open to avoid per-row requests.
 function LazyChecksBody({
@@ -189,12 +189,16 @@ export function PullRequestChecksPopover({
         {variant === "count" ? (
           <>
             {checks !== undefined && incompleteCount > 0 ? (
-              <span className="tabular-nums">
-                {checks.length - incompleteCount}/{checks.length} {uiT("checks")}
+              // Clip the second line so "checks" disappears whole when the count must shrink.
+              <span className="h-lh min-w-0 overflow-hidden text-left whitespace-normal tabular-nums">
+                <span className="whitespace-nowrap">
+                  {checks.length - incompleteCount}/{checks.length}
+                </span>{" "}
+                <UiText message={"checks"} />
               </span>
             ) : failedCount > 0 ? (
-              <span className="tabular-nums">
-                {failedCount} {uiT("failed")}
+              <span className="min-w-0 truncate tabular-nums">
+                <UiText message={"{0} failed"} values={{ "0": failedCount }} />
               </span>
             ) : null}
           </>

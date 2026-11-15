@@ -1,38 +1,37 @@
+import * as Dialog from "../../../components/ui/Dialog";
+import { useOpenPullRequest } from "../../../native/useOpenPullRequest";
+import {
+  type GitActionRequestInput,
+  buildMenuItems,
+  getGitActionDisabledReason,
+  requiresDefaultBranchConfirmation,
+} from "@t3tools/client-runtime/state/vcs";
+import { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   CommonActions,
   StackActions,
   useNavigation,
   type StaticScreenProps,
 } from "@react-navigation/native";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
-import {
-  buildMenuItems,
-  getGitActionDisabledReason,
-  requiresDefaultBranchConfirmation,
-  type GitActionRequestInput,
-} from "@t3tools/client-runtime/state/vcs";
-import { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { use, useEffect, useState } from "react";
-import { Platform, RefreshControl, View } from "react-native";
-import * as Dialog from "../../../components/ui/Dialog";
-import { useUiLanguage } from "../../../i18n";
-import { cn } from "../../../lib/cn";
+import { RefreshControl } from "../../../components/ui/RefreshControl";
 import { NativeScrollView } from "../../../native/NativeScrollViewMarker";
-import { useOpenPullRequest } from "../../../native/useOpenPullRequest";
-
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBar } from "../../../components/ui/AppBar";
 import { AppText as Text } from "../../../components/ui/AppText";
 import { ListRow } from "../../../components/ui/ListRow";
 import { ListSection } from "../../../components/ui/ListSection";
+import { groupedListInsets } from "../../../components/ui/listMetrics";
 import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { SheetPane } from "../../../components/ui/SheetPane";
+import { InspectorSheetContext } from "../../layout/workspace-inspector-sheet";
 import { useEnvironmentQuery } from "../../../state/query";
 import { useSelectedThreadGitActions } from "../../../state/use-selected-thread-git-actions";
 import { useSelectedThreadGitState } from "../../../state/use-selected-thread-git-state";
 import { useSelectedThreadWorktree } from "../../../state/use-selected-thread-worktree";
 import { useThreadSelection } from "../../../state/use-thread-selection";
 import { vcsEnvironment } from "../../../state/vcs";
-import { InspectorSheetContext } from "../../layout/workspace-inspector-sheet";
 import {
   LinkedPullRequestRow,
   linkedPullRequestKey,
@@ -40,6 +39,8 @@ import {
 } from "../LinkedPullRequestList";
 import { useLinkedPullRequestActions } from "../useLinkedPullRequestActions";
 import { menuItemIconName, statusSummary } from "./gitSheetComponents";
+
+import { useUiLanguage } from "../../../i18n";
 
 type GitOverviewSheetProps = StaticScreenProps<{
   readonly environmentId: string;
@@ -241,15 +242,11 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
     <NativeScrollView
       nestedScrollEnabled
       alwaysBounceVertical
-      className="flex-1 android:bg-sheet-solid ios:bg-screen"
+      className="flex-1 bg-screen"
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
       contentInset={{ bottom: Math.max(insets.bottom, 18) + 18 }}
-      contentContainerStyle={{
-        paddingHorizontal: Platform.OS === "android" ? 8 : isInspector ? 12 : 20,
-        paddingTop: 8,
-        gap: Platform.OS === "android" ? 8 : 14,
-      }}
+      contentContainerStyle={{ ...groupedListInsets(isInspector), paddingTop: 8 }}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} />
       }
@@ -358,10 +355,7 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
   };
 
   return (
-    <View
-      collapsable={false}
-      className={cn("flex-1 android:bg-header", isInspector ? "ios:bg-screen" : "ios:bg-sheet")}
-    >
+    <SheetPane surface={isInspector ? "screen" : "sheet"}>
       <AppBar
         title={currentBranchLabel}
         subtitle={currentStatusSummary}
@@ -370,6 +364,6 @@ function GitOverviewSheetContent(props: GitOverviewSheetProps) {
         refresh={refresh}
       />
       <ScreenContent insetHorizontal={isInspector ? true : undefined}>{content}</ScreenContent>
-    </View>
+    </SheetPane>
   );
 }

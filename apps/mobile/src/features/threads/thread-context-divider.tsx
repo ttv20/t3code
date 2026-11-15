@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { View, type ColorValue } from "react-native";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { useUiLanguage } from "../../i18n";
+
 import { ShimmeringWorkContent } from "./thread-work-log";
 
 export function ThreadContextDivider(props: {
@@ -13,7 +13,6 @@ export function ThreadContextDivider(props: {
   failed?: boolean;
   children?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <View className="mb-3 flex-row items-center gap-3 px-1 py-1">
       <View className="h-px min-w-2 flex-1 bg-separator" />
@@ -28,7 +27,7 @@ export function ThreadContextDivider(props: {
             compact
             icon="brain"
             iconSubtleColor={props.iconColor}
-            label={uiT(props.label)}
+            label={props.label}
             showIcon={false}
           />
         ) : (
@@ -39,7 +38,7 @@ export function ThreadContextDivider(props: {
                 : "font-t3-medium text-xs text-foreground-muted"
             }
           >
-            {uiT(props.label)}
+            {props.label}
           </Text>
         )}
         {props.children}

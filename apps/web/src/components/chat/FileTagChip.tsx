@@ -1,25 +1,27 @@
+import type { ReactNode } from "react";
 import type { EnvironmentId } from "@t3tools/contracts";
-import { useUiLanguage } from "../../i18n";
 import { ContextChipLabel } from "../ContextChip";
 import { WorkspaceEntryIcon } from "./WorkspaceEntryIcon";
 
 export function FileTagChipContent(props: {
+  icon?: ReactNode;
   path: string;
   label: string;
   theme: "light" | "dark";
   environmentId?: EnvironmentId | null | undefined;
   cwd?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <>
-      <WorkspaceEntryIcon
-        path={props.path}
-        environmentId={props.environmentId}
-        cwd={props.cwd}
-        theme={props.theme}
-      />
-      <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
+      {props.icon ?? (
+        <WorkspaceEntryIcon
+          path={props.path}
+          environmentId={props.environmentId}
+          cwd={props.cwd}
+          theme={props.theme}
+        />
+      )}
+      <ContextChipLabel>{props.label}</ContextChipLabel>
     </>
   );
 }

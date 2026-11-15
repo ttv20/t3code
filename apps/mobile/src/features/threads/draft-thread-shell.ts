@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../state/ui-language";
 import { presentThreadShell } from "@t3tools/client-runtime/state/shell";
 import type {
   EnvironmentId,
@@ -20,11 +21,12 @@ export function draftThreadShell(input: {
   readonly worktreePath: string | null;
   readonly createdAt: string;
 }) {
+  const uiT = readUiTranslator();
   const timestamp = DateTime.makeUnsafe(input.createdAt);
   return presentThreadShell(input.environmentId, {
     id: input.threadId,
     projectId: input.projectId,
-    title: "New thread",
+    title: uiT("New thread"),
     providerInstanceId: input.modelSelection.instanceId,
     modelSelection: input.modelSelection,
     runtimeMode: input.runtimeMode,

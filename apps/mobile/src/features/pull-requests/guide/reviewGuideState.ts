@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../../../state/ui-language";
 import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
 
 export function reviewGuideState(data: PullRequestReviewGuideResult | null) {
@@ -20,14 +21,17 @@ export function guideNoticeState(state: {
   readonly startError: string | null;
   readonly error: string | null;
 }) {
+  const uiT = readUiTranslator();
   const { guide, stale, failure } = reviewGuideState(state.data);
   if (state.running) {
     return {
       kind: "writing" as const,
-      title: "Rewriting guide",
+      title: uiT("Rewriting guide"),
       description: guide
-        ? "You can keep reading this guide while the agent writes the update."
-        : "An agent is reading the change and writing the tour. You can leave and come back when it’s ready.",
+        ? uiT("You can keep reading this guide while the agent writes the update.")
+        : uiT(
+            "An agent is reading the change and writing the tour. You can leave and come back when it’s ready.",
+          ),
       action: guide ? "Rewriting…" : "Writing guide…",
     };
   }
@@ -35,7 +39,7 @@ export function guideNoticeState(state: {
   if (error) {
     return {
       kind: "failed" as const,
-      title: "Could not write guide",
+      title: uiT("Could not write guide"),
       description: error,
       action: "Try again",
     };
@@ -43,7 +47,7 @@ export function guideNoticeState(state: {
   if (state.error) {
     return {
       kind: "unavailable" as const,
-      title: "Could not refresh guide",
+      title: uiT("Could not refresh guide"),
       description: state.error,
       action: "Try again",
     };
@@ -51,24 +55,25 @@ export function guideNoticeState(state: {
   if (!state.data) {
     return {
       kind: "loading" as const,
-      title: "Review guide",
-      description: "Checking for a saved guide…",
+      title: uiT("Review guide"),
+      description: uiT("Checking for a saved guide…"),
       action: "Loading guide…",
     };
   }
   if (stale) {
     return {
       kind: "stale" as const,
-      title: "New changes since this guide",
-      description: "You can read the previous guide, or rewrite it for the latest changes.",
+      title: uiT("New changes since this guide"),
+      description: uiT("You can read the previous guide, or rewrite it for the latest changes."),
       action: "Rewrite guide",
     };
   }
   return {
     kind: guide ? ("ready" as const) : ("empty" as const),
-    title: "Review guide",
-    description:
+    title: uiT("Review guide"),
+    description: uiT(
       "Get a tour of the change, with code excerpts and notes on what needs a closer look.",
+    ),
     action: "Write guide",
   };
 }

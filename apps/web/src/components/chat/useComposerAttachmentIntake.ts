@@ -1,27 +1,15 @@
-import {
-  fileAttachmentTooLargeMessage,
-  formatAttachmentSize,
-} from "@t3tools/client-runtime/state/attachments";
-import {
-  nextPastedTextFileName,
-  pastedTextDisposition,
-  wouldTextPasteExceedLimit,
-} from "@t3tools/client-runtime/text-paste";
+import type { ChatComposerProps } from "./ChatComposer";
 import {
   type ChatFileAttachment,
   PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
 } from "@t3tools/contracts";
-import { type RefObject, useRef } from "react";
-import { requestConfirmDialog } from "~/confirmDialog";
-import { fileContextReference, imageContextReference } from "~/lib/composerContextRecords";
 import {
   type ComposerContextReference,
   collectInlineContextIds,
   stripInlineContextReferences,
 } from "~/lib/composerContextReferences";
-import { isMacPlatform, randomUUID } from "~/lib/utils";
 import {
   type ComposerFileAttachment,
   type ComposerImageAttachment,
@@ -29,29 +17,46 @@ import {
   composerFileMatchesReattachMarker,
   composerFileNeedsReattach,
 } from "../../composerDraftStore";
-import { useUiLanguage } from "../../i18n";
-import {
-  inheritComposerImageThumbnail,
-  prepareImageForAttachment,
-} from "../../lib/imageCompression";
+import { type ComposerPromptEditorHandle } from "../ComposerPromptEditorTiptap";
+import type { ComposerAttachmentInsertion } from "../composerAttachmentInsertion";
+import { type PendingUserInput } from "../../session-logic";
 import {
   changeQuestionAttachmentPreparation,
   useQuestionAttachmentPreparation,
 } from "../../questionAttachments";
-import { type PendingUserInput } from "../../session-logic";
-import { type ComposerPromptEditorHandle } from "../ComposerPromptEditorTiptap";
-import { toastManager } from "../ui/toast";
-import type { ChatComposerProps } from "./ChatComposer";
 import {
   classifyComposerAttachmentFile,
   composerFileAttachmentMimeType,
+  composerImageSourceKey,
   normalizeComposerImageFileMimeType,
+  rememberComposerImageSource,
 } from "./composerAttachmentFiles";
 import {
+  fileAttachmentTooLargeMessage,
+  formatAttachmentSize,
+} from "@t3tools/client-runtime/state/attachments";
+import { fileContextReference, imageContextReference } from "~/lib/composerContextRecords";
+import { isMacPlatform, randomUUID } from "~/lib/utils";
+import {
+  nextPastedTextFileName,
+  pastedTextDisposition,
+  wouldTextPasteExceedLimit,
+} from "@t3tools/client-runtime/text-paste";
+import {
+  inheritComposerImageThumbnail,
+  prepareImageForAttachment,
+} from "../../lib/imageCompression";
+import { requestConfirmDialog } from "~/confirmDialog";
+import { toastManager } from "../ui/toast";
+import { type RefObject, useRef } from "react";
+import {
   addPreparingComposerImages,
+  getPreparingComposerImages,
   isPreparingComposerImage,
   removePreparingComposerImages,
 } from "./preparingComposerImages";
+
+import { useUiLanguage } from "../../i18n";
 
 /**
  * Takes files into the draft: validates and reserves slots, compresses images, inserts
@@ -82,6 +87,7 @@ export function useComposerAttachmentIntake(input: {
   readonly insertAttachmentReferences: (
     references: ReadonlyArray<ComposerContextReference>,
     selection?: { start: number; end: number },
+    pendingInsertion?: ComposerAttachmentInsertion,
   ) => boolean;
 }) {
   const { t: uiT } = useUiLanguage();
@@ -245,19 +251,30 @@ export function useComposerAttachmentIntake(input: {
     }
     if (acceptedImages.length === 0) return insertedAny;
 
+    // The store drops a repeated image only after compressing it, so a likely repeat prepares
+    // without a tile instead of flashing one. Only the store decides it is a duplicate.
+    const imageSourceKeys = new Set(
+      [...composerImagesRef.current, ...getPreparingComposerImages(attachmentTargetKey)].map(
+        (image) => composerImageSourceKey(image.file),
+      ),
+    );
     // The draft image reuses its placeholder's id and thumbnail so the strip tile stays exactly
     // as it is when the compressed file replaces it.
-    const preparingImages = acceptedImages.map((file) => ({
-      id: randomUUID(),
-      name: file.name || "image",
-      file,
-    }));
+    const preparingImages = acceptedImages.map((file) => {
+      const sourceKey = composerImageSourceKey(file);
+      const hidden = imageSourceKeys.has(sourceKey);
+      imageSourceKeys.add(sourceKey);
+      return { id: randomUUID(), name: file.name || "image", file, hidden };
+    });
     addPreparingComposerImages(attachmentTargetKey, preparingImages);
     if (questionAttachmentTarget)
       changeQuestionAttachmentPreparation(questionAttachmentTarget, acceptedImages.length);
     const compressed: { id: string; file: File }[] = [];
     // Keyed by image so a failure whose tile was removed (even mid-compression) is not reported.
     const compressionErrors = new Map<string, string>();
+    const pendingInsertion = imageAttachmentsGetChips
+      ? composerEditorRef.current?.captureAttachmentInsertion()
+      : undefined;
     for (const { id, file } of preparingImages) {
       // Removed from the strip while an earlier image was compressing.
       if (!isPreparingComposerImage(attachmentTargetKey, id)) continue;
@@ -276,9 +293,11 @@ export function useComposerAttachmentIntake(input: {
         );
         continue;
       }
-      inheritComposerImageThumbnail(file, result.file);
+      await inheritComposerImageThumbnail(file, result.file);
+      rememberComposerImageSource(file, result.file);
       compressed.push({ id, file: result.file });
     }
+    pendingInsertion?.dispose();
     const questionDiscarded =
       questionAttachmentTarget !== null &&
       !useQuestionAttachmentPreparation.getState().counts[questionAttachmentTarget];
@@ -316,7 +335,11 @@ export function useComposerAttachmentIntake(input: {
     }
     if (storedImages.length > 0 && imageAttachmentsGetChips) {
       insertedAny =
-        insertAttachmentReferences(storedImages.map(imageContextReference)) || insertedAny;
+        insertAttachmentReferences(
+          storedImages.map(imageContextReference),
+          undefined,
+          pendingInsertion,
+        ) || insertedAny;
     }
     // Only failures are reported here. Success must not pass `null`: by
     // now other work (a failed send, an overlapping paste) may have set a

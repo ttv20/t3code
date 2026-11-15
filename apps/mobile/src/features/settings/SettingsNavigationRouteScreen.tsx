@@ -48,8 +48,12 @@ export function SettingsNavigationRouteScreen() {
       >
         <Text className="px-2 text-sm text-foreground-muted">
           {customizable
-            ? "Phones show the first four enabled sections; Android tablet rails show all enabled sections. Remaining sections appear at the top of Settings. Hidden sections appear only here. Settings always stays last. Saved on this device."
-            : "Tab customization becomes available when there are six sections, including Settings."}
+            ? uiT(
+                "Phones show the first four enabled sections; Android tablet rails show all enabled sections. Remaining sections appear at the top of Settings. Hidden sections appear only here. Settings always stays last. Saved on this device.",
+              )
+            : uiT(
+                "Tab customization becomes available when there are six sections, including Settings.",
+              )}
         </Text>
         <SettingsSection title={uiT("Tab order")}>
           {order.map((tab, index) => (
@@ -63,10 +67,10 @@ export function SettingsNavigationRouteScreen() {
                 <Text>{WORKSPACE_TAB_LABELS[tab]}</Text>
                 <Text className="text-xs text-foreground-muted">
                   {hidden.includes(tab)
-                    ? "Hidden"
+                    ? uiT("Hidden")
                     : enabled.indexOf(tab) < capacity
-                      ? `Tab ${enabled.indexOf(tab) + 1}`
-                      : "In Settings"}
+                      ? uiT("Tab {0}", { "0": enabled.indexOf(tab) + 1 })
+                      : uiT("In Settings")}
                 </Text>
               </View>
               <IconButton

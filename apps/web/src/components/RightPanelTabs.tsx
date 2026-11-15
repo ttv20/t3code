@@ -1,20 +1,16 @@
-import {
-  closestCenter,
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { restrictToFirstScrollableAncestor, restrictToHorizontalAxis } from "@dnd-kit/modifiers";
-import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import {
   threadRuntimeIsActive,
   type EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
+import {
+  useProjects,
+  useQuietThreadShell,
+  useServerConfigs,
+  useThreadShells,
+} from "~/state/entities";
 import {
   threadPullRequestKeysEqual,
   visibleThreadPullRequests,
@@ -29,8 +25,19 @@ import type {
   ThreadId,
 } from "@t3tools/contracts";
 import { getTerminalLabel } from "@t3tools/shared/terminalLabels";
-import { Volume2, VolumeOff } from "lucide";
 import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { restrictToFirstScrollableAncestor, restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Smartphone,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -39,32 +46,30 @@ import {
   Globe2,
   MessagesSquare,
   Plus,
-  Smartphone,
   TerminalSquare,
+  Volume2Icon,
+  VolumeOffIcon,
 } from "lucide-react";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactElement,
+  type ReactNode,
   useEffect,
   useEffectEvent,
   useRef,
   useState,
-  type ReactElement,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
-  type ReactNode,
 } from "react";
-import {
-  useProjects,
-  useQuietThreadShell,
-  useServerConfigs,
-  useThreadShells,
-} from "~/state/entities";
-import { useUiLanguage } from "../i18n";
-
-import { faviconUrlForOrigin } from "@t3tools/shared/favicon";
-import { useBrowserDefaults } from "~/browser/browserDefaults";
-import { AndroidIcon, AppleIcon } from "~/components/Icons";
-import { MorphIcon } from "~/components/MorphIcon";
+import { isElectron } from "~/env";
+import type { DesktopPreviewOverlay } from "~/previewStateStore";
+import type { RightPanelSurface } from "~/rightPanelStore";
+import { cn } from "~/lib/utils";
+import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
+import { readLocalApi } from "~/localApi";
+import { useStableCallback } from "~/hooks/useStableCallback";
 import { Button } from "~/components/ui/button";
+import { AndroidIcon, AppleIcon } from "~/components/Icons";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { Kbd } from "~/components/ui/kbd";
 import {
   Menu,
@@ -76,19 +81,13 @@ import {
   MenuSubTrigger,
   MenuTrigger,
 } from "~/components/ui/menu";
-import { PanelTabCloseButton } from "~/components/ui/panel-tab-close-button";
+import { useBrowserDefaults } from "~/browser/browserDefaults";
 import { ScrollArea } from "~/components/ui/scroll-area";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { isElectron } from "~/env";
-import type { PreviewPanelInlineSize } from "~/hooks/usePreviewPanelInlineSize";
-import { useStableCallback } from "~/hooks/useStableCallback";
+import { PanelTabCloseButton } from "~/components/ui/panel-tab-close-button";
+import { faviconUrlForOrigin } from "@t3tools/shared/favicon";
 import { useTheme } from "~/hooks/useTheme";
-import { resolveShortcutCommand, type ShortcutMatchContext } from "~/keybindings";
-import { cn } from "~/lib/utils";
-import { readLocalApi } from "~/localApi";
-import type { DesktopPreviewOverlay } from "~/previewStateStore";
-import type { RightPanelSurface } from "~/rightPanelStore";
 import { useDeviceState } from "~/state/device";
+import type { PreviewPanelInlineSize } from "~/hooks/usePreviewPanelInlineSize";
 import {
   newestPullRequestSummary,
   pullRequestEnvironment,
@@ -96,15 +95,18 @@ import {
 } from "~/state/pullRequests";
 import { useEnvironmentQuery } from "~/state/query";
 import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "~/workspaceTitlebar";
-
+import { PreviewPanelShell, type PreviewPanelMode } from "./preview/PreviewPanelShell";
+import { FaviconImage } from "./preview/PreviewFaviconIcon";
+import { previewBridge } from "./preview/previewBridge";
+import { dispatchPreviewAction } from "./preview/previewActionBus";
+import { preventThumbButtonFocus, takeThumbButtonNavigation } from "./preview/thumbButtons";
+import { PierreEntryIcon } from "./chat/PierreEntryIcon";
+import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import { observeResize } from "~/lib/observeResize";
 import { surfaceShortcutKey } from "~/lib/surfaceShortcutKey";
-import { PierreEntryIcon } from "./chat/PierreEntryIcon";
-import { FaviconImage } from "./preview/PreviewFaviconIcon";
-import { PreviewPanelShell, type PreviewPanelMode } from "./preview/PreviewPanelShell";
-import { previewBridge } from "./preview/previewBridge";
-import { resolvePullRequestState } from "./pullRequest/pullRequestPresentation";
+
+import { useUiLanguage } from "../i18n";
 
 export interface RightPanelTabsProps {
   mode: PreviewPanelMode;
@@ -240,10 +242,11 @@ function previewTabIdOf(
 function tabMuteMenuItem(input: {
   overlay: DesktopPreviewOverlay | null;
   canResolveRuntimeTabId: boolean;
+  translate?: ReturnType<typeof createUiTranslator>;
 }): { label: string; disabled: boolean } {
   const muted = input.overlay?.audioMuted ?? false;
   return {
-    label: muted ? "Unmute tab" : "Mute tab",
+    label: (input.translate ?? createUiTranslator("en"))(muted ? "Unmute tab" : "Mute tab"),
     disabled: input.overlay === null || !input.canResolveRuntimeTabId,
   };
 }
@@ -493,7 +496,7 @@ function RightPanelEmptyState(props: {
           {actions.map((action) =>
             action.available ? (
               <div
-                key={uiT(action.label)}
+                key={action.label}
                 className="group relative"
                 onMouseEnter={() => setHighlight(availableActions.indexOf(action))}
                 onMouseLeave={() =>
@@ -550,7 +553,7 @@ function RightPanelEmptyState(props: {
               </div>
             ) : (
               <DisabledReasonTooltip
-                key={uiT(action.label)}
+                key={action.label}
                 reason={action.disabledReason}
                 trigger={
                   <div
@@ -954,7 +957,11 @@ function RightPanelTab(
                     .catch(() => undefined);
                 }}
               >
-                <MorphIcon className="size-3" icon={audio === "muted" ? VolumeOff : Volume2} />
+                {audio === "muted" ? (
+                  <VolumeOffIcon className="size-3" />
+                ) : (
+                  <Volume2Icon className="size-3" />
+                )}
               </button>
             }
           />
@@ -973,6 +980,7 @@ function RightPanelTab(
           onBlur={(event) => onFinishRename(surface.id, event.currentTarget.value)}
           onKeyDown={(event) => {
             event.stopPropagation();
+            if (event.nativeEvent.isComposing || event.keyCode === 229) return;
             if (event.key === "Enter") event.currentTarget.blur();
             if (event.key === "Escape") {
               event.currentTarget.value = title;
@@ -990,7 +998,11 @@ function RightPanelTab(
                   if (surface.kind === "device" && props.canRename) onStartRename(surface.id);
                 }}
                 className="cursor-pointer flex min-w-0 items-center"
-                aria-label={sideChatState === null ? undefined : `${title}, ${sideChatState}`}
+                aria-label={
+                  sideChatState === null
+                    ? undefined
+                    : uiT("{0}, {1}", { "0": title, "1": sideChatState })
+                }
                 onClick={() => onActivate(surface)}
               >
                 <span className="truncate">{title}</span>
@@ -1211,6 +1223,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
         ...tabMuteMenuItem({
           overlay: menuOverlay,
           canResolveRuntimeTabId: props.previewRuntimeTabId !== undefined,
+          translate: uiT,
         }),
       });
     }
@@ -1303,12 +1316,13 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
     if (!viewport) return;
 
     const update = () => updateTabScrollState(viewport);
+    // Only a vertical mouse wheel is translated. Horizontal input scrolls natively, since
+    // consuming it keeps Chromium from starting the gesture scroll that swipe navigation tracks.
     const handleWheel = (event: WheelEvent) => {
-      if (event.ctrlKey) return;
-      let delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (event.ctrlKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+      let delta = event.deltaY;
       if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) delta *= 16;
       if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) delta *= viewport.clientWidth;
-      if (delta === 0) return;
 
       const previousScrollLeft = viewport.scrollLeft;
       viewport.scrollLeft += delta;
@@ -1337,8 +1351,10 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       workspaceFocusKey={`panel:${props.environmentId}:${props.activeSurfaceId ?? "empty"}`}
       workspaceLabel={
         focusedSurface
-          ? `Workspace panel: ${surfaceTitle(focusedSurface, props.previewSessions, props.terminalLabelsById)}`
-          : "Workspace panel"
+          ? uiT("Workspace panel: {0}", {
+              "0": surfaceTitle(focusedSurface, props.previewSessions, props.terminalLabelsById),
+            })
+          : uiT("Workspace panel")
       }
       mode={props.mode}
       {...(props.maximized !== undefined ? { maximized: props.maximized } : {})}
@@ -1346,6 +1362,13 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
       {...(props.widthStorageKey !== undefined ? { widthStorageKey: props.widthStorageKey } : {})}
       {...(props.defaultWidth !== undefined ? { defaultWidth: props.defaultWidth } : {})}
       {...(props.inlineSize ? { inlineSize: props.inlineSize } : {})}
+      onMouseDown={preventThumbButtonFocus}
+      onMouseUp={(event) =>
+        takeThumbButtonNavigation(
+          event,
+          focusedSurface?.kind === "preview" ? dispatchPreviewAction : undefined,
+        )
+      }
     >
       <div
         className={cn(
@@ -1362,7 +1385,10 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
           ref={attachTabList}
           hideScrollbars
           scrollFade
-          className="min-w-0 flex-1 [unicode-bidi:plaintext]"
+          className={cn(
+            "min-w-0 flex-1",
+            ownsDesktopTitleBar && tabScrollState.hasOverflow && "[-webkit-app-region:no-drag]",
+          )}
           data-right-panel-tab-list
         >
           <div className="flex h-full w-max min-w-full items-center gap-1">
@@ -1431,7 +1457,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     const Icon = action.icon;
                     if (action.label === "Browser" && action.available) {
                       return (
-                        <MenuSub key={uiT(action.label)}>
+                        <MenuSub key={action.label}>
                           <MenuSubTrigger
                             className="[&>svg:last-child]:ms-0"
                             aria-keyshortcuts={action.shortcut}
@@ -1466,7 +1492,7 @@ export function RightPanelTabs(props: RightPanelTabsProps) {
                     }
                     return (
                       <SurfaceMenuItem
-                        key={uiT(action.label)}
+                        key={action.label}
                         available={action.available}
                         disabledReason={action.disabledReason}
                         shortcut={action.shortcut}

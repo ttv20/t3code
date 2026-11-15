@@ -12,7 +12,15 @@ import {
 } from "@t3tools/client-runtime/state/shell";
 import { threadSearchMatchKey } from "@t3tools/client-runtime/state/thread-search";
 import { type EnvironmentId, type SidebarProjectGroupingMode } from "@t3tools/contracts";
-import { use, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
+import {
+  use,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import {
   Platform,
   ScrollView,
@@ -35,10 +43,9 @@ import { useContentTopInset } from "../../components/ui/useBarInset";
 import { useUiLanguage } from "../../i18n";
 import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeScrollViewMarker";
 import { useActiveNewTask } from "../../state/active-new-task";
-import { readUiTranslator } from "../../state/ui-language";
+
 import { THREAD_SIDEBAR_ROW_LAYOUT } from "../threads/threadListAnimations";
 import type { ThreadMoveDestination } from "../threads/threadOrder";
-
 import { EmptyState } from "../../components/ui/EmptyState";
 import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { cn } from "../../lib/cn";
@@ -94,13 +101,18 @@ import {
   buildHomeProjectScopes,
   findHomeProjectScope,
   type HomeProjectSortOrder,
+  sortHomeProjectScopes,
 } from "./homeThreadList";
 import { createSwipeRowActivation } from "./swipe-row-activation";
 import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-swipe-actions";
+import { holdLaunchSplashForHomeRows, settleLaunchSplashHomeRows } from "./home-launch-splash";
 import { ThreadListFilters } from "./ThreadListFilters";
+import { deriveHomeEmptyState } from "./home-empty-state";
 
 interface HomeScreenProps {
   readonly onStickyShelfHeightChange?: (height: number) => void;
+  /** Whether this list is the one on screen; see `useHomeRouteVisible`. */
+  readonly visible: boolean;
   readonly projects: ReadonlyArray<EnvironmentProject>;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly pendingTasks: ReadonlyArray<PendingNewTask>;
@@ -157,77 +169,6 @@ const ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT = 72;
 // rows that are already built instead of rows still being rebuilt.
 const THREAD_LIST_V2_DRAW_DISTANCE = 1_000;
 
-function deriveEmptyState(props: {
-  readonly catalogState: WorkspaceState;
-  readonly projectCount: number;
-}): { readonly title: string; readonly detail: string; readonly loading: boolean } {
-  const uiT = readUiTranslator();
-
-  const { catalogState } = props;
-  if (catalogState.isLoadingConnections) {
-    return {
-      title: uiT("Loading environments"),
-      detail: uiT("Checking saved environments on this device."),
-      loading: true,
-    };
-  }
-
-  if (!catalogState.hasConnections) {
-    return {
-      title: uiT("No environments connected"),
-      detail: uiT("Add an environment to load projects and start coding sessions."),
-      loading: false,
-    };
-  }
-
-  if (
-    (catalogState.connectionState === "available" ||
-      catalogState.connectionState === "offline" ||
-      catalogState.connectionState === "error" ||
-      catalogState.connectionState === "unsupported") &&
-    !catalogState.hasLoadedShellSnapshot
-  ) {
-    return {
-      title:
-        catalogState.connectionState === "unsupported"
-          ? uiT("Client not supported")
-          : uiT("Environment unavailable"),
-      detail:
-        catalogState.connectionError ??
-        uiT(
-          "The saved environment is offline. Check the URL or start the environment, then retry.",
-        ),
-      loading: false,
-    };
-  }
-
-  if (
-    catalogState.hasConnectingEnvironment &&
-    !catalogState.hasLoadedShellSnapshot &&
-    catalogState.connectionError === null
-  ) {
-    return {
-      title: uiT("Connecting to environment"),
-      detail: uiT("Loading projects and threads from the saved environment."),
-      loading: true,
-    };
-  }
-
-  if (props.projectCount === 0 && catalogState.hasLoadedShellSnapshot) {
-    return {
-      title: uiT("No projects found"),
-      detail: uiT("The connected environment did not report any projects."),
-      loading: false,
-    };
-  }
-
-  return {
-    title: uiT("No threads yet"),
-    detail: uiT("Create a task to start a new coding runtime in one of your connected projects."),
-    loading: false,
-  };
-}
-
 function HomeTopContentSpacer() {
   return <View className="h-4" />;
 }
@@ -256,7 +197,7 @@ function HomeScrollView(props: ComponentProps<typeof ScrollView>) {
 }
 
 function renderHomeScrollView(props: ScrollViewProps) {
-  // FlatList clones this with cells and ref; keep the marker inside their actual ScrollView.
+  // The list passes its content and ref in these props; keep the marker inside the real ScrollView.
   return <HomeScrollView {...props} />;
 }
 
@@ -713,15 +654,18 @@ export function HomeScreen(props: HomeScreenProps) {
     props.threads.some((thread) => thread.archivedAt === null) ||
     props.pendingTasks.length > 0 ||
     threadListV2Layout.settledCount > 0;
+  // A hidden list gets no layout, so it never reports its rows as laid out.
+  const hasRowsToLayOut = props.visible && hasAnyThreads && threadListV2Items.length > 0;
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- holds the native launch splash, which is outside React, until the rows are gone or this list unmounts; a layout effect runs before the splash hides in this commit
+  useLayoutEffect(() => {
+    return hasRowsToLayOut ? holdLaunchSplashForHomeRows() : undefined;
+  }, [hasRowsToLayOut]);
   const selectedEnvironmentLabel =
     props.selectedEnvironmentId === null
       ? null
       : (props.savedConnectionsById[props.selectedEnvironmentId]?.environmentLabel ??
         uiT("this environment"));
-  const emptyState = deriveEmptyState({
-    catalogState: props.catalogState,
-    projectCount: props.projects.length,
-  });
+  const emptyState = deriveHomeEmptyState(props.catalogState, props.projects.length, locale);
   // Scroll padding includes the FAB reserve; the pinned shelf follows the pane edge instead.
   const pinnedShelf =
     Platform.OS === "android" ? (
@@ -776,14 +720,10 @@ export function HomeScreen(props: HomeScreenProps) {
               <EmptyState
                 title={emptyState.title}
                 detail={emptyState.detail}
-                actionLabel={
-                  !props.catalogState.hasReadyEnvironment ? uiT("Add environment") : undefined
-                }
-                onAction={
-                  !props.catalogState.hasReadyEnvironment ? props.onAddConnection : undefined
-                }
+                actionLabel={emptyState.showsAddEnvironment ? uiT("Add environment") : undefined}
+                onAction={emptyState.showsAddEnvironment ? props.onAddConnection : undefined}
                 action={
-                  Platform.OS === "android" && !props.catalogState.hasReadyEnvironment ? (
+                  Platform.OS === "android" && emptyState.showsAddEnvironment ? (
                     <FloatingActionButton
                       label={uiT("Add environment")}
                       icon="plus"
@@ -817,7 +757,14 @@ export function HomeScreen(props: HomeScreenProps) {
         <ThreadListFilters
           gutter={sidebarSurface ? 8 : 0}
           environments={props.environments}
-          projects={pickableProjectGroups(projectScopes).map((scope) => ({
+          projects={pickableProjectGroups(
+            sortHomeProjectScopes({
+              scopes: projectScopes,
+              threads: props.threads,
+              pendingTasks: [],
+              projectSortOrder: "updated_at",
+            }),
+          ).map((scope) => ({
             key: scope.key,
             label: scope.title,
           }))}
@@ -831,7 +778,13 @@ export function HomeScreen(props: HomeScreenProps) {
   );
 
   const v2ListEmpty =
-    hasSearchQuery && threadSearch.isPending ? undefined : hasSearchQuery ? (
+    hasSearchQuery && threadSearch.isPending ? (
+      <EmptyState
+        title={uiT("Searching thread messages…")}
+        detail={uiT('Looking for "{0}" in messages.', { "0": props.searchQuery })}
+        variant={Platform.OS === "android" ? "plain" : undefined}
+      />
+    ) : hasSearchQuery ? (
       <EmptyState
         title={uiT("No results")}
         detail={uiT('No threads matching "{0}".', { "0": props.searchQuery })}
@@ -882,7 +835,10 @@ export function HomeScreen(props: HomeScreenProps) {
               <AnimatedLegendList
                 itemLayoutAnimation={sidebarSurface ? THREAD_SIDEBAR_ROW_LAYOUT : undefined}
                 ref={listRef}
-                onLoad={() => activateVisibleRows(mainListItems)}
+                onLoad={() => {
+                  settleLaunchSplashHomeRows();
+                  activateVisibleRows(mainListItems);
+                }}
                 onTouchStart={(event) => trackListTouches(event, true)}
                 onTouchEnd={(event) => trackListTouches(event, false)}
                 onTouchCancel={(event) => trackListTouches(event, false)}

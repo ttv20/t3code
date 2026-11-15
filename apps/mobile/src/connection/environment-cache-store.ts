@@ -1,17 +1,18 @@
+import { readUiTranslator } from "../state/ui-language";
 import {
   COMPACT_THREAD_CACHE_SCHEMA_VERSION,
   decodeStoredThreadSnapshot,
-  encodeStoredThreadSnapshot,
-  makeStoredShellSnapshotEncoder,
-  ORCHESTRATION_CACHE_SCHEMA_VERSION,
   Persistence,
+  makeStoredShellSnapshotEncoder,
+  makeStoredThreadSnapshotEncoder,
+  makeThreadCacheWriteOrder,
+  ORCHESTRATION_CACHE_SCHEMA_VERSION,
 } from "@t3tools/client-runtime/platform";
 import { type EnvironmentId, ServerConfig, VcsListRefsResult } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-
 import {
   attachProjectFaviconDatabase,
   projectFaviconDatabaseCache,
@@ -44,9 +45,10 @@ const encodeStoredVcsRefs = Schema.encodeEffect(Schema.fromJsonString(StoredVcsR
 type CacheOperation = Persistence.ConnectionPersistenceError["operation"];
 
 function persistenceError(operation: CacheOperation, cause: unknown) {
+  const uiT = readUiTranslator();
   return new Persistence.ConnectionPersistenceError({
     operation,
-    message: `Could not ${operation.replaceAll("-", " ")}: ${String(cause)}`,
+    message: uiT("Could not {0}: {1}", { "0": operation.replaceAll("-", " "), "1": String(cause) }),
   });
 }
 
@@ -96,6 +98,8 @@ export const make = Effect.fn("MobileEnvironmentCacheStore.make")(function* () {
   const database = yield* MobileDatabase.MobileDatabase;
   attachProjectFaviconDatabase(database);
   const encodeStoredShellSnapshot = makeStoredShellSnapshotEncoder();
+  const encodeStoredThreadSnapshot = makeStoredThreadSnapshotEncoder({ format: "compact" });
+  const threadWriteOrder = makeThreadCacheWriteOrder();
   return Persistence.EnvironmentCacheStore.of({
     loadShell: Effect.fn("MobileEnvironmentCache.loadShell")((environmentId) =>
       loadDecodedCache({
@@ -156,20 +160,32 @@ export const make = Effect.fn("MobileEnvironmentCacheStore.make")(function* () {
     ),
     saveThread: Effect.fn("MobileEnvironmentCache.saveThread")(function* (environmentId, snapshot) {
       const threadId = snapshot.projection.thread.id;
+      const isLatest = threadWriteOrder.beginSave(environmentId, threadId);
       const payload = yield* encodeStoredThreadSnapshot({
         environmentId,
         threadId,
         snapshot,
       }).pipe(Effect.mapError((cause) => persistenceError("save-thread", cause)));
-      yield* database
-        .saveCache(environmentId, "thread", threadId, COMPACT_THREAD_CACHE_SCHEMA_VERSION, payload)
-        .pipe(Effect.mapError(mapDatabaseError("save-thread")));
+      if (!isLatest()) return;
+      // An older copy of a thread now too large to keep would paint stale on reopen.
+      yield* Option.match(payload, {
+        onNone: () => database.removeCache(environmentId, "thread", threadId),
+        onSome: (encoded) =>
+          database.saveCache(
+            environmentId,
+            "thread",
+            threadId,
+            COMPACT_THREAD_CACHE_SCHEMA_VERSION,
+            encoded,
+          ),
+      }).pipe(Effect.mapError(mapDatabaseError("save-thread")));
     }),
-    removeThread: Effect.fn("MobileEnvironmentCache.removeThread")((environmentId, threadId) =>
-      database
+    removeThread: Effect.fn("MobileEnvironmentCache.removeThread")((environmentId, threadId) => {
+      threadWriteOrder.removeThread(environmentId, threadId);
+      return database
         .removeCache(environmentId, "thread", threadId)
-        .pipe(Effect.mapError(mapDatabaseError("remove-thread"))),
-    ),
+        .pipe(Effect.mapError(mapDatabaseError("remove-thread")));
+    }),
     loadServerConfig: Effect.fn("MobileEnvironmentCache.loadServerConfig")((environmentId) =>
       loadDecodedCache({
         database,
@@ -237,12 +253,13 @@ export const make = Effect.fn("MobileEnvironmentCacheStore.make")(function* () {
         .clearCacheKind(environmentId, "vcs-refs")
         .pipe(Effect.mapError(mapDatabaseError("clear-vcs-refs"))),
     ),
-    clear: Effect.fn("MobileEnvironmentCache.clear")((environmentId) =>
-      Effect.promise(() => projectFaviconDatabaseCache.clearEnvironment(environmentId)).pipe(
+    clear: Effect.fn("MobileEnvironmentCache.clear")((environmentId) => {
+      threadWriteOrder.clearEnvironment(environmentId);
+      return Effect.promise(() => projectFaviconDatabaseCache.clearEnvironment(environmentId)).pipe(
         Effect.andThen(database.clearEnvironmentCache(environmentId)),
         Effect.mapError(mapDatabaseError("clear-environment")),
-      ),
-    ),
+      );
+    }),
   });
 });
 

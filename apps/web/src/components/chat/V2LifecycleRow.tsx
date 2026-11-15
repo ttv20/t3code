@@ -1,55 +1,56 @@
+import { ThreadHoverCardPopup } from "../ThreadHoverCard";
+import { AgentElapsed } from "./AgentElapsed";
+import { projectedSubagentsToRuntime } from "@t3tools/client-runtime/state/subagentRuntime";
+import type { ReactNode } from "react";
+import { useThreadShell, useProject } from "../../state/entities";
+import { useEnvironment } from "../../state/environments";
+import { buildThreadRouteParams } from "../../threadRoutes";
+import { useNavigate } from "@tanstack/react-router";
+import { SubagentTooltipContent } from "./SubagentTooltipContent";
 import { useAtomValue } from "@effect/atom-react";
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import { scopeThreadRef, scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { environmentThreadDetails } from "../../state/threads";
+import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
+import { MiddleTruncate } from "../ui/middle-truncate";
+import * as DateTime from "effect/DateTime";
+import { WorkLogRow } from "./WorkLog";
 import {
   resolveHandoffEndpoints,
-  resolveModelSwitchChange,
   type HandoffEndpoints,
   type HandoffTimelineRun,
+  resolveModelSwitchChange,
 } from "@t3tools/client-runtime/handoff";
-import { formatSubagentDisplayTitle } from "@t3tools/client-runtime/state/subagent-display";
-import { projectedSubagentsToRuntime } from "@t3tools/client-runtime/state/subagentRuntime";
+import {
+  formatSubagentDisplayTitle,
+  subagentCardDetail,
+} from "@t3tools/client-runtime/state/subagent-display";
 import {
   ProviderDriverKind,
-  type EnvironmentId,
   type ModelSelection,
-  type NodeId,
   type OrchestrationV2ModelSwitch,
   type OrchestrationV2Notification,
+  type OrchestrationV2TurnItem,
   type OrchestrationV2RemoteTaskChild,
   type OrchestrationV2Subagent,
-  type OrchestrationV2TurnItem,
   type ProviderInstanceId,
-  type ScopedThreadRef,
   type ServerProvider,
   type ThreadId,
+  type EnvironmentId,
+  type NodeId,
+  type ScopedThreadRef,
 } from "@t3tools/contracts";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
-import { useNavigate } from "@tanstack/react-router";
-import * as DateTime from "effect/DateTime";
 import {
-  ArrowRightIcon,
-  ArrowRightLeftIcon,
   BotIcon,
   ChevronRightIcon,
   CircleStopIcon,
+  ArrowRightLeftIcon,
+  ArrowRightIcon,
   EraserIcon,
   GitForkIcon,
   MessageSquareIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
-import { useProject, useThreadShell } from "../../state/entities";
-import { useEnvironment } from "../../state/environments";
-import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
-import { environmentThreadDetails } from "../../state/threads";
-import { buildThreadRouteParams } from "../../threadRoutes";
-import { ThreadHoverCardPopup } from "../ThreadHoverCard";
-import { MiddleTruncate } from "../ui/middle-truncate";
-import { AgentElapsed } from "./AgentElapsed";
-import { SubagentTooltipContent } from "./SubagentTooltipContent";
-import { WorkLogRow } from "./WorkLog";
-
-import { cn } from "~/lib/utils";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import {
   applyProviderInstanceSettings,
   brandProviderInstanceEntries,
@@ -58,13 +59,15 @@ import {
   type ProviderInstanceEntry,
 } from "../../providerInstances";
 import { formatShortTimestamp } from "../../timestampFormat";
-import { T3Wordmark } from "../T3Wordmark";
-import { Button, InlineButton } from "../ui/button";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { getTriggerDisplayModelName } from "./providerIconUtils";
 import { ProviderInstanceIcon, providerTextColor } from "./ProviderInstanceIcon";
+import { cn } from "~/lib/utils";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
 import { subagentResumedSince } from "./V2LifecycleRow.logic";
+import { Button, InlineButton } from "../ui/button";
+import { T3Wordmark } from "../T3Wordmark";
+
+import { useUiLanguage } from "../../i18n";
 
 export type { HandoffTimelineRun } from "@t3tools/client-runtime/handoff";
 
@@ -101,9 +104,13 @@ export function V2LifecycleRow(props: {
     const relatedThreadId = item.source.type === "run" ? item.source.threadId : item.targetThreadId;
     return (
       <TimelineSystemDivider
-        label={item.source.type === "run" ? "Forked from conversation" : uiT("Conversation fork")}
+        label={
+          item.source.type === "run" ? uiT("Forked from conversation") : uiT("Conversation fork")
+        }
         icon={GitForkIcon}
-        actionLabel={item.source.type === "run" ? "Open source conversation" : uiT("Open fork")}
+        actionLabel={
+          item.source.type === "run" ? uiT("Open source conversation") : uiT("Open fork")
+        }
         onAction={() => props.onOpenThread(relatedThreadId)}
       />
     );
@@ -139,7 +146,7 @@ export function V2LifecycleRow(props: {
         label={
           <>
             {uiT("Created thread")}
-            {item.title ? ` · ${item.title}` : ""}
+            {item.title ? uiT(" · {0}", { "0": item.title }) : ""}
           </>
         }
         trailing={
@@ -200,17 +207,6 @@ const SETTLED_SUBAGENT_STATUSES = new Set<OrchestrationV2TurnItem["status"]>([
   "cancelled",
   "interrupted",
 ]);
-
-const GENERIC_CHILD_END = /^Child task ended with status\b/i;
-
-function plainDetail(text: string): string {
-  return text
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-    .replace(/`/g, "")
-    .replace(/^[ \t]*[-*][ \t]+/gm, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function isoOrNull(value: DateTime.Utc | null | undefined): string | null {
   return value ? DateTime.formatIso(value) : null;
@@ -447,13 +443,12 @@ function SubagentTimelineLink(props: {
         : null;
   const liveStatus = agent?.status ?? props.status;
   const status = props.event ? props.event.status : liveStatus;
-  const statusLabel = props.event?.label ?? subagentStatusVisual(liveStatus).label;
+  const statusLabel = props.event?.label ?? uiT(subagentStatusVisual(liveStatus).label);
   const result = (agent?.result ?? props.result)?.trim();
   const progress = (agent?.progress ?? props.progress)?.trim();
   const settled = SETTLED_SUBAGENT_STATUSES.has(status ?? liveStatus);
   const rawDetail = settled ? result || progress : progress || result;
-  const detail =
-    rawDetail && !GENERIC_CHILD_END.test(rawDetail) ? plainDetail(rawDetail) || null : null;
+  const detail = subagentCardDetail(rawDetail);
   const failed = status === "failed";
   const timing = {
     status: liveStatus,
@@ -621,6 +616,8 @@ export function ModelSwitchRow(props: {
   readonly environmentId: EnvironmentId;
   readonly modelSwitch: OrchestrationV2ModelSwitch;
 }) {
+  const { t: uiT } = useUiLanguage();
+
   const providers =
     useAtomValue(serverEnvironment.providersValueAtom(props.environmentId)) ??
     EMPTY_SERVER_PROVIDERS;
@@ -635,7 +632,10 @@ export function ModelSwitchRow(props: {
   const { from, to } = props.modelSwitch;
   return (
     <TimelineSystemDivider
-      label={`${describe(from, change.effort?.from)} → ${describe(to, change.effort?.to)}`}
+      label={uiT("{0} → {1}", {
+        "0": describe(from, change.effort?.from),
+        "1": describe(to, change.effort?.to),
+      })}
     />
   );
 }
@@ -655,7 +655,7 @@ export function HandoffRow(props: {
   const entries = settings ? applyProviderInstanceSettings(derived, settings, null) : derived;
   return (
     <TimelineSystemDivider
-      label={props.pending ? "Context handoff pending" : uiT("Context handoff")}
+      label={props.pending ? uiT("Context handoff pending") : uiT("Context handoff")}
       icon={ArrowRightLeftIcon}
       showDetailSeparator={false}
       tone={props.failed ? "danger" : "neutral"}

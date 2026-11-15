@@ -7,7 +7,7 @@ import { useUiLanguage } from "../i18n";
 import type { ModelOption } from "../lib/modelOptions";
 import { resolveProviderOptionDescriptors } from "../lib/providerOptions";
 import { ComposerInlineControl } from "./ComposerToolbar";
-import { ProviderIcon, ProviderInstanceIcon } from "./ProviderIcon";
+import { ProviderIcon, ProviderInstanceIcon, providerInstanceNameLabel } from "./ProviderIcon";
 import { AppText as Text } from "./ui/AppText";
 
 export function ComposerModelControl(props: {
@@ -40,6 +40,15 @@ export function ComposerModelControl(props: {
     : "";
   const badge = props.modelOption?.providerBadge;
   const label = props.modelOption?.label ?? props.selection?.model ?? uiT("Choose model");
+  const providerNameLabel = badge
+    ? providerInstanceNameLabel({
+        provider: props.modelOption?.providerDriver,
+        iconUrl: props.modelOption?.providerIconUrl,
+        displayName: badge.displayName,
+        showBadge: badge.showBadge,
+      })
+    : null;
+  const shortLabel = props.modelOption?.shortName ?? label;
   return (
     <ComposerInlineControl
       accessibilityLabel={[
@@ -72,10 +81,24 @@ export function ComposerModelControl(props: {
           />
         )
       }
-      label={props.modelOption?.shortName ?? label}
+      label={providerNameLabel ?? shortLabel}
+      labelEllipsizeMode={providerNameLabel ? "middle" : undefined}
       iconOnly={props.iconOnly}
+      suffixWidth={providerNameLabel ? 96 : undefined}
       suffix={
-        summary ? (
+        providerNameLabel ? (
+          <Text
+            className={
+              props.size === "large"
+                ? "text-sm text-foreground-muted"
+                : "text-xs text-foreground-muted"
+            }
+            numberOfLines={1}
+          >
+            {shortLabel}
+            {summary ? ` · ${summary}` : ""}
+          </Text>
+        ) : summary ? (
           <Text
             className={
               props.size === "large"

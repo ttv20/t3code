@@ -1,4 +1,8 @@
-import { formatUiResetCreditChoices } from "@t3tools/client-runtime/usage-localization";
+import {
+  formatUiResetCreditChoices,
+  formatUiUsageReset,
+  formatUiUsageWindowLabel,
+} from "@t3tools/client-runtime/usage-localization";
 import { useAtomValue } from "@effect/atom-react";
 import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
@@ -12,7 +16,6 @@ import {
   UsageProviderKind,
 } from "@t3tools/contracts";
 import {
-  formatResetsIn,
   type LimitPace,
   paceOf,
   paceRemainingPercent,
@@ -126,19 +129,23 @@ function WindowBar({
   readonly window: ServerProviderUsageWindow;
   readonly now: number;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
 
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const [barRef, paceMark] = usePaceMark(timeLeft);
-  const resetsIn = formatResetsIn(window, now);
+  const resetsIn = formatUiUsageReset(window, now, locale);
   const resetsAt = window.resetsAt
-    ? formatUpcomingTimestamp(window.resetsAt, timestampFormat, now)
+    ? formatUpcomingTimestamp(window.resetsAt, timestampFormat, now, undefined, locale)
     : null;
-  const summary = `${window.label}: ${remaining}% left${
-    timeLeft === null ? "" : `, ${timeLeft}% of the window left`
-  }${resetsIn ? `, ${resetsIn}` : ""}`;
+  const summary = [
+    uiT("{0}: {1}% left", { "0": formatUiUsageWindowLabel(window.label, locale), "1": remaining }),
+    timeLeft === null ? null : uiT("{0}% of the window left", { "0": timeLeft }),
+    resetsIn,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <Tooltip>
@@ -176,7 +183,7 @@ function WindowBar({
           <span className="text-foreground">
             {remaining}
             {uiT("% left")}
-            {timeLeft !== null ? ` · ${timeLeft}% of the window left` : ""}
+            {timeLeft !== null ? ` · ${uiT("{0}% of the window left", { "0": timeLeft })}` : ""}
           </span>
           {timeLeft !== null ? (
             <span className="text-muted-foreground">
@@ -209,7 +216,7 @@ export function LimitWindows({
   readonly now: number;
   readonly compact?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const { t: uiT, locale } = useUiLanguage();
   const color = normalizeProviderAccentColor(accentColor) ?? barColor(driver);
   return (
     <div
@@ -221,11 +228,13 @@ export function LimitWindows({
     >
       {windows.map((window) => {
         const pace = paceOf(window, now);
-        const resetsIn = formatResetsIn(window, now);
+        const resetsIn = formatUiUsageReset(window, now, locale);
         return (
           <Fragment key={window.id}>
             <span className="flex min-w-0 items-center gap-2 text-xs">
-              <span className="truncate text-muted-foreground">{uiT(window.label)}</span>
+              <span className="truncate text-muted-foreground">
+                {formatUiUsageWindowLabel(window.label, locale)}
+              </span>
               <span className="ms-auto shrink-0 font-medium text-foreground tabular-nums">
                 {remainingPercent(window)}
                 {uiT("% left")}
@@ -251,6 +260,7 @@ const OUTCOME_TEXT: Record<ProviderConsumeResetCreditOutcome, string> = {
 };
 
 export function useResetCredit(environmentId: EnvironmentId) {
+  const { t: uiT } = useUiLanguage();
   const canManageProviders = useEnvironmentScope(environmentId, AuthProvidersManageScope);
   const consume = useAtomCommand(serverEnvironment.consumeResetCredit, { reportFailure: false });
   // Kept after close so the dialog's text survives its exit animation.
@@ -267,13 +277,13 @@ export function useResetCredit(environmentId: EnvironmentId) {
     const result = await consume({ environmentId, input: choice.input });
     setBusy(false);
     if (result._tag === "Success") {
-      setStatus(result.value.warning ?? OUTCOME_TEXT[result.value.outcome]);
+      setStatus(result.value.warning ?? uiT(OUTCOME_TEXT[result.value.outcome]));
       return;
     }
     setStatus(
       "error" in result.cause && result.cause.error instanceof Error
         ? result.cause.error.message
-        : "Could not use the reset credit.",
+        : uiT("Could not use the reset credit."),
     );
   };
 
@@ -353,7 +363,7 @@ export function ResetCredits({
           ) : null}
         </div>
       ))}
-      {status ? <span className="text-foreground">{uiT(status)}</span> : null}
+      {status ? <span className="text-foreground">{status}</span> : null}
       <ResetCreditDialog
         open={confirming}
         onOpenChange={setConfirming}

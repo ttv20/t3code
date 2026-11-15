@@ -1,16 +1,17 @@
-import { UiText, useUiLanguage } from "../i18n";
-
+import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
 import type { FileDiffContentsLoader, FileDiffMetadata } from "@pierre/diffs";
-import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import type { ReviewBranchCommitsResult, RunId, ScopedThreadRef } from "@t3tools/contracts";
-import { isTestChangedFile } from "@t3tools/shared/changedFileKind";
-import * as Schema from "effect/Schema";
-import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide";
+import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
+import {
+  CHECKPOINT_DIFF_TRUNCATED_MARKER,
+  type ReviewBranchCommitsResult,
+  type ScopedThreadRef,
+  type RunId,
+} from "@t3tools/contracts";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -21,16 +22,23 @@ import {
   PilcrowIcon,
   Rows3Icon,
   TextWrapIcon,
+  ChevronRightIcon,
+  ChevronsDownUpIcon,
+  ChevronsUpDownIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { MorphIcon } from "~/components/MorphIcon";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { cn } from "~/lib/utils";
+import * as Schema from "effect/Schema";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
+import { useCodeViewFileReveal } from "./diffs/useCodeViewFileReveal";
+import { useCodeViewScrollRestore } from "./diffs/useCodeViewScrollRestore";
 import { useFilesystemReadAccess } from "~/state/filesystem";
-import { useCheckpointDiff, useTurnItemDetail } from "~/state/queries";
-import { revisionedQuery } from "~/state/revisionedQuery";
+import { useOpenInPreferredEditor } from "../editorPreferences";
+import { useFileContextMenuHandler } from "../fileContextMenu";
 import { type DraftId } from "../composerDraftStore";
 import { openDiffFilePrimaryAction } from "../diffFileActions";
+import { toolCallDiff } from "../lib/toolCallDiff";
+import { useCheckpointDiff, useTurnItemDetail } from "~/state/queries";
+import { revisionedQuery } from "~/state/revisionedQuery";
+import { cn } from "~/lib/utils";
 import {
   resolveToolCallDiffTarget,
   selectThreadBranchBaseRef,
@@ -38,55 +46,47 @@ import {
   useDiffPanelSessionStore,
   useDiffPanelStore,
 } from "../diffPanelStore";
-import { useOpenInPreferredEditor } from "../editorPreferences";
-import { useFileContextMenuHandler } from "../fileContextMenu";
-import { LIVE_REFRESH_MIN_INTERVAL_MS, useLiveRefresh } from "../hooks/useLiveRefresh";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { updateClientSettings, useClientSettings } from "../hooks/useSettings";
-import { useStableCallback } from "../hooks/useStableCallback";
+import { isTestChangedFile } from "@t3tools/shared/changedFileKind";
+import { useHideTestFiles } from "./diffs/useHideTestFiles";
 import { useRenderedAppearance } from "../hooks/useTheme";
-import { buildBaseRefChoices, filterBaseRefChoices } from "../lib/baseRefChoices";
-import { areAllDiffFilesCollapsed, toggleAllDiffFiles } from "../lib/diffCollapse";
-import { createGitDiffFileContentsLoader } from "../lib/diffFileContents";
+import { useStableCallback } from "../hooks/useStableCallback";
 import {
-  buildFileDiffContentVersion,
-  buildFileDiffIdentityKey,
+  buildFileDiffEntries,
   getDiffLineStat,
   getRenderablePatch,
   resolveDiffThemeName,
   resolveFileDiffPath,
 } from "../lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "../lib/syntaxHighlighting";
-import { toolCallDiff } from "../lib/toolCallDiff";
+import { areAllDiffFilesCollapsed, toggleAllDiffFiles } from "../lib/diffCollapse";
+import { LIVE_REFRESH_MIN_INTERVAL_MS, useLiveRefresh } from "../hooks/useLiveRefresh";
 import {
   useProject,
+  useThreadCheckpointSummaries,
   useQuietThreadShell,
   useQuietThreadVisibleTurnItems,
-  useThreadCheckpointSummaries,
 } from "../state/entities";
-import { useEnvironmentQuery } from "../state/query";
-import { reviewEnvironment } from "../state/review";
-import { serverEnvironment } from "../state/server";
-import { useAtomCommand } from "../state/use-atom-command";
-import { vcsEnvironment } from "../state/vcs";
+import { useClientSettings, updateClientSettings } from "../hooks/useSettings";
 import { formatRelativeTimeLabel, formatShortTimestamp } from "../timestampFormat";
 import { DiffFilePathCopyButton } from "./DiffFilePathCopyButton";
 import { DiffPanelLoadingState, DiffPanelShell, type DiffPanelMode } from "./DiffPanelShell";
 import { DiffStatLabel } from "./chat/DiffStatLabel";
-import { AnnotatableCodeView } from "./diffs/AnnotatableCodeView";
+import { AnnotatableCodeView, type AnnotatableCodeViewHandle } from "./diffs/AnnotatableCodeView";
 import { DiffFileTree } from "./diffs/DiffFileTree";
-import { diffFileTreeEntries } from "./diffs/diffFileTree.logic";
-import { useCodeViewFileReveal } from "./diffs/useCodeViewFileReveal";
-import { useHideTestFiles } from "./diffs/useHideTestFiles";
 import { FileExplorerPane } from "./files/FileExplorerPane";
+import { diffFileTreeEntries } from "./diffs/diffFileTree.logic";
+import { getDiffHeaderClickAction } from "./diffs/diffHeaderClick";
 import { Button } from "./ui/button";
+import { ToggleGroup, Toggle } from "./ui/toggle-group";
+import { Switch } from "./ui/switch";
 import {
   Combobox,
   ComboboxEmpty,
+  ComboboxSearchInput,
   ComboboxItem,
   ComboboxList,
   ComboboxPopup,
-  ComboboxSearchInput,
   ComboboxTrigger,
 } from "./ui/combobox";
 import {
@@ -100,37 +100,26 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./ui/menu";
-import { Switch } from "./ui/switch";
-import { Toggle, ToggleGroup } from "./ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
-
-import { projectCommitUrl } from "@t3tools/client-runtime/change-request-links";
+import { useEnvironmentQuery } from "../state/query";
+import { useAtomCommand } from "../state/use-atom-command";
+import { serverEnvironment } from "../state/server";
+import { reviewEnvironment } from "../state/review";
+import { vcsEnvironment } from "../state/vcs";
+import { buildBaseRefChoices, filterBaseRefChoices } from "../lib/baseRefChoices";
+import { createGitDiffFileContentsLoader } from "../lib/diffFileContents";
 import { observeIntersection } from "~/lib/observeIntersection";
-import { useOpenLink } from "../browser/useOpenLink";
-import { useThreadRouteRef } from "../hooks/useThreadRouteTarget";
+import { useReviewFilePatches } from "./diffs/useReviewFilePatches";
 import { DiffFileLoadingBoundary } from "./diffs/DiffFileLoadingBoundary";
 import { DiffFileStatus } from "./diffs/DiffFileStatus";
-import { useReviewFilePatches } from "./diffs/useReviewFilePatches";
+import { useThreadRouteRef } from "../hooks/useThreadRouteTarget";
+import { projectCommitUrl } from "@t3tools/client-runtime/change-request-links";
+import { useOpenLink } from "../browser/useOpenLink";
+import { UiText, useUiLanguage } from "../i18n";
 
 type DiffThemeType = "light" | "dark";
 const AUTOMATIC_BASE_REF = "__automatic_base_ref__";
 const DIFF_FILE_TREE_STORAGE_KEY = "t3code.diffFileTreeOpen";
-const fileEntryCache = new WeakMap<
-  FileDiffMetadata,
-  { fileDiff: FileDiffMetadata; fileKey: string; fileVersion: number }
->();
-
-function getCachedFileEntry(fileDiff: FileDiffMetadata) {
-  const cached = fileEntryCache.get(fileDiff);
-  if (cached) return cached;
-  const entry = {
-    fileDiff,
-    fileKey: buildFileDiffIdentityKey(fileDiff),
-    fileVersion: buildFileDiffContentVersion(fileDiff),
-  };
-  fileEntryCache.set(fileDiff, entry);
-  return entry;
-}
 
 const EMPTY_COLLAPSED_DIFF_FILE_KEYS: ReadonlySet<string> = new Set();
 
@@ -173,6 +162,7 @@ function DiffFileCollapseToggle({
                 { rootMargin: "600px" },
               );
             }}
+            data-diff-file-key={fileKey}
             onClick={(event) => {
               event.stopPropagation();
               onToggle(fileKey);
@@ -180,10 +170,11 @@ function DiffFileCollapseToggle({
           />
         }
       >
-        <MorphIcon
-          className="size-4 text-muted-foreground/80"
-          icon={collapsed ? ChevronRight : ChevronDown}
-        />
+        {collapsed ? (
+          <ChevronRightIcon className="size-4 text-muted-foreground/80" />
+        ) : (
+          <ChevronDownIcon className="size-4 text-muted-foreground/80" />
+        )}
       </TooltipTrigger>
       <TooltipPopup side="top">
         {collapsed ? uiT("Expand diff") : uiT("Collapse diff")}
@@ -241,8 +232,10 @@ export default function DiffPanel({
     wordWrap: settings.wordWrap,
   }));
   const diffLayout = settings.diffLayout;
-  const [wordWrap, setWordWrap] = useState(settings.wordWrap);
-  const [diffIgnoreWhitespace, setDiffIgnoreWhitespace] = useState(settings.diffIgnoreWhitespace);
+  const [wordWrapOverride, setWordWrapOverride] = useState<boolean | null>(null);
+  const wordWrap = wordWrapOverride ?? settings.wordWrap;
+  const diffIgnoreWhitespace =
+    useDiffPanelSessionStore((state) => state.ignoreWhitespace) ?? settings.diffIgnoreWhitespace;
   const [fileTreeOpen, setFileTreeOpen] = useLocalStorage(
     DIFF_FILE_TREE_STORAGE_KEY,
     false,
@@ -338,7 +331,9 @@ export default function DiffPanel({
     diffSelection.kind === "branch" || diffSelection.kind === "commit"
       ? diffSelection.baseRef
       : null;
-  const selectedFilePath = diffSelection.kind === "turn" ? diffSelection.filePath : null;
+  // @pierre/diffs trims trailing whitespace from parsed file names; leading whitespace survives.
+  const selectedFilePath =
+    diffSelection.kind === "turn" ? diffSelection.filePath?.trimEnd() || null : null;
   const selectedFileRevealRequestId =
     diffSelection.kind === "turn" ? diffSelection.revealRequestId : 0;
   const selectedTurn =
@@ -444,23 +439,23 @@ export default function DiffPanel({
       : undefined;
   const selectedGitScopeLabel =
     selectedCommitSha !== null
-      ? (selectedCommitSubject ?? `Commit ${selectedCommitSha.slice(0, 7)}`)
+      ? (selectedCommitSubject ?? uiT("Commit {0}", { "0": selectedCommitSha.slice(0, 7) }))
       : selectedGitScope === "unstaged"
-        ? "Uncommitted"
+        ? uiT("Uncommitted")
         : uiT("Changes");
   const selectedScopeLabel = toolCallSelection
-    ? "Tool call"
+    ? uiT("Tool call")
     : selectedRunId === null
       ? selectedCommitSha !== null
-        ? (selectedCommitSubject ?? "Commit")
+        ? (selectedCommitSubject ?? uiT("Commit"))
         : selectedGitScopeLabel
       : selectedTurn?.runId === latestTurn?.runId
-        ? "Latest turn"
-        : `Turn ${selectedCheckpointTurnCount ?? "?"}`;
+        ? uiT("Latest turn")
+        : uiT("Turn {0}", { "0": selectedCheckpointTurnCount ?? "?" });
   const reviewSectionTitle = toolCallSelection
-    ? "Tool call"
+    ? uiT("Tool call")
     : selectedTurn
-      ? `Turn ${selectedCheckpointTurnCount ?? "?"}`
+      ? uiT("Turn {0}", { "0": selectedCheckpointTurnCount ?? "?" })
       : selectedGitScopeLabel;
   const headerCommitSha = selectedRunId === null ? selectedCommitSha : null;
   const selectedCommitUrl =
@@ -491,7 +486,10 @@ export default function DiffPanel({
       : gitDiff;
   const isSelectedPatchTruncated =
     toolCallPreview?.truncated === true ||
-    (isGitSelection && selectedGitSource?.truncated === true);
+    (isGitSelection && selectedGitSource?.truncated === true) ||
+    (!toolCallSelection &&
+      selectedTurn !== undefined &&
+      selectedPatch?.endsWith(CHECKPOINT_DIFF_TRUNCATED_MARKER) === true);
   const selectedPatchQuery = toolCallSelection
     ? toolCallDetail
     : selectedTurn
@@ -649,10 +647,10 @@ export default function DiffPanel({
 
   const isRefreshingDiff = branchDiffPreview.isPending || areFilePatchesPending;
   const pathOccurrences = new Map<string, number>();
-  const renderableFileEntries = renderableFiles.map((fileDiff) => {
-    const entry = getCachedFileEntry(fileDiff);
+  const renderableFileEntries = buildFileDiffEntries(renderableFiles).map((entry) => {
     if (!isGitSelection) return entry;
-    // Metadata has no change type; keep each path's identity when its patch arrives.
+    const { fileDiff } = entry;
+    // Metadata's change type can be missing or differ from the patch's; key each path's identity by path.
     const pathKey = JSON.stringify([fileDiff.prevName ?? fileDiff.name, fileDiff.name]);
     const occurrence = pathOccurrences.get(pathKey) ?? 0;
     pathOccurrences.set(pathKey, occurrence + 1);
@@ -703,12 +701,27 @@ export default function DiffPanel({
   const diffLineStat = sourceLineStat ?? getDiffLineStat(renderableFiles);
   const fileTreeEntries = diffFileTreeEntries(renderableFiles.filter(isFileShown));
   const codeViewReveal = useCodeViewFileReveal();
+  // Lazy files that sat above the saved position load again only when asked for.
+  const codeViewScroll = useCodeViewScrollRestore(
+    collapseScopeKey,
+    !isRefreshingDiff && remainingFileCount === 0,
+    remainingFileCount > 0 ? loadNextFiles : null,
+  );
+  const attachCodeView = useStableCallback((handle: AnnotatableCodeViewHandle | null) => {
+    codeViewScroll.attach(handle);
+    codeViewReveal.attach(handle);
+  });
+  const flushCodeView = useStableCallback(() => {
+    codeViewScroll.flush();
+    codeViewReveal.flush();
+  });
   const revealDiffFile = (filePath: string) => {
     const index = renderableFileEntries.findIndex(
       (candidate) => resolveFileDiffPath(candidate.fileDiff) === filePath,
     );
     const file = renderableFileEntries[index];
     if (!file) return false;
+    codeViewScroll.discard();
     updateCollapsedDiffFiles((current) => {
       const next = new Set(current);
       next.delete(file.fileKey);
@@ -785,6 +798,7 @@ export default function DiffPanel({
   });
 
   const toggleDiffFileCollapse = () => {
+    codeViewScroll.discard();
     setCodeViewRevision((current) => current + 1);
     updateCollapsedDiffFiles((current) => toggleAllDiffFiles(shownFileKeys, current));
   };
@@ -996,7 +1010,7 @@ export default function DiffPanel({
                   </DropdownMenuItem>
                 ) : branchCommits.truncated ? (
                   <DropdownMenuItem disabled>
-                    {`Showing latest ${branchCommits.commits.length} commits`}
+                    {uiT("Showing latest {0} commits", { "0": branchCommits.commits.length })}
                   </DropdownMenuItem>
                 ) : null}
               </DropdownMenuSubContent>
@@ -1023,7 +1037,7 @@ export default function DiffPanel({
                 <ArrowRightIcon className="size-3.5 shrink-0 opacity-70" />
               </TooltipTrigger>
               <TooltipPopup side="top">
-                {`${comparisonHeadRef} → ${comparisonBaseRef}`}
+                {uiT("{0} → {1}", { "0": comparisonHeadRef, "1": comparisonBaseRef })}
               </TooltipPopup>
             </Tooltip>
             <Tooltip>
@@ -1033,7 +1047,7 @@ export default function DiffPanel({
                 {uiT("vs")}
               </TooltipTrigger>
               <TooltipPopup side="top">
-                {`${comparisonHeadRef} → ${comparisonBaseRef}`}
+                {uiT("{0} → {1}", { "0": comparisonHeadRef, "1": comparisonBaseRef })}
               </TooltipPopup>
             </Tooltip>
             <Combobox
@@ -1093,7 +1107,7 @@ export default function DiffPanel({
                         value={item}
                       >
                         <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_2rem] items-center overflow-hidden">
-                          <span className="block min-w-0 truncate pe-2">{uiT(choice.label)}</span>
+                          <span className="block min-w-0 truncate pe-2">{choice.label}</span>
                           {hasBoth ? (
                             <div
                               className="flex justify-end"
@@ -1160,7 +1174,7 @@ export default function DiffPanel({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={isRefreshingDiff ? "Refreshing diff" : uiT("Refresh diff")}
+                  aria-label={isRefreshingDiff ? uiT("Refreshing diff") : uiT("Refresh diff")}
                   onClick={refreshDiffFromUserAction}
                 />
               }
@@ -1181,16 +1195,17 @@ export default function DiffPanel({
                   size="icon-sm"
                   variant="ghost"
                   aria-label={
-                    allDiffFilesCollapsed ? "Expand all files" : uiT("Collapse all files")
+                    allDiffFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")
                   }
                   onClick={toggleDiffFileCollapse}
                 />
               }
             >
-              <MorphIcon
-                className="size-3.5"
-                icon={allDiffFilesCollapsed ? ChevronsUpDown : ChevronsDownUp}
-              />
+              {allDiffFilesCollapsed ? (
+                <ChevronsUpDownIcon className="size-3.5" />
+              ) : (
+                <ChevronsDownUpIcon className="size-3.5" />
+              )}
             </TooltipTrigger>
             <TooltipPopup side="top">
               {allDiffFilesCollapsed ? uiT("Expand all files") : uiT("Collapse all files")}
@@ -1221,13 +1236,13 @@ export default function DiffPanel({
             render={
               <Toggle
                 aria-label={
-                  wordWrap ? "Disable diff line wrapping" : uiT("Enable diff line wrapping")
+                  wordWrap ? uiT("Disable diff line wrapping") : uiT("Enable diff line wrapping")
                 }
                 variant="ghost"
                 size="sm"
                 pressed={wordWrap}
                 onPressedChange={(pressed) => {
-                  setWordWrap(Boolean(pressed));
+                  setWordWrapOverride(Boolean(pressed));
                 }}
               />
             }
@@ -1243,13 +1258,15 @@ export default function DiffPanel({
             render={
               <Toggle
                 aria-label={
-                  diffIgnoreWhitespace ? "Show whitespace changes" : uiT("Hide whitespace changes")
+                  diffIgnoreWhitespace
+                    ? uiT("Show whitespace changes")
+                    : uiT("Hide whitespace changes")
                 }
                 variant="ghost"
                 size="sm"
                 pressed={diffIgnoreWhitespace}
                 onPressedChange={(pressed) => {
-                  setDiffIgnoreWhitespace(Boolean(pressed));
+                  useDiffPanelSessionStore.getState().setIgnoreWhitespace(Boolean(pressed));
                 }}
               />
             }
@@ -1277,7 +1294,10 @@ export default function DiffPanel({
             </TooltipTrigger>
             <TooltipPopup side="top">
               {hideTestFiles
-                ? `Show ${testFileCount} hidden test ${testFileCount === 1 ? "file" : "files"}`
+                ? uiT("Show {0} hidden test {1}", {
+                    "0": testFileCount,
+                    "1": uiT(testFileCount === 1 ? "file" : "files"),
+                  })
                 : uiT("Hide test files")}
             </TooltipPopup>
           </Tooltip>
@@ -1287,7 +1307,7 @@ export default function DiffPanel({
             <TooltipTrigger
               render={
                 <Toggle
-                  aria-label={fileTreeOpen ? "Hide file tree" : uiT("Show file tree")}
+                  aria-label={fileTreeOpen ? uiT("Hide file tree") : uiT("Show file tree")}
                   variant="ghost"
                   size="sm"
                   pressed={fileTreeOpen}
@@ -1383,14 +1403,14 @@ export default function DiffPanel({
                 <DiffPanelLoadingState
                   label={
                     toolCallSelection
-                      ? "Loading tool call diff..."
+                      ? uiT("Loading tool call diff...")
                       : selectedTurn
-                        ? "Loading checkpoint diff..."
+                        ? uiT("Loading checkpoint diff...")
                         : selectedGitScope === "unstaged"
-                          ? "Loading uncommitted changes..."
+                          ? uiT("Loading uncommitted changes...")
                           : selectedGitScope === "commit"
-                            ? "Loading commit..."
-                            : "Loading changes..."
+                            ? uiT("Loading commit...")
+                            : uiT("Loading changes...")
                   }
                 />
               ) : (
@@ -1407,33 +1427,9 @@ export default function DiffPanel({
                 <div
                   className="min-h-0 min-w-0 flex-1"
                   onClickCapture={(event) => {
-                    const composedPath = event.nativeEvent.composedPath?.() ?? [];
-                    for (const node of composedPath) {
-                      if (!(node instanceof HTMLElement)) continue;
-                      // Header buttons own their clicks; bubbling a chevron click would toggle twice.
-                      if (node instanceof HTMLButtonElement || node instanceof HTMLAnchorElement) {
-                        return;
-                      }
-                    }
-                    const title = composedPath.find(
-                      (node): node is HTMLElement =>
-                        node instanceof HTMLElement && node.hasAttribute("data-title"),
-                    );
-                    const filePath = title?.textContent;
-                    if (filePath) {
-                      openDiffFile(filePath);
-                      return;
-                    }
-                    const header = composedPath.find(
-                      (node): node is HTMLElement =>
-                        node instanceof HTMLElement && node.hasAttribute("data-diffs-header"),
-                    );
-                    const headerFilePath = header?.querySelector("[data-title]")?.textContent;
-                    if (!headerFilePath) return;
-                    const file = codeViewFiles.find(
-                      (candidate) => candidate.filePath === headerFilePath,
-                    );
-                    if (file) toggleDiffFileCollapsed(file.fileKey);
+                    const action = getDiffHeaderClickAction(event.nativeEvent);
+                    if (action?.type === "open") openDiffFile(action.filePath);
+                    else if (action?.type === "toggle") toggleDiffFileCollapsed(action.fileKey);
                   }}
                   onContextMenuCapture={(event) => {
                     const composedPath = event.nativeEvent.composedPath?.() ?? [];
@@ -1459,7 +1455,8 @@ export default function DiffPanel({
                     key={collapseScopeKey ?? reviewSectionId}
                     environmentId={activeThread?.environmentId}
                     projectId={activeThread?.projectId}
-                    viewerRef={codeViewReveal.attach}
+                    viewerRef={attachCodeView}
+                    onScroll={codeViewScroll.onScroll}
                     codeViewKey={codeViewMountKey}
                     className="h-full min-h-0 overflow-auto"
                     files={codeViewFiles}
@@ -1521,7 +1518,7 @@ export default function DiffPanel({
                       preferredHighlighter: PREFERRED_HIGHLIGHTER,
                       themeType: resolvedTheme as DiffThemeType,
                       stickyHeaders: true,
-                      onPostRender: codeViewReveal.flush,
+                      onPostRender: flushCodeView,
                       ...(currentLoadDiffFiles ? { loadDiffFiles } : {}),
                     }}
                   />
@@ -1531,7 +1528,7 @@ export default function DiffPanel({
                     resizable
                     storageKey="t3code:diff-file-tree-width"
                     defaultWidthFraction={0.4}
-                    resizeLabel="Resize Changes files"
+                    resizeLabel={uiT("Resize Changes files")}
                   >
                     <DiffFileTree
                       ariaLabel={uiT("{0} files", { "0": reviewSectionTitle })}

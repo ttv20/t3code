@@ -18,15 +18,16 @@ import type { ComposerTriggerKind } from "@t3tools/shared/composerTrigger";
 import { memo } from "react";
 import { Pressable, ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
 import { useUiLanguage } from "../../i18n";
-
 import { ENVIRONMENT_MACHINE_SYMBOLS } from "../../components/EnvironmentMachineSymbol";
 import { PierreEntryIcon } from "../../components/PierreEntryIcon";
 import { ProviderIcon } from "../../components/ProviderIcon";
+import { cn } from "../../lib/cn";
+import type { ModelOption } from "../../lib/modelOptions";
+import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
 import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import { GlassSurface } from "../../components/ui/GlassSurface";
-import type { ModelOption } from "../../lib/modelOptions";
-import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
+
 export type ComposerCommandItem =
   | {
       readonly id: string;
@@ -167,7 +168,7 @@ function emptyText(triggerKind: ComposerTriggerKind | null, isLoading: boolean):
     case "pull-request":
       return "No matching pull requests.";
     case "path":
-      return "No matching files or folders.";
+      return "No matching mentions.";
     case "skill":
       return "No skills found.";
     case "slash-command":
@@ -188,8 +189,8 @@ const CommandRow = memo(function CommandRow(props: {
   const label =
     props.isSlashSkill && props.item.type === "skill"
       ? `${uiT("skill:")}${props.item.skill.name}`
-      : uiT(props.item.label);
-  const description = uiT(props.item.description);
+      : props.item.label;
+  const description = props.item.description;
   const followsContent =
     props.item.type === "skill" ||
     props.item.type === "slash-command" ||
@@ -235,7 +236,10 @@ const CommandRow = memo(function CommandRow(props: {
         />
       ) : null}
       <Text
-        className="shrink-0 text-base font-t3-medium text-foreground"
+        className={cn(
+          "shrink-0 text-base font-t3-medium text-foreground",
+          props.item.type === "thread" && "max-w-[45%]",
+        )}
         numberOfLines={1}
         style={
           labelDirection

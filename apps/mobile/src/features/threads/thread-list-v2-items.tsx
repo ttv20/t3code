@@ -8,12 +8,17 @@ import type {
   EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
 import type { EnvironmentThreadSearchMatch } from "@t3tools/client-runtime/state/thread-search";
+import {
+  AuthOrchestrationOperateScope,
+  type EnvironmentId,
+  type EnvironmentMachineKind,
+} from "@t3tools/contracts";
+import { toServerClock } from "@t3tools/client-runtime/clock";
+import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { canSnooze } from "@t3tools/client-runtime/state/thread-settled";
 import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
-import { AuthOrchestrationOperateScope, type EnvironmentMachineKind } from "@t3tools/contracts";
-import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { memo, useCallback, useMemo, useState, type ComponentProps } from "react";
-import { Platform, Pressable, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, Text as RNText, useWindowDimensions, View } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import * as Dialog from "../../components/ui/Dialog";
 import { RowPressable } from "../../components/ui/RowPressable";
@@ -34,13 +39,13 @@ import {
 import type { ThreadRowProviderInstance } from "./thread-provider-instance";
 import type { ThreadMoveDestination } from "./threadOrder";
 import { useVisibleSecondClock } from "./use-visible-second-clock";
-
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { ProjectFavicon } from "../../components/ProjectFavicon";
-import { ProviderIcon, ProviderInstanceIcon } from "../../components/ProviderIcon";
-import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
-import { ContentText, AppText as Text } from "../../components/ui/AppText";
-import { Menu } from "../../components/ui/Menu";
+import {
+  ProviderIcon,
+  ProviderInstanceIcon,
+  providerInstanceNameLabel,
+} from "../../components/ProviderIcon";
 import { useNowAfter } from "../../lib/clock";
 import { cn } from "../../lib/cn";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
@@ -62,30 +67,36 @@ import { useThreadPr } from "../../state/use-thread-pr";
 import { useSwipeRowDormant } from "../home/swipe-row-activation";
 import { ThreadSwipeable } from "../home/thread-swipe-actions";
 import { threadCanArchive } from "../home/threadArchive";
-import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
-import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
-import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
+import {
+  THREAD_LIST_V2_SETTLED_PAGE_COUNT,
+  resolveThreadListV2SnoozeGateExpiryMs,
+  resolveThreadListV2SnoozeMenuSelection,
+  resolveThreadListV2SnoozePresets,
+  threadHasUnseenCompletion,
+  resolveThreadListV2RowStatus,
+  resolveThreadListV2Status,
+  resolveThreadListV2ProviderDrivers,
+  resolveThreadListV2SwipeActions,
+  layoutThreadListV2RowMenuActions,
+  threadListV2RowAccessibilityLabel,
+  type ThreadListV2Status,
+} from "./threadListV2";
 import { QueuedMessageIcon } from "./queued-message-icon";
 import { shouldRecedeThreadRow } from "./thread-row-emphasis";
 import { ThreadSearchMatchExcerpt } from "./thread-search-match";
 import { buildThreadTitleRegenerationMenuItems } from "./thread-title-regeneration-menu";
-import {
-  THREAD_LIST_V2_SETTLED_PAGE_COUNT,
-  layoutThreadListV2RowMenuActions,
-  resolveThreadListV2ProviderDrivers,
-  resolveThreadListV2SnoozeGateExpiryMs,
-  resolveThreadListV2SnoozeMenuSelection,
-  resolveThreadListV2SnoozePresets,
-  resolveThreadListV2Status,
-  resolveThreadListV2SwipeActions,
-  threadHasUnseenCompletion,
-  type ThreadListV2Status,
-} from "./threadListV2";
 import { canTurnThreadIntoProject, turnThreadIntoProject } from "./turnThreadIntoProject";
 import { useNewTaskProjectDefaults } from "./use-new-task-project-defaults";
+import { SymbolView, type AppSymbolName } from "../../components/ui/AppSymbol";
+import { ContentText, AppText as Text } from "../../components/ui/AppText";
+import { Menu } from "../../components/ui/Menu";
+import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
+import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
+import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 
 interface StatusLabel {
-  readonly label: string;
+  // Null when the icon and timer carry the status on their own.
+  readonly label: string | null;
   readonly icon: AppSymbolName;
   readonly className: string;
   readonly iconTintClassName: string;
@@ -110,13 +121,13 @@ const STATUS_LABEL_BY_STATUS: Partial<Record<ThreadListV2Status, StatusLabel>> =
     iconTintClassName: "accent-adaptive-fuchsia-600-300",
   },
   working: {
-    label: "Working",
+    label: null,
     icon: "circle.dashed",
     className: "text-adaptive-sky-600-400",
     iconTintClassName: "accent-adaptive-sky-600-400",
   },
   waiting: {
-    label: "Waiting",
+    label: null,
     icon: "circle.dashed.inset.filled",
     className: "text-foreground-muted",
     iconTintClassName: "accent-foreground-muted",
@@ -141,11 +152,29 @@ const DONE_STATUS_LABEL: StatusLabel = {
   iconTintClassName: "accent-adaptive-emerald-700-300",
 };
 
-function ThreadListV2Duration(props: { readonly startedAt: string | null }) {
+// DM Sans has no tabular figures, so a ticking timer in it reflows the row every second.
+const TABULAR_DURATION_STYLE = {
+  fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+  fontWeight: "700",
+  fontVariant: ["tabular-nums"],
+} as const;
+
+function ThreadListV2Duration(props: {
+  readonly environmentId: EnvironmentId;
+  readonly startedAt: string | null;
+  readonly leadingSpace: boolean;
+}) {
   const startedAtMs = Date.parse(props.startedAt ?? "");
   const nowMs = useVisibleSecondClock(Number.isFinite(startedAtMs));
   if (!Number.isFinite(startedAtMs)) return null;
-  return ` ${formatWorkingDurationLabel(nowMs - startedAtMs)}`;
+  return (
+    <>
+      {props.leadingSpace ? " " : null}
+      <RNText style={TABULAR_DURATION_STYLE}>
+        {formatWorkingDurationLabel(toServerClock(props.environmentId, nowMs) - startedAtMs)}
+      </RNText>
+    </>
+  );
 }
 
 function ThreadListV2Section(props: {
@@ -160,8 +189,6 @@ function ThreadListV2Section(props: {
     readonly accessibilityHint: string;
   };
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const snoozed = props.tone === "snoozed";
   const sidebarPane = props.pane === "sidebar";
   const className = cn(
@@ -180,7 +207,7 @@ function ThreadListV2Section(props: {
               : "text-foreground-tertiary",
         )}
       >
-        {uiT(props.label)}
+        {props.label}
       </Text>
       <View
         className={cn(
@@ -756,6 +783,14 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   }, [thread, props.providers]);
 
   const providerInstance = props.providerInstance;
+  const providerNameLabel = providerInstance
+    ? providerInstanceNameLabel({
+        provider: providerInstance.driverKind,
+        iconUrl: providerIconUrl,
+        displayName: providerInstance.displayName,
+        showBadge: providerInstance.showBadge,
+      })
+    : null;
   const pr = useThreadPr(thread);
   const prBadgeLabel = pr ? resolveThreadPrBadgeAction(pr).accessibilityLabel : null;
   const handleOpenPullRequests = useCallback(() => {
@@ -767,7 +802,8 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const selected = props.selected === true;
   const rowAppearance = getThreadListV2RowAppearance(theme, sidebarPane, selected);
 
-  const status = resolveThreadListV2Status(thread);
+  const rawStatus = resolveThreadListV2Status(thread);
+  const status = resolveThreadListV2RowStatus(thread);
   const isUnread = status === "ready" && threadHasUnseenCompletion(thread);
   const workingLabel = STATUS_LABEL_BY_STATUS[status];
   const showsWoke = status === "ready" && props.wokeAt !== null;
@@ -777,8 +813,21 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       : workingLabel) ?? (isUnread ? DONE_STATUS_LABEL : undefined);
   const recede = shouldRecedeThreadRow({ status, selected });
   const isRegeneratingTitle = thread.titleRegeneration != null;
-  const rowAccessibilityLabel = `${thread.title}${props.hasQueuedMessages ? uiT(", messages queued to send") : ""}${isRegeneratingTitle ? uiT(", regenerating title") : ""}`;
   const timeLabel = props.timeLabel;
+  const rowAccessibilityLabel = threadListV2RowAccessibilityLabel({
+    locale,
+    title: thread.title,
+    variant,
+    woke: showsWoke,
+    // Working and waiting rows show only an icon and a duration, so name them for speech.
+    statusLabel:
+      statusLabel && uiT(statusLabel.label ?? (status === "waiting" ? "Waiting" : "Working")),
+    timeLabel,
+    snoozeWakeLabel: snoozedRow ? props.snoozeWakeLabelText : undefined,
+    providerNameLabel,
+    hasQueuedMessages: props.hasQueuedMessages === true,
+    regeneratingTitle: isRegeneratingTitle,
+  });
 
   const visitThread = useAtomCommand(threadEnvironment.visit, { reportFailure: false });
   const handleAcknowledgeWoke = useCallback(() => {
@@ -906,12 +955,12 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               subactions: [
                 {
                   id: "auto-settle:enabled",
-                  title: uiT("Enabled"),
+                  title: uiT("Follow settings"),
                   state: thread.autoSettleDisabledAt == null ? "on" : "off",
                 },
                 {
                   id: "auto-settle:disabled",
-                  title: uiT("Disabled"),
+                  title: uiT("Never"),
                   state: thread.autoSettleDisabledAt == null ? "off" : "on",
                 },
               ],
@@ -1298,15 +1347,22 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               <Text
                 className={cn(
                   "text-xs font-t3-bold",
-                  (status === "working" || status === "waiting") && "tabular-nums",
                   selected ? selectedThreadRowColors.foregroundClassName : statusLabel.className,
                 )}
               >
                 {uiT(statusLabel.label)}
                 {status === "working" ? (
-                  <ThreadListV2Duration startedAt={resolveThreadWorkingStartedAt(thread)} />
+                  <ThreadListV2Duration
+                    environmentId={thread.environmentId}
+                    startedAt={resolveThreadWorkingStartedAt(thread)}
+                    leadingSpace={statusLabel.label !== null}
+                  />
                 ) : status === "waiting" ? (
-                  <ThreadListV2Duration startedAt={thread.latestRun?.completedAt ?? null} />
+                  <ThreadListV2Duration
+                    environmentId={thread.environmentId}
+                    startedAt={thread.latestRun?.completedAt ?? null}
+                    leadingSpace={statusLabel.label !== null}
+                  />
                 ) : null}
               </Text>
             </View>
@@ -1335,7 +1391,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         </View>
       ) : null}
       <View className="mt-1 flex-row items-center gap-2" style={{ paddingLeft: titleTextInset }}>
-        {(status === "failed" || status === "limited") && thread.runtime?.lastError ? (
+        {(rawStatus === "failed" || rawStatus === "limited") && thread.runtime?.lastError ? (
           <Text
             className={cn(
               "flex-1 text-xs",
@@ -1438,6 +1494,21 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               showBadge={providerInstance.showBadge}
               surfaceColor={rowAppearance.providerIconSurfaceColor}
             />
+            {providerNameLabel ? (
+              <Text
+                className={cn(
+                  "ml-1.5 text-xs",
+                  selected
+                    ? selectedThreadRowColors.mutedForegroundClassName
+                    : rowAppearance.tertiaryForegroundClassName,
+                )}
+                ellipsizeMode="middle"
+                numberOfLines={1}
+                style={{ maxWidth: 140 }}
+              >
+                {providerNameLabel}
+              </Text>
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -1531,6 +1602,20 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             >
               {thread.title}
             </ContentText>
+            {providerNameLabel ? (
+              <Text
+                className={cn(
+                  "text-xs",
+                  selected
+                    ? selectedThreadRowColors.mutedForegroundClassName
+                    : rowAppearance.tertiaryForegroundClassName,
+                )}
+                ellipsizeMode="middle"
+                numberOfLines={1}
+              >
+                {providerNameLabel}
+              </Text>
+            ) : null}
             {props.searchMatch ? (
               <ThreadSearchMatchExcerpt
                 sidebar={sidebarPane}
@@ -1587,7 +1672,12 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         threadTitle={thread.title}
       >
         {(close) => (
-          <Menu actions={menuActions} onPressAction={handleMenuAction} shouldOpenOnLongPress>
+          <Menu
+            accessibilityLabel={rowAccessibilityLabel}
+            actions={menuActions}
+            onPressAction={handleMenuAction}
+            shouldOpenOnLongPress
+          >
             {rowContent(close)}
           </Menu>
         )}

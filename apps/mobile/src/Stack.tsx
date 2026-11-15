@@ -16,7 +16,6 @@ import { PullRequestDiscussionScreen } from "./features/pull-requests/PullReques
 import { PullRequestInlineCommentScreen } from "./features/pull-requests/PullRequestInlineCommentScreen";
 import { isDraftThreadRoute } from "./features/threads/thread-route-state";
 import { useUiLanguage } from "./i18n";
-
 import {
   RenderErrorBoundary,
   RenderFailureView,
@@ -84,6 +83,18 @@ import { SettingsClientStorageRouteScreen } from "./features/settings/SettingsCl
 import { SettingsEnvironmentDetailRouteScreen } from "./features/settings/SettingsEnvironmentDetailRouteScreen";
 import { SettingsEnvironmentsRouteScreen } from "./features/settings/SettingsEnvironmentsRouteScreen";
 import { SettingsFollowUpRouteScreen } from "./features/settings/SettingsFollowUpRouteScreen";
+import { SettingsLanguageRouteScreen } from "./features/settings/SettingsLanguageRouteScreen";
+import {
+  SettingsEnvironmentMaintenanceRouteScreen,
+  SettingsThreadsRouteScreen,
+  SettingsWorktreesRouteScreen,
+  SettingsEnvironmentSourceControlRouteScreen,
+} from "./features/settings/SettingsServerControlsRouteScreen";
+import {
+  SettingsScheduledTasksRouteScreen,
+  SettingsScheduledTaskNewRouteScreen,
+  SettingsScheduledTaskEditRouteScreen,
+} from "./features/settings/SettingsScheduledTasksRouteScreen";
 import { SettingsKeyboardRouteScreen } from "./features/settings/SettingsKeyboardRouteScreen";
 import { SettingsLegalRouteScreen } from "./features/settings/SettingsLegalRouteScreen";
 import { SettingsNavigationRouteScreen } from "./features/settings/SettingsNavigationRouteScreen";
@@ -96,17 +107,6 @@ import { SettingsProjectGroupingRouteScreen } from "./features/settings/Settings
 import { SettingsProjectOverviewRouteScreen } from "./features/settings/SettingsProjectOverviewRouteScreen";
 import { SettingsProviderAccountsRouteScreen } from "./features/settings/SettingsProviderAccountsRouteScreen";
 import { SettingsRouteScreen } from "./features/settings/SettingsRouteScreen";
-import {
-  SettingsScheduledTaskEditRouteScreen,
-  SettingsScheduledTaskNewRouteScreen,
-  SettingsScheduledTasksRouteScreen,
-} from "./features/settings/SettingsScheduledTasksRouteScreen";
-import {
-  SettingsEnvironmentMaintenanceRouteScreen,
-  SettingsEnvironmentSourceControlRouteScreen,
-  SettingsThreadsRouteScreen,
-  SettingsWorktreesRouteScreen,
-} from "./features/settings/SettingsServerControlsRouteScreen";
 import { SettingsVoiceModelsRouteScreen } from "./features/settings/SettingsVoiceModelsRouteScreen";
 import { SettingsVoiceRouteScreen } from "./features/settings/SettingsVoiceRouteScreen";
 import { SettingsLabsRouteScreen } from "./features/settings/ThreadSettingsSections";
@@ -257,6 +257,11 @@ const SETTINGS_SCREENS = {
     screen: SettingsProjectGroupingRouteScreen,
     linking: "settings/organization",
     options: settingsPage("General"),
+  }),
+  SettingsLanguage: createNativeStackScreen({
+    screen: SettingsLanguageRouteScreen,
+    linking: "settings/language",
+    options: settingsPage("Language"),
   }),
   SettingsProjectOverview: createNativeStackScreen({
     screen: SettingsProjectOverviewRouteScreen,
@@ -490,11 +495,11 @@ const RootStackConfig = createWorkspaceStackNavigator({
     Home: createNativeStackScreen({
       screen: WorkspaceRootScreen,
       linking: "",
-      listeners: {
+      listeners: ({ navigation }) => ({
         transitionStart: ({ data }) => recordHomeTransitionStart(data.closing),
-        transitionEnd: ({ data }) => recordHomeTransitionEnd(data.closing),
+        transitionEnd: ({ data }) => recordHomeTransitionEnd(data.closing, navigation.isFocused()),
         focus: recordHomeFocus,
-      },
+      }),
       options: {
         ...pageRoute({ duoMinimize: "never", root: true }),
         contentStyle: { backgroundColor: "transparent" },
@@ -724,13 +729,20 @@ const RootStackConfig = createWorkspaceStackNavigator({
     Connections: createNativeStackScreen({
       screen: ConnectionsRouteScreen,
       linking: "connections",
-      options: sheetRoute({ title: "Environments", detent: 0.55, maxDetent: 0.7, android: "card" }),
+      options: sheetRoute({
+        title: "Environments",
+        detent: 0.55,
+        maxDetent: 0.7,
+        android: "card",
+        ...(Platform.OS === "android" ? { header: "none" as const } : {}),
+      }),
     }),
     ConnectionsNew: createNativeStackScreen({
       screen: ConnectionsNewRouteScreen,
       linking: "connections/new",
       options: sheetRoute({
         title: "Add Environment",
+        ...(Platform.OS === "android" ? { header: "none" as const } : {}),
         detent: 0.55,
         maxDetent: 0.7,
         android: "card",

@@ -1,7 +1,8 @@
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import { EnvironmentId } from "@t3tools/contracts";
+import { providerClients } from "@t3tools/client-runtime/provider-clients";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   collectExternalUsageLinks,
   collectLimitAccounts,
@@ -22,7 +23,6 @@ import { Defs, Path, Pattern, Rect, Svg } from "react-native-svg";
 import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import { UiText, useUiLanguage } from "../../i18n";
 import { readUiTranslator } from "../../state/ui-language";
-
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -31,19 +31,13 @@ import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { ResetCredits } from "./UsageLimitsSection";
 import { usageProviderKind, useProviderColors } from "./usageProviders";
 
-const DRIVER_LABEL: Partial<Record<string, string>> = {
-  codex: "Codex",
-  claudeAgent: "Claude",
-  grok: "Grok",
-  antigravity: "Antigravity",
-};
 const PACE_LABEL = { ahead: "Ahead of pace", on: "On pace", under: "Under pace" } as const;
 
 function accountName(account: LimitAccount) {
   const uiT = readUiTranslator();
 
   if (account.displayName) return account.displayName;
-  if (!account.email) return DRIVER_LABEL[account.driver] ?? String(account.driver);
+  if (!account.email) return providerClients.get(account.driver)?.label ?? account.driver;
   return emailInitials(account.email) || uiT("Account");
 }
 
@@ -180,7 +174,7 @@ function PoolWindowCard({
   readonly color: string;
   readonly now: number;
   readonly environmentIds: readonly string[] | null;
-  readonly label?: string;
+  readonly label?: string | null;
   readonly description?: string;
   readonly wide: boolean;
 }) {
@@ -206,7 +200,9 @@ function PoolWindowCard({
     <>
       <View className={wide ? "gap-1" : "flex-row items-start justify-between gap-3"}>
         <View className="gap-1">
-          <Text className="text-sm font-t3-medium text-foreground">{label ?? pool.label}</Text>
+          {label !== null ? (
+            <Text className="text-sm font-t3-medium text-foreground">{label ?? pool.label}</Text>
+          ) : null}
           <View className="flex-row items-baseline gap-1.5">
             <Text className="text-3xl font-t3-bold tabular-nums text-foreground">
               {pool.remainingPercent}%
@@ -463,12 +459,12 @@ export function UsageLimitsSection({
               <View className="flex-row items-center gap-2 px-1">
                 <ProviderIcon provider={pool.driver} size={18} />
                 <Text className="text-base font-t3-medium text-foreground">
-                  {DRIVER_LABEL[pool.driver] ?? pool.driver}
+                  {providerClients.get(pool.driver)?.label ?? pool.driver}
                 </Text>
               </View>
               {windows.map((window) => {
                 const details =
-                  pool.driver === "cursor" ? cursorUsageWindowDetails(window.id) : undefined;
+                  pool.driver === "cursor" ? cursorUsageWindowDetails(window.id, pool) : undefined;
                 return (
                   <PoolWindowCard
                     key={`${window.kind}:${window.id}`}
@@ -583,7 +579,9 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               <View className="flex-row items-center gap-2">
                 <ProviderIcon provider={account.driver} size={24} />
                 <Text className="flex-1 text-xl font-t3-bold text-foreground">
-                  {account.displayName ?? DRIVER_LABEL[account.driver] ?? account.driver}
+                  {account.displayName ??
+                    providerClients.get(account.driver)?.label ??
+                    account.driver}
                 </Text>
               </View>
               {account.email ? (
@@ -602,7 +600,7 @@ export function UsageLimitAccountScreen({ route }: AccountScreenProps) {
               ) : null}
               {account.plan ? (
                 <Text selectable className="text-sm text-foreground-muted">
-                  {uiT(account.plan)}
+                  {account.plan}
                 </Text>
               ) : null}
             </View>

@@ -14,7 +14,6 @@ import { Menu } from "../../components/ui/Menu";
 import { Toolbar } from "../../components/ui/Toolbar";
 import { useUiLanguage } from "../../i18n";
 import { PR_ROW_LAYOUT } from "./pullRequestAnimations";
-
 import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { usePullRequestAgentActions } from "./usePullRequestAgentActions";
@@ -48,12 +47,10 @@ export function PullRequestCardRow(props: {
   readonly expanded?: boolean;
   readonly children?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <Pressable
       accessibilityRole={props.onPress || props.menu ? "button" : undefined}
-      accessibilityLabel={uiT(props.accessibilityLabel)}
+      accessibilityLabel={props.accessibilityLabel}
       accessibilityState={props.expanded === undefined ? undefined : { expanded: props.expanded }}
       onPress={props.onPress}
       disabled={!props.onPress && !props.menu}
@@ -174,8 +171,8 @@ export function PullRequestActionToolbar(props: {
               >
                 <View pointerEvents="none">
                   <IconButton
-                    icon="sparkles"
-                    accessibilityLabel={uiT("{0} agent actions", { "0": uiT(shortLabel) })}
+                    icon="ellipsis.bubble"
+                    accessibilityLabel={uiT("{0} agent actions", { "0": shortLabel })}
                     disabled={agent.disabled}
                   />
                 </View>
@@ -249,9 +246,9 @@ export function PullRequestActionToolbar(props: {
   const agentControl = showAgentControls ? (
     <Toolbar.Menu
       identifier="pull-request-agent"
-      icon="sparkles"
+      icon="ellipsis.bubble"
       title={uiT("AI helpers")}
-      accessibilityLabel={uiT("{0} agent actions", { "0": uiT(shortLabel) })}
+      accessibilityLabel={uiT("{0} agent actions", { "0": shortLabel })}
       disabled={agent.disabled}
       separateBackground
     >

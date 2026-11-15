@@ -1,9 +1,10 @@
+import { StackActions, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 import { View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
 import { useUiLanguage } from "../../i18n";
 import { withKnownPullRequestSummary } from "../../state/use-thread-pr";
-import { useOpenWorkspaceDetail } from "../layout/useOpenWorkspaceDetail";
+
 import { PullRequestCardGroup, PullRequestCardRow } from "./PullRequestControls";
 import { PullRequestGlyph } from "./pullRequestGlyphs";
 import { pullRequestLayerParams } from "./pullRequestStack";
@@ -16,8 +17,7 @@ export function PullRequestStackCard(props: {
   readonly state: PullRequestStackState;
 }) {
   const { t: uiT } = useUiLanguage();
-
-  const openDetail = useOpenWorkspaceDetail();
+  const navigation = useNavigation();
   const [expanded, setExpanded] = useState(false);
   const stack = props.state.stack;
   if (!stack) {
@@ -77,12 +77,14 @@ export function PullRequestStackCard(props: {
                     selected
                       ? undefined
                       : () =>
-                          openDetail({
-                            name: "PullRequest",
-                            params: withKnownPullRequestSummary(
-                              pullRequestLayerParams(props.params, layer.number),
+                          navigation.dispatch(
+                            StackActions.push(
+                              "PullRequest",
+                              withKnownPullRequestSummary(
+                                pullRequestLayerParams(props.params, layer.number),
+                              ),
                             ),
-                          })
+                          )
                   }
                   last={index === stack.layers.length - 1}
                 />

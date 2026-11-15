@@ -1,22 +1,21 @@
-import { useAtomMount } from "@effect/atom-react";
-import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@t3tools/contracts";
-import { AuthSettingsWriteScope } from "@t3tools/contracts";
-import { Check as CheckGlyph, CircleAlert } from "lucide";
-import { Check } from "lucide-react";
-import { useState } from "react";
-import { useUiLanguage } from "../../i18n";
+import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { DeviceHostUpdates } from "./DeviceHostUpdates";
-
-import { MorphIcon } from "~/components/MorphIcon";
+import type { DevicePlatform, DeviceServiceState, EnvironmentId } from "@t3tools/contracts";
+import { Check, CircleAlert } from "lucide-react";
+import { AuthSettingsWriteScope } from "@t3tools/contracts";
+import { useAtomMount } from "@effect/atom-react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { DialogClose } from "~/components/ui/dialog";
+import { WizardHeader, WizardPanel, WizardSteps, WizardFooter } from "~/components/ui/wizard";
 import { Spinner } from "~/components/ui/spinner";
 import { Switch } from "~/components/ui/switch";
-import { WizardFooter, WizardHeader, WizardPanel, WizardSteps } from "~/components/ui/wizard";
-import { cn } from "~/lib/utils";
 import { deviceEnvironment, deviceHostProbeAtom, NO_DEVICE_PROBE_ATOM } from "~/state/device";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useAtomCommand } from "~/state/use-atom-command";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
+import { cn } from "~/lib/utils";
+
+import { useUiLanguage } from "../../i18n";
 
 const platformName = (platform: DevicePlatform) => (platform === "ios" ? "iOS" : "Android");
 
@@ -87,12 +86,18 @@ function DeviceHostDiagnostics(props: {
   );
 }
 
-export function platformSetupStatus(state: DeviceServiceState, platform: DevicePlatform) {
+export function platformSetupStatus(
+  state: DeviceServiceState,
+  platform: DevicePlatform,
+  translate = createUiTranslator("en"),
+) {
   const hasDevices = state.devices.some((device) => device.platform === platform);
   if (platform === "android" && !hasDevices && isAndroidDiscoveryUncertain(state)) {
     return {
       ready: false,
-      message: "The Android device list may be incomplete. Check the device host and try again.",
+      message: translate(
+        "The Android device list may be incomplete. Check the device host and try again.",
+      ),
     };
   }
   const availabilities = state.hosts.flatMap((host) =>
@@ -106,7 +111,9 @@ export function platformSetupStatus(state: DeviceServiceState, platform: DeviceP
   if (supportingHosts.length === 0) {
     return {
       ready: false,
-      message: availabilities[0]?.reason ?? `${platformName(platform)} support was not detected.`,
+      message:
+        availabilities[0]?.reason ??
+        translate("{0} support was not detected.", { "0": platformName(platform) }),
     };
   }
   const readyHosts = supportingHosts.filter(
@@ -122,29 +129,41 @@ export function platformSetupStatus(state: DeviceServiceState, platform: DeviceP
     ) {
       return {
         ready: false,
-        message: `No ${platformName(platform)} devices were listed because device discovery reported a problem.`,
+        message: translate(
+          "No {0} devices were listed because device discovery reported a problem.",
+          { "0": platformName(platform) },
+        ),
       };
     }
     return {
       ready: false,
       message:
         platform === "ios"
-          ? "Xcode is installed, but no iOS Simulator is available. Install a runtime in Xcode Settings → Components."
-          : "The Android SDK is installed, but no virtual device exists. Create one in Android Studio → Device Manager.",
+          ? translate(
+              "Xcode is installed, but no iOS Simulator is available. Install a runtime in Xcode Settings → Components.",
+            )
+          : translate(
+              "The Android SDK is installed, but no virtual device exists. Create one in Android Studio → Device Manager.",
+            ),
     };
   }
   const remoteHost = supportingHosts.every((host) => host.kind !== "local")
     ? supportingHosts[0]
     : undefined;
-  const location = remoteHost ? ` on ${remoteHost.label}` : "";
+  const location = remoteHost ? translate(" on {0}", { "0": remoteHost.label }) : "";
   return {
     ready: true,
     message:
       remoteHost?.kind === "eas"
-        ? `${remoteHost.label} starts ${platform === "ios" ? "iOS Simulators" : "Android emulators"} in the cloud with EAS Simulator.`
+        ? translate(
+            platform === "ios"
+              ? "{0} starts iOS Simulators in the cloud with Expo Simulators."
+              : "{0} starts Android emulators in the cloud with Expo Simulators.",
+            { "0": remoteHost.label },
+          )
         : platform === "ios"
-          ? `Xcode and iOS Simulator are available${location}.`
-          : `The Android SDK and Emulator are available${location}.`,
+          ? translate("Xcode and iOS Simulator are available{0}.", { "0": location })
+          : translate("The Android SDK and Emulator are available{0}.", { "0": location }),
   };
 }
 
@@ -187,7 +206,7 @@ export function DeviceSetup(props: {
         )}
       >
         <WizardSteps
-          steps={["Device hub", "Simulators", "Agent access"]}
+          steps={[uiT("Device hub"), uiT("Simulators"), uiT("Agent access")]}
           currentStep={step}
           onStepChange={setStep}
           isStepDisabled={(requested) => busy || pending !== null || requested > step}
@@ -333,8 +352,11 @@ function DevicePlatformSetup(props: {
   const { t: uiT } = useUiLanguage();
   return (
     <div className="space-y-3">
-      <PlatformStatus platform="iOS" status={platformSetupStatus(props.state, "ios")} />
-      <PlatformStatus platform="Android" status={platformSetupStatus(props.state, "android")} />
+      <PlatformStatus platform="iOS" status={platformSetupStatus(props.state, "ios", uiT)} />
+      <PlatformStatus
+        platform="Android"
+        status={platformSetupStatus(props.state, "android", uiT)}
+      />
       <DeviceHostDiagnostics hosts={props.state.hosts} hostStatuses={props.state.hostStatuses} />
       <p className="text-xs text-muted-foreground">
         {uiT(
@@ -359,14 +381,14 @@ export function AgentDeviceSetupStatus(props: {
     const label =
       props.state.hostStatus === "installing"
         ? props.compact
-          ? "Installing…"
-          : "Installing agent tools…"
+          ? uiT("Installing…")
+          : uiT("Installing agent tools…")
         : props.state.hostStatus === "starting"
           ? props.compact
-            ? "Starting…"
-            : "Starting agent tools…"
+            ? uiT("Starting…")
+            : uiT("Starting agent tools…")
           : props.compact
-            ? "Updating…"
+            ? uiT("Updating…")
             : uiT("Updating agent access…");
     return (
       <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -400,13 +422,11 @@ function PlatformStatus(props: {
     <div
       className={cn("flex gap-2", !props.compact && "rounded-md border border-border/60 px-3 py-2")}
     >
-      <MorphIcon
-        className={cn(
-          "mt-0.5 size-4 shrink-0",
-          props.status.ready ? "text-success" : "text-muted-foreground",
-        )}
-        icon={props.status.ready ? CheckGlyph : CircleAlert}
-      />
+      {props.status.ready ? (
+        <Check className="mt-0.5 size-4 shrink-0 text-success" />
+      ) : (
+        <CircleAlert className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      )}
       <div className={cn(props.compact && props.status.ready && "flex items-center gap-2")}>
         <p className="font-medium">{props.platform}</p>
         <p className="text-xs text-muted-foreground">

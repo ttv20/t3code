@@ -312,7 +312,7 @@ function MachineBetaSection({
   );
   const writable = useEnvironmentsWithScope(supported, AuthSettingsWriteScope);
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: `${setting} beta update`,
+    label: uiT("{0} beta update", { "0": setting }),
     reportFailure: true,
   });
   if (supported.length === 0) return null;

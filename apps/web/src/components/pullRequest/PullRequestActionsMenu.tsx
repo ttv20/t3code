@@ -23,12 +23,10 @@ import {
   MessageCircleQuestionIcon,
   MoreHorizontalIcon,
   RotateCcwIcon,
-  SparklesIcon,
+  ScrollTextIcon,
   Trash2Icon,
 } from "lucide-react";
 import { useId, useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
-
 import { shortcutLabelForCommand } from "~/keybindings";
 import { readLocalApi } from "~/localApi";
 import { pullRequestEnvironment } from "~/state/pullRequests";
@@ -49,16 +47,18 @@ import {
 import { RefreshIcon } from "../ui/refresh-icon";
 import { toastManager } from "../ui/toast";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { ActOnEnvironmentPicker, type PerformPullRequestAction } from "./PullRequestDetailActions";
 import {
   PULL_REQUEST_MERGE_METHOD_LABELS,
   pullRequestActionMenuHasGroup,
   readableFailure,
 } from "./pullRequestDetail.logic";
-import { ActOnEnvironmentPicker, type PerformPullRequestAction } from "./PullRequestDetailActions";
 import { PullRequestGlyph } from "./pullRequestIcons";
 import type { PickableEnvironment } from "./pullRequestProjectAssignment.logic";
 import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
+
+import { UiText, useUiLanguage } from "../../i18n";
 
 /** Everything else the reader can do with the pull request, behind the header's overflow button. */
 export function PullRequestActionsMenu({
@@ -230,8 +230,8 @@ export function PullRequestActionsMenu({
         />
         <TooltipPopup>
           {refreshing
-            ? `Refreshing ${terminology.singular}`
-            : `More ${terminology.singular} actions`}
+            ? uiT("Refreshing {0}", { "0": terminology.singular })
+            : uiT("More {0} actions", { "0": terminology.singular })}
         </TooltipPopup>
       </Tooltip>
       <MenuPopup align="end" side="bottom">
@@ -253,8 +253,10 @@ export function PullRequestActionsMenu({
             <span>{handoff === "ask" ? uiT("Opening...") : uiT("Ask a question")}</span>
             <span className="text-xs text-muted-foreground">
               {attachesToComposer
-                ? `Adds the ${terminology.singular} to this thread's composer.`
-                : `Opens a thread that knows which ${terminology.singular} you mean.`}
+                ? uiT("Adds the {0} to this thread's composer.", { "0": terminology.singular })
+                : uiT("Opens a thread that knows which {0} you mean.", {
+                    "0": terminology.singular,
+                  })}
             </span>
           </span>
         </MenuItem>
@@ -262,7 +264,9 @@ export function PullRequestActionsMenu({
           <BookOpenIcon className="mt-1 size-3.5 shrink-0 self-start" />
           <span className="flex min-w-0 flex-col">
             <span>
-              {handoff === "explain" ? uiT("Opening...") : `Explain this ${terminology.shortLabel}`}
+              {handoff === "explain"
+                ? uiT("Opening...")
+                : uiT("Explain this {0}", { "0": terminology.shortLabel })}
             </span>
             <span className="text-xs text-muted-foreground">
               {uiT("A walk through the diff and what to read closely.")}
@@ -275,7 +279,7 @@ export function PullRequestActionsMenu({
         </MenuItem>
         {canWriteGuide ? (
           <MenuItem disabled={guideRunning} onClick={writeGuide}>
-            <SparklesIcon className="size-3.5" />
+            <ScrollTextIcon className="size-3.5" />
             {guideRunning
               ? uiT("Writing guide...")
               : !guideWritten
@@ -446,7 +450,7 @@ export function PullRequestActionsMenu({
               <PullRequestGlyph.closed className="size-3.5" />
               {inlineConfirm.isArmed("close")
                 ? uiT("Confirm close?")
-                : `Close ${terminology.singular}`}
+                : uiT("Close {0}", { "0": terminology.singular })}
             </MenuItem>
           </>
         ) : detail.state === "closed" && can("reopen") ? (

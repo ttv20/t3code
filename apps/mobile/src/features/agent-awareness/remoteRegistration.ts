@@ -24,7 +24,6 @@ import {
   clearAndroidAgentNotifications,
   configureAndroidAgentNotifications,
 } from "./androidNotifications";
-
 import { runtime } from "../../lib/runtime";
 import {
   clearAgentAwarenessRegistrationRecord,
@@ -96,6 +95,9 @@ const registeredActivityPushTokens = new Map<string, number>();
 // repaint, so a slow older response never overwrites newer rows.
 let widgetSnapshotReads = 0;
 let androidDeviceReplayedAt: number | null = null;
+let lastNativePushToken: string | null = null;
+let registeredWithPushToken = false;
+let nativePushTokenRotations = 0;
 let pushTokenSubscription: { remove: () => void } | null = null;
 let appStateSubscription: { remove: () => void } | null = null;
 
@@ -104,12 +106,22 @@ let registrationStatus: AgentAwarenessRegistrationStatus = "unknown";
 let registeredForPush = false;
 const registrationStatusListeners = new Set<() => void>();
 
-function setRegistrationStatus(next: AgentAwarenessRegistrationStatus): void {
-  if (registrationStatus === next) {
+function setRegistrationStatus(
+  next: AgentAwarenessRegistrationStatus,
+  withPushToken = registeredWithPushToken,
+  notificationsEnabled = registeredForPush,
+): void {
+  const nextRegisteredForPush = next === "registered" && withPushToken && notificationsEnabled;
+  if (
+    registrationStatus === next &&
+    registeredWithPushToken === withPushToken &&
+    registeredForPush === nextRegisteredForPush
+  ) {
     return;
   }
   registrationStatus = next;
-  if (next === "unknown") registeredForPush = false;
+  registeredForPush = nextRegisteredForPush;
+  registeredWithPushToken = withPushToken;
   for (const listener of registrationStatusListeners) {
     listener();
   }
@@ -121,6 +133,12 @@ export function hasAgentAwarenessPushRegistration(): boolean {
 
 export function getAgentAwarenessRegistrationStatus(): AgentAwarenessRegistrationStatus {
   return registrationStatus;
+}
+
+// Live Activities use their own push tokens, so device registration alone does not mean
+// the relay can deliver notifications.
+export function agentAwarenessNotificationsReady(): boolean {
+  return registrationStatus === "registered" && registeredWithPushToken;
 }
 
 export function subscribeAgentAwarenessRegistrationStatus(listener: () => void): () => void {
@@ -189,6 +207,7 @@ export function setAgentAwarenessRelayTokenProvider(
     provider !== null &&
     !shouldRegisterAgentAwarenessDeviceForProvider(relayTokenProviderIdentity, identity);
   if (!isExistingIdentity) {
+    registeredWithPushToken = false;
     registeredForPush = false;
     // An unset JS identity may mean remount; native configure checks the persisted account on cold start.
     if (relayTokenProviderIdentity && identity !== relayTokenProviderIdentity) {
@@ -299,12 +318,15 @@ const nativePushTokenRegistration = Effect.fn("remoteRegistration.nativePushToke
           )
         : true);
     if (observedPushToken) {
+      lastNativePushToken = observedPushToken;
+      nativePushTokenRotations++;
       return {
         notificationsEnabled: alertsEnabled,
         pushToken: observedPushToken,
         notificationPermissionGranted: permissions.granted,
       };
     }
+    const rotationsBeforeLookup = nativePushTokenRotations;
     const token = yield* Effect.tryPromise({
       try: () => Notifications.getDevicePushTokenAsync(),
       catch: (cause) =>
@@ -320,12 +342,18 @@ const nativePushTokenRegistration = Effect.fn("remoteRegistration.nativePushToke
       ),
       Effect.orElseSucceed(() => null),
     );
-    const pushToken =
+    const lookedUpPushToken =
       token?.type === Platform.OS && typeof token.data === "string" && token.data.trim().length > 0
         ? token.data.trim()
         : null;
+    // A rotation observed while this lookup ran is newer than what the lookup returned.
+    if (lookedUpPushToken && rotationsBeforeLookup === nativePushTokenRotations) {
+      lastNativePushToken = lookedUpPushToken;
+    }
+    const pushToken = lastNativePushToken;
+    // A missing token must not disable notifications the relay accepted.
     return {
-      notificationsEnabled: alertsEnabled && pushToken !== null,
+      notificationsEnabled: alertsEnabled,
       pushToken,
       notificationPermissionGranted: permissions.granted,
     };
@@ -413,8 +441,11 @@ const registerDeviceWithRelay = Effect.fn("remoteRegistration.registerDeviceWith
     persisted.signature === signature &&
     !needsAndroidReplay
   ) {
-    registeredForPush = body.preferences.notificationsEnabled && Boolean(body.pushToken);
-    setRegistrationStatus("registered");
+    setRegistrationStatus(
+      "registered",
+      Boolean(payload.pushToken),
+      body.preferences.notificationsEnabled,
+    );
     return;
   }
 
@@ -430,8 +461,11 @@ const registerDeviceWithRelay = Effect.fn("remoteRegistration.registerDeviceWith
     return;
   }
   if (body.platform === "android") androidDeviceReplayedAt = yield* Clock.currentTimeMillis;
-  registeredForPush = body.preferences.notificationsEnabled && Boolean(body.pushToken);
-  setRegistrationStatus("registered");
+  setRegistrationStatus(
+    "registered",
+    Boolean(payload.pushToken),
+    body.preferences.notificationsEnabled,
+  );
   yield* Effect.promise(() =>
     saveAgentAwarenessRegistrationRecord({
       identity,
@@ -869,8 +903,11 @@ export function __resetAgentAwarenessRemoteRegistrationForTest(): void {
   activeDeviceRegistration = null;
   pendingDeviceRegistration = null;
   registrationStatus = "unknown";
+  registeredWithPushToken = false;
   registeredForPush = false;
   androidDeviceReplayedAt = null;
+  lastNativePushToken = null;
+  nativePushTokenRotations = 0;
   registrationStatusListeners.clear();
   registeredActivityPushTokens.clear();
   activityPushTokenLocks.clear();

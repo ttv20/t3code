@@ -1,8 +1,5 @@
-import {
-  ClientCapabilities,
-  PlatformConnectionSource,
-  Persistence,
-} from "@t3tools/client-runtime/platform";
+import { readUiTranslator } from "../state/ui-language";
+import { ClientCapabilities, PlatformConnectionSource } from "@t3tools/client-runtime/platform";
 import {
   ConnectionBlockedError,
   ConnectionTransientError,
@@ -25,10 +22,8 @@ import { authClientMetadata } from "../lib/authClientMetadata";
 import * as Runtime from "../lib/runtime";
 import * as MobileStorage from "../persistence/mobile-storage";
 import { appAtomRegistry } from "../state/atom-registry";
-import { clearThreadOutboxEnvironment } from "../state/thread-outbox-removal";
-import { clearComposerDraftsEnvironment } from "../state/use-composer-drafts";
-import { clearThreadComposerErrorsForEnvironment } from "../state/thread-composer-error";
 import { mobileApplicationActiveWakeup } from "./app-state-wakeups";
+import * as EnvironmentOwnedDataCleanup from "./environment-owned-data-cleanup";
 import * as ConnectionStorage from "./storage";
 
 function networkStatus(state: Network.NetworkState): "unknown" | "offline" | "online" {
@@ -152,6 +147,7 @@ const layerWakeups = Wakeups.layer({
 
 const layerCapabilities = Layer.effectContext(
   Effect.gen(function* () {
+    const uiT = readUiTranslator();
     const storage = yield* MobileStorage.MobileStorage;
     return Context.make(
       ClientCapabilities.CloudSession,
@@ -164,7 +160,7 @@ const layerCapabilities = Layer.effectContext(
           if (session === null) {
             return yield* new ConnectionBlockedError({
               reason: "authentication",
-              detail: "Sign in to T3 Connect to connect this environment.",
+              detail: uiT("Sign in to T3 Connect to connect this environment."),
             });
           }
           const token = yield* session.readClerkToken().pipe(
@@ -179,7 +175,7 @@ const layerCapabilities = Layer.effectContext(
           if (token === null) {
             return yield* new ConnectionBlockedError({
               reason: "authentication",
-              detail: "The T3 Connect session is unavailable.",
+              detail: uiT("The T3 Connect session is unavailable."),
             });
           }
           return token;
@@ -204,7 +200,9 @@ const layerCapabilities = Layer.effectContext(
               (cause) =>
                 new ConnectionTransientError({
                   reason: "remote-unavailable",
-                  detail: `Could not load the mobile device identity: ${String(cause)}`,
+                  detail: uiT("Could not load the mobile device identity: {0}", {
+                    "0": String(cause),
+                  }),
                 }),
             ),
             Effect.asSome,
@@ -224,7 +222,7 @@ const layerCapabilities = Layer.effectContext(
             Effect.fail(
               new ConnectionBlockedError({
                 reason: "unsupported",
-                detail: "SSH environments are only available in the desktop app.",
+                detail: uiT("SSH environments are only available in the desktop app."),
               }),
             ),
           ),
@@ -232,7 +230,7 @@ const layerCapabilities = Layer.effectContext(
             Effect.fail(
               new ConnectionBlockedError({
                 reason: "unsupported",
-                detail: "SSH environments are only available in the desktop app.",
+                detail: uiT("SSH environments are only available in the desktop app."),
               }),
             ),
           ),
@@ -255,22 +253,6 @@ const layerPlatformConnectionSource = Layer.succeed(
 const layerProvidedConnectionStorage = ConnectionStorage.layer.pipe(Layer.provide(Runtime.layer));
 const layerProvidedCapabilities = layerCapabilities.pipe(Layer.provide(Runtime.layer));
 
-const layerEnvironmentOwnedDataCleanup = Layer.succeed(
-  Persistence.EnvironmentOwnedDataCleanup,
-  Persistence.EnvironmentOwnedDataCleanup.of({
-    clear: Effect.fn("Persistence.EnvironmentOwnedDataCleanup.clear")((environmentId) =>
-      Effect.all(
-        [
-          Effect.promise(() => clearThreadOutboxEnvironment(environmentId)),
-          Effect.promise(() => clearComposerDraftsEnvironment(environmentId)),
-          Effect.sync(() => clearThreadComposerErrorsForEnvironment(environmentId)),
-        ],
-        { concurrency: "unbounded", discard: true },
-      ),
-    ),
-  }),
-);
-
 type ConnectionPlatformLayerSource =
   | typeof layerProvidedConnectionStorage
   | typeof Runtime.layer
@@ -278,7 +260,7 @@ type ConnectionPlatformLayerSource =
   | typeof layerWakeups
   | typeof layerProvidedCapabilities
   | typeof layerPlatformConnectionSource
-  | typeof layerEnvironmentOwnedDataCleanup;
+  | typeof EnvironmentOwnedDataCleanup.layer;
 
 export const layer: Layer.Layer<
   Layer.Success<ConnectionPlatformLayerSource>,
@@ -291,5 +273,5 @@ export const layer: Layer.Layer<
   layerWakeups,
   layerProvidedCapabilities,
   layerPlatformConnectionSource,
-  layerEnvironmentOwnedDataCleanup,
+  EnvironmentOwnedDataCleanup.layer,
 );

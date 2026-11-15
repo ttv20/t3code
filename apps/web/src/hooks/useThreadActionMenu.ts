@@ -1,9 +1,11 @@
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
+import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
+import { openGuestShareDialog } from "../components/chat/guestShareDialogState";
 import {
+  type AtomCommandResult,
   isAtomCommandInterrupted,
   settlePromise,
   squashAtomCommandFailure,
-  type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
 import { canSnooze, effectiveSnoozed } from "@t3tools/client-runtime/state/thread-settled";
 import {
@@ -12,28 +14,19 @@ import {
   type ThreadId,
 } from "@t3tools/contracts";
 import { useRouter } from "@tanstack/react-router";
-import { requestCustomSnooze } from "../components/CustomSnoozeDialog";
-import { openGuestShareDialog } from "../components/chat/guestShareDialogState";
-import { useUiLanguage } from "../i18n";
-
-import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
-import {
-  deriveLogicalProjectKeyFromSettings,
-  derivePhysicalProjectKey,
-  selectProjectGroupingSettings,
-} from "@t3tools/client-runtime/state/project-grouping";
-import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import { pickSnoozePreset, resolveSnoozePresets } from "../components/Sidebar.snooze";
 import {
   buildThreadActionMenuItems,
   threadActionRequiresOperate,
   type ThreadActionMenuId,
 } from "../components/threadActionMenu.logic";
+import { titleRegenerationToast } from "../components/threadTitleRegenerationToast";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
-import { configuredHostedAppUrl } from "../hostedPairing";
 import { copyThreadReference } from "../lib/copyThreadReference";
-import { readLocalApi } from "../localApi";
-import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
+import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
+import { threadEnvironment } from "../state/threads";
+import { useOrchestrationCommand } from "../state/use-orchestration-command";
+import { readEnvironmentScope } from "../state/session";
 import {
   readEnvironmentServerConfigLoaded,
   readEnvironmentSupportsAutoSettleOptOut,
@@ -41,13 +34,21 @@ import {
   useProjects,
 } from "../state/entities";
 import { usePrimaryEnvironmentId } from "../state/environments";
-import { readEnvironmentScope } from "../state/session";
-import { threadEnvironment } from "../state/threads";
-import { useOrchestrationCommand } from "../state/use-orchestration-command";
+import { readLocalApi } from "../localApi";
+import { configuredHostedAppUrl } from "../hostedPairing";
+import {
+  deriveLogicalProjectKeyFromSettings,
+  derivePhysicalProjectKey,
+  selectProjectGroupingSettings,
+} from "@t3tools/client-runtime/state/project-grouping";
+import { buildPhysicalToLogicalProjectKeyMap } from "../sidebarProjectGrouping";
+import { threadRuntimeCanArchive } from "@t3tools/client-runtime/state/models";
 import { useCopyToClipboard } from "./useCopyToClipboard";
 import { useNewThreadHandler } from "./useHandleNewThread";
 import { useClientSettings } from "./useSettings";
 import { canTurnThreadIntoProject, useThreadActions } from "./useThreadActions";
+
+import { useUiLanguage } from "../i18n";
 
 function failureToast(title: string, error: unknown) {
   toastManager.add(
@@ -90,7 +91,7 @@ export function useThreadActionMenu(input: {
     markThreadUnread,
     turnThreadIntoProject,
   } = useThreadActions();
-  const updateThreadMetadata = useOrchestrationCommand(threadEnvironment.updateMetadata, {
+  const regenerateThreadTitle = useOrchestrationCommand(threadEnvironment.regenerateTitle, {
     reportFailure: false,
   });
   const handleNewThread = useNewThreadHandler();
@@ -98,22 +99,13 @@ export function useThreadActionMenu(input: {
   const confirmThreadArchive = useClientSettings((s) => s.confirmThreadArchive);
   const timestampFormat = useClientSettings((s) => s.timestampFormat);
   const { copyToClipboard: copyPathToClipboard } = useCopyToClipboard<{ path: string }>({
-    onCopy: ({ path }) => {
-      toastManager.add({ type: "success", title: uiT("Path copied"), description: path });
-    },
     onError: (error) => failureToast("Failed to copy path", error),
   });
   const { copyToClipboard: copyBranchToClipboard } = useCopyToClipboard<{ branch: string }>({
     target: "branch name",
-    onCopy: ({ branch }) => {
-      toastManager.add({ type: "success", title: uiT("Branch copied"), description: branch });
-    },
     onError: (error) => failureToast("Failed to copy branch", error),
   });
   const { copyToClipboard: copyThreadIdToClipboard } = useCopyToClipboard<{ threadId: ThreadId }>({
-    onCopy: ({ threadId }) => {
-      toastManager.add({ type: "success", title: uiT("Thread ID copied"), description: threadId });
-    },
     onError: (error) => failureToast("Failed to copy thread ID", error),
   });
 
@@ -123,7 +115,13 @@ export function useThreadActionMenu(input: {
       const api = readLocalApi();
       if (!api) return;
       const thread = readThreadShell(threadRef);
-      if (!thread) return;
+      if (!thread) {
+        failureToast(
+          uiT("Thread actions unavailable"),
+          new Error(uiT("This thread has not loaded yet.")),
+        );
+        return;
+      }
       const now = new Date();
       const configLoaded = readEnvironmentServerConfigLoaded(threadRef.environmentId);
       const supports = {
@@ -249,15 +247,17 @@ export function useThreadActionMenu(input: {
         case "rename":
           onStartRename();
           return;
-        case "regenerate-title":
+        case "regenerate-title": {
           if (isRegeneratingTitle) return;
-          await reportFailure("Failed to regenerate thread title", () =>
-            updateThreadMetadata({
+          const toast = titleRegenerationToast([
+            await regenerateThreadTitle({
               environmentId: threadRef.environmentId,
-              input: { threadId: threadRef.threadId, regenerateTitle: true },
+              input: { threadId: threadRef.threadId },
             }),
-          );
+          ]);
+          if (toast) toastManager.add(toast);
           return;
+        }
         case "mark-unread":
           markThreadUnread(threadRef);
           return;

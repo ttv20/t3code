@@ -9,6 +9,7 @@ import {
 } from "../../cloud/connectCliAuth";
 import { isElectron } from "../../env";
 import { resolveClerkSignInProps } from "../clerk/authRedirect";
+import { retryClerkLoad, useClerkLoadFailed } from "../clerk/clerkLoadFailure";
 import { Button } from "../ui/button";
 import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 
@@ -24,6 +25,7 @@ export function ConnectCliAuthorizeSurface() {
   const [request] = useState(() => readConnectAuthorizeRequest(new URL(window.location.href)));
   const clerk = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
+  const loadFailed = useClerkLoadFailed();
   const signInOpened = useRef(false);
   const redirecting = useRef(false);
 
@@ -79,7 +81,13 @@ export function ConnectCliAuthorizeSurface() {
             : uiT("Sign in to continue authorizing T3 Connect for your CLI.")
         }
       />
-      {isLoaded && !isSignedIn ? (
+      {loadFailed ? (
+        <div className="mt-6">
+          <Button type="button" onClick={retryClerkLoad}>
+            Retry sign-in
+          </Button>
+        </div>
+      ) : isLoaded && !isSignedIn ? (
         <div className="mt-6">
           <Button type="button" onClick={openSignIn}>
             {uiT("Sign in")}

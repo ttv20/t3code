@@ -1,3 +1,4 @@
+import { readUiTranslator } from "../state/ui-language";
 import {
   BearerConnectionCredential,
   BearerConnectionProfile,
@@ -92,11 +93,14 @@ const decodeLegacyCatalogJson = Schema.decodeUnknownEffect(Schema.fromJsonString
 export const migrateLegacyConnectionCatalog = Effect.fn(
   "mobile.connectionMigration.migrateCatalog",
 )(function* (raw: string) {
+  const uiT = readUiTranslator();
   const parsed = yield* decodeLegacyCatalogJson(raw).pipe(
     Effect.mapError(
       (cause) =>
         new LegacyConnectionMigrationError({
-          message: `Could not parse the legacy mobile connection catalog: ${String(cause)}`,
+          message: uiT("Could not parse the legacy mobile connection catalog: {0}", {
+            "0": String(cause),
+          }),
         }),
     ),
   );
@@ -104,7 +108,9 @@ export const migrateLegacyConnectionCatalog = Effect.fn(
     Effect.mapError(
       (cause) =>
         new LegacyConnectionMigrationError({
-          message: `Could not decode the legacy mobile connection catalog: ${String(cause)}`,
+          message: uiT("Could not decode the legacy mobile connection catalog: {0}", {
+            "0": String(cause),
+          }),
         }),
     ),
   );
