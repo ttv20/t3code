@@ -182,7 +182,6 @@ const browserTestProject = {
   },
   test: {
     name: "browser",
-    sequence: { groupOrder: 1 },
     include: ["src/**/*.browser.test.{ts,tsx}"],
     hookTimeout: 15_000,
     testTimeout: 15_000,

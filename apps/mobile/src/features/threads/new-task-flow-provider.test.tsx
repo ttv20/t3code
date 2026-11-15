@@ -14,7 +14,7 @@ import * as Layer from "effect/Layer";
 import * as Queue from "effect/Queue";
 import * as Stream from "effect/Stream";
 import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
-import { act, useLayoutEffect } from "react";
+import { act, useEffect, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vite-plus/test";
 import type { ComposerDraft } from "../../state/use-composer-drafts";
@@ -213,8 +213,12 @@ function setup() {
   mocks.writeSettings.mockImplementation(write);
   mocks.writeText.mockImplementation((key, text) => write(key, { text }));
   let current: ReturnType<typeof useNewTaskFlow>;
-  function Probe() {
+  function Probe({ initialProject }: { readonly initialProject?: EnvironmentProject }) {
     const value = useNewTaskFlow();
+    useEffect(() => {
+      if (initialProject && value.selectedProject !== initialProject)
+        value.setProject(initialProject);
+    }, [initialProject, value]);
     useLayoutEffect(() => {
       current = value;
     });
@@ -245,12 +249,12 @@ function setup() {
     get current() {
       return current;
     },
-    async render(active: boolean) {
+    async render(active: boolean, initialProject?: EnvironmentProject) {
       await act(async () =>
         root.render(
           <RegistryContext.Provider value={registry}>
             <NewTaskFlowProvider active={active} flowKey="test-flow">
-              <Probe />
+              <Probe initialProject={initialProject} />
             </NewTaskFlowProvider>
           </RegistryContext.Provider>,
         ),
@@ -269,6 +273,23 @@ function setup() {
     },
   };
 }
+
+it("keeps the route-selected project's draft when the child selection precedes default creation", async () => {
+  using screen = setup();
+  const picked = screen.projects[1]!;
+  await screen.render(true, picked);
+  expect(screen.current.selectedProject).toEqual(picked);
+  expect(screen.snapshot(screen.current.draftKey!).project).toMatchObject({
+    environmentId: picked.environmentId,
+    projectId: picked.id,
+  });
+  expect(mocks.createDraft).toHaveBeenCalledTimes(1);
+  act(() => screen.current.setPrompt("keep the destination"));
+  await screen.render(false);
+  await screen.render(true);
+  expect(screen.current.selectedProject).toEqual(picked);
+  expect(screen.snapshot(screen.current.draftKey!).project?.projectId).toBe(picked.id);
+});
 
 it("owns a status stream only while the draft is active, retaining draft choices on reopen", async () => {
   using screen = setup();
