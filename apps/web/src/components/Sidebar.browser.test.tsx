@@ -254,7 +254,7 @@ describe("sidebar render isolation", () => {
     await expect.element(screen.getByText("Thread 4").first()).toBeInTheDocument();
     const rowRenders = () => vi.mocked(SortableThreadRow).mock.calls.length;
 
-    using _timers = fakeTimers();
+    using _timers = fakeTimers({ now: 0 });
     const modifier = isMacPlatform(navigator.platform) ? "Meta" : "Control";
     const beforeShortcut = rowRenders();
     await userEvent.keyboard(`{${modifier}>}`);
