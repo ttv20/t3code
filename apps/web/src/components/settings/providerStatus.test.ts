@@ -1,4 +1,4 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import { ProviderDriverKind, ProviderInstanceId, type ServerProvider } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -23,7 +23,7 @@ describe("getProviderSummary", () => {
     expect(
       getProviderSummary(
         { ...provider, auth: { status: "authenticated", label: "Settings" } },
-        createUiTranslator("he"),
+        createUiMessageResolver("he"),
       ),
     ).toEqual({
       headline: "מאומת · Settings",

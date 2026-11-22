@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vite-plus/test";
 vi.mock("@expo/ui/jetpack-compose", () => ({
   Button: "Button",
   Column: "Column",
-  LinearProgressIndicator: "LinearProgressIndicator",
+  Box: "Box",
+  Row: "Row",
+  Image: "Image",
+  Spacer: "Spacer",
   Text: "Text",
   getMaterialColors: ({ scheme }: { scheme: string }) => ({
     surface: `${scheme}-surface`,
@@ -16,6 +19,10 @@ vi.mock("@expo/ui/jetpack-compose", () => ({
 }));
 
 vi.mock("@expo/ui/jetpack-compose/modifiers", () => ({
+  background: (color: string) => ({ background: color }),
+  cornerRadius: (value: number) => ({ cornerRadius: value }),
+  size: (width: number, height: number) => ({ size: [width, height] }),
+  width: (value: number) => ({ width: value }),
   fillMaxSize: () => "fillMaxSize",
   fillMaxWidth: () => "fillMaxWidth",
   height: (value: number) => ({ height: value }),
@@ -35,7 +42,13 @@ const provider = {
   name: "Codex",
   detail: "Subscription remaining",
   windows: [
-    { kind: "session", label: "5 hours", remaining: 60, reset: "Next reset Sep 5, 5:00 PM" },
+    {
+      kind: "session",
+      label: "5 hours",
+      remaining: 60,
+      reset: "Next reset Sep 5, 5:00 PM",
+      accounts: [{ name: "Codex", remaining: 60, reset: "Next reset Sep 5, 5:00 PM" }],
+    },
     { kind: "weekly", label: "Weekly", remaining: 8, reset: "Next reset Sep 9, 9:00 AM" },
   ],
   expiresAt: now + 60_000,
@@ -56,22 +69,37 @@ describe("SubscriptionUsage Android layout", () => {
   it("uses snapshot translations without the app's React context", () => {
     const tree = render({
       ...snapshot,
-      messages: {
-        "{0} · {1}% left": "{0} · נותרו {1}%",
-        "As of {0}": "נכון ל־{0}",
+      text: {
+        refresh: "פתחו T3 לרענון",
+        noSessionLimit: "",
+        noWeeklyLimit: "",
+        subscriptionRemaining: "",
+        percentLeft: "נותרו {remaining}%",
+        windowPercentLeft: "{window} · נותרו {remaining}%",
+        left: "נותרו",
+        notApplicable: "",
+        openApp: "",
+        noLimits: "",
+        asOf: "נכון ל־{time}",
+        tapToConnect: "הקישו לחיבור",
+        providerAccessibility: "",
+        windowAccessibility: "",
+        moreInApp: {},
       },
     });
-    expect(tree).toContain("5 hours · נותרו 60%");
+    expect(tree).toContain("Codex 5 hours");
+    expect(tree).toContain("נותרו");
+    expect(tree).not.toContain('"left"');
     expect(tree).toContain("נכון ל־");
     expect(tree).not.toContain("{1}");
   });
 
   it("renders each window with its remaining share, bar, and reset", () => {
     const tree = render(snapshot);
-    expect(tree).toContain("5 hours · 60% left");
-    expect(tree).toContain('"progress":0.6');
+    expect(tree).toContain("Codex 5 hours");
+    expect(tree).toContain('"size":[115.2,20]');
     expect(tree).toContain("Next reset Sep 5, 5:00 PM");
-    expect(tree).toContain('"progress":0.08');
+    expect(tree).toContain('"size":[15.36,20]');
     expect(tree).toContain('"color":"dark-error"');
     expect(tree).toContain("As of ");
   });
@@ -82,7 +110,7 @@ describe("SubscriptionUsage Android layout", () => {
       providers: [{ ...provider, expiresAt: now - 1 }],
     });
     expect(tree).toContain("Open T3 to refresh");
-    expect(tree).not.toContain("LinearProgressIndicator");
+    expect(tree).not.toContain('"size":[115.2,20]');
     expect(tree).not.toContain("more in T3");
   });
 
@@ -93,7 +121,7 @@ describe("SubscriptionUsage Android layout", () => {
 
   it("keeps quotas without an expiry deadline visible", () => {
     const tree = render({ ...snapshot, providers: [{ ...provider, expiresAt: 0 }] });
-    expect(tree).toContain("5 hours · 60% left");
+    expect(tree).toContain("Codex 5 hours");
     expect(tree).not.toContain("Open T3 to refresh");
   });
 

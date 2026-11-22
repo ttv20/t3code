@@ -603,9 +603,8 @@ export function ServerReleaseCheckAction({
           description: thrownErrorMessage(error, messages),
         });
       }
-    } finally {
-      if (request.current === controller) request.current = null;
     }
+    if (request.current === controller) request.current = null;
   };
   const label =
     currentResult?.status === "checking" ? gt("Checking for updates…") : gt("Check for updates");

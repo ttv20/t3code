@@ -1,4 +1,4 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import { SourceControlProviderKind, type VcsStatusResult } from "@t3tools/contracts";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { resolveAutoFeatureBranchName } from "@t3tools/shared/git";
@@ -244,7 +244,7 @@ describe("when: the ref is on GitLab", () => {
         includesCommit: false,
         terminology: sourceControlClients.get("gitlab").changeRequest,
       },
-      createUiTranslator("he"),
+      createUiMessageResolver("he"),
     );
     assert.equal(translated.continueLabel, "דחף אל Settings");
     assert.include(translated.description, '"Settings"');
