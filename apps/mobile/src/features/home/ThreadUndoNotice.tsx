@@ -75,7 +75,7 @@ export function ThreadUndoNotice(props: { readonly visible: boolean }) {
             ) + 8
       : floatingTabsEnabled && keyboardHeight === 0
         ? Math.max(insets.bottom + 12, workspace?.bottomClearance ?? 0)
-        : insets.bottom + 12;
+        : Math.max(insets.bottom, keyboardHeight) + 12;
   return (
     <View
       key={instance.key}
