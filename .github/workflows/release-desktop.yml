@@ -177,6 +177,20 @@ jobs:
           git sparse-checkout set --no-cone '/*' '!/.repos/'
           git -c checkout.workers=0 checkout --detach FETCH_HEAD
 
+      - name: Select Xcode 26 for Apple Speech
+        if: inputs.platform == 'mac'
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          xcode_apps=(/Applications/Xcode_26*.app)
+          if [[ ${#xcode_apps[@]} -eq 0 ]]; then
+            echo "::error::The Apple Speech helper requires an installed Xcode 26."
+            exit 1
+          fi
+          sudo xcode-select --switch "${xcode_apps[0]}/Contents/Developer"
+          xcodebuild -version
+
       # pnpm checks the lockfile and policy before reusing this result. A missing
       # artifact leaves the cache empty, so installation runs the checks again.
       - name: Download dependency verification
