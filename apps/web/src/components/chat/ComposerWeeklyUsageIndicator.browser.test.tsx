@@ -7,6 +7,7 @@ import {
 import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { expect, it, vi } from "vite-plus/test";
 import { page } from "vite-plus/test/browser";
+import { GTProvider, getTranslationsSnapshot } from "gt-react";
 import { render } from "../../../test/render";
 import { UiLanguageContext } from "../../i18n";
 import "../../index.css";
@@ -32,6 +33,7 @@ import { ComposerUsageIndicator } from "./ComposerWeeklyUsageIndicator";
 it.each(["en", "he"] as const)("redeems only the confirmed footer choice in %s", async (locale) => {
   harness.calls = [];
   const t = createUiTranslator(locale);
+  const translations = await getTranslationsSnapshot(locale);
   const environmentId = EnvironmentId.make("desk");
   const instanceId = ProviderInstanceId.make("claude-work");
   const provider: ServerProvider = {
@@ -80,9 +82,11 @@ it.each(["en", "he"] as const)("redeems only the confirmed footer choice in %s",
     },
   };
   await using screen = await render(
-    <UiLanguageContext value={{ locale, direction: locale === "he" ? "rtl" : "ltr", t }}>
-      <ComposerUsageIndicator environmentId={environmentId} provider={provider} />
-    </UiLanguageContext>,
+    <GTProvider locale={locale} translations={translations}>
+      <UiLanguageContext value={{ locale, direction: locale === "he" ? "rtl" : "ltr", t }}>
+        <ComposerUsageIndicator environmentId={environmentId} provider={provider} />
+      </UiLanguageContext>
+    </GTProvider>,
   );
   await screen.getByRole("button").first().click();
   await page

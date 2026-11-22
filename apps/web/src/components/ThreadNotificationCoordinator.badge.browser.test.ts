@@ -3,6 +3,8 @@ import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
 import type { AnyRouter } from "@tanstack/react-router";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
+import { getTranslationsSnapshot } from "gt-react";
+import { getActiveLocale, setActiveLocale } from "../i18n/messages";
 import { Atom, AtomRegistry } from "effect/reactivity";
 import { expect, it, vi } from "vite-plus/test";
 
@@ -197,6 +199,9 @@ function shell(overrides: Partial<typeof thread> = {}, ...others: Partial<typeof
 function setup() {
   vi.clearAllMocks();
   const stack = new AsyncDisposableStack();
+  const previousLocale = getActiveLocale();
+  stack.defer(() => setActiveLocale(previousLocale));
+  setActiveLocale("en");
   registry = AtomRegistry.make();
   const testRegistry = registry;
   stack.defer(() => testRegistry.dispose());
@@ -288,9 +293,11 @@ it.each([
   ["en", "Thread completed"],
   ["he", "השיחה הושלמה"],
 ] as const)("presents completion immediately in %s", async (language, title) => {
+  await getTranslationsSnapshot(language);
   await using app = setup();
   state.mode = "notifications-and-sound";
   state.language = language;
+  setActiveLocale(language);
   app.start();
   state.shells.set(
     "one",
