@@ -1,7 +1,8 @@
 import type { PullRequestListEntry, PullRequestSummary } from "@t3tools/contracts";
+import { T, useGT, useMessages } from "gt-react-native";
 import { View } from "react-native";
 import { Chip } from "../../components/ui/Chip";
-import { useUiLanguage } from "../../i18n";
+
 import { PullRequestCardGroup, PullRequestCardRow } from "./PullRequestControls";
 import { PullRequestGlyph } from "./pullRequestGlyphs";
 import { pullRequestListReviewStatus } from "./pullRequestList";
@@ -19,18 +20,21 @@ export function PullRequestOverviewLoading({
   readonly params: PullRequestParams;
   readonly stack: PullRequestStackState;
 }) {
-  const { t: uiT } = useUiLanguage();
-
-  const review = pullRequestListReviewStatus({
-    reviewDecision: summary.reviewDecision ?? undefined,
-    viewerReviewRequested: "viewerReviewRequested" in summary && summary.viewerReviewRequested,
-  });
+  const gt = useGT();
+  const m = useMessages();
+  const review = pullRequestListReviewStatus(
+    {
+      reviewDecision: summary.reviewDecision ?? undefined,
+      viewerReviewRequested: "viewerReviewRequested" in summary && summary.viewerReviewRequested,
+    },
+    m,
+  );
   const conflicting = summary.mergeability === "conflicting";
   const clean = summary.mergeability === "mergeable";
   return (
     <View
       className="gap-5"
-      accessibilityLabel={uiT("Loading pull request details")}
+      accessibilityLabel={gt("Loading pull request details")}
       accessibilityState={{ busy: true }}
     >
       <PullRequestStackCard params={params} state={stack} />
@@ -39,12 +43,12 @@ export function PullRequestOverviewLoading({
           compact
           title={
             summary.checksState === "passing"
-              ? uiT("Checks completed")
+              ? gt("Checks completed")
               : summary.checksState === "failing"
-                ? uiT("Checks failing")
+                ? gt("Checks failing")
                 : summary.checksState === "pending"
-                  ? uiT("Checks running")
-                  : uiT("Checks")
+                  ? gt("Checks running")
+                  : gt("Checks", { $context: "CI checks row" })
           }
           icon={
             summary.checksState === "passing"
@@ -65,7 +69,7 @@ export function PullRequestOverviewLoading({
         </PullRequestCardRow>
         <PullRequestCardRow
           compact
-          title={review?.accessibleLabel ?? uiT("Reviews")}
+          title={review?.accessibleLabel ?? gt("Reviews")}
           icon={review?.icon ?? "bubble.left"}
           tint={review?.tint}
         >
@@ -75,10 +79,10 @@ export function PullRequestOverviewLoading({
           compact
           title={
             conflicting
-              ? uiT("Conflicts with {0}", { "0": summary.baseBranch })
+              ? gt("Conflicts with {branch}", { branch: summary.baseBranch })
               : clean
-                ? uiT("No conflicts with {0}", { "0": summary.baseBranch })
-                : uiT("Branch")
+                ? gt("No conflicts with {branch}", { branch: summary.baseBranch })
+                : gt("Branch", { $context: "git branch" })
           }
           icon={
             conflicting ? PullRequestGlyph.conflicting : clean ? "checkmark.circle" : "arrow.branch"
@@ -103,7 +107,9 @@ export function PullRequestOverviewLoading({
         </View>
       ) : null}
       <View className="gap-3">
-        <PullRequestSectionHeading>{uiT("Description")}</PullRequestSectionHeading>
+        <PullRequestSectionHeading>
+          <T>Description</T>
+        </PullRequestSectionHeading>
         <View className="gap-3 py-1">
           <View className="h-4 w-full rounded bg-subtle-strong" />
           <View className="h-4 w-full rounded bg-subtle-strong" />

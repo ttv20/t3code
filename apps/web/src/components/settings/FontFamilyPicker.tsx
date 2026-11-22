@@ -1,9 +1,13 @@
-import { UiText } from "../../i18n";
 import { useLegendListRef } from "~/hooks/useLegendListRef";
 import { LegendList, type LegendListRef } from "@legendapp/list/react";
+import { T, useGT } from "gt-react";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { isMonospaceFamily, queryInstalledFontFamilies } from "../../appearanceFonts";
+import {
+  displayFontFamily,
+  isMonospaceFamily,
+  queryInstalledFontFamilies,
+} from "../../appearanceFonts";
 import {
   Combobox,
   ComboboxEmpty,
@@ -15,8 +19,6 @@ import {
 } from "../ui/combobox";
 import { SelectButton } from "../ui/select";
 import { stackedThreadToast, toastManager } from "../ui/toast";
-
-import { useUiLanguage } from "../../i18n";
 
 const DEFAULT_FONT_VALUE = "__default__";
 
@@ -97,7 +99,7 @@ export function FontFamilyPicker({
   initialOpen?: boolean;
   onSelect: (family: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   // Base UI needs an initial closed commit; mounting open loses exit transitionend and leaves the popup
@@ -144,8 +146,8 @@ export function FontFamilyPicker({
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT('"{0}" isn\'t monospace', { "0": value }),
-          description: uiT(
+          title: gt('"{font}" isn\'t monospace', { font: value }),
+          description: gt(
             "Code and terminal need a fixed-width font, so the current font was kept.",
           ),
         }),
@@ -161,12 +163,14 @@ export function FontFamilyPicker({
     return (
       <ComboboxItem hideIndicator index={index} key={item} value={item}>
         <div className="flex w-full min-w-0 items-center justify-between gap-2">
-          <span className="min-w-0 truncate" style={{ fontFamily: family }}>
+          <span className="min-w-0 truncate" style={{ fontFamily: displayFontFamily(family) }}>
             {family}
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
             {isDefault ? (
-              <span className="text-3xs text-muted-foreground/60">{uiT("default")}</span>
+              <span className="text-3xs text-muted-foreground/60">
+                {gt("default", { $context: "marks the default font" })}
+              </span>
             ) : null}
             {item === selectedValue ? (
               <CheckIcon className="size-3.5 text-muted-foreground" />
@@ -201,13 +205,13 @@ export function FontFamilyPicker({
       </ComboboxTrigger>
       <ComboboxPopup align="end" className="flex w-72 flex-col">
         <ComboboxSearchInput
-          placeholder={uiT("Search fonts…")}
+          placeholder={gt("Search fonts…")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <ComboboxEmpty>
-            <UiText message={"No fonts found."} />
+            <T>No fonts found.</T>
           </ComboboxEmpty>
           {/* Short windows cap the popup; every level down to the list must shrink or rows are clipped unreachably. */}
           <div className="relative flex min-h-0 max-h-72 w-full flex-1 flex-col overflow-hidden">

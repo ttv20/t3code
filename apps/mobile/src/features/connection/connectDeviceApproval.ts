@@ -1,5 +1,7 @@
-import { readUiTranslator } from "../../state/ui-language";
 import type { AuthClientMetadata, AuthPairingLink } from "@t3tools/contracts";
+import { msg } from "gt-react-native";
+
+import { m } from "../../i18n/messages";
 
 export interface ConnectDeviceApprovalPrompt {
   readonly pairingLinkId: string;
@@ -10,8 +12,8 @@ export interface ConnectDeviceApprovalPrompt {
 export function describeConnectDevice(device: AuthClientMetadata | undefined): string {
   const { label, browser, os } = device ?? {};
   if (label) return label;
-  if (browser && os) return `${browser} on ${os}`;
-  return browser ?? os ?? "A new device";
+  if (browser && os) return m(msg("{browser} on {os}", { browser, os }));
+  return browser ?? os ?? m(msg("A new device"));
 }
 
 /** Requests waiting on approval that have not been shown yet, oldest first. */
@@ -20,7 +22,6 @@ export function connectDeviceApprovalPrompts(input: {
   readonly pairingLinks: ReadonlyArray<AuthPairingLink>;
   readonly shownIds: ReadonlySet<string>;
 }): ReadonlyArray<ConnectDeviceApprovalPrompt> {
-  const uiT = readUiTranslator();
   const waiting = input.pairingLinks.flatMap((link) =>
     link.connectDeviceRequest !== undefined && !input.shownIds.has(link.id)
       ? [{ link, ...link.connectDeviceRequest }]
@@ -33,10 +34,17 @@ export function connectDeviceApprovalPrompts(input: {
     )
     .map(({ link, verificationCode, client: device }) => ({
       pairingLinkId: link.id,
-      title: uiT("Approve this device?"),
-      message: uiT(
-        "{0} wants to connect to {1} through T3 Connect. It shows code {2}. Approve it only if that code matches.",
-        { "0": describeConnectDevice(device), "1": input.environmentLabel, "2": verificationCode },
+      title: m(msg("Approve this device?")),
+      message: m(
+        msg(
+          "{device} wants to connect to {environment} through {product}. It shows code {code}. Approve it only if that code matches.",
+          {
+            device: describeConnectDevice(device),
+            environment: input.environmentLabel,
+            product: "T3 Connect",
+            code: verificationCode,
+          },
+        ),
       ),
     }));
 }

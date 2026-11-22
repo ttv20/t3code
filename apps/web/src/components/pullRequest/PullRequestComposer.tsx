@@ -1,23 +1,22 @@
-import {
-  capitalizeTerm,
-  sourceControlClients,
-} from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import type { EnvironmentId, PullRequestDetailView, PullRequestRef } from "@t3tools/contracts";
 import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
+import { T, useGT } from "gt-react";
 import { useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { Button } from "../ui/button";
 import { Popover, PopoverClose, PopoverPopup, PopoverTitle, PopoverTrigger } from "../ui/popover";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { PullRequestCommentForm } from "./PullRequestCommentForm";
-import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
 import { PullRequestReviewForm } from "./PullRequestReviewForm";
 import {
   pullRequestReviewKey,
   usePendingReviewComments,
   usePullRequestReviewStore,
 } from "./pullRequestReviewStore";
+import { pullRequestCompletionScope } from "./PullRequestMarkdownTextarea";
+
+import { changeRequestTermKind } from "./changeRequestTerm";
 
 export function PullRequestComposer({
   environmentId,
@@ -41,8 +40,8 @@ export function PullRequestComposer({
   onReviewSubmitted: () => void;
   openReviewRequest?: number | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-  const term = sourceControlClients.get(detail.provider).changeRequest.singular;
+  const gt = useGT();
+  const term = changeRequestTermKind(sourceControlClients.get(detail.provider).changeRequest);
   const [open, setOpen] = useState(false);
   const [reviewPending, setReviewPending] = useState(false);
   const [requestedMode, setRequestedMode] = useState<"comment" | "review">("comment");
@@ -83,14 +82,19 @@ export function PullRequestComposer({
         render={<Button size="icon" variant="glass" />}
         aria-label={
           pendingComments.length > 0
-            ? uiT("Review {0}, {1} {2} pending", {
-                "0": uiT(term),
-                "1": pendingComments.length,
-                "2": pendingComments.length === 1 ? "comment" : "comments",
-              })
+            ? gt(
+                "{count, plural, one {Review {term, select, mr {merge request} cr {change request} other {pull request}}, {count} comment pending} other {Review {term, select, mr {merge request} cr {change request} other {pull request}}, {count} comments pending}}",
+                { count: pendingComments.length, term },
+              )
             : reviewStarted || !canComment
-              ? uiT("Review {0}", { "0": uiT(term) })
-              : uiT("Comment on {0}", { "0": uiT(term) })
+              ? gt(
+                  "Review {term, select, mr {merge request} cr {change request} other {pull request}}",
+                  { term },
+                )
+              : gt(
+                  "Comment on {term, select, mr {merge request} cr {change request} other {pull request}}",
+                  { term },
+                )
         }
       >
         <MessageSquareIcon className="size-4" />
@@ -110,12 +114,15 @@ export function PullRequestComposer({
         sideOffset={8}
         width="lg"
         initialFocus={mode === "review" ? reviewRef : commentRef}
-        aria-label={uiT("{0} composer", { "0": uiT(capitalizeTerm(term)) })}
+        aria-label={gt(
+          "{term, select, mr {Merge request} cr {Change request} other {Pull request}} composer",
+          { term },
+        )}
       >
         <div className="mb-3 flex items-center justify-between gap-2">
           {canComment && verdicts.length > 0 ? (
             <ToggleGroup
-              aria-label={uiT("Composer mode")}
+              aria-label={gt("Composer mode")}
               variant="segmented"
               value={[mode]}
               onValueChange={(next) => {
@@ -123,16 +130,26 @@ export function PullRequestComposer({
                 if (value === "comment" || value === "review") setRequestedMode(value);
               }}
             >
-              <Toggle value="comment">{uiT("Comment")}</Toggle>
+              <Toggle value="comment">
+                <T context="noun, composer mode">Comment</T>
+              </Toggle>
               <Toggle value="review">
                 {pendingComments.length > 0
-                  ? uiT("Review ({0})", { "0": pendingComments.length })
-                  : uiT("Review")}
+                  ? gt("Review ({count})", { count: pendingComments.length })
+                  : gt("Review", { $context: "noun, composer mode" })}
               </Toggle>
             </ToggleGroup>
           ) : (
             <PopoverTitle>
-              {mode === "review" ? `Review ${term}` : `Comment on ${term}`}
+              {mode === "review"
+                ? gt(
+                    "Review {term, select, mr {merge request} cr {change request} other {pull request}}",
+                    { term },
+                  )
+                : gt(
+                    "Comment on {term, select, mr {merge request} cr {change request} other {pull request}}",
+                    { term },
+                  )}
             </PopoverTitle>
           )}
           <div className="flex items-center gap-1">
@@ -140,8 +157,8 @@ export function PullRequestComposer({
               <Button
                 size="icon-xs"
                 variant="ghost"
-                aria-label={uiT("Discard pending line comments")}
-                title={uiT("Discard pending line comments")}
+                aria-label={gt("Discard pending line comments")}
+                title={gt("Discard pending line comments")}
                 disabled={reviewPending}
                 onClick={() => clearComments(reviewKey)}
               >
@@ -150,7 +167,7 @@ export function PullRequestComposer({
             ) : null}
             <PopoverClose
               render={<Button size="icon-xs" variant="ghost" />}
-              aria-label={uiT("Close composer")}
+              aria-label={gt("Close composer")}
             >
               <XIcon className="size-3.5" />
             </PopoverClose>

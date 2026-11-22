@@ -1,4 +1,3 @@
-import { UiText } from "../../i18n";
 import { useState, type ReactNode } from "react";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -13,7 +12,10 @@ import {
   type ProviderSettingsFormSchemaAnnotation,
   type SecretReference,
 } from "@t3tools/contracts";
+import { msg, T, useGT, useMessages } from "gt-react";
 import { PlusIcon, XIcon } from "lucide-react";
+
+import { m, type MessageResolver } from "../../i18n/messages";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { DraftInput } from "../ui/draft-input";
@@ -24,13 +26,11 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 import type { ProviderClientDefinition } from "@t3tools/provider-core/client";
-import { SettingsRow } from "./settingsLayout";
-
-import { useUiLanguage } from "../../i18n";
 
 export type SettingsFormDefinition = Pick<ProviderClientDefinition, "settingsSchema"> & {
   readonly driverKind?: ProviderClientDefinition["driverKind"];
 };
+import { SettingsRow } from "./settingsLayout";
 
 export interface ProviderSettingsFieldModel {
   readonly key: string;
@@ -100,9 +100,169 @@ function fieldAcceptsString(
   return (value) => Option.isSome(decode(value));
 }
 
+// Field text authored in contracts and the provider and source-control packages, which the server
+// also imports. Keyed by that English; text not listed here shows as authored.
+const PACKAGE_FIELD_TEXT: ReadonlyMap<string, string> = new Map([
+  ["Binary path", msg("Binary path")],
+  ["CODEX_HOME path", msg("CODEX_HOME path")],
+  ["Shadow home path", msg("Shadow home path")],
+  ["Launch arguments", msg("Launch arguments")],
+  ["CLAUDE_CONFIG_DIR path", msg("CLAUDE_CONFIG_DIR path")],
+  ["Auto-compact after", msg("Auto-compact after")],
+  ["Compact idle threads", msg("Compact idle threads")],
+  ["Sign-in method", msg("Sign-in method")],
+  ["API key", msg("API key")],
+  ["GCP project", msg("GCP project")],
+  ["GCP location", msg("GCP location")],
+  ["ACP source", msg("ACP source")],
+  ["Registry agent ID", msg("Registry agent ID")],
+  ["Executable override", msg("Executable override")],
+  ["Authentication method", msg("Authentication method")],
+  ["Server URL", msg("Server URL")],
+  ["Server password", msg("Server password")],
+  ["Access token", msg("Access token")],
+  ["Atlassian account email", msg("Atlassian account email")],
+  ["API token", msg("API token")],
+  ["Token", msg("Token", { $context: "settings field, an access token" })],
+  [
+    "Path to the Codex binary used by this instance.",
+    msg("Path to the Codex binary used by this instance."),
+  ],
+  ["Custom Codex home and config directory.", msg("Custom Codex home and config directory.")],
+  [
+    "Account-specific Codex home. Keeps auth.json separate while sharing state from CODEX_HOME.",
+    msg(
+      "Account-specific Codex home. Keeps auth.json separate while sharing state from CODEX_HOME.",
+    ),
+  ],
+  [
+    "Additional CLI arguments passed to codex app-server on session start.",
+    msg("Additional CLI arguments passed to codex app-server on session start."),
+  ],
+  [
+    "Path to the Claude binary used by this instance.",
+    msg("Path to the Claude binary used by this instance."),
+  ],
+  [
+    "Custom Claude home and config directory. Keeps .claude.json and .claude separate.",
+    msg("Custom Claude home and config directory. Keeps .claude.json and .claude separate."),
+  ],
+  [
+    "Additional CLI arguments passed on session start.",
+    msg("Additional CLI arguments passed on session start."),
+  ],
+  [
+    "Compact after 100,000 to 1,000,000 tokens. Leave empty to use Claude's default.",
+    msg("Compact after 100,000 to 1,000,000 tokens. Leave empty to use Claude's default."),
+  ],
+  [
+    "When to compact an idle thread over 200,000 tokens: after you return, just before its prompt cache expires, or never. Overrides the default in Providers > Advanced.",
+    msg(
+      "When to compact an idle thread over 200,000 tokens: after you return, just before its prompt cache expires, or never. Overrides the default in Providers > Advanced.",
+    ),
+  ],
+  [
+    "Google accounts use your subscription; API keys and Agent Platform bill usage.",
+    msg("Google accounts use your subscription; API keys and Agent Platform bill usage."),
+  ],
+  [
+    "Gemini or Vertex AI express key. Stored separately on the host.",
+    msg("Gemini or Vertex AI express key. Stored separately on the host."),
+  ],
+  [
+    "Required for Gemini Enterprise. Agent Platform uses it when no API key is set.",
+    msg("Required for Gemini Enterprise. Agent Platform uses it when no API key is set."),
+  ],
+  [
+    "Region for Gemini Enterprise or Agent Platform.",
+    msg("Region for Gemini Enterprise or Agent Platform."),
+  ],
+  [
+    "Custom ACP executable. Leave empty to select automatically.",
+    msg("Custom ACP executable. Leave empty to select automatically."),
+  ],
+  [
+    "Agent identifier from the official ACP Registry, for example 'devin'.",
+    msg("Agent identifier from the official ACP Registry, for example 'devin'."),
+  ],
+  [
+    "Executable on this environment. For registry agents, this overrides the distribution executable while keeping its arguments and environment.",
+    msg(
+      "Executable on this environment. For registry agents, this overrides the distribution executable while keeping its arguments and environment.",
+    ),
+  ],
+  [
+    "Optional ACP authentication method ID. By default, the first agent-managed method is selected.",
+    msg(
+      "Optional ACP authentication method ID. By default, the first agent-managed method is selected.",
+    ),
+  ],
+  [
+    "Path to the fx binary. All fx instances on this machine share its fx login.",
+    msg("Path to the fx binary. All fx instances on this machine share its fx login."),
+  ],
+  ["Path to the Grok CLI binary.", msg("Path to the Grok CLI binary.")],
+  ["Path to the Kiro CLI binary.", msg("Path to the Kiro CLI binary.")],
+  [
+    "Path to the Muse Code binary on this environment. Sign in with muse login on that host.",
+    msg("Path to the Muse Code binary on this environment. Sign in with muse login on that host."),
+  ],
+  ["Path to the OpenCode binary.", msg("Path to the OpenCode binary.")],
+  [
+    "Leave blank to let T3 Code spawn the server when needed.",
+    msg("Leave blank to let T3 Code spawn the server when needed."),
+  ],
+  ["Stored separately on the host.", msg("Stored separately on the host.")],
+  ["Path to the Pi coding agent binary.", msg("Path to the Pi coding agent binary.")],
+  [
+    "Additional CLI arguments passed to pi --mode rpc on session start.",
+    msg("Additional CLI arguments passed to pi --mode rpc on session start."),
+  ],
+  [
+    "Scoped to one repository, project, or workspace. Create it in that item's Bitbucket settings.",
+    msg(
+      "Scoped to one repository, project, or workspace. Create it in that item's Bitbucket settings.",
+    ),
+  ],
+  [
+    "With an API token instead of an access token.",
+    msg("With an API token instead of an access token."),
+  ],
+  [
+    "Reaches every repository your Atlassian account can. Give it read and write access to repositories and pull requests, plus read:user:bitbucket and read:workspace:bitbucket.",
+    msg(
+      "Reaches every repository your Atlassian account can. Give it read and write access to repositories and pull requests, plus read:user:bitbucket and read:workspace:bitbucket.",
+    ),
+  ],
+  [
+    "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.",
+    msg(
+      "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.",
+    ),
+  ],
+  ["e.g. --chrome", msg("e.g. --chrome")],
+  ["e.g. 300000", msg("e.g. 300000")],
+  ["Optional", msg("Optional", { $context: "placeholder of an optional settings field" })],
+  ["Automatic", msg("Automatic", { $context: "placeholder, chosen automatically when empty" })],
+  ["Registry default", msg("Registry default")],
+  ["When you return", msg("When you return")],
+  ["Before the cache expires (beta)", msg("Before the cache expires (beta)")],
+  ["Never", msg("Never", { $context: "option, never compact idle threads" })],
+  ["Use default", msg("Use default")],
+  ["Google account", msg("Google account")],
+  ["Gemini API key", msg("Gemini API key")],
+  ["Local command", msg("Local command")],
+]);
+
+function packageFieldText(text: string, resolve: MessageResolver): string {
+  const entry = PACKAGE_FIELD_TEXT.get(text);
+  return entry === undefined ? text : resolve(entry);
+}
+
 export function deriveProviderSettingsFields(
   definition: SettingsFormDefinition,
   value?: unknown,
+  resolve: MessageResolver = m,
 ): ReadonlyArray<ProviderSettingsFieldModel> {
   const isLocalAcp =
     definition.driverKind === "acpRegistry" &&
@@ -135,17 +295,19 @@ export function deriveProviderSettingsFields(
           control: formAnnotation.control ?? "text",
           label:
             isLocalAcp && key === "commandPath"
-              ? "Executable"
-              : (annotatedTitle ?? titleizeFieldKey(key)),
+              ? resolve(msg("Executable"))
+              : annotatedTitle !== undefined
+                ? packageFieldText(annotatedTitle, resolve)
+                : titleizeFieldKey(key),
           ...(isLocalAcp && key === "commandPath"
-            ? { description: "Executable name or path on this environment." }
+            ? { description: resolve(msg("Executable name or path on this environment.")) }
             : annotatedDescription !== undefined
-              ? { description: annotatedDescription }
+              ? { description: packageFieldText(annotatedDescription, resolve) }
               : {}),
           ...(isLocalAcp && key === "commandPath"
-            ? { placeholder: "e.g. dsh" }
+            ? { placeholder: resolve(msg("e.g. dsh")) }
             : formAnnotation.placeholder !== undefined
-              ? { placeholder: formAnnotation.placeholder }
+              ? { placeholder: packageFieldText(formAnnotation.placeholder, resolve) }
               : {}),
           clearWhenEmpty: formAnnotation.clearWhenEmpty ?? "omit",
           ...(isSecretSetting(fieldSchema) ? { secret: true } : {}),
@@ -155,7 +317,12 @@ export function deriveProviderSettingsFields(
             : {}),
           accepts: fieldAcceptsString(fieldSchema),
           ...(formAnnotation.control === "select" && formAnnotation.options
-            ? { options: formAnnotation.options }
+            ? {
+                options: formAnnotation.options.map((option) => ({
+                  ...option,
+                  label: packageFieldText(option.label, resolve),
+                })),
+              }
             : {}),
         } satisfies ProviderSettingsFieldModel,
       ];
@@ -222,7 +389,7 @@ function ProviderCommandArguments({
 }: Pick<ProviderSettingsFormProps, "value" | "onChange"> & {
   readonly managedReason: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const args = configuredCommandArgs(value);
   const [storedDraft, setDraft] = useState(() => seedRowsDraft(args, toCommandArgumentRows));
   const draft = reconcileRowsDraft(storedDraft, args, commandArgumentsEqual, toCommandArgumentRows);
@@ -239,8 +406,8 @@ function ProviderCommandArguments({
 
   return (
     <SettingsRow
-      title={uiT("Arguments")}
-      description={uiT("One literal argument per row, in launch order.")}
+      title={gt("Arguments")}
+      description={gt("One literal argument per row, in launch order.")}
       managed={managedReason}
       control={
         <Button
@@ -250,7 +417,7 @@ function ProviderCommandArguments({
           onClick={() => updateArguments([...rows, makeCommandArgumentDraftRow("")])}
         >
           <PlusIcon />
-          {uiT("Add argument")}
+          <T>Add argument</T>
         </Button>
       }
     >
@@ -274,7 +441,7 @@ function ProviderCommandArguments({
                       ),
                     )
                   }
-                  aria-label={uiT("Argument {0}", { "0": index + 1 })}
+                  aria-label={gt("Argument {number}", { number: index + 1 })}
                   spellCheck={false}
                 />
                 <Button
@@ -284,7 +451,7 @@ function ProviderCommandArguments({
                   onClick={() =>
                     updateArguments(rows.filter((current) => current.id !== argument.id))
                   }
-                  aria-label={uiT("Remove argument {0}", { "0": index + 1 })}
+                  aria-label={gt("Remove argument {number}", { number: index + 1 })}
                 >
                   <XIcon />
                 </Button>
@@ -368,7 +535,7 @@ function SecretSettingsControl({
   readonly environmentId: EnvironmentId;
   readonly onChange: ProviderSettingsFormProps["onChange"];
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const sources = useSecretSources(environmentId);
   const saved =
     value !== null && typeof value === "object"
@@ -381,7 +548,7 @@ function SecretSettingsControl({
       <SecretSourceInput
         id={inputId}
         aria-describedby={descriptionId}
-        aria-label={uiT(field.label)}
+        aria-label={field.label}
         size="sm"
         className="min-w-0 flex-1"
         value={reference ?? ""}
@@ -399,7 +566,7 @@ function SecretSettingsControl({
           size="icon-sm"
           variant="ghost-destructive"
           onClick={() => onChange(nextProviderConfigWithFieldValue(value, field, ""))}
-          aria-label={uiT("Clear {0}", { "0": field.label })}
+          aria-label={gt("Clear {field}", { field: field.label })}
         >
           <XIcon className="size-3.5" />
         </Button>
@@ -423,8 +590,6 @@ function ProviderSettingsSelect({
   readonly className?: string | undefined;
   readonly onChange: ProviderSettingsFormProps["onChange"];
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const options = field.options ?? [];
   const fallback = options[0]?.value ?? "";
   const current = readProviderConfigString(value, field.key) || fallback;
@@ -437,13 +602,13 @@ function ProviderSettingsSelect({
         onChange(nextProviderConfigWithFieldValue(value, field, next === fallback ? "" : next));
       }}
     >
-      <SelectTrigger id={inputId} size={size} className={className} aria-label={uiT(field.label)}>
-        <SelectValue>{uiT(label)}</SelectValue>
+      <SelectTrigger id={inputId} size={size} className={className} aria-label={field.label}>
+        <SelectValue>{label}</SelectValue>
       </SelectTrigger>
       <SelectPopup align="start" alignItemWithTrigger={false}>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
-            {uiT(option.label)}
+            {option.label}
           </SelectItem>
         ))}
       </SelectPopup>
@@ -490,7 +655,7 @@ function ProviderSettingsTextInput({
       />
       {rejected !== null ? (
         <p className="text-2xs text-destructive">
-          <UiText message={"Enter a valid value. It was not saved."} />
+          <T>Enter a valid value. It was not saved.</T>
         </p>
       ) : null}
     </div>
@@ -526,16 +691,15 @@ function ProviderSettingsFieldRow({
   managedReason,
   environmentId,
 }: ProviderSettingsFieldRowProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const inputId = `${idPrefix}-${field.key}`;
   const descriptionClassName =
     variant === "dialog"
       ? "text-2xs text-muted-foreground"
       : "mt-1 block text-xs text-muted-foreground";
-  const label = <span className="text-xs font-medium text-foreground">{uiT(field.label)}</span>;
+  const label = <span className="text-xs font-medium text-foreground">{field.label}</span>;
   const description = field.description ? (
-    <span className={descriptionClassName}>{uiT(field.description)}</span>
+    <span className={descriptionClassName}>{field.description}</span>
   ) : null;
 
   if (variant === "settings") {
@@ -549,7 +713,7 @@ function ProviderSettingsFieldRow({
           onCheckedChange={(checked) =>
             onChange(nextProviderConfigWithFieldValue(value, field, Boolean(checked)))
           }
-          aria-label={uiT(field.label)}
+          aria-label={field.label}
           aria-describedby={descriptionId}
         />
       ) : field.control === "select" ? (
@@ -570,7 +734,7 @@ function ProviderSettingsFieldRow({
           onChange={(event) =>
             onChange(nextProviderConfigWithFieldValue(value, field, event.target.value))
           }
-          placeholder={uiT(field.placeholder)}
+          placeholder={field.placeholder}
           spellCheck={false}
         />
       ) : field.acceptsSecretReference && environmentId !== undefined ? (
@@ -599,7 +763,7 @@ function ProviderSettingsFieldRow({
               size="icon-sm"
               variant="ghost-destructive"
               onClick={() => onChange(nextProviderConfigWithFieldValue(value, field, ""))}
-              aria-label={uiT("Clear {0}", { "0": field.label })}
+              aria-label={gt("Clear {field}", { field: field.label })}
             >
               <XIcon className="size-3.5" />
             </Button>
@@ -618,14 +782,10 @@ function ProviderSettingsFieldRow({
     return (
       <SettingsRow
         title={
-          field.control === "switch" ? (
-            uiT(field.label)
-          ) : (
-            <label htmlFor={inputId}>{uiT(field.label)}</label>
-          )
+          field.control === "switch" ? field.label : <label htmlFor={inputId}>{field.label}</label>
         }
         description={
-          field.description ? <span id={descriptionId}>{uiT(field.description)}</span> : undefined
+          field.description ? <span id={descriptionId}>{field.description}</span> : undefined
         }
         control={control}
         managed={managedReason}
@@ -638,7 +798,7 @@ function ProviderSettingsFieldRow({
       <FieldFrame variant={variant}>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 [unicode-bidi:plaintext]">
-            {uiT(label)}
+            {label}
             {description}
           </div>
           <Switch
@@ -646,7 +806,7 @@ function ProviderSettingsFieldRow({
             onCheckedChange={(checked) =>
               onChange(nextProviderConfigWithFieldValue(value, field, Boolean(checked)))
             }
-            aria-label={uiT(field.label)}
+            aria-label={field.label}
           />
         </div>
       </FieldFrame>
@@ -657,7 +817,7 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {uiT(label)}
+          {label}
           <ProviderSettingsSelect
             field={field}
             value={value}
@@ -676,7 +836,7 @@ function ProviderSettingsFieldRow({
     return (
       <FieldFrame variant={variant}>
         <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-          {uiT(label)}
+          {label}
           <Textarea
             id={inputId}
             className={cn(variant === "card" && "mt-1.5")}
@@ -684,7 +844,7 @@ function ProviderSettingsFieldRow({
             onChange={(event) =>
               onChange(nextProviderConfigWithFieldValue(value, field, event.target.value))
             }
-            placeholder={uiT(field.placeholder)}
+            placeholder={field.placeholder}
             spellCheck={false}
           />
           {description}
@@ -699,7 +859,7 @@ function ProviderSettingsFieldRow({
   return (
     <FieldFrame variant={variant}>
       <label htmlFor={inputId} className={cn(variant === "card" && "block")}>
-        {uiT(label)}
+        {label}
         {variant === "card" ? (
           <BufferedInput
             id={inputId}
@@ -709,7 +869,7 @@ function ProviderSettingsFieldRow({
             autoComplete={!field.secret && field.control === "password" ? "off" : undefined}
             value={readProviderConfigString(value, field.key)}
             onCommit={(next) => onChange(nextProviderConfigWithFieldValue(value, field, next))}
-            placeholder={uiT(field.placeholder)}
+            placeholder={field.placeholder}
             spellCheck={false}
           />
         ) : (
@@ -721,7 +881,7 @@ function ProviderSettingsFieldRow({
             onChange={(event) =>
               onChange(nextProviderConfigWithFieldValue(value, field, event.target.value))
             }
-            placeholder={uiT(field.placeholder)}
+            placeholder={field.placeholder}
             spellCheck={false}
           />
         )}
@@ -740,7 +900,8 @@ export function ProviderSettingsForm({
   managed,
   environmentId,
 }: ProviderSettingsFormProps) {
-  const fields = deriveProviderSettingsFields(definition, value);
+  const resolve = useMessages();
+  const fields = deriveProviderSettingsFields(definition, value, resolve);
   const isLocalAcp =
     definition.driverKind === "acpRegistry" &&
     readProviderConfigString(value, "source") === "local";

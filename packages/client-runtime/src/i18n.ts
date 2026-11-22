@@ -1,4 +1,6 @@
-import { resolveLocale } from "./locales.ts";
+import { decodeOptions, gtFallback, msg } from "gt-i18n";
+import type { MFunctionType } from "gt-i18n/types";
+import { nativeLanguageName, resolveLocale } from "./locales.ts";
 import { HEBREW_UI_MESSAGES } from "./locales/he.ts";
 import { ARABIC_UI_MESSAGES } from "./locales/ar.ts";
 import { PERSIAN_UI_MESSAGES } from "./locales/fa.ts";
@@ -8,25 +10,26 @@ export type UiLocale = Exclude<InterfaceLanguage, "system">;
 export type UiDirection = "ltr" | "rtl";
 
 export const INTERFACE_LANGUAGES = [
-  { value: "system", label: "System" },
-  { value: "en", label: "English" },
-  { value: "he", label: "עברית" },
-  { value: "ar", label: "العربية" },
-  { value: "fa", label: "فارسی" },
-  { value: "de", label: "Deutsch" },
-  { value: "es", label: "Español" },
-  { value: "fr", label: "Français" },
-  { value: "ja", label: "日本語" },
-  { value: "ko", label: "한국어" },
-  { value: "pt-BR", label: "Português (Brasil)" },
-  { value: "ru", label: "Русский" },
-  { value: "zh", label: "中文" },
+  { value: "system", label: msg("System") },
+  { value: "en", label: nativeLanguageName("en") },
+  { value: "he", label: nativeLanguageName("he") },
+  { value: "ar", label: nativeLanguageName("ar") },
+  { value: "fa", label: nativeLanguageName("fa") },
+  { value: "de", label: nativeLanguageName("de") },
+  { value: "es", label: nativeLanguageName("es") },
+  { value: "fr", label: nativeLanguageName("fr") },
+  { value: "ja", label: nativeLanguageName("ja") },
+  { value: "ko", label: nativeLanguageName("ko") },
+  { value: "pt-BR", label: nativeLanguageName("pt-BR") },
+  { value: "ru", label: nativeLanguageName("ru") },
+  { value: "sv", label: nativeLanguageName("sv") },
+  { value: "zh", label: nativeLanguageName("zh") },
 ] as const;
 
 export const INTERFACE_DIRECTIONS = [
-  { value: "auto", label: "Automatic" },
-  { value: "ltr", label: "Left to right" },
-  { value: "rtl", label: "Right to left" },
+  { value: "auto", label: msg("Automatic") },
+  { value: "ltr", label: msg("Left to right") },
+  { value: "rtl", label: msg("Right to left") },
 ] as const;
 
 /** Resolve the first supported system language, with English as the fallback. */
@@ -58,11 +61,19 @@ const UI_MESSAGES: Readonly<Record<UiLocale, Readonly<Record<string, string>>>> 
   ko: {},
   "pt-BR": {},
   ru: {},
+  sv: {},
   zh: {},
   he: HEBREW_UI_MESSAGES,
   ar: ARABIC_UI_MESSAGES,
   fa: PERSIAN_UI_MESSAGES,
 };
+
+type UiTranslationLookup = (locale: UiLocale, source: string) => string | undefined;
+let translationLookup: UiTranslationLookup | undefined;
+
+export function registerUiTranslationLookup(lookup: UiTranslationLookup): void {
+  translationLookup = lookup;
+}
 
 const searchAliasesByLocale = new Map<UiLocale, Map<string, Set<string>>>();
 
@@ -111,6 +122,7 @@ export const UI_DATE_LOCALES = {
   ko: "ko-KR",
   "pt-BR": "pt-BR",
   ru: "ru-RU",
+  sv: "sv-SE",
   zh: "zh-CN",
   he: "he-IL",
   ar: "ar-u-ca-gregory",
@@ -120,7 +132,7 @@ export const UI_DATE_LOCALES = {
 const relativeTimeFormatters = new Map<UiLocale, Intl.RelativeTimeFormat>();
 const dateTimeFormatters = new Map<UiLocale, Intl.DateTimeFormat>();
 
-export function formatUiDateTime(value: number, locale: UiLocale) {
+function formatUiDateTime(value: number, locale: UiLocale) {
   let formatter = dateTimeFormatters.get(locale);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(UI_DATE_LOCALES[locale], {
@@ -167,12 +179,29 @@ export function translateUiText(
   values?: UiMessageValues,
 ): string {
   const messages = UI_MESSAGES[locale];
-  const translated = Object.hasOwn(messages, message) ? messages[message]! : message;
+  const translated = Object.hasOwn(messages, message)
+    ? messages[message]!
+    : (translationLookup?.(locale, message) ?? message);
   return values
     ? translated.replace(/\{(\w+)\}/g, (token, key: string) =>
         Object.hasOwn(values, key) ? String(values[key]) : token,
       )
     : translated;
+}
+
+export function createUiMessageResolver(locale: UiLocale): MFunctionType {
+  return ((message, variables) => {
+    if (typeof message !== "string") return message;
+    const decoded = decodeOptions(message);
+    const source = typeof decoded?.$_source === "string" ? decoded.$_source : message;
+    const options = typeof decoded?.$_source === "string" ? decoded : variables;
+    const target = translateUiText(locale, source);
+    return gtFallback(target, {
+      ...options,
+      $locale: target === source ? "en" : locale,
+      $_fallback: source,
+    });
+  }) as MFunctionType;
 }
 
 /** Translate interface copy; retain numbers, elements and other slot values as supplied. */
@@ -195,11 +224,6 @@ export function splitUiTextSlots(message: string) {
     occurrences.set(slot, occurrence + 1);
     return { key: `slot-${slot}-${occurrence}`, text, slot };
   });
-}
-
-export function createGtSourceCatalog(source: Readonly<Record<string, string>>, locale: UiLocale) {
-  const t = createUiTranslator(locale);
-  return Object.fromEntries(Object.entries(source).map(([key, message]) => [key, t(message)]));
 }
 
 export function resolveInterfaceLanguage(value: string): InterfaceLanguage {

@@ -1,5 +1,10 @@
 import { type RuntimeRequestId, type ScopedThreadRef } from "@t3tools/contracts";
-import { markdownProseDirection, textDirection } from "~/textDirection";
+import {
+  countMarkdownDirectionCharacters,
+  resolveMarkdownDirection,
+} from "@t3tools/client-runtime/markdown-direction";
+import { useUiLanguage } from "../../i18n";
+import { useGT } from "gt-react";
 import { memo, use, useEffect, useEffectEvent, useRef, useState } from "react";
 import { BackgroundThreadContext } from "./backgroundThread";
 import { useStableCallback } from "~/hooks/useStableCallback";
@@ -14,7 +19,8 @@ import { isInSideChatPane } from "~/lib/sideChatPane";
 import { ComposerBanner } from "./ComposerBanner";
 import ChatMarkdown from "../ChatMarkdown";
 
-import { useUiLanguage } from "../../i18n";
+const pendingQuestionDirection = (text: string) =>
+  resolveMarkdownDirection(countMarkdownDirectionCharacters(text));
 
 interface PendingUserInputPanelProps {
   pendingUserInputs: PendingUserInput[];
@@ -85,8 +91,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
   onAdvance: () => void;
   onDismiss: (requestId: RuntimeRequestId) => void;
 }) {
-  const { t: uiT, direction: uiDirection } = useUiLanguage();
-
+  const gt = useGT();
+  const { direction: uiDirection } = useUiLanguage();
   // Message-mode requests remain answerable after their provider turn ends.
   const canRespond = prompt.responseCapability !== "not_resumable";
   const responseDisabled = disabled || isResponding || !canRespond;
@@ -155,7 +161,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
   useEffect(() => {
     if (!activeQuestion || responseDisabled || isCollapsed || backgroundThread) return;
     const handler = (event: globalThis.KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target;
       if (isInSideChatPane(target)) return;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -186,7 +192,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
     return null;
   }
 
-  const promptDirection = markdownProseDirection(
+  const promptDirection = pendingQuestionDirection(
     prompt.questions
       .flatMap((question) => [
         question.header,
@@ -195,7 +201,10 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
       ])
       .join(" "),
   );
-  const questionDirection = markdownProseDirection(activeQuestion.question) ?? uiDirection;
+  const questionDirection = resolveMarkdownDirection(
+    countMarkdownDirectionCharacters(activeQuestion.question),
+    uiDirection,
+  );
   const questionTextAlign = questionDirection === "rtl" ? "text-right" : "text-left";
 
   return (
@@ -210,8 +219,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
         render={<ComposerBanner.Row render={<button type="button" />} />}
         title={
           isCollapsed
-            ? uiT("Show the question and its options")
-            : uiT("Hide the question and its options")
+            ? gt("Show the question and its options")
+            : gt("Hide the question and its options")
         }
         data-pending-user-input-toggle={isCollapsed ? "collapsed" : "expanded"}
         className="px-4 py-1.5"
@@ -219,7 +228,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
         <ComposerBanner.Content>
           <span
             className={cn("min-w-0 truncate text-muted-foreground", isCollapsed && "max-w-1/2")}
-            dir={textDirection(activeQuestion.header)}
+            dir={pendingQuestionDirection(activeQuestion.header)}
           >
             {activeQuestion.header}
           </span>
@@ -228,7 +237,7 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
               <ComposerBanner.Separator />
               <span
                 className={cn("min-w-0 flex-1 truncate text-secondary-label", questionTextAlign)}
-                dir={markdownProseDirection(activeQuestion.question)}
+                dir={questionDirection}
               >
                 {activeQuestion.question}
               </span>
@@ -245,8 +254,8 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
           {prompt.dismissible ? (
             <ComposerBanner.Dismiss
               render={<span role="button" tabIndex={0} />}
-              aria-label={uiT("Dismiss question without answering")}
-              title={uiT("Dismiss question without answering")}
+              aria-label={gt("Dismiss question without answering")}
+              title={gt("Dismiss question without answering")}
               disabled={isResponding}
               data-pending-user-input-dismiss
               onClick={(event) => {
@@ -304,13 +313,16 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                       )}
                     </span>
                     <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                      <span className="text-sm font-medium" dir={textDirection(option.label)}>
+                      <span
+                        className="text-sm font-medium"
+                        dir={pendingQuestionDirection(option.label)}
+                      >
                         {option.label}
                       </span>
                       {option.description && option.description !== option.label ? (
                         <span
                           className="text-secondary-label text-2xs"
-                          dir={textDirection(option.description)}
+                          dir={pendingQuestionDirection(option.description)}
                         >
                           {option.description}
                         </span>
@@ -325,7 +337,15 @@ const ComposerPendingUserInputCard = memo(function ComposerPendingUserInputCard(
                 );
                 // The preview sits outside the button: it can hold links, and a click on a single-select option advances.
                 return (
-                  <div key={`${activeQuestion.id}:${optionValue}`}>
+                  <div
+                    key={`${activeQuestion.id}:${optionValue}`}
+                    dir={resolveMarkdownDirection(
+                      countMarkdownDirectionCharacters(
+                        `${option.label} ${option.description ?? ""}`,
+                      ),
+                      questionDirection,
+                    )}
+                  >
                     <button
                       type="button"
                       aria-pressed={isSelected}

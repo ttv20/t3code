@@ -1,21 +1,21 @@
-import { useAtomValue } from "@effect/atom-react";
-import { preloadPatchFile } from "@pierre/diffs/ssr";
 import type { ServerProviderSkill } from "@t3tools/contracts";
+import { preloadPatchFile } from "@pierre/diffs/ssr";
+import { useAtomValue } from "@effect/atom-react";
 import * as Effect from "effect/Effect";
+import { useGT } from "gt-react";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { useEffect, useRef, useState } from "react";
-import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
-import { DEFAULT_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
-import { useRenderedAppearance, useTheme } from "../../hooks/useTheme";
-import { useUiLanguage } from "../../i18n";
-import { resolveDiffThemeName, type DiffThemeName } from "../../lib/diffRendering";
-import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
-import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../composerContextPresentation";
 import {
   ComposerPromptEditorTiptap as ComposerPromptEditor,
   type ComposerPromptEditorHandle,
 } from "../ComposerPromptEditorTiptap";
+import { EMPTY_COMPOSER_CONTEXT_RECORDS } from "../composerContextPresentation";
 import { terminalThemeFromApp } from "../ThreadTerminalDrawer";
+import { useRenderedAppearance, useTheme } from "../../hooks/useTheme";
+import { DEFAULT_COMPOSER_PLACEHOLDER } from "../../composerPlaceholder";
+import { resolveDiffThemeName, type DiffThemeName } from "../../lib/diffRendering";
+import { PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
+import { GhosttyTerminalSurface } from "~/terminal/ghostty/surface";
 
 const PREVIEW_SKILLS: ReadonlyArray<ServerProviderSkill> = [
   { name: "frontend-design", path: ".agents/skills/frontend-design/SKILL.md", enabled: true },
@@ -29,8 +29,7 @@ const PROMPT_PREVIEW_TEXT =
 function noop() {}
 
 export function PromptFontPreview() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const editorRef = useRef<ComposerPromptEditorHandle>(null);
   const [prompt, setPrompt] = useState(PROMPT_PREVIEW_TEXT);
   const [cursor, setCursor] = useState(PROMPT_PREVIEW_TEXT.length);
@@ -41,7 +40,7 @@ export function PromptFontPreview() {
   return (
     <div dir="ltr" className="mt-1 mb-2 rounded-lg border border-border bg-background px-3 py-2">
       <ComposerPromptEditor
-        ariaLabel={uiT("Prompt font preview")}
+        ariaLabel={gt("Prompt font preview")}
         editorRef={editorRef}
         value={prompt}
         cursor={cursor}
@@ -156,8 +155,7 @@ function previewTerminalFont(family: string, size: number): { family?: string; s
 }
 
 export function TerminalFontPreview({ family, size }: { family: string; size: number }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const mountRef = useRef<HTMLDivElement>(null);
   const [surface, setSurface] = useState<GhosttyTerminalSurface | null>(null);
   const [initialFont] = useState(() => previewTerminalFont(family, size));
@@ -219,6 +217,8 @@ export function TerminalFontPreview({ family, size }: { family: string; size: nu
       theme: terminalThemeFromApp(mount),
       font: initialFont,
       onData: echo,
+      onBinary: noop,
+      onReply: noop,
       onResize: noop,
       onSelectionChange: noop,
       beforeKey: (event) => event.key !== "Tab",
@@ -245,7 +245,7 @@ export function TerminalFontPreview({ family, size }: { family: string; size: nu
     <div
       ref={mountSurface}
       className="relative mt-1 mb-2 h-52 overflow-hidden rounded-lg border border-border"
-      aria-label={uiT("Terminal font preview")}
+      aria-label={gt("Terminal font preview")}
     />
   );
 }

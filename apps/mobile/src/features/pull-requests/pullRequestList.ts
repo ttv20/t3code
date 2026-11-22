@@ -1,4 +1,3 @@
-import { readUiTranslator } from "../../state/ui-language";
 import { pullRequestFilterProjects } from "@t3tools/client-runtime/pull-request-project-filter";
 import { parsePullRequestQuery } from "@t3tools/client-runtime/pull-request-query";
 import {
@@ -11,8 +10,10 @@ import {
   type PullRequestListResult,
   type PullRequestListStatsInput,
 } from "@t3tools/contracts";
+import { msg } from "gt-react-native";
 import type { PullRequestListControls } from "../../persistence/mobile-preferences";
 import { compareTimestamps } from "../../lib/time";
+import { m, type MessageResolver } from "../../i18n/messages";
 
 export const PR_LIST_PAGE_SIZE = 30;
 export type { PullRequestListControls } from "../../persistence/mobile-preferences";
@@ -189,6 +190,7 @@ export function pullRequestListRowsAreEqual(
       previous.title === next.title &&
       previous.url === next.url &&
       previous.state === next.state &&
+      previous.visibility === next.visibility &&
       previous.isDraft === next.isDraft &&
       previous.mergeability === next.mergeability &&
       previous.baseBranch === next.baseBranch &&
@@ -466,33 +468,33 @@ export function filterPullRequestList<
 
 export function pullRequestListReviewStatus(
   entry: Pick<PullRequestListEntry, "reviewDecision" | "viewerReviewRequested">,
+  resolve: MessageResolver = m,
 ) {
-  const uiT = readUiTranslator();
   if (entry.reviewDecision === "changes-requested")
     return {
-      label: uiT("Changes"),
-      accessibleLabel: "Changes requested",
+      label: resolve(msg("Changes", { $context: "review status badge: changes requested" })),
+      accessibleLabel: resolve(msg("Changes requested")),
       icon: "person.fill.xmark",
       tint: "accent-danger-foreground",
     } as const;
   if (entry.reviewDecision === "approved")
     return {
-      label: uiT("Approved"),
-      accessibleLabel: "Reviews approved",
+      label: resolve(msg("Approved", { $context: "review status badge" })),
+      accessibleLabel: resolve(msg("Reviews approved")),
       icon: "person.fill.checkmark",
       tint: "accent-adaptive-emerald-600-400",
     } as const;
   if (entry.viewerReviewRequested)
     return {
-      label: uiT("Your review"),
-      accessibleLabel: "Your review requested",
+      label: resolve(msg("Your review")),
+      accessibleLabel: resolve(msg("Your review requested")),
       icon: "person.badge.clock",
       tint: "accent-warning-foreground",
     } as const;
   if (entry.reviewDecision === "review-required")
     return {
-      label: uiT("Review"),
-      accessibleLabel: "Review required",
+      label: resolve(msg("Review", { $context: "review status badge: review required" })),
+      accessibleLabel: resolve(msg("Review required")),
       icon: "person.badge.clock",
       tint: "accent-icon-muted",
     } as const;

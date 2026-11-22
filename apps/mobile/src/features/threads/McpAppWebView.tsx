@@ -21,6 +21,8 @@ import {
 import * as Predicate from "effect/Predicate";
 import { AsyncResult } from "effect/reactivity";
 import Constants from "expo-constants";
+import { msg, T, useGT, Var } from "gt-react-native";
+
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,10 +30,11 @@ import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
-import { UiText, useUiLanguage } from "../../i18n";
+
 import { readUiTranslator } from "../../state/ui-language";
 
 import { AppText as Text } from "../../components/ui/AppText";
+import { m } from "../../i18n/messages";
 import { shareGeneratedAttachment } from "../../lib/attachmentDownload";
 import { mobileHtmlRenderTheme } from "../../lib/htmlRenderTheme";
 import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
@@ -88,7 +91,7 @@ const confirm = (title: string, message: string, action: string) =>
       title,
       message,
       [
-        { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+        { text: m(msg("Cancel")), style: "cancel", onPress: () => resolve(false) },
         { text: action, onPress: () => resolve(true) },
       ],
       // Android dismisses earlier alerts when showing another; decline dismissed requests to release their slots.
@@ -123,8 +126,7 @@ export function ThreadMcpApp(props: {
   readonly onExitFullscreen?: () => void;
   readonly height?: number;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [height, setHeight] = useState(MCP_APP_INLINE_MAX_HEIGHT);
   const [documentKey, setDocumentKeyState] = useState(0);
   // The view keeps its first URL: a re-minted one would reload the app.
@@ -272,6 +274,8 @@ export function ThreadMcpApp(props: {
     );
   }, [host, detailAtom]);
   const userActive = useRef(false);
+  // Teardown completions check this so a replaced document's late callback is ignored.
+  const currentHost = useRef<McpAppHost | null>(null);
 
   // Each WebView document gets its own host: the view is keyed by document,
   // restart generation and URL, and a changed app re-attaches this callback.
@@ -331,16 +335,21 @@ export function ThreadMcpApp(props: {
         const info = await latest.current.toolInfo({ environmentId, input: { ...input, name } });
         if (info._tag !== "Success") throw commandFailure(info);
         if (!info.value.callable)
-          throw new McpAppHostRefusal({ message: uiT("This app cannot call that tool.") });
+          throw new McpAppHostRefusal({ message: gt("This app cannot call that tool.") });
         if (
           !info.value.readOnly &&
           !(await confirm(
-            uiT("Allow {0} to run {1}?", { "0": app.server, "1": info.value.title ?? name }),
+            m(
+              msg("Allow {server} to run {tool}?", {
+                server: app.server,
+                tool: info.value.title ?? name,
+              }),
+            ),
             JSON.stringify(args, null, 2),
-            "Allow",
+            m(msg("Allow", { $context: "verb, confirm button" })),
           ))
         ) {
-          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
+          throw new McpAppHostRefusal({ message: gt("Declined by the user.") });
         }
         const result = await latest.current.callTool({
           environmentId,
@@ -360,18 +369,28 @@ export function ThreadMcpApp(props: {
       },
       openLink: async (url) => {
         // WebViews cannot prove user activation; confirm links to prevent timer-driven navigation out of T3.
-        if (!(await confirm(uiT("Open a link from {0}?", { "0": app.server }), url, "Open"))) {
-          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
+        if (
+          !(await confirm(
+            m(msg("Open a link from {server}?", { server: app.server })),
+            url,
+            m(msg("Open", { $context: "verb, opens a link" })),
+          ))
+        ) {
+          throw new McpAppHostRefusal({ message: "Declined by the user." });
         }
         if (!(await tryOpenExternalUrl(url, "mcp-app"))) {
-          throw new McpAppHostRefusal({ message: uiT("The link could not be opened.") });
+          throw new McpAppHostRefusal({ message: gt("The link could not be opened.") });
         }
       },
       sendMessage: async (text) => {
         if (
-          !(await confirm(uiT("Send this message from {0}?", { "0": app.server }), text, "Send"))
+          !(await confirm(
+            m(msg("Send this message from {server}?", { server: app.server })),
+            text,
+            m(msg("Send", { $context: "verb, sends the message" })),
+          ))
         ) {
-          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
+          throw new McpAppHostRefusal({ message: "Declined by the user." });
         }
         await enqueueThreadOutboxMessage({
           environmentId: latest.current.props.environmentId,
@@ -409,6 +428,8 @@ export function ThreadMcpApp(props: {
         }
         if (mode === "fullscreen" && current.displayMode !== "fullscreen") {
           await documentHost.teardown();
+          // A crash restart or reload during the wait already replaced this document.
+          if (currentHost.current !== documentHost) return "inline";
           // Approval arrival or navigation during the wait requires reloading inline.
           const navigation = latest.current.navigation;
           if (latest.current.awaitingUser || !navigation.isFocused()) {
@@ -427,15 +448,21 @@ export function ThreadMcpApp(props: {
         }
         if (mode === "inline" && current.displayMode === "fullscreen") {
           await documentHost.teardown();
-          current.onExitFullscreen?.();
+          if (currentHost.current === documentHost) current.onExitFullscreen?.();
           return "inline";
         }
         return current.displayMode ?? "inline";
       },
       downloadFile: async (files) => {
         const names = files.map((file) => file.name).join(", ");
-        if (!(await confirm(uiT("Save a file from {0}?", { "0": app.server }), names, "Save"))) {
-          throw new McpAppHostRefusal({ message: uiT("Declined by the user.") });
+        if (
+          !(await confirm(
+            m(msg("Save a file from {server}?", { server: app.server })),
+            names,
+            m(msg("Save", { $context: "verb, confirm button" })),
+          ))
+        ) {
+          throw new McpAppHostRefusal({ message: "Declined by the user." });
         }
         for (const file of files) {
           let bytes: Uint8Array | undefined;
@@ -456,11 +483,11 @@ export function ThreadMcpApp(props: {
           }
           if (bytes === undefined)
             throw new McpAppHostRefusal({
-              message: uiT("{0} has no contents.", { "0": file.name }),
+              message: gt("{0} has no contents.", { "0": file.name }),
             });
           if (bytes.byteLength > MAX_DOWNLOAD_BYTES) {
             throw new McpAppHostRefusal({
-              message: uiT("{0} is too large to save.", { "0": file.name }),
+              message: gt("{0} is too large to save.", { "0": file.name }),
             });
           }
           const shared = await shareGeneratedAttachment({
@@ -470,17 +497,17 @@ export function ThreadMcpApp(props: {
           });
           if (!shared)
             throw new McpAppHostRefusal({
-              message: uiT("Sharing is not available on this device."),
+              message: gt("Sharing is not available on this device."),
             });
         }
       },
       onRequestTeardown: () => {
         const current = latest.current.props;
-        if (current.displayMode === "fullscreen") {
-          void documentHost.teardown().then(() => current.onExitFullscreen?.());
-        } else {
-          void documentHost.teardown().then(() => setClosed(true));
-        }
+        void documentHost.teardown().then(() => {
+          if (currentHost.current !== documentHost) return;
+          if (current.displayMode === "fullscreen") current.onExitFullscreen?.();
+          else setClosed(true);
+        });
       },
       onSizeChanged: (size) => {
         if (latest.current.props.displayMode === "fullscreen") return;
@@ -489,7 +516,9 @@ export function ThreadMcpApp(props: {
       },
     });
     setHost(documentHost);
+    currentHost.current = documentHost;
     return () => {
+      if (currentHost.current === documentHost) currentHost.current = null;
       // An unmount cannot wait: the request goes out before the view does.
       void documentHost.teardown();
       setHost((current) => (current === documentHost ? null : current));
@@ -508,7 +537,9 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          <UiText message={uiT("The {0}  app is open full screen")} values={{ "0": app.server }} />
+          <T>
+            The <Var>{app.server}</Var> app is open full screen
+          </T>
         </Text>
       </View>
     );
@@ -521,11 +552,13 @@ export function ThreadMcpApp(props: {
         className="items-center justify-center gap-2 rounded-lg border border-border"
       >
         <Text className="text-sm text-foreground-muted">
-          <UiText message={uiT("The {0}  app was closed")} values={{ "0": app.server }} />
+          <T>
+            The <Var>{app.server}</Var> app was closed
+          </T>
         </Text>
         <View className="items-center">
           <Button
-            label={uiT("Show app")}
+            label={gt("Show app")}
             tone="secondary"
             onPress={() => {
               reopenDocument();
@@ -542,10 +575,9 @@ export function ThreadMcpApp(props: {
       {navigatedAway ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            <UiText
-              message={uiT("The {0}  app left its page and was stopped")}
-              values={{ "0": app.server }}
-            />
+            <T>
+              The <Var>{app.server}</Var> app left its page and was stopped
+            </T>
           </Text>
         </View>
       ) : uri !== null && !crashed ? (
@@ -555,7 +587,7 @@ export function ThreadMcpApp(props: {
           onContentProcessDidTerminate={restart}
           onRenderProcessGone={restart}
           source={source!}
-          accessibilityLabel={uiT("{0} app", { "0": app.server })}
+          accessibilityLabel={gt("{server} app", { server: app.server })}
           style={{ flex: 1, backgroundColor: "transparent" }}
           nestedScrollEnabled
           decelerationRate={webViewDecelerationRate}
@@ -592,7 +624,9 @@ export function ThreadMcpApp(props: {
       ) : asset._tag === "Failure" || crashed ? (
         <View className="flex-1 items-center justify-center">
           <Text className="text-sm text-foreground-muted">
-            <UiText message={uiT("Unable to load the{0}  app")} values={{ "0": app.server }} />
+            <T>
+              Unable to load the <Var>{app.server}</Var> app
+            </T>
           </Text>
         </View>
       ) : null}

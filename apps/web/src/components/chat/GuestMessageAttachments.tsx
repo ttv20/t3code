@@ -1,6 +1,6 @@
-import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import type { ChatAttachment } from "@t3tools/contracts";
-import { useUiLanguage } from "../../i18n";
+import { useGT, useMessages } from "gt-react";
+import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 
 import { useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
@@ -25,8 +25,8 @@ export function GuestMessageAttachments(props: {
   readonly fileHref?: (attachment: ChatFileAttachment) => string;
   readonly onOpenFile?: (attachment: ChatFileAttachment) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const { resolvedTheme } = useTheme();
   const images = props.attachments.filter(isImageAttachment);
   const files = props.attachments.filter(isFileAttachment);
@@ -43,7 +43,7 @@ export function GuestMessageAttachments(props: {
                   <button
                     type="button"
                     className="block size-full cursor-zoom-in"
-                    aria-label={uiT("Preview {0}", { "0": image.name })}
+                    aria-label={gt("Preview {name}", { name: image.name })}
                     onClick={() => props.onOpenImage(image)}
                   >
                     {/* Isolate the thumbnail raster from nearby activity repaints in Chromium. */}
@@ -72,7 +72,7 @@ export function GuestMessageAttachments(props: {
             <PierreEntryIcon pathValue={file.name} kind="file" theme={resolvedTheme} />
             <span className="min-w-0 truncate">{file.name}</span>
             <span className="shrink-0 text-xs text-muted-foreground">
-              {formatAttachmentSize(file.sizeBytes)}
+              {formatAttachmentSize(file.sizeBytes, messages)}
             </span>
           </>
         );
@@ -89,7 +89,7 @@ export function GuestMessageAttachments(props: {
           <button
             key={file.id}
             type="button"
-            aria-label={uiT("Preview {0}", { "0": file.name })}
+            aria-label={gt("Preview {name}", { name: file.name })}
             onClick={() => props.onOpenFile?.(file)}
             className={cn(FILE_ROW, "cursor-pointer hover:underline")}
           >

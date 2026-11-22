@@ -1,5 +1,7 @@
+import { msg } from "gt-react-native";
 import { Alert } from "react-native";
-import { readUiTranslator } from "../../state/ui-language";
+
+import { m } from "../../i18n/messages";
 import type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";
 
 export type { ConfirmDialogRequest, TextInputDialogRequest } from "./Dialog.types";
@@ -10,13 +12,8 @@ export function alert(...args: Parameters<typeof Alert.alert>): void {
 }
 
 export function confirm(request: ConfirmDialogRequest): void {
-  const translateAction = readUiTranslator();
   Alert.alert(request.title, request.message, [
-    {
-      text: request.cancelText ?? translateAction("Cancel"),
-      style: "cancel",
-      onPress: request.onCancel,
-    },
+    { text: request.cancelText ?? m(msg("Cancel")), style: "cancel", onPress: request.onCancel },
     {
       text: request.confirmText,
       style: request.destructive ? "destructive" : "default",
@@ -26,20 +23,12 @@ export function confirm(request: ConfirmDialogRequest): void {
 }
 
 export function prompt(request: TextInputDialogRequest): void {
-  const translateAction = readUiTranslator();
   Alert.prompt(
     request.title,
     request.message,
     [
-      {
-        text: request.cancelText ?? translateAction("Cancel"),
-        style: "cancel",
-        onPress: request.onCancel,
-      },
-      {
-        text: request.confirmText,
-        onPress: (value) => request.onConfirm(value ?? ""),
-      },
+      { text: request.cancelText ?? m(msg("Cancel")), style: "cancel", onPress: request.onCancel },
+      { text: request.confirmText, onPress: (value) => request.onConfirm(value ?? "") },
     ],
     "plain-text",
     request.initialValue,

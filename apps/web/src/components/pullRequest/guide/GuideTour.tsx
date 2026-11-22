@@ -1,6 +1,6 @@
 import type { EnvironmentId, PullRequestRef, PullRequestReviewGuide } from "@t3tools/contracts";
+import { T, Var } from "gt-react";
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
-import { useUiLanguage } from "../../../i18n";
 
 import { createPullRequestDiffFileContentsLoader } from "~/lib/diffFileContents";
 import { isEditableFocused } from "~/lib/editableFocus";
@@ -9,9 +9,9 @@ import { useAtomCommand } from "~/state/use-atom-command";
 
 import { isCommandPaletteOpen } from "~/commandPaletteBus";
 
-import { stepTourPosition, stopFilePaths } from "@t3tools/client-runtime/review-guide-tour";
-import type { ExcerptCommenting } from "./GuideExcerpt";
 import { GuideRail } from "./GuideRail";
+import { GuideStop } from "./GuideStop";
+import type { ExcerptCommenting } from "./GuideExcerpt";
 import {
   guideProgressKey,
   guideRunKey,
@@ -19,7 +19,7 @@ import {
   useGuideRunStore,
   type GuideProgress,
 } from "./guideRunStore";
-import { GuideStop } from "./GuideStop";
+import { stepTourPosition, stopFilePaths } from "@t3tools/client-runtime/review-guide-tour";
 import { useGuideDiffFiles } from "./useGuideDiffFiles";
 
 export function GuideTour({
@@ -43,7 +43,6 @@ export function GuideTour({
   onFinish: (() => void) | null;
   onOpenFile: (path: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const key = guideProgressKey(guideRunKey(environmentId, reference), guide.headSha);
   const tour = useGuideProgress(key);
   const update = (change: (current: GuideProgress) => Partial<GuideProgress>) =>
@@ -74,7 +73,8 @@ export function GuideTour({
   const goTo = (next: number) => {
     const focused = document.activeElement;
     if (scrollRef.current?.contains(focused) && !railRef.current?.contains(focused)) {
-      scrollRef.current.focus({ preventScroll: true });
+      // Keeps focus off the unmounting stop; it is not navigation, so no workspace ring.
+      scrollRef.current.focus({ preventScroll: true, focusVisible: false });
     }
     update((current) => ({
       position: next,
@@ -106,6 +106,7 @@ export function GuideTour({
     <div
       ref={scrollRef}
       tabIndex={-1}
+      data-workspace-focus-default
       aria-keyshortcuts="J K"
       className="@container/guide h-full overflow-y-auto scrollbar-gutter-both outline-none"
     >
@@ -117,12 +118,14 @@ export function GuideTour({
           {banner}
           {diff.error !== null ? (
             <p className="text-xs text-muted-foreground">
-              {uiT("The diff could not be loaded, so excerpts are missing:")} {diff.error}
+              <T>
+                The diff could not be loaded, so excerpts are missing: <Var>{diff.error}</Var>
+              </T>
             </p>
           ) : null}
           {stop === null ? (
             <p className="text-sm text-muted-foreground">
-              {uiT("This change has no files to tour.")}
+              <T>This change has no files to tour.</T>
             </p>
           ) : (
             <GuideStop

@@ -1,12 +1,12 @@
+import { useGT } from "gt-react-native";
 import type { ComponentProps } from "react";
-import { useUiLanguage } from "../i18n";
+
 import type { NewThreadButton as SharedNewThreadButton } from "./NewThreadButton.shared";
 import { ScrollComposeButton } from "./ScrollComposeButton.android";
 import { FloatingActionButton } from "./ui/FloatingActionButton.android";
 
 export function NewThreadButton(props: ComponentProps<typeof SharedNewThreadButton>) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (props.extended && props.expanded !== undefined) {
     return <ScrollComposeButton {...props} expanded={props.expanded} />;
   }
@@ -14,7 +14,7 @@ export function NewThreadButton(props: ComponentProps<typeof SharedNewThreadButt
     <FloatingActionButton
       {...props}
       icon="square.and.pencil"
-      label={uiT("New thread")}
+      label={gt("New thread")}
       tone="primary"
       variant={props.extended ? "extended" : "large"}
     />

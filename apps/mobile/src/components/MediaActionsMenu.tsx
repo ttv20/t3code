@@ -1,7 +1,7 @@
 import { MenuView } from "@react-native-menu/menu";
+import { useGT } from "gt-react-native";
 import type { ReactElement } from "react";
 import { Platform, View, type PressableProps, type StyleProp, type ViewStyle } from "react-native";
-import { useUiLanguage } from "../i18n";
 
 import type { useMediaActions } from "../state/mediaActions";
 import { SymbolView } from "./ui/AppSymbol";
@@ -13,7 +13,7 @@ export function MediaActionsMenu(props: {
   readonly children?: ReactElement<PressableProps>;
   readonly style?: StyleProp<ViewStyle>;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   if (props.media.actions.length === 0) return props.children ?? null;
   // Android's normal anchored menu lives in the app-root portal, behind native modals.
   const nativeAndroidMenu = props.inModal && Platform.OS === "android";
@@ -36,7 +36,7 @@ export function MediaActionsMenu(props: {
         <View
           accessible
           accessibilityRole="button"
-          accessibilityLabel={uiT("Media actions")}
+          accessibilityLabel={gt("Media actions")}
           className="min-h-11 min-w-11 items-center justify-center rounded-md bg-black/60"
         >
           <SymbolView name="ellipsis" size={20} tintColor="#ffffff" type="monochrome" />

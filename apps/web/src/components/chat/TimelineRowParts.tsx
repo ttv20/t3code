@@ -1,9 +1,9 @@
-import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { useMessages } from "gt-react";
 import { type ReactNode } from "react";
-import { cn } from "~/lib/utils";
-import { useUiLanguage } from "../../i18n";
-import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../timestampFormat";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { cn } from "~/lib/utils";
+import { type TimestampFormat } from "@t3tools/contracts/settings";
+import { formatChatTimestampTooltip, formatDayAwareTimestamp } from "../../timestampFormat";
 
 export const MESSAGE_HEADING_LEVEL = 3;
 
@@ -22,8 +22,7 @@ export function TimelineRowTimestamp({
   className?: string;
   alwaysVisible?: boolean;
 }) {
-  const { locale } = useUiLanguage();
-
+  const m = useMessages();
   return (
     <Tooltip>
       <TooltipTrigger
@@ -37,21 +36,29 @@ export function TimelineRowTimestamp({
           />
         }
       >
-        {formatDayAwareTimestamp(createdAt, timestampFormat)}
+        {formatDayAwareTimestamp(createdAt, timestampFormat, undefined, undefined, m)}
       </TooltipTrigger>
-      <TooltipPopup>{formatChatTimestampTooltip(createdAt, timestampFormat, locale)}</TooltipPopup>
+      <TooltipPopup>{formatChatTimestampTooltip(createdAt, timestampFormat, m)}</TooltipPopup>
     </Tooltip>
   );
 }
 
-export function ActivityShimmerOverlay({ children }: { children: ReactNode }) {
+export function ActivityShimmerOverlay({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden
       className="live-activity-focus pointer-events-none absolute inset-y-0 select-none"
     >
       <span className="live-activity-focus-counter block">
-        <span className="live-activity-focus-aligned block text-foreground">{children}</span>
+        <span className={cn("live-activity-focus-aligned block text-foreground", className)}>
+          {children}
+        </span>
       </span>
     </span>
   );

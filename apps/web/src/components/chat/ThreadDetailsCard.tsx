@@ -1,4 +1,5 @@
-import type { ScopedThreadRef } from "@t3tools/contracts";
+import { useGT } from "gt-react";
+import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import {
   useLayoutEffect,
   useState,
@@ -6,17 +7,18 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { observeResize } from "../../lib/observeResize";
-import { cn } from "../../lib/utils";
-import { requestWorkspaceFocus, workspaceAreaProps } from "../../lib/workspaceFocus";
-import { selectThreadPanelOpen, useRightPanelStore } from "../../rightPanelStore";
-import { Popover, PopoverCreateHandle, PopoverPopup } from "../ui/popover";
+import type { ScopedThreadRef } from "@t3tools/contracts";
 import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "../../lib/utils";
+import { Popover, PopoverPopup, PopoverCreateHandle } from "../ui/popover";
+import { selectThreadPanelOpen, useRightPanelStore } from "../../rightPanelStore";
 import { useChatCanvas } from "./ChatCanvasContext";
 import {
   THREAD_DETAILS_CARD_GAP,
   resolveThreadDetailsCardDensity,
 } from "./threadDetailsCardLayout";
+import { observeResize } from "../../lib/observeResize";
+import { requestWorkspaceFocus } from "../../lib/workspaceFocus";
 
 export function ThreadDetailsCard({
   threadRef,
@@ -34,7 +36,8 @@ export function ThreadDetailsCard({
   onContextMenu?: MouseEventHandler<HTMLDivElement>;
   children: (density: "full" | "compact" | "essential") => ReactNode;
 }) {
-  const detailsArea = workspaceAreaProps("details", 3, "Thread details");
+  const gt = useGT();
+  const detailsArea = workspaceAreaProps("details", 3, gt("Thread details"));
   const canvas = useChatCanvas();
   const preferredPlacement = canvas?.preferredDetailsCard ?? null;
   const placement = canvas?.detailsCardPlacement ?? null;
@@ -155,7 +158,7 @@ export function ThreadDetailsCard({
             topInset > 0 && "transition-[top] duration-150 ease-out motion-reduce:transition-none",
           )}
           style={{
-            insetInlineEnd: placement.right,
+            right: placement.right,
             top: placement.y,
             width: placement.width,
             maxHeight: height,

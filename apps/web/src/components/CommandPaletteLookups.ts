@@ -3,14 +3,14 @@ import {
   type EnvironmentId,
   resolveEnvironmentMachineKind,
 } from "@t3tools/contracts";
-import { useUiLanguage } from "../i18n";
+import { useGT } from "gt-react";
 
-import { getProjectOrderKey } from "@t3tools/client-runtime/state/project-grouping";
 import { isDesktopLocalConnectionTarget } from "../connection/desktopLocal";
 import { useClientSettings } from "../hooks/useSettings";
-import { buildSidebarProjectSnapshots } from "../sidebarProjectGrouping";
+import { getProjectOrderKey } from "@t3tools/client-runtime/state/project-grouping";
 import { useProjects, useVisibleThreadShells } from "../state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
+import { buildSidebarProjectSnapshots } from "../sidebarProjectGrouping";
 import { legacyProjectCwdPreferenceKey, useUiStateStore } from "../uiStateStore";
 import { orderItemsByPreferredIds, sortLogicalProjectsForSidebar } from "./Sidebar.logic";
 
@@ -18,8 +18,7 @@ import { orderItemsByPreferredIds, sortLogicalProjectsForSidebar } from "./Sideb
 // source. Taking the source as an argument instead leaves the helper hook-free, and the
 // compiler then treats it as a plain function and caches nothing.
 export function useEnvironmentLookups() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { environments } = useEnvironments();
   const environmentLabelById = new Map(
     environments.map((environment) => [environment.environmentId, environment.label] as const),
@@ -33,9 +32,9 @@ export function useEnvironmentLookups() {
         {
           kind: isLocal ? "local" : "remote",
           label: isPrimary
-            ? uiT("Local")
+            ? gt("Local", { $context: "machine location" })
             : isLocal
-              ? uiT("{0} (Local)", { "0": environment.label })
+              ? gt("{label} (Local)", { label: environment.label })
               : environment.label,
           machine: resolveEnvironmentMachineKind(environment.serverConfig),
         },

@@ -3,6 +3,7 @@ import type {
   NativeStackHeaderItemMenu,
   NativeStackNavigationOptions,
 } from "@react-navigation/native-stack";
+import { useGT } from "gt-react-native";
 import { isValidElement, useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { KeyboardController, useKeyboardState } from "react-native-keyboard-controller";
@@ -18,7 +19,7 @@ import {
   type StackHeaderMenuIOS,
   type StackHeaderMinimizationBehaviorIOS,
 } from "react-native-screens";
-import { useUiLanguage } from "../i18n";
+
 import { isDuoDevice } from "../lib/device-type";
 import { useMobileNavigationTheme } from "../lib/useMobileNavigationTheme";
 import { HeaderItemsWidthContext } from "./header-items-width";
@@ -160,8 +161,8 @@ export function V5StackHeader(props: {
   /** UIKit morphs search items that share an identifier between bars as columns change. */
   readonly searchIdentifier?: string;
 }) {
-  const { t: uiT } = useUiLanguage();
   const { options } = props;
+  const gt = useGT();
   const theme = useMobileNavigationTheme();
   const nativeMetrics = useNativeLayoutMetrics();
   const deviceType = useDeviceType();
@@ -248,7 +249,7 @@ export function V5StackHeader(props: {
     const compose: HeaderItem = {
       type: "item",
       id: "workspace-compose",
-      title: uiT("New task"),
+      title: gt("New task"),
       icon: { type: "sfSymbol", name: "square.and.pencil" },
       onPress: props.onCompose,
     };
@@ -269,7 +270,7 @@ export function V5StackHeader(props: {
       {
         type: "item",
         id: "dismiss-keyboard",
-        title: uiT("Dismiss keyboard"),
+        title: gt("Dismiss keyboard"),
         icon: { type: "sfSymbol", name: "keyboard.chevron.compact.down" },
         onPress: () => void KeyboardController.dismiss(),
         // The folded bar is short; keep this out of the overflow menu.
@@ -361,7 +362,11 @@ export function V5StackHeader(props: {
                 hideWhenScrolling={false}
                 allowToolbarIntegration={searchOptions?.allowToolbarIntegration ?? true}
                 placement={bottomSearch ? "integrated" : (searchOptions?.placement ?? "automatic")}
-                placeholder={mailSearch?.placeholder ?? searchOptions?.placeholder ?? uiT("Search")}
+                placeholder={
+                  mailSearch?.placeholder ??
+                  searchOptions?.placeholder ??
+                  gt("Search", { $context: "search field placeholder" })
+                }
                 onFocus={(event) => {
                   searchOptions?.onFocus?.(event);
                 }}

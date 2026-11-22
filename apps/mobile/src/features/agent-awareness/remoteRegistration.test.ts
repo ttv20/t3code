@@ -1,5 +1,9 @@
+import * as ManagedRelayLayer from "../cloud/managedRelayLayer";
+import { configureAndroidAgentNotifications } from "./androidNotifications";
+import * as Dpop from "../cloud/dpop";
 /// <reference types="node" />
 
+/// <reference types="node" />
 import * as NodeCrypto from "node:crypto";
 
 import { describe, expect, it } from "@effect/vitest";
@@ -21,15 +25,19 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import {
   clearAgentAwarenessRegistrationRecord,
+  loadAgentAwarenessDeviceId,
   loadAgentAwarenessRegistrationRecord,
   loadOrCreateAgentAwarenessDeviceId,
   loadPreferences,
   saveAgentAwarenessRegistrationRecord,
 } from "../../persistence/imperative";
-import type { Preferences } from "../../persistence/mobile-preferences";
-import * as Dpop from "../cloud/dpop";
-import * as ManagedRelayLayer from "../cloud/managedRelayLayer";
-import { configureAndroidAgentNotifications } from "./androidNotifications";
+import {
+  MobilePreferencesLoadError,
+  MobilePreferencesStore,
+  type Preferences,
+} from "../../persistence/mobile-preferences";
+import { MobileSecureStorageError } from "../../persistence/mobile-secure-storage";
+import * as MobileStorage from "../../persistence/mobile-storage";
 import { makeRelayDeviceRegistrationRequest } from "./registrationPayload";
 import {
   __resetAgentAwarenessRemoteRegistrationForTest,
@@ -44,6 +52,7 @@ import {
   subscribeAgentAwarenessRegistrationStatus,
   updateAgentAwarenessRegistrationPreferences,
   type AgentAwarenessRegistrationError,
+  type AgentAwarenessRegistrationServices,
 } from "./remoteRegistration";
 
 vi.mock("../../state/ui-language", async () => {
@@ -224,8 +233,53 @@ function proofIat(proof: string): number {
   return decoded.iat;
 }
 
+const storageFailure = (cause: unknown) =>
+  new MobileSecureStorageError({ operation: "read", key: "test", cause });
+const unexpectedStorage = () => Effect.die("Unexpected storage request");
+
+// Delegates to the persistence/imperative mocks so each test steers both paths the same way.
+const layerPersistenceTest = Layer.merge(
+  Layer.succeed(
+    MobileStorage.MobileStorage,
+    MobileStorage.MobileStorage.of({
+      loadOrCreateAgentAwarenessDeviceId: Effect.tryPromise({
+        try: () => loadOrCreateAgentAwarenessDeviceId(),
+        catch: storageFailure,
+      }),
+      loadAgentAwarenessDeviceId: Effect.tryPromise({
+        try: () => loadAgentAwarenessDeviceId(),
+        catch: storageFailure,
+      }),
+      loadAgentAwarenessRegistrationRecord: Effect.tryPromise({
+        try: () => loadAgentAwarenessRegistrationRecord(),
+        catch: storageFailure,
+      }),
+      saveAgentAwarenessRegistrationRecord: (record) =>
+        Effect.tryPromise({
+          try: () => saveAgentAwarenessRegistrationRecord(record),
+          catch: storageFailure,
+        }),
+      clearAgentAwarenessRegistrationRecord: unexpectedStorage(),
+      loadRecentThreadShortcuts: unexpectedStorage(),
+      saveRecentThreadShortcuts: unexpectedStorage,
+    }),
+  ),
+  Layer.succeed(
+    MobilePreferencesStore,
+    MobilePreferencesStore.of({
+      load: Effect.tryPromise({
+        try: () => loadPreferences(),
+        catch: (cause) => new MobilePreferencesLoadError({ cause }),
+      }),
+      savePatch: unexpectedStorage,
+      update: unexpectedStorage,
+    }),
+  ),
+);
+
 const layerRelayTest = ManagedRelayLayer.layer("https://relay.example.test").pipe(
   Layer.provide(Layer.mergeAll(FetchHttpClient.layer, Dpop.layer)),
+  Layer.merge(layerPersistenceTest),
 );
 
 const runBackgroundOperations = Effect.fn("TestRemoteRegistration.runBackgroundOperations")(
@@ -247,7 +301,7 @@ const runBackgroundOperations = Effect.fn("TestRemoteRegistration.runBackgroundO
         pending.operation as Effect.Effect<
           unknown,
           AgentAwarenessRegistrationError,
-          ManagedRelay.ManagedRelayClient
+          AgentAwarenessRegistrationServices
         >,
       );
       yield* Effect.sync(() => {
@@ -605,6 +659,22 @@ describe("makeRelayDeviceRegistrationRequest", () => {
     }).pipe(Effect.provide(layerRelayTest));
   });
 
+  it.effect("leaves the signed-out status alone when an obsolete registration fails", () => {
+    Constants.expoConfig!.extra = {
+      relay: {
+        url: "https://relay.example.test/",
+      },
+    };
+    vi.mocked(loadOrCreateAgentAwarenessDeviceId).mockRejectedValue(new Error("storage failure"));
+    setAgentAwarenessRelayTokenProvider(() => Promise.resolve("clerk-token-user-a"));
+    setAgentAwarenessRelayTokenProvider(null);
+
+    return Effect.gen(function* () {
+      yield* runBackgroundOperations();
+      expect(getAgentAwarenessRegistrationStatus()).toBe("unknown");
+    }).pipe(Effect.provide(layerRelayTest));
+  });
+
   it.effect("does not re-register the same account when nothing has changed", () => {
     Constants.expoConfig!.extra = {
       relay: {
@@ -713,6 +783,7 @@ describe("makeRelayDeviceRegistrationRequest", () => {
         Effect.provide(
           ManagedRelayLayer.layer("https://permission-relay.example.test").pipe(
             Layer.provide(Layer.mergeAll(FetchHttpClient.layer, Dpop.layer)),
+            Layer.merge(layerPersistenceTest),
           ),
         ),
       );
@@ -1012,7 +1083,7 @@ describe("makeRelayDeviceRegistrationRequest", () => {
           getAgentActivitySnapshot,
           resetTokenCache: Effect.void,
         }),
-      );
+      ).pipe(Layer.merge(layerPersistenceTest));
     }
 
     it.effect("registers an existing Live Activity before waiting on the widget read", () => {

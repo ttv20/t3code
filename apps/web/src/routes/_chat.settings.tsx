@@ -1,20 +1,21 @@
-import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
-import { RotateCcwIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { useSettingsRestore } from "../components/settings/SettingsPanels";
-import { Button } from "../components/ui/button";
-import { UiText, useUiLanguage } from "../i18n";
 import { workspaceAreaProps } from "../lib/workspaceFocus";
+import { Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
+import { T, useGT, useMessages, Var } from "gt-react";
+import { RotateCcwIcon } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { useSettingsRestore } from "../components/settings/SettingsPanels";
 
 import { AppRouteModal, AppRouteModalClose } from "../components/AppRouteModal";
 import { SettingsBreadcrumb } from "../components/settings/SettingsBreadcrumb";
+import { SettingsSidebarNav } from "../components/settings/SettingsSidebarNav";
 import {
   SettingsScopeProvider,
   useSettingsScope,
 } from "../components/settings/SettingsScopeContext";
+import { useEnvironments } from "../state/environments";
 import { SettingsScopeNotice } from "../components/settings/SettingsScopeNotice";
 import { SETTINGS_DEVICE_ONLY_PATHS } from "../components/settings/SettingsScopeSentence";
-import { SettingsSidebarNav } from "../components/settings/SettingsSidebarNav";
 import { SettingsPageContainer } from "../components/settings/settingsLayout";
 import {
   retainSettingsScope,
@@ -26,10 +27,8 @@ import {
   isSettingsSearchScopeAvailable,
   movedSettingsPath,
 } from "../components/settings/settingsSearch";
-import { useEnvironments } from "../state/environments";
 
 function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void }) {
-  const { t } = useUiLanguage();
   const { changedSettingLabels, restoreDefaults } = useSettingsRestore(onRestored);
   return (
     <Button
@@ -39,16 +38,18 @@ function RestoreDeviceDefaultsButton({ onRestored }: { onRestored: () => void })
       onClick={() => void restoreDefaults()}
     >
       <RotateCcwIcon className="mx-1 size-3.5" />
-      <span className="max-sm:sr-only">{t("Restore device defaults")}</span>
+      <span className="max-sm:sr-only">
+        <T>Restore device defaults</T>
+      </span>
     </Button>
   );
 }
 
 function SettingsScopeBoundary({ pathname, children }: { pathname: string; children: ReactNode }) {
-  const { t: uiT } = useUiLanguage();
-  const { t } = useUiLanguage();
   const { scope, connectedEnvironments } = useSettingsScope();
   const { environments } = useEnvironments();
+  const gt = useGT();
+  const m = useMessages();
   const hash = useLocation({ select: (location) => location.hash });
   const searchTarget = getSettingsSearchTargetScope(hash);
   const autoSettlementAvailability = searchTarget?.requiresThreadAutoSettlement
@@ -67,12 +68,12 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
         eligibleEnvironmentIds={autoSettlementAvailability.eligibleEnvironmentIds}
       >
         {autoSettlementAvailability.eligibleEnvironmentIds.length > 0
-          ? uiT("{0} requires a supporting environment. Choose one to continue.", {
-              "0": searchTarget.title,
+          ? gt("{title} requires a supporting environment. Choose one to continue.", {
+              title: m(searchTarget.title),
             })
-          : uiT(
-              "{0} requires a supporting environment. Connect or update an environment to continue.",
-              { "0": searchTarget.title },
+          : gt(
+              "{title} requires a supporting environment. Connect or update an environment to continue.",
+              { title: m(searchTarget.title) },
             )}
       </SettingsScopeNotice>
     );
@@ -90,9 +91,10 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
         : "all";
     return (
       <SettingsScopeNotice target={target} targetId={hash}>
-        {uiT("{0} is not available for the selected target. Choose its owning scope to continue.", {
-          "0": searchTarget.title,
-        })}
+        {gt(
+          "{title} is not available for the selected target. Choose its owning scope to continue.",
+          { title: m(searchTarget.title) },
+        )}
       </SettingsScopeNotice>
     );
   }
@@ -109,10 +111,9 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
     return (
       <SettingsPageContainer>
         <p className="text-sm text-muted-foreground">
-          <UiText
-            message={"{0}{1} to change its settings."}
-            values={{ "0": t("Reconnect"), "1": uiT(scope.label) }}
-          />
+          <T>
+            Reconnect <Var>{scope.label}</Var> to change its settings.
+          </T>
         </p>
       </SettingsPageContainer>
     );
@@ -121,9 +122,8 @@ function SettingsScopeBoundary({ pathname, children }: { pathname: string; child
 }
 
 function SettingsContentLayout() {
-  const { t: uiT } = useUiLanguage();
-
-  const contentArea = workspaceAreaProps("settings", 1, "Settings content");
+  const gt = useGT();
+  const contentArea = workspaceAreaProps("settings", 1, gt("Settings content"));
   const location = useLocation();
   const { search, environment } = useSettingsScope();
   const contentScopeKey =
@@ -133,7 +133,7 @@ function SettingsContentLayout() {
   const [restoreSignal, setRestoreSignal] = useState(0);
 
   return (
-    <AppRouteModal label={uiT("Settings")}>
+    <AppRouteModal label={gt("Settings")}>
       <div className="relative flex min-h-0 flex-1">
         <SettingsSidebarNav pathname={location.pathname} />
         <div {...contentArea} className="flex min-h-0 min-w-0 flex-1 flex-col">

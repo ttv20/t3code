@@ -1,4 +1,5 @@
-import { UiText, useUiLanguage } from "../../i18n";
+import { T, useGT, Var } from "gt-react";
+
 import { MenuGroupLabel } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
@@ -11,18 +12,19 @@ export function PullRequestStackHeader({
   notice?: string | null | undefined;
   stale?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <MenuGroupLabel>
       <div className="flex items-center justify-between gap-2">
         <span>
-          <UiText message={"Stack #{0}"} values={{ "0": number }} />
+          <T>
+            Stack #<Var>{number}</Var>
+          </T>
         </span>
         {notice ? (
           <Tooltip>
             <TooltipTrigger render={<span role="status" className="text-xs font-normal" />}>
-              {stale ? uiT("May be stale") : uiT("Refreshing…")}
+              {stale ? gt("May be stale") : gt("Refreshing…")}
             </TooltipTrigger>
             <TooltipPopup>{notice}</TooltipPopup>
           </Tooltip>

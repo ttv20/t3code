@@ -1,13 +1,15 @@
 import { useAtomValue } from "@effect/atom-react";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { proposedPlanTitle, stripDisplayedPlanMarkdown } from "@t3tools/shared/proposedPlanText";
+import { useGT } from "gt-react-native";
+import { m } from "../../i18n/messages";
 import { useRef, useState, type ReactNode } from "react";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
@@ -22,8 +24,7 @@ export function ProposedPlanCard(props: {
   readonly markdown: string;
   readonly renderMarkdown: (text: string) => ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const canWrite = useAtomValue(projectEnvironment.writeFile.permissionAtom(props.environmentId));
   const writeFile = useAtomCommand(projectEnvironment.writeFile, { reportFailure: false });
   const inFlight = useRef(false);
@@ -35,7 +36,7 @@ export function ProposedPlanCard(props: {
     const relativePath = path.trim();
     if (!canWrite || !props.workspaceRoot || inFlight.current) return;
     if (!relativePath) {
-      Dialog.alert(uiT("Enter a workspace path"));
+      Dialog.alert(gt("Enter a workspace path"));
       return;
     }
     inFlight.current = true;
@@ -49,13 +50,10 @@ export function ProposedPlanCard(props: {
       setSaving(false);
     });
     if (result._tag === "Success") {
-      Dialog.alert(uiT("Plan saved to workspace"), result.value.relativePath);
+      Dialog.alert(gt("Plan saved to workspace"), result.value.relativePath);
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
-      Dialog.alert(
-        uiT("Could not save plan"),
-        error instanceof Error ? error.message : String(error),
-      );
+      Dialog.alert(gt("Could not save plan"), errorDisplayMessage(error, m) ?? String(error));
     }
   };
 
@@ -63,25 +61,25 @@ export function ProposedPlanCard(props: {
     <View className="mb-3 gap-3 rounded-[20px] border border-border bg-card-alt p-4">
       <View className="flex-row items-center gap-2">
         <Text accessibilityRole="header" className="flex-1 font-t3-bold text-base text-foreground">
-          {proposedPlanTitle(props.markdown) ?? uiT("Proposed plan")}
+          {proposedPlanTitle(props.markdown) ?? gt("Proposed plan")}
         </Text>
-        <CopyTextButton accessibilityLabel={uiT("Copy plan")} text={contents} />
+        <CopyTextButton accessibilityLabel={gt("Copy plan")} text={contents} />
       </View>
       {props.renderMarkdown(stripDisplayedPlanMarkdown(props.markdown))}
       <View className="flex-row">
         <Button
-          label={saving ? uiT("Saving...") : uiT("Save to workspace")}
+          label={saving ? gt("Saving...") : gt("Save to workspace")}
           tone="secondary"
           disabled={!canWrite || !props.workspaceRoot || saving}
           onPress={() =>
             Dialog.prompt({
-              title: uiT("Save plan to workspace"),
+              title: gt("Save plan to workspace"),
               // The write replaces an existing file, and the RPC has no create-only mode.
-              message: uiT(
+              message: gt(
                 "Enter a path relative to the thread's workspace. A file already at that path is replaced.",
               ),
               initialValue: lastPath,
-              confirmText: uiT("Save"),
+              confirmText: gt("Save", { $context: "verb, confirm button" }),
               onConfirm: (path) => void save(path),
             })
           }

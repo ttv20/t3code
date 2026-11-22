@@ -1,6 +1,6 @@
-import { Platform, Pressable, View } from "react-native";
+import { T, useGT } from "gt-react-native";
 import { SymbolView } from "../../components/ui/AppSymbol";
-import { useUiLanguage } from "../../i18n";
+import { Platform, Pressable, View } from "react-native";
 
 import { NewThreadButton } from "../../components/NewThreadButton";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -14,9 +14,9 @@ export function WorkspaceEmptyDetail(props: {
   readonly onStartNewTask?: () => void;
   readonly onAddConnection?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const pullRequests = props.tab === "pullRequests";
+  const issues = props.tab === "issues";
   const settings = props.tab === "settings";
   if (props.tab === "usage") return <View className="flex-1 bg-screen" />;
   return (
@@ -31,12 +31,12 @@ export function WorkspaceEmptyDetail(props: {
         {props.onAddConnection ? (
           <View className="w-full max-w-[430px]">
             <EmptyState
-              title={uiT("No environments connected")}
-              detail={uiT("Add an environment to load projects and start coding sessions.")}
+              title={gt("No environments connected")}
+              detail={gt("Add an environment to load projects and start coding sessions.")}
               variant="plain"
               action={
                 <FloatingActionButton
-                  label={uiT("Add environment")}
+                  label={gt("Add environment")}
                   icon="plus"
                   variant="extended"
                   tone="primary"
@@ -55,21 +55,25 @@ export function WorkspaceEmptyDetail(props: {
             />
             <Text className="text-center text-xl font-t3-bold">
               {settings
-                ? uiT("Select a setting")
+                ? gt("Select a setting")
                 : pullRequests
-                  ? uiT("Select a pull request")
-                  : uiT("Select a thread")}
+                  ? gt("Select a pull request")
+                  : issues
+                    ? gt("Select an issue")
+                    : gt("Select a thread")}
             </Text>
             <Text className="text-center text-base text-foreground-muted">
               {settings
-                ? uiT("Choose a page from the sidebar.")
+                ? gt("Choose a page from the sidebar.")
                 : pullRequests
-                  ? uiT("Choose a pull request from the sidebar to review it.")
-                  : Platform.OS === "android"
-                    ? uiT("Choose a thread from the sidebar or start a new thread.")
-                    : uiT("Choose a thread from the sidebar or start a new task.")}
+                  ? gt("Choose a pull request from the sidebar to review it.")
+                  : issues
+                    ? gt("Choose an issue from the sidebar to read it.")
+                    : Platform.OS === "android"
+                      ? gt("Choose a thread from the sidebar or start a new thread.")
+                      : gt("Choose a thread from the sidebar or start a new task.")}
             </Text>
-            {props.onStartNewTask && !pullRequests && !settings ? (
+            {props.onStartNewTask && !pullRequests && !issues && !settings ? (
               Platform.OS === "android" ? (
                 <NewThreadButton extended className="mt-2" onPress={props.onStartNewTask} />
               ) : (
@@ -79,7 +83,7 @@ export function WorkspaceEmptyDetail(props: {
                   onPress={props.onStartNewTask}
                 >
                   <Text className="text-base font-t3-bold text-primary-foreground">
-                    {uiT("New thread")}
+                    <T>New thread</T>
                   </Text>
                 </Pressable>
               )

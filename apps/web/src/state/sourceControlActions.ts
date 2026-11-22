@@ -1,3 +1,4 @@
+import { msg, useMessages } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import type {
   AtomCommandFailure,
@@ -6,8 +7,8 @@ import type {
 } from "@t3tools/client-runtime/state/runtime";
 import {
   VcsActionUnavailableError,
-  type RunVcsStackedActionInput,
   type VcsActionOperation,
+  type RunVcsStackedActionInput,
 } from "@t3tools/client-runtime/state/vcs";
 import {
   AuthOrchestrationOperateScope,
@@ -22,16 +23,16 @@ import {
 } from "@t3tools/contracts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
-import { useUiLanguage } from "../i18n";
 
-import { suggestAppAccessForRemote } from "../components/sourceControlAppAccessToast";
 import { appAtomRegistry } from "../rpc/atomRegistry";
+import { m } from "../i18n/messages";
 import { gitEnvironment } from "./git";
 import { useEnvironmentQuery } from "./query";
 import { readEnvironmentScope, useEnvironmentScope } from "./session";
 import { sourceControlEnvironment } from "./sourceControl";
 import { useAtomCommand } from "./use-atom-command";
 import { vcsActionManager, vcsEnvironment } from "./vcs";
+import { suggestAppAccessForRemote } from "../components/sourceControlAppAccessToast";
 
 export type SourceControlActionKind =
   | "init"
@@ -82,7 +83,6 @@ function useAction<
   readonly onSuccess?: () => void;
   readonly managedExternally?: boolean;
 }): SourceControlActionState<TArgs, R> {
-  const { t: uiT } = useUiLanguage();
   const isAllowed = useEnvironmentScope(input.scope.environmentId, AuthSourceControlWriteScope);
   const operation = ACTION_OPERATION[input.kind];
   const state = useAtomValue(vcsActionManager.stateAtom(input.scope));
@@ -101,7 +101,7 @@ function useAction<
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthSourceControlWriteScope,
-            message: uiT("This connection cannot change source control."),
+            message: m(msg("This connection cannot change source control.")),
           }),
         ),
       );
@@ -122,7 +122,7 @@ function useAction<
           input.scope,
           {
             operation,
-            label: input.label,
+            label: m(input.label),
           },
           execute,
         );
@@ -160,8 +160,6 @@ export function useSourceControlActionRunning(
 }
 
 export function useVcsInitAction(scope: SourceControlActionScope) {
-  const { t: uiT } = useUiLanguage();
-
   const init = useAtomCommand(vcsEnvironment.init, { reportFailure: false });
   const action = async () => {
     const target = resolveScope(scope);
@@ -181,12 +179,10 @@ export function useVcsInitAction(scope: SourceControlActionScope) {
       input: { cwd: target.cwd },
     });
   };
-  return useAction({ kind: "init", label: uiT("Initializing repository"), scope, action });
+  return useAction({ kind: "init", label: msg("Initializing repository"), scope, action });
 }
 
 export function useVcsPullAction(scope: SourceControlActionScope) {
-  const { t: uiT } = useUiLanguage();
-
   const pull = useAtomCommand(vcsEnvironment.pull, { reportFailure: false });
   const status = useEnvironmentQuery(
     scope.environmentId !== null && scope.cwd !== null
@@ -216,7 +212,7 @@ export function useVcsPullAction(scope: SourceControlActionScope) {
   };
   return useAction({
     kind: "pull",
-    label: uiT("Pulling latest changes..."),
+    label: msg("Pulling latest changes..."),
     scope,
     action,
     onSuccess: status.refresh,
@@ -224,8 +220,6 @@ export function useVcsPullAction(scope: SourceControlActionScope) {
 }
 
 export function useGitStackedAction(scope: SourceControlActionScope) {
-  const { t: uiT } = useUiLanguage();
-
   const runStackedAction = useAtomCommand(vcsActionManager.runStackedAction(scope), {
     reportFailure: false,
   });
@@ -255,7 +249,7 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
 
   return useAction({
     kind: "runStackedAction",
-    label: uiT("Running source control action"),
+    label: msg("Running source control action"),
     scope,
     action,
     onSuccess: status.refresh,
@@ -264,8 +258,6 @@ export function useGitStackedAction(scope: SourceControlActionScope) {
 }
 
 export function useSourceControlPublishRepositoryAction(scope: SourceControlActionScope) {
-  const { t: uiT } = useUiLanguage();
-
   const publishRepository = useAtomCommand(sourceControlEnvironment.publishRepository, {
     reportFailure: false,
   });
@@ -310,7 +302,7 @@ export function useSourceControlPublishRepositoryAction(scope: SourceControlActi
   };
   return useAction({
     kind: "publishRepository",
-    label: uiT("Publishing repository"),
+    label: msg("Publishing repository"),
     scope,
     action,
     onSuccess: status.refresh,
@@ -318,8 +310,6 @@ export function useSourceControlPublishRepositoryAction(scope: SourceControlActi
 }
 
 export function usePreparePullRequestThreadAction(scope: SourceControlActionScope) {
-  const { t: uiT } = useUiLanguage();
-
   const preparePullRequestThread = useAtomCommand(gitEnvironment.preparePullRequestThread, {
     reportFailure: false,
   });
@@ -349,7 +339,7 @@ export function usePreparePullRequestThreadAction(scope: SourceControlActionScop
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthOrchestrationOperateScope,
-            message: uiT("This connection cannot change threads."),
+            message: m(msg("This connection cannot change threads.")),
           }),
         ),
       );
@@ -366,7 +356,7 @@ export function usePreparePullRequestThreadAction(scope: SourceControlActionScop
   };
   return useAction({
     kind: "preparePullRequestThread",
-    label: uiT("Preparing pull request thread"),
+    label: msg("Preparing pull request thread"),
     scope,
     action,
   });
@@ -396,6 +386,7 @@ export function readCachedPullRequestResolution(
 }
 
 export function usePullRequestResolutionState(target: PullRequestResolutionTarget) {
+  const resolve = useMessages();
   const query = useEnvironmentQuery(
     target.environmentId !== null && target.cwd !== null && target.reference !== null
       ? gitEnvironment.pullRequestResolution({
@@ -406,6 +397,7 @@ export function usePullRequestResolutionState(target: PullRequestResolutionTarge
           },
         })
       : null,
+    resolve,
   );
   const cached = readCachedPullRequestResolution(target);
 

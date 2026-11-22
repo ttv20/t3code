@@ -1,8 +1,10 @@
+import { useGT, useMessages } from "gt-react-native";
+import { selectedNavigationTab, visibleNavigationTabs } from "./navigation-tab-order";
 import { Toolbar } from "../../../components/ui/Toolbar";
 import { useControlTheme } from "../../../components/ui/useControlTheme";
-import { useUiLanguage } from "../../../i18n";
+
 import { useDeviceType } from "../../../native/native-layout-metrics";
-import { selectedNavigationTab, visibleNavigationTabs } from "./navigation-tab-order";
+
 import {
   NAVIGATION_TAB_ICONS,
   WORKSPACE_TAB_LABELS,
@@ -14,10 +16,11 @@ import { useCompactWorkspaceTabs, useSidebarWorkspaceTabs } from "./useSystemWor
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 
 const PULL_REQUEST_ICON = require("../../../../assets/icons/pull-request.png");
+const ISSUE_ICON = require("../../../../assets/icons/issue.png");
 
 export function WorkspaceTabToolbarButtons() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const order = useNavigationTabOrder();
   const hidden = useHiddenNavigationTabs();
   const workspace = useWorkspaceTabs()!;
@@ -35,11 +38,13 @@ export function WorkspaceTabToolbarButtons() {
         <Toolbar.Button
           key={tab}
           identifier={`workspace-tab-${tab}`}
-          accessibilityLabel={uiT(WORKSPACE_TAB_LABELS[tab])}
+          accessibilityLabel={m(WORKSPACE_TAB_LABELS[tab])}
           icon={
             tab === "pullRequests"
               ? { type: "image", source: PULL_REQUEST_ICON, tinted: true }
-              : NAVIGATION_TAB_ICONS[tab]
+              : tab === "issues"
+                ? { type: "image", source: ISSUE_ICON, tinted: true }
+                : NAVIGATION_TAB_ICONS[tab]
           }
           tintColor={selected === tab ? selectedTint : undefined}
           onPress={() => selectTab(tab)}
@@ -47,7 +52,7 @@ export function WorkspaceTabToolbarButtons() {
       ))}
       <Toolbar.Button
         identifier="workspace-tab-settings"
-        accessibilityLabel={uiT("Settings")}
+        accessibilityLabel={gt("Settings")}
         icon="gearshape"
         tintColor={selected === "settings" ? selectedTint : undefined}
         onPress={() => selectTab("settings")}
@@ -63,8 +68,7 @@ export function WorkspaceSectionToolbar({
   readonly onNewTask: () => void;
   readonly showCompose?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const sidebarTabs = useSidebarWorkspaceTabs();
   const compactTabs = useCompactWorkspaceTabs();
   const deviceType = useDeviceType();
@@ -73,7 +77,7 @@ export function WorkspaceSectionToolbar({
       {showCompose && sidebarTabs !== "picker" && deviceType !== "duo-unfolded" && !compactTabs ? (
         <Toolbar placement="right">
           <Toolbar.Button
-            accessibilityLabel={uiT("New chat")}
+            accessibilityLabel={gt("New chat")}
             icon="square.and.pencil"
             onPress={onNewTask}
           />

@@ -1,9 +1,10 @@
+import { useKeyboardState } from "react-native-keyboard-controller";
 import { useState } from "react";
 import { Platform, View } from "react-native";
-import { useKeyboardState } from "react-native-keyboard-controller";
+import { useGT } from "gt-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../components/ui/Toast";
-import { useUiLanguage } from "../../i18n";
+
 import {
   useDeviceType,
   useDuoBottomBarInset,
@@ -20,8 +21,7 @@ import {
 } from "./thread-undo-notice";
 
 export function ThreadUndoNotice(props: { readonly visible: boolean }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const floatingTabsEnabled = useAndroidFloatingTabs();
   const notice = useThreadUndoNotice();
   const insets = useSafeAreaInsets();
@@ -54,7 +54,11 @@ export function ThreadUndoNotice(props: { readonly visible: boolean }) {
   const bottom =
     Platform.OS === "ios"
       ? foldedResting
-        ? Math.max(rootMetrics.safeArea.bottom, keyboardHeight) + 8
+        ? // Sit level with the rail's tab pill, which floats inside the bottom safe area.
+          Math.max(
+            rootMetrics.bottomBarInset ?? rootMetrics.safeArea.bottom + 8,
+            keyboardHeight + 8,
+          )
         : rootMetrics?.hasHinge && rootMetrics.verticalBarEdge !== "none"
           ? // The column's safe area already includes UIKit's search toolbar in this posture.
             workspaceSearchBottomClearance({
@@ -81,9 +85,15 @@ export function ThreadUndoNotice(props: { readonly visible: boolean }) {
       pointerEvents="box-none"
     >
       <Toast
-        message={uiT("{0} thread", { "0": notice.action })}
+        message={
+          notice.action === "Settled"
+            ? gt("Settled thread")
+            : notice.action === "Snoozed"
+              ? gt("Snoozed thread")
+              : gt("Unpinned thread")
+        }
         action={{
-          label: uiT("Undo"),
+          label: gt("Undo"),
           onPress: () => {
             void notice.undo();
           },

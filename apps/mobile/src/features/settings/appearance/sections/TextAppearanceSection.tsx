@@ -1,5 +1,5 @@
 import { SliderRow } from "../../../../components/ui/SliderRow";
-import { useUiLanguage } from "../../../../i18n";
+import { useGT } from "gt-react-native";
 import {
   BASE_FONT_SIZE_STEP,
   MAX_BASE_FONT_SIZE,
@@ -17,7 +17,7 @@ import {
 import { FontSizeSliderRow } from "../components/FontSizeSliderRow";
 
 export function TextAppearanceSection() {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
 
   const {
     isReady,
@@ -31,13 +31,13 @@ export function TextAppearanceSection() {
 
   return (
     <>
-      <SettingsSection title={uiT("Text")}>
+      <SettingsSection title={gt("Text")}>
         <TextAppearancePreview fontSize={appearance.baseFontSize} />
         <AppearancePreviewSeparator />
         <FontSizeSliderRow
           disabled={!isReady}
           icon="textformat.size"
-          label={uiT("Text size")}
+          label={gt("Text size")}
           max={MAX_BASE_FONT_SIZE}
           min={MIN_BASE_FONT_SIZE}
           onChange={setBaseFontSize}
@@ -48,12 +48,12 @@ export function TextAppearanceSection() {
         <SettingsSwitchRow
           disabled={!isReady}
           icon="plusminus"
-          label={uiT("Render math")}
+          label={gt("Render math")}
           value={mathRenderingEnabled}
           onValueChange={setMathRenderingEnabled}
         />
       </SettingsSection>
-      <SettingsSection title={uiT("Chat text")}>
+      <SettingsSection title={gt("Chat text")}>
         <TextAppearancePreview
           fontSize={appearance.chatFontSize}
           lineHeight={appearance.chatLineHeight}
@@ -62,7 +62,7 @@ export function TextAppearanceSection() {
         <SettingsSwitchRow
           disabled={!isReady}
           icon="textformat.size"
-          label={uiT("Custom chat text size")}
+          label={gt("Custom chat text size")}
           value={appearance.isChatFontSizeCustom}
           onValueChange={(enabled) => setChatFontSize(enabled ? appearance.chatFontSize : null)}
         />
@@ -70,7 +70,7 @@ export function TextAppearanceSection() {
           <FontSizeSliderRow
             disabled={!isReady}
             icon="textformat.size"
-            label={uiT("Chat text size")}
+            label={gt("Chat text size")}
             max={MAX_BASE_FONT_SIZE}
             min={MIN_BASE_FONT_SIZE}
             onChange={setChatFontSize}
@@ -82,7 +82,7 @@ export function TextAppearanceSection() {
         <SettingsSwitchRow
           disabled={!isReady}
           icon="arrow.up.and.down"
-          label={uiT("Custom chat line height")}
+          label={gt("Custom chat line height")}
           value={appearance.isChatLineHeightCustom}
           onValueChange={(enabled) => setChatLineHeight(enabled ? appearance.chatLineHeight : null)}
         />
@@ -90,7 +90,7 @@ export function TextAppearanceSection() {
           <SliderRow
             disabled={!isReady}
             icon="arrow.up.and.down"
-            label={uiT("Chat line height")}
+            label={gt("Chat line height")}
             min={Math.max(MIN_CHAT_LINE_HEIGHT, appearance.chatFontSize + 2)}
             max={MAX_CHAT_LINE_HEIGHT}
             step={1}

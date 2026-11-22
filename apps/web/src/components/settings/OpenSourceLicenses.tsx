@@ -1,13 +1,14 @@
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import * as Cause from "effect/Cause";
+import * as Schema from "effect/Schema";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import * as Schema from "effect/Schema";
 import { FetchHttpClient, HttpClient } from "effect/http";
 import { Atom } from "effect/reactivity";
-import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "lucide-react";
+import { msg, T, useGT, useMessages } from "gt-react";
 import { useState } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import {
   decodeThirdPartyLicenseManifest,
@@ -17,6 +18,7 @@ import {
   type ThirdPartyLicenseEntry,
 } from "@t3tools/shared/thirdPartyLicenses";
 
+import { m } from "../../i18n/messages";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collapsible";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
@@ -37,15 +39,22 @@ const licenseManifestAtom = Atom.make(
     );
     if (response.status < 200 || response.status >= 300) {
       return yield* new LicenseManifestLoadError({
-        message: `The license manifest request failed with status ${String(response.status)}.`,
+        message: m(
+          msg("The license manifest request failed with status {status}.", {
+            status: String(response.status),
+          }),
+        ),
       });
     }
     const body = yield* response.json;
     return yield* Effect.try({
-      try: () => decodeThirdPartyLicenseManifest(body),
+      try: () => decodeThirdPartyLicenseManifest(body, m),
       catch: (error) =>
         new LicenseManifestLoadError({
-          message: error instanceof Error ? error.message : "The license manifest could not load.",
+          message:
+            error instanceof Error
+              ? (thrownErrorMessage(error, m) ?? error.message)
+              : m(msg("The license manifest could not load.")),
         }),
     });
   }).pipe(
@@ -57,7 +66,9 @@ const licenseManifestAtom = Atom.make(
       duration: "30 seconds",
       orElse: () =>
         Effect.fail(
-          new LicenseManifestLoadError({ message: "The license manifest took too long to load." }),
+          new LicenseManifestLoadError({
+            message: m(msg("The license manifest took too long to load.")),
+          }),
         ),
     }),
     Effect.provide(FetchHttpClient.layer),
@@ -73,8 +84,8 @@ function LicenseNoticeRow({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
       <article>
@@ -92,20 +103,17 @@ function LicenseNoticeRow({
                 <code className="shrink-0 text-xs text-muted-foreground">{entry.version}</code>
               ) : null}
             </span>
-            <span
-              dir="auto"
-              className="max-w-[42%] shrink-0 truncate text-xs text-muted-foreground"
-            >
-              {entry.license} · {formatLicenseBundles(entry.bundles)}
+            <span className="max-w-[42%] shrink-0 truncate text-xs text-muted-foreground">
+              {entry.license} · {formatLicenseBundles(entry.bundles, messages)}
             </span>
           </CollapsibleTrigger>
           {entry.sourceUrl ? (
             <Button
-              aria-label={uiT("View project source for {0}", { "0": entry.name })}
+              aria-label={gt("View project source for {name}", { name: entry.name })}
               className="me-3 shrink-0 sm:me-4"
               render={<a href={entry.sourceUrl} rel="noreferrer noopener" target="_blank" />}
               size="icon-micro"
-              title={uiT("Project source")}
+              title={gt("Project source")}
               variant="ghost-muted"
             >
               <ExternalLinkIcon aria-hidden className="size-3" />
@@ -133,13 +141,17 @@ function LicenseCount({
   filteredCount: number;
   totalCount: number;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <p className="whitespace-nowrap text-xs font-normal text-muted-foreground tabular-nums">
       {filteredCount === totalCount
-        ? uiT("{0} notices", { "0": String(totalCount) })
-        : uiT("{0} of {1}", { "0": String(filteredCount), "1": String(totalCount) })}
+        ? gt("{count, plural, one {{count} notices} other {{count} notices}}", {
+            count: totalCount,
+          })
+        : gt("{filtered} of {total}", {
+            filtered: String(filteredCount),
+            total: String(totalCount),
+          })}
     </p>
   );
 }
@@ -159,8 +171,7 @@ function LicenseHeaderAction({
   filteredCount: number;
   totalCount: number;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (!searchOpen) {
     return (
       <div className="flex items-center gap-1.5">
@@ -169,7 +180,7 @@ function LicenseHeaderAction({
           <TooltipTrigger
             render={
               <Button
-                aria-label={uiT("Search open-source licenses")}
+                aria-label={gt("Search open-source licenses")}
                 onClick={() => onSearchOpenChange(true)}
                 size="icon-micro"
                 type="button"
@@ -179,7 +190,9 @@ function LicenseHeaderAction({
               </Button>
             }
           />
-          <TooltipPopup side="top">{uiT("Search licenses")}</TooltipPopup>
+          <TooltipPopup side="top">
+            <T>Search licenses</T>
+          </TooltipPopup>
         </Tooltip>
       </div>
     );
@@ -195,7 +208,7 @@ function LicenseHeaderAction({
           <SearchIcon aria-hidden className="size-3" />
         </InputGroupAddon>
         <InputGroupInput
-          aria-label={uiT("Search open-source licenses")}
+          aria-label={gt("Search open-source licenses")}
           autoFocus
           onBlur={() => {
             if (query.length === 0) onSearchOpenChange(false);
@@ -207,7 +220,7 @@ function LicenseHeaderAction({
             onQueryChange("");
             onSearchOpenChange(false);
           }}
-          placeholder={uiT("Search licenses")}
+          placeholder={gt("Search licenses")}
           size="sm"
           type="search"
           value={query}
@@ -218,28 +231,25 @@ function LicenseHeaderAction({
 }
 
 function LicenseManifestError({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <div className="flex flex-col items-start gap-3 px-3 py-5 sm:px-4">
       <div className="flex flex-col gap-1">
         <h3 className="text-sm font-medium text-foreground">
-          {uiT("Open-source notices are unavailable")}
+          <T>Open-source notices are unavailable</T>
         </h3>
         <p className="max-w-[70ch] text-pretty text-xs leading-normal text-muted-foreground/80">
           {message}
         </p>
       </div>
       <Button type="button" size="xs" variant="outline" onClick={onRetry}>
-        {uiT("Try again")}
+        <T>Try again</T>
       </Button>
     </div>
   );
 }
 
 export function OpenSourceLicensesPanel() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const result = useAtomValue(licenseManifestAtom);
   const retry = useAtomRefresh(licenseManifestAtom);
   const [query, setQuery] = useState("");
@@ -251,7 +261,7 @@ export function OpenSourceLicensesPanel() {
   const errorMessage =
     result._tag === "Failure" && !result.waiting
       ? Option.match(Cause.findErrorOption(result.cause), {
-          onNone: () => "The license manifest could not load.",
+          onNone: () => gt("The license manifest could not load."),
           onSome: (error) => error.message,
         })
       : null;
@@ -259,7 +269,7 @@ export function OpenSourceLicensesPanel() {
   return (
     <SettingsPageContainer>
       <SettingsSection
-        title={uiT("Third-party notices")}
+        title={gt("Third-party notices")}
         headerAction={
           manifest ? (
             <LicenseHeaderAction
@@ -289,7 +299,7 @@ export function OpenSourceLicensesPanel() {
               })
             ) : (
               <p className="px-3 py-8 text-center text-sm/6 text-muted-foreground sm:px-4">
-                {uiT("No licenses match that search.")}
+                <T>No licenses match that search.</T>
               </p>
             )}
           </div>
@@ -297,7 +307,7 @@ export function OpenSourceLicensesPanel() {
           <LicenseManifestError message={errorMessage} onRetry={retry} />
         ) : (
           <p className="px-3 py-5 text-sm/6 text-muted-foreground sm:px-4">
-            {uiT("Loading open-source notices…")}
+            <T>Loading open-source notices…</T>
           </p>
         )}
       </SettingsSection>

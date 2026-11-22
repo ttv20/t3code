@@ -1,5 +1,7 @@
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
+import * as messages from "~/i18n/messages";
 import { EnvironmentId, type ServerSelfUpdateCapability } from "@t3tools/contracts";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   closeFinishedUpdateRun,
@@ -13,7 +15,6 @@ import {
   localSwitchBlockReason,
   resolveUpdateRunMachineStatus,
   runUpdateEverything,
-  UPDATE_SLOW_AFTER_MS,
   type UpdateEverythingMachine,
   type UpdateEverythingRun,
   type UpdateRunMachine,
@@ -111,6 +112,18 @@ describe("collectServerUpdateTargets", () => {
     ]);
   });
 
+  it("does not offer a Nightly build to a Stable desktop app, whose own feed has nothing newer", () => {
+    const { targets, skipped } = collectServerUpdateTargets(
+      [machine("stable-desktop", "0.1.9", "desktop-managed")],
+      "0.1.10-nightly.20261116.4761",
+    );
+
+    expect(targets.map((target) => target.serverLabel)).toEqual([]);
+    expect(skipped.map((entry) => [entry.label, entry.reason])).toEqual([
+      ["stable-desktop", "on the stable channel"],
+    ]);
+  });
+
   it("skips servers whose policy refuses the update, with the policy's message", () => {
     const managed = (
       id: string,
@@ -145,7 +158,10 @@ describe("collectServerUpdateTargets", () => {
           ...entry,
           serverConfig: {
             ...entry.serverConfig,
-            environment: { ...entry.serverConfig.environment, serverVersion: "0.0.49-nightly.1" },
+            environment: {
+              ...entry.serverConfig.environment,
+              serverVersion: "0.0.49-nightly.20261027.1",
+            },
           },
         })),
         "0.0.50-nightly.20261028.1",
@@ -280,7 +296,7 @@ describe("localSwitchBlockReason", () => {
     const nightly = "0.1.4-nightly.20261027.3796";
 
     const windows = { connected: true, databaseMigration: 69 };
-    expect(localSwitchBlockReason(nightly, stable, [windows], 1)).toBeNull();
+    expect(localSwitchBlockReason(nightly, stable, [windows], 1, true)).toBeNull();
     // A WSL server's newer migration blocks the reinstall that would restart it.
     expect(
       localSwitchBlockReason(
@@ -288,17 +304,31 @@ describe("localSwitchBlockReason", () => {
         stable,
         [windows, { connected: true, databaseMigration: 72 }],
         2,
+        true,
       ),
     ).toContain("does not support yet");
     // A WSL backend still starting has no client entry, so its database is unchecked.
-    expect(localSwitchBlockReason(nightly, stable, [windows], 2)).toBe(
-      "its server is not connected, so its database cannot be checked",
+    expect(localSwitchBlockReason(nightly, stable, [windows], 2, true)).toBe(
+      "This app cannot switch: its server is not connected, so its database cannot be checked.",
     );
     // A cached head from a disconnected server proves nothing.
     expect(
-      localSwitchBlockReason(nightly, stable, [{ connected: false, databaseMigration: 69 }], 1),
-    ).toBe("its server is not connected, so its database cannot be checked");
-    expect(localSwitchBlockReason("0.1.3", stable, [], 1)).toBeNull();
+      localSwitchBlockReason(
+        nightly,
+        stable,
+        [{ connected: false, databaseMigration: 69 }],
+        1,
+        true,
+      ),
+    ).toBe(
+      "This app cannot switch: its server is not connected, so its database cannot be checked.",
+    );
+    expect(localSwitchBlockReason("0.1.3", stable, [], 1, true)).toBeNull();
+    // A primary backend still starting has no entry or bootstrap yet, unless Local environment is off.
+    expect(localSwitchBlockReason(nightly, stable, [], 0, true)).toBe(
+      "This app cannot switch: its server is not connected, so its database cannot be checked.",
+    );
+    expect(localSwitchBlockReason(nightly, stable, [], 0, false)).toBeNull();
   });
 });
 
@@ -547,14 +577,12 @@ describe("update capsule", () => {
       label: "1 of 3 updated",
       action: null,
     });
-    expect(describeUpdateCapsule(run(), machines, null, UPDATE_SLOW_AFTER_MS + 6 * 60_000)).toEqual(
-      {
-        tone: "slow",
-        label: "alvin",
-        slow: { status: "restarting", elapsed: "9m" },
-        action: null,
-      },
-    );
+    expect(describeUpdateCapsule(run(), machines, null, 9 * 60_000)).toEqual({
+      tone: "slow",
+      label: "alvin",
+      slow: { status: "restarting", elapsed: "9m" },
+      action: null,
+    });
   });
 
   it("offers a retry only for failed servers it can update again", () => {
@@ -571,7 +599,13 @@ describe("update capsule", () => {
         0,
       ),
     ).toEqual({ tone: "failed", label: "2 failed", action: "dismiss" });
-    const localized = describeUpdateCapsule(run(), [view("Settings", "failed")], null, 0, "he");
+    const localized = describeUpdateCapsule(
+      run(),
+      [view("Settings", "failed")],
+      null,
+      0,
+      createUiMessageResolver("he"),
+    );
     expect(localized.label).toBe("העדכון של Settings נכשל");
   });
 
@@ -644,12 +678,10 @@ describe("update everything summary", () => {
   });
 
   it("localizes restart summaries while preserving server names", () => {
+    using _locale = vi.spyOn(messages, "m").mockImplementation(createUiMessageResolver("he"));
     expect(
-      getUpdateEverythingToastView(
-        { ...result, failures: [], restarting: ["alvin"] },
-        "0.0.50",
-        "he",
-      )?.description,
+      getUpdateEverythingToastView({ ...result, failures: [], restarting: ["alvin"] }, "0.0.50")
+        ?.description,
     ).toBe("alvin עדיין באתחול.");
   });
 

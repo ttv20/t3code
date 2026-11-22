@@ -1,4 +1,5 @@
-import { useAtomValue } from "@effect/atom-react";
+import * as Dialog from "../../components/ui/Dialog";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
 import {
   CommonActions,
   usePreventRemove,
@@ -6,22 +7,24 @@ import {
   useRoute,
   type StaticScreenProps,
 } from "@react-navigation/native";
+import { msg, T, useGT } from "gt-react-native";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
+import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
   runAtomCommand,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult, Atom } from "effect/reactivity";
-import { useEffect, useState } from "react";
-import { View } from "react-native";
+
 import { AppBar } from "../../components/ui/AppBar";
 import { AppText as Text } from "../../components/ui/AppText";
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
-import { rootNavigationRef } from "../../lib/rootNavigation";
-import { appAtomRegistry } from "../../state/atom-registry";
+import { m } from "../../i18n/messages";
 import { useProjects } from "../../state/entities";
-import { readUiTranslator } from "../../state/ui-language";
+import { appAtomRegistry } from "../../state/atom-registry";
+import { rootNavigationRef } from "../../lib/rootNavigation";
+
 import { vcsEnvironment } from "../../state/vcs";
 import { useWorkspaceState } from "../../state/workspace";
 import { threadSelectionDeferral } from "../layout/deferred-navigation";
@@ -66,12 +69,11 @@ const branchCheckouts = makeNewTaskBranchCheckouts({
     }),
   holdNavigation: threadSelectionDeferral.waitFor,
   onFailure: (request, result) => {
-    const uiT = readUiTranslator();
     if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
       Dialog.alert(
-        uiT("Could not switch branch"),
-        error instanceof Error ? error.message : uiT("The branch could not be checked out."),
+        m(msg("Could not switch branch")),
+        errorDisplayMessage(error, m) ?? m(msg("The branch could not be checked out.")),
       );
     }
     rootNavigationRef.dispatch({
@@ -92,8 +94,7 @@ const idleBranchCheckoutAtom = Atom.make(AsyncResult.initial<BranchCheckoutResul
 );
 
 export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraftRouteParams>) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const currentRoute = useRoute();
   const goBack = useWorkspaceBackNavigation();
   const params = route.params ?? {};
@@ -204,9 +205,11 @@ export function NewTaskDraftRouteScreen({ route }: StaticScreenProps<NewTaskDraf
   return (
     <>
       {preparingBranch ? (
-        <ThreadScreenFallback header={<AppBar title={uiT("New thread")} onBack={goBack} />}>
+        <ThreadScreenFallback header={<AppBar title={gt("New thread")} onBack={goBack} />}>
           <View className="flex-1 items-center justify-center bg-screen">
-            <Text className="text-foreground">{uiT("Switching branch...")}</Text>
+            <Text className="text-foreground">
+              <T>Switching branch...</T>
+            </Text>
           </View>
         </ThreadScreenFallback>
       ) : (

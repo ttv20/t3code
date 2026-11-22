@@ -1,12 +1,15 @@
-import { useNavigation } from "@react-navigation/native";
-import * as Arr from "effect/Array";
-import * as Order from "effect/Order";
-import { use, useMemo, useState } from "react";
-import { Platform } from "react-native";
-import { useUiLanguage } from "../../i18n";
+import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
+import { HomeScreen } from "./HomeScreen";
+import { openSettings } from "../settings/settings-navigation";
 import { uuidv4 } from "../../lib/uuid";
-import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
 import { ThreadUndoNotice } from "./ThreadUndoNotice";
+import { use } from "react";
+import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
+import { useNavigation } from "@react-navigation/native";
+import { useMemo, useState } from "react";
+import { Platform } from "react-native";
+import { useGT, useMessages } from "gt-react-native";
+
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
 import { useProjects } from "../../state/entities";
@@ -37,14 +40,11 @@ import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspace
 import { useSelectWorkspaceTab } from "../layout/workspace/useSelectWorkspaceTab";
 import { WorkspaceListEmptyDetail } from "../layout/workspace/WorkspaceListEmptyDetail";
 import { WorkspaceListHeader } from "../layout/workspace/WorkspaceListHeader";
-import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
-import { openSettings } from "../settings/settings-navigation";
-import { HomeScreen } from "./HomeScreen";
+import { homeListFilterEnvironments } from "./home-list-filter-menu";
 
 export function HomeRouteScreen() {
-  const { t: uiT } = useUiLanguage();
-
-  const { locale } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
   const nativePrimaryColumn = use(NativePrimaryColumnContext);
   const { layout, setPrimarySidebarSearchQuery, startNewTask } = useAdaptiveWorkspaceLayout();
   const { primarySidebarSearchQuery } = useWorkspacePaneState();
@@ -110,19 +110,7 @@ export function HomeRouteScreen() {
   const pendingTasks = usePendingNewTasks();
   const { openPendingTask, confirmDeletePendingTask } =
     usePendingTaskListActions(selectThreadRoute);
-  const connectionStateByEnvironmentId = new Map(
-    workspaceEnvironments.map(
-      (environment) => [environment.environmentId, environment.connectionState] as const,
-    ),
-  );
-  const environments = Arr.sort(
-    Object.values(savedConnectionsById).map((connection) => ({
-      environmentId: connection.environmentId,
-      label: connection.environmentLabel,
-      connectionState: connectionStateByEnvironmentId.get(connection.environmentId) ?? "available",
-    })),
-    Order.mapInput(Order.String, (environment: { readonly label: string }) => environment.label),
-  );
+  const environments = homeListFilterEnvironments(workspaceEnvironments);
   const availableEnvironmentIds = useMemo(
     () => new Set(environments.map((environment) => environment.environmentId)),
     [environments],
@@ -135,13 +123,15 @@ export function HomeRouteScreen() {
   const selectedEnvironmentId = listOptions.selectedEnvironmentId;
   const projectScopes = useMemo(
     () =>
-      buildHomeProjectScopes({
-        locale,
-        projects,
-        environmentId: selectedEnvironmentId,
-        projectGroupingMode: listOptions.projectGroupingMode,
-      }),
-    [listOptions.projectGroupingMode, projects, selectedEnvironmentId, locale],
+      buildHomeProjectScopes(
+        {
+          projects,
+          environmentId: selectedEnvironmentId,
+          projectGroupingMode: listOptions.projectGroupingMode,
+        },
+        m,
+      ),
+    [listOptions.projectGroupingMode, projects, selectedEnvironmentId, m],
   );
   const projectFilterOptions = useMemo(
     () =>
@@ -175,24 +165,27 @@ export function HomeRouteScreen() {
     <AndroidHomeFabLayout onStartNewTask={startNewTask} bottomInset={stickyShelfHeight}>
       <>
         <WorkspaceListHeader
-          accessibilityLabel={uiT("T3 Code, Threads")}
+          accessibilityLabel={gt("T3 Code, Threads")}
           onOpenEnvironments={() => openSettings(navigation, "SettingsEnvironments")}
           search={{
             value: searchQuery,
             onChangeText: setSearchQuery,
-            placeholder: uiT("Search"),
-            accessibilityLabel: uiT("Search threads"),
+            placeholder: gt("Search", { $context: "search field placeholder" }),
+            accessibilityLabel: gt("Search threads"),
           }}
           filter={{
             customized: selectedEnvironmentId !== null || selectedProjectKey !== null,
-            items: buildHomeListFilterMenuItems({
-              environments,
-              projects: projectFilterOptions,
-              selectedEnvironmentId,
-              selectedProjectKey,
-              onEnvironmentChange: setSelectedEnvironmentId,
-              onProjectChange: setSelectedProjectKey,
-            }),
+            items: buildHomeListFilterMenuItems(
+              {
+                environments,
+                projects: projectFilterOptions,
+                selectedEnvironmentId,
+                selectedProjectKey,
+                onEnvironmentChange: setSelectedEnvironmentId,
+                onProjectChange: setSelectedProjectKey,
+              },
+              m,
+            ),
           }}
         />
 

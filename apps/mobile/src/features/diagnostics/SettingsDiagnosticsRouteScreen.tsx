@@ -1,23 +1,23 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
-import * as Effect from "effect/Effect";
-import * as Exit from "effect/Exit";
-import * as Schema from "effect/Schema";
-import { AsyncResult, Atom } from "effect/reactivity";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
+import { useAtomValue } from "@effect/atom-react";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import { AsyncResult, Atom } from "effect/reactivity";
+import { T, useGT } from "gt-react-native";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { tryCopyTextWithHaptic } from "../../lib/copyTextWithHaptic";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { mobilePreferencesAtom, saveMobilePreferences } from "../../state/preferences";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { crashReportingAvailable, setCrashReportsEnabled } from "../observability/observe";
 import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { SettingsSection } from "../settings/components/SettingsSection";
@@ -81,9 +81,9 @@ function appIdentity() {
 }
 
 export function SettingsDiagnosticsRouteScreen() {
-  const { t: uiT } = useUiLanguage();
   const insets = useSafeAreaInsets();
   const state = useCrashLogState();
+  const gt = useGT();
   const [copied, setCopied] = useState(false);
 
   const records = state.status === "ready" ? state.records : [];
@@ -95,35 +95,35 @@ export function SettingsDiagnosticsRouteScreen() {
   };
 
   return (
-    <SettingsScreen title={uiT("Diagnostics")}>
+    <SettingsScreen title={gt("Diagnostics")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentInset={{ bottom: Math.max(insets.bottom, 18) }}
         showsVerticalScrollIndicator={false}
         className="flex-1"
-        contentContainerClassName="gap-6 px-5 pt-4 pb-[18px]"
+        contentContainerClassName="gap-6 px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
         {crashReportingAvailable ? <CrashReportsSetting /> : null}
 
-        <SettingsSection title={uiT("Startup crashes")}>
+        <SettingsSection title={gt("Startup crashes")}>
           {state.status === "loading" ? (
             <View className="items-center gap-3 px-6 py-8">
               <AppActivityIndicator />
               <Text className="text-center text-sm text-foreground-muted">
-                {uiT("Reading crash log…")}
+                <T>Reading crash log…</T>
               </Text>
             </View>
           ) : state.status === "unavailable" ? (
             <EmptyState
               icon="exclamationmark.triangle"
-              title={uiT("Crash log unavailable")}
-              detail={uiT("Startup crash records are only kept in store and TestFlight builds.")}
+              title={gt("Crash log unavailable")}
+              detail={gt("Startup crash records are only kept in store and TestFlight builds.")}
             />
           ) : records.length === 0 ? (
             <EmptyState
               icon="checkmark.circle"
-              title={uiT("No startup crashes")}
-              detail={uiT("Nothing has taken the app down during launch in the last 7 days.")}
+              title={gt("No startup crashes")}
+              detail={gt("Nothing has taken the app down during launch in the last 7 days.")}
             />
           ) : (
             records.map((record, index) => (
@@ -133,18 +133,20 @@ export function SettingsDiagnosticsRouteScreen() {
         </SettingsSection>
 
         <View className="gap-3">
-          <SettingsSection title={uiT("Actions")}>
+          <SettingsSection title={gt("Actions")}>
             <SettingsActionRow
               icon={copied ? "checkmark" : "doc.on.doc"}
-              label={copied ? uiT("Copied") : uiT("Copy crash report")}
+              label={copied ? gt("Copied") : gt("Copy crash report")}
               disabled={state.status !== "ready"}
               onPress={() => void copyReport()}
             />
           </SettingsSection>
           <Text className="px-2 text-sm leading-normal text-foreground-muted">
-            {uiT(
-              "Paste the report into a GitHub issue. It contains the app version, the JavaScript error message, and the component stack. Error messages can quote values from the app, so read it over before sharing.",
-            )}
+            <T>
+              Paste the report into a GitHub issue. It contains the app version, the JavaScript
+              error message, and the component stack. Error messages can quote values from the app,
+              so read it over before sharing.
+            </T>
           </Text>
         </View>
       </ScrollView>
@@ -153,12 +155,11 @@ export function SettingsDiagnosticsRouteScreen() {
 }
 
 function CrashReportsSetting() {
-  const { t: uiT } = useUiLanguage();
-
   const preferences = useAtomValue(mobilePreferencesAtom);
-  const savePreferences = useAtomSet(updateMobilePreferencesAtom, { mode: "promiseExit" });
+  const savePreferences = useAtomCommand(saveMobilePreferences, { reportFailure: false });
   // One change at a time, so a slow save never turns sending back on after a later opt-out.
   const [saving, setSaving] = useState(false);
+  const gt = useGT();
   const ready = AsyncResult.isSuccess(preferences) && !preferences.waiting;
   const enabled = AsyncResult.isSuccess(preferences)
     ? preferences.value.crashReportsEnabled !== false
@@ -169,9 +170,9 @@ function CrashReportsSetting() {
     // Sending stops before the save and starts only after it.
     if (!value) void setCrashReportsEnabled(false);
     savePreferences({ crashReportsEnabled: value })
-      .then((exit) => {
-        if (Exit.isFailure(exit)) {
-          console.warn("[diagnostics] could not save the crash report setting", exit.cause);
+      .then((result) => {
+        if (result._tag === "Failure") {
+          console.warn("[diagnostics] could not save the crash report setting", result.cause);
           return value ? undefined : setCrashReportsEnabled(true);
         }
         return value ? setCrashReportsEnabled(true) : undefined;
@@ -184,19 +185,21 @@ function CrashReportsSetting() {
 
   return (
     <View className="gap-3">
-      <SettingsSection title={uiT("Crash reports")}>
+      <SettingsSection title={gt("Crash reports")}>
         <SettingsSwitchRow
           icon="tray.and.arrow.up"
-          label={uiT("Send crash reports")}
+          label={gt("Send crash reports")}
           disabled={!ready || saving}
           value={enabled}
           onValueChange={change}
         />
       </SettingsSection>
       <Text className="px-2 text-sm leading-normal text-foreground-muted">
-        {uiT(
-          "When the app crashes or hits an error, it sends the error message, the stack trace, the app version, and the device model and OS version to the T3 Code team. Each launch also sends startup timings. Reports carry a random ID for this install.",
-        )}
+        <T>
+          When the app crashes or hits an error, it sends the error message, the stack trace, the
+          app version, and the device model and OS version to the T3 Code team. Each launch also
+          sends startup timings. Reports carry a random ID for this install.
+        </T>
       </Text>
     </View>
   );
@@ -223,7 +226,6 @@ function EmptyState(props: {
 }
 
 function CrashRow(props: { readonly record: StartupCrashRecord; readonly first: boolean }) {
-  const { t: uiT } = useUiLanguage();
   const { record } = props;
   return (
     <View className={props.first ? "gap-1.5 p-4" : "gap-1.5 border-t border-border-subtle p-4"}>
@@ -231,7 +233,7 @@ function CrashRow(props: { readonly record: StartupCrashRecord; readonly first: 
         {new Date(record.timestamp).toLocaleString()}
       </Text>
       <Text selectable className="text-base leading-snug text-danger-foreground">
-        {uiT(record.description)}
+        {record.description}
       </Text>
       {record.frames.length > 0 ? (
         <Text selectable className="font-mono text-xs leading-snug text-foreground-muted">

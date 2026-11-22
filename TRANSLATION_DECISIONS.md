@@ -22,8 +22,10 @@ Reuse established translations such as `מסוף` for the singular terminal labe
 ## Shared catalogs and fallback
 
 English source messages are the catalog keys and the fallback when a translation is missing.
-Web, desktop, and native mobile use the shared [translation runtime](packages/client-runtime/src/i18n.ts).
-Keep translation in the client so a remote environment does not impose its language on other clients.
+Web, desktop, and native mobile use upstream GT catalogs for each client. Fork-only helpers retain
+the shared [translation runtime](packages/client-runtime/src/i18n.ts), with a lookup bridge to the
+active client catalog. Both use the same saved language. Keep translation in the client so a remote
+environment does not impose its language on other clients.
 
 English, Hebrew, Arabic, Persian, and system-language selection are supported. System-language
 selection falls back to English when no supported language matches. Arabic and Persian include

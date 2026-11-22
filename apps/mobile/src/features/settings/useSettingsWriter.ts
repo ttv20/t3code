@@ -1,9 +1,9 @@
+import { useGT } from "gt-react-native";
+import type { EnvironmentId, ServerSettingsPatch } from "@t3tools/contracts";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentId, ServerSettingsPatch } from "@t3tools/contracts";
-import { useUiLanguage } from "../../i18n";
 
 import * as Dialog from "../../components/ui/Dialog";
 import { serverEnvironment } from "../../state/server";
@@ -11,10 +11,9 @@ import { useAtomCommand } from "../../state/use-atom-command";
 import type { ScopedMobileSettingsTarget } from "./settings-scoped-server";
 
 export function useSettingsWriter() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: uiT("environment settings update"),
+    label: gt("environment settings update"),
     reportFailure: true,
   });
 
@@ -36,12 +35,15 @@ export function useSettingsWriter() {
           targets.find((target) => target.environment.environmentId === entry.environmentId)
             ?.environment.label ?? entry.environmentId;
         const error = squashAtomCommandFailure(result);
-        return `${label}: ${error instanceof Error ? error.message : String(error)}`;
+        return gt("{environment}: {error}", {
+          environment: label,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }),
     );
     const failures = outcomes.filter((outcome) => outcome !== null);
     if (failures.length > 0) {
-      Dialog.alert(uiT("Could not save settings"), failures.join("\n\n"));
+      Dialog.alert(gt("Could not save settings"), failures.join("\n\n"));
     }
   };
 }

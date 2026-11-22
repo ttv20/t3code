@@ -1,6 +1,6 @@
 import type { ProjectScript, ResolvedKeybindingsConfig } from "@t3tools/contracts";
+import { T, useGT } from "gt-react";
 import { SettingsIcon } from "lucide-react";
-import { useUiLanguage } from "../../i18n";
 import { shortcutLabelForCommand } from "../../keybindings";
 import { commandForProjectScript } from "../../projectScripts";
 import { ScriptIcon } from "../projectScriptEditor";
@@ -18,11 +18,11 @@ export function ProjectActionsList({
   disabled: boolean;
   onEdit: (script: ProjectScript) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   if (scripts.length === 0)
     return (
       <p className="px-3 py-2 text-base text-muted-foreground sm:px-4 sm:text-sm">
-        {uiT("No actions configured.")}
+        <T>No actions configured.</T>
       </p>
     );
   return scripts.map((script) => {
@@ -37,17 +37,17 @@ export function ProjectActionsList({
             <span className="min-w-0 truncate">{script.name}</span>
             {script.runOnWorktreeCreate ? (
               <span className="shrink-0 rounded-sm border border-border/60 px-1.5 py-px text-2xs font-normal text-muted-foreground">
-                {uiT("setup")}
+                {gt("setup", { $context: "badge, action runs when a worktree is created" })}
               </span>
             ) : null}
             {script.runOnSettle ? (
               <span className="shrink-0 rounded-sm border border-border/60 px-1.5 py-px text-2xs font-normal text-muted-foreground">
-                {uiT("on settle")}
+                <T>on settle</T>
               </span>
             ) : null}
             {script.previewUrl ? (
               <span className="shrink-0 rounded-sm border border-border/60 px-1.5 py-px text-2xs font-normal text-muted-foreground max-sm:hidden">
-                {uiT("preview · desktop only")}
+                <T>preview · desktop only</T>
               </span>
             ) : null}
           </span>
@@ -62,7 +62,7 @@ export function ProjectActionsList({
               <Button
                 size="icon-xs"
                 variant="ghost-muted"
-                aria-label={uiT("Edit {0}", { "0": script.name })}
+                aria-label={gt("Edit {name}", { name: script.name })}
                 disabled={disabled}
                 onClick={() => onEdit(script)}
               >

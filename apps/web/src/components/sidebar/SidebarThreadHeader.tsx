@@ -1,3 +1,4 @@
+import { useGT } from "gt-react";
 import { FolderPlusIcon, SearchIcon, SquarePenIcon, XIcon } from "lucide-react";
 import {
   type ComponentProps,
@@ -6,7 +7,6 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
@@ -50,14 +50,13 @@ export function SidebarThreadHeader({
   activeSearchResultIndex,
   onClearSearch,
 }: SidebarThreadHeaderProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const resultsVisible = isSearching && searchResultCount > 0;
   // Shrinking results can remove the active option; never leave aria-activedescendant pointing at it.
   const activeResultExists = resultsVisible && activeSearchResultIndex < searchResultCount;
   const newThreadLabel = newThreadShortcutLabel
-    ? uiT("New thread ({0})", { "0": newThreadShortcutLabel })
-    : uiT("New thread");
+    ? gt("New thread ({shortcut})", { shortcut: newThreadShortcutLabel })
+    : gt("New thread");
 
   return (
     <div className="flex items-center gap-1">
@@ -70,8 +69,8 @@ export function SidebarThreadHeader({
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
           onKeyDown={onSearchKeyDown}
-          placeholder={uiT("Search")}
-          aria-label={uiT("Search threads")}
+          placeholder={gt("Search", { $context: "search field placeholder" })}
+          aria-label={gt("Search threads")}
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={resultsVisible}
@@ -89,7 +88,7 @@ export function SidebarThreadHeader({
             size="icon-micro"
             variant="ghost-muted"
             className="shrink-0"
-            aria-label={uiT("Clear thread search")}
+            aria-label={gt("Clear thread search")}
             onClick={() => {
               onClearSearch();
               searchInputRef.current?.focus();
@@ -103,20 +102,23 @@ export function SidebarThreadHeader({
         {hasProjects ? (
           <>
             {projectScope}
-            <SidebarHeaderIconButton label={uiT("Add project")} onClick={onNewProject}>
+            <SidebarHeaderIconButton label={gt("Add project")} onClick={onNewProject}>
               <FolderPlusIcon />
             </SidebarHeaderIconButton>
           </>
         ) : null}
         <SidebarHeaderIconButton
-          label={uiT("New thread")}
+          label={gt("New thread")}
           tooltip={
             showNewThreadInProjectHint ? (
               <span className="flex flex-col gap-0.5">
                 <span>{newThreadLabel}</span>
                 <span className="text-muted-foreground">
-                  {uiT("New thread in current project: Shift+click")}
-                  {newThreadInProjectShortcutLabel ? ` (${newThreadInProjectShortcutLabel})` : ""}
+                  {newThreadInProjectShortcutLabel
+                    ? gt("New thread in current project: Shift+click ({shortcut})", {
+                        shortcut: newThreadInProjectShortcutLabel,
+                      })
+                    : gt("New thread in current project: Shift+click")}
                 </span>
               </span>
             ) : (

@@ -1,6 +1,6 @@
+import { useGT } from "gt-react";
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { X } from "lucide-react";
-import { useUiLanguage } from "../../i18n";
 
 import { isValidHistoryTimestamp, type BrowserHistoryEntry } from "~/browserHistoryStore";
 import { RelativeTime } from "~/components/RelativeTime";
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function PreviewRecentUrlCard({ threadRef, entry, onOpen, onRemove }: Props) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const parsed = new URL(entry.url);
   const path = parsed.pathname === "/" ? "" : parsed.pathname;
   const label = `${parsed.host}${path}${parsed.search}${parsed.hash}`;
@@ -32,7 +32,7 @@ export function PreviewRecentUrlCard({ threadRef, entry, onOpen, onRemove }: Pro
         <PreviewFaviconIcon threadRef={threadRef} url={entry.url} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-medium text-foreground">
-            {entry.title ?? uiT(label)}
+            {entry.title ?? label}
           </span>
           <span className="truncate text-xs text-muted-foreground">
             {entry.title ? `${label} · ` : ""}
@@ -42,7 +42,7 @@ export function PreviewRecentUrlCard({ threadRef, entry, onOpen, onRemove }: Pro
       </button>
       <button
         type="button"
-        aria-label={uiT("Remove {0} from history", { "0": label })}
+        aria-label={gt("Remove {url} from history", { url: label })}
         onClick={onRemove}
         className="absolute right-3 rounded p-1 text-muted-foreground opacity-0 hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring group-hover:opacity-100"
       >

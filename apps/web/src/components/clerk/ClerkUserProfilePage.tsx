@@ -1,5 +1,5 @@
+import { T } from "gt-react";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { useUiLanguage } from "../../i18n";
 
 import type { ReactNode } from "react";
 
@@ -19,15 +19,14 @@ export function ClerkUserProfilePage({
   readonly description?: ReactNode;
   readonly title: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div className={cn("w-full min-w-0 text-foreground", className)}>
       <header className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-8">
         <div className="min-w-0 [unicode-bidi:plaintext]">
-          <h2 className="text-base leading-6 font-semibold">{uiT(title)}</h2>
+          <h2 className="text-base leading-6 font-semibold">{title}</h2>
           {description ? (
             <p className="mt-1 max-w-[34rem] text-xs leading-4.5 text-muted-foreground sm:min-h-9">
-              {uiT(description)}
+              {description}
             </p>
           ) : null}
         </div>
@@ -50,7 +49,6 @@ export function ClerkUserProfileRefreshButton({
   readonly isPending: boolean;
   readonly onClick: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Button
       size="sm"
@@ -60,7 +58,7 @@ export function ClerkUserProfileRefreshButton({
       onClick={onClick}
     >
       <RefreshIcon aria-hidden="true" size="sm" refreshing={isPending} />
-      {uiT("Refresh")}
+      <T>Refresh</T>
     </Button>
   );
 }

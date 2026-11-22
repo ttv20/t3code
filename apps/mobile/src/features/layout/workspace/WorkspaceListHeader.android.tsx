@@ -1,7 +1,8 @@
-import { useNavigation, useNavigationState } from "@react-navigation/native";
+import { useGT } from "gt-react-native";
 import { useEffect, useState } from "react";
+import { useNavigation, useNavigationState } from "@react-navigation/native";
+
 import { BackHandler, Keyboard } from "react-native";
-import { useUiLanguage } from "../../../i18n";
 
 import { AppBar } from "../../../components/ui/AppBar";
 import { useWorkspaceConnectionState } from "../../../state/workspace";
@@ -14,8 +15,7 @@ import {
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 
 export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const navigation = useNavigation();
   const workspace = useWorkspaceTabs();
   const isTabActive = workspace?.isTabActive;
@@ -61,7 +61,7 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
 
   return (
     <AppBar
-      title={uiT("T3 Code")}
+      title={gt("T3 Code")}
       titleContent={
         <WorkspaceBrandTitle
           accessibilityLabel={props.accessibilityLabel}
@@ -81,7 +81,7 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
         connectionState.hasConnections
           ? [
               {
-                title: uiT("Filter threads"),
+                title: gt("Filter threads"),
                 icon: workspaceListFilterIcon(props.filter.customized),
                 items: props.filter.items,
               },

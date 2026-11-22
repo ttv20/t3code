@@ -1,6 +1,7 @@
 import type { EnvironmentThreadSearchMatch } from "@t3tools/client-runtime/state/thread-search";
 import { findSearchTokenRanges, splitSearchText } from "@t3tools/shared/paletteSearch";
-import { useUiLanguage } from "../../i18n";
+
+import { useGT } from "gt-react-native";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
@@ -12,7 +13,7 @@ export function ThreadSearchMatchExcerpt(props: {
   readonly compact?: boolean;
   readonly sidebar?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const isUser = props.match.source === "user";
   const parts = splitSearchText(
     props.match.snippet,
@@ -42,7 +43,9 @@ export function ThreadSearchMatchExcerpt(props: {
               : "text-adaptive-emerald-600-400",
         )}
       >
-        {isUser ? uiT("You:") : uiT("Agent:")}{" "}
+        {isUser
+          ? gt("You:", { $context: "label before a search snippet the user wrote" })
+          : gt("Agent:", { $context: "label before a search snippet the agent wrote" })}{" "}
       </Text>
       {parts.map((part) => (
         <Text

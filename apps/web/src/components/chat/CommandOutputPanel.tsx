@@ -1,15 +1,14 @@
-import { UiText } from "../../i18n";
 import type { CommandOutputView } from "@t3tools/client-runtime/state/command-output";
 import type { EnvironmentId, ThreadId, TurnItemId } from "@t3tools/contracts";
 import { TERMINAL_PALETTES, terminalOutputSpans } from "@t3tools/shared/terminalOutput";
+import { T, Var } from "gt-react";
 import { useLayoutEffect, useRef } from "react";
+
 import { useTheme } from "../../hooks/useTheme";
 import { useServerConfigs } from "../../state/entities";
 import { orchestrationEnvironment } from "../../state/orchestration";
 import { useEnvironmentQuery } from "../../state/query";
 import { useInitialOutputReady, type TurnItemSource } from "./timelineRowContext";
-
-import { useUiLanguage } from "../../i18n";
 
 const FOLLOW_SLACK_PX = 8;
 
@@ -33,8 +32,6 @@ export function CommandOutputPanel(props: {
   readonly source?: TurnItemSource["commandOutput"] | undefined;
 }) {
   const input = { threadId: props.threadId, itemId: props.itemId };
-  const { t: uiT } = useUiLanguage();
-
   const { data, error } = useEnvironmentQuery<CommandOutputView, unknown>(
     props.source
       ? props.source(input)
@@ -53,16 +50,26 @@ export function CommandOutputPanel(props: {
   });
 
   if (text.length === 0) {
-    if (error)
+    if (error) {
       return (
         <div className="text-destructive">
-          {uiT("Couldn't load output:")} {error}
+          <T>
+            Couldn&apos;t load output: <Var>{error}</Var>
+          </T>
         </div>
       );
-    if (data === null)
-      return <div className="text-muted-foreground italic">{uiT("Loading output…")}</div>;
+    }
+    if (data === null) {
+      return (
+        <div className="text-muted-foreground italic">
+          <T>Loading output…</T>
+        </div>
+      );
+    }
     return data.running ? null : (
-      <div className="text-muted-foreground italic">{uiT("No output.")}</div>
+      <div className="text-muted-foreground italic">
+        <T>No output.</T>
+      </div>
     );
   }
   // Parse after all hooks to preserve the text/theme compiler cache.
@@ -79,7 +86,7 @@ export function CommandOutputPanel(props: {
     >
       {data?.output.truncated ? (
         <div className="italic">
-          <UiText message={"Earlier output not shown"} />
+          <T>Earlier output not shown</T>
         </div>
       ) : null}
       {spans.map((span, index) =>

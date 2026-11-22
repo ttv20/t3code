@@ -1,11 +1,11 @@
+import { useUiLanguage } from "~/i18n";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
-import * as Schema from "effect/Schema";
-
+import { T, useGT } from "gt-react";
 import { PanelLeftCloseIcon, PanelLeftIcon } from "lucide-react";
 import * as React from "react";
-
+import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Input, type InputProps } from "~/components/ui/input";
 import { ScrollArea } from "~/components/ui/scroll-area";
@@ -25,11 +25,9 @@ import {
   setLocalStorageItem,
   writeLocalStorageValue,
 } from "~/hooks/useLocalStorage";
-
-import { announceSidebarVisibility } from "~/lib/accessibilityAnnouncements";
-import { cn } from "~/lib/utils";
-import { useUiLanguage } from "../../i18n";
 import { resolveSidebarState, type ResponsiveSidebarState } from "./sidebarState";
+import * as Schema from "effect/Schema";
+import { announceSidebarVisibility } from "~/lib/accessibilityAnnouncements";
 
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "calc(100vw - var(--spacing) * 3)";
@@ -296,8 +294,8 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none";
   resizable?: boolean | SidebarResizableOptions;
 }) {
-  const { t: uiT } = useUiLanguage();
   const { isMobile, state, openMobile, setOpenMobile, setMobileSheetMounted } = useSidebar();
+  const gt = useGT();
   // Not usePanelAnimationSettings: its navigation suppression would snap the sheet shut mid-exit when an item navigates.
   const panelAnimationDurationMs = useClientSettings(
     (settings) => settings.panelAnimationDurationMs,
@@ -356,8 +354,10 @@ function Sidebar({
             }
           >
             <SheetHeader className="sr-only">
-              <SheetTitle>{props["aria-label"] ?? uiT("Sidebar")}</SheetTitle>
-              <SheetDescription>{uiT("Displays the mobile sidebar.")}</SheetDescription>
+              <SheetTitle>{props["aria-label"] ?? gt("Sidebar")}</SheetTitle>
+              <SheetDescription>
+                <T>Displays the mobile sidebar.</T>
+              </SheetDescription>
             </SheetHeader>
             <div
               className={cn(
@@ -428,8 +428,6 @@ function Sidebar({
 }
 
 function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
-  const { t: uiT } = useUiLanguage();
-
   const { toggleSidebar } = useSidebar();
   const isOpen = useSidebarVisibility();
 
@@ -451,7 +449,9 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
       {...props}
     >
       {isOpen ? <PanelLeftCloseIcon className="size-4" /> : <PanelLeftIcon className="size-4" />}
-      <span className="sr-only">{uiT("Toggle Sidebar")}</span>
+      <span className="sr-only">
+        <T>Toggle Sidebar</T>
+      </span>
     </Button>
   );
 }
@@ -470,15 +470,15 @@ function SidebarRail({
   onPointerUp,
   ...props
 }: React.ComponentProps<"button">) {
-  const { t: uiT, direction } = useUiLanguage();
-
+  const { direction } = useUiLanguage();
   const { open, toggleSidebar, onCollapse } = useSidebar();
+  const gt = useGT();
   const sidebarInstance = React.use(SidebarInstanceContext);
   const suppressClickRef = React.useRef(false);
   const resolvedResizable = sidebarInstance?.resizable ?? null;
   const canResize = resolvedResizable !== null && open;
-  const railLabel = canResize ? "Resize Sidebar" : uiT("Toggle Sidebar");
-  const railTitle = canResize ? "Drag to resize sidebar" : uiT("Toggle Sidebar");
+  const railLabel = canResize ? gt("Resize Sidebar") : gt("Toggle Sidebar");
+  const railTitle = canResize ? gt("Drag to resize sidebar") : gt("Toggle Sidebar");
   const resize = useResizeDrag<HTMLButtonElement>((event) => {
     const options = resolvedResizable;
     if (!options || !open) return null;
@@ -589,8 +589,10 @@ function SidebarRail({
               /* A collapsed offcanvas rail overlaps the native scrollbar on Windows and Linux. */
               "-translate-x-1/2 group-data-[side=left]:-right-4 absolute inset-y-0 z-20 hidden w-4 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=right]:left-0 sm:flex [[data-collapsible=offcanvas][data-state=collapsed]_&]:pointer-events-none",
               "[[data-panel-animations=true]_&]:transition-all [[data-panel-animations=true]_&]:[transition-duration:var(--panel-animation-duration)] [[data-panel-animations=true]_&]:ease-out",
-              "touch-none in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
-              "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
+              "touch-none",
+              canResize
+                ? "cursor-col-resize"
+                : "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize [[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
               "group-data-[collapsible=offcanvas]:translate-x-0 hover:group-data-[collapsible=offcanvas]:bg-sidebar group-data-[collapsible=offcanvas]:after:left-full",
               "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
               "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
@@ -897,12 +899,12 @@ function SidebarMenuSubButton({
 }
 
 export {
+  SidebarInput,
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarInput,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,

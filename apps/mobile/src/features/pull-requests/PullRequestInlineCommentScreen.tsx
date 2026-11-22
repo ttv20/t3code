@@ -1,13 +1,14 @@
-import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
-import type { PullRequestReviewPosition } from "@t3tools/contracts";
+import { type PullRequestReviewPosition } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { T, useGT, useMessages } from "gt-react-native";
 import { useRef, useState } from "react";
 import { View } from "react-native";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
 import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
+
 import { uuidv4 } from "../../lib/uuid";
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
@@ -28,9 +29,10 @@ export type InlineCommentParams = PullRequestParams & {
   readonly code: string;
 };
 export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<InlineCommentParams>) {
-  const { t: uiT } = useUiLanguage();
   const params = route.params;
   const navigation = useNavigation();
+  const gt = useGT();
+  const m = useMessages();
   const store = usePullRequestReviewDraft(params);
   const saved = store.draft.comments.find((draft) => draft.id === params.draftId);
   const [editedBody, setBody] = useState<string | null>(null);
@@ -86,13 +88,13 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
   return (
     <PullRequestSheetContent
       busy={busy}
-      title={saved ? uiT("Edit review comment") : uiT("Review comment")}
-      subtitle={`#${params.number} · ${reviewPositionLabel(params.position)}`}
+      title={saved ? gt("Edit review comment") : gt("Review comment")}
+      subtitle={`#${params.number} · ${reviewPositionLabel(params.position, m)}`}
       footer={
         <Button
           fullWidth
           tone="contrast"
-          label={busy ? uiT("Saving…") : uiT("Save draft")}
+          label={busy ? gt("Saving…") : gt("Save draft")}
           loading={busy}
           disabled={
             !store.ready ||
@@ -120,8 +122,8 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
         onBlur={completions.onBlur}
         editable={store.ready && !busy}
         autoFocus
-        accessibilityLabel={uiT("Inline review comment")}
-        placeholder={uiT("Write feedback on this line…")}
+        accessibilityLabel={gt("Inline review comment")}
+        placeholder={gt("Write feedback on this line…")}
         placeholderTextColorClassName="accent-foreground-muted"
         maxLength={65536}
         value={body}
@@ -130,11 +132,11 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
         style={{ textAlignVertical: "top" }}
       />
       <Text className="text-xs text-foreground-muted">
-        {uiT("Saved comments are private until you submit your review.")}
+        <T>Saved comments are private until you submit your review.</T>
       </Text>
       {stale ? (
         <Text className="text-sm text-danger-foreground">
-          {uiT("The branch changed. Return to the current diff and select the line again.")}
+          <T>The branch changed. Return to the current diff and select the line again.</T>
         </Text>
       ) : null}
       {store.error || detail.error ? (
@@ -142,26 +144,22 @@ export function PullRequestInlineCommentScreen({ route }: StaticScreenProps<Inli
       ) : null}
       {saved ? (
         <Button
-          label={uiT("Delete draft")}
+          label={gt("Delete draft")}
           onPress={() =>
-            Dialog.alert(
-              uiT("Delete this draft?"),
-              uiT("Your other review comments will be kept."),
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => {
-                    store.update((draft) => ({
-                      ...draft,
-                      comments: draft.comments.filter((comment) => comment.id !== saved.id),
-                    }));
-                    navigation.goBack();
-                  },
+            Dialog.alert(gt("Delete this draft?"), gt("Your other review comments will be kept."), [
+              { text: gt("Cancel"), style: "cancel" },
+              {
+                text: gt("Delete"),
+                style: "destructive",
+                onPress: () => {
+                  store.update((draft) => ({
+                    ...draft,
+                    comments: draft.comments.filter((comment) => comment.id !== saved.id),
+                  }));
+                  navigation.goBack();
                 },
-              ],
-            )
+              },
+            ])
           }
         />
       ) : null}

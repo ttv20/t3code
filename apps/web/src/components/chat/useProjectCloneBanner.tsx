@@ -1,31 +1,30 @@
+import { T, msg, useGT, useMessages } from "gt-react";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m } from "~/i18n/messages";
+import { useStableCallback } from "../../hooks/useStableCallback";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
-import {
-  projectCloneDisplayName,
-  projectCloneProgressSummary,
-  type ScopedProjectRef,
-} from "@t3tools/contracts";
 import { DownloadIcon } from "lucide-react";
+import { stackedThreadToast, toastManager } from "../ui/toast";
 import { useRemoveClonedProject } from "../../hooks/useRemoveClonedProject";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { useUiLanguage } from "../../i18n";
-import { dismissProjectFileCopy, useProjectFileCopy } from "../../lib/addProjectToMachine";
-import { useProjectClone } from "../../state/projectClones";
 import { sourceControlEnvironment } from "../../state/sourceControl";
+import { useProjectClone } from "../../state/projectClones";
+import { projectCloneDisplayName, type ScopedProjectRef } from "@t3tools/contracts";
+import { projectCloneProgressSummary } from "@t3tools/client-runtime/contract-labels";
+import { dismissProjectFileCopy, useProjectFileCopy } from "../../lib/addProjectToMachine";
+import { type ComposerBannerStackItem } from "./ComposerBannerStack";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
-import { stackedThreadToast, toastManager } from "../ui/toast";
-import { type ComposerBannerStackItem } from "./ComposerBannerStack";
 /**
  * A project still being cloned or copied into place: the composer banner with its cancel,
  * retry, and remove actions, and the reason sending waits until it is done.
  */
 export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const activeProjectClone = useProjectClone(activeProjectRef);
   const cancelProjectClone = useAtomCommand(sourceControlEnvironment.cancelProjectClone, {
     reportFailure: false,
@@ -45,7 +44,7 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
         stackedThreadToast({
           type: "error",
           title,
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          description: thrownErrorMessage(error, m) ?? m(msg("An error occurred.")),
         }),
       );
     }
@@ -54,11 +53,11 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
   const activeProjectFileCopy = useProjectFileCopy(activeProjectRef);
   const projectCloneSendBlockReason =
     activeProjectClone?.phase === "running"
-      ? uiT("Cloning repository")
+      ? gt("Cloning repository")
       : activeProjectClone !== null && activeProjectClone.phase !== "done"
-        ? uiT("Repository not cloned")
+        ? gt("Repository not cloned")
         : activeProjectFileCopy?.phase === "copying"
-          ? uiT("Copying files")
+          ? gt("Copying files")
           : null;
   const projectCloneBannerItem = (() => {
     if (activeProjectFileCopy?.phase === "failed" && activeProjectRef) {
@@ -66,7 +65,7 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
         id: `project-file-copy:${activeProjectRef.projectId}`,
         variant: "error",
         icon: <DownloadIcon />,
-        title: activeProjectFileCopy.title,
+        title: messages(activeProjectFileCopy.title),
         description: activeProjectFileCopy.failures.join("\n"),
         onDismiss: () => dismissProjectFileCopy(activeProjectRef),
       };
@@ -81,19 +80,19 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
         id: `project-clone:${projectId}`,
         variant: "info",
         icon: <DownloadIcon />,
-        title: uiT("Cloning {0}", { "0": name }),
-        description: projectCloneProgressSummary(activeProjectClone),
+        title: gt("Cloning {name}", { name }),
+        description: projectCloneProgressSummary(activeProjectClone, messages),
         actions: (
           <Button
             size="xs"
             variant="ghost"
             onClick={() =>
-              void runProjectCloneActionStable("Failed to cancel clone", () =>
+              void runProjectCloneActionStable(m(msg("Failed to cancel clone")), () =>
                 cancelProjectClone({ environmentId, input: { projectId } }),
               )
             }
           >
-            {uiT("Cancel")}
+            <T>Cancel</T>
           </Button>
         ),
       };
@@ -104,9 +103,9 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
       variant: cancelled ? "warning" : "error",
       icon: <DownloadIcon />,
       title: cancelled
-        ? uiT("Cancelled cloning {0}", { "0": name })
-        : uiT("Failed to clone {0}", { "0": name }),
-      description: cancelled ? uiT("Retry to bring in the repository.") : activeProjectClone.error,
+        ? gt("Cancelled cloning {name}", { name })
+        : gt("Failed to clone {name}", { name }),
+      description: cancelled ? gt("Retry to bring in the repository.") : activeProjectClone.error,
       actions: (
         <>
           <Button
@@ -114,18 +113,18 @@ export function useProjectCloneBanner(activeProjectRef: ScopedProjectRef | null)
             variant="ghost"
             onClick={() => void removeClonedProject({ environmentId, projectId })}
           >
-            {uiT("Remove project")}
+            <T>Remove project</T>
           </Button>
           <Button
             size="xs"
             variant="ghost"
             onClick={() =>
-              void runProjectCloneActionStable("Failed to retry clone", () =>
+              void runProjectCloneActionStable(m(msg("Failed to retry clone")), () =>
                 retryProjectClone({ environmentId, input: { projectId } }),
               )
             }
           >
-            {uiT("Retry")}
+            <T context="verb, retries the clone">Retry</T>
           </Button>
         </>
       ),

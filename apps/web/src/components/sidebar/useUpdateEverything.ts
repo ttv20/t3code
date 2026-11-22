@@ -1,5 +1,8 @@
+import { useForkReleasePublished } from "~/state/forkRelease";
+import { msg, useMessages } from "gt-react";
 import { useAtomValue } from "@effect/atom-react";
 import { PROVIDER_DISPLAY_NAMES } from "@t3tools/contracts";
+
 import { APP_VERSION } from "~/branding";
 import { isDesktopLocalConnectionTarget } from "~/connection/desktopLocal";
 import { isElectron } from "~/env";
@@ -32,10 +35,6 @@ import {
   waitForUpdateRestart,
 } from "./updateEverythingRun";
 
-import { useUiLanguage } from "../../i18n";
-
-import { useForkReleasePublished } from "~/state/forkRelease";
-
 const UPDATE_RESTART_DELAY_MS = 5_000;
 
 /** Servers this desktop app runs; they update with it. */
@@ -56,9 +55,9 @@ export function useUpdateEverything(
   localUpdateVersion: string | null,
   channelSwitch?: ChannelSwitchRelease,
 ) {
-  const { locale, t: uiT } = useUiLanguage();
   const targetVersion = localUpdateVersion ?? APP_VERSION;
   const { environments } = useEnvironments();
+  const resolve = useMessages();
   const environmentIds = environmentIdsKey(environments.map(({ environmentId }) => environmentId));
   const sessionStates = useAtomValue(environmentSessionStatesAtom(environmentIds));
   const updateStates = useAtomValue(environmentUpdateStatesAtom(environmentIds));
@@ -72,8 +71,8 @@ export function useUpdateEverything(
     updateState: updateStates[index]!,
   }));
   const collected = channelSwitch
-    ? collectChannelSwitchTargets(machines, channelSwitch, locale)
-    : collectServerUpdateTargets(machines, targetVersion, locale);
+    ? collectChannelSwitchTargets(machines, channelSwitch, resolve)
+    : collectServerUpdateTargets(machines, targetVersion, resolve);
   const needsRelease = collected.targets.some(
     (server) => server.selfUpdate !== "desktop-managed" && !server.trackOnly,
   );
@@ -93,7 +92,9 @@ export function useUpdateEverything(
       .map((server) => ({
         environmentId: server.environmentId,
         label: server.serverLabel,
-        reason: uiT("T3 {0} is not on GitHub Releases yet", { "0": server.targetVersion }),
+        reason: resolve(
+          msg("T3 {version} is not on GitHub Releases yet", { version: server.targetVersion }),
+        ),
       })),
   ];
   // Track-only hosts save a setting and restart nothing, so they are neither listed nor counted.
@@ -121,7 +122,7 @@ export function useUpdateEverything(
         ),
       })),
     },
-    locale,
+    resolve,
   );
 
   return {
@@ -184,13 +185,13 @@ export function useUpdateEverything(
           updateProviders: async () => {
             const runs = await providers.updateAll({ quiet: true });
             const outcomes = runs.map((run) => {
-              const runOutcome = getProviderUpdateRunOutcome(run, locale);
+              const runOutcome = getProviderUpdateRunOutcome(run);
               if (runOutcome.status !== "updated") {
                 providerFailures.set(
                   run.environmentId,
                   runOutcome.status === "failed"
                     ? runOutcome.line
-                    : uiT("Provider update interrupted"),
+                    : resolve(msg("Provider update interrupted")),
                 );
               }
               return runOutcome;
@@ -263,15 +264,12 @@ export function useUpdateEverything(
           },
         });
         const result = (finished: ReadonlyArray<{ label: string; outcome: ServerUpdateOutcome }>) =>
-          collectUpdateEverythingResult(
-            {
-              localVersion: null,
-              localFailures,
-              servers: finished,
-              providers: outcome.providers,
-            },
-            locale,
-          );
+          collectUpdateEverythingResult({
+            localVersion: null,
+            localFailures,
+            servers: finished,
+            providers: outcome.providers,
+          });
         if (outcome.localReady && installLocal) {
           if (await waitForUpdateRestart(UPDATE_RESTART_DELAY_MS)) {
             setUpdateEverythingRun(
@@ -292,7 +290,7 @@ export function useUpdateEverything(
               localVersion: null,
             }),
         );
-        showUpdateEverythingResult(result(await Promise.all(outcome.servers)), locale);
+        showUpdateEverythingResult(result(await Promise.all(outcome.servers)));
       } catch (error) {
         setUpdateEverythingRun(() => null);
         throw error;

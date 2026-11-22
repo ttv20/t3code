@@ -1,5 +1,26 @@
 import { resolveInterfaceLanguage } from "@t3tools/client-runtime/i18n";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { useRef, useSyncExternalStore, use } from "react";
+import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
+import {
+  DEFAULT_SERVER_SETTINGS,
+  AuthSettingsWriteScope,
+  requiredScopesForServerSettingsPatch,
+  type EnvironmentId,
+  type ProviderInstanceMutation,
+  type ProviderInstanceId,
+  ServerSettings,
+  type ServerSettingsPatch,
+  sessionGrantsScope,
+} from "@t3tools/contracts";
+import {
+  type ClientSettingsPatch,
+  type ClientSettings,
+  DEFAULT_CLIENT_SETTINGS,
+  type EnvironmentIdentificationMode,
+  type UnifiedSettings,
+} from "@t3tools/contracts/settings";
 import { safeErrorLogAttributes } from "@t3tools/client-runtime/errors";
 import {
   isAtomCommandInterrupted,
@@ -11,49 +32,7 @@ import {
   splitSharedServerPatch,
   supportsSharedSettingsSync,
 } from "@t3tools/client-runtime/state/shared-settings";
-import {
-  AuthSettingsWriteScope,
-  DEFAULT_SERVER_SETTINGS,
-  type EnvironmentId,
-  type ProviderInstanceId,
-  type ProviderInstanceMutation,
-  requiredScopesForServerSettingsPatch,
-  ServerSettings,
-  type ServerSettingsPatch,
-  sessionGrantsScope,
-} from "@t3tools/contracts";
-import {
-  type ClientSettings,
-  type ClientSettingsPatch,
-  DEFAULT_CLIENT_SETTINGS,
-  type EnvironmentIdentificationMode,
-  type UnifiedSettings,
-} from "@t3tools/contracts/settings";
-import {
-  modelPreferencesMigrationPatch,
-  resolveModelPreferences,
-} from "@t3tools/shared/serverSettings";
-import * as Equal from "effect/Equal";
-import * as Option from "effect/Option";
-import { AsyncResult, Atom } from "effect/reactivity";
-import * as Struct from "effect/Struct";
-import { use, useRef, useSyncExternalStore } from "react";
-import { useSyncExternalStoreWithSelector } from "use-sync-external-store/with-selector";
-import { toastManager } from "~/components/ui/toast";
-import { environmentCatalog } from "~/connection/catalog";
-import { isHostedStaticApp } from "~/hostedPairing";
 import { ensureLocalApi } from "~/localApi";
-import { appAtomRegistry } from "~/rpc/atomRegistry";
-import { environmentIdsKey } from "~/state/environmentAtomList";
-import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
-import { primaryServerSettingsAtom, serverEnvironment } from "~/state/server";
-import {
-  environmentSession,
-  environmentSessionStatesAtom,
-  readEnvironmentScope,
-  useEnvironmentScope,
-} from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { subscribeBrowserClientSettingsWrites } from "~/clientPersistenceStorage";
 import {
   getThemeDefinition,
@@ -62,8 +41,31 @@ import {
   subscribeToThemePreview,
   themeAllowsSidebarArtwork,
 } from "~/themePalette";
-import { useUiLanguage } from "../i18n";
+import {
+  modelPreferencesMigrationPatch,
+  resolveModelPreferences,
+} from "@t3tools/shared/serverSettings";
+import * as Equal from "effect/Equal";
+import * as Struct from "effect/Struct";
+import * as Option from "effect/Option";
+import { AsyncResult, Atom } from "effect/reactivity";
+import { toastManager } from "~/components/ui/toast";
+import { isHostedStaticApp } from "~/hostedPairing";
+import { environmentCatalog } from "~/connection/catalog";
+import { primaryServerSettingsAtom, serverEnvironment } from "~/state/server";
+import { useEnvironments, usePrimaryEnvironment } from "~/state/environments";
+import { useAtomCommand } from "~/state/use-atom-command";
 import { useTheme } from "./useTheme";
+import { msg } from "gt-react";
+import { m } from "~/i18n/messages";
+import {
+  environmentSession,
+  environmentSessionStatesAtom,
+  readEnvironmentScope,
+  useEnvironmentScope,
+} from "~/state/session";
+import { environmentIdsKey } from "~/state/environmentAtomList";
+import { appAtomRegistry } from "~/rpc/atomRegistry";
 
 const CLIENT_SETTINGS_PERSISTENCE_ERROR_SCOPE = "[CLIENT_SETTINGS]";
 
@@ -480,8 +482,6 @@ export async function prepareModelPreferencesPatch(
 }
 
 export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentId | null) {
-  const { t: uiT } = useUiLanguage();
-
   const settings = useAtomValue(
     environmentId ? serverEnvironment.settingsValueAtom(environmentId) : noEnvironmentSettingsAtom,
   );
@@ -494,8 +494,8 @@ export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentI
     } catch {
       toastManager.add({
         type: "error",
-        title: uiT("Model preferences not saved"),
-        description: uiT("Could not load saved model preferences. Try again."),
+        title: m(msg("Model preferences not saved")),
+        description: m(msg("Could not load saved model preferences. Try again.")),
       });
       return;
     }
@@ -505,8 +505,6 @@ export function useUpdateEnvironmentModelPreferences(environmentId: EnvironmentI
 
 /** Send the desired state so two clients adding a favorite do not cancel each other. */
 export function useToggleEnvironmentModelFavorite(environmentId: EnvironmentId | null) {
-  const { t: uiT } = useUiLanguage();
-
   const registry = use(RegistryContext);
   const pendingFavorites = useRef(
     new Map<string, { favorite: boolean; settings: ServerSettings; pending: boolean }>(),
@@ -523,8 +521,8 @@ export function useToggleEnvironmentModelFavorite(environmentId: EnvironmentId |
       } catch {
         toastManager.add({
           type: "error",
-          title: uiT("Favorites not saved"),
-          description: uiT("Could not load saved model preferences. Try again."),
+          title: m(msg("Favorites not saved")),
+          description: m(msg("Could not load saved model preferences. Try again.")),
         });
         return;
       }
@@ -604,8 +602,9 @@ export function usePrimarySettings<T = UnifiedSettings>(
   return useMergedSettings(settings, selector);
 }
 
-export const PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE =
-  "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.";
+export const PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE = msg(
+  "This setting is saved on a server, and the hosted app is not anchored to one. Change it from the desktop app or from the server's own address.",
+);
 
 /** Hosted clients have no primary: usePrimarySettings reads defaults and cannot write. */
 export function usePrimarySettingsAvailable(): boolean {
@@ -632,12 +631,20 @@ function useSharedSettingsSyncTargetIds(includePending = false): ReadonlyArray<E
   });
 }
 
-function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
-  const { t: uiT } = useUiLanguage();
+function deniedSettingsDescription(environmentLabel: string | null | undefined): string {
+  return environmentLabel == null
+    ? m(msg("This connection lacks permission to change settings on the selected environment."))
+    : m(
+        msg("This connection lacks permission to change settings on {environments}.", {
+          environments: environmentLabel,
+        }),
+      );
+}
 
+function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
   useEnvironmentScope(environmentId, AuthSettingsWriteScope);
   const persist = useAtomCommand(serverEnvironment.updateSettings, {
-    label: uiT("server settings update"),
+    label: "server settings update",
     reportFailure: false,
   });
   const { environments } = useEnvironments();
@@ -654,14 +661,15 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       const error = squashAtomCommandFailure(result);
       toastManager.add({
         type: "error",
-        title: uiT("Setting not saved"),
-        description: uiT("Could not save on {0}: {1}", {
-          "0": label,
-          "1":
-            error instanceof Error
-              ? error.message
-              : uiT("The save failed. Try reconnecting and saving again."),
-        }),
+        title: m(msg("Setting not saved")),
+        description: m(
+          msg("Could not save on {label}: {error}", {
+            label,
+            error:
+              (error instanceof Error ? thrownErrorMessage(error, m) : null) ??
+              m(msg("The save failed. Try reconnecting and saving again.")),
+          }),
+        ),
       });
     }
     return result;
@@ -682,22 +690,20 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
       options?.onFailed?.();
       toastManager.add({
         type: "warning",
-        title: uiT("Setting not saved"),
-        description: uiT("This connection lacks permission to change settings on {0}.", {
-          "0":
-            environments.find((target) => target.environmentId === environmentId)?.label ??
-            uiT("the selected environment"),
-        }),
+        title: m(msg("Setting not saved")),
+        description: deniedSettingsDescription(
+          environments.find((target) => target.environmentId === environmentId)?.label,
+        ),
       });
     }
     if (Object.keys(serverPatch).length > 0 && canWriteServerPatch) {
       const { sharedPatch, localPatch } = splitSharedServerPatch(serverPatch);
       // Dropping the write silently leaves the control looking saved.
-      const warnUnsaved = (description = uiT(PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE)) => {
+      const warnUnsaved = (description = m(PRIMARY_SETTINGS_UNAVAILABLE_MESSAGE)) => {
         options?.onFailed?.();
         return toastManager.add({
           type: "warning",
-          title: uiT("Setting not saved"),
+          title: m(msg("Setting not saved")),
           description,
         });
       };
@@ -749,11 +755,13 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
         if (writes.length === 0) {
           warnUnsaved(
             deniedLabels.length > 0
-              ? uiT("This connection lacks permission to change settings on {0}.", {
-                  "0": deniedLabels.join(", "),
-                })
+              ? m(
+                  msg("This connection lacks permission to change settings on {environments}.", {
+                    environments: deniedLabels.join(", "),
+                  }),
+                )
               : targets.size > 0
-                ? uiT("Update older servers to save this setting.")
+                ? m(msg("Update older servers to save this setting."))
                 : undefined,
           );
         } else {
@@ -775,13 +783,14 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
               if (result._tag !== "Failure" || isAtomCommandInterrupted(result)) return [];
               const error = squashAtomCommandFailure(result);
               return [
-                uiT("Could not save on {0}: {1}", {
-                  "0": label,
-                  "1":
-                    error instanceof Error
-                      ? error.message
-                      : uiT("The save failed. Try reconnecting and saving again."),
-                }),
+                m(
+                  msg("Could not save on {label}: {error}", {
+                    label,
+                    error:
+                      (error instanceof Error ? thrownErrorMessage(error, m) : null) ??
+                      m(msg("The save failed. Try reconnecting and saving again.")),
+                  }),
+                ),
               ];
             });
             if (
@@ -798,11 +807,13 @@ function useUpdateSettingsTarget(environmentId: EnvironmentId | null) {
               type: "error",
               title:
                 saved.length > 0
-                  ? uiT("Setting saved on some environments")
-                  : uiT("Setting not saved"),
+                  ? m(msg("Setting saved on some environments"))
+                  : m(msg("Setting not saved")),
               description: [
                 ...failures,
-                ...(saved.length > 0 ? [uiT("Saved on {0}.", { "0": saved.join(", ") })] : []),
+                ...(saved.length > 0
+                  ? [m(msg("Saved on {environments}.", { environments: saved.join(", ") }))]
+                  : []),
               ].join("\n"),
             });
           });

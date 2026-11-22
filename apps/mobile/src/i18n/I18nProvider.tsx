@@ -1,7 +1,4 @@
 import "./intl-polyfills";
-import { createGtSourceCatalog } from "@t3tools/client-runtime/i18n";
-import { useUiLanguage } from "../i18n";
-import en from "./translations/en.json";
 import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import {
@@ -13,42 +10,55 @@ import {
   getReactI18nCache,
   internalInitializeGTSRA as initializeGT,
 } from "@generaltranslation/react-core/pure";
-import { Suspense, use, useDeferredValue, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  Suspense,
+  use,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { resolveLocaleSelection } from "@t3tools/client-runtime/locales";
+import { useLocale } from "gt-react-native";
+import { readSystemLocales } from "./systemLocales";
+import { setActiveLocale } from "./messages";
 import { View } from "react-native";
 
 import { mobilePreferencesAtom } from "../state/preferences";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./locales";
-import de from "./translations/de.json";
-import es from "./translations/es.json";
-import fr from "./translations/fr.json";
-import ja from "./translations/ja.json";
-import ko from "./translations/ko.json";
-import ptBR from "./translations/pt-BR.json";
-import ru from "./translations/ru.json";
-import zh from "./translations/zh.json";
 
 // Screens import GT from here so the polyfills above always load first.
 export { useGT } from "gt-react-native";
 
 // Committed catalogs, so forks and offline installs never reach GT's CDN. English is the source.
-const TRANSLATIONS: Readonly<Record<string, Record<string, string>>> = {
-  he: createGtSourceCatalog(en, "he"),
-  ar: createGtSourceCatalog(en, "ar"),
-  fa: createGtSourceCatalog(en, "fa"),
-  es,
-  zh,
-  "pt-BR": ptBR,
-  fr,
-  de,
-  ja,
-  ko,
-  ru,
+const CATALOGS: Readonly<Record<string, () => unknown>> = {
+  he: () => require("./translations/he.json"),
+  ar: () => require("./translations/ar.json"),
+  fa: () => require("./translations/fa.json"),
+  es: () => require("./translations/es.json"),
+  zh: () => require("./translations/zh.json"),
+  "pt-BR": () => require("./translations/pt-BR.json"),
+  fr: () => require("./translations/fr.json"),
+  de: () => require("./translations/de.json"),
+  ja: () => require("./translations/ja.json"),
+  ko: () => require("./translations/ko.json"),
+  ru: () => require("./translations/ru.json"),
+  sv: () => require("./translations/sv.json"),
 };
+
+const FormattingLocaleContext = createContext(DEFAULT_LOCALE);
+
+export function useFormattingLocale(): string {
+  return use(FormattingLocaleContext);
+}
 
 initializeGT({
   defaultLocale: DEFAULT_LOCALE,
   locales: [...SUPPORTED_LOCALES],
-  loadTranslations: async (locale: string) => TRANSLATIONS[locale] ?? {},
+  loadTranslations: async (locale: string) => CATALOGS[locale]?.() ?? {},
+  cacheExpiryTime: null,
 });
 
 const translationPromises = new Map<
@@ -98,12 +108,31 @@ export function useLanguagePreference(): string {
 
 /** Translates the screens inside it into the saved language; "system" follows the device. */
 export function I18nProvider(props: { readonly children: ReactNode }) {
-  // GT suspends while a locale's catalog loads. Deferring the switch keeps the current language
-  // on screen until then, instead of GT's full-screen spinner.
-  const locale = useDeferredValue(useUiLanguage().locale);
+  const { catalogLocale, formattingLocale } = resolveLocaleSelection(
+    useLanguagePreference(),
+    readSystemLocales(),
+    SUPPORTED_LOCALES,
+    DEFAULT_LOCALE,
+  );
+  // Defer catalog and formatting changes together while the next catalog loads.
+  const selection = useDeferredValue(
+    useMemo(() => ({ catalogLocale, formattingLocale }), [catalogLocale, formattingLocale]),
+  );
   return (
     <Suspense fallback={<View className="flex-1 bg-screen" />}>
-      <ControlledGTProvider locale={locale}>{props.children}</ControlledGTProvider>
+      <ControlledGTProvider locale={selection.catalogLocale}>
+        <ActiveLocale />
+        <FormattingLocaleContext value={selection.formattingLocale}>
+          {props.children}
+        </FormattingLocaleContext>
+      </ControlledGTProvider>
     </Suspense>
   );
+}
+
+function ActiveLocale() {
+  const locale = useLocale();
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- call-time messages outside React read the committed locale after its catalog loads
+  useEffect(() => setActiveLocale(locale), [locale]);
+  return null;
 }

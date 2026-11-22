@@ -1,31 +1,36 @@
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { parsePullRequestAnchor } from "@t3tools/shared/pullRequestAnchor";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
 import { type MouseEvent } from "react";
+import { msg } from "gt-react";
+
 import {
   resolveChangeRequestLinkTarget,
   resolvePullRequestPreviewTarget,
 } from "@t3tools/client-runtime/change-request-links";
+
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+
 import { canOpenLinksInApp } from "../browser/browserLinkTarget";
 import { useOpenLink } from "../browser/useOpenLink";
 import { useClientSettings } from "../hooks/useSettings";
 import { stackedThreadToast, toastManager } from "../components/ui/toast";
-import { useRightPanelStore } from "../rightPanelStore";
+import { m } from "../i18n/messages";
+import { PULL_REQUESTS_PANEL_REF, useRightPanelStore } from "../rightPanelStore";
 import {
   selectThreadBranchBaseRef,
   selectThreadDiffPanelSelection,
   useDiffPanelStore,
 } from "../diffPanelStore";
+
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { readProject, readProjects, readThreadShell, useProjects } from "../state/entities";
 import { environmentServerConfigsAtom, serverEnvironment } from "../state/server";
 import { usePrimaryEnvironmentId } from "../state/environments";
 import { reviewEnvironment } from "../state/review";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-
-import { useUiLanguage } from "../i18n";
 
 export function usePullRequestPreviewTarget(environmentId: EnvironmentId | null, url: string) {
   const projects = useProjects();
@@ -35,6 +40,27 @@ export function usePullRequestPreviewTarget(environmentId: EnvironmentId | null,
     projects,
     pullRequestsEnabled: serverConfig !== null,
     url,
+  });
+}
+
+/** Where a click on this link opens the in-app panel, read at call time as the click reads it. */
+export function pullRequestLinkPanelTarget(input: {
+  readonly url: string;
+  readonly environmentId: EnvironmentId | undefined;
+  readonly primaryEnvironmentId: EnvironmentId | null;
+  readonly lendHostProject: boolean;
+}) {
+  // Read at click time: every provider status push replaces the config map, and
+  // subscribing would hand every rendered link a new handler. Projects likewise, so a
+  // link can resolve against a snapshot that arrived after this handler was built.
+  const serverConfigs = appAtomRegistry.get(environmentServerConfigsAtom);
+  return resolveChangeRequestLinkTarget({
+    url: input.url,
+    projects: readProjects(),
+    configLoaded: (environmentId) => serverConfigs.has(environmentId),
+    environmentId: input.environmentId,
+    primaryEnvironmentId: input.primaryEnvironmentId,
+    lendHostProject: input.lendHostProject,
   });
 }
 
@@ -59,7 +85,6 @@ export function useOpenChangeRequestLink(
   targetEnvironmentId?: EnvironmentId,
   onCommitUnavailable?: () => void,
 ) => boolean {
-  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const openInApp = useClientSettings((settings) => settings.pullRequestLinksOpenInApp);
@@ -75,14 +100,8 @@ export function useOpenChangeRequestLink(
     const resolvedThreadRef = targetThreadRef ?? threadRef;
     const resolvedPanelRef = panelRef ?? resolvedThreadRef;
     const openPullRequest = () => {
-      // Read at click time: every provider status push replaces the config map, and
-      // subscribing would hand every rendered link a new handler. Projects likewise, so a
-      // link can resolve against a snapshot that arrived after this handler was built.
-      const serverConfigs = appAtomRegistry.get(environmentServerConfigsAtom);
-      const target = resolveChangeRequestLinkTarget({
+      const target = pullRequestLinkPanelTarget({
         url: targetUrl,
-        projects: readProjects(),
-        configLoaded: (environmentId) => serverConfigs.has(environmentId),
         environmentId: resolvedThreadRef?.environmentId ?? targetEnvironmentId,
         primaryEnvironmentId,
         lendHostProject: resolvedPanelRef !== undefined,
@@ -110,7 +129,8 @@ export function useOpenChangeRequestLink(
           ...(revealUrl === undefined ? {} : { revealUrl }),
           number,
         });
-        if (!resolvedThreadRef) {
+        // The pull request list keeps its selection in the URL; the Issues page's panel does not.
+        if (resolvedPanelRef === PULL_REQUESTS_PANEL_REF) {
           void navigate({
             to: "/pull-requests",
             search: (previous) => ({
@@ -212,9 +232,9 @@ export function useOpenChangeRequestLink(
             const toastId = toastManager.add(
               stackedThreadToast({
                 type: "info",
-                title: uiT("This commit is not in the thread's workspace"),
+                title: m(msg("This commit is not in the thread's workspace")),
                 actionProps: {
-                  children: "Open link",
+                  children: m(msg("Open link")),
                   onClick: () => {
                     toastManager.close(toastId);
                     window.open(targetUrl, "_blank", "noopener,noreferrer");
@@ -240,8 +260,6 @@ export function useOpenChangeRequestLink(
 }
 
 export function useOpenPrLink(threadRef?: ScopedThreadRef) {
-  const { t: uiT } = useUiLanguage();
-
   const openChangeRequest = useOpenChangeRequestLink(threadRef);
   const openLink = useOpenLink(threadRef);
   return (event: MouseEvent<HTMLElement>, prUrl: string, targetThreadRef?: ScopedThreadRef) => {
@@ -261,8 +279,8 @@ export function useOpenPrLink(threadRef?: ScopedThreadRef) {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Unable to open pull request link"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          title: m(msg("Unable to open pull request link")),
+          description: thrownErrorMessage(error, m) ?? m(msg("An error occurred.")),
         }),
       );
     });

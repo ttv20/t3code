@@ -4,16 +4,16 @@ import {
   type SecretReference,
   type SettingsSecretValue,
 } from "@t3tools/contracts";
+import { T, useGT, Var } from "gt-react";
 import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
 
+import { useEnvironmentSettings } from "../../hooks/useSettings";
 import {
   readHostCredentialSettings,
   type SourceControlDefinition,
   type SourceControlHostCredentials,
 } from "@t3tools/client-runtime/source-control-clients";
-import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { serverEnvironment } from "../../state/server";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button, InlineButton } from "../ui/button";
@@ -35,12 +35,17 @@ export function SourceControlTokenSettings({
   readonly credentials: SourceControlHostCredentials;
   readonly onSaved: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  // Translates the GitHub definition's English `tokenAccess`.
+  const tokenAccess =
+    definition.kind === "github"
+      ? gt("read and write access to pull requests and contents")
+      : credentials.tokenAccess;
   const { tokens } = useEnvironmentSettings(environmentId, (settings) =>
     readHostCredentialSettings(settings, definition.kind),
   );
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
-    label: uiT("save {0} token", { "0": definition.label }),
+    label: `save ${definition.label} token`,
   });
   const defaultHost = definition.publicHost ?? "";
   const [host, setHost] = useState(defaultHost);
@@ -90,43 +95,38 @@ export function SourceControlTokenSettings({
       {/* Locked while saving: a successful save clears the draft, which would drop edits made mid-request. */}
       <fieldset disabled={saving} className="contents">
         <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground">
-          <UiText
-            message={
-              "A token saved here is used before {0} and the {1} login, so {2} works without the {3}. Give it {4}. {5}"
-            }
-            values={{
-              "0": (
-                <code className="rounded bg-muted px-1 py-px text-2xs">
-                  {credentials.tokenEnvVar}
-                </code>
-              ),
-              "1": (
-                <code className="rounded bg-muted px-1 py-px text-2xs">{credentials.cliName}</code>
-              ),
-              "2": definition.label,
-              "3": credentials.cliLabel,
-              "4": credentials.tokenAccess,
-              "5":
-                normalizedHost || defaultHost ? (
-                  <InlineButton
-                    render={
-                      <a
-                        href={credentials.newTokenUrl(normalizedHost || defaultHost)}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                      />
-                    }
-                  >
-                    {uiT("Create a token")}
-                    <ExternalLinkIcon aria-hidden className="size-3" />
-                  </InlineButton>
-                ) : null,
-            }}
-          />
+          <T>
+            A token saved here is used before{" "}
+            <code className="rounded bg-muted px-1 py-px text-2xs">
+              <Var>{credentials.tokenEnvVar}</Var>
+            </code>{" "}
+            and the{" "}
+            <code className="rounded bg-muted px-1 py-px text-2xs">
+              <Var>{credentials.cliName}</Var>
+            </code>{" "}
+            login, so <Var>{definition.label}</Var> works without the{" "}
+            <Var>{credentials.cliLabel}</Var>. Give it <Var>{tokenAccess}</Var>.
+          </T>{" "}
+          {normalizedHost || defaultHost ? (
+            <InlineButton
+              render={
+                <a
+                  href={credentials.newTokenUrl(normalizedHost || defaultHost)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                />
+              }
+            >
+              <T>Create a token</T>
+              <ExternalLinkIcon aria-hidden className="size-3" />
+            </InlineButton>
+          ) : null}
         </p>
         <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
           <div className="grid gap-1.5">
-            <Label htmlFor={`${definition.kind}-token-host-${environmentId}`}>{uiT("Host")}</Label>
+            <Label htmlFor={`${definition.kind}-token-host-${environmentId}`}>
+              <T>Host</T>
+            </Label>
             <Input
               id={`${definition.kind}-token-host-${environmentId}`}
               autoComplete="off"
@@ -137,11 +137,13 @@ export function SourceControlTokenSettings({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor={`${definition.kind}-token-${environmentId}`}>{uiT("Token")}</Label>
+            <Label htmlFor={`${definition.kind}-token-${environmentId}`}>
+              <T>Token</T>
+            </Label>
             <SecretSourceInput
               id={`${definition.kind}-token-${environmentId}`}
               size="sm"
-              aria-label={`${definition.label} token`}
+              aria-label={gt("{host} token", { host: definition.label })}
               environmentId={environmentId}
               configured={isSaved && !isSecretReference(savedToken)}
               value={draft}
@@ -154,8 +156,11 @@ export function SourceControlTokenSettings({
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             {savedHosts.length === 0
-              ? `No token saved; the server uses ${credentials.tokenEnvVar} or the ${credentials.cliName} login.`
-              : `Saved for ${savedHosts.join(", ")}.`}
+              ? gt("No token saved; the server uses {envVar} or the {cliName} login.", {
+                  envVar: credentials.tokenEnvVar,
+                  cliName: credentials.cliName,
+                })
+              : gt("Saved for {hosts}.", { hosts: savedHosts.join(", ") })}
           </p>
           <div className="flex shrink-0 gap-2">
             {isSaved ? (
@@ -165,7 +170,7 @@ export function SourceControlTokenSettings({
                 disabled={saving}
                 onClick={() => void save(normalizedHost, "")}
               >
-                {uiT("Remove")}
+                <T>Remove</T>
               </Button>
             ) : null}
             <Button
@@ -173,7 +178,7 @@ export function SourceControlTokenSettings({
               size="xs"
               disabled={!normalizedHost || submission === "" || saving}
             >
-              {uiT("Save")}
+              <T>Save</T>
             </Button>
           </div>
         </div>

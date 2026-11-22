@@ -1,11 +1,14 @@
-import type { FileDiffMetadata } from "@pierre/diffs";
-import { excerptRows, fileDiffRows, rowsToPatch } from "@t3tools/client-runtime/review-guide-tour";
-import type { PullRequestReviewGuideExcerpt } from "@t3tools/contracts";
+import { type FileDiffMetadata } from "@pierre/diffs";
+import { type PullRequestReviewGuideExcerpt } from "@t3tools/contracts";
+import { rowsToPatch } from "@t3tools/client-runtime/review-guide-tour";
+import { excerptRows } from "@t3tools/client-runtime/review-guide-tour";
+import { fileDiffRows } from "@t3tools/client-runtime/review-guide-tour";
+import { useGT, useMessages } from "gt-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { SymbolView } from "../../../components/ui/AppSymbol";
 import { AppText as Text } from "../../../components/ui/AppText";
-import { useUiLanguage } from "../../../i18n";
+
 import { resolveNativeReviewDiffView } from "../../diffs/nativeReviewDiffSurface";
 import { buildNativeReviewDiffData } from "../../review/nativeReviewDiffAdapter";
 import { buildReviewParsedDiff } from "../../review/reviewModel";
@@ -27,14 +30,14 @@ export function ReviewGuideExcerpt({
   readonly loading: boolean;
   readonly onOpen: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const { nativeReviewDiffStyle, codeWordBreak } = useAppearanceCodeSurface();
   const { themeAppearance } = useAppearancePreferences();
   const slice = excerptPatch(file, excerpt);
   const data = (() => {
     const parsed = buildNativeReviewDiffData(
-      buildReviewParsedDiff(slice, `guide:${excerpt.path}:${excerpt.start}`),
+      buildReviewParsedDiff(slice, `guide:${excerpt.path}:${excerpt.start}`, messages),
     );
     return {
       ...parsed,
@@ -64,9 +67,9 @@ export function ReviewGuideExcerpt({
       <View className="overflow-hidden rounded-lg border border-border-subtle">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={uiT("Open {0} at line {1} in full diff", {
-            "0": excerpt.path,
-            "1": excerpt.start,
+          accessibilityLabel={gt("Open {path} at line {line} in full diff", {
+            path: excerpt.path,
+            line: excerpt.start,
           })}
           onPress={onOpen}
           className="min-h-11 flex-row items-center gap-3 border-b border-border-subtle px-3 py-2 active:opacity-60"
@@ -121,11 +124,9 @@ export function ReviewGuideExcerpt({
         ) : (
           <Text className="p-3 text-xs text-foreground-muted">
             {loading
-              ? uiT("Loading {0}…", { "0": excerpt.path })
-              : uiT("{0}:{1}–{2} is not in the loaded diff.", {
-                  "0": excerpt.path,
-                  "1": excerpt.start,
-                  "2": excerpt.end,
+              ? gt("Loading {path}…", { path: excerpt.path })
+              : gt("{location} is not in the loaded diff.", {
+                  location: `${excerpt.path}:${excerpt.start}–${excerpt.end}`,
                 })}
           </Text>
         )}

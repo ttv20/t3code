@@ -1,10 +1,13 @@
 import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId } from "@t3tools/contracts";
-import { CHATGPT_USAGE_URL, collectExternalUsageLinks } from "@t3tools/shared/usageLimits";
-import { Linking, Pressable, View } from "react-native";
-import { ProviderIcon } from "../../components/ProviderIcon";
+import { CHATGPT_USAGE_URL } from "@t3tools/shared/usageLimits";
+import { collectExternalUsageLinks } from "@t3tools/shared/usageLimitsCopy";
+import { T, useMessages, Var } from "gt-react-native";
+import { Pressable, View } from "react-native";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { AppText as Text } from "../../components/ui/AppText";
-import { UiText, useUiLanguage } from "../../i18n";
+import { ProviderIcon } from "../../components/ProviderIcon";
+
 import { environmentPresentations } from "../../state/presentation";
 
 export function ChatGptUsageSummary({
@@ -12,34 +15,39 @@ export function ChatGptUsageSummary({
 }: {
   selectedEnvironmentIds: ReadonlySet<EnvironmentId> | null;
 }) {
-  const { t: uiT } = useUiLanguage();
   const presentations = useAtomValue(environmentPresentations.presentationsWithProvidersAtom);
+  const m = useMessages();
   const selected =
     selectedEnvironmentIds === null
       ? presentations
       : new Map([...presentations].filter(([id]) => selectedEnvironmentIds.has(id)));
-  const usage = collectExternalUsageLinks(selected).find((link) => link.url === CHATGPT_USAGE_URL);
+  const usage = collectExternalUsageLinks(selected, m).find(
+    (link) => link.url === CHATGPT_USAGE_URL,
+  );
   if (!usage) return null;
   return (
     <View className="gap-1">
       <View className="flex-row items-center justify-between gap-3">
         <View className="flex-row items-center gap-2">
           <ProviderIcon provider="codex" size={16} />
-          <Text className="text-sm text-foreground">{uiT("ChatGPT shared usage")}</Text>
+          <Text className="text-sm text-foreground">
+            <T>ChatGPT shared usage</T>
+          </Text>
         </View>
         <Pressable
           accessibilityRole="link"
           className="min-h-11 justify-center"
-          onPress={() => void Linking.openURL(usage.url).catch(() => undefined)}
+          onPress={() => void tryOpenExternalUrl(usage.url)}
         >
-          <Text className="text-sm font-t3-medium text-primary">{uiT("Manage usage")}</Text>
+          <Text className="text-sm font-t3-medium text-primary">
+            <T>Manage usage</T>
+          </Text>
         </Pressable>
       </View>
       <Text className="text-xs text-foreground-muted">
-        <UiText
-          message={uiT("{0}. Open ChatGPT with the account you connected.")}
-          values={{ "0": usage.accounts.join(", ") }}
-        />
+        <T>
+          <Var>{usage.accounts.join(", ")}</Var>. Open ChatGPT with the account you connected.
+        </T>
       </Text>
     </View>
   );

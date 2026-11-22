@@ -1,5 +1,9 @@
+import { PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@t3tools/contracts";
+import { EnvironmentId } from "@t3tools/contracts";
 import { CommonActions } from "@react-navigation/native";
-import { EnvironmentId, PROVIDER_SEND_TURN_MAX_FILE_BYTES } from "@t3tools/contracts";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+import * as Dialog from "../../components/ui/Dialog";
+import { m } from "../../i18n/messages";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
 import {
@@ -9,10 +13,9 @@ import {
   type ResolvedSharePayload,
   type SharePayload,
 } from "expo-sharing";
+import { msg } from "gt-react-native";
 import { useSyncExternalStore } from "react";
 import { Platform } from "react-native";
-import * as Dialog from "../../components/ui/Dialog";
-import { readUiTranslator } from "../../state/ui-language";
 
 import { subscribeAppActive } from "../../lib/appState";
 import { coalescedRun } from "../../lib/coalescedRun";
@@ -230,17 +233,16 @@ function getIncomingShareSnapshot() {
 }
 
 function reportRefreshFailure(cause: unknown) {
-  const uiT = readUiTranslator();
-
   console.warn(
     "[incoming-share] refresh failed",
     cause,
     cause instanceof Error ? cause.cause : null,
   );
-  const error = cause instanceof Error ? cause : new Error("Could not import shared content.");
-  Dialog.alert(uiT("Could not import shared content"), error.message, [
-    { text: "Dismiss", style: "cancel" },
-    { text: "Retry", onPress: () => void refreshIncomingShares() },
+  const error =
+    cause instanceof Error ? cause : new Error(m(msg("Could not import shared content.")));
+  Dialog.alert(m(msg("Could not import shared content")), error.message, [
+    { text: m(msg("Dismiss")), style: "cancel" },
+    { text: m(msg("Retry")), onPress: () => void refreshIncomingShares() },
   ]);
 }
 
@@ -321,38 +323,34 @@ export const incomingShareImports = makeIncomingShareImports({
     }),
   releaseUnusedAttachments: scheduleUnusedComposerAttachmentCleanup,
   onWarnings: (warnings) => {
-    const uiT = readUiTranslator();
-
-    Dialog.alert(uiT("Some shared content was skipped"), warnings.join("\n"));
+    Dialog.alert(m(msg("Some shared content was skipped")), warnings.join("\n"));
   },
   onImportFailure: (target, error) => {
-    const uiT = readUiTranslator();
-
     Dialog.alert(
-      uiT("Could not import shared content"),
-      error instanceof Error ? error.message : uiT("The shared content could not be saved."),
+      m(msg("Could not import shared content")),
+      error instanceof Error
+        ? (errorDisplayMessage(error, m) ?? error.message)
+        : m(msg("The shared content could not be saved.")),
       [
         {
-          text: "Cancel import",
+          text: m(msg("Cancel import")),
           style: "cancel",
           onPress: () => void incomingShareImports.cancel(target),
         },
-        { text: "Retry", onPress: () => incomingShareImports.retry(target) },
+        { text: m(msg("Retry")), onPress: () => incomingShareImports.retry(target) },
       ],
       { cancelable: false },
     );
   },
   onCancelFailure: (target, error) => {
-    const uiT = readUiTranslator();
-
     Dialog.alert(
-      uiT("Could not cancel import"),
+      m(msg("Could not cancel import")),
       error instanceof Error
-        ? error.message
-        : uiT("The shared content could not be restored safely."),
+        ? (errorDisplayMessage(error, m) ?? error.message)
+        : m(msg("The shared content could not be restored safely.")),
       [
-        { text: "Retry import", onPress: () => incomingShareImports.retry(target) },
-        { text: "Retry cancel", onPress: () => void incomingShareImports.cancel(target) },
+        { text: m(msg("Retry import")), onPress: () => incomingShareImports.retry(target) },
+        { text: m(msg("Retry cancel")), onPress: () => void incomingShareImports.cancel(target) },
       ],
       { cancelable: false },
     );

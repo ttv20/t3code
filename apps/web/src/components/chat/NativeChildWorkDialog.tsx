@@ -5,9 +5,9 @@ import type {
   OrchestrationV2NativeChildWork,
   ThreadId,
 } from "@t3tools/contracts";
+import { T, useGT } from "gt-react";
 import { ListTreeIcon } from "lucide-react";
 import { useState } from "react";
-import { UiText } from "../../i18n";
 
 import { orchestrationEnvironment } from "../../state/orchestration";
 import { useEnvironmentQuery } from "../../state/query";
@@ -38,16 +38,16 @@ export function NativeChildWorkDialog(props: {
       <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
         <ListTreeIcon />
         <span className="@max-[420px]/composer-surface:sr-only">
-          <UiText message={"Subagent work"} />
+          <T>Subagent work</T>
         </span>
       </Button>
       <DialogPopup className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            <UiText message={"Subagent work"} />
+            <T>Subagent work</T>
           </DialogTitle>
           <DialogDescription>
-            <UiText message={"Read only. These subagents cannot take messages."} />
+            <T>Read only. These subagents cannot take messages.</T>
           </DialogDescription>
         </DialogHeader>
         {open ? <NativeChildWorkContent {...props} /> : null}
@@ -74,11 +74,11 @@ function NativeChildWorkContent(props: {
           <p className="text-sm text-destructive-foreground">{query.error}</p>
         ) : children === undefined ? (
           <p className="text-sm text-muted-foreground">
-            <UiText message={"Loading…"} />
+            <T>Loading…</T>
           </p>
         ) : children.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            <UiText message={"The provider has no record of which subagents this call started."} />
+            <T>The provider has no record of which subagents this call started.</T>
           </p>
         ) : (
           children.map((child) => <NativeChild key={child.conversationId} child={child} />)
@@ -86,7 +86,7 @@ function NativeChildWorkContent(props: {
       </DialogPanel>
       <DialogFooter variant="bare">
         <Button size="sm" variant="outline" disabled={query.isPending} onClick={query.refresh}>
-          <UiText message={"Refresh"} />
+          <T>Refresh</T>
         </Button>
       </DialogFooter>
     </>
@@ -95,20 +95,22 @@ function NativeChildWorkContent(props: {
 
 function NativeChild(props: { readonly child: OrchestrationV2NativeChildWork }) {
   const { child } = props;
+  const gt = useGT();
+  const role = child.role || gt("Subagent");
   return (
-    <section aria-label={child.role || "Subagent"} className="flex min-w-0 flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">{child.role || "Subagent"}</h3>
+    <section aria-label={role} className="flex min-w-0 flex-col gap-2">
+      <h3 className="text-sm font-medium text-foreground">{role}</h3>
       <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
         {child.prompt}
       </p>
       {child.truncated ? (
         <p className="text-xs text-muted-foreground">
-          <UiText message={"Earlier steps are not shown."} />
+          <T>Earlier steps are not shown.</T>
         </p>
       ) : null}
       {child.steps === null ? (
         <p className="text-xs text-muted-foreground">
-          <UiText message={"No transcript yet."} />
+          <T>No transcript yet.</T>
         </p>
       ) : (
         <ol className="m-0 flex list-none flex-col gap-2 border-s ps-3">

@@ -1,18 +1,18 @@
+import { workspaceAreaProps } from "../lib/workspaceFocus";
+import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { T, useGT } from "gt-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
-import { useUiLanguage } from "../i18n";
-import { workspaceAreaProps } from "../lib/workspaceFocus";
 
-import { HostedEmptyState } from "../components/HostedEmptyState";
+import { isElectron } from "../env";
 import { NoProjectsHero } from "../components/NoProjectsHero";
 import { sortScopedProjectsForSidebar } from "../components/Sidebar.logic";
 import { Button } from "../components/ui/button";
+import { HostedEmptyState } from "../components/HostedEmptyState";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../components/ui/empty";
 import { SidebarInset } from "../components/ui/sidebar";
 import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
-import { isElectron } from "../env";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import {
   readProject,
@@ -92,9 +92,8 @@ function IndexDraftLanding() {
 }
 
 function DraftStartError({ onRetry }: { readonly onRetry: () => void }) {
-  const { t: uiT } = useUiLanguage();
-
-  const contentArea = workspaceAreaProps("home", 1, "Home");
+  const gt = useGT();
+  const contentArea = workspaceAreaProps("home", 1, gt("Home", { $context: "the home screen" }));
   return (
     <SidebarInset
       {...contentArea}
@@ -104,14 +103,16 @@ function DraftStartError({ onRetry }: { readonly onRetry: () => void }) {
       {isElectron ? <WorkspacePageHeader electron /> : null}
       <Empty className="flex-1">
         <EmptyHeader className="max-w-md">
-          <EmptyTitle>{uiT("Couldn’t start a new thread")}</EmptyTitle>
+          <EmptyTitle>
+            <T>Couldn’t start a new thread</T>
+          </EmptyTitle>
           <EmptyDescription>
-            {uiT("The project is still available. Try opening the draft again.")}
+            <T>The project is still available. Try opening the draft again.</T>
           </EmptyDescription>
           <div className="mt-5 flex justify-center">
             <Button size="sm" onClick={onRetry}>
               <RefreshIcon size="md" />
-              {uiT("Try again")}
+              <T>Try again</T>
             </Button>
           </div>
         </EmptyHeader>

@@ -1,17 +1,18 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { useAtomValue } from "@effect/atom-react";
 import { INTERFACE_DIRECTIONS, INTERFACE_LANGUAGES } from "@t3tools/client-runtime/i18n";
 import { AsyncResult } from "effect/reactivity";
 import { View } from "react-native";
 import { useUiLanguage } from "../../i18n";
 
 import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { mobilePreferencesAtom, saveMobilePreferences } from "../../state/preferences";
 import { SettingsSection } from "./components/SettingsSection";
 
 export function LanguageSettingsSection() {
   const { t: uiT } = useUiLanguage();
   const result = useAtomValue(mobilePreferencesAtom);
-  const update = useAtomSet(updateMobilePreferencesAtom);
+  const update = useAtomCommand(saveMobilePreferences);
   const preferences = AsyncResult.isSuccess(result) ? result.value : null;
 
   return (

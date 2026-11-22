@@ -1,12 +1,12 @@
-import { readUiTranslator } from "../state/ui-language";
 import * as Hash from "effect/Hash";
 import { File, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
+import { T, useGT, Var } from "gt-react-native";
 import type { DiagramType } from "pele/lazy";
 import { Suspense, use, useRef, useState } from "react";
 import { PixelRatio, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { parse, Svg, SvgXml } from "react-native-svg";
-import { useUiLanguage } from "../i18n";
+
 import { FilePreviewModal } from "../components/ui/FilePreviewModal";
 import { copyTextWithHaptic } from "../lib/copyTextWithHaptic";
 import { mermaidSvgForNative, withDiagramBackground } from "../lib/mermaidSvg";
@@ -22,7 +22,8 @@ type Diagram =
       readonly width: number;
       readonly height: number;
     }
-  | { readonly status: "error"; readonly message: string };
+  | { readonly status: "error"; readonly reason: "load" }
+  | { readonly status: "error"; readonly reason: "render"; readonly message: string | null };
 
 let peleLoad: Promise<Pele | null> | null = null;
 // Each diagram type is its own chunk, so a thread with one flowchart only
@@ -50,14 +51,13 @@ const MONOSPACE = Platform.OS === "ios" ? "Menlo" : "monospace";
 const DIAGRAM_FONT = Platform.OS === "ios" ? "Helvetica" : "sans-serif";
 
 async function renderDiagram(source: string): Promise<Diagram> {
-  const uiT = readUiTranslator();
   peleLoad ??= import("pele/lazy").catch(() => null);
   const pele = await peleLoad;
   if (!pele) {
     // Not cached, so the next mount tries again.
     peleLoad = null;
     diagramLoads.delete(source);
-    return { status: "error", message: uiT("The diagram renderer failed to load.") };
+    return { status: "error", reason: "load" };
   }
   let type: DiagramType | null = null;
   try {
@@ -77,7 +77,7 @@ async function renderDiagram(source: string): Promise<Diagram> {
     if (!(await load)) {
       typeLoads.delete(type);
       diagramLoads.delete(source);
-      return { status: "error", message: uiT("The diagram renderer failed to load.") };
+      return { status: "error", reason: "load" };
     }
   }
   try {
@@ -91,7 +91,8 @@ async function renderDiagram(source: string): Promise<Diagram> {
   } catch (error) {
     return {
       status: "error",
-      message: error instanceof Error ? error.message : uiT("The diagram could not be rendered."),
+      reason: "render",
+      message: error instanceof Error ? error.message : null,
     };
   }
 }
@@ -131,14 +132,19 @@ function RenderedMermaidBlock(props: MermaidCodeBlockProps) {
 }
 
 function MermaidBlock(props: MermaidCodeBlockProps & { readonly diagram: Diagram | null }) {
-  const { t: uiT } = useUiLanguage();
-
   const { code, textStyle, diagram } = props;
+  const gt = useGT();
   const [showCode, setShowCode] = useState(false);
   const [expansion, setExpansion] = useState<Expansion | null>(null);
   const exportSvg = useRef<Svg>(null);
   const secondaryColor = themeColorWithAlpha(textStyle.codeColor, 0.6);
   const codeFontSize = textStyle.fontSize * 0.9;
+  const diagramError =
+    diagram?.status !== "error"
+      ? null
+      : diagram.reason === "load"
+        ? gt("The diagram renderer failed to load.")
+        : (diagram.message ?? gt("The diagram could not be rendered."));
   const svg =
     diagram?.status === "ready"
       ? mermaidSvgForNative(diagram.svg, {
@@ -204,14 +210,14 @@ function MermaidBlock(props: MermaidCodeBlockProps & { readonly diagram: Diagram
           {svg ? (
             <CodeBlockHeaderButton
               icon={showCode ? "flowchart" : "chevron.left.forwardslash.chevron.right"}
-              label={showCode ? uiT("Show diagram") : uiT("Show code")}
+              label={showCode ? gt("Show diagram") : gt("Show code")}
               textStyle={textStyle}
               onPress={() => setShowCode((value) => !value)}
             />
           ) : null}
           <CodeBlockHeaderButton
             icon="doc.on.doc"
-            label={uiT("Copy code")}
+            label={gt("Copy code")}
             textStyle={textStyle}
             onPress={() => copyTextWithHaptic(code)}
           />
@@ -221,7 +227,9 @@ function MermaidBlock(props: MermaidCodeBlockProps & { readonly diagram: Diagram
       <View style={styles.content}>
         {diagram?.status === "error" ? (
           <Text style={[styles.error, { color: secondaryColor, fontSize: codeFontSize * 0.85 }]}>
-            {uiT("Unable to render diagram: {0}", { "0": diagram.message })}
+            <T>
+              Unable to render diagram: <Var>{diagramError}</Var>
+            </T>
           </Text>
         ) : null}
         {svg && diagram?.status === "ready" && !showCode ? (
@@ -230,8 +238,8 @@ function MermaidBlock(props: MermaidCodeBlockProps & { readonly diagram: Diagram
           <View style={styles.diagramRow}>
             <Pressable
               accessibilityRole="imagebutton"
-              accessibilityLabel={uiT("Mermaid diagram")}
-              accessibilityHint={uiT("Opens the diagram full screen")}
+              accessibilityLabel={gt("{name} diagram", { name: "Mermaid" })}
+              accessibilityHint={gt("Opens the diagram full screen")}
               onPress={() => {
                 if (expansion) return;
                 void Haptics.selectionAsync();

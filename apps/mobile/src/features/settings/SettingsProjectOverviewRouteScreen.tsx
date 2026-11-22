@@ -1,24 +1,28 @@
+import { type ProjectGroup } from "@t3tools/client-runtime/state/project-grouping";
+import { clearComposerDraft } from "../../state/use-composer-drafts";
 import { useNavigation } from "@react-navigation/native";
-import {
-  deriveProjectGroupLabel,
-  type ProjectGroup,
-} from "@t3tools/client-runtime/state/project-grouping";
+import { findNewTaskDraftKeys } from "../../state/use-composer-drafts";
+import { composerDraftsAtom } from "../../state/use-composer-drafts";
+import { deriveProjectGroupLabel } from "@t3tools/client-runtime/state/project-grouping";
+import { waitForComposerDraftsLoaded } from "../../state/use-composer-drafts";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+import { T, useGT } from "gt-react-native";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import { AppText as Text, AppTextInput } from "../../components/ui/AppText";
+import { Button } from "../../components/ui/Button";
+import { ProjectFavicon } from "../../components/ProjectFavicon";
+import * as Dialog from "../../components/ui/Dialog";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import { planProjectRemoval } from "@t3tools/client-runtime/state/projects";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
+
 import { useRef, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ProjectFavicon } from "../../components/ProjectFavicon";
-import { AppTextInput, AppText as Text } from "../../components/ui/AppText";
-import { Button } from "../../components/ui/Button";
-import * as Dialog from "../../components/ui/Dialog";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useUiLanguage } from "../../i18n";
 
 import { ListActionRow as SettingsActionRow } from "../../components/ui/ListActionRow";
 import { appAtomRegistry } from "../../state/atom-registry";
@@ -31,24 +35,21 @@ import {
   useEnvironmentsWithScope,
 } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
-import {
-  clearComposerDraft,
-  composerDraftsAtom,
-  findNewTaskDraftKeys,
-  waitForComposerDraftsLoaded,
-} from "../../state/use-composer-drafts";
-import { workspaceHasColumns } from "../layout/workspace/workspace-selection-store";
-import { DEFAULT_SETTINGS_PAGE } from "../layout/workspace/workspace-tab-navigation";
-import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
+
 import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
+import { ProjectRepositoriesSection } from "./ProjectRepositoriesSection";
+import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { useSettingsEnvironmentFilter, type SettingsTarget } from "./settings-environment-filter";
 import { leaveSettingsPage } from "./settings-navigation";
+import { workspaceHasColumns } from "../layout/workspace/workspace-selection-store";
+import { DEFAULT_SETTINGS_PAGE } from "../layout/workspace/workspace-tab-navigation";
+
+import { m } from "../../i18n/messages";
 
 export function SettingsProjectOverviewRouteScreen() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const environmentMenu = useSettingsEnvironmentMenu();
   const insets = useSafeAreaInsets();
   const [isRemoving, setIsRemoving] = useState(false);
@@ -87,7 +88,7 @@ export function SettingsProjectOverviewRouteScreen() {
       .filter((project) => selectedEnvironmentIds.has(project.environmentId)) ?? [];
 
   return (
-    <SettingsScreen title={uiT("Projects")} menus={[environmentMenu]}>
+    <SettingsScreen title={gt("Projects")} menus={[environmentMenu]}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -97,15 +98,14 @@ export function SettingsProjectOverviewRouteScreen() {
       >
         {selectedProjectKey === null ? (
           <Text className="px-2 text-base text-foreground-muted">
-            {uiT(
-              "Choose a project with the filter above to manage its name, checkouts and removal.",
-            )}
+            <T>Choose a project with the filter above to manage its name, checkouts and removal.</T>
           </Text>
         ) : !group || members.length === 0 ? (
           <Text className="px-2 text-base text-foreground-muted">
-            {uiT(
-              "This project has no checkout on the selected connected environments. Change the filter above.",
-            )}
+            <T>
+              This project has no checkout on the selected connected environments. Change the filter
+              above.
+            </T>
           </Text>
         ) : (
           <ProjectOverviewContent
@@ -142,8 +142,7 @@ function ProjectOverviewContent(props: {
   readonly projectKey: string | null;
   readonly onProjectRemoved: (projectKey: string | null) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { isRemoving, setIsRemoving, startRemoval, finishRemoval } = props;
   const representative = props.members[0]!;
   const displayName = deriveProjectGroupLabel({
@@ -161,11 +160,11 @@ function ProjectOverviewContent(props: {
   );
   const deleteProject = useAtomCommand(projectEnvironment.delete, { reportFailure: false });
   const updateProject = useAtomCommand(projectEnvironment.update, {
-    label: uiT("project name update"),
+    label: gt("project name update"),
     reportFailure: true,
   });
   const organizeProject = useAtomCommand(projectEnvironment.update, {
-    label: uiT("project update"),
+    label: gt("project update"),
     reportFailure: true,
   });
   const [isOrganizing, setIsOrganizing] = useState(false);
@@ -191,8 +190,8 @@ function ProjectOverviewContent(props: {
     for (const member of allMembers) {
       if (!readEnvironmentScope(member.environmentId, AuthOrchestrationOperateScope)) {
         Dialog.alert(
-          uiT("Failed to update project"),
-          uiT("This connection can no longer change it."),
+          gt("Failed to update project"),
+          gt("This connection can no longer change it."),
         );
         break;
       }
@@ -204,8 +203,10 @@ function ProjectOverviewContent(props: {
         if (!isAtomCommandInterrupted(result)) {
           const error = squashAtomCommandFailure(result);
           Dialog.alert(
-            uiT('Failed to update "{0}"', { "0": member.title }),
-            error instanceof Error ? error.message : uiT("An error occurred."),
+            gt('Failed to update "{project}"', { project: member.title }),
+            error instanceof Error
+              ? (errorDisplayMessage(error, m) ?? error.message)
+              : gt("An error occurred."),
           );
         }
         break;
@@ -225,10 +226,12 @@ function ProjectOverviewContent(props: {
       (entry) => entry.environmentId === denied.environmentId,
     );
     Dialog.alert(
-      uiT("Failed to remove project"),
-      uiT("This connection cannot change projects in {0}.", {
-        "0": environment?.label ?? "this environment",
-      }),
+      gt("Failed to remove project"),
+      environment
+        ? gt("This connection cannot change projects in {environment}.", {
+            environment: environment.label,
+          })
+        : gt("This connection cannot change projects in this environment."),
     );
     return false;
   };
@@ -236,23 +239,26 @@ function ProjectOverviewContent(props: {
   const removeMembers = (members: readonly EnvironmentProject[]) => {
     if (!checkRemovalAccess(members) || !startRemoval()) return;
     const projectKey = props.projectKey;
-    const plan = planProjectRemoval({
-      members: members.map((member) => ({
-        ...member,
-        environmentLabel: props.environments.find(
-          (entry) => entry.environmentId === member.environmentId,
-        )?.label,
-      })),
-      groupMemberCount: props.members.length,
-      hasOtherMembers: props.hasOtherMembers,
-      displayName,
-      threads,
-      unloadedThreadCount: readUnloadedThreadCount(members, threads),
-    });
+    const plan = planProjectRemoval(
+      {
+        members: members.map((member) => ({
+          ...member,
+          environmentLabel: props.environments.find(
+            (entry) => entry.environmentId === member.environmentId,
+          )?.label,
+        })),
+        groupMemberCount: props.members.length,
+        hasOtherMembers: props.hasOtherMembers,
+        displayName,
+        threads,
+        unloadedThreadCount: readUnloadedThreadCount(members, threads),
+      },
+      m,
+    );
     Dialog.confirm({
-      title: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
+      title: plan.targetKind === "checkout" ? gt("Remove checkout") : gt("Remove project"),
       message: plan.confirmationMessage,
-      confirmText: plan.targetKind === "checkout" ? uiT("Remove checkout") : uiT("Remove project"),
+      confirmText: plan.targetKind === "checkout" ? gt("Remove checkout") : gt("Remove project"),
       destructive: true,
       onCancel: finishRemoval,
       onConfirm: () => {
@@ -269,8 +275,10 @@ function ProjectOverviewContent(props: {
               if (!isAtomCommandInterrupted(result)) {
                 const error = squashAtomCommandFailure(result);
                 Dialog.alert(
-                  uiT('Failed to remove "{0}"', { "0": member.title }),
-                  error instanceof Error ? error.message : uiT("An error occurred."),
+                  gt('Failed to remove "{project}"', { project: member.title }),
+                  error instanceof Error
+                    ? (errorDisplayMessage(error, m) ?? error.message)
+                    : gt("An error occurred."),
                 );
               }
               return;
@@ -331,19 +339,21 @@ function ProjectOverviewContent(props: {
             {displayName}
           </Text>
           <Text className="text-sm text-foreground-muted">
-            {props.members.length === 1
-              ? uiT("1 checkout")
-              : uiT("{0} checkouts", { "0": props.members.length })}
+            {gt("{count, plural, one {{count} checkout} other {{count} checkouts}}", {
+              count: props.members.length,
+            })}
           </Text>
         </View>
       </View>
 
-      <SettingsSection title={uiT("Project")}>
+      <SettingsSection title={gt("Project")}>
         <View className="gap-3 p-4">
-          <Text className="text-sm font-t3-medium text-foreground-muted">{uiT("Name")}</Text>
+          <Text className="text-sm font-t3-medium text-foreground-muted">
+            <T>Name</T>
+          </Text>
           <View className="flex-row items-center gap-3">
             <AppTextInput
-              accessibilityLabel={uiT("Project name")}
+              accessibilityLabel={gt("Project name")}
               className="min-h-11 min-w-0 flex-1 rounded-xl border-continuous bg-card px-3 text-base text-foreground"
               value={draftName ?? displayName}
               onChangeText={setDraftName}
@@ -353,8 +363,8 @@ function ProjectOverviewContent(props: {
             />
             {canSave ? (
               <Button
-                label={uiT("Save")}
-                accessibilityHint={uiT("Save project name")}
+                label={gt("Save")}
+                accessibilityHint={gt("Save project name")}
                 tone="secondary"
                 onPress={saveName}
               />
@@ -364,14 +374,14 @@ function ProjectOverviewContent(props: {
       </SettingsSection>
 
       {canOrganize ? (
-        <SettingsSection title={uiT("Organize")}>
+        <SettingsSection title={gt("Organize")}>
           <SettingsSwitchRow
             icon="pin"
-            label={uiT("Pin")}
+            label={gt("Pin", { $context: "verb, keep the project at the top" })}
             subtitle={
               offline
-                ? uiT("Connect every machine with this project to change this.")
-                : uiT("Pinned projects come first in project pickers.")
+                ? gt("Connect every machine with this project to change this.")
+                : gt("Pinned projects come first in project pickers.")
             }
             value={props.group.pinned}
             disabled={isOrganizing || offline}
@@ -379,11 +389,11 @@ function ProjectOverviewContent(props: {
           />
           <SettingsActionRow
             icon="archivebox"
-            label={props.group.archived ? uiT("Unarchive project") : uiT("Archive project")}
+            label={props.group.archived ? gt("Unarchive project") : gt("Archive project")}
             description={
               props.group.archived
-                ? uiT("Hidden from project pickers. Threads and files are kept.")
-                : uiT("Hides the project from project pickers. Threads and files are kept.")
+                ? gt("Hidden from project pickers. Threads and files are kept.")
+                : gt("Hides the project from project pickers. Threads and files are kept.")
             }
             disabled={isOrganizing || offline}
             onPress={() => void organize({ archived: !props.group.archived })}
@@ -391,7 +401,7 @@ function ProjectOverviewContent(props: {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection title={uiT("Checkouts")}>
+      <SettingsSection title={gt("Checkouts")}>
         {props.members.map((member, index) => {
           const environment = props.environments.find(
             (entry) => entry.environmentId === member.environmentId,
@@ -408,7 +418,7 @@ function ProjectOverviewContent(props: {
                     : "text-lg text-foreground"
                 }
               >
-                {environment?.label ?? uiT("Environment")}
+                {environment?.label ?? gt("Environment")}
               </Text>
               {environment?.displayUrl ? (
                 <Text className="text-sm leading-normal text-foreground-muted">
@@ -429,27 +439,47 @@ function ProjectOverviewContent(props: {
           );
         })}
       </SettingsSection>
-      <SettingsSection title={uiT("Danger")}>
+      {props.members.map((member) => {
+        const environment = props.environments.find(
+          (entry) => entry.environmentId === member.environmentId,
+        )?.label;
+        return (
+          <ProjectRepositoriesSection
+            key={`${member.environmentId}:${member.id}`}
+            member={member}
+            title={
+              props.members.length === 1
+                ? gt("Repositories")
+                : gt("Repositories · {environment}", {
+                    environment: environment ?? gt("Environment"),
+                  })
+            }
+          />
+        );
+      })}
+      <SettingsSection
+        title={gt("Danger", { $context: "section heading for destructive actions" })}
+      >
         <SettingsActionRow
           icon="trash"
           label={
             props.hasOtherMembers
-              ? uiT("Remove checkout")
+              ? gt("Remove checkout")
               : props.members.length > 1
-                ? uiT("Remove this project everywhere")
-                : uiT("Remove project")
+                ? gt("Remove this project everywhere")
+                : gt("Remove project")
           }
           description={
             props.hasOtherMembers
-              ? uiT(
+              ? gt(
                   "Deletes the selected machine's checkout entries and their threads. Other machines and files on disk are not touched.",
                 )
               : props.members.length > 1
-                ? uiT(
-                    "Deletes all {0} checkout entries and their threads on every machine. Files on disk are not touched.",
-                    { "0": props.members.length },
+                ? gt(
+                    "{count, plural, other {Deletes all {count} checkout entries and their threads on every machine. Files on disk are not touched.}}",
+                    { count: props.members.length },
                   )
-                : uiT("Deletes the project entry and its threads. Files on disk are not touched.")
+                : gt("Deletes the project entry and its threads. Files on disk are not touched.")
           }
           tone="danger"
           disabled={!canRemoveGroup || isRemoving}
@@ -466,19 +496,18 @@ function RemoveCheckoutAction(props: {
   readonly disabled: boolean;
   readonly onPress: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const canRemove = useEnvironmentScope(props.member.environmentId, AuthOrchestrationOperateScope);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={uiT("Remove checkout {0}", { "0": props.member.workspaceRoot })}
+      accessibilityLabel={gt("Remove checkout {path}", { path: props.member.workspaceRoot })}
       disabled={props.disabled || !canRemove}
       onPress={props.onPress}
       className="self-start rounded-full border border-border bg-card px-3 py-1.5 disabled:opacity-40"
     >
       <Text className="font-t3-medium text-xs text-danger-foreground">
-        {uiT("Remove checkout")}
+        <T>Remove checkout</T>
       </Text>
     </Pressable>
   );

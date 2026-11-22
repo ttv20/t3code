@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
 
-import { Button } from "~/components/ui/button";
+import { T, useGT } from "gt-react";
 import { Spinner } from "~/components/ui/spinner";
+import { Button } from "~/components/ui/button";
 import { Toggle } from "~/components/ui/toggle";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import { DIFF_SURFACE_THEME_UNSAFE_CSS } from "~/lib/diffRendering";
@@ -66,7 +66,6 @@ export function FileSurfaceAction(props: {
   readonly onPress: () => void;
   readonly children: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   const pressed = props.pressed;
   return (
     <Tooltip>
@@ -78,7 +77,7 @@ export function FileSurfaceAction(props: {
               className="shrink-0"
               disabled={props.disabled ?? false}
               onClick={props.onPress}
-              aria-label={uiT(props.label)}
+              aria-label={props.label}
               variant="ghost"
               size="icon-sm"
             >
@@ -90,7 +89,7 @@ export function FileSurfaceAction(props: {
               pressed={pressed}
               disabled={props.disabled ?? false}
               onPressedChange={props.onPress}
-              aria-label={uiT(props.label)}
+              aria-label={props.label}
               variant="ghost"
               size="sm"
             >
@@ -99,7 +98,7 @@ export function FileSurfaceAction(props: {
           )
         }
       />
-      <TooltipPopup>{uiT(props.label)}</TooltipPopup>
+      <TooltipPopup>{props.label}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -116,11 +115,11 @@ export function FileSurfaceNotice(props: { readonly children: ReactNode }) {
 }
 
 export function FileSurfaceLoading(props: { readonly className?: string }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <div
       role="status"
-      aria-label={uiT("Loading file")}
+      aria-label={gt("Loading file")}
       className={cn(
         "flex min-h-0 flex-1 items-center justify-center text-muted-foreground",
         props.className,
@@ -135,7 +134,6 @@ export function FileSurfaceFailure(props: {
   readonly message: string;
   readonly onRetry?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <div
       role="alert"
@@ -148,7 +146,7 @@ export function FileSurfaceFailure(props: {
           onClick={props.onRetry}
           className="rounded-md border border-input px-2.5 py-1 text-xs text-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
-          {uiT("Try again")}
+          <T>Try again</T>
         </button>
       ) : null}
     </div>

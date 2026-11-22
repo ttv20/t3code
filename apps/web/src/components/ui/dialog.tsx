@@ -1,5 +1,6 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useRender } from "@base-ui/react/use-render";
+import { useGT } from "gt-react";
 import { XIcon } from "lucide-react";
 import {
   type ComponentProps,
@@ -22,7 +23,6 @@ import {
 } from "~/components/ui/dialog-styles";
 import { ScrollArea } from "~/components/ui/scroll-area";
 
-import { useUiLanguage } from "../../i18n";
 const ControlledOpenContext = createContext<boolean | undefined>(undefined);
 
 function RetainedWhileClosed({ open, children }: { open: boolean; children: ReactNode }) {
@@ -121,8 +121,7 @@ function DialogPopup({
   variant?: "default" | "media";
   mediaControlsPlacement?: "inside" | "outside";
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { popupRef, initialFocus } = useDialogActionInitialFocus();
   const popup = useRender({
     ref: popupRef,
@@ -143,7 +142,7 @@ function DialogPopup({
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
-            aria-label={uiT("Close")}
+            aria-label={gt("Close", { $context: "button, closes the dialog" })}
             className="absolute end-2 top-2"
             render={<Button size="icon" variant="ghost" />}
           >
@@ -263,6 +262,7 @@ function DialogPanel({
 
 export {
   ControlledOpenContext,
+  renderRetainedPopup,
   Dialog,
   DialogTrigger,
   DialogPortal,
@@ -270,14 +270,13 @@ export {
   DialogAction,
   useDialogActionInitialFocus,
   DialogBackdrop,
-  DialogPopup as DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogBackdrop as DialogOverlay,
-  DialogPanel,
   DialogPopup,
+  DialogPopup as DialogContent,
+  DialogHeader,
+  DialogFooter,
   DialogTitle,
+  DialogDescription,
+  DialogPanel,
   DialogViewport,
-  renderRetainedPopup,
 };

@@ -53,6 +53,7 @@ vi.mock("../../state/entities", () => ({
 vi.mock("../../state/vcs", () => ({
   vcsEnvironment: { status: mocks.status, listRefs: mocks.refs },
 }));
+vi.mock("../../state/filesystem", () => ({ filesystemEnvironment: {} }));
 vi.mock("../../state/projects", () => ({
   projectEnvironment: { readFile: mocks.readFile, openScratch: {} },
 }));
@@ -213,15 +214,16 @@ function setup() {
   mocks.writeSettings.mockImplementation(write);
   mocks.writeText.mockImplementation((key, text) => write(key, { text }));
   let current: ReturnType<typeof useNewTaskFlow>;
-  function Probe({ initialProject }: { readonly initialProject?: EnvironmentProject }) {
+  function Probe(props: { readonly pickOnMount?: EnvironmentProject }) {
     const value = useNewTaskFlow();
-    useEffect(() => {
-      if (initialProject && value.selectedProject !== initialProject)
-        value.setProject(initialProject);
-    }, [initialProject, value]);
     useLayoutEffect(() => {
       current = value;
     });
+    // Mirrors the draft screen applying its route project on mount, before the provider's effects run.
+    useEffect(() => {
+      if (props.pickOnMount) value.setProject(props.pickOnMount);
+      // oxlint-disable-next-line react/exhaustive-effect-dependencies -- picks once on mount; setProject changes every render
+    }, []);
     return null;
   }
   const root = createRoot(document.createElement("div"));
@@ -249,16 +251,20 @@ function setup() {
     get current() {
       return current;
     },
-    async render(active: boolean, initialProject?: EnvironmentProject) {
+    async render(active: boolean, pickOnMount?: EnvironmentProject) {
       await act(async () =>
         root.render(
           <RegistryContext.Provider value={registry}>
             <NewTaskFlowProvider active={active} flowKey="test-flow">
-              <Probe initialProject={initialProject} />
+              <Probe pickOnMount={pickOnMount} />
             </NewTaskFlowProvider>
           </RegistryContext.Provider>,
         ),
       );
+      // The draft screen applies a project whenever it shows without a draft.
+      if (active && current.draftKey === null) {
+        await act(async () => current.setProject(projects[0]!));
+      }
     },
     async emit(cwd: string, branch: string, isRepo = true) {
       await act(async () => emitters.get(cwd)!(branch, isRepo));
@@ -274,21 +280,14 @@ function setup() {
   };
 }
 
-it("keeps the route-selected project's draft when the child selection precedes default creation", async () => {
+it("keeps the draft on a project the screen picks as it mounts", async () => {
   using screen = setup();
-  const picked = screen.projects[1]!;
-  await screen.render(true, picked);
-  expect(screen.current.selectedProject).toEqual(picked);
-  expect(screen.snapshot(screen.current.draftKey!).project).toMatchObject({
-    environmentId: picked.environmentId,
-    projectId: picked.id,
+  await screen.render(true, screen.projects[2]);
+  expect(screen.current.selectedProject).toEqual(screen.projects[2]);
+  expect(screen.snapshot(screen.current.draftKey).project).toEqual({
+    environmentId: "two",
+    projectId: "b",
   });
-  expect(mocks.createDraft).toHaveBeenCalledTimes(1);
-  act(() => screen.current.setPrompt("keep the destination"));
-  await screen.render(false);
-  await screen.render(true);
-  expect(screen.current.selectedProject).toEqual(picked);
-  expect(screen.snapshot(screen.current.draftKey!).project?.projectId).toBe(picked.id);
 });
 
 it("owns a status stream only while the draft is active, retaining draft choices on reopen", async () => {

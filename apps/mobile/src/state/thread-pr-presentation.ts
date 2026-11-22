@@ -1,4 +1,3 @@
-import { readUiTranslator } from "../state/ui-language";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import type {
   PullRequestSummary,
@@ -10,6 +9,7 @@ import {
   sourceControlClients,
   type ChangeRequestTerminology,
 } from "@t3tools/client-runtime/source-control-clients";
+import { changeRequestTermKind } from "../lib/changeRequestTerm";
 
 import {
   legacyThreadPullRequestKey,
@@ -17,6 +17,9 @@ import {
   resolveThreadPullRequestBadge,
   threadPullRequestKeyOf,
 } from "@t3tools/client-runtime/thread-pull-requests";
+import { msg } from "gt-react-native";
+
+import { m, type MessageResolver } from "../i18n/messages";
 
 export type ThreadPr = NonNullable<VcsStatusResult["pr"]>;
 
@@ -40,11 +43,16 @@ const PR_STATE_TEXT_CLASS: Record<ThreadPr["state"], string> = {
   closed: "text-adaptive-rose-600-400",
 };
 
+function prStateKey(state: ThreadPr["state"] | "draft" | null) {
+  return state ?? "pending";
+}
+
+/** Render callers pass `useMessages()` so the label follows a language switch. */
 export function presentThreadPr(
   pr: ThreadPr,
   provider: VcsStatusResult["sourceControlProvider"] | null | undefined,
+  resolve: MessageResolver = m,
 ): ThreadPrPresentation {
-  const uiT = readUiTranslator();
   const { changeRequest } = sourceControlClients.get(provider?.kind);
   const isDraft = pr.state === "open" && pr.isDraft === true;
   return {
@@ -57,19 +65,24 @@ export function presentThreadPr(
     url: pr.url,
     changeRequest,
     label: String(pr.number),
-    accessibilityLabel: uiT("{0} #{1}: {2}", {
-      "0": uiT(changeRequest.singular),
-      "1": pr.number,
-      "2": uiT(isDraft ? "draft" : pr.state),
-    }),
+    accessibilityLabel: resolve(
+      msg(
+        "{term, select, mr {#{number} merge request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} cr {#{number} change request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {#{number} pull request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}",
+        {
+          number: String(pr.number),
+          term: changeRequestTermKind(changeRequest),
+          state: prStateKey(isDraft ? "draft" : pr.state),
+        },
+      ),
+    ),
     textClassName: isDraft ? "text-foreground-muted" : PR_STATE_TEXT_CLASS[pr.state],
   };
 }
 
 export function presentThreadLinkedPullRequests(
   links: ReadonlyArray<ThreadPullRequestLink>,
+  resolve: MessageResolver = m,
 ): ThreadPrPresentation | null {
-  const uiT = readUiTranslator();
   const link = resolveThreadCurrentPullRequestLink(links);
   const badge = resolveThreadPullRequestBadge(links);
   if (link === null || badge === null) return null;
@@ -104,22 +117,37 @@ export function presentThreadLinkedPullRequests(
     label,
     accessibilityLabel:
       badge.kind === "stack"
-        ? uiT("{0} {1} in stack, {2}", {
-            "0": badge.layers,
-            "1": uiT(changeRequest.plural),
-            "2": uiT(isDraft ? "draft" : (state ?? "Status pending")),
-          })
+        ? resolve(
+            msg(
+              "{term, select, mr {{count, plural, one {{count} merge requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} merge requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}} cr {{count, plural, one {{count} change requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} change requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}} other {{count, plural, one {{count} pull requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} pull requests in stack, {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}}}",
+              {
+                count: badge.layers,
+                term: changeRequestTermKind(changeRequest),
+                state: prStateKey(isDraft ? "draft" : state),
+              },
+            ),
+          )
         : linkedCount !== null
-          ? uiT("{0} linked {1}, overall {2}", {
-              "0": linkedCount,
-              "1": uiT(changeRequest.plural),
-              "2": uiT(badge.state),
-            })
-          : uiT("{0} #{1}: {2}", {
-              "0": uiT(changeRequest.singular),
-              "1": link.number,
-              "2": uiT(state === null ? "Status pending" : isDraft ? "draft" : state),
-            }),
+          ? resolve(
+              msg(
+                "{term, select, mr {{count, plural, one {{count} linked merge requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} linked merge requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}} cr {{count, plural, one {{count} linked change requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} linked change requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}} other {{count, plural, one {{count} linked pull requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {{count} linked pull requests, overall {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}}}",
+                {
+                  count: linkedCount,
+                  term: changeRequestTermKind(changeRequest),
+                  state: prStateKey(badge.state),
+                },
+              ),
+            )
+          : resolve(
+              msg(
+                "{term, select, mr {#{number} merge request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} cr {#{number} change request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}} other {#{number} pull request {state, select, pending {status pending} draft {draft} open {open} merged {merged} other {closed}}}}",
+                {
+                  number: String(link.number),
+                  term: changeRequestTermKind(changeRequest),
+                  state: prStateKey(state === null ? null : isDraft ? "draft" : state),
+                },
+              ),
+            ),
     textClassName: state === null || isDraft ? "text-foreground-muted" : PR_STATE_TEXT_CLASS[state],
   };
 }
@@ -128,9 +156,10 @@ export function resolveThreadPrSource(
   thread: Pick<EnvironmentThreadShell, "pullRequests" | "linkedPullRequest" | "branchPullRequest">,
   /** False until the server config loads; the stored references serve until then. */
   supportsSnapshots: boolean,
+  resolve: MessageResolver = m,
 ) {
   const linkedPresentation = supportsSnapshots
-    ? presentThreadLinkedPullRequests(thread.pullRequests)
+    ? presentThreadLinkedPullRequests(thread.pullRequests, resolve)
     : null;
   const pullRequestRef =
     linkedPresentation !== null
@@ -141,13 +170,15 @@ export function resolveThreadPrSource(
   return { linkedPresentation, pullRequestRef };
 }
 
-export function resolveThreadPrBadgeAction(pr: ThreadPrPresentation) {
-  const uiT = readUiTranslator();
+export function resolveThreadPrBadgeAction(pr: ThreadPrPresentation, resolve: MessageResolver = m) {
   return pr.kind === "stack" || pr.others > 0
-    ? { kind: "list" as const, accessibilityLabel: uiT("Show {0}", { "0": pr.accessibilityLabel }) }
+    ? {
+        kind: "list" as const,
+        accessibilityLabel: resolve(msg("Show {label}", { label: pr.accessibilityLabel })),
+      }
     : {
         kind: "open" as const,
-        accessibilityLabel: uiT("Open {0}", { "0": pr.accessibilityLabel }),
+        accessibilityLabel: resolve(msg("Open {label}", { label: pr.accessibilityLabel })),
       };
 }
 

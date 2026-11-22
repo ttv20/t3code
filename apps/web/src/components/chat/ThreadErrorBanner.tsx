@@ -4,26 +4,31 @@ import {
   CHATGPT_WORKSPACE_ADMIN_REQUEST,
   CHATGPT_WORKSPACE_USAGE_LIMIT_CODE,
 } from "@t3tools/shared/usageLimits";
-import { CircleAlertIcon, XIcon } from "lucide-react";
+import { msg, T, useGT } from "gt-react";
 import { memo } from "react";
+import { m } from "../../i18n/messages";
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
-import { useUiLanguage } from "../../i18n";
-import { OpenAI } from "../Icons";
-import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
-import { ExpandableText } from "../settings/ExpandableText";
 import { Alert, AlertAction, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
+import { CircleAlertIcon, XIcon } from "lucide-react";
+import { OpenAI } from "../Icons";
+import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
+import { ExpandableText } from "../settings/ExpandableText";
 
-export function copyAdminRequest(t: (message: string) => string) {
-  void writeTextToClipboard(t(CHATGPT_WORKSPACE_ADMIN_REQUEST), "admin request").then(
+export function copyAdminRequest() {
+  void writeTextToClipboard(CHATGPT_WORKSPACE_ADMIN_REQUEST, {
+    target: "admin request",
+    unavailableMessage: msg("Clipboard API is unavailable while copying admin request."),
+    failureMessage: msg("Failed to copy admin request to the clipboard."),
+  }).then(
     () =>
       toastManager.add({
         type: "success",
-        title: t("Request copied"),
-        description: t("Send it to your workspace admin."),
+        title: m(msg("Request copied")),
+        description: m(msg("Send it to your workspace admin.")),
       }),
-    () => toastManager.add({ type: "error", title: t("Could not copy the request") }),
+    () => toastManager.add({ type: "error", title: m(msg("Could not copy the request")) }),
   );
 }
 
@@ -46,8 +51,12 @@ export function getThreadErrorBannerMessage(error: string): string {
     : error;
 }
 
-export function getThreadErrorBannerKey(threadKey: string, error: string | null): string | null {
-  return error === null ? null : `${threadKey}\u0000${error}`;
+export function getThreadErrorBannerKey(
+  threadKey: string,
+  error: string | null,
+  source: string | null = null,
+): string | null {
+  return error === null ? null : `${threadKey}\u0000${source ?? ""}\u0000${error}`;
 }
 
 export function shouldShowThreadErrorBanner(
@@ -81,8 +90,7 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
   errorCode?: string | null;
   onDismiss?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (!error) return null;
   const workspaceLimit = errorCode === CHATGPT_WORKSPACE_USAGE_LIMIT_CODE;
   const chatGptLimit = workspaceLimit || errorCode === CHATGPT_USAGE_LIMIT_CODE;
@@ -98,10 +106,12 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
         <AlertDescription>
           {chatGptLimit ? (
             <div className="space-y-1">
-              <p className="font-medium">{uiT("ChatGPT usage limit reached")}</p>
+              <p className="font-medium">
+                <T>ChatGPT usage limit reached</T>
+              </p>
               {workspaceLimit ? (
                 <p>
-                  {uiT(
+                  {gt(
                     "You've reached your workspace's limit for using your ChatGPT plan in other apps. Copy a request to ask your workspace admin for increased usage limits.",
                   )}
                 </p>
@@ -114,8 +124,8 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
         {(chatGptLimit || onDismiss) && (
           <AlertAction>
             {workspaceLimit ? (
-              <Button variant="default" size="sm" onClick={() => copyAdminRequest(uiT)}>
-                {uiT("Copy request for admin")}
+              <Button variant="default" size="sm" onClick={copyAdminRequest}>
+                <T>Copy request for admin</T>
               </Button>
             ) : chatGptLimit ? (
               <ChatGptUsageButton variant="default" size="sm" />
@@ -124,7 +134,7 @@ export const ThreadErrorBanner = memo(function ThreadErrorBanner({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={uiT("Dismiss error")}
+                aria-label={gt("Dismiss error")}
                 onClick={onDismiss}
               >
                 <XIcon />

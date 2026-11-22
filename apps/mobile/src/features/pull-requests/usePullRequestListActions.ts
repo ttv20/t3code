@@ -1,3 +1,5 @@
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+import * as Dialog from "../../components/ui/Dialog";
 import { RegistryContext, useAtomValue } from "@effect/atom-react";
 import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
@@ -6,12 +8,12 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, PullRequestAction } from "@t3tools/contracts";
-import { AsyncResult, Atom } from "effect/reactivity";
+import { Atom, AsyncResult } from "effect/reactivity";
+import { useGT, useMessages } from "gt-react-native";
 import { use, useRef, useState } from "react";
-import { Linking, Platform } from "react-native";
-import * as Dialog from "../../components/ui/Dialog";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import type { MenuProps } from "../../components/ui/Menu.types";
-import { useUiLanguage } from "../../i18n";
+
 import { composerPullRequests } from "../../state/pull-requests";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useOpenWorkspaceDetail } from "../layout/useOpenWorkspaceDetail";
@@ -21,9 +23,14 @@ import {
   openOnProviderLabel,
   pullRequestActionLabel,
 } from "./pullRequestActions";
-import { copyPullRequestLink, sharePullRequestLink } from "./pullRequestLink";
+
+import { changeRequestTermKind } from "../../lib/changeRequestTerm";
 import { scopedPullRequestListKey, type EnvironmentPullRequestListEntry } from "./pullRequestList";
+import { copyPullRequestLink, sharePullRequestLink } from "./pullRequestLink";
+
 import { pullRequestTarget } from "./usePullRequestDiff";
+
+import { m as resolveMessage } from "../../i18n/messages";
 
 export function usePullRequestListActions(
   environmentIds: readonly EnvironmentId[],
@@ -32,9 +39,9 @@ export function usePullRequestListActions(
     patch: Partial<EnvironmentPullRequestListEntry>,
   ) => void,
 ) {
-  const { t: uiT } = useUiLanguage();
-
   const registry = use(RegistryContext);
+  const gt = useGT();
+  const m = useMessages();
   const selectDetail = useSelectWorkspaceDetail();
   const openDetail = useOpenWorkspaceDetail();
   const permissionKey = JSON.stringify(environmentIds);
@@ -81,7 +88,14 @@ export function usePullRequestListActions(
           !pr.capabilities.reviewers.request ||
           !pr.viewerPermissions.requestReviewers
         )
-          throw new Error(`Review requests aren't available for this ${terminology.singular}.`);
+          throw new Error(
+            gt(
+              "Review requests aren't available for this {term, select, mr {merge request} cr {change request} other {pull request}}.",
+              {
+                term: changeRequestTermKind(terminology),
+              },
+            ),
+          );
         openDetail(
           { name: "PullRequest", params: params(entry) },
           { name: "PullRequestReviewers", params: params(entry) },
@@ -92,7 +106,14 @@ export function usePullRequestListActions(
         !registry.get(composerPullRequests.runAction.permissionAtom(environmentId)) ||
         !canPerformPullRequestAction(pr, action)
       )
-        throw new Error(`This action isn't available for this ${terminology.singular}.`);
+        throw new Error(
+          gt(
+            "This action isn't available for this {term, select, mr {merge request} cr {change request} other {pull request}}.",
+            {
+              term: changeRequestTermKind(terminology),
+            },
+          ),
+        );
       const result = await run({ ...target, input: { ...target.input, action } });
       if (result._tag === "Failure") throw squashAtomCommandFailure(result);
       if (result.value !== undefined) return;
@@ -110,8 +131,13 @@ export function usePullRequestListActions(
     if (AsyncResult.isFailure(result)) {
       const cause = squashAtomCommandFailure(result);
       Dialog.alert(
-        uiT("Couldn't update this {0}", { "0": terminology.singular }),
-        cause instanceof Error ? cause.message : uiT("Try again."),
+        gt(
+          "Couldn't update this {term, select, mr {merge request} cr {change request} other {pull request}}",
+          { term: changeRequestTermKind(terminology) },
+        ),
+        cause instanceof Error
+          ? (errorDisplayMessage(cause, resolveMessage) ?? cause.message)
+          : gt("Try again."),
       );
     }
   };
@@ -129,7 +155,7 @@ export function usePullRequestListActions(
       return;
     }
     if (action === "provider") {
-      void Linking.openURL(entry.url);
+      void tryOpenExternalUrl(entry.url, "pull-request");
       return;
     }
     if (action === "share") {
@@ -143,9 +169,10 @@ export function usePullRequestListActions(
     const label = pullRequestActionLabel(
       supported,
       sourceControlClients.get(entry.provider).changeRequest,
+      m,
     );
-    Dialog.alert(`${label}?`, `#${entry.number} · ${entry.title}`, [
-      { text: "Cancel", style: "cancel" },
+    Dialog.alert(gt("{action}?", { action: label }), `#${entry.number} · ${entry.title}`, [
+      { text: gt("Cancel"), style: "cancel" },
       {
         text: label,
         style: supported === "close" ? "destructive" : "default",
@@ -158,24 +185,27 @@ export function usePullRequestListActions(
     return [
       {
         id: "open",
-        title: uiT("Open {0}", { "0": terminology.singular }),
+        title: gt(
+          "Open {term, select, mr {merge request} cr {change request} other {pull request}}",
+          { term: changeRequestTermKind(terminology) },
+        ),
         image: "arrow.up.right",
       },
       ...(writableEnvironments.has(entry.environmentId) && entry.state === "open"
         ? [
             {
               id: "request-review",
-              title: uiT("Request review"),
+              title: gt("Request review"),
               image: "person.badge.plus",
             },
             {
               id: entry.isDraft ? "ready" : "draft",
-              title: entry.isDraft ? uiT("Mark ready for review") : uiT("Convert to draft"),
+              title: entry.isDraft ? gt("Mark ready for review") : gt("Convert to draft"),
               image: "pencil",
             },
             {
               id: "close",
-              title: pullRequestActionLabel("close", terminology),
+              title: pullRequestActionLabel("close", terminology, m),
               image: "xmark",
               attributes: { destructive: true },
             },
@@ -184,20 +214,20 @@ export function usePullRequestListActions(
           ? [
               {
                 id: "reopen",
-                title: pullRequestActionLabel("reopen", terminology),
+                title: pullRequestActionLabel("reopen", terminology, m),
                 image: "arrow.clockwise",
               },
             ]
           : []),
       {
         id: "share",
-        title: uiT("Share…"),
-        image: Platform.OS === "ios" ? "square.and.arrow.up" : "share",
+        title: gt("Share…"),
+        image: "square.and.arrow.up",
       },
-      { id: "copy", title: uiT("Copy link"), image: Platform.OS === "ios" ? "link" : "link" },
+      { id: "copy", title: gt("Copy link"), image: "link" },
       {
         id: "provider",
-        title: openOnProviderLabel(entry.provider),
+        title: openOnProviderLabel(entry.provider, m),
         image: "safari",
       },
     ];

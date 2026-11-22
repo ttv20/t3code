@@ -10,6 +10,7 @@ import {
 } from "@t3tools/contracts";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
+import { useGT } from "gt-react-native";
 import { useState } from "react";
 import { Platform } from "react-native";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
@@ -21,7 +22,6 @@ import { PullRequestLabelDot } from "./PullRequestLabelDot";
 import { pullRequestFilterChoices, pullRequestLabelColors } from "./pullRequestList";
 import { PullRequestSearchSheet } from "./PullRequestSearchSheet";
 import { usePullRequestListControls } from "./usePullRequestListControls";
-import { useUiLanguage } from "../../i18n";
 
 export type PullRequestFilterSearchParams = {
   readonly kind: PullRequestFilterOptionKind;
@@ -53,9 +53,8 @@ const optionsFamily = Atom.family((key: string) => {
 export function PullRequestFilterSearchScreen({
   route,
 }: StaticScreenProps<PullRequestFilterSearchParams>) {
-  const { t: uiT } = useUiLanguage();
-
   const navigation = useNavigation();
+  const gt = useGT();
   const { kind, environmentId, environmentIds, suggestions, labelColors } = route.params;
   const listControls = usePullRequestListControls();
   const controls = listControls.controlsFor(environmentId);
@@ -114,16 +113,16 @@ export function PullRequestFilterSearchScreen({
       },
     });
   };
-  const placeholder = kind === "labels" ? "Search labels" : "Search authors";
+  const placeholder = kind === "labels" ? gt("Search labels") : gt("Search authors");
   return (
     <PullRequestSearchSheet
-      title={kind === "labels" ? uiT("Filter by label") : uiT("Filter by author")}
+      title={kind === "labels" ? gt("Filter by label") : gt("Filter by author")}
       placeholder={placeholder}
       closeAccessibilityLabel={
-        kind === "labels" ? uiT("Close label filter") : uiT("Close author filter")
+        kind === "labels" ? gt("Close label filter") : gt("Close author filter")
       }
       clearAccessibilityLabel={
-        kind === "labels" ? uiT("Clear label search") : uiT("Clear author search")
+        kind === "labels" ? gt("Clear label search") : gt("Clear author search")
       }
       query={query}
       onQueryChange={setQuery}
@@ -165,17 +164,17 @@ export function PullRequestFilterSearchScreen({
               <EmptyState
                 title={
                   hosted.failed
-                    ? uiT("Couldn't search the host")
+                    ? gt("Couldn't search the host")
                     : kind === "labels"
-                      ? uiT("No matching labels")
-                      : uiT("No matching authors")
+                      ? gt("No matching labels")
+                      : gt("No matching authors")
                 }
                 detail={
                   hosted.failed
-                    ? uiT("The host didn't answer. Try again in a moment.")
+                    ? gt("The host didn't answer. Try again in a moment.")
                     : kind === "labels"
-                      ? uiT("Search the labels of the repositories this list covers.")
-                      : uiT("Search people by name or handle on the repositories' hosts.")
+                      ? gt("Search the labels of the repositories this list covers.")
+                      : gt("Search people by name or handle on the repositories' hosts.")
                 }
                 variant="plain"
               />

@@ -1,18 +1,18 @@
+import { useGT } from "gt-react";
+import { MoonIcon, SunIcon } from "lucide-react";
+import type { CSSProperties } from "react";
 import {
   STANDARD_THEME_PREVIEW_COLORS as SHARED_STANDARD_THEME_PREVIEW_COLORS,
   THEME_PREVIEW_RENDER_SPECS,
 } from "@t3tools/shared/themePreview";
-import { MoonIcon, SunIcon } from "lucide-react";
-import type { CSSProperties } from "react";
-import { useUiLanguage } from "../../i18n";
 import { cn } from "../../lib/utils";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   getThemeColorsForMode,
   getThemeModes,
   type ThemeAppearance,
   type ThemeDefinition,
 } from "../../themePalette";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 const THEME_PREVIEW_ROLES = [
   "sidebar",
@@ -160,7 +160,7 @@ export function ThemePreviewCircles({
   onSelectMode: (mode: ThemeMode) => void;
   previews: ThemeCardDefinition["previews"];
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <div className="flex min-h-16 items-center justify-center gap-2.5 px-3 pt-3">
       {previews.map((preview) => {
@@ -171,7 +171,11 @@ export function ThemePreviewCircles({
             <TooltipTrigger
               render={
                 <button
-                  aria-label={uiT("Use {0} {1} mode", { "0": label, "1": uiT(mode) })}
+                  aria-label={
+                    mode === "light"
+                      ? gt("Use {label} light mode", { label })
+                      : gt("Use {label} dark mode", { label })
+                  }
                   aria-pressed={isPicked}
                   className={cn(
                     "relative flex size-[68px] shrink-0 transform-gpu cursor-pointer items-center justify-center rounded-full p-1.5 outline-none transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-5 focus-visible:outline-foreground/60",
@@ -207,7 +211,7 @@ export function ThemePreviewCircles({
               }
             />
             <TooltipPopup>
-              {mode === "light" ? uiT("Use for light mode only") : uiT("Use for dark mode only")}
+              {mode === "light" ? gt("Use for light mode only") : gt("Use for dark mode only")}
             </TooltipPopup>
           </Tooltip>
         );

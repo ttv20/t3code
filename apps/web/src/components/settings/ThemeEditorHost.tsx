@@ -1,5 +1,8 @@
+import { msg } from "gt-react";
 import { lazy, Suspense, useSyncExternalStore } from "react";
+
 import { useTheme } from "../../hooks/useTheme";
+import { m } from "../../i18n/messages";
 import {
   getThemeDefinition,
   subscribeToCustomThemes,
@@ -8,8 +11,6 @@ import {
 } from "../../themePalette";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { useThemeEditorStore } from "./themeEditorStore";
-
-import { useUiLanguage } from "../../i18n";
 
 const ThemeEditorPanel = lazy(() =>
   import("./ThemeEditorPanel").then((module) => ({ default: module.ThemeEditorPanel })),
@@ -24,7 +25,6 @@ function useThemeDefinition(id: string | null | undefined) {
 }
 
 export function ThemeEditorHost() {
-  const { t: uiT } = useUiLanguage();
   const session = useThemeEditorStore((store) => store.session);
   const closeThemeEditor = useThemeEditorStore((store) => store.closeThemeEditor);
   const { theme, setTheme, themeHalves, refreshTheme } = useTheme();
@@ -40,8 +40,8 @@ export function ThemeEditorHost() {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: uiT("Could not save your theme"),
-            description: uiT("Browser storage is unavailable, so the change was not kept."),
+            title: m(msg("Could not save your theme")),
+            description: m(msg("Browser storage is unavailable, so the change was not kept.")),
           }),
         );
         return false;
@@ -62,8 +62,8 @@ export function ThemeEditorHost() {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Could not save your theme"),
-          description: uiT("Browser storage is unavailable, so the change was not kept."),
+          title: m(msg("Could not save your theme")),
+          description: m(msg("Browser storage is unavailable, so the change was not kept.")),
         }),
       );
       return false;

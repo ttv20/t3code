@@ -1,10 +1,11 @@
+import { useMessages } from "gt-react-native";
 import { useSyncExternalStore } from "react";
-import { useUiLanguage } from "../i18n";
+
 import { msUntilRelativeTimeChange, relativeTime } from "../lib/time";
 
 // The React Compiler caches inline relativeTime calls on the timestamp alone.
 export function RelativeTime(props: { timestamp: string }) {
-  const { t } = useUiLanguage();
+  const messages = useMessages();
   const subscribe = (onChange: () => void) => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const schedule = () => {
@@ -18,13 +19,6 @@ export function RelativeTime(props: { timestamp: string }) {
     schedule();
     return () => clearTimeout(timer);
   };
-  const getSnapshot = () => {
-    const value = relativeTime(props.timestamp);
-    const match = /^(<)?(\d+)([mhd])$/.exec(value);
-    if (!match) return value;
-    const labels = { m: "{0}m", h: "{0}h", d: "{0}d" } as const;
-    const unit = match[3] as keyof typeof labels;
-    return `${match[1] ?? ""}${t(labels[unit], { "0": match[2] })}`;
-  };
+  const getSnapshot = () => relativeTime(props.timestamp, Date.now(), messages);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

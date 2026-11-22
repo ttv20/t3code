@@ -1,6 +1,6 @@
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { T, useGT } from "gt-react-native";
 import { Platform, Pressable, ScrollView, View } from "react-native";
-import { UiText, useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { ContentText, AppText as Text } from "../../components/ui/AppText";
@@ -16,9 +16,9 @@ export function ThreadSideChatsRow(props: {
   readonly environmentId: EnvironmentId;
   readonly threadId: ThreadId;
 }) {
-  const { t: uiT } = useUiLanguage();
   const sideChats = useSideChats({ environmentId: props.environmentId, threadId: props.threadId });
   const openLinkedThread = useOpenLinkedThread();
+  const gt = useGT();
   if (sideChats.length === 0) return null;
   return (
     <View
@@ -33,7 +33,7 @@ export function ThreadSideChatsRow(props: {
         tintColorClassName="accent-foreground-muted"
       />
       <Text className="text-xs text-foreground-muted">
-        <UiText message={uiT("Side chats")} />
+        <T>Side chats</T>
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
         <View className="flex-row gap-1" style={{ paddingEnd: 16 }}>
@@ -49,10 +49,11 @@ export function ThreadSideChatsRow(props: {
                 key={sideChat.id}
                 accessibilityRole="button"
                 accessibilityLabel={
-                  uiT("Open side chat {0}", { "0": sideChat.title }) +
-                  (needs === null
-                    ? ""
-                    : uiT(needs === "approval" ? ", needs approval" : ", needs input"))
+                  needs === null
+                    ? gt("Open side chat {title}", { title: sideChat.title })
+                    : needs === "approval"
+                      ? gt("Open side chat {title}, needs approval", { title: sideChat.title })
+                      : gt("Open side chat {title}, needs input", { title: sideChat.title })
                 }
                 className="max-w-48 flex-row items-center gap-1.5 rounded-full bg-subtle px-2.5 py-1"
                 onPress={() =>

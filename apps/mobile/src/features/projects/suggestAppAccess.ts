@@ -5,10 +5,12 @@ import type {
   SourceControlAppAccess,
   SourceControlAppAccessInput,
 } from "@t3tools/contracts";
-import { Linking } from "react-native";
-import { readUiTranslator } from "../../state/ui-language";
+
+import { msg } from "gt-react-native";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 
 import * as Dialog from "../../components/ui/Dialog";
+import { m } from "../../i18n/messages";
 
 /**
  * After a clone, suggests installing the forge app on the repository's owner when the server is
@@ -22,24 +24,24 @@ export async function suggestAppAccessForRemote(
   environmentId: EnvironmentId,
   remoteUrl: string,
 ): Promise<void> {
-  const uiT = readUiTranslator();
-
   const target = appSignInTargetForRemote(remoteUrl);
   if (target === null) return;
   const result = await check({ environmentId, input: target.input });
   if (result._tag !== "Success" || result.value.status !== "not-covered") return;
   const owner = target.input.repository.split("/")[0] ?? target.input.repository;
   Dialog.alert(
-    uiT("Give {0} access to {1}", { "0": target.appSignIn.appName, "1": owner }),
-    uiT(
-      "It isn't installed there, so GitHub requests for {0} use your own login and its lower rate limit.",
-      { "0": target.input.repository },
+    m(msg("Give {app} access to {owner}", { app: target.appSignIn.appName, owner })),
+    m(
+      msg(
+        "It isn't installed there, so GitHub requests for {repository} use your own login and its lower rate limit.",
+        { repository: target.input.repository },
+      ),
     ),
     [
-      { text: "Not now", style: "cancel" },
+      { text: m(msg("Not now")), style: "cancel" },
       {
-        text: "Install",
-        onPress: () => void Linking.openURL(target.appSignIn.installUrl).catch(() => undefined),
+        text: m(msg("Install", { $context: "verb, installs the GitHub app" })),
+        onPress: () => void tryOpenExternalUrl(target.appSignIn.installUrl, "provider-auth"),
       },
     ],
   );

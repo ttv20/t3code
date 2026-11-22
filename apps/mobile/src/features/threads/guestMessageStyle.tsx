@@ -1,15 +1,14 @@
+import { useGT } from "gt-react-native";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 
 /** The guest's name above their message, where "Sent by T3 Code" sits for server messages. */
 export function GuestMessageName(props: { readonly name: string }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <Text
-      accessibilityLabel={uiT("{0} (guest)", { "0": props.name })}
+      accessibilityLabel={gt("{name} (guest)", { name: props.name })}
       className="mb-1 pr-1 font-t3-medium text-2xs text-adaptive-fuchsia-600-300"
       numberOfLines={1}
     >

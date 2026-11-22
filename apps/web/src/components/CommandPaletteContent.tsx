@@ -1,5 +1,4 @@
-import { UiText } from "../i18n";
-
+import { T } from "gt-react";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, type RefObject } from "react";
 
@@ -55,7 +54,7 @@ type CommandPaletteContentProps = Omit<ComponentProps<typeof Command>, "children
 
 export function CommandPaletteContent({
   children,
-  escapeLabel = "Close",
+  escapeLabel,
   footerActionLabel,
   footerTrailing,
   inputAccessory,
@@ -102,32 +101,26 @@ export function CommandPaletteContent({
                 <ArrowDownIcon />
               </Kbd>
               <span>
-                <UiText message={"Navigate"} />
+                <T>Navigate</T>
               </span>
             </KbdGroup>
             {footerActionLabel !== undefined ? (
               <KbdGroup>
-                <Kbd>
-                  <UiText message={"Enter"} />
-                </Kbd>
+                <Kbd>Enter</Kbd>
                 <span>{footerActionLabel}</span>
               </KbdGroup>
             ) : null}
             {showBackHint ? (
               <KbdGroup>
-                <Kbd>
-                  <UiText message={"Backspace"} />
-                </Kbd>
+                <Kbd>Backspace</Kbd>
                 <span>
-                  <UiText message={"Back"} />
+                  <T>Back</T>
                 </span>
               </KbdGroup>
             ) : null}
             <KbdGroup>
-              <Kbd>
-                <UiText message={"Esc"} />
-              </Kbd>
-              <span>{escapeLabel}</span>
+              <Kbd>Esc</Kbd>
+              <span>{escapeLabel ?? <T>Close</T>}</span>
             </KbdGroup>
           </div>
           {footerTrailing}

@@ -3,7 +3,7 @@ import type {
   ServerProviderResetCredits,
   ServerProviderUsageWindow,
 } from "@t3tools/contracts";
-import { formatDuration, resetCreditChoices } from "@t3tools/shared/usageLimits";
+import { formatDuration, resetCreditChoices } from "@t3tools/shared/usageLimitsCopy";
 import { createUiTranslator, type UiLocale } from "./i18n.ts";
 
 export function formatUiResetCreditChoices(

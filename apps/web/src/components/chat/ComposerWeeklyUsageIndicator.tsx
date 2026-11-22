@@ -10,6 +10,7 @@ import type {
   ServerProviderUsageWindow,
 } from "@t3tools/contracts";
 import { Fragment, useState } from "react";
+import { useMessages } from "gt-react";
 
 import { useNowMinute } from "../../hooks/useNowMinute";
 import { usePrimarySettings } from "../../hooks/useSettings";
@@ -140,6 +141,7 @@ function ComposerUsagePanel({
   readonly usage: ComposerUsageWindows;
 }) {
   const { t: uiT, locale } = useUiLanguage();
+  const m = useMessages();
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const refreshProviders = useAtomCommand(serverEnvironment.refreshProviders, {
     reportFailure: false,
@@ -200,7 +202,7 @@ function ComposerUsagePanel({
                 {window.resetsAt ? (
                   <span className="text-2xs text-muted-foreground tabular-nums">
                     {uiT("Quota resets")}{" "}
-                    {formatChatTimestampTooltip(window.resetsAt, timestampFormat, locale)}
+                    {formatChatTimestampTooltip(window.resetsAt, timestampFormat, m)}
                   </span>
                 ) : null}
               </div>
@@ -229,7 +231,7 @@ function ComposerUsagePanel({
             <div className="flex flex-wrap justify-between gap-x-3 text-2xs text-muted-foreground">
               <span>{uiT("Last checked")}</span>
               <span className="tabular-nums">
-                {formatChatTimestampTooltip(limits.checkedAt, timestampFormat, locale)}
+                {formatChatTimestampTooltip(limits.checkedAt, timestampFormat, m)}
               </span>
             </div>
             <Button
@@ -254,7 +256,7 @@ function ComposerUsagePanel({
       />
       {reset.status ? (
         <p role="status" className="mt-2 text-xs">
-          {uiT(reset.status)}
+          {reset.status}
         </p>
       ) : null}
     </div>

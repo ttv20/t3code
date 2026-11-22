@@ -1,9 +1,9 @@
 import type { DeviceServiceState, EnvironmentId } from "@t3tools/contracts";
+import { T, useGT } from "gt-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { deviceEnvironment } from "~/state/device";
 import { useAtomCommand } from "~/state/use-atom-command";
-import { useUiLanguage } from "../../i18n";
 
 export function DeviceHostUpdates({
   state,
@@ -12,7 +12,7 @@ export function DeviceHostUpdates({
   state: DeviceServiceState;
   environmentId: EnvironmentId;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const retry = useAtomCommand(deviceEnvironment.list);
   const [pending, setPending] = useState<string | null>(null);
   if (state.hostStatus === "disabled") return null;
@@ -29,20 +29,21 @@ export function DeviceHostUpdates({
             className="flex items-start gap-3 rounded-md border border-border/60 px-3 py-2 text-xs"
           >
             <div className="min-w-0 flex-1 [unicode-bidi:plaintext]">
-              <p className="font-medium">{uiT(host.label)}</p>
+              <p className="font-medium">{host.label}</p>
               <p className="whitespace-pre-wrap break-words text-muted-foreground">
                 {status.detail ??
                   (failed
-                    ? uiT("Device support could not start.")
+                    ? gt("Device support could not start.")
                     : status.status === "installing"
-                      ? uiT("Installing device tools…")
-                      : uiT("Starting device tools…"))}
+                      ? gt("Installing device tools…")
+                      : gt("Starting device tools…"))}
               </p>
               {failed ? (
                 <p className="mt-1 text-muted-foreground">
-                  {uiT(
-                    "Check the host connection and network access, then retry. Your device settings are saved.",
-                  )}
+                  <T>
+                    Check the host connection and network access, then retry. Your device settings
+                    are saved.
+                  </T>
                 </p>
               ) : null}
             </div>
@@ -58,7 +59,7 @@ export function DeviceHostUpdates({
                   );
                 }}
               >
-                {pending === host.id ? uiT("Retrying…") : uiT("Retry")}
+                {pending === host.id ? gt("Retrying…") : gt("Retry")}
               </Button>
             ) : null}
           </div>

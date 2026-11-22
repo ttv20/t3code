@@ -1,5 +1,6 @@
-import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import { sanitizeFeatureBranchName } from "@t3tools/shared/git";
+import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { useGT } from "gt-react-native";
 import { useState } from "react";
 import { SheetHeader } from "../../../components/ui/SheetHeader";
 import { FitSheet } from "../../../components/ui/FitSheet";
@@ -12,9 +13,8 @@ import { useSelectedThreadGitState } from "../../../state/use-selected-thread-gi
 import { useSelectedThreadWorktree } from "../../../state/use-selected-thread-worktree";
 import { useThreadSelection } from "../../../state/use-thread-selection";
 import { vcsEnvironment } from "../../../state/vcs";
+import { useRefreshBranchesOnFocus } from "../use-refresh-branches-on-focus";
 import { SheetActionButton } from "./gitSheetComponents";
-
-import { useUiLanguage } from "../../../i18n";
 
 type GitBranchesSheetProps = StaticScreenProps<{
   readonly environmentId: string;
@@ -22,10 +22,11 @@ type GitBranchesSheetProps = StaticScreenProps<{
 }>;
 
 export function GitBranchesSheet(_props: GitBranchesSheetProps) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const navigation = useNavigation();
   const { selectedThread } = useThreadSelection();
   const { selectedThreadCwd } = useSelectedThreadWorktree();
+  useRefreshBranchesOnFocus(selectedThread?.environmentId, selectedThreadCwd);
   const gitState = useSelectedThreadGitState();
   const gitActions = useSelectedThreadGitActions();
   const { canChangeThreadBranch } = gitActions;
@@ -39,8 +40,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
       : null,
   );
 
-  const currentBranchLabel =
-    gitStatus.data?.refName ?? selectedThread?.branch ?? uiT("Detached HEAD");
+  const currentBranch = gitStatus.data?.refName ?? selectedThread?.branch ?? null;
   const currentWorktreePath = selectedThreadCwd;
   const availableBranches = gitState.selectedThreadBranches;
   const branchesLoading = gitState.selectedThreadBranchesLoading;
@@ -49,8 +49,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
   const [newBranchName, setNewBranchName] = useState("");
   const [worktreeBaseBranchOverride, setWorktreeBaseBranchOverride] = useState<string | null>(null);
   const worktreeBaseBranch =
-    worktreeBaseBranchOverride ??
-    (currentBranchLabel === "Detached HEAD" ? uiT("main") : currentBranchLabel);
+    worktreeBaseBranchOverride ?? (currentBranch === null ? "main" : currentBranch);
   const [worktreeBranchName, setWorktreeBranchName] = useState("");
 
   const disabledExistingBranchNames: Array<string> = [];
@@ -64,28 +63,28 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
   return (
     <FitSheet
       header={
-        <SheetHeader title={uiT("Branches & worktrees")} onClose={() => navigation.goBack()} />
+        <SheetHeader title={gt("Branches & worktrees")} onClose={() => navigation.goBack()} />
       }
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <FormSection title={uiT("New branch")}>
+      <FormSection title={gt("New branch")}>
         <FormField
           value={newBranchName}
           onChangeText={setNewBranchName}
-          placeholder={uiT("feature/mobile-polish")}
-          accessibilityLabel={uiT("New branch name")}
+          placeholder="feature/mobile-polish"
+          accessibilityLabel={gt("New branch name")}
         />
         <SheetActionButton
           icon="plus"
-          label={uiT("Create & checkout")}
+          label={gt("Create & checkout")}
           tone="primary"
           disabled={!canChangeThreadBranch || busy || newBranchName.trim().length === 0}
           onPress={() => {
             const branch = sanitizeFeatureBranchName(newBranchName.trim());
             if (branch.length === 0) return;
             void gitActions.onCreateSelectedThreadBranch(branch).then((result) => {
-              if (result === null) return;
+              if (result === null || !navigation.isFocused()) return;
               setNewBranchName("");
               navigation.goBack();
             });
@@ -93,24 +92,24 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
         />
       </FormSection>
 
-      <FormSection title={uiT("New worktree")}>
+      <FormSection title={gt("New worktree")}>
         <FormField
-          label={uiT("Base branch")}
+          label={gt("Base branch")}
           value={worktreeBaseBranch}
           onChangeText={setWorktreeBaseBranchOverride}
-          placeholder={uiT("main")}
-          accessibilityLabel={uiT("Worktree base branch")}
+          placeholder="main"
+          accessibilityLabel={gt("Worktree base branch")}
         />
         <FormField
-          label={uiT("New branch")}
+          label={gt("New branch")}
           value={worktreeBranchName}
           onChangeText={setWorktreeBranchName}
-          placeholder={uiT("feature/mobile-thread")}
-          accessibilityLabel={uiT("Worktree branch name")}
+          placeholder="feature/mobile-thread"
+          accessibilityLabel={gt("Worktree branch name")}
         />
         <SheetActionButton
           icon="square.split.2x1"
-          label={uiT("Create worktree")}
+          label={gt("Create worktree")}
           tone="primary"
           disabled={
             !canChangeThreadBranch ||
@@ -125,7 +124,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
             void gitActions
               .onCreateSelectedThreadWorktree({ baseBranch, newBranch })
               .then((result) => {
-                if (result === null) return;
+                if (result === null || !navigation.isFocused()) return;
                 setWorktreeBranchName("");
                 navigation.goBack();
               });
@@ -134,12 +133,12 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
       </FormSection>
 
       <ListSection
-        title={uiT("Existing branches")}
+        title={gt("Existing branches")}
         footer={
           branchesLoading
-            ? uiT("Loading branches...")
+            ? gt("Loading branches...")
             : availableBranches.length === 0
-              ? uiT("No local branches found.")
+              ? gt("No local branches found.")
               : undefined
         }
       >
@@ -147,11 +146,11 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
           const disabled = disabledExistingBranches.has(branch.name);
           const subtitle = branch.worktreePath
             ? branch.worktreePath === currentWorktreePath
-              ? uiT("Checked out in this thread")
-              : "Checked out in another worktree"
+              ? gt("Checked out in this thread")
+              : gt("Checked out in another worktree")
             : branch.isDefault
-              ? uiT("Default branch")
-              : uiT("Local branch");
+              ? gt("Default branch")
+              : gt("Local branch");
 
           return (
             <ListChoiceRow
@@ -163,7 +162,7 @@ export function GitBranchesSheet(_props: GitBranchesSheetProps) {
               disabled={!canChangeThreadBranch || busy || disabled}
               onPress={() => {
                 void gitActions.onCheckoutSelectedThreadBranch(branch.name).then((result) => {
-                  if (result === null) return;
+                  if (result === null || !navigation.isFocused()) return;
                   navigation.goBack();
                 });
               }}

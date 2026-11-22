@@ -1,13 +1,12 @@
+import { useGT } from "gt-react-native";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { AppText } from "./AppText";
 import { IconButton } from "./IconButton";
 import type { NumberFieldProps } from "./NumberField.types";
 
 export function NumberField(props: NumberFieldProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const adjust = (amount: number) => {
     if (props.disabled) return;
     const next = Math.max(props.min, Math.min(props.max, props.value + amount));
@@ -23,7 +22,7 @@ export function NumberField(props: NumberFieldProps) {
       />
       <IconButton
         icon="minus"
-        accessibilityLabel={uiT("Decrease {0}", { "0": props.label })}
+        accessibilityLabel={gt("Decrease {label}", { label: props.label })}
         disabled={props.disabled || props.value <= props.min}
         onPress={() => adjust(-1)}
       />
@@ -31,14 +30,17 @@ export function NumberField(props: NumberFieldProps) {
         textRole="body"
         className="min-w-8 text-center"
         style={{ fontVariant: ["tabular-nums"] }}
-        accessibilityLabel={`${props.label}: ${props.formatValue?.(props.value) ?? props.value}`}
+        accessibilityLabel={gt("{label}: {value}", {
+          label: props.label,
+          value: props.formatValue?.(props.value) ?? props.value,
+        })}
         accessibilityLiveRegion="polite"
       >
         {props.value}
       </AppText>
       <IconButton
         icon="plus"
-        accessibilityLabel={uiT("Increase {0}", { "0": props.label })}
+        accessibilityLabel={gt("Increase {label}", { label: props.label })}
         disabled={props.disabled || props.value >= props.max}
         onPress={() => adjust(1)}
       />

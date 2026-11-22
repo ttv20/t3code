@@ -6,6 +6,7 @@ import {
   onSizeChanged,
   size,
 } from "@expo/ui/jetpack-compose/modifiers";
+import { useGT } from "gt-react-native";
 import { useState } from "react";
 import { Pressable, View, type StyleProp, type ViewStyle } from "react-native";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
@@ -22,7 +23,8 @@ export function ScrollComposeButton(props: {
   readonly className?: string;
   readonly style?: StyleProp<ViewStyle>;
 }) {
-  const { direction, t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const { direction } = useUiLanguage();
   const { appearance, themeVariables: colors } = useAppearancePreferences();
   const typography = resolveScaledTextRole("footnote", appearance.baseFontSize);
   const { iconSize, fabSize: scaledFabSize } = useAndroidControlSizing();
@@ -81,7 +83,7 @@ export function ScrollComposeButton(props: {
                     fontWeight: "500",
                   }}
                 >
-                  {uiT("New thread")}
+                  {gt("New thread")}
                 </Text>
               </ExtendedFloatingActionButton.Text>
             </ExtendedFloatingActionButton>
@@ -92,7 +94,7 @@ export function ScrollComposeButton(props: {
       <Pressable
         onPress={props.onPress}
         accessibilityRole="button"
-        accessibilityLabel={uiT("New thread")}
+        accessibilityLabel={gt("New thread")}
         android_ripple={{ foreground: true }}
         style={{
           position: "absolute",

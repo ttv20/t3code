@@ -1,16 +1,17 @@
 import type { EnvironmentId } from "@t3tools/contracts";
+import { useGT, useMessages } from "gt-react";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import { useState } from "react";
-import { useUiLanguage } from "../i18n";
 
 import { usePaginatedBranches } from "../state/queries";
 import { useEnvironmentQuery } from "../state/query";
+import { useAtomCommand } from "../state/use-atom-command";
 import { vcsEnvironment } from "../state/vcs";
 import { BranchPicker, BranchPickerRefItem } from "./BranchPicker";
 import { resolveBranchTriggerLabel, sanitizeNewRefName } from "./BranchToolbar.logic";
+import { MiddleTruncate } from "./ui/middle-truncate";
 import { Button } from "./ui/button";
 import { ComboboxTrigger } from "./ui/combobox";
-import { MiddleTruncate } from "./ui/middle-truncate";
 
 export function WorktreeBaseBranchPicker({
   environmentId,
@@ -31,14 +32,21 @@ export function WorktreeBaseBranchPicker({
   disabled?: boolean;
   id?: string;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const messages = useMessages();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const branches = usePaginatedBranches({
-    environmentId,
-    cwd,
-    query: sanitizeNewRefName(query.trim()),
+  const refreshLocalStatusForPicker = useAtomCommand(vcsEnvironment.refreshLocalStatusForPicker, {
+    reportFailure: false,
   });
+  const branches = usePaginatedBranches(
+    {
+      environmentId,
+      cwd,
+      query: sanitizeNewRefName(query.trim()),
+    },
+    messages,
+  );
   const selectedRefQuery = useEnvironmentQuery(
     cwd && value
       ? vcsEnvironment.listRefs({
@@ -58,7 +66,7 @@ export function WorktreeBaseBranchPicker({
       resolvedActiveBranchIsRemote: selectedRef ? selectedRef.isRemote === true : null,
       startFromOrigin,
     },
-    uiT,
+    messages,
   );
   const branchByName = new Map(branches.refs.map((branch) => [branch.name, branch]));
   const items = [...branchByName.keys()];
@@ -66,17 +74,23 @@ export function WorktreeBaseBranchPicker({
   const statusText =
     branches.error ??
     (branches.isPending && branches.data === null
-      ? uiT("Loading refs...")
+      ? gt("Loading refs...")
       : branches.isFetchingNextPage
-        ? uiT("Loading more refs...")
+        ? gt("Loading more refs...")
         : hasNextPage
-          ? uiT("Showing {0} of {1} refs", {
-              "0": branches.refs.length,
-              "1": branches.data?.totalCount,
-            })
+          ? gt(
+              "{total, plural, one {Showing {shown} of {total} refs} other {Showing {shown} of {total} refs}}",
+              {
+                shown: branches.refs.length,
+                total: String(branches.data?.totalCount),
+              },
+            )
           : null);
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
+    if (next && !open && cwd !== null) {
+      void refreshLocalStatusForPicker({ environmentId, input: { cwd } });
+    }
     if (!next) setQuery("");
   };
   return (

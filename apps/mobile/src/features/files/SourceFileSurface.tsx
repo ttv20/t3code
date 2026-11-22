@@ -1,4 +1,5 @@
 import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
+import { T, useGT } from "gt-react-native";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { useAtomValue } from "@effect/atom-react";
 import { SourceText } from "@t3tools/mobile-source-text";
@@ -19,7 +20,7 @@ import { WebView } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText as Text } from "../../components/ui/AppText";
 import { LoadingStrip } from "../../components/ui/LoadingStrip";
-import { useUiLanguage } from "../../i18n";
+
 import type { ResolvedMobileCodeSurface } from "../../lib/appearancePreferences";
 import { cn } from "../../lib/cn";
 import type { HighlightedToken } from "../../lib/highlights";
@@ -67,8 +68,7 @@ const HighlightedSourceLine = function HighlightedSourceLine(props: {
   readonly wordBreak: boolean;
   readonly onLongPress?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const selectable = props.onLongPress === undefined;
   const row = (
     <View
@@ -143,7 +143,7 @@ const HighlightedSourceLine = function HighlightedSourceLine(props: {
   return onLongPress ? (
     <Pressable
       onLongPress={onLongPress}
-      accessibilityActions={[{ name: "longpress", label: uiT("Select text") }]}
+      accessibilityActions={[{ name: "longpress", label: gt("Select text") }]}
       onAccessibilityAction={(event) => {
         if (event.nativeEvent.actionName === "longpress") onLongPress();
       }}
@@ -180,8 +180,6 @@ function useSourceFileModel(props: SourceFileSurfaceProps) {
 }
 
 function SourceHighlightStatusView(props: { readonly status: SourceHighlightStatus }) {
-  const { t: uiT } = useUiLanguage();
-
   if (props.status === "highlighting") {
     return <LoadingStrip />;
   }
@@ -189,7 +187,7 @@ function SourceHighlightStatusView(props: { readonly status: SourceHighlightStat
     return (
       <View className="border-b border-border bg-card px-4 py-2">
         <Text className="text-2xs font-t3-medium uppercase text-foreground-muted">
-          {uiT("Plain text")}
+          <T>Plain text</T>
         </Text>
       </View>
     );

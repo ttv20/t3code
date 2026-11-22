@@ -1,11 +1,11 @@
 import type { PullRequestReviewGuideStop } from "@t3tools/contracts";
+import { T, useGT, useMessages } from "gt-react";
 import { CheckIcon } from "lucide-react";
-import { UiText, useUiLanguage } from "../../../i18n";
 
 import { cn } from "~/lib/utils";
 
-import { stopSubline } from "@t3tools/client-runtime/review-guide-tour";
 import { Badge } from "../../ui/badge";
+import { stopSubline } from "@t3tools/client-runtime/review-guide-tour";
 
 export function GuideRail({
   stops,
@@ -18,7 +18,8 @@ export function GuideRail({
   seen: ReadonlySet<number>;
   onSelect: (position: number) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const messages = useMessages();
   const reviewed = seen.size;
   const renderStop = (stop: PullRequestReviewGuideStop, index: number) => (
     <li key={index}>
@@ -31,10 +32,10 @@ export function GuideRail({
           <>
             {stop.attention !== null ? (
               <Badge size="sm" variant="warning">
-                {uiT("Look closely")}
+                <T>Look closely</T>
               </Badge>
             ) : null}
-            <span>{stopSubline(stop)}</span>
+            <span>{stopSubline(stop, messages)}</span>
           </>
         }
       />
@@ -42,9 +43,12 @@ export function GuideRail({
   );
 
   return (
-    <nav aria-label={uiT("Review tour")} className="flex min-h-0 flex-col gap-4">
+    <nav aria-label={gt("Review tour")} className="flex min-h-0 flex-col gap-4">
       <p className="text-xs text-muted-foreground tabular-nums @max-[56rem]/guide:hidden">
-        <UiText message={"{0} of {1} read"} values={{ "0": reviewed, "1": stops.length }} />
+        {gt(
+          "{total, plural, one {{reviewed} of {total} read} other {{reviewed} of {total} read}}",
+          { reviewed, total: stops.length },
+        )}
       </p>
       <div className="flex flex-col gap-4">
         <ol className="flex flex-col gap-0.5">{stops.map(renderStop)}</ol>
@@ -66,7 +70,6 @@ function RailRow({
   title: string;
   detail: React.ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <button
       type="button"
@@ -79,7 +82,7 @@ function RailRow({
     >
       {lead}
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-sm text-foreground">{uiT(title)}</span>
+        <span className="text-sm text-foreground">{title}</span>
         {detail !== null ? (
           <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {detail}
@@ -91,7 +94,7 @@ function RailRow({
 }
 
 function StopBullet({ number, seen }: { number: number; seen: boolean }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <span
       className={cn(
@@ -100,7 +103,7 @@ function StopBullet({ number, seen }: { number: number; seen: boolean }) {
       )}
     >
       {seen ? (
-        <CheckIcon aria-label={uiT("Stop {0}, read", { "0": number })} className="size-3" />
+        <CheckIcon aria-label={gt("Stop {number}, read", { number })} className="size-3" />
       ) : (
         number
       )}

@@ -79,18 +79,6 @@ export function remarkRtlSentenceBoundaries() {
   };
 }
 
-/** Preserve source syntax for native renderers that accept Markdown rather than an AST. */
-export function markdownWithRtlSentenceBoundaries(source: string, tree: MarkdownNode): string {
-  const insertions = sentenceBoundaryInsertions(tree, source);
-  for (let index = insertions.length - 1; index >= 0; index -= 1) {
-    const { node, offset } = insertions[index]!;
-    const start = node.position?.start.offset;
-    if (start === undefined) continue;
-    const insertionOffset = start + offset;
-    source = source.slice(0, insertionOffset) + RLM + source.slice(insertionOffset);
-  }
-  return source;
-}
 import { resolveMarkdownDirection, startsWithRtlLetter } from "./markdownDirection.ts";
 
 /** Native first-strong renderers need an explicit mark when prose resolves the other way. */

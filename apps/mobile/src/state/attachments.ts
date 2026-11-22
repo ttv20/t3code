@@ -1,4 +1,3 @@
-import { readUiTranslator } from "../state/ui-language";
 import { createAttachmentEnvironmentAtoms } from "@t3tools/client-runtime/state/attachments";
 import type { AtomCommand } from "@t3tools/client-runtime/state/runtime";
 import {
@@ -6,8 +5,9 @@ import {
   EnvironmentAuthorizationError,
   type EnvironmentId,
 } from "@t3tools/contracts";
-import * as Cause from "effect/Cause";
-import { AsyncResult } from "effect/reactivity";
+import * as Effect from "effect/Effect";
+import { msg } from "gt-react-native";
+import { m } from "../i18n/messages";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 import { readEnvironmentScope } from "./session";
@@ -15,22 +15,19 @@ import { readEnvironmentScope } from "./session";
 function requireAttachmentWriteAccess<W extends { readonly environmentId: EnvironmentId }, A, E>(
   command: AtomCommand<W, A, E>,
 ): AtomCommand<W, A, E | EnvironmentAuthorizationError> {
-  const uiT = readUiTranslator();
   return {
     ...command,
-    run: async (registry, input) => {
-      if (!readEnvironmentScope(input.environmentId, AuthOrchestrationOperateScope)) {
-        return AsyncResult.failure(
-          Cause.fail(
-            new EnvironmentAuthorizationError({
-              message: uiT("This connection cannot change attachments."),
-              requiredScope: AuthOrchestrationOperateScope,
-            }),
-          ),
-        );
-      }
-      return command.run(registry, input);
-    },
+    run: (registry, input) =>
+      Effect.suspend((): Effect.Effect<A, E | EnvironmentAuthorizationError> =>
+        readEnvironmentScope(input.environmentId, AuthOrchestrationOperateScope)
+          ? command.run(registry, input)
+          : Effect.fail(
+              new EnvironmentAuthorizationError({
+                message: m(msg("This connection cannot change attachments.")),
+                requiredScope: AuthOrchestrationOperateScope,
+              }),
+            ),
+      ),
   };
 }
 

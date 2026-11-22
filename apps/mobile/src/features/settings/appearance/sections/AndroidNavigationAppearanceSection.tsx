@@ -1,27 +1,26 @@
+import { useGT } from "gt-react-native";
 import { View } from "react-native";
-import { useUiLanguage } from "../../../../i18n";
 
 import { ListChoiceRow as SettingsChoiceRow } from "../../../../components/ui/ListChoiceRow";
 import { SettingsSection } from "../../components/SettingsSection";
 import { useAppearancePreferences } from "../AppearancePreferencesProvider";
 
 export function AndroidNavigationAppearanceSection() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { isReady, androidNavigationStyle, setAndroidNavigationStyle } = useAppearancePreferences();
   return (
-    <SettingsSection title={uiT("Navigation")}>
+    <SettingsSection title={gt("Navigation", { $context: "navigation bar style" })}>
       <View accessibilityRole="radiogroup">
         <SettingsChoiceRow
-          label={uiT("One UI")}
-          description={uiT("Floating navigation with a separate compose button.")}
+          label="One UI"
+          description={gt("Floating navigation with a separate compose button.")}
           disabled={!isReady}
           selected={androidNavigationStyle === "one-ui"}
           onPress={() => setAndroidNavigationStyle("one-ui")}
         />
         <SettingsChoiceRow
-          label={uiT("Material")}
-          description={uiT("Standard Android navigation bar and side rail.")}
+          label="Material"
+          description={gt("Standard Android navigation bar and side rail.")}
           disabled={!isReady}
           selected={androidNavigationStyle === "material"}
           onPress={() => setAndroidNavigationStyle("material")}

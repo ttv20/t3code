@@ -1,10 +1,10 @@
+import { useGT } from "gt-react";
 import { CheckIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { AnimatedHeight } from "../AnimatedHeight";
-import { DialogDescription, DialogFooter, DialogHeader, DialogPopup, DialogTitle } from "./dialog";
+import { DialogPopup, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog";
 import { ScrollArea } from "./scroll-area";
 
 export function WizardPopup({
@@ -34,12 +34,11 @@ export function WizardHeader({
   readonly identity?: ReactNode;
   readonly children?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <DialogHeader>
-      <DialogTitle className={identity ? "sr-only" : undefined}>{uiT(title)}</DialogTitle>
+      <DialogTitle className={identity ? "sr-only" : undefined}>{title}</DialogTitle>
       {identity}
-      {description ? <DialogDescription>{uiT(description)}</DialogDescription> : null}
+      {description ? <DialogDescription>{description}</DialogDescription> : null}
       {children}
     </DialogHeader>
   );
@@ -79,13 +78,13 @@ export function WizardSteps({
   readonly isStepDisabled?: (step: number) => boolean;
   readonly onStepChange?: (step: number) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const Step = onStepChange ? "button" : "div";
   return (
     <ol
       className="grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-background p-1 ring-1 ring-black/5 dark:bg-white/4 dark:ring-white/5"
       role="list"
-      aria-label={uiT("Setup progress")}
+      aria-label={gt("Setup progress")}
     >
       {steps.map((step, index) => (
         <li key={step} className="min-w-0 [unicode-bidi:plaintext]">
@@ -101,11 +100,15 @@ export function WizardSteps({
                 "bg-card text-foreground shadow-xs ring-1 ring-inset ring-black/5 hover:bg-card dark:shadow-none dark:ring-white/5",
             )}
             aria-current={index === currentStep ? "step" : undefined}
-            aria-label={uiT("{0}, step {1}{2}", {
-              "0": uiT(step),
-              "1": index + 1,
-              "2": index < currentStep && summaries?.[index] ? `, ${summaries?.[index]}` : "",
-            })}
+            aria-label={
+              index < currentStep && summaries?.[index]
+                ? gt("{step}, step {number}, {summary}", {
+                    step,
+                    number: index + 1,
+                    summary: summaries[index],
+                  })
+                : gt("{step}, step {number}", { step, number: index + 1 })
+            }
             onClick={onStepChange ? () => onStepChange(index) : undefined}
           >
             <span
@@ -127,7 +130,7 @@ export function WizardSteps({
                 index === currentStep ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {uiT(step)}
+              {step}
               {showSummaries && index < currentStep && summaries?.[index]
                 ? `: ${summaries[index]}`
                 : null}

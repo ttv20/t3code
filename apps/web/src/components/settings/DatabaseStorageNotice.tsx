@@ -1,3 +1,5 @@
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m } from "~/i18n/messages";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
@@ -9,7 +11,9 @@ import {
   type EnvironmentId,
 } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
+import { msg, T, useGT, Var } from "gt-react";
 import { type ReactNode, useState } from "react";
+
 import { useCopyToClipboard } from "../../hooks/useCopyToClipboard";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { environmentAtomList, environmentIdsKey } from "../../state/environmentAtomList";
@@ -28,8 +32,6 @@ import { Button } from "../ui/button";
 import { toastManager } from "../ui/toast";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
 
-import { UiText, useUiLanguage } from "../../i18n";
-
 const DismissedEnvironmentIds = Schema.Array(Schema.String);
 const reclaimPermissionsAtom = environmentAtomList(
   "web-database-reclaim-permissions",
@@ -44,8 +46,7 @@ export function DatabaseStorageNotice({
 }: {
   environments: ReadonlyArray<{ readonly environmentId: EnvironmentId; readonly label: string }>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const environmentIds = environments.map((environment) => environment.environmentId);
   const recommendations = useAtomValue(
     serverEnvironment.databaseCompactionRecommendations(JSON.stringify(environmentIds)),
@@ -56,7 +57,13 @@ export function DatabaseStorageNotice({
     [],
     DismissedEnvironmentIds,
   );
-  const { copyToClipboard } = useCopyToClipboard({ target: "command" });
+  const { copyToClipboard } = useCopyToClipboard({
+    target: {
+      target: "command",
+      unavailableMessage: msg("Clipboard API is unavailable while copying command."),
+      failureMessage: msg("Failed to copy command to the clipboard."),
+    },
+  });
   const visible = recommendations
     .filter((recommendation) => !dismissed.includes(recommendation.environmentId))
     .map((recommendation) => ({
@@ -71,14 +78,16 @@ export function DatabaseStorageNotice({
     }));
   if (visible.length === 0) return null;
   return (
-    <SettingsSection id="storage-database" title={uiT("Database")}>
+    <SettingsSection id="storage-database" title={gt("Database")}>
       <SettingsRow
-        title={uiT("Reclaim freed database space")}
-        description={uiT("These databases still hold space freed by history cleanup.{0}", {
-          "0": visible.every((recommendation) => recommendation.reclaimable)
-            ? ""
-            : " Run the command on each machine to reclaim it. It restarts the background service. Quit the desktop app first if it hosts the environment.",
-        })}
+        title={gt("Reclaim freed database space")}
+        description={
+          visible.every((recommendation) => recommendation.reclaimable)
+            ? gt("These databases still hold space freed by history cleanup.")
+            : gt(
+                "These databases still hold space freed by history cleanup. Run the command on each machine to reclaim it. It restarts the background service. Quit the desktop app first if it hosts the environment.",
+              )
+        }
       />
       {visible.map(({ environmentId, status, label, reclaimable }) => {
         const dismiss = (
@@ -87,7 +96,7 @@ export function DatabaseStorageNotice({
             size="xs"
             onClick={() => setDismissed((current) => [...current, environmentId])}
           >
-            <UiText message={"Dismiss"} />
+            <T>Dismiss</T>
           </Button>
         );
         return reclaimable ? (
@@ -101,7 +110,10 @@ export function DatabaseStorageNotice({
         ) : (
           <SettingsRow
             key={environmentId}
-            title={uiT("{0} on {1}", { "0": formatGiB(status.reclaimableBytes), "1": label })}
+            title={gt("{amount} on {environment}", {
+              amount: formatGiB(status.reclaimableBytes),
+              environment: label,
+            })}
             description={<code className="select-text break-all">{status.compactCommand}</code>}
             control={
               <div className="flex flex-wrap items-center gap-1.5">
@@ -110,7 +122,7 @@ export function DatabaseStorageNotice({
                   size="xs"
                   onClick={() => copyToClipboard(status.compactCommand, undefined)}
                 >
-                  <UiText message={"Copy command"} />
+                  <T>Copy command</T>
                 </Button>
                 {dismiss}
               </div>
@@ -133,7 +145,7 @@ function ReclaimRow({
   readonly status: DatabaseStorageStatus;
   readonly dismiss: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const reclaim = useAtomCommand(serverEnvironment.reclaimDatabaseSpace);
   const [confirming, setConfirming] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -148,8 +160,10 @@ function ReclaimRow({
     if (result._tag === "Success") {
       toastManager.add({
         type: "success",
-        title: uiT("Reclaiming {0} on {1}", { "0": amount, "1": label }),
-        description: uiT("T3 Code there restarts and is back in about {0} min.", { "0": minutes }),
+        title: gt("Reclaiming {amount} on {environment}", { amount, environment: label }),
+        description: gt("T3 Code there restarts and is back in about {minutes} min.", {
+          minutes,
+        }),
       });
       return;
     }
@@ -158,17 +172,20 @@ function ReclaimRow({
     const error = squashAtomCommandFailure(result);
     toastManager.add({
       type: "error",
-      title: uiT("Could not reclaim space on {0}", { "0": label }),
-      description: error instanceof Error ? error.message : uiT("An error occurred."),
+      title: gt("Could not reclaim space on {environment}", { environment: label }),
+      description:
+        error instanceof Error
+          ? (thrownErrorMessage(error, m) ?? error.message)
+          : gt("An error occurred."),
     });
   };
   return (
     <SettingsRow
-      title={uiT("{0} on {1}", { "0": amount, "1": label })}
+      title={gt("{amount} on {environment}", { amount, environment: label })}
       description={
         status.reclaimFailure === undefined
-          ? uiT("Restarts T3 Code there. It will be offline for about {0} min.", { "0": minutes })
-          : uiT("The last attempt failed: {0}", { "0": status.reclaimFailure })
+          ? gt("Restarts T3 Code there. It will be offline for about {minutes} min.", { minutes })
+          : gt("The last attempt failed: {reason}", { reason: status.reclaimFailure })
       }
       control={
         <div className="flex flex-wrap items-center gap-1.5">
@@ -178,30 +195,31 @@ function ReclaimRow({
             disabled={restarting}
             onClick={() => setConfirming(true)}
           >
-            {restarting ? uiT("Restarting…") : uiT("Reclaim")}
+            {restarting ? gt("Restarting…") : gt("Reclaim")}
           </Button>
           {dismiss}
           <AlertDialog open={confirming} onOpenChange={setConfirming}>
             <AlertDialogPopup>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  <UiText message={"Reclaim {0} on {1}?"} values={{ 0: amount, 1: label }} />
+                  <T>
+                    Reclaim <Var>{amount}</Var> on <Var>{label}</Var>?
+                  </T>
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  <UiText
-                    message={
-                      "T3 Code on {0} stops, rebuilds its database, and starts again. It will be offline for about {1} min. Running agents stop when it restarts."
-                    }
-                    values={{ "0": label, "1": minutes }}
-                  />
+                  <T>
+                    T3 Code on <Var>{label}</Var> stops, rebuilds its database, and starts again. It
+                    will be offline for about <Var>{minutes}</Var> min. Running agents stop when it
+                    restarts.
+                  </T>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogClose render={<Button variant="outline" />}>
-                  <UiText message={"Cancel"} />
+                  <T>Cancel</T>
                 </AlertDialogClose>
                 <Button onClick={() => void start()}>
-                  <UiText message={"Restart and reclaim"} />
+                  <T>Restart and reclaim</T>
                 </Button>
               </AlertDialogFooter>
             </AlertDialogPopup>

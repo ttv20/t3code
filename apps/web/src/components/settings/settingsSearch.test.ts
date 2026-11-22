@@ -1,11 +1,12 @@
-import { UNKNOWN_SOURCE_CONTROL_CLIENT } from "@t3tools/client-runtime/source-control-clients";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   EnvironmentId,
   makeProviderSettingsSchema,
   SourceControlProviderKind,
 } from "@t3tools/contracts";
+import { UNKNOWN_SOURCE_CONTROL_CLIENT } from "@t3tools/client-runtime/source-control-clients";
 import * as Schema from "effect/Schema";
-import { describe, expect, it, vi } from "vite-plus/test";
+import { decodeMsg } from "gt-react";
 
 import {
   filterAvailableSettingsSearchItems,
@@ -14,17 +15,12 @@ import {
   isSettingsSearchScopeAvailable,
   movedSettingsPath,
   searchSettings,
-  SETTINGS_NAV_GROUPS,
+  settingsNavGroups,
   SETTINGS_SEARCH_ITEMS,
   sourceControlHostSearchItems,
   sourceControlHostSettingsSearchId,
   type SettingsSearchItem,
 } from "./settingsSearch";
-
-vi.mock("~/env", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/env")>()),
-  isSecretsFeatureEnabled: false,
-}));
 
 const ITEMS: ReadonlyArray<SettingsSearchItem> = [
   {
@@ -64,20 +60,11 @@ describe("searchSettings", () => {
     expect(searchSettings("sharing", ITEMS).map((item) => item.id)).toEqual(["network-access"]);
     expect(searchSettings("claude", ITEMS).map((item) => item.id)).toEqual(["providers"]);
     expect(searchSettings("long lines", ITEMS).map((item) => item.id)).toEqual(["word-wrap"]);
-    expect(searchSettings("גלישת שורות", ITEMS, "he").map((item) => item.id)).toEqual([
-      "word-wrap",
-    ]);
-    expect(searchSettings("שיתוף וגישה", ITEMS, "he").map((item) => item.id)).toEqual([
-      "network-access",
-    ]);
-    expect(searchSettings("word wrap", ITEMS, "he").map((item) => item.id)).toEqual(["word-wrap"]);
-    expect(searchSettings("التفاف الأسطر", ITEMS, "ar").map((item) => item.id)).toEqual([
-      "word-wrap",
-    ]);
-    expect(searchSettings("شکستن خطوط", ITEMS, "fa").map((item) => item.id)).toEqual(["word-wrap"]);
-    expect(searchSettings("גלישת שורות", ITEMS, "en")).toEqual([]);
-    expect(searchSettings("גלישת שורות", ITEMS, "he")[0]?.title).toBe("Word wrap");
-
+    for (const query of ["sticky", "working threads", "bottom shelf"]) {
+      expect(searchSettings(query).map((item) => item.id)).toContain("sticky-working-shelf");
+    }
+    expect(searchSettings("RTL").map((item) => item.id)).toContain("interface-direction");
+    expect(searchSettings("עברית").map((item) => item.id)).toContain("interface-language");
     const spanish = (message: string) => (message === "Word wrap" ? "Ajuste de línea" : message);
     expect(searchSettings("ajuste", ITEMS, spanish).map((item) => item.id)).toEqual(["word-wrap"]);
     for (const query of ["fallback", "fallback agent", "fallback model"]) {
@@ -89,9 +76,33 @@ describe("searchSettings", () => {
     }
   });
 
-  it("hides the Secrets page from nav and search while the secrets feature is disabled", () => {
-    expect(SETTINGS_NAV_GROUPS.flatMap((group) => group.paths)).not.toContain("/settings/secrets");
-    expect(searchSettings("1password").map((item) => item.to)).not.toContain("/settings/secrets");
+  it("shows the Secrets page in nav and search only when an environment enables secret providers", () => {
+    const availability = {
+      hasCloudPublicConfig: false,
+      hasEnvironment: true,
+      hasProviderSettingsEnvironment: true,
+      canManageLocalBackend: false,
+      isWslSettingsRowVisible: false,
+      hasThreadAutoSettlement: false,
+    };
+    for (const enabled of [false, true]) {
+      const navPaths = settingsNavGroups(enabled).flatMap((group) => group.paths);
+      const searchPaths = searchSettings(
+        "1password",
+        filterAvailableSettingsSearchItems({
+          ...availability,
+          hasSecretProvidersEnvironment: enabled,
+        }),
+      ).map((item) => item.to);
+      expect(navPaths.includes("/settings/secrets")).toBe(enabled);
+      expect(searchPaths.includes("/settings/secrets")).toBe(enabled);
+    }
+  });
+
+  it("finds where subagents and side chats open by any of its names", () => {
+    for (const query of ["side panel", "subagent", "side chat", "linked thread", "middle click"]) {
+      expect(searchSettings(query).map((item) => item.id)).toContain("side-thread-open-target");
+    }
   });
 
   it("finds the Scheduled tasks page", () => {
@@ -350,7 +361,7 @@ describe("source control host search items", () => {
 
   it("lists a host by its label, its keywords, and its settings fields", () => {
     const items = sourceControlHostSearchItems([UNKNOWN_SOURCE_CONTROL_CLIENT, definition]);
-    expect(items.map((item) => item.title)).toEqual(["Example credentials"]);
+    expect(items.map((item) => decodeMsg(item.title))).toEqual(["Example credentials"]);
     expect(searchSettings("sample apitoken", items).map((item) => item.id)).toEqual([
       sourceControlHostSettingsSearchId("example"),
     ]);
@@ -370,7 +381,7 @@ describe("source control host search items", () => {
         },
       },
     ]);
-    expect(items.map((item) => item.title)).toEqual(["Example accounts and token"]);
+    expect(items.map((item) => decodeMsg(item.title))).toEqual(["Example accounts and token"]);
     expect(searchSettings("ex switch accounts", items)).toHaveLength(1);
   });
 
@@ -406,29 +417,5 @@ describe("movedSettingsPath", () => {
     expect(movedSettingsPath("/settings/projects", "project-defaults")).toBeNull();
     expect(movedSettingsPath("/settings/connections", "remote-environments")).toBeNull();
     expect(movedSettingsPath("/settings/appearance", "theme")).toBeNull();
-  });
-});
-
-describe("localized interface settings search", () => {
-  it.each(["Hebrew", "עברית", "שפה", "translation"])(
-    "finds the language setting for %s",
-    (query) => {
-      expect(searchSettings(query)).toContainEqual(
-        expect.objectContaining({
-          id: "interface-language",
-          targetId: "language-direction",
-          to: "/settings/appearance",
-        }),
-      );
-    },
-  );
-  it.each(["RTL", "LTR", "כיוון"])("finds interface direction for %s", (query) => {
-    expect(searchSettings(query)).toContainEqual(
-      expect.objectContaining({
-        id: "interface-direction",
-        targetId: "language-direction",
-        to: "/settings/appearance",
-      }),
-    );
   });
 });

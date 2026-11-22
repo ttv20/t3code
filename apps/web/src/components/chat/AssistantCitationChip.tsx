@@ -5,6 +5,7 @@ import {
   serializeAssistantCitation,
 } from "@t3tools/shared/assistantCitations";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useGT } from "gt-react";
 import { PencilIcon, QuoteIcon } from "lucide-react";
 import {
   useEffect,
@@ -31,8 +32,6 @@ import { resolveAssistantCitationCommentDismissal } from "./assistantCitationCom
 import { observeAssistantCitationCommentSource } from "./AssistantCitationSource";
 import { composerFloatingLayerProps } from "./composerEventScope";
 import { textDirection } from "~/textDirection";
-
-import { useUiLanguage } from "../../i18n";
 
 function useCitationSourceLinkProps(citation: AssistantCitation) {
   const navigate = useNavigate();
@@ -124,8 +123,7 @@ export function AssistantCitationEmbed({
   leading: boolean;
   trailing: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const wholeResponse = citation.prefix === "" && citation.suffix === "";
   const { comment, ...quoted } = citation;
   return (
@@ -133,7 +131,7 @@ export function AssistantCitationEmbed({
       citation={citation}
       copyMarkdown={serializeAssistantCitation(citation)}
       cardCopyMarkdown={serializeAssistantCitation(quoted)}
-      label={uiT("Go to quoted response: {0}", { "0": assistantCitationLabel(quoted) })}
+      label={gt("Go to quoted response: {label}", { label: assistantCitationLabel(quoted) })}
       comment={comment}
       leading={leading}
       trailing={trailing}
@@ -142,11 +140,11 @@ export function AssistantCitationEmbed({
           flat(citation.text)
         ) : (
           <>
-            {citation.prefix ? uiT("…{0}", { "0": flat(citation.prefix) }) : null}
+            {citation.prefix ? `…${flat(citation.prefix)}` : null}
             <mark className="rounded-sm bg-foreground/12 px-0.5 text-foreground">
               {flat(citation.text)}
             </mark>
-            {citation.suffix ? uiT("{0}…", { "0": flat(citation.suffix) }) : null}
+            {citation.suffix ? `${flat(citation.suffix)}…` : null}
           </>
         )
       }
@@ -166,13 +164,12 @@ export function ResponseReplyCard({
   leading: boolean;
   trailing: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <ResponseCard
       citation={record.citation}
       copyMarkdown={copyMarkdown}
-      label={uiT("Go to the response this replies to: {0}", { "0": record.label })}
+      label={gt("Go to the response this replies to: {label}", { label: record.label })}
       title={record.subagents?.map((subagent) => subagent.title).join(", ")}
       preview={flat(record.citation.text)}
       leading={leading}
@@ -198,8 +195,7 @@ export function AssistantCitationChip({
     onRestoreFocus?: () => void;
   };
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const sourceLinkProps = useCitationSourceLinkProps(citation);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const commentPopupRef = useRef<HTMLDivElement>(null);
@@ -264,7 +260,7 @@ export function AssistantCitationChip({
     <Link
       {...sourceLinkProps}
       className="inline-flex min-w-0 items-center gap-[0.2em] self-baseline text-inherit no-underline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current rounded-sm"
-      aria-label={uiT("View cited assistant text: {0}", { "0": label })}
+      aria-label={gt("View cited assistant text: {label}", { label })}
     >
       <QuoteIcon aria-hidden="true" />
       <ContextChipLabel className="max-w-[16em]" dir={textDirection(label)}>
@@ -293,7 +289,7 @@ export function AssistantCitationChip({
         >
           <PopoverTrigger
             aria-label={
-              citation.comment ? uiT("Edit citation comment") : uiT("Add comment to citation")
+              citation.comment ? gt("Edit citation comment") : gt("Add comment to citation")
             }
             data-citation-comment-trigger="true"
             render={<ContextChipAction />}
@@ -333,7 +329,7 @@ export function AssistantCitationChip({
                   : undefined
               }
               ref={commentPopupRef}
-              aria-label={uiT("Edit citation comment")}
+              aria-label={gt("Edit citation comment")}
               width="md"
               padding="compact"
               onPointerDown={(event) => event.stopPropagation()}

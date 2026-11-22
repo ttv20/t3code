@@ -1,16 +1,16 @@
 import { useAtomValue } from "@effect/atom-react";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
 import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import {
-  capitalizeTerm,
-  sourceControlClients,
-} from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { changeRequestTermKind } from "../../lib/changeRequestTerm";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { PullRequestComment } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
+import { useGT } from "gt-react-native";
 import { useRef, useState } from "react";
 import { AppText as Text, AppTextInput as TextInput } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
-import { useUiLanguage } from "../../i18n";
+
 import { composerPullRequests } from "../../state/pull-requests";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -19,6 +19,8 @@ import { PullRequestSheetContent } from "./PullRequestSheetContent";
 import { usePullRequestCompletions } from "./usePullRequestCompletions";
 import { pullRequestTarget, type PullRequestParams } from "./usePullRequestDiff";
 import { usePullRequestPermissions } from "./usePullRequestPermissions";
+
+import { m } from "../../i18n/messages";
 
 export type PullRequestEditParams = PullRequestParams &
   (
@@ -33,19 +35,18 @@ export type PullRequestEditParams = PullRequestParams &
   );
 
 export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEditParams>) {
-  const { t: uiT } = useUiLanguage();
-
   const params = route.params;
   const navigation = useNavigation();
   const target = pullRequestTarget(params);
   const detail = useEnvironmentQuery(composerPullRequests.detail(target));
   const pr = detail.data;
   const permissions = usePullRequestPermissions(params, pr);
+  const gt = useGT();
   const update = useAtomCommand(composerPullRequests.update, { reportFailure: false });
   const updateComment = useAtomCommand(composerPullRequests.updateComment, {
     reportFailure: false,
   });
-  const singular = sourceControlClients.get(pr?.provider).changeRequest.singular;
+  const term = changeRequestTermKind(sourceControlClients.get(pr?.provider).changeRequest);
   const original =
     params.field === "comment"
       ? params.comment.body
@@ -79,12 +80,15 @@ export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEd
     !pr || allowed
       ? null
       : !permissions.connected
-        ? uiT("Reconnect to save changes.")
+        ? gt("Reconnect to save changes.")
         : !canWrite
-          ? uiT("This device isn't allowed to change source control on this environment.")
+          ? gt("This device isn't allowed to change source control on this environment.")
           : params.field === "comment"
-            ? uiT("You can't edit this comment.")
-            : uiT("You can't edit this {0}.", { "0": uiT(singular) });
+            ? gt("You can't edit this comment.")
+            : gt(
+                "You can't edit this {term, select, mr {merge request} cr {change request} other {pull request}}.",
+                { term },
+              );
   const unchanged = draft === null || draft === original;
   const invalid = params.field === "title" && value.trim().length === 0;
   const save = async () => {
@@ -114,7 +118,11 @@ export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEd
     setBusy(false);
     if (AsyncResult.isFailure(result)) {
       const cause = squashAtomCommandFailure(result);
-      setError(cause instanceof Error ? cause.message : "The provider refused the change.");
+      setError(
+        cause instanceof Error
+          ? (errorDisplayMessage(cause, m) ?? cause.message)
+          : gt("The provider refused the change."),
+      );
       return;
     }
     // updateComment refreshes the activity on its own; a title or body lives on the detail.
@@ -123,10 +131,10 @@ export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEd
   };
   const title =
     params.field === "title"
-      ? uiT("Edit title")
+      ? gt("Edit title")
       : params.field === "body"
-        ? uiT("Edit description")
-        : uiT("Edit comment");
+        ? gt("Edit description")
+        : gt("Edit comment");
   return (
     <PullRequestSheetContent
       busy={busy}
@@ -136,7 +144,7 @@ export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEd
         <Button
           fullWidth
           tone="contrast"
-          label={busy ? uiT("Saving…") : uiT("Save")}
+          label={busy ? gt("Saving…") : gt("Save")}
           loading={busy}
           disabled={!allowed || unchanged || invalid || original === null}
           onPress={() => void save()}
@@ -153,12 +161,22 @@ export function PullRequestEditScreen({ route }: StaticScreenProps<PullRequestEd
         autoFocus
         accessibilityLabel={
           params.field === "title"
-            ? uiT("{0} title", { "0": uiT(capitalizeTerm(singular)) })
+            ? gt(
+                "{term, select, mr {Merge request} cr {Change request} other {Pull request}} title",
+                { term },
+              )
             : params.field === "body"
-              ? uiT("{0} description", { "0": uiT(capitalizeTerm(singular)) })
-              : uiT("Comment")
+              ? gt(
+                  "{term, select, mr {Merge request} cr {Change request} other {Pull request}} description",
+                  { term },
+                )
+              : gt("Comment", { $context: "noun, field label" })
         }
-        placeholder={params.field === "title" ? uiT("Title") : uiT("Write in Markdown…")}
+        placeholder={
+          params.field === "title"
+            ? gt("Title", { $context: "field placeholder" })
+            : gt("Write in Markdown…")
+        }
         placeholderTextColorClassName="accent-foreground-muted"
         maxLength={params.field === "title" ? 1024 : 65536}
         value={value}

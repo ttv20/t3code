@@ -3,6 +3,7 @@ import { getBrowseDirectoryPath } from "@t3tools/client-runtime/state/projects";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { maskMarkdownFrontmatter } from "@t3tools/shared/markdownFrontmatter";
+import { useGT } from "gt-react-native";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { RefreshControl } from "../../components/ui/RefreshControl";
@@ -33,7 +34,6 @@ import {
 import { useMarkdownImageSource } from "../../native/useMarkdownImageSource";
 import { useAppearancePreferences } from "../settings/appearance/AppearancePreferencesProvider";
 import { fileRoutePathSegments, resolveWorkspaceFilePath } from "./filePath";
-import { useUiLanguage } from "../../i18n";
 
 interface MarkdownPreviewStyles {
   readonly nativeTextStyle: NativeMarkdownTextStyle;
@@ -85,9 +85,8 @@ export function FileMarkdownPreview(props: {
   readonly threadId: ThreadId | null;
   readonly onRefresh?: () => Promise<void> | void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const navigation = useNavigation();
+  const gt = useGT();
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [expandedFile, setExpandedFile] = useState<FilePreviewSource | null>(null);
   const [expandedVideo, setExpandedVideo] = useState<VideoPreviewSource | null>(null);
@@ -122,11 +121,11 @@ export function FileMarkdownPreview(props: {
       (!props.captured && fileLink.kind === "file" && fileLink.line !== undefined)
     ) {
       const name =
-        preview?.source.name ?? (fileLink.kind === "file" ? fileLink.label : "Open file");
+        preview?.source.name ?? (fileLink.kind === "file" ? fileLink.label : gt("Open file"));
       return (
         <Text
           accessibilityRole="link"
-          accessibilityLabel={uiT("Open {0}", { "0": name })}
+          accessibilityLabel={gt("Open {name}", { name })}
           onPress={() => openMedia(image.href, true)}
           style={{ color: styles.nativeTextStyle.linkColor }}
         >

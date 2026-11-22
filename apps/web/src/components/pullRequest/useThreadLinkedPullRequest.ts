@@ -1,8 +1,4 @@
-import { scopedThreadKey } from "@t3tools/client-runtime/environment";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import {
   type EnvironmentId,
   type ProjectId,
@@ -10,8 +6,14 @@ import {
   type ThreadLinkedPullRequest,
   type VcsStatusResult,
 } from "@t3tools/contracts";
+import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
+import { msg } from "gt-react";
 import { useEffect, useRef } from "react";
-import { useUiLanguage } from "../../i18n";
+import { m } from "~/i18n/messages";
 import { selectActiveRightPanelSurface, useRightPanelStore } from "../../rightPanelStore";
 import { threadEnvironment } from "../../state/threads";
 import { useOrchestrationCommand } from "../../state/use-orchestration-command";
@@ -28,8 +30,6 @@ export function useThreadLinkedPullRequest(input: {
   readonly threadBranch: string | null;
   readonly gitStatus: Pick<VcsStatusResult, "refName" | "pr"> | null;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const { serverThreadRef, persisted, projectId, projectRepository, threadBranch, gitStatus } =
     input;
   const updateThreadMetadata = useOrchestrationCommand(threadEnvironment.updateMetadata, {
@@ -92,12 +92,12 @@ export function useThreadLinkedPullRequest(input: {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Unable to update the thread pull request"),
-          description: error instanceof Error ? error.message : uiT("An error occurred."),
+          title: m(msg("Unable to update the thread pull request")),
+          description: thrownErrorMessage(error, m) ?? m(msg("An error occurred.")),
         }),
       );
     });
-  }, [persisted, replacement, serverThreadRef, updateThreadMetadata, uiT]);
+  }, [persisted, replacement, serverThreadRef, updateThreadMetadata]);
 
   const linked = replacement ?? persisted;
   return {

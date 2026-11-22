@@ -1,9 +1,10 @@
-import { UiText } from "../../i18n";
 import { useAtomValue } from "@effect/atom-react";
 import { EnvironmentId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
 import { ChevronRightIcon } from "lucide-react";
+import { msg, T, useGT, useMessages } from "gt-react";
 import { Fragment, type RefObject, useRef } from "react";
+
 import { environmentThreadShells } from "~/state/threads";
 import {
   AlertDialog,
@@ -19,8 +20,6 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "../ui/collaps
 import { MiddleTruncate } from "../ui/middle-truncate";
 import { ScrollArea } from "../ui/scroll-area";
 import type { RestartingMachine, UpdateEverythingRow } from "./updateEverything.logic";
-
-import { useUiLanguage } from "../../i18n";
 
 const isRunning = (status: string) =>
   status === "preparing" || status === "starting" || status === "running";
@@ -89,9 +88,9 @@ export function UpdateEverythingDialog({
 }
 
 const APP_LABELS = {
-  "this-app": "This app",
-  server: "Server",
-  "desktop-app": "Desktop app",
+  "this-app": msg("This app"),
+  server: msg("Server"),
+  "desktop-app": msg("Desktop app"),
 } as const;
 
 function UpdateEverythingDialogContent({
@@ -102,14 +101,14 @@ function UpdateEverythingDialogContent({
   onConfirm,
   cancelRef,
   title,
-  confirmLabel = "Update",
+  confirmLabel,
   notes = [],
   disabledReason = null,
   busy = false,
   checking = false,
 }: UpdateEverythingDialogContentProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const stopped = useAtomValue(
     runningThreadCountAtom(
       restarts
@@ -136,14 +135,14 @@ function UpdateEverythingDialogContent({
       <AlertDialogHeader className="shrink-0">
         <AlertDialogTitle>
           {title ??
-            uiT(updating.length === 1 ? "Update 1 machine?" : "Update {0} machines?", {
-              "0": updating.length,
+            gt("{count, plural, one {Update {count} machine?} other {Update {count} machines?}}", {
+              count: updating.length,
             })}
         </AlertDialogTitle>
         <AlertDialogDescription>
           {version !== null ? (
             <>
-              {uiT("T3 Code")}{" "}
+              T3 Code{" "}
               <bdi dir="ltr" className="font-mono text-xs">
                 {version}
               </bdi>
@@ -151,14 +150,13 @@ function UpdateEverythingDialogContent({
           ) : null}
           {version !== null && providerCount > 0 ? " · " : null}
           {providerCount > 0
-            ? uiT(providerCount === 1 ? "1 provider update" : "{0} provider updates", {
-                "0": providerCount,
-              })
+            ? gt(
+                "{count, plural, one {{count} provider update} other {{count} provider updates}}",
+                { count: providerCount },
+              )
             : null}
           {checking
-            ? uiT("{0}Checking for more…", {
-                "0": version !== null || providerCount > 0 ? " · " : "",
-              })
+            ? `${version !== null || providerCount > 0 ? " · " : ""}${gt("Checking for more…")}`
             : null}
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -179,13 +177,11 @@ function UpdateEverythingDialogContent({
               className="col-span-full grid grid-cols-subgrid border-b pb-1.5 text-muted-foreground text-xs"
             >
               <span role="columnheader">
-                <UiText message={"Machine"} />
+                <T>Machine</T>
               </span>
+              <span role="columnheader">T3 Code</span>
               <span role="columnheader">
-                <UiText message={"T3 Code"} />
-              </span>
-              <span role="columnheader">
-                <UiText message={"Providers"} />
+                <T>Providers</T>
               </span>
               <span role="columnheader" />
             </div>
@@ -200,13 +196,15 @@ function UpdateEverythingDialogContent({
                   <MiddleTruncate value={row.label} aria-hidden />
                 </span>
                 <span role="cell">
-                  {row.app !== null ? APP_LABELS[row.app] : null}
+                  {row.app !== null ? m(APP_LABELS[row.app]) : null}
                   {row.app === null && row.skipped !== null ? (
-                    <span className="text-muted-foreground">{uiT("Skipped")}</span>
+                    <span className="text-muted-foreground">
+                      <T>Skipped</T>
+                    </span>
                   ) : null}
                   {row.app === "this-app" ? (
                     <span className="block text-muted-foreground text-xs">
-                      {uiT("restarts last")}
+                      <T>restarts last</T>
                     </span>
                   ) : null}
                 </span>
@@ -230,7 +228,9 @@ function UpdateEverythingDialogContent({
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-muted-foreground text-xs hover:text-foreground data-panel-open:[&_svg]:rotate-90">
                 <ChevronRightIcon className="size-3.5 transition-transform" aria-hidden />
-                {uiT("{0} skipped", { "0": skipped.length })}
+                {gt("{count, plural, one {{count} skipped} other {{count} skipped}}", {
+                  count: skipped.length,
+                })}
               </CollapsibleTrigger>
               <CollapsiblePanel>
                 <div className="grid grid-cols-[minmax(0,max-content)_1fr] gap-x-3 gap-y-0.5 pt-1.5 ps-4.5 text-muted-foreground text-xs">
@@ -239,7 +239,7 @@ function UpdateEverythingDialogContent({
                       <span className="max-w-32 min-w-0">
                         <bdi>
                           <MiddleTruncate
-                            value={row.environmentId === null ? "This app" : row.label}
+                            value={row.environmentId === null ? gt("This app") : row.label}
                           />
                         </bdi>
                       </span>
@@ -260,35 +260,29 @@ function UpdateEverythingDialogContent({
         ) : running > 0 ? (
           <p className="self-center text-muted-foreground text-sm max-sm:order-1 max-sm:text-center sm:mr-auto">
             {stopped === 0
-              ? uiT(
-                  running === 1
-                    ? "1 running thread will be interrupted and can resume after the restart."
-                    : "{0} running threads will be interrupted and can resume after the restart.",
-                  { "0": running },
+              ? gt(
+                  "{count, plural, one {{count} running thread will be interrupted and can resume after the restart.} other {{count} running threads will be interrupted and can resume after the restart.}}",
+                  { count: running },
                 )
               : continuing === 0
-                ? uiT(
-                    running === 1
-                      ? "1 running thread will be interrupted."
-                      : "{0} running threads will be interrupted.",
-                    { "0": running },
+                ? gt(
+                    "{count, plural, one {{count} running thread will be interrupted.} other {{count} running threads will be interrupted.}}",
+                    { count: running },
                   )
-                : uiT(
-                    continuing === 1
-                      ? "{0} running threads will be interrupted. 1 can resume after the restart."
-                      : "{0} running threads will be interrupted. {1} can resume after the restart.",
-                    {
-                      "0": running,
-                      "1": continuing,
-                    },
-                  )}
+                : `${gt(
+                    "{count, plural, one {{count} running thread will be interrupted.} other {{count} running threads will be interrupted.}}",
+                    { count: running },
+                  )} ${gt(
+                    "{count, plural, one {{count} can resume after the restart.} other {{count} can resume after the restart.}}",
+                    { count: continuing },
+                  )}`}
           </p>
         ) : null}
         <AlertDialogClose ref={cancelRef} render={<Button variant="outline" disabled={busy} />}>
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </AlertDialogClose>
         <Button disabled={disabledReason !== null || busy} onClick={onConfirm}>
-          {confirmLabel}
+          {confirmLabel ?? gt("Update", { $context: "verb, confirms the update" })}
         </Button>
       </AlertDialogFooter>
     </>
@@ -296,12 +290,11 @@ function UpdateEverythingDialogContent({
 }
 
 function RunningThreads({ environmentId }: { readonly environmentId: EnvironmentId }) {
-  const { t: uiT } = useUiLanguage();
-
   const count = useAtomValue(runningThreadCountAtom(environmentId));
+  const gt = useGT();
   return count > 0 ? (
     <span className="whitespace-nowrap text-warning">
-      {uiT(count === 1 ? "1 running" : "{0} running", { "0": count })}
+      {gt("{count, plural, one {{count} running} other {{count} running}}", { count })}
     </span>
   ) : null;
 }

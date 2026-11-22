@@ -1,6 +1,6 @@
 import type { PullRequestStack } from "@t3tools/contracts";
+import { useMessages } from "gt-react";
 import { cn } from "~/lib/utils";
-import { useUiLanguage } from "../../i18n";
 import { resolvePullRequestState } from "./pullRequestPresentation";
 
 export function PullRequestStackLayerContent({
@@ -10,11 +10,14 @@ export function PullRequestStackLayerContent({
   layer: PullRequestStack["layers"][number];
   compact?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-  const state = resolvePullRequestState({
-    state: layer.state,
-    isDraft: layer.isDraft ?? false,
-  });
+  const messages = useMessages();
+  const state = resolvePullRequestState(
+    {
+      state: layer.state,
+      isDraft: layer.isDraft ?? false,
+    },
+    messages,
+  );
   return (
     <>
       <state.Icon aria-hidden className={cn("size-4 shrink-0", state.toneClassName)} />
@@ -22,7 +25,7 @@ export function PullRequestStackLayerContent({
         <span className="block truncate">{layer.title || layer.headBranch}</span>
         <span className="block truncate text-xs font-normal text-muted-foreground">
           #{layer.number} · {compact ? null : `${layer.headBranch} · `}
-          {uiT(state.label)}
+          {state.label}
         </span>
       </span>
     </>

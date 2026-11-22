@@ -1,9 +1,11 @@
 import type { ScopedThreadRef } from "@t3tools/contracts";
-import { parseThreadLinkPrompt, withoutPromptLinkParams } from "@t3tools/shared/promptLinks";
+import { withoutPromptLinkParams } from "@t3tools/shared/promptLinks";
+import { parseThreadLinkPrompt } from "@t3tools/shared/promptLinksCopy";
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { msg } from "gt-react";
 import { useEffect } from "react";
-import { useUiLanguage } from "../../i18n";
 
+import { m } from "../../i18n/messages";
 import { isThreadRoutePathname } from "../../threadRoutes";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 import { placeLinkedPrompt } from "./linkedPrompt";
@@ -11,7 +13,6 @@ import { placeLinkedPrompt } from "./linkedPrompt";
 const handledLinkKeys = new Set<string>();
 
 export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThreadRef }) {
-  const { t: uiT } = useUiLanguage();
   const navigate = useNavigate();
   const location = useLocation({
     select: (current) => ({
@@ -29,12 +30,12 @@ export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThre
     if (!new URLSearchParams(location.search).has("prompt")) return;
     if (!handledLinkKeys.has(location.key)) {
       handledLinkKeys.add(location.key);
-      const parsed = parseThreadLinkPrompt(location.search);
+      const parsed = parseThreadLinkPrompt(location.search, m);
       if (!parsed.ok) {
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: uiT("Could not open the linked prompt"),
+            title: m(msg("Could not open the linked prompt")),
             description: parsed.error,
           }),
         );
@@ -46,7 +47,7 @@ export function ThreadLinkPrompt({ threadRef }: { readonly threadRef: ScopedThre
       href: `${location.pathname}${withoutPromptLinkParams(location.search)}`,
       replace: true,
     });
-  }, [location, navigate, threadRef, uiT]);
+  }, [location, navigate, threadRef]);
 
   return null;
 }

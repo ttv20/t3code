@@ -1,3 +1,14 @@
+import { msg } from "gt-react";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m } from "~/i18n/messages";
+import type {
+  KeybindingCommand,
+  ProjectId,
+  ProjectScript,
+  EnvironmentId,
+} from "@t3tools/contracts";
+import { AuthSettingsWriteScope, EnvironmentAuthorizationError } from "@t3tools/contracts";
+import type { UnifiedSettings } from "@t3tools/contracts/settings";
 import {
   isAtomCommandInterrupted,
   mapAtomCommandResult,
@@ -5,19 +16,10 @@ import {
   type AtomCommandResult,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import type {
-  EnvironmentId,
-  KeybindingCommand,
-  ProjectId,
-  ProjectScript,
-} from "@t3tools/contracts";
-import { AuthSettingsWriteScope, EnvironmentAuthorizationError } from "@t3tools/contracts";
-import type { UnifiedSettings } from "@t3tools/contracts/settings";
 import { resolveProjectScripts } from "@t3tools/shared/projectScripts";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
 import { useStableCallback } from "../../hooks/useStableCallback";
-import { useUiLanguage } from "../../i18n";
 import {
   decodeProjectScriptKeybindingRule,
   keybindingValueForCommand,
@@ -30,10 +32,10 @@ import {
   releaseClaimedRoles,
 } from "../../projectScripts";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
-import { useProjects } from "../../state/entities";
 import { serverEnvironment } from "../../state/server";
 import { readEnvironmentScope } from "../../state/session";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { useProjects } from "../../state/entities";
 import { type NewProjectScriptInput } from "../ProjectScriptsControl";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 
@@ -44,8 +46,6 @@ export function useProjectScriptEditing(input: {
   readonly scripts: ReadonlyArray<ProjectScript>;
   readonly settings: UnifiedSettings;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const { environmentId, project, scripts, settings } = input;
   const allProjects = useProjects();
   const updateProjectScriptSettings = useAtomCommand(serverEnvironment.updateSettings, {
@@ -82,7 +82,7 @@ export function useProjectScriptEditing(input: {
         Cause.fail(
           new EnvironmentAuthorizationError({
             requiredScope: AuthSettingsWriteScope,
-            message: uiT("This connection cannot change keyboard shortcuts."),
+            message: m(msg("This connection cannot change keyboard shortcuts.")),
           }),
         ),
       );
@@ -127,11 +127,15 @@ export function useProjectScriptEditing(input: {
           new EnvironmentAuthorizationError({
             requiredScope: AuthSettingsWriteScope,
             message: isDeletingScript
-              ? uiT(
-                  "The script was deleted, but its keyboard shortcut could not be removed because permission changed.",
+              ? m(
+                  msg(
+                    "The script was deleted, but its keyboard shortcut could not be removed because permission changed.",
+                  ),
                 )
-              : uiT(
-                  "The script was saved, but this connection can no longer change keyboard shortcuts.",
+              : m(
+                  msg(
+                    "The script was saved, but this connection can no longer change keyboard shortcuts.",
+                  ),
                 ),
           }),
         ),
@@ -220,7 +224,7 @@ export function useProjectScriptEditing(input: {
     }
     const existingScript = scripts.find((script) => script.id === scriptId);
     if (!existingScript) {
-      return AsyncResult.failure(Cause.fail(new Error("Script not found.")));
+      return AsyncResult.failure(Cause.fail(new Error(m(msg("Script not found.")))));
     }
 
     const updatedScript = buildProjectScript(existingScript.id, input);
@@ -258,16 +262,20 @@ export function useProjectScriptEditing(input: {
     if (result._tag === "Success") {
       toastManager.add({
         type: "success",
-        title: uiT('Deleted action "{0}"', { "0": deletedName ?? "Unknown" }),
+        title: m(
+          msg('Deleted action "{name}"', {
+            name:
+              deletedName ?? m(msg("Unknown", { $context: "fallback name of a deleted action" })),
+          }),
+        ),
       });
     } else if (!isAtomCommandInterrupted(result)) {
       const error = squashAtomCommandFailure(result);
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Could not delete action"),
-          description:
-            error instanceof Error ? error.message : uiT("An unexpected error occurred."),
+          title: m(msg("Could not delete action")),
+          description: thrownErrorMessage(error, m) ?? m(msg("An unexpected error occurred.")),
         }),
       );
     }

@@ -1,17 +1,7 @@
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import {
-  AuthOrchestrationOperateScope,
-  AuthSettingsWriteScope,
-  type KeybindingCommand,
-  type KeybindingWhenNode,
-  type ServerRemoveKeybindingInput,
-  type ServerUpsertKeybindingInput,
-} from "@t3tools/contracts";
-import { mergeWithDefaultKeybindings } from "@t3tools/shared/keybindings";
-import { useLocation } from "@tanstack/react-router";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m as resolveMessage } from "~/i18n/messages";
+import { useEnvironmentScope } from "../../state/session";
+import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
 import {
   ChevronDownIcon,
   CircleXIcon,
@@ -23,6 +13,7 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
+import { useLocation } from "@tanstack/react-router";
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -32,19 +23,31 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { useUiLanguage } from "../../i18n";
+import { T, useGT, useMessages } from "gt-react";
 import {
-  readEnvironmentScope,
-  useEnvironmentScope,
-  useEnvironmentsWithScope,
-} from "../../state/session";
+  AuthOrchestrationOperateScope,
+  AuthSettingsWriteScope,
+  type KeybindingCommand,
+  type KeybindingWhenNode,
+  type ServerRemoveKeybindingInput,
+  type ServerUpsertKeybindingInput,
+} from "@t3tools/contracts";
+import {
+  mergeWithDefaultKeybindings,
+  parseKeybindingWhenExpression,
+} from "@t3tools/shared/keybindings";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 
-import { useOpenInPreferredEditor } from "../../editorPreferences";
 import { isElectron } from "../../env";
+import { useOpenInPreferredEditor } from "../../editorPreferences";
 import { formatShortcutLabel } from "../../keybindings";
 import { cn } from "../../lib/utils";
 import { serverEnvironment } from "../../state/server";
-import { useAtomCommand } from "../../state/use-atom-command";
+import { useSettingsScope } from "./SettingsScopeContext";
+import { useClientSettings } from "../../hooks/useSettings";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -52,37 +55,52 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 import { Kbd, KbdGroup } from "../ui/kbd";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { toastManager } from "../ui/toast";
-import { Toggle } from "../ui/toggle";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
-  buildKeybindingCommandOptions,
+  Combobox,
+  ComboboxTrigger,
+  ComboboxPopup,
+  ComboboxSearchInput,
+  ComboboxEmpty,
+  ComboboxList,
+  ComboboxItem,
+} from "../ui/combobox";
+import {
+  SelectButton,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Toggle } from "../ui/toggle";
+import { toastManager } from "../ui/toast";
+import {
   buildKeybindingRows,
+  filterKeybindingRows,
+  buildKeybindingCommandOptions,
   buildWhenVariableOptions,
   commandLabel,
   DEFAULT_WHEN_VARIABLE,
-  filterKeybindingRows,
-  groupKeybindingRows,
   isKnownWhenVariable,
-  type KeybindingCommandOption,
   keybindingConflictLabels,
   keybindingFromKeyboardEvent,
+  parseWhenExpressionDraft,
+  groupKeybindingRows,
+  type KeybindingCommandOption,
   type KeybindingGroup,
   type KeybindingRow,
-  parseWhenExpressionDraft,
+  type WhenVariableOption,
   unknownWhenVariables,
   whenAstToExpression,
   whenNodeRemoveLabel,
-  type WhenVariableOption,
 } from "./KeybindingsSettings.logic";
 import { SettingsGroup } from "./SettingsGroup";
 import { SettingsPageContainer, SettingsRow, SettingsSection } from "./settingsLayout";
-import { useSettingsScope } from "./SettingsScopeContext";
-import { keybindingSearchAnchorId, searchableSetting } from "./settingsSearch";
+import { keybindingSearchAnchorId, useSearchableSetting } from "./settingsSearch";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { useAtomCommand } from "../../state/use-atom-command";
 
 function KeybindingPill({ value }: { value: string }) {
-  const { t: uiT } = useUiLanguage();
   // Keys dedupe repeated parts; a literal "+" in a shortcut splits into empty strings.
   const seenParts = new Map<string, number>();
   const parts = value.split("+").map((part) => {
@@ -97,13 +115,13 @@ function KeybindingPill({ value }: { value: string }) {
           {part === "mod"
             ? navigator.platform.toLowerCase().includes("mac")
               ? "⌘"
-              : uiT("Ctrl")
+              : "Ctrl"
             : part === "shift"
               ? "⇧"
               : part === "alt"
                 ? navigator.platform.toLowerCase().includes("mac")
                   ? "⌥"
-                  : uiT("Alt")
+                  : "Alt"
                 : part === "ctrl"
                   ? "⌃"
                   : part.length === 1
@@ -124,8 +142,7 @@ function KeybindingsSearchInput({
   onChange: (next: string) => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <InputGroup className="min-w-0 basis-full **:[input]:h-9 sm:basis-0 sm:flex-1 sm:**:[input]:h-8">
       <InputGroupAddon>
@@ -144,8 +161,8 @@ function KeybindingsSearchInput({
             onChange("");
           } else event.currentTarget.blur();
         }}
-        placeholder={uiT("Search keybindings")}
-        aria-label={uiT("Search keybindings")}
+        placeholder={gt("Search keybindings")}
+        aria-label={gt("Search keybindings")}
         size="sm"
       />
     </InputGroup>
@@ -226,14 +243,13 @@ function WarningTooltipIcon({
   className?: string | undefined;
   children: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <span
             tabIndex={focusable ? 0 : undefined}
-            aria-label={uiT(label)}
+            aria-label={label}
             className={cn(
               "inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-warning outline-none transition-colors hover:bg-warning/10 focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-warning/25",
               className,
@@ -255,39 +271,36 @@ function UnknownWhenVariableWarning({
   identifiers: ReadonlyArray<string>;
   focusable?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (identifiers.length === 0) return null;
   const label =
     identifiers.length === 1
-      ? uiT("Unknown condition: {0}", { "0": identifiers[0] })
-      : uiT("Unknown conditions: {0}", { "0": identifiers.join(", ") });
+      ? gt("Unknown condition: {condition}", { condition: identifiers[0] })
+      : gt("Unknown conditions: {conditions}", { conditions: identifiers.join(", ") });
 
   return (
-    <WarningTooltipIcon label={uiT(label)} focusable={focusable} className="size-4.5">
-      {uiT(
-        "T3 Code does not recognize this condition yet. It can still be saved, but it may not match unless the runtime provides it.",
-      )}
+    <WarningTooltipIcon label={label} focusable={focusable} className="size-4.5">
+      <T>
+        T3 Code does not recognize this condition yet. It can still be saved, but it may not match
+        unless the runtime provides it.
+      </T>
     </WarningTooltipIcon>
   );
 }
 
 function KeybindingConflictWarning({ labels }: { labels: ReadonlyArray<string> }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (labels.length === 0) return null;
   const description =
     labels.length === 1
-      ? uiT("Conflicts with {0}.", { "0": labels[0] })
-      : uiT("Conflicts with {0}{1}.", {
-          "0": labels.slice(0, 3).join(", "),
-          "1": labels.length > 3 ? ", and more" : "",
-        });
+      ? gt("Conflicts with {command}.", { command: labels[0] })
+      : labels.length > 3
+        ? gt("Conflicts with {commands}, and more.", { commands: labels.slice(0, 3).join(", ") })
+        : gt("Conflicts with {commands}.", { commands: labels.slice(0, 3).join(", ") });
 
   return (
-    <WarningTooltipIcon label={uiT(description)}>
-      {uiT(description)}{" "}
-      {uiT("The most recent matching binding wins when both conditions can apply.")}
+    <WarningTooltipIcon label={description}>
+      {description} <T>The most recent matching binding wins when both conditions can apply.</T>
     </WarningTooltipIcon>
   );
 }
@@ -303,16 +316,15 @@ function WhenVariableSelect({
   unknownIdentifiers?: ReadonlyArray<string>;
   onChange: (value: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const selected = variables.find((option) => option === value);
   const options =
     selected || variables.some((option) => option === value) ? variables : [value, ...variables];
 
   return (
     <Select value={value} onValueChange={(nextValue) => nextValue && onChange(nextValue)}>
-      <SelectTrigger size="compact" className="min-w-0 flex-1 [unicode-bidi:plaintext]">
-        <SelectValue placeholder={uiT("Condition")} />
+      <SelectTrigger size="compact" className="min-w-0 flex-1">
+        <SelectValue placeholder={gt("Condition")} />
         {unknownIdentifiers && unknownIdentifiers.length > 0 ? (
           <UnknownWhenVariableWarning identifiers={unknownIdentifiers} focusable={false} />
         ) : null}
@@ -337,8 +349,6 @@ function WhenExpressionRemoveButton({
   className?: string | undefined;
   onRemove: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <Tooltip>
       <TooltipTrigger
@@ -349,14 +359,14 @@ function WhenExpressionRemoveButton({
             variant="ghost"
             size="icon-sm"
             className={cn("size-7", className)}
-            aria-label={uiT(label)}
+            aria-label={label}
             onClick={onRemove}
           />
         }
       >
         <MinusIcon aria-hidden className="size-3.5" />
       </TooltipTrigger>
-      <TooltipPopup side="top">{uiT(label)}</TooltipPopup>
+      <TooltipPopup side="top">{label}</TooltipPopup>
     </Tooltip>
   );
 }
@@ -374,8 +384,8 @@ function WhenExpressionNodeEditor({
   onChange: (node: KeybindingWhenNode) => void;
   onRemove?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const condition = conditionParts(node);
 
   if (condition) {
@@ -388,12 +398,12 @@ function WhenExpressionNodeEditor({
         <Toggle
           pressed={condition.negated}
           onPressedChange={(pressed) => onChange(setConditionNegated(node, pressed))}
-          aria-label={uiT("Negate {0}", { "0": condition.identifier })}
+          aria-label={gt("Negate {condition}", { condition: condition.identifier })}
           variant="outline"
           size="compact"
           className="min-w-10"
         >
-          {uiT("Not")}
+          {gt("Not", { $context: "logical negation toggle" })}
         </Toggle>
         <WhenVariableSelect
           value={condition.identifier}
@@ -403,7 +413,7 @@ function WhenExpressionNodeEditor({
         />
         {onRemove ? (
           <WhenExpressionRemoveButton
-            label={whenNodeRemoveLabel(node, depth)}
+            label={whenNodeRemoveLabel(node, depth, m)}
             onRemove={onRemove}
           />
         ) : null}
@@ -423,16 +433,16 @@ function WhenExpressionNodeEditor({
           <Toggle
             pressed
             onPressedChange={(pressed) => onChange(pressed ? node : node.node)}
-            aria-label={uiT("Negate group")}
+            aria-label={gt("Negate group")}
             variant="outline"
             size="compact"
             className="min-w-10"
           >
-            {uiT("Not")}
+            {gt("Not", { $context: "logical negation toggle" })}
           </Toggle>
           {onRemove ? (
             <WhenExpressionRemoveButton
-              label={whenNodeRemoveLabel(node, depth)}
+              label={whenNodeRemoveLabel(node, depth, m)}
               className="ml-auto"
               onRemove={onRemove}
             />
@@ -527,21 +537,25 @@ function WhenExpressionNodeEditor({
             <SelectValue />
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} matchTriggerWidth={false}>
-            <SelectItem value="and">{uiT("and")}</SelectItem>
-            <SelectItem value="or">{uiT("or")}</SelectItem>
+            <SelectItem value="and">
+              {gt("and", { $context: "logical operator in a when clause" })}
+            </SelectItem>
+            <SelectItem value="or">
+              {gt("or", { $context: "logical operator in a when clause" })}
+            </SelectItem>
           </SelectContent>
         </Select>
         <Button type="button" variant="outline" size="compact" onClick={addCondition}>
           <PlusIcon className="size-3.5" />
-          {uiT("Condition")}
+          {gt("Condition", { $context: "button, adds a when-clause condition" })}
         </Button>
         <Button type="button" variant="outline" size="compact" onClick={addGroup}>
           <PlusIcon className="size-3.5" />
-          {uiT("Group")}
+          {gt("Group", { $context: "button, adds a group of when-clause conditions" })}
         </Button>
         {onRemove ? (
           <WhenExpressionRemoveButton
-            label={whenNodeRemoveLabel(node, depth)}
+            label={whenNodeRemoveLabel(node, depth, m)}
             className="ml-auto"
             onRemove={onRemove}
           />
@@ -589,17 +603,17 @@ function WhenExpressionBuilder({
   onChange: (value: KeybindingWhenNode | undefined) => void;
   onValidityChange?: (valid: boolean) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const expression = whenAstToExpression(value);
   const [expressionDraft, setExpressionDraft] = useState(expression);
-  const parseResult = parseWhenExpressionDraft(expressionDraft);
+  const parseResult = parseWhenExpressionDraft(expressionDraft, m);
   const parseError = parseResult.ok ? null : parseResult.message;
   const unknownIdentifiers = parseResult.ok ? unknownWhenVariables(parseResult.value) : [];
 
   const updateExpressionDraft = (nextExpression: string) => {
     setExpressionDraft(nextExpression);
-    const nextResult = parseWhenExpressionDraft(nextExpression);
+    const nextResult = parseWhenExpressionDraft(nextExpression, m);
     onValidityChange?.(nextResult.ok);
     if (nextResult.ok) {
       onChange(nextResult.value);
@@ -632,17 +646,19 @@ function WhenExpressionBuilder({
   return (
     <div className="w-[min(34rem,calc(100vw-2rem))] space-y-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 [unicode-bidi:plaintext]">
-          <div className="text-sm font-medium text-foreground">{uiT("When")}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-foreground">
+            {gt("When", { $context: "heading for keybinding conditions" })}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Button type="button" variant="outline" size="compact" onClick={addRootCondition}>
             <PlusIcon className="size-3.5" />
-            {uiT("Condition")}
+            {gt("Condition", { $context: "button, adds a when-clause condition" })}
           </Button>
           <Button type="button" variant="outline" size="compact" onClick={addRootGroup}>
             <PlusIcon className="size-3.5" />
-            {uiT("Group")}
+            {gt("Group", { $context: "button, adds a group of when-clause conditions" })}
           </Button>
         </div>
       </div>
@@ -652,9 +668,9 @@ function WhenExpressionBuilder({
           <InputGroupInput
             value={expressionDraft}
             onChange={(event) => updateExpressionDraft(event.currentTarget.value)}
-            placeholder={uiT("Always")}
+            placeholder={gt("Always")}
             aria-invalid={Boolean(parseError)}
-            aria-label={uiT("When expression")}
+            aria-label={gt("When expression")}
             size="compact"
             font="mono"
           />
@@ -685,18 +701,18 @@ function WhenExpressionBuilder({
             <div className="flex flex-wrap gap-2">
               <Button type="button" size="compact" onClick={addRootCondition}>
                 <PlusIcon className="size-3.5" />
-                {uiT("Condition")}
+                {gt("Condition", { $context: "button, adds a when-clause condition" })}
               </Button>
               <Button type="button" variant="outline" size="compact" onClick={addRootGroup}>
                 <PlusIcon className="size-3.5" />
-                {uiT("Group")}
+                {gt("Group", { $context: "button, adds a group of when-clause conditions" })}
               </Button>
             </div>
           </div>
         )}
         {parseError ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg border border-destructive/30 bg-background/75 p-4 text-center text-xs text-destructive backdrop-blur-xs">
-            {uiT("Fix the expression above to continue editing visually.")}
+            <T>Fix the expression above to continue editing visually.</T>
           </div>
         ) : null}
       </div>
@@ -744,16 +760,32 @@ function useKeybindingRowEditor({
   allRows: ReadonlyArray<KeybindingRow>;
   onSave: (input: ServerUpsertKeybindingInput) => void;
 }) {
+  const m = useMessages();
   const [draft, setDraft] = useReducer(keybindingRowDraftReducer, row, createKeybindingRowDraft);
   const pillRef = useRef<HTMLButtonElement>(null);
   const { keyDraft, whenDraft, isRecording, isWhenDraftValid } = draft;
   const whenDraftExpression = whenAstToExpression(whenDraft);
   const isDirty = keyDraft !== row.key || whenDraftExpression !== row.when;
-  const conflictLabels = keybindingConflictLabels(allRows, {
-    rowId: row.id,
-    key: keyDraft,
-    when: whenDraftExpression,
-  });
+  const conflictLabels = keybindingConflictLabels(
+    allRows,
+    {
+      rowId: row.id,
+      key: keyDraft,
+      when: whenDraftExpression,
+    },
+    navigator.platform,
+    m,
+  );
+
+  // Giving an unassigned row a shortcut brings back its default condition.
+  const setKeyDraft = (next: string, patch: Partial<KeybindingRowDraftState> = {}) =>
+    setDraft({
+      ...patch,
+      keyDraft: next,
+      ...(row.isUnassigned && whenDraftExpression === "false"
+        ? { whenDraft: parseKeybindingWhenExpression(row.defaultWhen) ?? undefined }
+        : {}),
+    });
 
   const save = () => {
     onSave({
@@ -771,7 +803,15 @@ function useKeybindingRowEditor({
       // An unhandled Escape closes the settings page.
       event.stopPropagation();
       const field = event.currentTarget;
-      flushSync(() => setDraft({ keyDraft: row.key, isRecording: false }));
+      flushSync(() =>
+        setDraft({
+          keyDraft: row.key,
+          isRecording: false,
+          ...(row.isUnassigned && whenDraftExpression === row.defaultWhen
+            ? { whenDraft: parseKeybindingWhenExpression(row.when) ?? undefined }
+            : {}),
+        }),
+      );
       // The field may unmount for the pill; focus would otherwise drop to the page.
       if (pillRef.current) pillRef.current.focus();
       else field.blur();
@@ -781,7 +821,7 @@ function useKeybindingRowEditor({
       layoutCharacter: true,
     });
     if (!next) return;
-    setDraft({ keyDraft: next, isRecording: false });
+    setKeyDraft(next, { isRecording: false });
   };
 
   return {
@@ -793,6 +833,7 @@ function useKeybindingRowEditor({
     isDirty,
     conflictLabels,
     setDraft,
+    setKeyDraft,
     save,
     captureKeybinding,
     pillRef,
@@ -806,6 +847,7 @@ interface KeybindingRowActions {
   variables: ReadonlyArray<WhenVariableOption>;
   onSave: (input: ServerUpsertKeybindingInput) => void;
   onReset: (row: KeybindingRow) => void;
+  onUnassign: (row: KeybindingRow) => void;
   onRemove: (row: KeybindingRow) => void;
 }
 
@@ -826,18 +868,19 @@ function KeybindingKeyControl({
   isSaving: boolean;
   pillClassName?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const {
     keyDraft,
     isRecording,
     isDirty,
     isWhenDraftValid,
     setDraft,
+    setKeyDraft,
     save,
     captureKeybinding,
     pillRef,
   } = editor;
+  const gt = useGT();
+  const m = useMessages();
   const showPill = !isRecording && keyDraft === row.key && row.key.length > 0 && !isDirty;
 
   return (
@@ -848,7 +891,7 @@ function KeybindingKeyControl({
           disabled={isSaving || keyDraft.trim().length === 0 || !isWhenDraftValid}
           onClick={save}
         >
-          {isSaving ? uiT("Saving") : uiT("Save")}
+          {isSaving ? gt("Saving") : gt("Save", { $context: "verb" })}
         </Button>
       ) : null}
       {showPill ? (
@@ -856,30 +899,38 @@ function KeybindingKeyControl({
           ref={pillRef}
           type="button"
           onClick={() => setDraft({ isRecording: true })}
-          aria-label={uiT("Edit shortcut for {0}: {1}", {
-            "0": commandLabel(row.command),
-            "1": formatShortcutLabel(row.binding.shortcut),
+          aria-label={gt("Edit shortcut for {command}: {shortcut}", {
+            command: commandLabel(row.command, m),
+            shortcut: row.isUnassigned
+              ? gt("Unassigned", { $context: "keyboard shortcut with no key assigned" })
+              : formatShortcutLabel(row.binding.shortcut),
           })}
           className={cn(
             "inline-flex h-8 cursor-pointer items-center rounded-md border border-transparent px-1.5 sm:h-7 outline-none transition-colors hover:border-border/70 hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/24",
             pillClassName,
           )}
         >
-          <KeybindingPill value={row.key} />
+          {row.isUnassigned ? (
+            <span className="text-sm text-muted-foreground">
+              <T context="keyboard shortcut with no key assigned">Unassigned</T>
+            </span>
+          ) : (
+            <KeybindingPill value={row.key} />
+          )}
         </button>
       ) : (
         <Input
           data-keybinding-capture=""
           autoFocus={isRecording}
-          aria-label={uiT("Keybinding for {0}", { "0": commandLabel(row.command) })}
+          aria-label={gt("Keybinding for {command}", { command: commandLabel(row.command, m) })}
           value={isRecording ? "" : keyDraft}
-          placeholder={isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
+          placeholder={isRecording ? gt("Press shortcut") : gt("Unassigned")}
           size="sm"
           font="mono"
           className="w-44"
           onFocus={() => setDraft({ isRecording: true })}
           onBlur={() => setDraft({ isRecording: false })}
-          onChange={(event) => setDraft({ keyDraft: event.currentTarget.value })}
+          onChange={(event) => setKeyDraft(event.currentTarget.value)}
           onKeyDown={captureKeybinding}
         />
       )}
@@ -888,22 +939,22 @@ function KeybindingKeyControl({
 }
 
 function WhenClauseControl({
-  label,
+  editLabel,
   expression,
   value,
   variables,
   onChange,
   onValidityChange,
 }: {
-  label: string;
+  editLabel: string;
   expression: string;
   value: KeybindingWhenNode | undefined;
   variables: ReadonlyArray<WhenVariableOption>;
   onChange: (value: KeybindingWhenNode | undefined) => void;
   onValidityChange: (valid: boolean) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   // Closing unmounts the builder, which drops an unparsed draft and keeps the last valid value.
+  const gt = useGT();
   const handleOpenChange = (open: boolean) => {
     if (!open) onValidityChange(true);
   };
@@ -918,9 +969,9 @@ function WhenClauseControl({
             className="min-w-0 shrink"
           />
         }
-        aria-label={uiT("Edit when clause for {0}", { "0": label })}
+        aria-label={editLabel}
       >
-        <span className="truncate font-mono">{expression || uiT("Always")}</span>
+        <span className="truncate font-mono">{expression || gt("Always")}</span>
         <ChevronDownIcon className="size-3.5 shrink-0 opacity-60" />
       </PopoverTrigger>
       <PopoverContent align="start" sideOffset={6}>
@@ -939,18 +990,21 @@ function KeybindingRowMenu({
   row,
   isSaving,
   onReset,
+  onUnassign,
   onRemove,
 }: {
   row: KeybindingRow;
   isSaving: boolean;
   onReset: (row: KeybindingRow) => void;
+  onUnassign: (row: KeybindingRow) => void;
   onRemove: (row: KeybindingRow) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const canReset = row.source === "Custom" && row.defaultKey !== null;
-  const canRemove = row.source !== "Default";
-  if (!canReset && !canRemove) return null;
+  const canUnassign = row.source === "Default";
+  // Reset to default is the way back; removing would drop the default for good.
+  const canRemove = row.source !== "Default" && !row.isUnassigned;
 
   return (
     <Menu>
@@ -961,7 +1015,7 @@ function KeybindingRowMenu({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label={uiT("Actions for {0}", { "0": commandLabel(row.command) })}
+            aria-label={gt("Actions for {command}", { command: commandLabel(row.command, m) })}
           />
         }
       >
@@ -970,12 +1024,17 @@ function KeybindingRowMenu({
       <MenuPopup align="end">
         {canReset ? (
           <MenuItem disabled={isSaving} onClick={() => onReset(row)}>
-            {uiT("Reset to default")}
+            <T>Reset to default</T>
+          </MenuItem>
+        ) : null}
+        {canUnassign ? (
+          <MenuItem variant="destructive" disabled={isSaving} onClick={() => onUnassign(row)}>
+            {gt("Unassign", { $context: "verb, removes the key from a keyboard shortcut" })}
           </MenuItem>
         ) : null}
         {canRemove ? (
           <MenuItem variant="destructive" disabled={isSaving} onClick={() => onRemove(row)}>
-            {uiT("Remove")}
+            {gt("Remove", { $context: "verb, removes a keybinding" })}
           </MenuItem>
         ) : null}
       </MenuPopup>
@@ -984,21 +1043,23 @@ function KeybindingRowMenu({
 }
 
 function KeybindingSourceBadge({ source }: { source: KeybindingRow["source"] }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   if (source === "Default") return null;
   return (
     <Badge variant="outline" size="sm">
-      {uiT(source)}
+      {source === "Custom"
+        ? gt("Custom", { $context: "keybinding source badge" })
+        : gt("Project", { $context: "keybinding source badge" })}
     </Badge>
   );
 }
 
 function KeybindingRowTitle({ row }: { row: KeybindingRow }) {
+  const m = useMessages();
   return (
     <Tooltip>
       <TooltipTrigger render={<span className="flex items-center gap-2" />}>
-        {commandLabel(row.command)}
+        {commandLabel(row.command, m)}
         <KeybindingSourceBadge source={row.source} />
       </TooltipTrigger>
       <TooltipPopup side="top">{row.command}</TooltipPopup>
@@ -1015,13 +1076,15 @@ function KeybindingRowWhen({
   editor: KeybindingRowEditor;
   variables: ReadonlyArray<WhenVariableOption>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   return (
     <span className="flex h-6 items-center gap-1.5">
-      <span className="text-xs leading-none text-muted-foreground/70">{uiT("When")}</span>
+      <span className="text-xs leading-none text-muted-foreground/70">
+        {gt("When", { $context: "heading for keybinding conditions" })}
+      </span>
       <WhenClauseControl
-        label={commandLabel(row.command)}
+        editLabel={gt("Edit when clause for {command}", { command: commandLabel(row.command, m) })}
         expression={editor.whenDraftExpression}
         value={editor.whenDraft}
         variables={variables}
@@ -1036,6 +1099,7 @@ function KeybindingHoverRowMenu(props: {
   row: KeybindingRow;
   isSaving: boolean;
   onReset: (row: KeybindingRow) => void;
+  onUnassign: (row: KeybindingRow) => void;
   onRemove: (row: KeybindingRow) => void;
 }) {
   return (
@@ -1046,7 +1110,8 @@ function KeybindingHoverRowMenu(props: {
 }
 
 function KeybindingSettingsRow(props: KeybindingRowProps) {
-  const { row, isSaving, anchorId, allRows, variables, onSave, onReset, onRemove } = props;
+  const { row, isSaving, anchorId, allRows, variables, onSave, onReset, onUnassign, onRemove } =
+    props;
   const editor = useKeybindingRowEditor({ row, allRows, onSave });
 
   return (
@@ -1054,7 +1119,13 @@ function KeybindingSettingsRow(props: KeybindingRowProps) {
       id={anchorId}
       className="group/row rounded-none"
       title={<KeybindingRowTitle row={row} />}
-      description={<KeybindingRowWhen row={row} editor={editor} variables={variables} />}
+      description={
+        row.isUnassigned && !editor.isDirty ? (
+          <T>No keyboard shortcut assigned. Click Unassigned to set one.</T>
+        ) : (
+          <KeybindingRowWhen row={row} editor={editor} variables={variables} />
+        )
+      }
       control={
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           <KeybindingConflictWarning labels={editor.conflictLabels} />
@@ -1062,6 +1133,7 @@ function KeybindingSettingsRow(props: KeybindingRowProps) {
             row={row}
             isSaving={isSaving}
             onReset={onReset}
+            onUnassign={onUnassign}
             onRemove={onRemove}
           />
           <KeybindingKeyControl
@@ -1083,8 +1155,7 @@ function useNewKeybindingDraft({
   allRows: ReadonlyArray<KeybindingRow>;
   onSave: (input: ServerUpsertKeybindingInput) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const m = useMessages();
   const [commandDraft, setCommandDraft] = useState<KeybindingCommand | "">("");
   const [draft, setDraft] = useReducer(keybindingRowDraftReducer, {
     keyDraft: "",
@@ -1094,12 +1165,17 @@ function useNewKeybindingDraft({
   });
   const { keyDraft, whenDraft, isRecording, isWhenDraftValid } = draft;
   const whenDraftExpression = whenAstToExpression(whenDraft);
-  const conflictLabels = keybindingConflictLabels(allRows, {
-    rowId: "new",
-    key: keyDraft,
-    when: whenDraftExpression,
-  });
-  const commandLabelText = commandDraft ? commandLabel(commandDraft) : uiT("new keybinding");
+  const conflictLabels = keybindingConflictLabels(
+    allRows,
+    {
+      rowId: "new",
+      key: keyDraft,
+      when: whenDraftExpression,
+    },
+    navigator.platform,
+    m,
+  );
+  const commandLabelText = commandDraft ? commandLabel(commandDraft, m) : null;
   const canSave = Boolean(commandDraft) && keyDraft.trim().length > 0 && isWhenDraftValid;
 
   const save = () => {
@@ -1158,30 +1234,76 @@ interface NewKeybindingProps {
 function NewKeybindingCommandSelect({
   draft,
   commandOptions,
+  allRows,
   className,
 }: {
   draft: NewKeybindingDraft;
   commandOptions: ReadonlyArray<KeybindingCommandOption>;
+  allRows: ReadonlyArray<KeybindingRow>;
   className?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
+  const shortcutsByCommand = new Map<
+    KeybindingCommand,
+    Array<{ id: string; label: string; when: string }>
+  >();
+  for (const row of allRows) {
+    for (const label of row.previewLabels) {
+      const shortcuts = shortcutsByCommand.get(row.command) ?? [];
+      shortcuts.push({ id: `${row.id}:${label}`, label, when: row.when });
+      shortcutsByCommand.set(row.command, shortcuts);
+    }
+  }
   return (
-    <Select
-      value={draft.commandDraft}
-      onValueChange={(value) => draft.setCommandDraft(value as KeybindingCommand)}
+    <Combobox
+      items={commandOptions}
+      defaultOpen
+      itemToStringLabel={(command) => commandLabel(command, m)}
+      filter={(command, query) =>
+        `${command} ${commandLabel(command, m)}`.toLowerCase().includes(query.trim().toLowerCase())
+      }
+      autoHighlight
+      value={draft.commandDraft || null}
+      onValueChange={(value) => value && draft.setCommandDraft(value)}
     >
-      <SelectTrigger size="sm" className={className}>
-        <SelectValue placeholder={uiT("Command")} />
-      </SelectTrigger>
-      <SelectContent alignItemWithTrigger={false} matchTriggerWidth={false} className="max-h-72">
-        {commandOptions.map((command) => (
-          <SelectItem key={command} value={command} className="w-full">
-            <span className="truncate">{commandLabel(command)}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <ComboboxTrigger
+        aria-label={gt("Command")}
+        render={<SelectButton size="sm" />}
+        className={className}
+      >
+        {draft.commandDraft ? commandLabel(draft.commandDraft, m) : gt("Command")}
+      </ComboboxTrigger>
+      <ComboboxPopup aria-label={gt("Command")} className="w-96">
+        <ComboboxSearchInput
+          autoFocus
+          placeholder={gt("Search", { $context: "search field placeholder" })}
+          aria-label={gt("Search", { $context: "search field placeholder" })}
+        />
+        <ComboboxEmpty>{gt("No results found.")}</ComboboxEmpty>
+        <ComboboxList>
+          {(command: KeybindingCommandOption) => {
+            const shortcuts = shortcutsByCommand.get(command);
+            return (
+              <ComboboxItem key={command} value={command}>
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                  <span>{commandLabel(command, m)}</span>
+                  {shortcuts && (
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      {shortcuts.map((shortcut) => (
+                        <Kbd key={shortcut.id} title={shortcut.when || undefined}>
+                          {shortcut.label}
+                        </Kbd>
+                      ))}
+                    </span>
+                  )}
+                </div>
+              </ComboboxItem>
+            );
+          }}
+        </ComboboxList>
+      </ComboboxPopup>
+    </Combobox>
   );
 }
 
@@ -1194,15 +1316,18 @@ function NewKeybindingKeyInput({
   autoFocus?: boolean;
   className?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <Input
       data-keybinding-capture=""
       autoFocus={autoFocus}
-      aria-label={uiT("Keybinding for {0}", { "0": draft.commandLabelText })}
+      aria-label={
+        draft.commandLabelText === null
+          ? gt("Keybinding for new keybinding")
+          : gt("Keybinding for {command}", { command: draft.commandLabelText })
+      }
       value={draft.isRecording ? "" : draft.keyDraft}
-      placeholder={draft.isRecording ? uiT("Press shortcut") : uiT("Unassigned")}
+      placeholder={draft.isRecording ? gt("Press shortcut") : gt("Unassigned")}
       size="sm"
       font="mono"
       className={className}
@@ -1221,9 +1346,14 @@ function NewKeybindingWhen({
   draft: NewKeybindingDraft;
   variables: ReadonlyArray<WhenVariableOption>;
 }) {
+  const gt = useGT();
   return (
     <WhenClauseControl
-      label={draft.commandLabelText}
+      editLabel={
+        draft.commandLabelText === null
+          ? gt("Edit when clause for new keybinding")
+          : gt("Edit when clause for {command}", { command: draft.commandLabelText })
+      }
       expression={draft.whenDraftExpression}
       value={draft.whenDraft}
       variables={variables}
@@ -1240,8 +1370,7 @@ function NewKeybindingCancelIcon({
   isSaving: boolean;
   onCancel: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <Tooltip>
       <TooltipTrigger
@@ -1251,31 +1380,34 @@ function NewKeybindingCancelIcon({
             variant="ghost-muted"
             size="icon-sm"
             disabled={isSaving}
-            aria-label={uiT("Cancel new keybinding")}
+            aria-label={gt("Cancel new keybinding")}
             onClick={onCancel}
           />
         }
       >
         <XIcon className="size-3.5" />
       </TooltipTrigger>
-      <TooltipPopup side="top">{uiT("Cancel")}</TooltipPopup>
+      <TooltipPopup side="top">
+        <T>Cancel</T>
+      </TooltipPopup>
     </Tooltip>
   );
 }
 
 function NewKeybindingSettingsRow(props: NewKeybindingProps) {
-  const { t: uiT } = useUiLanguage();
-
   const { commandOptions, allRows, variables, isSaving, onSave, onCancel } = props;
   const draft = useNewKeybindingDraft({ allRows, onSave });
+  const gt = useGT();
 
   return (
     <SettingsRow
       className="bg-muted/15"
-      title={uiT("New keybinding")}
+      title={gt("New keybinding")}
       description={
         <span className="flex h-6 items-center gap-1.5">
-          <span className="text-xs leading-none text-muted-foreground/70">{uiT("When")}</span>
+          <span className="text-xs leading-none text-muted-foreground/70">
+            {gt("When", { $context: "heading for keybinding conditions" })}
+          </span>
           <NewKeybindingWhen draft={draft} variables={variables} />
         </span>
       }
@@ -1284,12 +1416,13 @@ function NewKeybindingSettingsRow(props: NewKeybindingProps) {
           <NewKeybindingCommandSelect
             draft={draft}
             commandOptions={commandOptions}
+            allRows={allRows}
             className="w-56"
           />
           <KeybindingConflictWarning labels={draft.conflictLabels} />
           <NewKeybindingKeyInput draft={draft} className="w-44" />
           <Button size="sm" disabled={isSaving || !draft.canSave} onClick={draft.save}>
-            {isSaving ? uiT("Saving") : uiT("Save")}
+            {isSaving ? gt("Saving") : gt("Save", { $context: "verb" })}
           </Button>
           <NewKeybindingCancelIcon isSaving={isSaving} onCancel={onCancel} />
         </div>
@@ -1306,8 +1439,9 @@ interface KeybindingsGroupsProps extends KeybindingRowActions {
 
 function KeybindingsGroups(props: KeybindingsGroupsProps) {
   const { groups, anchorIds, savingCommand, ...rowActions } = props;
+  const m = useMessages();
   return groups.map((group) => (
-    <SettingsSection key={group.id} id={`keybindings-${group.id}`} title={group.title}>
+    <SettingsSection key={group.id} id={`keybindings-${group.id}`} title={m(group.title)}>
       {group.rows.map((row) => (
         <KeybindingSettingsRow
           key={row.id}
@@ -1322,9 +1456,8 @@ function KeybindingsGroups(props: KeybindingsGroupsProps) {
 }
 
 function BrowserKeybindingNotice() {
-  const { t: uiT } = useUiLanguage();
-
-  const message = uiT(
+  const gt = useGT();
+  const message = gt(
     "The browser may claim some shortcuts first. The desktop app receives them all.",
   );
   return (
@@ -1357,17 +1490,20 @@ function keybindingAnchorIds(rows: ReturnType<typeof buildKeybindingRows>) {
 
 // Cache rows in a separate hook so the compiler does not rebuild them per search keystroke.
 function useKeybindingCatalog() {
+  const sendShortcut = useClientSettings((settings) => settings.sendShortcut);
   const serverKeybindings = useSettingsScope().environment?.serverConfig?.keybindings;
   const merged = mergeWithDefaultKeybindings(serverKeybindings ?? []);
+  const m = useMessages();
   return {
-    commandOptions: buildKeybindingCommandOptions(merged),
-    allRows: buildKeybindingRows(merged),
+    commandOptions: buildKeybindingCommandOptions(merged, m),
+    allRows: buildKeybindingRows(merged, navigator.platform, sendShortcut, m),
   };
 }
 
 export function KeybindingsSettingsPanel() {
-  const { t: uiT } = useUiLanguage();
-
+  const searchableSetting = useSearchableSetting();
+  const gt = useGT();
+  const m = useMessages();
   const { environment: primaryEnvironment, connectedEnvironments } = useSettingsScope();
   const canOpenKeybindingsFile = useEnvironmentScope(
     primaryEnvironment?.environmentId ?? null,
@@ -1402,7 +1538,7 @@ export function KeybindingsSettingsPanel() {
   }
   const whenVariables = buildWhenVariableOptions();
   const { commandOptions, allRows } = useKeybindingCatalog();
-  const rows = filterKeybindingRows(allRows, query, uiT);
+  const rows = filterKeybindingRows(allRows, query, m);
   const groups = groupKeybindingRows(rows);
   const anchorIds = keybindingAnchorIds(rows);
 
@@ -1420,9 +1556,11 @@ export function KeybindingsSettingsPanel() {
       }
       const error = squashAtomCommandFailure(result);
       toastManager.add({
-        title: uiT("Unable to open keybindings file"),
+        title: gt("Unable to open keybindings file"),
         description:
-          error instanceof Error ? error.message : uiT("The keybindings file was not opened."),
+          error instanceof Error
+            ? (thrownErrorMessage(error, resolveMessage) ?? error.message)
+            : gt("The keybindings file was not opened."),
         type: "error",
       });
     })();
@@ -1458,9 +1596,11 @@ export function KeybindingsSettingsPanel() {
       if (!isAtomCommandInterrupted(failed)) {
         const error = squashAtomCommandFailure(failed);
         toastManager.add({
-          title: uiT("Unable to save keybinding"),
+          title: gt("Unable to save keybinding"),
           description:
-            error instanceof Error ? error.message : uiT("The keybinding was not saved."),
+            error instanceof Error
+              ? (thrownErrorMessage(error, resolveMessage) ?? error.message)
+              : gt("The keybinding was not saved."),
           type: "error",
         });
       }
@@ -1490,13 +1630,25 @@ export function KeybindingsSettingsPanel() {
       if (result?._tag === "Failure" && !isAtomCommandInterrupted(result)) {
         const error = squashAtomCommandFailure(result);
         toastManager.add({
-          title: uiT("Unable to remove keybinding"),
+          title: gt("Unable to remove keybinding"),
           description:
-            error instanceof Error ? error.message : uiT("The keybinding was not removed."),
+            error instanceof Error
+              ? (thrownErrorMessage(error, resolveMessage) ?? error.message)
+              : gt("The keybinding was not removed."),
           type: "error",
         });
       }
     })();
+  };
+
+  const unassignKeybinding = (row: KeybindingRow) => {
+    if (row.source !== "Default") return;
+    saveKeybinding({
+      command: row.command,
+      key: row.key,
+      when: "false",
+      replace: rowKeybindingTarget(row),
+    });
   };
 
   const resetKeybinding = (row: KeybindingRow) => {
@@ -1520,6 +1672,7 @@ export function KeybindingsSettingsPanel() {
     variables: whenVariables,
     onSave: saveKeybinding,
     onReset: resetKeybinding,
+    onUnassign: unassignKeybinding,
     onRemove: removeKeybinding,
   };
 
@@ -1538,7 +1691,7 @@ export function KeybindingsSettingsPanel() {
             onClick={() => setIsAddingBinding(true)}
           >
             <PlusIcon aria-hidden className="size-4" />
-            {uiT("Add keybinding")}
+            <T>Add keybinding</T>
           </Button>
           <Tooltip>
             <TooltipTrigger
@@ -1549,13 +1702,15 @@ export function KeybindingsSettingsPanel() {
                   size="icon"
                   disabled={!keybindingsConfigPath || !canOpenKeybindingsFile}
                   onClick={openKeybindingsFile}
-                  aria-label={uiT("Open keybindings.json")}
+                  aria-label={gt("Open keybindings.json")}
                 >
                   <FileJsonIcon aria-hidden className="size-4" />
                 </Button>
               }
             />
-            <TooltipPopup side="top">{uiT("Open keybindings.json")}</TooltipPopup>
+            <TooltipPopup side="top">
+              <T>Open keybindings.json</T>
+            </TooltipPopup>
           </Tooltip>
         </div>
       </SettingsSection>
@@ -1563,8 +1718,8 @@ export function KeybindingsSettingsPanel() {
       {!canWriteSettings ? (
         <p className="text-xs text-muted-foreground">
           {connectedEnvironments.length === 0
-            ? uiT("Connect an environment to change keybindings.")
-            : uiT("This connection can view keybindings but cannot change them.")}
+            ? gt("Connect an environment to change keybindings.")
+            : gt("This connection can view keybindings but cannot change them.")}
         </p>
       ) : null}
       <div inert={!canWriteSettings} className="flex flex-col gap-8">
@@ -1591,7 +1746,7 @@ export function KeybindingsSettingsPanel() {
         ) : (
           <SettingsGroup>
             <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-              {uiT("No keybindings match your search.")}
+              <T>No keybindings match your search.</T>
             </div>
           </SettingsGroup>
         )}

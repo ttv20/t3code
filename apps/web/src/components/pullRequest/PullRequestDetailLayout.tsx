@@ -1,11 +1,38 @@
-import { ArrowLeftIcon, FileDiffIcon } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
+import { useGT } from "gt-react";
+import { ArrowLeftIcon, FileDiffIcon, LockIcon } from "lucide-react";
+import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 
 import { cn } from "~/lib/utils";
 
+import { Badge } from "../ui/badge";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { PullRequestMetaLine } from "./pullRequestPresentation";
+
+export function PullRequestPrivateMark({ className }: { className?: string }) {
+  const gt = useGT();
+  const label = gt("Private");
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<LockIcon role="img" aria-label={label} className={cn("shrink-0", className)} />}
+      />
+      <TooltipPopup side="top">{label}</TooltipPopup>
+    </Tooltip>
+  );
+}
+
+export function PullRequestPrivateBadge() {
+  const gt = useGT();
+  return (
+    <Badge size="control" variant="outline">
+      <span className="flex items-center gap-1 text-muted-foreground">
+        <LockIcon className="size-3.5" />
+        {gt("Private")}
+      </span>
+    </Badge>
+  );
+}
 
 export function PullRequestDetailHeaderBody({
   title,
@@ -26,10 +53,10 @@ export function PullRequestDetailHeaderBody({
   files: ReactNode;
   diffStat: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <div className="col-span-2 mt-1 min-w-0 px-4 pb-4">
-      {uiT(title)}
+      {title}
       <div className="mt-2 flex min-h-5 min-w-0 items-center gap-2 text-xs text-muted-foreground">
         <PullRequestMetaLine className="min-w-0 whitespace-nowrap">
           {author}
@@ -41,7 +68,10 @@ export function PullRequestDetailHeaderBody({
         <span className="flex min-w-0 flex-1 items-center gap-1.5 font-mono text-xs text-muted-foreground/70">
           {base}
           <ArrowLeftIcon
-            aria-label={uiT("receives changes from")}
+            aria-label={gt("receives changes from", {
+              $context:
+                "screen reader label for an arrow between the base branch, read before it, and the head branch, read after it",
+            })}
             className="size-3.5 shrink-0 opacity-60"
           />
           {head}
@@ -79,11 +109,15 @@ export function PullRequestDetailTabBar<Tab extends string>({
   inert?: boolean;
   children?: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  // A pointer passing over a tab is not intent; it must rest like a list row does.
+  const pointerIntent = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- A rest timer still pending when the bar unmounts must not read for a closed panel.
+  useEffect(() => () => clearTimeout(pointerIntent.current), []);
   return (
     <nav
       className="col-span-2 flex min-w-0 flex-wrap items-center gap-2 border-t border-border/60 px-4 py-2"
-      aria-label={uiT("Pull request tabs")}
+      aria-label={gt("Pull request tabs")}
       inert={inert}
     >
       <ToggleGroup
@@ -100,10 +134,18 @@ export function PullRequestDetailTabBar<Tab extends string>({
           <Toggle
             key={tab.value}
             value={tab.value}
-            onPointerEnter={onTabIntent ? () => onTabIntent(tab.value) : undefined}
+            onPointerEnter={
+              onTabIntent
+                ? () => {
+                    clearTimeout(pointerIntent.current);
+                    pointerIntent.current = setTimeout(() => onTabIntent(tab.value), 150);
+                  }
+                : undefined
+            }
+            onPointerLeave={onTabIntent ? () => clearTimeout(pointerIntent.current) : undefined}
             onFocus={onTabIntent ? () => onTabIntent(tab.value) : undefined}
           >
-            {uiT(tab.label)}
+            {tab.label}
           </Toggle>
         ))}
       </ToggleGroup>
@@ -118,7 +160,6 @@ export function PullRequestChecksStatusLine({
   className,
   ...props
 }: Omit<ComponentProps<"span">, "children"> & { icon: ReactNode; label: ReactNode }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <span
       className={cn(
@@ -128,7 +169,7 @@ export function PullRequestChecksStatusLine({
       {...props}
     >
       {icon}
-      <span className="whitespace-nowrap">{uiT(label)}</span>
+      <span className="whitespace-nowrap">{label}</span>
     </span>
   );
 }

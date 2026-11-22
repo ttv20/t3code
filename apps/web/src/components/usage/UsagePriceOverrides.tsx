@@ -1,16 +1,16 @@
 import { useAtomValue } from "@effect/atom-react";
-import { AuthSettingsWriteScope, sessionGrantsScope, type EnvironmentId } from "@t3tools/contracts";
-import { AsyncResult, Atom } from "effect/reactivity";
+import { AuthSettingsWriteScope, type EnvironmentId, sessionGrantsScope } from "@t3tools/contracts";
 import { ChevronDownIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
+import { AsyncResult, Atom } from "effect/reactivity";
+import { msg, T, useGT, useMessages, Var } from "gt-react";
 import { useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { cn } from "../../lib/utils";
 import { environmentPresentations } from "../../state/presentation";
 import { serverEnvironment } from "../../state/server";
 import { environmentSession, readEnvironmentScope } from "../../state/session";
-import type { EnvironmentUsageStatus } from "../../state/usage";
 import { useAtomCommand } from "../../state/use-atom-command";
+import type { EnvironmentUsageStatus } from "../../state/usage";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -25,7 +25,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipPopup } from "../ui/tooltip";
 import { isUsagePriceEdit, USAGE_PRICE_FIELDS } from "./usagePriceForm";
 import {
   isEmptyUsagePriceDraft,
@@ -67,13 +67,13 @@ const priceTargetsAtom = Atom.make((get): readonly UsagePriceTarget[] =>
           : null,
       unavailable:
         environment.connection.phase !== "connected"
-          ? "Offline"
+          ? msg("Offline")
           : settings === null
-            ? "Prices not loaded"
+            ? msg("Prices not loaded")
             : access === "pending"
-              ? "Checking permissions…"
+              ? msg("Checking permissions…")
               : access === "denied"
-                ? "Read-only access"
+                ? msg("Read-only access")
                 : null,
     };
   }),
@@ -102,9 +102,11 @@ export function UsagePriceOverrides({
   readonly initialModel?: string | undefined;
   readonly onOpenChange: (open: boolean) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
-  const environments = useAtomValue(priceTargetsAtom);
+  const gt = useGT();
+  const messages = useMessages();
+  const environments = useAtomValue(priceTargetsAtom).map((target) =>
+    target.unavailable === null ? target : { ...target, unavailable: messages(target.unavailable) },
+  );
   const [selectedIds, setSelectedIds] = useState(initialSelectedEnvironmentIds);
   const selected = environments.filter(
     (environment) => selectedIds === null || selectedIds.has(environment.environmentId),
@@ -160,18 +162,18 @@ export function UsagePriceOverrides({
     ...drafts.filter((draft) => draft.isNew),
   ];
   const stagedDrafts = drafts.filter((draft) => !isEmptyUsagePriceDraft(draft));
-  const errors = usagePriceTableErrors(selected, stagedDrafts);
+  const errors = usagePriceTableErrors(selected, stagedDrafts, messages);
   // New rows still block Save, but show a price error only once a price or mapping is typed.
   const awaitingPrice = new Set<string>();
   for (const draft of stagedDrafts) {
     if (!draft.isNew) continue;
-    if (draft.model.trim() === "") errors.set(draft.id, "Enter a model ID.");
+    if (draft.model.trim() === "") errors.set(draft.id, gt("Enter a model ID."));
     else if (
       attempt === null &&
       (customModels.includes(draft.model.trim()) ||
         drafts.some((other) => other.id !== draft.id && other.model.trim() === draft.model.trim()))
     )
-      errors.set(draft.id, "This model already has a row. Edit its prices there.");
+      errors.set(draft.id, gt("This model already has a row. Edit its prices there."));
     else if (
       (draft.alias ?? "").trim() === "" &&
       Object.values(draft.values).every((value) => value.trim() === "")
@@ -185,8 +187,12 @@ export function UsagePriceOverrides({
   const locked = pending || failedDestinations.length > 0;
   const hasChanges = stagedDrafts.length > 0;
   const destinationLabel =
-    selected.length === 1 ? selected[0]!.label : uiT("{0} environments", { "0": selected.length });
-  const selectionLabel = selectedIds === null ? uiT("All environments") : destinationLabel;
+    selected.length === 1
+      ? selected[0]!.label
+      : gt("{count, plural, one {{count} environments} other {{count} environments}}", {
+          count: selected.length,
+        });
+  const selectionLabel = selectedIds === null ? gt("All environments") : destinationLabel;
   const discard = () => {
     setDrafts([]);
     setAttempt(null);
@@ -209,8 +215,8 @@ export function UsagePriceOverrides({
     value: string,
   ) =>
     !row.isNew &&
-    cell.placeholder !== "Mixed" &&
-    cell.placeholder !== "Unavailable" &&
+    cell.placeholder !== gt("Mixed") &&
+    cell.placeholder !== gt("Unavailable") &&
     value === cell.value;
   const updateOrDropDraft = (draft: UsagePriceDraft) => {
     if (!draft.isNew && Object.keys(draft.values).length === 0 && draft.alias === undefined)
@@ -219,13 +225,13 @@ export function UsagePriceOverrides({
   };
   const editCell = (row: UsagePriceDraft, field: UsagePriceField, value: string) => {
     const values = { ...row.values, [field]: value };
-    const original = usagePriceCell(selected, row.model, field);
+    const original = usagePriceCell(selected, row.model, field, messages);
     if (matchesSaved(row, original, value)) delete values[field];
     updateOrDropDraft({ ...row, values });
   };
   const editAlias = (row: UsagePriceDraft, value: string) => {
     const { alias: _alias, ...rest } = row;
-    const original = usageAliasCell(selected, row.model);
+    const original = usageAliasCell(selected, row.model, messages);
     updateOrDropDraft(matchesSaved(row, original, value) ? rest : { ...rest, alias: value });
   };
   const save = async (retry = false) => {
@@ -237,10 +243,18 @@ export function UsagePriceOverrides({
       (destination) =>
         environments.find(
           (environment) => environment.environmentId === destination.environmentId,
-        ) ?? { ...destination, prices: null, aliases: null, unavailable: "Environment removed" },
+        ) ?? {
+          ...destination,
+          prices: null,
+          aliases: null,
+          unavailable: gt("Environment removed"),
+        },
     );
     const changes = new Map(
-      targets.map((target) => [target.environmentId, usagePriceTableChanges(target, edits)]),
+      targets.map((target) => [
+        target.environmentId,
+        usagePriceTableChanges(target, edits, messages),
+      ]),
     );
     setPending(true);
     setAttempt((previous) => ({
@@ -285,18 +299,20 @@ export function UsagePriceOverrides({
     >
       <DialogPopup className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{uiT("Custom model prices")}</DialogTitle>
+          <DialogTitle>
+            <T>Custom model prices</T>
+          </DialogTitle>
           <DialogDescription>
-            {uiT(
-              "Prices and mappings apply to all past and future usage on the environments you select.",
-            )}
+            <T>
+              Prices and mappings apply to all past and future usage on the environments you select.
+            </T>
           </DialogDescription>
         </DialogHeader>
         <DialogPanel>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <Label id="usage-prices-apply-label" className="shrink-0">
-                {uiT("Apply to")}
+                <T>Apply to</T>
               </Label>
               <Menu>
                 <MenuTrigger
@@ -321,7 +337,7 @@ export function UsagePriceOverrides({
                     closeOnClick={false}
                     onCheckedChange={(checked) => selectEnvironments(checked ? null : new Set())}
                   >
-                    {uiT("All environments")}
+                    <T>All environments</T>
                   </MenuCheckboxItem>
                   <MenuSeparator />
                   {environments.map((environment) => (
@@ -349,18 +365,20 @@ export function UsagePriceOverrides({
                 </MenuPopup>
               </Menu>
             </div>
-            <span className="text-xs text-muted-foreground">{uiT("USD / million tokens")}</span>
+            <span className="text-xs text-muted-foreground">
+              <T>USD / million tokens</T>
+            </span>
           </div>
           {selected.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               {environments.length === 0
-                ? uiT("Connect an environment to set model prices.")
-                : uiT("Select an environment to see and change its model prices.")}
+                ? gt("Connect an environment to set model prices.")
+                : gt("Select an environment to see and change its model prices.")}
             </p>
           ) : (
             <>
               <div className="min-w-0 overflow-hidden rounded-lg border border-border">
-                <Table className="min-w-180 table-fixed" aria-label={uiT("Custom model prices")}>
+                <Table className="min-w-180 table-fixed" aria-label={gt("Custom model prices")}>
                   <colgroup>
                     <col className="w-[22%]" />
                     <col className="w-[18%]" />
@@ -371,16 +389,20 @@ export function UsagePriceOverrides({
                   </colgroup>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{uiT("Model ID")}</TableHead>
-                      <TableHead>{uiT("Map to")}</TableHead>
+                      <TableHead>
+                        <T>Model ID</T>
+                      </TableHead>
+                      <TableHead>
+                        <T>Map to</T>
+                      </TableHead>
                       {USAGE_PRICE_FIELDS.map((field) => (
-                        <TableHead key={field.key}>{uiT(field.label)}</TableHead>
+                        <TableHead key={field.key}>{messages(field.label)}</TableHead>
                       ))}
                       <TableHead>
                         <Button
                           size="icon-xs"
                           variant="ghost"
-                          aria-label={uiT("Add model price")}
+                          aria-label={gt("Add model price")}
                           disabled={locked}
                           onClick={() => {
                             const id = `new:${nextRowId.current++}`;
@@ -399,14 +421,14 @@ export function UsagePriceOverrides({
                         <TableCell colSpan={7} className="text-center whitespace-normal">
                           <p className="py-6 text-muted-foreground">
                             {selected.some((environment) => environment.prices === null)
-                              ? uiT("Some environment prices are unavailable.")
-                              : uiT("No custom prices or mappings. Add a row to set one.")}
+                              ? gt("Some environment prices are unavailable.")
+                              : gt("No custom prices or mappings. Add a row to set one.")}
                           </p>
                         </TableCell>
                       </TableRow>
                     ) : (
                       rows.map((row) => {
-                        const aliasCell = usageAliasCell(selected, row.model);
+                        const aliasCell = usageAliasCell(selected, row.model, messages);
                         const alias = (row.alias ?? aliasCell.value).trim();
                         const error = awaitingPrice.has(row.id) ? undefined : errors.get(row.id);
                         return (
@@ -422,12 +444,12 @@ export function UsagePriceOverrides({
                                       focusRowRef.current = null;
                                     }
                                   }}
-                                  aria-label={uiT("New model ID")}
+                                  aria-label={gt("New model ID")}
                                   aria-invalid={
                                     (row.model.trim() !== "" && error !== undefined) || undefined
                                   }
                                   list="usage-price-models"
-                                  placeholder={uiT("Model ID")}
+                                  placeholder={gt("Model ID")}
                                   autoComplete="off"
                                   spellCheck={false}
                                   disabled={locked}
@@ -456,7 +478,7 @@ export function UsagePriceOverrides({
                             {row.removed ? (
                               <TableCell colSpan={5}>
                                 <span className="text-muted-foreground">
-                                  {uiT("Automatic pricing after saving")}
+                                  <T>Automatic pricing after saving</T>
                                 </span>
                               </TableCell>
                             ) : (
@@ -464,11 +486,11 @@ export function UsagePriceOverrides({
                                 <Input
                                   size="compact"
                                   value={row.alias ?? aliasCell.value}
-                                  aria-label={uiT("Map {0} to model", {
-                                    "0": row.model || "new model",
+                                  aria-label={gt("Map {model} to model", {
+                                    model: row.model || gt("new model"),
                                   })}
                                   list="usage-alias-models"
-                                  placeholder={row.isNew ? uiT("Optional") : aliasCell.placeholder}
+                                  placeholder={row.isNew ? gt("Optional") : aliasCell.placeholder}
                                   autoComplete="off"
                                   spellCheck={false}
                                   disabled={locked}
@@ -479,13 +501,19 @@ export function UsagePriceOverrides({
                             {row.removed ? null : alias !== "" ? (
                               <TableCell colSpan={4} className="whitespace-normal">
                                 <span className="break-all text-muted-foreground">
-                                  {uiT("Counted as")}
-                                  {alias}
+                                  <T>
+                                    Counted as <Var>{alias}</Var>
+                                  </T>
                                 </span>
                               </TableCell>
                             ) : (
                               USAGE_PRICE_FIELDS.map((field) => {
-                                const cell = usagePriceCell(selected, row.model, field.key);
+                                const cell = usagePriceCell(
+                                  selected,
+                                  row.model,
+                                  field.key,
+                                  messages,
+                                );
                                 const value =
                                   row.values[field.key] ?? (row.isNew ? "" : cell.value);
                                 return (
@@ -493,15 +521,15 @@ export function UsagePriceOverrides({
                                     <Input
                                       size="compact"
                                       inputMode="decimal"
-                                      aria-label={uiT("{0} price for {1}", {
-                                        "0": field.label,
-                                        "1": row.model || "new model",
+                                      aria-label={gt("{field} price for {model}", {
+                                        field: messages(field.label),
+                                        model: row.model || gt("new model"),
                                       })}
                                       value={value}
                                       placeholder={
                                         row.isNew
                                           ? field.optional
-                                            ? uiT("Input rate")
+                                            ? gt("Input rate")
                                             : "0.00"
                                           : cell.placeholder
                                       }
@@ -524,11 +552,11 @@ export function UsagePriceOverrides({
                                   disabled={locked}
                                   aria-label={
                                     row.removed
-                                      ? uiT("Undo reset for {0}", { "0": row.model })
+                                      ? gt("Undo reset for {model}", { model: row.model })
                                       : row.isNew
-                                        ? uiT("Remove new model")
-                                        : uiT("Reset price for {0} to automatic", {
-                                            "0": row.model,
+                                        ? gt("Remove new model")
+                                        : gt("Reset price for {model} to automatic", {
+                                            model: row.model,
                                           })
                                   }
                                   onClick={() => {
@@ -549,10 +577,10 @@ export function UsagePriceOverrides({
                                 </TooltipTrigger>
                                 <TooltipPopup>
                                   {row.removed
-                                    ? uiT("Undo reset")
+                                    ? gt("Undo reset")
                                     : row.isNew
-                                      ? uiT("Remove row")
-                                      : uiT("Reset to automatic")}
+                                      ? gt("Remove row")
+                                      : gt("Reset to automatic")}
                                 </TooltipPopup>
                               </Tooltip>
                             </TableCell>
@@ -582,11 +610,11 @@ export function UsagePriceOverrides({
                   ))}
               </datalist>
               <p className="text-xs text-muted-foreground">
-                {uiT(
+                {gt(
                   "Blank cache rates use the input price. Enter 0 for free tokens. A mapped model’s usage counts as the model it maps to.",
                 )}
                 {selected.length > 1
-                  ? uiT(" Mixed cells keep each environment’s rate until you edit them.")
+                  ? ` ${gt("Mixed cells keep each environment’s rate until you edit them.")}`
                   : ""}
               </p>
             </>
@@ -606,10 +634,10 @@ export function UsagePriceOverrides({
                       }
                     >
                       {result?.status === "failed"
-                        ? uiT("Not saved · {0}", { "0": result.error })
+                        ? gt("Not saved · {error}", { error: result.error })
                         : result?.status === "saved"
-                          ? uiT("Saved")
-                          : uiT("Saving…")}
+                          ? gt("Saved")
+                          : gt("Saving…")}
                     </span>
                   </div>
                 );
@@ -619,14 +647,16 @@ export function UsagePriceOverrides({
         </DialogPanel>
         <DialogFooter variant="bare" className="items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">
-            {hasChanges ? uiT("Changes apply to {0}", { "0": destinationLabel }) : ""}
+            {hasChanges
+              ? gt("Changes apply to {destination}", { destination: destinationLabel })
+              : ""}
           </span>
           <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
             {hasChanges ? (
               <Button variant="ghost" disabled={pending} onClick={discard}>
                 {failedDestinations.length > 0
-                  ? uiT("Discard pending changes")
-                  : uiT("Discard changes")}
+                  ? gt("Discard pending changes")
+                  : gt("Discard changes")}
               </Button>
             ) : null}
             <Button
@@ -638,10 +668,10 @@ export function UsagePriceOverrides({
               onClick={() => void save(failedDestinations.length > 0)}
             >
               {pending
-                ? uiT("Saving…")
+                ? gt("Saving…")
                 : failedDestinations.length > 0
-                  ? uiT("Retry failed saves")
-                  : uiT("Save changes")}
+                  ? gt("Retry failed saves")
+                  : gt("Save changes")}
             </Button>
           </div>
         </DialogFooter>

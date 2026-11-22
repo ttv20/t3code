@@ -1,4 +1,5 @@
-import { createUiTranslator, type UiLocale, type UiMessageValues } from "./i18n.ts";
+import { mFallback, msg } from "gt-i18n";
+import type { MFunctionType } from "gt-i18n/types";
 import type { T3McpToolSummaryAction } from "@t3tools/shared/t3McpToolPresentation";
 
 export interface T3ToolSummaryCall {
@@ -76,7 +77,7 @@ function countEntities(ids: ReadonlyArray<string | undefined>): number {
   );
 }
 
-/** One PR per single call; a batch counts what its result reports. */
+/** One PR per single call; a batch counts what its result reports. Null when a count was lost. */
 function pullRequestCount(
   calls: ReadonlyArray<{
     readonly input: Record<string, unknown> | undefined;
@@ -98,7 +99,7 @@ function pullRequestCount(
 export function summarizeT3ToolCalls(
   action: T3McpToolSummaryAction,
   calls: ReadonlyArray<T3ToolSummaryCall>,
-  locale: UiLocale = "en",
+  resolve: MFunctionType = mFallback,
 ): { label: string; failedCount: number } {
   const results = calls.map((call) => {
     const result = readResult(call.output);
@@ -110,10 +111,8 @@ export function summarizeT3ToolCalls(
   });
   const completed = results.filter((call) => call.outcome === "completed");
   let failedCount = results.filter((call) => call.outcome === "failed").length;
-  const selected = completed.length > 0 ? completed : results;
-  const translate = createUiTranslator(locale);
-  const phrase = (past: string, attempted: string, values?: UiMessageValues) =>
-    translate(completed.length > 0 ? past : attempted, values);
+  const done = completed.length > 0;
+  const selected = done ? completed : results;
   const entityIds = (key: string) =>
     selected.map((call) => id(call.output?.[key]) ?? id(call.input?.[key]));
   const projectIds = selected.map(
@@ -127,38 +126,1216 @@ export function summarizeT3ToolCalls(
   );
   let label: string;
   switch (action) {
+    case "delegate": {
+      const count = countEntities(entityIds("taskId"));
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Delegated {count} task} other {Delegated {count} tasks}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to delegate {count} task} other {Tried to delegate {count} tasks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-interrupt": {
+      const count = countEntities(threadIds);
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested interrupts for {count} thread} other {Requested interrupts for {count} threads}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to interrupt {count} thread} other {Tried to interrupt {count} threads}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "workflow-stop": {
+      const count = countEntities(entityIds("subagentId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested stops for {count} workflow} other {Requested stops for {count} workflows}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to stop {count} workflow} other {Tried to stop {count} workflows}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "task-cancel": {
+      const count = countEntities(entityIds("taskId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested cancellation of {count} task} other {Requested cancellation of {count} tasks}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to cancel {count} task} other {Tried to cancel {count} tasks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "schedule-create": {
+      const count = countEntities(entityIds("scheduledTaskId"));
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Scheduled {count} task} other {Scheduled {count} tasks}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to schedule {count} task} other {Tried to schedule {count} tasks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "schedule-update": {
+      const count = countEntities(entityIds("scheduledTaskId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated {count} scheduled task} other {Updated {count} scheduled tasks}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update {count} scheduled task} other {Tried to update {count} scheduled tasks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "schedule-delete": {
+      const count = countEntities(entityIds("scheduledTaskId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested deletion of {count} scheduled task} other {Requested deletion of {count} scheduled tasks}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to delete {count} scheduled task} other {Tried to delete {count} scheduled tasks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "schedule-run": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested {count} scheduled task run} other {Requested {count} scheduled task runs}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to request {count} scheduled task run} other {Tried to request {count} scheduled task runs}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-fork": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested {count} thread fork} other {Requested {count} thread forks}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to request {count} thread fork} other {Tried to request {count} thread forks}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-merge": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested {count} context merge} other {Requested {count} context merges}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to request {count} context merge} other {Tried to request {count} context merges}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-update": {
+      const count = countEntities(threadIds);
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Updated {count} thread} other {Updated {count} threads}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update {count} thread} other {Tried to update {count} threads}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-read": {
+      const count = countEntities(entityIds("queuedRunId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Read {count} queued message} other {Read {count} queued messages}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} queued message} other {Tried to read {count} queued messages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-edit": {
+      const count = countEntities(entityIds("queuedRunId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Edited {count} queued message} other {Edited {count} queued messages}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to edit {count} queued message} other {Tried to edit {count} queued messages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-cancel": {
+      const count = countEntities(entityIds("queuedRunId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested cancellation of {count} queued run} other {Requested cancellation of {count} queued runs}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to cancel {count} queued run} other {Tried to cancel {count} queued runs}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-reorder": {
+      const count = countEntities(entityIds("queuedRunId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Reordered {count} queued run} other {Reordered {count} queued runs}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to reorder {count} queued run} other {Tried to reorder {count} queued runs}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-steer": {
+      const count = countEntities(entityIds("queuedRunId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Requested steering with {count} queued message} other {Requested steering with {count} queued messages}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to steer with {count} queued message} other {Tried to steer with {count} queued messages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "question-read": {
+      const count = countEntities(entityIds("requestId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Read {count} pending question request} other {Read {count} pending question requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} pending question request} other {Tried to read {count} pending question requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "question-respond": {
+      const count = countEntities(entityIds("requestId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Answered {count} pending question request} other {Answered {count} pending question requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to answer {count} pending question request} other {Tried to answer {count} pending question requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "secret-request": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Asked for {count} secret} other {Asked for {count} secrets}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to ask for {count} secret} other {Tried to ask for {count} secrets}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "worktree-handoff": {
+      const count = countEntities(entityIds("worktreePath"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Handed off to {count} worktree} other {Handed off to {count} worktrees}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to hand off to {count} worktree} other {Tried to hand off to {count} worktrees}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-read": {
+      const count = countEntities(projectIds);
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Read {count} project} other {Read {count} projects}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} project} other {Tried to read {count} projects}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-create": {
+      const count = countEntities(projectIds);
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Registered {count} project} other {Registered {count} projects}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to register {count} project} other {Tried to register {count} projects}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-update": {
+      const count = countEntities(projectIds);
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Updated {count} project} other {Updated {count} projects}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update {count} project} other {Tried to update {count} projects}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-delete": {
+      const count = countEntities(projectIds);
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Deleted {count} project} other {Deleted {count} projects}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to delete {count} project} other {Tried to delete {count} projects}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-clone": {
+      const count = countEntities(entityIds("cwd"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Cloned {count} repository} other {Cloned {count} repositories}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to clone {count} repository} other {Tried to clone {count} repositories}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "environment-link": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Asked to link {count} environment} other {Asked to link {count} environments}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to ask to link {count} environment} other {Tried to ask to link {count} environments}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "environment-unlink": {
+      const count = countEntities(entityIds("environmentId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Forgot {count} linked environment} other {Forgot {count} linked environments}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to forget {count} linked environment} other {Tried to forget {count} linked environments}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "attachment-prepare": {
+      const count = countEntities(entityIds("attachmentId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Prepared {count} attachment upload} other {Prepared {count} attachment uploads}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to prepare {count} attachment upload} other {Tried to prepare {count} attachment uploads}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "attachment-discard": {
+      const count = countEntities(entityIds("attachmentId"));
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Discarded {count} pending attachment} other {Discarded {count} pending attachments}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to discard {count} pending attachment} other {Tried to discard {count} pending attachments}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "watch-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Watching {count} pull request} other {Watching {count} pull requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to watch {count} pull request} other {Tried to watch {count} pull requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "unwatch-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Stopped watching {count} pull request} other {Stopped watching {count} pull requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to stop watching {count} pull request} other {Tried to stop watching {count} pull requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "read-pr-guide": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Read {count} review guide} other {Read {count} review guides}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} review guide} other {Tried to read {count} review guides}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "list-issues": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed issues {count} time} other {Listed issues {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list issues {count} time} other {Tried to list issues {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "read-issue": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Read {count} issue} other {Read {count} issues}}", { count }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} issue} other {Tried to read {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "create-issue": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Filed {count} issue} other {Filed {count} issues}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to file {count} issue} other {Tried to file {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "comment-issue": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Commented on {count} issue} other {Commented on {count} issues}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to comment on {count} issue} other {Tried to comment on {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "set-issue-state": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Changed the state of {count} issue} other {Changed the state of {count} issues}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to change the state of {count} issue} other {Tried to change the state of {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "link-issue": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Linked {count} issue} other {Linked {count} issues}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to link {count} issue} other {Tried to link {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "unlink-issue": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Unlinked {count} issue} other {Unlinked {count} issues}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to unlink {count} issue} other {Tried to unlink {count} issues}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "list-thread-issues": {
+      const count = selected.length;
+      if (count === 1) {
+        label = done
+          ? resolve(msg("Checked linked issues"))
+          : resolve(msg("Tried to check linked issues"));
+      } else {
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Checked linked issues {count} time} other {Checked linked issues {count} times}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to check linked issues {count} time} other {Tried to check linked issues {count} times}}",
+                { count },
+              ),
+            );
+      }
+      break;
+    }
+    case "html-preview": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Previewed {count} HTML page} other {Previewed {count} HTML pages}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to preview {count} HTML page} other {Tried to preview {count} HTML pages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "html-render": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Rendered {count} HTML page} other {Rendered {count} HTML pages}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to render {count} HTML page} other {Tried to render {count} HTML pages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "send-to-user": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg("{count, plural, one {Sent {count} message} other {Sent {count} messages}}", {
+              count,
+            }),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to send {count} message} other {Tried to send {count} messages}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed threads {count} time} other {Listed threads {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list threads {count} time} other {Tried to list threads {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "task-status": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked task status {count} time} other {Checked task status {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check task status {count} time} other {Tried to check task status {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "background-wait": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated background waits {count} time} other {Updated background waits {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update background waits {count} time} other {Tried to update background waits {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "schedule-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed scheduled tasks {count} time} other {Listed scheduled tasks {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list scheduled tasks {count} time} other {Tried to list scheduled tasks {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-configuration": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked thread configuration {count} time} other {Checked thread configuration {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check thread configuration {count} time} other {Tried to check thread configuration {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-configure": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Set thread model {count} time} other {Set thread model {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to set thread model {count} time} other {Tried to set thread model {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-search": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Searched threads {count} time} other {Searched threads {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to search threads {count} time} other {Tried to search threads {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-transfers": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked thread transfers {count} time} other {Checked thread transfers {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check thread transfers {count} time} other {Tried to check thread transfers {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-organize": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Organized threads {count} time} other {Organized threads {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to organize threads {count} time} other {Tried to organize threads {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "queue-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed queued messages {count} time} other {Listed queued messages {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list queued messages {count} time} other {Tried to list queued messages {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "question-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed pending questions {count} time} other {Listed pending questions {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list pending questions {count} time} other {Tried to list pending questions {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "worktree-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed workspace branches {count} time} other {Listed workspace branches {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list workspace branches {count} time} other {Tried to list workspace branches {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "worktree-status": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked worktree status {count} time} other {Checked worktree status {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check worktree status {count} time} other {Tried to check worktree status {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "project-list": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed projects {count} time} other {Listed projects {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list projects {count} time} other {Tried to list projects {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "environment-read": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked environment preferences {count} time} other {Checked environment preferences {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check environment preferences {count} time} other {Tried to check environment preferences {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "environment-update": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated environment preferences {count} time} other {Updated environment preferences {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update environment preferences {count} time} other {Tried to update environment preferences {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "theme-read": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked themes {count} time} other {Checked themes {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check themes {count} time} other {Tried to check themes {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "theme-set": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Set the theme {count} time} other {Set the theme {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to set the theme {count} time} other {Tried to set the theme {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "environment-links": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed linked environments {count} time} other {Listed linked environments {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list linked environments {count} time} other {Tried to list linked environments {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "browser": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Used browser {count} time} other {Used browser {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to use browser {count} time} other {Tried to use browser {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "device": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Used device controls {count} time} other {Used device controls {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to use device controls {count} time} other {Tried to use device controls {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "capabilities": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Checked orchestration capabilities {count} time} other {Checked orchestration capabilities {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to check orchestration capabilities {count} time} other {Tried to check orchestration capabilities {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "thread-read": {
+      if (threadIds.every((value) => value !== undefined)) {
+        const count = new Set(threadIds).size;
+        label = done
+          ? resolve(
+              msg("{count, plural, one {Read {count} thread} other {Read {count} threads}}", {
+                count,
+              }),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to read {count} thread} other {Tried to read {count} threads}}",
+                { count },
+              ),
+            );
+      } else {
+        const count = selected.length;
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Read threads {count} time} other {Read threads {count} times}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to read threads {count} time} other {Tried to read threads {count} times}}",
+                { count },
+              ),
+            );
+      }
+      break;
+    }
+    case "thread-wait": {
+      if (threadIds.every((value) => value !== undefined)) {
+        const count = new Set(threadIds).size;
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Waited on {count} thread} other {Waited on {count} threads}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to wait on {count} thread} other {Tried to wait on {count} threads}}",
+                { count },
+              ),
+            );
+      } else {
+        const count = selected.length;
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Waited on threads {count} time} other {Waited on threads {count} times}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to wait on threads {count} time} other {Tried to wait on threads {count} times}}",
+                { count },
+              ),
+            );
+      }
+      break;
+    }
     case "thread-send": {
       const messages = countEntities(selected.map((call) => id(call.output?.messageId)));
-      const targetsKnown = threadIds.every((value) => value !== undefined);
       const threads = new Set(threadIds).size;
-      if (!targetsKnown) {
-        label = phrase(
-          messages === 1 ? "Sent {0} message" : "Sent {0} messages",
-          messages === 1 ? "Tried to send {0} message" : "Tried to send {0} messages",
-          { "0": messages },
-        );
+      if (!threadIds.every((value) => value !== undefined)) {
+        const count = messages;
+        label = done
+          ? resolve(
+              msg("{count, plural, one {Sent {count} message} other {Sent {count} messages}}", {
+                count,
+              }),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to send {count} message} other {Tried to send {count} messages}}",
+                { count },
+              ),
+            );
       } else if (messages === threads && messages > 1) {
-        label = phrase("Sent messages to {0} threads", "Tried to send messages to {0} threads", {
-          "0": threads,
-        });
+        label = done
+          ? resolve(
+              msg(
+                "{threads, plural, one {Sent messages to {threads} thread} other {Sent messages to {threads} threads}}",
+                { threads },
+              ),
+            )
+          : resolve(
+              msg(
+                "{threads, plural, one {Tried to send messages to {threads} thread} other {Tried to send messages to {threads} threads}}",
+                { threads },
+              ),
+            );
       } else {
-        label = phrase(
-          messages === 1
-            ? threads === 1
-              ? "Sent {0} message to {1} thread"
-              : "Sent {0} message to {1} threads"
-            : threads === 1
-              ? "Sent {0} messages to {1} thread"
-              : "Sent {0} messages to {1} threads",
-          messages === 1
-            ? threads === 1
-              ? "Tried to send {0} message to {1} thread"
-              : "Tried to send {0} message to {1} threads"
-            : threads === 1
-              ? "Tried to send {0} messages to {1} thread"
-              : "Tried to send {0} messages to {1} threads",
-          { "0": messages, "1": threads },
-        );
+        label = done
+          ? resolve(
+              msg(
+                "{messages, plural, one {Sent {messages} message to {threads, plural, one {{threads} thread} other {{threads} threads}}} other {Sent {messages} messages to {threads, plural, one {{threads} thread} other {{threads} threads}}}}",
+                { messages, threads },
+              ),
+            )
+          : resolve(
+              msg(
+                "{messages, plural, one {Tried to send {messages} message to {threads, plural, one {{threads} thread} other {{threads} threads}}} other {Tried to send {messages} messages to {threads, plural, one {{threads} thread} other {{threads} threads}}}}",
+                { messages, threads },
+              ),
+            );
       }
       break;
     }
@@ -177,655 +1354,30 @@ export function summarizeT3ToolCalls(
             return true;
           });
         });
-      label = resultsKnown
-        ? translate(new Set(createdIds).size === 1 ? "Created {0} thread" : "Created {0} threads", {
-            "0": new Set(createdIds).size,
-          })
-        : translate(
-            selected.length === 1
-              ? "Requested thread creation {0} time"
-              : "Requested thread creation {0} times",
-            { "0": selected.length },
-          );
+      if (resultsKnown) {
+        const count = new Set(createdIds).size;
+        label = resolve(
+          msg("{count, plural, one {Created {count} thread} other {Created {count} threads}}", {
+            count,
+          }),
+        );
+      } else {
+        const count = selected.length;
+        label = resolve(
+          msg(
+            "{count, plural, one {Requested thread creation {count} time} other {Requested thread creation {count} times}}",
+            { count },
+          ),
+        );
+      }
       break;
     }
-    case "delegate": {
-      const count = countEntities(entityIds("taskId"));
-      label = phrase(
-        count === 1 ? "Delegated {0} task" : "Delegated {0} tasks",
-        count === 1 ? "Tried to delegate {0} task" : "Tried to delegate {0} tasks",
-        { "0": count },
-      );
-      break;
-    }
-    case "thread-interrupt": {
-      const count = countEntities(threadIds);
-      label = phrase(
-        count === 1
-          ? "Requested interrupts for {0} thread"
-          : "Requested interrupts for {0} threads",
-        count === 1 ? "Tried to interrupt {0} thread" : "Tried to interrupt {0} threads",
-        { "0": count },
-      );
-      break;
-    }
-    case "workflow-stop": {
-      const count = countEntities(entityIds("subagentId"));
-      label = phrase(
-        count === 1 ? "Requested stops for {0} workflow" : "Requested stops for {0} workflows",
-        count === 1 ? "Tried to stop {0} workflow" : "Tried to stop {0} workflows",
-        { "0": count },
-      );
-      break;
-    }
-    case "task-cancel": {
-      const count = countEntities(entityIds("taskId"));
-      label = phrase(
-        count === 1 ? "Requested cancellation of {0} task" : "Requested cancellation of {0} tasks",
-        count === 1 ? "Tried to cancel {0} task" : "Tried to cancel {0} tasks",
-        { "0": count },
-      );
-      break;
-    }
-    case "schedule-create": {
-      const count = countEntities(entityIds("scheduledTaskId"));
-      label = phrase(
-        count === 1 ? "Scheduled {0} task" : "Scheduled {0} tasks",
-        count === 1 ? "Tried to schedule {0} task" : "Tried to schedule {0} tasks",
-        { "0": count },
-      );
-      break;
-    }
-    case "schedule-update": {
-      const count = countEntities(entityIds("scheduledTaskId"));
-      label = phrase(
-        count === 1 ? "Updated {0} scheduled task" : "Updated {0} scheduled tasks",
-        count === 1 ? "Tried to update {0} scheduled task" : "Tried to update {0} scheduled tasks",
-        { "0": count },
-      );
-      break;
-    }
-    case "schedule-delete": {
-      const count = countEntities(entityIds("scheduledTaskId"));
-      label = phrase(
-        count === 1
-          ? "Requested deletion of {0} scheduled task"
-          : "Requested deletion of {0} scheduled tasks",
-        count === 1 ? "Tried to delete {0} scheduled task" : "Tried to delete {0} scheduled tasks",
-        { "0": count },
-      );
-      break;
-    }
-    case "schedule-run":
-      label = phrase(
-        selected.length === 1
-          ? "Requested {0} scheduled task run"
-          : "Requested {0} scheduled task runs",
-        selected.length === 1
-          ? "Tried to request {0} scheduled task run"
-          : "Tried to request {0} scheduled task runs",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-fork":
-      label = phrase(
-        selected.length === 1 ? "Requested {0} thread fork" : "Requested {0} thread forks",
-        selected.length === 1
-          ? "Tried to request {0} thread fork"
-          : "Tried to request {0} thread forks",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-merge":
-      label = phrase(
-        selected.length === 1 ? "Requested {0} context merge" : "Requested {0} context merges",
-        selected.length === 1
-          ? "Tried to request {0} context merge"
-          : "Tried to request {0} context merges",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-update": {
-      const count = countEntities(threadIds);
-      label = phrase(
-        count === 1 ? "Updated {0} thread" : "Updated {0} threads",
-        count === 1 ? "Tried to update {0} thread" : "Tried to update {0} threads",
-        { "0": count },
-      );
-      break;
-    }
-    case "queue-read": {
-      const count = countEntities(entityIds("queuedRunId"));
-      label = phrase(
-        count === 1 ? "Read {0} queued message" : "Read {0} queued messages",
-        count === 1 ? "Tried to read {0} queued message" : "Tried to read {0} queued messages",
-        { "0": count },
-      );
-      break;
-    }
-    case "queue-edit": {
-      const count = countEntities(entityIds("queuedRunId"));
-      label = phrase(
-        count === 1 ? "Edited {0} queued message" : "Edited {0} queued messages",
-        count === 1 ? "Tried to edit {0} queued message" : "Tried to edit {0} queued messages",
-        { "0": count },
-      );
-      break;
-    }
-    case "queue-cancel": {
-      const count = countEntities(entityIds("queuedRunId"));
-      label = phrase(
-        count === 1
-          ? "Requested cancellation of {0} queued run"
-          : "Requested cancellation of {0} queued runs",
-        count === 1 ? "Tried to cancel {0} queued run" : "Tried to cancel {0} queued runs",
-        { "0": count },
-      );
-      break;
-    }
-    case "queue-reorder": {
-      const count = countEntities(entityIds("queuedRunId"));
-      label = phrase(
-        count === 1 ? "Reordered {0} queued run" : "Reordered {0} queued runs",
-        count === 1 ? "Tried to reorder {0} queued run" : "Tried to reorder {0} queued runs",
-        { "0": count },
-      );
-      break;
-    }
-    case "queue-steer": {
-      const count = countEntities(entityIds("queuedRunId"));
-      label = phrase(
-        count === 1
-          ? "Requested steering with {0} queued message"
-          : "Requested steering with {0} queued messages",
-        count === 1
-          ? "Tried to steer with {0} queued message"
-          : "Tried to steer with {0} queued messages",
-        { "0": count },
-      );
-      break;
-    }
-    case "question-read": {
-      const count = countEntities(entityIds("requestId"));
-      label = phrase(
-        count === 1 ? "Read {0} pending question request" : "Read {0} pending question requests",
-        count === 1
-          ? "Tried to read {0} pending question request"
-          : "Tried to read {0} pending question requests",
-        { "0": count },
-      );
-      break;
-    }
-    case "question-respond": {
-      const count = countEntities(entityIds("requestId"));
-      label = phrase(
-        count === 1
-          ? "Answered {0} pending question request"
-          : "Answered {0} pending question requests",
-        count === 1
-          ? "Tried to answer {0} pending question request"
-          : "Tried to answer {0} pending question requests",
-        { "0": count },
-      );
-      break;
-    }
-    case "secret-request":
-      label = phrase(
-        selected.length === 1 ? "Asked for {0} secret" : "Asked for {0} secrets",
-        selected.length === 1 ? "Tried to ask for {0} secret" : "Tried to ask for {0} secrets",
-        { "0": selected.length },
-      );
-      break;
-    case "worktree-handoff": {
-      const count = countEntities(entityIds("worktreePath"));
-      label = phrase(
-        count === 1 ? "Handed off to {0} worktree" : "Handed off to {0} worktrees",
-        count === 1 ? "Tried to hand off to {0} worktree" : "Tried to hand off to {0} worktrees",
-        { "0": count },
-      );
-      break;
-    }
-    case "project-read": {
-      const count = countEntities(projectIds);
-      label = phrase(
-        count === 1 ? "Read {0} project" : "Read {0} projects",
-        count === 1 ? "Tried to read {0} project" : "Tried to read {0} projects",
-        { "0": count },
-      );
-      break;
-    }
-    case "project-create": {
-      const count = countEntities(projectIds);
-      label = phrase(
-        count === 1 ? "Registered {0} project" : "Registered {0} projects",
-        count === 1 ? "Tried to register {0} project" : "Tried to register {0} projects",
-        { "0": count },
-      );
-      break;
-    }
-    case "project-update": {
-      const count = countEntities(projectIds);
-      label = phrase(
-        count === 1 ? "Updated {0} project" : "Updated {0} projects",
-        count === 1 ? "Tried to update {0} project" : "Tried to update {0} projects",
-        { "0": count },
-      );
-      break;
-    }
-    case "project-delete": {
-      const count = countEntities(projectIds);
-      label = phrase(
-        count === 1 ? "Deleted {0} project" : "Deleted {0} projects",
-        count === 1 ? "Tried to delete {0} project" : "Tried to delete {0} projects",
-        { "0": count },
-      );
-      break;
-    }
-    case "project-clone": {
-      const count = countEntities(entityIds("cwd"));
-      label = phrase(
-        count === 1 ? "Cloned {0} repository" : "Cloned {0} repositories",
-        count === 1 ? "Tried to clone {0} repository" : "Tried to clone {0} repositories",
-        { "0": count },
-      );
-      break;
-    }
-    case "environment-link":
-      label = phrase(
-        selected.length === 1 ? "Asked to link {0} environment" : "Asked to link {0} environments",
-        selected.length === 1
-          ? "Tried to ask to link {0} environment"
-          : "Tried to ask to link {0} environments",
-        { "0": selected.length },
-      );
-      break;
-    case "environment-unlink": {
-      const count = countEntities(entityIds("environmentId"));
-      label = phrase(
-        count === 1 ? "Forgot {0} linked environment" : "Forgot {0} linked environments",
-        count === 1
-          ? "Tried to forget {0} linked environment"
-          : "Tried to forget {0} linked environments",
-        { "0": count },
-      );
-      break;
-    }
-    case "attachment-prepare": {
-      const count = countEntities(entityIds("attachmentId"));
-      label = phrase(
-        count === 1 ? "Prepared {0} attachment upload" : "Prepared {0} attachment uploads",
-        count === 1
-          ? "Tried to prepare {0} attachment upload"
-          : "Tried to prepare {0} attachment uploads",
-        { "0": count },
-      );
-      break;
-    }
-    case "attachment-discard": {
-      const count = countEntities(entityIds("attachmentId"));
-      label = phrase(
-        count === 1 ? "Discarded {0} pending attachment" : "Discarded {0} pending attachments",
-        count === 1
-          ? "Tried to discard {0} pending attachment"
-          : "Tried to discard {0} pending attachments",
-        { "0": count },
-      );
-      break;
-    }
-    case "watch-pr":
-      label = phrase(
-        selected.length === 1 ? "Watching {0} pull request" : "Watching {0} pull requests",
-        selected.length === 1
-          ? "Tried to watch {0} pull request"
-          : "Tried to watch {0} pull requests",
-        { "0": selected.length },
-      );
-      break;
-    case "unwatch-pr":
-      label = phrase(
-        selected.length === 1
-          ? "Stopped watching {0} pull request"
-          : "Stopped watching {0} pull requests",
-        selected.length === 1
-          ? "Tried to stop watching {0} pull request"
-          : "Tried to stop watching {0} pull requests",
-        { "0": selected.length },
-      );
-      break;
-    case "read-pr-guide":
-      label = phrase(
-        selected.length === 1 ? "Read {0} review guide" : "Read {0} review guides",
-        selected.length === 1
-          ? "Tried to read {0} review guide"
-          : "Tried to read {0} review guides",
-        { "0": selected.length },
-      );
-      break;
-    case "html-preview":
-      label = phrase(
-        selected.length === 1 ? "Previewed {0} HTML page" : "Previewed {0} HTML pages",
-        selected.length === 1
-          ? "Tried to preview {0} HTML page"
-          : "Tried to preview {0} HTML pages",
-        { "0": selected.length },
-      );
-      break;
-    case "html-render":
-      label = phrase(
-        selected.length === 1 ? "Rendered {0} HTML page" : "Rendered {0} HTML pages",
-        selected.length === 1 ? "Tried to render {0} HTML page" : "Tried to render {0} HTML pages",
-        { "0": selected.length },
-      );
-      break;
-    case "send-to-user":
-      label = phrase(
-        selected.length === 1 ? "Sent {0} message" : "Sent {0} messages",
-        selected.length === 1 ? "Tried to send {0} message" : "Tried to send {0} messages",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-list":
-      label = phrase(
-        selected.length === 1 ? "Listed threads {0} time" : "Listed threads {0} times",
-        selected.length === 1
-          ? "Tried to list threads {0} time"
-          : "Tried to list threads {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "task-status":
-      label = phrase(
-        selected.length === 1 ? "Checked task status {0} time" : "Checked task status {0} times",
-        selected.length === 1
-          ? "Tried to check task status {0} time"
-          : "Tried to check task status {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "background-wait":
-      label = phrase(
-        selected.length === 1
-          ? "Updated background waits {0} time"
-          : "Updated background waits {0} times",
-        selected.length === 1
-          ? "Tried to update background waits {0} time"
-          : "Tried to update background waits {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "schedule-list":
-      label = phrase(
-        selected.length === 1
-          ? "Listed scheduled tasks {0} time"
-          : "Listed scheduled tasks {0} times",
-        selected.length === 1
-          ? "Tried to list scheduled tasks {0} time"
-          : "Tried to list scheduled tasks {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-configuration":
-      label = phrase(
-        selected.length === 1
-          ? "Checked thread configuration {0} time"
-          : "Checked thread configuration {0} times",
-        selected.length === 1
-          ? "Tried to check thread configuration {0} time"
-          : "Tried to check thread configuration {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-configure":
-      label = phrase(
-        selected.length === 1 ? "Set thread model {0} time" : "Set thread model {0} times",
-        selected.length === 1
-          ? "Tried to set thread model {0} time"
-          : "Tried to set thread model {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-search":
-      label = phrase(
-        selected.length === 1 ? "Searched threads {0} time" : "Searched threads {0} times",
-        selected.length === 1
-          ? "Tried to search threads {0} time"
-          : "Tried to search threads {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-transfers":
-      label = phrase(
-        selected.length === 1
-          ? "Checked thread transfers {0} time"
-          : "Checked thread transfers {0} times",
-        selected.length === 1
-          ? "Tried to check thread transfers {0} time"
-          : "Tried to check thread transfers {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-organize":
-      label = phrase(
-        selected.length === 1 ? "Organized threads {0} time" : "Organized threads {0} times",
-        selected.length === 1
-          ? "Tried to organize threads {0} time"
-          : "Tried to organize threads {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "queue-list":
-      label = phrase(
-        selected.length === 1
-          ? "Listed queued messages {0} time"
-          : "Listed queued messages {0} times",
-        selected.length === 1
-          ? "Tried to list queued messages {0} time"
-          : "Tried to list queued messages {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "question-list":
-      label = phrase(
-        selected.length === 1
-          ? "Listed pending questions {0} time"
-          : "Listed pending questions {0} times",
-        selected.length === 1
-          ? "Tried to list pending questions {0} time"
-          : "Tried to list pending questions {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "worktree-list":
-      label = phrase(
-        selected.length === 1
-          ? "Listed workspace branches {0} time"
-          : "Listed workspace branches {0} times",
-        selected.length === 1
-          ? "Tried to list workspace branches {0} time"
-          : "Tried to list workspace branches {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "worktree-status":
-      label = phrase(
-        selected.length === 1
-          ? "Checked worktree status {0} time"
-          : "Checked worktree status {0} times",
-        selected.length === 1
-          ? "Tried to check worktree status {0} time"
-          : "Tried to check worktree status {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "project-list":
-      label = phrase(
-        selected.length === 1 ? "Listed projects {0} time" : "Listed projects {0} times",
-        selected.length === 1
-          ? "Tried to list projects {0} time"
-          : "Tried to list projects {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "environment-read":
-      label = phrase(
-        selected.length === 1
-          ? "Checked environment preferences {0} time"
-          : "Checked environment preferences {0} times",
-        selected.length === 1
-          ? "Tried to check environment preferences {0} time"
-          : "Tried to check environment preferences {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "environment-update":
-      label = phrase(
-        selected.length === 1
-          ? "Updated environment preferences {0} time"
-          : "Updated environment preferences {0} times",
-        selected.length === 1
-          ? "Tried to update environment preferences {0} time"
-          : "Tried to update environment preferences {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "theme-read":
-      label = phrase(
-        selected.length === 1 ? "Checked themes {0} time" : "Checked themes {0} times",
-        selected.length === 1
-          ? "Tried to check themes {0} time"
-          : "Tried to check themes {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "theme-set":
-      label = phrase(
-        selected.length === 1 ? "Set the theme {0} time" : "Set the theme {0} times",
-        selected.length === 1
-          ? "Tried to set the theme {0} time"
-          : "Tried to set the theme {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "environment-links":
-      label = phrase(
-        selected.length === 1
-          ? "Listed linked environments {0} time"
-          : "Listed linked environments {0} times",
-        selected.length === 1
-          ? "Tried to list linked environments {0} time"
-          : "Tried to list linked environments {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "browser":
-      label = phrase(
-        selected.length === 1 ? "Used browser {0} time" : "Used browser {0} times",
-        selected.length === 1 ? "Tried to use browser {0} time" : "Tried to use browser {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "device":
-      label = phrase(
-        selected.length === 1 ? "Used device controls {0} time" : "Used device controls {0} times",
-        selected.length === 1
-          ? "Tried to use device controls {0} time"
-          : "Tried to use device controls {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "capabilities":
-      label = phrase(
-        selected.length === 1
-          ? "Checked orchestration capabilities {0} time"
-          : "Checked orchestration capabilities {0} times",
-        selected.length === 1
-          ? "Tried to check orchestration capabilities {0} time"
-          : "Tried to check orchestration capabilities {0} times",
-        { "0": selected.length },
-      );
-      break;
-    case "thread-read": {
-      label = threadIds.every((value) => value !== undefined)
-        ? phrase(
-            new Set(threadIds).size === 1 ? "Read {0} thread" : "Read {0} threads",
-            new Set(threadIds).size === 1
-              ? "Tried to read {0} thread"
-              : "Tried to read {0} threads",
-            { "0": new Set(threadIds).size },
-          )
-        : phrase(
-            selected.length === 1 ? "Read threads {0} time" : "Read threads {0} times",
-            selected.length === 1
-              ? "Tried to read threads {0} time"
-              : "Tried to read threads {0} times",
-            { "0": selected.length },
-          );
-      break;
-    }
-    case "thread-wait": {
-      label = threadIds.every((value) => value !== undefined)
-        ? phrase(
-            new Set(threadIds).size === 1 ? "Waited on {0} thread" : "Waited on {0} threads",
-            new Set(threadIds).size === 1
-              ? "Tried to wait on {0} thread"
-              : "Tried to wait on {0} threads",
-            { "0": new Set(threadIds).size },
-          )
-        : phrase(
-            selected.length === 1 ? "Waited on threads {0} time" : "Waited on threads {0} times",
-            selected.length === 1
-              ? "Tried to wait on threads {0} time"
-              : "Tried to wait on threads {0} times",
-            { "0": selected.length },
-          );
-      break;
-    }
-    case "link-pr": {
-      const count = pullRequestCount(selected, "linkedCount");
-      label =
-        count === null
-          ? phrase("Linked pull requests", "Tried to link pull requests")
-          : phrase(
-              count === 1 ? "Linked {0} pull request" : "Linked {0} pull requests",
-              count === 1 ? "Tried to link {0} pull request" : "Tried to link {0} pull requests",
-              { "0": count },
-            );
-      break;
-    }
-    case "unlink-pr": {
-      const count = pullRequestCount(selected, "unlinkedCount");
-      label =
-        count === null
-          ? phrase("Unlinked pull requests", "Tried to unlink pull requests")
-          : phrase(
-              count === 1 ? "Unlinked {0} pull request" : "Unlinked {0} pull requests",
-              count === 1
-                ? "Tried to unlink {0} pull request"
-                : "Tried to unlink {0} pull requests",
-              { "0": count },
-            );
-      break;
-    }
-    case "list-prs":
-      label =
-        selected.length === 1
-          ? phrase("Checked linked pull requests", "Tried to check linked pull requests")
-          : phrase(
-              selected.length === 1
-                ? "Checked linked pull requests {0} time"
-                : "Checked linked pull requests {0} times",
-              selected.length === 1
-                ? "Tried to check linked pull requests {0} time"
-                : "Tried to check linked pull requests {0} times",
-              { "0": selected.length },
-            );
-      break;
     case "attachment-send": {
       const messages = new Map<string, (typeof selected)[number]>();
       selected.forEach((call, index) =>
         messages.set(id(call.output?.messageId) ?? `call-${index}`, call),
       );
-      const attachmentCount = [...messages.values()].reduce(
+      const attachments = [...messages.values()].reduce(
         (count, call) =>
           count + (Array.isArray(call.input?.attachments) ? call.input.attachments.length : 0),
         0,
@@ -833,62 +1385,133 @@ export function summarizeT3ToolCalls(
       const countsKnown = [...messages.values()].every(
         (call) => Array.isArray(call.input?.attachments) && call.input.attachments.length > 0,
       );
-      const targetsKnown = threadIds.every((value) => value !== undefined);
       const threads = new Set(threadIds).size;
-      if (countsKnown) {
-        if (!targetsKnown) {
-          label = phrase(
-            attachmentCount === 1 ? "Sent {0} attachment" : "Sent {0} attachments",
-            attachmentCount === 1
-              ? "Tried to send {0} attachment"
-              : "Tried to send {0} attachments",
-            { "0": attachmentCount },
-          );
-        } else {
-          label = phrase(
-            attachmentCount === 1
-              ? threads === 1
-                ? "Sent {0} attachment to {1} thread"
-                : "Sent {0} attachment to {1} threads"
-              : threads === 1
-                ? "Sent {0} attachments to {1} thread"
-                : "Sent {0} attachments to {1} threads",
-            attachmentCount === 1
-              ? threads === 1
-                ? "Tried to send {0} attachment to {1} thread"
-                : "Tried to send {0} attachment to {1} threads"
-              : threads === 1
-                ? "Tried to send {0} attachments to {1} thread"
-                : "Tried to send {0} attachments to {1} threads",
-            { "0": attachmentCount, "1": threads },
-          );
-        }
-      } else if (!targetsKnown) {
-        label = phrase(
-          selected.length === 1 ? "Sent attachments {0} time" : "Sent attachments {0} times",
-          selected.length === 1
-            ? "Tried to send attachments {0} time"
-            : "Tried to send attachments {0} times",
-          { "0": selected.length },
-        );
+      const count = selected.length;
+      if (threadIds.every((value) => value !== undefined)) {
+        label = countsKnown
+          ? done
+            ? resolve(
+                msg(
+                  "{attachments, plural, one {Sent {attachments} attachment to {threads, plural, one {{threads} thread} other {{threads} threads}}} other {Sent {attachments} attachments to {threads, plural, one {{threads} thread} other {{threads} threads}}}}",
+                  { attachments, threads },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{attachments, plural, one {Tried to send {attachments} attachment to {threads, plural, one {{threads} thread} other {{threads} threads}}} other {Tried to send {attachments} attachments to {threads, plural, one {{threads} thread} other {{threads} threads}}}}",
+                  { attachments, threads },
+                ),
+              )
+          : done
+            ? resolve(
+                msg(
+                  "{count, plural, one {Sent attachments to {threads, plural, one {{threads} thread} other {{threads} threads}} {count} time} other {Sent attachments to {threads, plural, one {{threads} thread} other {{threads} threads}} {count} times}}",
+                  { threads, count },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{count, plural, one {Tried to send attachments to {threads, plural, one {{threads} thread} other {{threads} threads}} {count} time} other {Tried to send attachments to {threads, plural, one {{threads} thread} other {{threads} threads}} {count} times}}",
+                  { threads, count },
+                ),
+              );
       } else {
-        label = phrase(
-          threads === 1
-            ? selected.length === 1
-              ? "Sent attachments to {0} thread {1} time"
-              : "Sent attachments to {0} thread {1} times"
-            : selected.length === 1
-              ? "Sent attachments to {0} threads {1} time"
-              : "Sent attachments to {0} threads {1} times",
-          threads === 1
-            ? selected.length === 1
-              ? "Tried to send attachments to {0} thread {1} time"
-              : "Tried to send attachments to {0} thread {1} times"
-            : selected.length === 1
-              ? "Tried to send attachments to {0} threads {1} time"
-              : "Tried to send attachments to {0} threads {1} times",
-          { "0": threads, "1": selected.length },
-        );
+        label = countsKnown
+          ? done
+            ? resolve(
+                msg(
+                  "{attachments, plural, one {Sent {attachments} attachment} other {Sent {attachments} attachments}}",
+                  { attachments },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{attachments, plural, one {Tried to send {attachments} attachment} other {Tried to send {attachments} attachments}}",
+                  { attachments },
+                ),
+              )
+          : done
+            ? resolve(
+                msg(
+                  "{count, plural, one {Sent attachments {count} time} other {Sent attachments {count} times}}",
+                  { count },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{count, plural, one {Tried to send attachments {count} time} other {Tried to send attachments {count} times}}",
+                  { count },
+                ),
+              );
+      }
+      break;
+    }
+    case "link-pr": {
+      const count = pullRequestCount(selected, "linkedCount");
+      if (count === null) {
+        label = done
+          ? resolve(msg("Linked pull requests"))
+          : resolve(msg("Tried to link pull requests"));
+      } else {
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Linked {count} pull request} other {Linked {count} pull requests}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to link {count} pull request} other {Tried to link {count} pull requests}}",
+                { count },
+              ),
+            );
+      }
+      break;
+    }
+    case "unlink-pr": {
+      const count = pullRequestCount(selected, "unlinkedCount");
+      if (count === null) {
+        label = done
+          ? resolve(msg("Unlinked pull requests"))
+          : resolve(msg("Tried to unlink pull requests"));
+      } else {
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Unlinked {count} pull request} other {Unlinked {count} pull requests}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to unlink {count} pull request} other {Tried to unlink {count} pull requests}}",
+                { count },
+              ),
+            );
+      }
+      break;
+    }
+    case "list-prs": {
+      const count = selected.length;
+      if (count === 1) {
+        label = done
+          ? resolve(msg("Checked linked pull requests"))
+          : resolve(msg("Tried to check linked pull requests"));
+      } else {
+        label = done
+          ? resolve(
+              msg(
+                "{count, plural, one {Checked linked pull requests {count} time} other {Checked linked pull requests {count} times}}",
+                { count },
+              ),
+            )
+          : resolve(
+              msg(
+                "{count, plural, one {Tried to check linked pull requests {count} time} other {Tried to check linked pull requests {count} times}}",
+                { count },
+              ),
+            );
       }
       break;
     }
@@ -903,40 +1526,282 @@ export function summarizeT3ToolCalls(
       const failed = outcomes.length - started;
       failedCount += failed;
       if (outcomes.length === 0) {
+        const count = selected.length;
         label =
-          selected.length === 1
-            ? phrase("Started writing review guides", "Tried to start writing review guides")
-            : phrase(
-                selected.length === 1
-                  ? "Started writing review guides {0} time"
-                  : "Started writing review guides {0} times",
-                selected.length === 1
-                  ? "Tried to start writing review guides {0} time"
-                  : "Tried to start writing review guides {0} times",
-                { "0": selected.length },
-              );
+          count === 1
+            ? done
+              ? resolve(msg("Started writing review guides"))
+              : resolve(msg("Tried to start writing review guides"))
+            : done
+              ? resolve(
+                  msg(
+                    "{count, plural, one {Started writing review guides {count} time} other {Started writing review guides {count} times}}",
+                    { count },
+                  ),
+                )
+              : resolve(
+                  msg(
+                    "{count, plural, one {Tried to start writing review guides {count} time} other {Tried to start writing review guides {count} times}}",
+                    { count },
+                  ),
+                );
       } else if (started === 0) {
-        label = translate(
-          failed === 1 ? "Could not start {0} review guide" : "Could not start {0} review guides",
-          { "0": failed },
+        label = resolve(
+          msg(
+            "{failed, plural, one {Could not start {failed} review guide} other {Could not start {failed} review guides}}",
+            { failed },
+          ),
         );
       } else if (failed > 0) {
-        label = phrase(
-          started === 1
-            ? "Started {0} review guide, {1} failed"
-            : "Started {0} review guides, {1} failed",
-          started === 1
-            ? "Tried to start {0} review guide, {1} failed"
-            : "Tried to start {0} review guides, {1} failed",
-          { "0": started, "1": failed },
+        label = done
+          ? resolve(
+              msg(
+                "{started, plural, one {Started {started} review guide, {failed} failed} other {Started {started} review guides, {failed} failed}}",
+                { started, failed },
+              ),
+            )
+          : resolve(
+              msg(
+                "{started, plural, one {Tried to start {started} review guide, {failed} failed} other {Tried to start {started} review guides, {failed} failed}}",
+                { started, failed },
+              ),
+            );
+      } else {
+        label = done
+          ? resolve(
+              msg(
+                "{started, plural, one {Started {started} review guide} other {Started {started} review guides}}",
+                { started },
+              ),
+            )
+          : resolve(
+              msg(
+                "{started, plural, one {Tried to start {started} review guide} other {Tried to start {started} review guides}}",
+                { started },
+              ),
+            );
+      }
+      break;
+    }
+    case "read-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Read {count} pull request} other {Read {count} pull requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read {count} pull request} other {Tried to read {count} pull requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "list-repo-prs": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Listed pull requests {count} time} other {Listed pull requests {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to list pull requests {count} time} other {Tried to list pull requests {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "create-pr": {
+      // An open PR for the branch is returned rather than duplicated.
+      const existing = selected.filter((call) => call.output?.created === false).length;
+      const opened = selected.length - existing;
+      label = !done
+        ? resolve(
+            msg(
+              "{count, plural, one {Tried to open {count} pull request} other {Tried to open {count} pull requests}}",
+              { count: selected.length },
+            ),
+          )
+        : opened === 0
+          ? resolve(
+              msg(
+                "{count, plural, one {Found {count} open pull request} other {Found {count} open pull requests}}",
+                { count: existing },
+              ),
+            )
+          : existing === 0
+            ? resolve(
+                msg(
+                  "{count, plural, one {Opened {count} pull request} other {Opened {count} pull requests}}",
+                  { count: opened },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{opened, plural, one {Opened {opened} pull request, found {existing} open} other {Opened {opened} pull requests, found {existing} open}}",
+                  { opened, existing },
+                ),
+              );
+      break;
+    }
+    case "update-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Updated {count} pull request} other {Updated {count} pull requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to update {count} pull request} other {Tried to update {count} pull requests}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "respond-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Responded on pull requests {count} time} other {Responded on pull requests {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to respond on pull requests {count} time} other {Tried to respond on pull requests {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "merge-pr": {
+      // Auto-merge and merge queues leave the PR open until it lands.
+      const queued = selected.filter((call) =>
+        call.output?.state === undefined
+          ? call.input?.auto === true
+          : call.output.state !== "merged",
+      ).length;
+      const merged = selected.length - queued;
+      label = !done
+        ? resolve(
+            msg(
+              "{count, plural, one {Tried to merge {count} pull request} other {Tried to merge {count} pull requests}}",
+              { count: selected.length },
+            ),
+          )
+        : merged === 0
+          ? resolve(
+              msg(
+                "{count, plural, one {Queued {count} pull request to merge} other {Queued {count} pull requests to merge}}",
+                { count: queued },
+              ),
+            )
+          : queued === 0
+            ? resolve(
+                msg(
+                  "{count, plural, one {Merged {count} pull request} other {Merged {count} pull requests}}",
+                  { count: merged },
+                ),
+              )
+            : resolve(
+                msg(
+                  "{merged, plural, one {Merged {merged} pull request, queued {queued}} other {Merged {merged} pull requests, queued {queued}}}",
+                  { merged, queued },
+                ),
+              );
+      break;
+    }
+    case "ci-logs": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Read CI logs {count} time} other {Read CI logs {count} times}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to read CI logs {count} time} other {Tried to read CI logs {count} times}}",
+              { count },
+            ),
+          );
+      break;
+    }
+    case "ci-rerun": {
+      // A host can refuse a check it cannot re-run, such as one outside its CI.
+      const outcomes = selected.flatMap((call) =>
+        Array.isArray(call.output?.checks)
+          ? call.output.checks.map((check) => asRecord(check)?.rerun === true)
+          : [],
+      );
+      const rerun = outcomes.filter(Boolean).length;
+      const refused = outcomes.length - rerun;
+      failedCount += refused;
+      if (!done) {
+        label = resolve(
+          msg(
+            "{count, plural, one {Tried to re-run CI {count} time} other {Tried to re-run CI {count} times}}",
+            { count: selected.length },
+          ),
+        );
+      } else if (outcomes.length === 0) {
+        // An empty list means no check had failed, so nothing was asked of the host.
+        label = selected.some((call) => Array.isArray(call.output?.checks))
+          ? resolve(msg("Found no failed checks to re-run"))
+          : resolve(
+              msg("{count, plural, one {Re-ran CI {count} time} other {Re-ran CI {count} times}}", {
+                count: selected.length,
+              }),
+            );
+      } else if (rerun === 0) {
+        label = resolve(
+          msg(
+            "{count, plural, one {Could not re-run {count} check} other {Could not re-run {count} checks}}",
+            { count: refused },
+          ),
+        );
+      } else if (refused === 0) {
+        label = resolve(
+          msg("{count, plural, one {Re-ran {count} check} other {Re-ran {count} checks}}", {
+            count: rerun,
+          }),
         );
       } else {
-        label = phrase(
-          started === 1 ? "Started {0} review guide" : "Started {0} review guides",
-          started === 1 ? "Tried to start {0} review guide" : "Tried to start {0} review guides",
-          { "0": started },
+        label = resolve(
+          msg(
+            "{rerun, plural, one {Re-ran {rerun} check, {refused} refused} other {Re-ran {rerun} checks, {refused} refused}}",
+            { rerun, refused },
+          ),
         );
       }
+      break;
+    }
+    case "review-pr": {
+      const count = selected.length;
+      label = done
+        ? resolve(
+            msg(
+              "{count, plural, one {Reviewed {count} pull request} other {Reviewed {count} pull requests}}",
+              { count },
+            ),
+          )
+        : resolve(
+            msg(
+              "{count, plural, one {Tried to review {count} pull request} other {Tried to review {count} pull requests}}",
+              { count },
+            ),
+          );
       break;
     }
   }

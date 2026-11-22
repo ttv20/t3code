@@ -1,4 +1,6 @@
-import { createUiTranslator, type UiLocale } from "@t3tools/client-runtime/i18n";
+import { msg } from "gt-react-native";
+
+import { m, type MessageResolver } from "../../i18n/messages";
 import { isWorkspaceCatalogPending, type WorkspaceState } from "../../state/workspaceModel";
 
 export interface HomeEmptyState {
@@ -11,9 +13,9 @@ export interface HomeEmptyState {
 export function deriveHomeEmptyState(
   catalogState: WorkspaceState,
   projectCount: number,
-  locale: UiLocale = "en",
+  resolve: MessageResolver = m,
 ): HomeEmptyState {
-  const emptyState = deriveEmptyState(catalogState, projectCount, locale);
+  const emptyState = deriveEmptyState(catalogState, projectCount, resolve);
   return {
     ...emptyState,
     showsAddEnvironment: !emptyState.loading && !catalogState.hasReadyEnvironment,
@@ -23,21 +25,20 @@ export function deriveHomeEmptyState(
 function deriveEmptyState(
   catalogState: WorkspaceState,
   projectCount: number,
-  locale: UiLocale,
+  resolve: MessageResolver,
 ): Omit<HomeEmptyState, "showsAddEnvironment"> {
-  const uiT = createUiTranslator(locale);
   if (catalogState.isLoadingConnections) {
     return {
-      title: uiT("Loading environments"),
-      detail: uiT("Checking saved environments on this device."),
+      title: resolve(msg("Loading environments")),
+      detail: resolve(msg("Checking saved environments on this device.")),
       loading: true,
     };
   }
 
   if (!catalogState.hasConnections) {
     return {
-      title: uiT("No environments connected"),
-      detail: uiT("Add an environment to load projects and start coding sessions."),
+      title: resolve(msg("No environments connected")),
+      detail: resolve(msg("Add an environment to load projects and start coding sessions.")),
       loading: false,
     };
   }
@@ -52,12 +53,14 @@ function deriveEmptyState(
     return {
       title:
         catalogState.connectionState === "unsupported"
-          ? uiT("Client not supported")
-          : uiT("Environment unavailable"),
+          ? resolve(msg("Client not supported"))
+          : resolve(msg("Environment unavailable")),
       detail:
         catalogState.connectionError ??
-        uiT(
-          "The saved environment is offline. Check the URL or start the environment, then retry.",
+        resolve(
+          msg(
+            "The saved environment is offline. Check the URL or start the environment, then retry.",
+          ),
         ),
       loading: false,
     };
@@ -66,24 +69,26 @@ function deriveEmptyState(
   if (isWorkspaceCatalogPending(catalogState)) {
     return {
       title: catalogState.hasReadyEnvironment
-        ? uiT("Loading threads")
-        : uiT("Connecting to environment"),
-      detail: uiT("Loading projects and threads from the saved environment."),
+        ? resolve(msg("Loading threads"))
+        : resolve(msg("Connecting to environment")),
+      detail: resolve(msg("Loading projects and threads from the saved environment.")),
       loading: true,
     };
   }
 
   if (projectCount === 0 && catalogState.hasLoadedShellSnapshot) {
     return {
-      title: uiT("No projects found"),
-      detail: uiT("The connected environment did not report any projects."),
+      title: resolve(msg("No projects found")),
+      detail: resolve(msg("The connected environment did not report any projects.")),
       loading: false,
     };
   }
 
   return {
-    title: uiT("No threads yet"),
-    detail: uiT("Create a task to start a new coding runtime in one of your connected projects."),
+    title: resolve(msg("No threads yet")),
+    detail: resolve(
+      msg("Create a task to start a new coding runtime in one of your connected projects."),
+    ),
     loading: false,
   };
 }

@@ -1,3 +1,4 @@
+import { useGT } from "gt-react-native";
 import {
   WorkspaceColumnsRendererContext,
   WorkspacePresentationHostContext,
@@ -42,8 +43,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-
-import { useUiLanguage } from "../../i18n";
 
 import { RenderErrorBoundary, RenderFailureView } from "../../components/RenderErrorBoundary";
 import { PaneContext } from "../../components/ui/Pane";
@@ -258,8 +257,7 @@ function AdaptiveWorkspaceLayoutContent(
     readonly savedThreadListFilters?: ThreadListFilters | undefined;
   },
 ) {
-  const { t: uiT, locale } = useUiLanguage();
-
+  const gt = useGT();
   const floatingTabsEnabled = useAndroidFloatingTabs();
   const projectGroupingMode = props.projectGroupingMode;
   const nativeWorkspace = use(NativeWorkspaceModeContext);
@@ -621,7 +619,6 @@ function AdaptiveWorkspaceLayoutContent(
         : null;
     const filteredScope = resolveHomeProjectFilterScope(
       buildHomeProjectScopes({
-        locale,
         projects,
         environmentId: listEnvironmentId,
         projectGroupingMode,
@@ -1039,8 +1036,8 @@ function AdaptiveWorkspaceLayoutContent(
                 renderFallback={(fallback) => (
                   <RenderFailureView
                     {...fallback}
-                    title={uiT("The sidebar couldn't be displayed")}
-                    exit={{ label: uiT("Open settings"), onPress: handleOpenSettings }}
+                    title={gt("The sidebar couldn't be displayed")}
+                    exit={{ label: gt("Open settings"), onPress: handleOpenSettings }}
                   />
                 )}
               >
@@ -1137,7 +1134,7 @@ function AdaptiveWorkspaceLayoutContent(
           style={[{ zIndex: 1 }, scrimAnimatedStyle]}
         >
           <Pressable
-            accessibilityLabel={uiT("Hide sidebar")}
+            accessibilityLabel={gt("Hide sidebar")}
             className="flex-1"
             onPress={() => setPrimarySidebarVisible(false)}
           />

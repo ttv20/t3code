@@ -1,11 +1,23 @@
+import { nativeHeaderScrollEdgeEffects } from "../../native/scrollEdgeEffects";
+import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
 import { AsyncResult, Atom } from "effect/reactivity";
+import { useAtomValue } from "@effect/atom-react";
 import { stickyWorkingShelfAtom } from "../../state/sticky-working-shelf";
 import { StickyWorkingShelf } from "./StickyWorkingShelf";
 import { useAndroidFloatingTabs } from "../settings/appearance/AppearancePreferencesProvider";
-import { useAtomValue } from "@effect/atom-react";
+import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { useGT, useMessages } from "gt-react-native";
+
+import { useContentTopInset } from "../../components/ui/useBarInset";
+import { usePaneRole } from "../../components/ui/Pane";
+import { ScreenContent } from "../../components/ui/ScreenContent";
+import { useActiveNewTask } from "../../state/active-new-task";
+import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
+import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
+import type { ThreadMoveDestination } from "../threads/threadOrder";
 import type { LegendListRef } from "@legendapp/list/react-native";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
-import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { THREAD_LIST_ROW_LAYOUT } from "../threads/threadListAnimations";
 import {
   type EnvironmentProject,
   type EnvironmentThreadShell,
@@ -35,17 +47,9 @@ import {
 import { GestureDetector, useNativeGesture } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
-import { usePaneRole } from "../../components/ui/Pane";
-import { ScreenContent } from "../../components/ui/ScreenContent";
-import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
-import { useContentTopInset } from "../../components/ui/useBarInset";
-import { useUiLanguage } from "../../i18n";
-import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeScrollViewMarker";
-import { useActiveNewTask } from "../../state/active-new-task";
 
-import { THREAD_SIDEBAR_ROW_LAYOUT } from "../threads/threadListAnimations";
-import type { ThreadMoveDestination } from "../threads/threadOrder";
+import { NativeScrollViewMarker as ScrollViewMarker } from "../../native/NativeScrollViewMarker";
+
 import { EmptyState } from "../../components/ui/EmptyState";
 import { FloatingActionButton } from "../../components/ui/FloatingActionButton";
 import { cn } from "../../lib/cn";
@@ -60,17 +64,22 @@ import {
   useNativeLayoutMetrics,
 } from "../../native/native-layout-metrics";
 import { useNativeWorkspaceColumnsSupported } from "../../native/NativeWorkspaceColumns";
-import { nativeHeaderScrollEdgeEffects } from "../../native/scrollEdgeEffects";
-import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
-import { threadListEnvironmentsAtom } from "../../state/presentation";
 import { useThreadSearch } from "../../state/queries";
+import { requestThreadMessageJump } from "../threads/threadMessageJump";
+import { useThreadListSearchMatches } from "../threads/useThreadListSearchMatches";
+import { useThreadListV2 } from "../threads/useThreadListV2";
+import { useSidebarRowThreadKey } from "../threads/useSidebarRowThreadKey";
+import { useThreadListNow } from "../threads/use-thread-list-now";
+import { useSearchScrollRestoration } from "../layout/workspace/useSearchScrollRestoration";
+import { useThreadJumpShortcuts } from "../keyboard/threadKeyboardShortcuts";
 import { usePendingThreadOrder } from "../../state/thread-order";
+import { threadListEnvironmentsAtom } from "../../state/presentation";
+
 import type { ThreadPrPresentation } from "../../state/thread-pr-presentation";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import { useQueuedThreadKeys } from "../../state/use-thread-outbox";
 import type { WorkspaceEnvironment, WorkspaceState } from "../../state/workspaceModel";
-import { useThreadJumpShortcuts } from "../keyboard/threadKeyboardShortcuts";
-import { useSearchScrollRestoration } from "../layout/workspace/useSearchScrollRestoration";
+
 import { useWorkspaceListEmptyTopInset } from "../layout/workspace/workspace-list-insets";
 import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
 import {
@@ -89,12 +98,11 @@ import {
   partitionWorkingShelf,
   type ThreadListV2ListItem,
 } from "../threads/threadListV2";
-import { requestThreadMessageJump } from "../threads/threadMessageJump";
+
 import { useOpenThreadPullRequests } from "../threads/use-open-thread-pull-requests";
-import { useThreadListNow } from "../threads/use-thread-list-now";
+
 import { useThreadListV2ShelfPreferences } from "../threads/use-thread-list-v2-shelf-preferences";
-import { useThreadListSearchMatches } from "../threads/useThreadListSearchMatches";
-import { useThreadListV2 } from "../threads/useThreadListV2";
+
 import { useFabScroll } from "./FabScrollContext";
 import type { HomeListFilterMenuEnvironment } from "./home-list-filter-menu";
 import {
@@ -202,7 +210,8 @@ function renderHomeScrollView(props: ScrollViewProps) {
 }
 
 export function HomeScreen(props: HomeScreenProps) {
-  const { t: uiT, locale } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
   const stickyPreference = useAtomValue(homeStickyWorkingShelfAtom);
   const [stickyHeight, setStickyHeight] = useState(0);
   const [listViewportHeight, setListViewportHeight] = useState(0);
@@ -219,7 +228,8 @@ export function HomeScreen(props: HomeScreenProps) {
   );
   const columnMetrics = useNativeColumnLayoutMetrics();
   const activeNewTask = useActiveNewTask();
-  const selectedThreadKey = activeNewTask ? null : (primaryColumn?.selectedThreadKey ?? null);
+  const sidebarRowThreadKey = useSidebarRowThreadKey(primaryColumn?.selectedThreadKey ?? null);
+  const selectedThreadKey = activeNewTask ? null : sidebarRowThreadKey;
   const fullSwipeWidth = primaryColumn && columnMetrics ? columnMetrics.width - 20 : undefined;
   const queuedThreadKeys = useQueuedThreadKeys();
   const openSwipeableRef = useRef<SwipeableMethods | null>(null);
@@ -334,13 +344,15 @@ export function HomeScreen(props: HomeScreenProps) {
   const { projects, selectedEnvironmentId, projectGroupingMode } = props;
   const projectScopes = useMemo(
     () =>
-      buildHomeProjectScopes({
-        locale,
-        projects,
-        environmentId: selectedEnvironmentId,
-        projectGroupingMode,
-      }),
-    [locale, projects, selectedEnvironmentId, projectGroupingMode],
+      buildHomeProjectScopes(
+        {
+          projects,
+          environmentId: selectedEnvironmentId,
+          projectGroupingMode,
+        },
+        m,
+      ),
+    [projects, selectedEnvironmentId, projectGroupingMode, m],
   );
   const hasSearchQuery = props.searchQuery.trim().length > 0;
   const projectByKey = (() => {
@@ -488,7 +500,7 @@ export function HomeScreen(props: HomeScreenProps) {
     }
     onSelectThread(thread);
   };
-  useThreadJumpShortcuts(threadJumpItems, selectThread);
+  useThreadJumpShortcuts(threadJumpItems, selectThread, props.onSelectPendingTask);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads the list's visible range after commit to enable swipe gestures on those rows
   useEffect(() => {
     if (swipeEnabled) activateVisibleRows(mainListItems);
@@ -514,7 +526,6 @@ export function HomeScreen(props: HomeScreenProps) {
                 selectedThreadKey)
           }
           project={projectByKey.get(pendingScopeKey) ?? null}
-          projectTitle={v2ProjectTitleByProjectKey.get(pendingScopeKey)}
           environmentLabel={
             Object.keys(props.savedConnectionsById).length > 1
               ? (props.savedConnectionsById[item.pendingTask.environmentId]?.environmentLabel ??
@@ -664,8 +675,8 @@ export function HomeScreen(props: HomeScreenProps) {
     props.selectedEnvironmentId === null
       ? null
       : (props.savedConnectionsById[props.selectedEnvironmentId]?.environmentLabel ??
-        uiT("this environment"));
-  const emptyState = deriveHomeEmptyState(props.catalogState, props.projects.length, locale);
+        "this environment");
+  const emptyState = deriveHomeEmptyState(props.catalogState, props.projects.length, m);
   // Scroll padding includes the FAB reserve; the pinned shelf follows the pane edge instead.
   const pinnedShelf =
     Platform.OS === "android" ? (
@@ -720,12 +731,12 @@ export function HomeScreen(props: HomeScreenProps) {
               <EmptyState
                 title={emptyState.title}
                 detail={emptyState.detail}
-                actionLabel={emptyState.showsAddEnvironment ? uiT("Add environment") : undefined}
+                actionLabel={emptyState.showsAddEnvironment ? gt("Add environment") : undefined}
                 onAction={emptyState.showsAddEnvironment ? props.onAddConnection : undefined}
                 action={
                   Platform.OS === "android" && emptyState.showsAddEnvironment ? (
                     <FloatingActionButton
-                      label={uiT("Add environment")}
+                      label={gt("Add environment")}
                       icon="plus"
                       variant="extended"
                       tone="primary"
@@ -780,32 +791,40 @@ export function HomeScreen(props: HomeScreenProps) {
   const v2ListEmpty =
     hasSearchQuery && threadSearch.isPending ? (
       <EmptyState
-        title={uiT("Searching thread messages…")}
-        detail={uiT('Looking for "{0}" in messages.', { "0": props.searchQuery })}
+        title={gt("Searching thread messages…")}
+        detail={gt('Looking for "{query}" in messages.', { query: props.searchQuery })}
+        variant={Platform.OS === "android" ? "plain" : undefined}
+      />
+    ) : hasSearchQuery && threadSearch.failed ? (
+      <EmptyState
+        title={gt("Search failed")}
+        detail={gt('Couldn\'t search messages for "{query}". Change the search to try again.', {
+          query: props.searchQuery,
+        })}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : hasSearchQuery ? (
       <EmptyState
-        title={uiT("No results")}
-        detail={uiT('No threads matching "{0}".', { "0": props.searchQuery })}
+        title={gt("No results")}
+        detail={gt('No threads matching "{query}".', { query: props.searchQuery })}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : v2ScopedProjectGroup !== null ? (
       <EmptyState
-        title={uiT("No threads in {0}", { "0": v2ScopedProjectGroup.title })}
-        detail={uiT("Choose another project or create a new task.")}
+        title={gt("No threads in {name}", { name: v2ScopedProjectGroup.title })}
+        detail={gt("Choose another project or create a new task.")}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : selectedEnvironmentLabel ? (
       <EmptyState
-        title={uiT("No threads in {0}", { "0": selectedEnvironmentLabel })}
-        detail={uiT("Choose another environment or create a new task.")}
+        title={gt("No threads in {name}", { name: selectedEnvironmentLabel })}
+        detail={gt("Choose another environment or create a new task.")}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : (
       <EmptyState
-        title={uiT("No threads yet")}
-        detail={uiT("Create a task to start a new coding session.")}
+        title={gt("No threads yet")}
+        detail={gt("Create a task to start a new coding session.")}
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     );
@@ -833,7 +852,7 @@ export function HomeScreen(props: HomeScreenProps) {
           <SwipeableScrollGateProvider enabled={swipeEnabled} activation={swipeRowActivation}>
             <GestureDetector gesture={homeScrollGesture}>
               <AnimatedLegendList
-                itemLayoutAnimation={sidebarSurface ? THREAD_SIDEBAR_ROW_LAYOUT : undefined}
+                itemLayoutAnimation={THREAD_LIST_ROW_LAYOUT}
                 ref={listRef}
                 onLoad={() => {
                   settleLaunchSplashHomeRows();

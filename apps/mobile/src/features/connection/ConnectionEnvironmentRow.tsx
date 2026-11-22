@@ -1,4 +1,9 @@
 import { useAtomValue } from "@effect/atom-react";
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+import { msg, T, useGT, useMessages } from "gt-react-native";
+import * as Dialog from "../../components/ui/Dialog";
+import { ConnectionTraceId } from "./ConnectionTraceId";
+import { SymbolView } from "../../components/ui/AppSymbol";
 import { hasSavedBearerRoute, hostFreezeNotice } from "@t3tools/client-runtime/connection";
 import type { AtomCommandResult } from "@t3tools/client-runtime/state/runtime";
 import { type EnvironmentId, resolveEnvironmentMachineKind } from "@t3tools/contracts";
@@ -7,10 +12,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
-import { SymbolView } from "../../components/ui/AppSymbol";
-import * as Dialog from "../../components/ui/Dialog";
-import { useUiLanguage } from "../../i18n";
-import { ConnectionTraceId } from "./ConnectionTraceId";
+import { m as resolveMessage } from "../../i18n/messages";
 
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -25,16 +27,26 @@ import { ConnectionDiagnosisDetails, useConnectionDiagnosis } from "./Connection
 import { ConnectionFormField } from "./ConnectionFormField";
 import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { environmentStatusText } from "./environmentStatusText";
+import type { MessageResolver } from "../../i18n/messages";
 
-function connectionStatusLabel(environment: ConnectedEnvironmentSummary): string | null {
+function connectionStatusLabel(
+  environment: ConnectedEnvironmentSummary,
+  resolve: MessageResolver,
+): string | null {
   if (!environment.isEnabled && environment.connectionState !== "unsupported") {
-    return "Off";
+    return resolve(msg("Off", { $context: "environment is switched off" }));
   }
-  return environmentStatusText({
-    phase: environment.connectionState,
-    error: environment.connectionError,
-    traceId: environment.connectionErrorTraceId,
-  });
+  return environmentStatusText(
+    {
+      phase: environment.connectionState,
+      error: environment.connectionError,
+      ...(environment.i18nConnectionError === undefined
+        ? {}
+        : { i18nError: environment.i18nConnectionError }),
+      traceId: environment.connectionErrorTraceId,
+    },
+    resolve,
+  );
 }
 
 export function ConnectionEnvironmentRow(props: {
@@ -50,8 +62,8 @@ export function ConnectionEnvironmentRow(props: {
     updates: { readonly label: string; readonly displayUrl: string },
   ) => Promise<AtomCommandResult<unknown, unknown>>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const [label, setLabel] = useState(props.environment.environmentLabel);
   const [url, setUrl] = useState(props.environment.displayUrl);
   const serverConfig = useAtomValue(
@@ -67,11 +79,11 @@ export function ConnectionEnvironmentRow(props: {
     presentation,
   );
   const enabled = props.environment.isEnabled && !unsupported;
-  const statusLabel = connectionStatusLabel(props.environment);
+  const statusLabel = connectionStatusLabel(props.environment, m);
   const statusTraceId = enabled ? props.environment.connectionErrorTraceId : null;
   const hasConnectionFailure = enabled && props.environment.connectionError !== null;
   const freeze = enabled
-    ? hostFreezeNotice(props.environment.environmentLabel, serverConfig?.lastEventLoopStall)
+    ? hostFreezeNotice(props.environment.environmentLabel, serverConfig?.lastEventLoopStall, m)
     : null;
   const isRetrying =
     enabled &&
@@ -88,10 +100,22 @@ export function ConnectionEnvironmentRow(props: {
     }
     const error = Cause.squash(result.cause);
     Dialog.alert(
-      uiT("Could not update environment"),
-      error instanceof Error ? error.message : uiT("The environment could not be updated."),
+      gt("Could not update environment"),
+      error instanceof Error
+        ? (errorDisplayMessage(error, resolveMessage) ?? error.message)
+        : gt("The environment could not be updated."),
     );
   };
+
+  const toggleLabel = props.opensDetails
+    ? gt("Manage {environment}", { environment: props.environment.environmentLabel })
+    : props.expanded
+      ? gt("Collapse details for {environment}", {
+          environment: props.environment.environmentLabel,
+        })
+      : gt("Expand details for {environment}", {
+          environment: props.environment.environmentLabel,
+        });
 
   return (
     <Animated.View layout={LinearTransition.duration(250)} className="bg-grouped-card">
@@ -99,14 +123,7 @@ export function ConnectionEnvironmentRow(props: {
         <Pressable
           className="min-w-0 flex-1 gap-0.5 active:opacity-70"
           accessibilityRole="button"
-          accessibilityLabel={
-            props.opensDetails
-              ? uiT("Manage {0}", { "0": props.environment.environmentLabel })
-              : uiT("{0} details for {1}", {
-                  "0": props.expanded ? "Collapse" : "Expand",
-                  "1": props.environment.environmentLabel,
-                })
-          }
+          accessibilityLabel={toggleLabel}
           onPress={props.onToggle}
         >
           <View className="flex-row items-center gap-1.5">
@@ -137,7 +154,7 @@ export function ConnectionEnvironmentRow(props: {
               <Text className="text-xs text-danger-foreground">{diagnosis.headline}</Text>
               {connectionState.attempt > 0 ? (
                 <Text className="text-xs text-foreground-muted">
-                  {uiT("Retrying · attempt {0}", { "0": connectionState.attempt })}
+                  {gt("Retrying · attempt {attempt}", { attempt: connectionState.attempt })}
                 </Text>
               ) : null}
             </>
@@ -171,22 +188,18 @@ export function ConnectionEnvironmentRow(props: {
         </Pressable>
 
         <ThemedSwitch
-          accessibilityLabel={uiT("Enable {0}", { "0": props.environment.environmentLabel })}
+          accessibilityLabel={gt("Enable {environment}", {
+            environment: props.environment.environmentLabel,
+          })}
           style={{ alignSelf: "center" }}
           disabled={unsupported && !canRetry}
           onValueChange={(next) => props.onSetEnabled(props.environment.environmentId, next)}
           value={enabled}
         />
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            props.opensDetails
-              ? uiT("Manage {0}", { "0": props.environment.environmentLabel })
-              : uiT("{0} details for {1}", {
-                  "0": props.expanded ? "Collapse" : "Expand",
-                  "1": props.environment.environmentLabel,
-                })
-          }
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
           onPress={props.onToggle}
           style={{
             minWidth: 44,
@@ -219,21 +232,23 @@ export function ConnectionEnvironmentRow(props: {
           ) : null}
           {props.environment.isRelayManaged ? (
             <Text className="text-sm text-foreground-muted">
-              {uiT("Managed by T3 Connect. Tunnel details update automatically.")}
+              {gt("Managed by {product}. Tunnel details update automatically.", {
+                product: "T3 Connect",
+              })}
             </Text>
           ) : (
             <>
               <ConnectionFormField
-                label={uiT("Label")}
+                label={gt("Label", { $context: "noun, environment name field" })}
                 autoCapitalize="words"
                 autoCorrect={false}
-                placeholder={uiT("My MacBook")}
+                placeholder={gt("My MacBook")}
                 value={label}
                 onChangeText={setLabel}
               />
 
               <ConnectionFormField
-                label={uiT("URL")}
+                label={gt("URL")}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
@@ -249,7 +264,7 @@ export function ConnectionEnvironmentRow(props: {
               {props.environment.isRelayManaged ? null : (
                 <View className="flex-1">
                   <Button
-                    label={uiT("Save")}
+                    label={gt("Save")}
                     tone="primary"
                     fullWidth
                     onPress={() => {
@@ -259,14 +274,14 @@ export function ConnectionEnvironmentRow(props: {
                 </View>
               )}
               <IconButton
-                accessibilityLabel={uiT("Reconnect environment")}
+                accessibilityLabel={gt("Reconnect environment")}
                 icon="arrow.clockwise"
                 variant="tonal"
                 disabled={!enabled}
                 onPress={() => props.onReconnect(props.environment.environmentId)}
               />
               <IconButton
-                accessibilityLabel={uiT("Remove environment")}
+                accessibilityLabel={gt("Remove environment")}
                 icon="trash"
                 variant="danger"
                 onPress={() => props.onRemove(props.environment.environmentId)}
@@ -286,14 +301,14 @@ export function ConnectionEnvironmentRow(props: {
                     type="monochrome"
                   />
                   <Text className="text-xs font-t3-bold tracking-[0.8px] uppercase text-primary-foreground">
-                    {uiT("Save")}
+                    <T>Save</T>
                   </Text>
                 </Pressable>
               )}
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={uiT("Reconnect environment")}
+                accessibilityLabel={gt("Reconnect environment")}
                 accessibilityState={{ disabled: !enabled }}
                 className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-input-border bg-input active:opacity-70 disabled:opacity-40"
                 disabled={!enabled}
@@ -309,7 +324,7 @@ export function ConnectionEnvironmentRow(props: {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={uiT("Remove environment")}
+                accessibilityLabel={gt("Remove environment")}
                 className="h-[42px] w-[42px] items-center justify-center rounded-[14px] border border-danger-border bg-danger active:opacity-70"
                 onPress={() => props.onRemove(props.environment.environmentId)}
               >

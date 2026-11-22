@@ -1,3 +1,4 @@
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import type {
   EnvironmentProject,
   EnvironmentThreadShell,
@@ -47,20 +48,22 @@ function makeThread(
 describe("home project scopes", () => {
   it("translates scratch labels without translating a project with the same name", () => {
     const environmentId = EnvironmentId.make("local");
-    const scopes = buildHomeProjectScopes({
-      projects: [
-        makeProject({
-          environmentId,
-          id: ProjectId.make("scratch"),
-          title: "No project",
-          isScratch: true,
-        }),
-        makeProject({ environmentId, id: ProjectId.make("ordinary"), title: "No project" }),
-      ],
-      environmentId: null,
-      projectGroupingMode: "separate",
-      locale: "he",
-    });
+    const scopes = buildHomeProjectScopes(
+      {
+        projects: [
+          makeProject({
+            environmentId,
+            id: ProjectId.make("scratch"),
+            title: "No project",
+            isScratch: true,
+          }),
+          makeProject({ environmentId, id: ProjectId.make("ordinary"), title: "No project" }),
+        ],
+        environmentId: null,
+        projectGroupingMode: "separate",
+      },
+      createUiMessageResolver("he"),
+    );
     expect(scopes.find((scope) => scope.representative.isScratch)?.title).toBe("אין פרויקט");
     expect(scopes.find((scope) => !scope.representative.isScratch)?.title).toBe("No project");
   });

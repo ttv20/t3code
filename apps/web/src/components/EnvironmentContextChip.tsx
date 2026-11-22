@@ -1,5 +1,6 @@
 import { type EnvironmentContextRecord, resolveEnvironmentMachineKind } from "@t3tools/contracts";
-import { useUiLanguage } from "../i18n";
+
+import { useGT } from "gt-react";
 
 import { useEnvironment } from "~/state/environments";
 import { ContextChip, ContextChipLabel } from "./ContextChip";
@@ -14,8 +15,7 @@ export function EnvironmentContextChip(props: {
   record: Pick<EnvironmentContextRecord, "environmentId" | "label">;
   copyMarkdown?: string;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const environment = useEnvironment(props.record.environmentId);
   const label = environment?.label.trim() || props.record.label;
   return (
@@ -25,7 +25,7 @@ export function EnvironmentContextChip(props: {
           <ContextChip
             kind="environment"
             tabIndex={0}
-            aria-label={uiT("Machine, {0}", { "0": label })}
+            aria-label={gt("Machine, {label}", { label })}
             data-markdown-copy={props.copyMarkdown}
           >
             <EnvironmentMachineIcon
@@ -36,7 +36,7 @@ export function EnvironmentContextChip(props: {
         }
       />
       <TooltipPopup side="top">
-        {environment ? uiT("T3 Code environment") : uiT("Machine not in this app")}
+        {environment ? gt("T3 Code environment") : gt("Machine not in this app")}
       </TooltipPopup>
     </Tooltip>
   );

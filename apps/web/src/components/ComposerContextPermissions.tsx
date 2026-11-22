@@ -1,13 +1,13 @@
-import { useAtomValue } from "@effect/atom-react";
 import type { EnvironmentId, RuntimeMode } from "@t3tools/contracts";
-import { useUiLanguage } from "../i18n";
+import { useAtomValue } from "@effect/atom-react";
+import { T, useGT, useMessages } from "gt-react";
 
 import { shortcutLabelForCommand } from "../keybindings";
 import { useManagedPolicy } from "../state/managedPolicy";
 import { primaryServerKeybindingsAtom } from "../state/server";
 import { ComposerControl } from "./chat/ComposerControl";
-import { useComposerMenuProps } from "./chat/composerEventScope";
 import { ComposerPermissionsSection } from "./chat/ComposerFooterControls";
+import { useComposerMenuProps } from "./chat/composerEventScope";
 import {
   resolveCompatibleRuntimeMode,
   resolveRuntimeModeOptions,
@@ -23,8 +23,8 @@ export function ComposerContextPermissions(props: {
   supportedRuntimeModes: ReadonlyArray<RuntimeMode> | undefined;
   onRuntimeModeChange: (mode: RuntimeMode) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const shortcutLabel = shortcutLabelForCommand(
     useAtomValue(primaryServerKeybindingsAtom),
     "composer.mode",
@@ -33,9 +33,10 @@ export function ComposerContextPermissions(props: {
     props.runtimeMode,
     props.supportedRuntimeModes,
   );
-  const options = resolveRuntimeModeOptions(modes, useManagedPolicy(props.environmentId));
+  const options = resolveRuntimeModeOptions(modes, useManagedPolicy(props.environmentId), messages);
   const composerMenuProps = useComposerMenuProps();
-  const { icon: Icon, label } = runtimeModeConfig[mode];
+  const { icon: Icon } = runtimeModeConfig[mode];
+  const label = messages(runtimeModeConfig[mode].label);
   return (
     <Menu>
       <Tooltip>
@@ -46,7 +47,7 @@ export function ComposerContextPermissions(props: {
                 <ComposerControl
                   size="xs"
                   className="ms-auto min-w-0 shrink-0"
-                  aria-label={uiT("Permissions: {0}", { "0": label })}
+                  aria-label={gt("Permissions: {label}", { label })}
                   data-composer-context-control
                 />
               }
@@ -54,10 +55,10 @@ export function ComposerContextPermissions(props: {
           }
         >
           <Icon aria-hidden="true" className="size-3" />
-          <ComposerContextLabel>{uiT(label)}</ComposerContextLabel>
+          <ComposerContextLabel>{label}</ComposerContextLabel>
         </TooltipTrigger>
         <TooltipPopup>
-          {uiT("Permissions")}
+          <T>Permissions</T>
           {shortcutLabel ? ` · ${shortcutLabel}` : null}
         </TooltipPopup>
       </Tooltip>

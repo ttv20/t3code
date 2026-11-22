@@ -4,11 +4,21 @@ import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vite-plus/test";
 
+// This test initializes the real locale catalogs instead of the other tests' English-only GT shim.
+vi.mock("gt-react-native", async () => {
+  const pure = await import("@generaltranslation/react-core/pure");
+  const components = await import("@generaltranslation/react-core/components");
+  const hooks = await import("@generaltranslation/react-core/hooks");
+  return { ...pure, ...components, ...hooks };
+});
+
 const nativeStore = vi.hoisted(() => new Map<string, string>());
 const nativeWrites = vi.hoisted(() => [] as Array<() => void>);
+const language = vi.hoisted(() => ({ value: "en" as UiLocale }));
 
 vi.mock("react-native", () => ({
   Platform: { OS: "android" },
+  I18nManager: { getConstants: () => ({ localeIdentifier: "en-US" }) },
   TurboModuleRegistry: {
     getEnforcing: () => ({
       getNativeLocales: () => ["en-US"],
@@ -24,6 +34,10 @@ vi.mock("react-native", () => ({
   ActivityIndicator: () => null,
 }));
 vi.mock("../state/preferences", () => ({ mobilePreferencesAtom: {} }));
+vi.mock("@effect/atom-react", async () => {
+  const { AsyncResult } = await import("effect/reactivity");
+  return { useAtomValue: () => AsyncResult.success({ interfaceLanguage: language.value }) };
+});
 
 import { UiLanguageContext } from "../i18n";
 import { I18nProvider, useGT } from "./I18nProvider";
@@ -50,6 +64,7 @@ it("loads Hebrew Settings through the native GT provider on startup and language
   using _root = { [Symbol.dispose]: () => act(() => root.unmount()) };
   const labels = () => container.querySelector("span")?.textContent;
   const render = async (locale: UiLocale) => {
+    language.value = locale;
     await act(async () => {
       root.render(
         <UiLanguageContext.Provider
@@ -88,7 +103,7 @@ it("loads Hebrew Settings through the native GT provider on startup and language
     ["ar", "الإعدادات"],
     ["fa", "تنظیمات"],
     ["de", "Einstellungen"],
-    ["fr", "Réglages"],
+    ["fr", "Paramètres"],
     ["ja", "設定"],
     ["ko", "설정"],
     ["pt-BR", "Configurações"],

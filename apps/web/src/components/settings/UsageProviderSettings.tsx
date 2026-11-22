@@ -1,7 +1,7 @@
 import type { EnvironmentId, UnifiedSettings } from "@t3tools/contracts";
+import { T, useGT, Var } from "gt-react";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
 
 import { useUpdateEnvironmentSettings } from "../../hooks/useSettings";
 import {
@@ -15,8 +15,10 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { AddUsageLimitSourceDialog } from "./AddUsageLimitSourceDialog";
+import { useSearchableSetting } from "./settingsSearch";
 import { SettingsRow, SettingsSection } from "./settingsLayout";
-import { searchableSetting } from "./settingsSearch";
+
+const CLI_PROXY_NAME = "CLI Proxy";
 
 export function UsageProviderSettings({
   environmentId,
@@ -29,7 +31,8 @@ export function UsageProviderSettings({
   readonly sources: UnifiedSettings["usageLimitSources"];
   readonly readOnly: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const searchableSetting = useSearchableSetting();
   const updateSettings = useUpdateEnvironmentSettings(environmentId);
   const [adding, setAdding] = useState(false);
   const entries = Object.entries(sources);
@@ -42,31 +45,32 @@ export function UsageProviderSettings({
           !readOnly ? (
             <Button size="xs" variant="outline" onClick={() => setAdding(true)}>
               <PlusIcon className="size-3" aria-hidden />
-              {uiT("Add hub")}
+              <T>Add hub</T>
             </Button>
           ) : null
         }
       >
         {entries.length === 0 ? (
-          <SettingsRow title={uiT("No hubs configured.")} />
+          <SettingsRow title={gt("No hubs configured.")} />
         ) : (
           entries.map(([id, source]) => {
             const label = source.label?.trim() || source.url;
             return (
               <SettingsRow
                 key={id}
-                title={uiT(label)}
+                title={label}
                 description={
                   <span className="break-all">
-                    {uiT("CLI Proxy")}
-                    {source.enabled ? "" : uiT(" · Disabled")}
+                    {source.enabled
+                      ? CLI_PROXY_NAME
+                      : gt("{name} · Disabled", { name: CLI_PROXY_NAME })}
                     {label !== source.url ? ` · ${source.url}` : ""}
                   </span>
                 }
                 control={
                   !readOnly ? (
                     <RemoveUsageProviderButton
-                      label={uiT(label)}
+                      label={label}
                       onConfirm={() => updateSettings({ usageLimitSources: { [id]: null } })}
                     />
                   ) : null
@@ -96,28 +100,31 @@ function RemoveUsageProviderButton({
   readonly label: string;
   readonly onConfirm: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const [open, setOpen] = useState(false);
   return (
     <>
       <Button size="xs" variant="ghost" onClick={() => setOpen(true)}>
-        {uiT("Remove")}
+        <T>Remove</T>
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogPopup>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <UiText message={"Remove {0}?"} values={{ "0": uiT(label) }} />
+              <T>
+                Remove <Var>{label}</Var>?
+              </T>
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {uiT(
-                "The hub's management key is deleted from this server. Its accounts leave the Limits view; the hub itself is untouched. Add it again with the URL and key to bring them back.",
-              )}
+              <T>
+                The hub's management key is deleted from this server. Its accounts leave the Limits
+                view; the hub itself is untouched. Add it again with the URL and key to bring them
+                back.
+              </T>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogClose render={<Button variant="outline" />}>
-              {uiT("Cancel")}
+              <T>Cancel</T>
             </AlertDialogClose>
             <Button
               variant="destructive"
@@ -126,7 +133,7 @@ function RemoveUsageProviderButton({
                 onConfirm();
               }}
             >
-              {uiT("Remove hub")}
+              <T>Remove hub</T>
             </Button>
           </AlertDialogFooter>
         </AlertDialogPopup>

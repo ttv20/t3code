@@ -1,10 +1,11 @@
-import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
-import type { EnvironmentMachineKind } from "@t3tools/contracts";
+import { T, useGT, Var } from "gt-react-native";
 import { Pressable } from "react-native";
+import type { EnvironmentMachineKind } from "@t3tools/contracts";
+import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
+
 import { EnvironmentMachineSymbol } from "../../components/EnvironmentMachineSymbol";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
-import { UiText, useUiLanguage } from "../../i18n";
 
 import { ConnectionStatusDot } from "../connection/ConnectionStatusDot";
 
@@ -15,16 +16,16 @@ export function DraftEnvironmentControl(props: {
   readonly disabled: boolean;
   readonly onChooseEnvironment: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const disconnected = props.connectionState !== "connected";
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={uiT("Choose environment, {0}, {1}", {
-        "0": props.label,
-        "1": disconnected ? "Offline" : "Connected",
-      })}
+      accessibilityLabel={
+        disconnected
+          ? gt("Choose environment, {label}, Offline", { label: props.label })
+          : gt("Choose environment, {label}, Connected", { label: props.label })
+      }
       disabled={props.disabled}
       onPress={props.onChooseEnvironment}
       className="flex-row items-center gap-1.5 rounded-xl px-3 py-2 active:opacity-65"
@@ -35,7 +36,9 @@ export function DraftEnvironmentControl(props: {
         tintColorClassName="accent-icon-muted"
       />
       <Text className="shrink text-sm text-foreground-muted" numberOfLines={1}>
-        <UiText message={uiT("on {0}")} values={{ "0": props.label }} />
+        <T>
+          on <Var>{props.label}</Var>
+        </T>
       </Text>
       <SymbolView name="chevron.right" size={11} tintColorClassName="accent-icon-muted" />
       {disconnected ? <ConnectionStatusDot state="error" pulse={false} size={6} /> : null}

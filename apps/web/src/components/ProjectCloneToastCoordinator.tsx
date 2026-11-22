@@ -1,3 +1,5 @@
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { useParams } from "@tanstack/react-router";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import {
   type AtomCommandResult,
@@ -5,17 +7,16 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import {
-  type EnvironmentId,
   projectCloneDisplayName,
-  projectCloneProgressSummary,
+  type EnvironmentId,
   type ProjectCloneSnapshot,
   type ProjectId,
 } from "@t3tools/contracts";
-import { useParams } from "@tanstack/react-router";
+import { projectCloneProgressSummary } from "@t3tools/client-runtime/contract-labels";
 import { useEffect, useRef } from "react";
-import { useUiLanguage } from "../i18n";
+import { msg } from "gt-react";
 
-import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
+import { m } from "../i18n/messages";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
 import { useRemoveClonedProject } from "../hooks/useRemoveClonedProject";
 import { useEnvironments } from "../state/environments";
@@ -26,6 +27,7 @@ import {
 } from "../state/projectClones";
 import { sourceControlEnvironment } from "../state/sourceControl";
 import { useAtomCommand } from "../state/use-atom-command";
+import { type DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { toastManager } from "./ui/toast";
 import { stackedThreadToast } from "./ui/toastHelpers";
 
@@ -60,15 +62,13 @@ async function runCloneAction(
       stackedThreadToast({
         type: "error",
         title,
-        description: error instanceof Error ? error.message : "An error occurred.",
+        description: thrownErrorMessage(error, m) ?? m(msg("An error occurred.")),
       }),
     );
   }
 }
 
 function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentId }) {
-  const { t: uiT } = useUiLanguage();
-
   const clones = useEnvironmentProjectClones(environmentId);
   const handleNewThread = useNewThreadHandler();
   const { draftId: routeDraftId } = useParams({ strict: false });
@@ -123,13 +123,13 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       if (clone.phase === "running") {
         const options = stackedThreadToast({
           type: "loading",
-          title: uiT("Cloning {0}", { "0": name }),
-          description: projectCloneProgressSummary(clone),
+          title: m(msg("Cloning {name}", { name })),
+          description: projectCloneProgressSummary(clone, m),
           timeout: 0,
           actionProps: {
-            children: "Cancel",
+            children: m(msg("Cancel")),
             onClick: () => {
-              void runCloneAction("Failed to cancel clone", () =>
+              void runCloneAction(m(msg("Failed to cancel clone")), () =>
                 cancelClone({ environmentId, input: { projectId: clone.projectId } }),
               );
             },
@@ -149,11 +149,11 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       if (clone.phase === "done") {
         const options = stackedThreadToast({
           type: "success",
-          title: uiT("Cloned {0}", { "0": name }),
+          title: m(msg("Cloned {name}", { name })),
           description: clone.destinationPath,
           timeout: 8_000,
           actionProps: {
-            children: "Open project",
+            children: m(msg("Open project")),
             onClick: () => {
               closeToast();
               openProject(clone.projectId);
@@ -175,14 +175,16 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
       const options = stackedThreadToast({
         type: cancelled ? "info" : "error",
         title: cancelled
-          ? uiT("Cancelled cloning {0}", { "0": name })
-          : uiT("Failed to clone {0}", { "0": name }),
-        description: cancelled ? clone.destinationPath : (clone.error ?? uiT("The clone failed.")),
+          ? m(msg("Cancelled cloning {name}", { name }))
+          : m(msg("Failed to clone {name}", { name })),
+        description: cancelled
+          ? clone.destinationPath
+          : (clone.error ?? m(msg("The clone failed."))),
         timeout: 0,
         actionProps: {
-          children: "Retry",
+          children: m(msg("Retry")),
           onClick: () => {
-            void runCloneAction("Failed to retry clone", () =>
+            void runCloneAction(m(msg("Failed to retry clone")), () =>
               retryClone({ environmentId, input: { projectId: clone.projectId } }),
             );
           },
@@ -190,7 +192,7 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
         data: {
           ...(cancelled ? { hideCopyButton: true } : {}),
           secondaryActionProps: {
-            children: "Remove project",
+            children: m(msg("Remove project")),
             onClick: () => {
               void removeClonedProject({ environmentId, projectId: clone.projectId });
             },
@@ -219,7 +221,6 @@ function EnvironmentCloneToasts({ environmentId }: { environmentId: EnvironmentI
     openProject,
     removeClonedProject,
     retryClone,
-    uiT,
   ]);
 
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- closes every tracked clone toast in toastManager when the coordinator unmounts

@@ -1,17 +1,7 @@
-import { UiText } from "~/i18n";
-import {
-  formatUiResetCreditChoices,
-  formatUiUsageReset,
-} from "@t3tools/client-runtime/usage-localization";
-import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
-import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import {
   CHATGPT_USAGE_URL,
-  collectExternalUsageLinks,
   collectLimitAccounts,
-  collectLimitNotices,
   collectLimitPools,
-  cursorUsageWindowDetails,
   displayLimitWindows,
   type LimitAccount,
   type LimitPool,
@@ -21,6 +11,9 @@ import {
   remainingPercent,
   type ResetCreditChoice,
 } from "@t3tools/shared/usageLimits";
+import { T, useGT, useMessages } from "gt-react";
+import type { Popover as PopoverPrimitive } from "@base-ui/react/popover";
+import { normalizeProviderAccentColor } from "@t3tools/client-runtime/state/provider-instance-display";
 import { AlertTriangleIcon, ExternalLinkIcon, TicketIcon } from "lucide-react";
 import {
   createContext,
@@ -32,20 +25,26 @@ import {
   useRef,
   useState,
 } from "react";
-import { useUiLanguage } from "../../i18n";
 
+import { ensureLocalApi } from "../../localApi";
 import { usePrimarySettings } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
-import { ensureLocalApi } from "../../localApi";
 import { formatUpcomingTimestamp } from "../../timestampFormat";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
-import { OpenAI } from "../Icons";
 import { providerClients } from "../settings/providerDriverMeta";
 import { RedactedSensitiveText } from "../settings/RedactedSensitiveText";
-import { Alert, AlertTitle } from "../ui/alert";
 import { Button } from "../ui/button";
+import { OpenAI } from "../Icons";
+import { Alert, AlertTitle } from "../ui/alert";
 import { Popover, PopoverCreateHandle, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { PaceIcon, ResetCreditDialog, barColor, usePaceMark, useResetCredit } from "./UsageLimits";
+import {
+  collectExternalUsageLinks,
+  collectLimitNotices,
+  cursorUsageWindowDetails,
+  formatResetsIn,
+  resetCreditChoices,
+} from "@t3tools/shared/usageLimitsCopy";
 
 function accountInitials(email: string): string {
   const [local = "", domain = ""] = email.split("@");
@@ -61,13 +60,12 @@ function accountHue(email: string): number {
 }
 
 function AccountChip({ email }: { readonly email: string }) {
-  const { t: uiT } = useUiLanguage();
-
   const hue = accountHue(email);
+  const gt = useGT();
   return (
     <span
       role="img"
-      aria-label={uiT("Account {0}", { "0": accountInitials(email) })}
+      aria-label={gt("Account {initials}", { initials: accountInitials(email) })}
       className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-3xs leading-none font-semibold"
       style={{ backgroundColor: `oklch(0.85 0.08 ${hue})`, color: `oklch(0.35 0.1 ${hue})` }}
     >
@@ -149,25 +147,19 @@ function SegmentPopover({
   readonly redeem: ReturnType<typeof useResetCredit> | null;
   readonly onRedeem: (choice: ResetCreditChoice) => void;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
-
   const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
+  const gt = useGT();
+  const m = useMessages();
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const resetsIn = formatResetsIn(window, now, m, "in");
   const where =
     account.environments.length > 0
       ? account.environments.map((environment) => environment.label).join(", ")
       : account.sourceLabel;
   const choices =
     redeem && account.redeem && account.limits.resetCredits?.availableCount
-      ? formatUiResetCreditChoices(
-          account.limits.resetCredits,
-          account.redeem.input,
-          now,
-          locale,
-          true,
-        )
+      ? resetCreditChoices(account.limits.resetCredits, account.redeem.input, now, true, m)
       : [];
   return (
     <div className="flex w-72 max-w-[calc(100vw-3rem)] flex-col gap-2.5 text-xs">
@@ -181,37 +173,43 @@ function SegmentPopover({
         {account.email ? (
           <RedactedSensitiveText
             value={account.email}
-            ariaLabel={uiT("Toggle account email visibility")}
-            revealTooltip={uiT("Click to reveal email")}
-            hideTooltip={uiT("Click to hide email")}
+            ariaLabel={gt("Toggle account email visibility")}
+            revealTooltip={gt("Click to reveal email")}
+            hideTooltip={gt("Click to hide email")}
             className="w-fit"
           />
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
-        {account.plan ? <Row label={uiT("Plan")}>{account.plan}</Row> : null}
+        {account.plan ? (
+          <Row label={gt("Plan", { $context: "subscription plan" })}>{account.plan}</Row>
+        ) : null}
         {where ? (
-          <Row label={account.environments.length > 0 ? uiT("Signed in") : uiT("Via")}>{where}</Row>
+          <Row
+            label={
+              account.environments.length > 0
+                ? gt("Signed in")
+                : gt("Via", { $context: "signed in through a source" })
+            }
+          >
+            {where}
+          </Row>
         ) : null}
       </div>
       <div className="flex flex-col gap-1 border-t border-border/60 pt-2.5">
-        <Row label={uiT("Left")}>{remaining}%</Row>
+        <Row label={gt("Left", { $context: "remaining usage" })}>{remaining}%</Row>
         {window.resetsAt ? (
-          <Row label={uiT("Resets")}>
-            {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now, undefined, locale)}
-            {resetsIn ? ` · ${formatUiUsageReset(window, now, locale, true)}` : ""}
+          <Row label={gt("Resets", { $context: "when the usage window resets" })}>
+            {formatUpcomingTimestamp(window.resetsAt, timestampFormat, now, undefined, m)}
+            {resetsIn ? ` · ${resetsIn}` : ""}
           </Row>
         ) : null}
         {timeLeft !== null ? (
-          <Row label={uiT("Even pace")}>
-            {timeLeft}
-            {uiT("% left by now")}
-          </Row>
+          <Row label={gt("Even pace")}>{gt("{timeLeft}% left by now", { timeLeft })}</Row>
         ) : null}
         {reset && reset.restoresPercent > 0 ? (
-          <Row label={uiT("Restores")}>
-            +{reset.restoresPercent}
-            {uiT("% of pool")}
+          <Row label={gt("Restores", { $context: "a reset credit restores part of the pool" })}>
+            {gt("+{percent}% of pool", { percent: reset.restoresPercent })}
           </Row>
         ) : null}
       </div>
@@ -228,7 +226,7 @@ function SegmentPopover({
                   className="ms-auto"
                   onClick={() => onRedeem(choice)}
                 >
-                  {redeem.busy ? uiT("Using…") : choice.actionLabel}
+                  {redeem.busy ? gt("Using…") : choice.actionLabel}
                 </Button>
               ) : null}
             </span>
@@ -326,8 +324,8 @@ function RedeemableSegment({
 }: Omit<Parameters<typeof SegmentTriggers>[0], "redeem"> & {
   readonly redeemAt: NonNullable<LimitAccount["redeem"]>;
 }) {
-  const { t: uiT } = useUiLanguage();
   const redeem = useResetCredit(redeemAt.environmentId);
+  const gt = useGT();
   return (
     <>
       <SegmentTriggers redeem={redeem} {...props} />
@@ -342,7 +340,7 @@ function RedeemableSegment({
       {redeem.busy || redeem.status ? (
         <span role="status" className="col-span-full text-xs text-muted-foreground">
           <AccountName account={props.account} className="font-medium text-foreground" />{" "}
-          {redeem.busy ? uiT("Using reset credit…") : redeem.status}
+          {redeem.busy ? gt("Using reset credit…") : redeem.status}
         </span>
       ) : null}
     </>
@@ -366,15 +364,33 @@ function SegmentTriggers({
   readonly index: number;
   readonly showAccountName: boolean;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
-
   const popover = use(SegmentPopoverContext) ?? undefined;
   const payload: SegmentPayload = { account, window, reset, redeem };
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const [segmentRef, paceMark] = usePaceMark(timeLeft);
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const m = useMessages();
+  const resetsIn = formatResetsIn(window, now, m);
+  const refillIn = formatResetsIn(window, now, m, "refill");
   const credits = account.limits.resetCredits?.availableCount ?? 0;
+  const gt = useGT();
+  const segmentLabel = [
+    gt("{name}: {remaining}% left", {
+      name:
+        account.displayName ?? (account.email ? accountInitials(account.email) : account.driver),
+      remaining,
+    }),
+    resetsIn,
+    timeLeft === null ? null : gt("{timeLeft}% of the window left", { timeLeft }),
+    credits
+      ? gt(
+          "{count, plural, one {{count} reset credit banked} other {{count} reset credits banked}}",
+          { count: credits },
+        )
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   return (
     <>
       <PopoverTrigger
@@ -386,17 +402,7 @@ function SegmentTriggers({
             ref={segmentRef}
             type="button"
             style={{ gridColumn: index, gridRow: 1, ...paceMark?.gappedTrack }}
-            aria-label={uiT("{0}: {1}% left{2}{3}{4}", {
-              "0":
-                account.displayName ??
-                (account.email ? accountInitials(account.email) : account.driver),
-              "1": remaining,
-              "2": resetsIn ? `, ${resetsIn}` : "",
-              "3": timeLeft === null ? "" : `, ${timeLeft}% of the window left`,
-              "4": credits
-                ? `, ${credits} reset ${credits === 1 ? "credit" : "credits"} banked`
-                : "",
-            })}
+            aria-label={segmentLabel}
             className="relative h-5 min-w-0 cursor-pointer rounded-md bg-muted text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[popup-open]:ring-1 data-[popup-open]:ring-inset data-[popup-open]:ring-border @2xl/pool:h-8"
           />
         }
@@ -415,7 +421,9 @@ function SegmentTriggers({
                 className="absolute inset-y-0 right-0 opacity-20"
                 style={{
                   width: `${Math.min(100 - remaining, refillPercent)}%`,
-                  backgroundImage: `repeating-linear-gradient(135deg, ${color} 0 1px, transparent 1px 5px)`,
+                  // A bare 45° gradient repeats every 5√2px, so some stripes rasterize thinner; a whole-pixel tile doesn't.
+                  backgroundImage: `repeating-linear-gradient(135deg, transparent 0 1px, ${color} 1px 2px, transparent 2px 50%)`,
+                  backgroundSize: "7px 7px",
                 }}
               />
             ) : null}
@@ -449,7 +457,7 @@ function SegmentTriggers({
           ) : null}
           {resetsIn || credits ? (
             <span className="ms-auto flex min-w-0 items-center gap-1.5 overflow-hidden rounded-sm bg-background/85 px-1.5 py-0.5 text-2xs whitespace-nowrap text-foreground tabular-nums">
-              {resetsIn?.replace("resets in ", "↻ ") ?? ""}
+              {refillIn ?? ""}
               {credits ? (
                 <>
                   {resetsIn ? (
@@ -483,13 +491,13 @@ function LegendRow({
   readonly now: number;
   readonly index: number;
 }) {
-  const { t: uiT, locale } = useUiLanguage();
-
   const popover = use(SegmentPopoverContext) ?? undefined;
   const { account, window } = payload;
   const remaining = remainingPercent(window);
-  const resetsIn = formatUiUsageReset(window, now, locale);
+  const m = useMessages();
+  const resetsIn = formatResetsIn(window, now, m, "refill");
   const credits = account.limits.resetCredits?.availableCount ?? 0;
+  const gt = useGT();
   return (
     <PopoverTrigger
       handle={popover}
@@ -504,13 +512,13 @@ function LegendRow({
           className="absolute inset-0 rounded-sm opacity-35"
           style={{ backgroundColor: color }}
         />
-        <span className="sr-only">{uiT("Segment")}</span>
+        <span className="sr-only">{`${gt("Segment")} `}</span>
         <span className="relative">{index}</span>
       </span>
       <AccountName account={account} className="min-w-0 truncate font-medium text-foreground" />
       <span className="shrink-0 font-semibold text-foreground tabular-nums">{remaining}%</span>
       <span className="ms-auto flex shrink-0 items-center gap-1.5 text-2xs text-muted-foreground tabular-nums">
-        {resetsIn?.replace("resets in ", "↻ ") ?? ""}
+        {resetsIn ?? ""}
         {credits ? (
           <>
             {resetsIn ? <span aria-hidden>·</span> : null}
@@ -522,8 +530,10 @@ function LegendRow({
               {credits}
             </span>
             <span className="sr-only">
-              {credits} {uiT("reset")}
-              {credits === 1 ? uiT("credit") : uiT("credits")} {uiT("banked")}
+              {gt(
+                "{count, plural, one {{count} reset credit banked} other {{count} reset credits banked}}",
+                { count: credits },
+              )}
             </span>
           </>
         ) : null}
@@ -542,6 +552,7 @@ function PoolBar({
   readonly now: number;
 }) {
   const restores = new Map(pool.resets.map((reset) => [reset.member.account.key, reset]));
+  const gt = useGT();
   return (
     <div className="@container/pool min-w-0">
       <div
@@ -571,7 +582,7 @@ function PoolBar({
                 account={member.account}
                 className="hidden min-w-0 truncate @2xl/pool:inline-flex"
               />
-              <UiText message="$0 cap" />
+              {gt("$0 cap")}
             </div>
           ) : null,
         )}
@@ -593,8 +604,6 @@ function PoolWindowCard({
   readonly label?: string | null | undefined;
   readonly description?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
   return (
     <div className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border/60 p-4 md:grid-cols-[11rem_minmax(0,1fr)]">
@@ -607,7 +616,9 @@ function PoolWindowCard({
             {pool.remainingPercent}%
           </span>
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{uiT("left")}</span>
+            <span>
+              <T context="remaining usage percentage">left</T>
+            </span>
             {pool.pace ? <PaceIcon pace={pool.pace} /> : null}
           </span>
         </span>
@@ -629,6 +640,7 @@ function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: nu
   const color = barColor(pool.driver);
   const label = providerClients.get(pool.driver)?.label ?? String(pool.driver);
   const windows = displayLimitWindows(pool);
+  const m = useMessages();
   return (
     <section className="flex flex-col gap-3">
       <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -643,7 +655,7 @@ function PoolSection({ pool, now }: { readonly pool: LimitPool; readonly now: nu
       </h2>
       {windows.map((window) => {
         const details =
-          pool.driver === "cursor" ? cursorUsageWindowDetails(window.id, pool) : undefined;
+          pool.driver === "cursor" ? cursorUsageWindowDetails(window.id, pool, m) : undefined;
         return (
           <PoolWindowCard
             key={`${window.kind}:${window.id}`}
@@ -666,18 +678,18 @@ export function UsageLimitsPooled({
   readonly presentations: Parameters<typeof collectLimitAccounts>[0];
   readonly now: number;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const m = useMessages();
   const [segmentPopover] = useState(() => PopoverCreateHandle<SegmentPayload>());
   const segmentPopoverActions = useRef<PopoverPrimitive.Root.Actions | null>(null);
   const pools = collectLimitPools(collectLimitAccounts(presentations), now);
-  const notices = collectLimitNotices(presentations);
-  const externalLinks = collectExternalUsageLinks(presentations);
+  const notices = collectLimitNotices(presentations, m);
+  const externalLinks = collectExternalUsageLinks(presentations, m);
   return (
     <div className="flex flex-col gap-8">
       {pools.length === 0 && notices.length === 0 && externalLinks.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {uiT("No provider on the selected environments reports subscription limits.")}
+          <T>No provider on the selected environments reports subscription limits.</T>
         </p>
       ) : null}
       <SegmentPopoverContext value={segmentPopover}>
@@ -716,7 +728,7 @@ export function UsageLimitsPooled({
               </p>
               {link.url === CHATGPT_USAGE_URL ? (
                 <p className="text-xs text-muted-foreground">
-                  {uiT("View usage in ChatGPT with your connected account.")}
+                  <T>View usage in ChatGPT with your connected account.</T>
                 </p>
               ) : link.message ? (
                 <p className="max-w-xl text-xs text-muted-foreground">{link.message}</p>
@@ -728,7 +740,7 @@ export function UsageLimitsPooled({
             size="xs"
             onClick={() => void ensureLocalApi().shell.openExternal(link.url)}
           >
-            {uiT("Manage usage")}
+            {gt("Manage usage")}
             <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
           </Button>
         </section>

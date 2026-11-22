@@ -1,3 +1,7 @@
+import { proposedPlanTitle, stripDisplayedPlanMarkdown } from "@t3tools/shared/proposedPlanText";
+import { msg, T, useGT, useMessages, Var } from "gt-react";
+import { memo, useState, useId } from "react";
+import { findRevealRef } from "./markdownFindContext";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
@@ -7,15 +11,6 @@ import {
   type EnvironmentId,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
-import { proposedPlanTitle, stripDisplayedPlanMarkdown } from "@t3tools/shared/proposedPlanText";
-import { EllipsisIcon } from "lucide-react";
-import { memo, useId, useState } from "react";
-import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
-import { cn } from "~/lib/utils";
-import { projectEnvironment } from "~/state/projects";
-import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
-import { useUiLanguage } from "../../i18n";
 import {
   buildCollapsedProposedPlanPreviewMarkdown,
   buildProposedPlanMarkdownFilename,
@@ -23,8 +18,12 @@ import {
   normalizePlanMarkdownForExport,
 } from "../../proposedPlan";
 import ChatMarkdown from "../ChatMarkdown";
-import { Badge } from "../ui/badge";
+import { EllipsisIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
+import { cn } from "~/lib/utils";
+import { Badge } from "../ui/badge";
 import {
   Dialog,
   DialogDescription,
@@ -34,10 +33,11 @@ import {
   DialogPopup,
   DialogTitle,
 } from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { stackedThreadToast, toastManager } from "../ui/toast";
-import { findRevealRef } from "./markdownFindContext";
+import { projectEnvironment } from "~/state/projects";
+import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
+import { useAtomCommand } from "~/state/use-atom-command";
+import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 
 export const ProposedPlanCard = memo(function ProposedPlanCard({
   planMarkdown,
@@ -54,8 +54,8 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
   workspaceRoot: string | undefined;
   findActive?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const [expanded, setExpanded] = useState(false);
   const canWriteFiles = useEnvironmentScope(environmentId, AuthFilesystemWriteScope);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -65,24 +65,28 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
     reportFailure: false,
   });
   const { copyToClipboard, isCopied } = useCopyToClipboard({
-    target: "plan",
+    target: {
+      target: "plan",
+      unavailableMessage: msg("Clipboard API is unavailable while copying plan."),
+      failureMessage: msg("Failed to copy plan to the clipboard."),
+    },
     onError: (error) => {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Could not copy plan"),
+          title: gt("Could not copy plan"),
           description:
-            error instanceof Error ? error.message : uiT("An error occurred while copying."),
+            error instanceof Error ? error.message : gt("An error occurred while copying."),
         }),
       );
     },
   });
-  const title = proposedPlanTitle(planMarkdown) ?? uiT("Proposed plan");
+  const title = proposedPlanTitle(planMarkdown) ?? gt("Proposed plan");
   const lineCount = planMarkdown.split("\n").length;
   const canCollapse = planMarkdown.length > 900 || lineCount > 20;
   const displayedPlanMarkdown = stripDisplayedPlanMarkdown(planMarkdown);
   const collapsedPreview = canCollapse
-    ? buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, { maxLines: 10 })
+    ? buildCollapsedProposedPlanPreviewMarkdown(planMarkdown, { maxLines: 10 }, messages)
     : null;
   const isCollapsed = canCollapse && !expanded;
   // Mount clipped plans during find to count hidden matches without revealing them.
@@ -105,8 +109,8 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: uiT("Workspace path is unavailable"),
-          description: uiT("This thread does not have a workspace path to save into."),
+          title: gt("Workspace path is unavailable"),
+          description: gt("This thread does not have a workspace path to save into."),
         }),
       );
       return;
@@ -122,7 +126,7 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
     if (!relativePath) {
       toastManager.add({
         type: "warning",
-        title: uiT("Enter a workspace path"),
+        title: gt("Enter a workspace path"),
       });
       return;
     }
@@ -143,7 +147,7 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
         setIsSaveDialogOpen(false);
         toastManager.add({
           type: "success",
-          title: uiT("Plan saved to workspace"),
+          title: gt("Plan saved to workspace"),
           description: result.value.relativePath,
         });
         return;
@@ -153,9 +157,9 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
         toastManager.add(
           stackedThreadToast({
             type: "error",
-            title: uiT("Could not save plan"),
+            title: gt("Could not save plan"),
             description:
-              error instanceof Error ? error.message : uiT("An error occurred while saving."),
+              error instanceof Error ? error.message : gt("An error occurred while saving."),
           }),
         );
       }
@@ -166,28 +170,30 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
     <div className="rounded-2xl border border-border/80 bg-card/70 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Badge variant="secondary">{uiT("Plan")}</Badge>
+          <Badge variant="secondary">{gt("Plan", { $context: "badge, noun" })}</Badge>
           {}
           <h3 data-thread-find-text="true" className="truncate text-sm font-medium text-foreground">
-            {uiT(title)}
+            {title}
           </h3>
         </div>
         <Menu>
           <MenuTrigger
-            render={<Button aria-label={uiT("Plan actions")} size="icon-xs" variant="outline" />}
+            render={<Button aria-label={gt("Plan actions")} size="icon-xs" variant="outline" />}
           >
             <EllipsisIcon aria-hidden="true" className="size-4" />
           </MenuTrigger>
           <MenuPopup align="end">
             <MenuItem onClick={handleCopyPlan}>
-              {isCopied ? uiT("Copied!") : uiT("Copy to clipboard")}
+              {isCopied ? gt("Copied!") : gt("Copy to clipboard")}
             </MenuItem>
-            <MenuItem onClick={handleDownload}>{uiT("Download as markdown")}</MenuItem>
+            <MenuItem onClick={handleDownload}>
+              <T>Download as markdown</T>
+            </MenuItem>
             <MenuItem
               onClick={openSaveDialog}
               disabled={!canWriteFiles || !workspaceRoot || isSavingToWorkspace}
             >
-              {uiT("Save to workspace")}
+              <T>Save to workspace</T>
             </MenuItem>
           </MenuPopup>
         </Menu>
@@ -230,7 +236,7 @@ export const ProposedPlanCard = memo(function ProposedPlanCard({
               data-scroll-anchor-ignore
               onClick={() => setExpanded((value) => !value)}
             >
-              {expanded ? uiT("Collapse plan") : uiT("Expand plan")}
+              {expanded ? gt("Collapse plan") : gt("Expand plan")}
             </Button>
           </div>
         ) : null}
@@ -277,22 +283,36 @@ function SavePlanToWorkspaceForm({
   onCancel: () => void;
   onSave: (path: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [savePath, setSavePath] = useState(initialPath);
   const savePathInputId = useId();
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{uiT("Save plan to workspace")}</DialogTitle>
+        <DialogTitle>
+          <T>Save plan to workspace</T>
+        </DialogTitle>
         <DialogDescription>
-          {uiT("Enter a path relative to")}
-          <code>{workspaceRoot ?? "the workspace"}</code>.
+          {workspaceRoot !== undefined ? (
+            <T>
+              Enter a path relative to{" "}
+              <code>
+                <Var>{workspaceRoot}</Var>
+              </code>
+              .
+            </T>
+          ) : (
+            <T>
+              Enter a path relative to <code>the workspace</code>.
+            </T>
+          )}
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>
         <label htmlFor={savePathInputId} className="grid gap-1.5">
-          <span className="text-xs font-medium text-foreground">{uiT("Workspace path")}</span>
+          <span className="text-xs font-medium text-foreground">
+            <T>Workspace path</T>
+          </span>
           <Input
             id={savePathInputId}
             value={savePath}
@@ -305,10 +325,10 @@ function SavePlanToWorkspaceForm({
       </DialogPanel>
       <DialogFooter>
         <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </Button>
         <Button size="sm" onClick={() => onSave(savePath)} disabled={!canWriteFiles || saving}>
-          {saving ? uiT("Saving...") : uiT("Save")}
+          {saving ? gt("Saving...") : gt("Save")}
         </Button>
       </DialogFooter>
     </>

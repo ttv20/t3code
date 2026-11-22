@@ -1,9 +1,11 @@
+import { useGT } from "gt-react-native";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import Animated, { FadeIn, FadeOut, ReduceMotion } from "react-native-reanimated";
 import { Toast } from "../../components/ui/Toast";
 import { useBarInset } from "../../components/ui/useBarInset";
-import { useUiLanguage } from "../../i18n";
+
 import { MOBILE_MOTION } from "../../lib/designTokens";
-import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
+
 import type { GitActionProgress } from "../../state/use-vcs-action-state";
 
 export function GitActionProgressOverlay(props: {
@@ -11,8 +13,7 @@ export function GitActionProgressOverlay(props: {
   readonly onDismiss: () => void;
   readonly onOpenPullRequest?: (url: string) => Promise<boolean>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { progress, onDismiss } = props;
   const openPullRequest = props.onOpenPullRequest;
   const top = useBarInset() + 8;
@@ -40,7 +41,7 @@ export function GitActionProgressOverlay(props: {
     >
       <Toast
         singleLine
-        message={progress.label ?? uiT("Source control")}
+        message={progress.label ?? gt("Source control")}
         description={progress.description ?? undefined}
         tone={
           progress.phase === "error"
@@ -50,7 +51,14 @@ export function GitActionProgressOverlay(props: {
               : "default"
         }
         busy={progress.phase === "running"}
-        action={progress.prUrl ? { label: uiT("View"), onPress: handlePress } : undefined}
+        action={
+          progress.prUrl
+            ? {
+                label: gt("View", { $context: "verb, opens the pull request" }),
+                onPress: handlePress,
+              }
+            : undefined
+        }
       />
     </Animated.View>
   );

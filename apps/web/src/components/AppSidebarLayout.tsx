@@ -1,5 +1,6 @@
+import { useUiLanguage } from "~/i18n";
 import { useAtomValue } from "@effect/atom-react";
-import { useLocation, useRouter, type AnyRouter } from "@tanstack/react-router";
+import { useGT } from "gt-react";
 import * as Schema from "effect/Schema";
 import {
   useEffect,
@@ -8,8 +9,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { UiText, useUiLanguage } from "../i18n";
+import { useLocation, useRouter, type AnyRouter } from "@tanstack/react-router";
 
+import { moveWorkspaceFocus, workspaceAreaProps } from "../lib/workspaceFocus";
 import { isCommandPaletteOpen } from "../commandPaletteBus";
 import { isElectron } from "../env";
 import {
@@ -18,35 +20,32 @@ import {
   undoLatestThreadAction,
 } from "../hooks/showThreadUndoNotice";
 import { getLocalStorageItem, removeLocalStorageItem } from "../hooks/useLocalStorage";
-import { useEnvironmentIdentificationMode } from "../hooks/useSettings";
 import {
   isRichTextBoldShortcut,
+  isSidebarToggleShortcut,
   resolveShortcutCommand,
   shortcutLabelForCommand,
 } from "../keybindings";
 import { isEditableFocused } from "../lib/editableFocus";
 import { isPreviewFocused } from "../lib/previewFocus";
 import { isTerminalFocused } from "../lib/terminalFocus";
-import { cn, isMacPlatform } from "../lib/utils";
-import { moveWorkspaceFocus, workspaceAreaProps } from "../lib/workspaceFocus";
 import { isModelPickerOpen } from "../modelPickerVisibility";
+import { selectActiveRightPanel, useRightPanelStore } from "../rightPanelStore";
+import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
+import { cn, isMacPlatform } from "../lib/utils";
+import { primaryServerKeybindingsAtom } from "../state/server";
+import { useEnvironmentIdentificationMode } from "../hooks/useSettings";
 import {
   PanelAnimationSuppressionProvider,
   usePanelAnimationSettings,
   usePanelNavigationSuppression,
 } from "../panelAnimations";
-import { selectActiveRightPanel, useRightPanelStore } from "../rightPanelStore";
-import { appAtomRegistry } from "../rpc/atomRegistry";
-import { registerCommands, registerMenuAction } from "../shortcuts/dispatcher";
-import { primaryServerKeybindingsAtom } from "../state/server";
-import { selectThreadTerminalUiState, useTerminalUiStateStore } from "../terminalUiStateStore";
-import { resolveThreadRouteRef } from "../threadRoutes";
 import { BackgroundThreadAnnouncer } from "./BackgroundThreadAnnouncer";
 import { HistorySwipeNavigation } from "./HistorySwipeNavigation";
 import ThreadSidebar from "./Sidebar";
+import { SidebarBrandWidthProbe } from "./sidebar/SidebarChrome";
 import { isAppModalPage } from "./sidebar/mainAppLocation";
 import type { SidebarRouteReveal } from "./sidebar/routeReveal";
-import { SidebarBrandWidthProbe } from "./sidebar/SidebarChrome";
 import { useSidebarStageBackdropVariant } from "./SidebarStageBackdrop";
 import {
   clampThreadSidebarWidth,
@@ -66,6 +65,9 @@ import {
   useSidebarVisibility,
 } from "./ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { appAtomRegistry } from "../rpc/atomRegistry";
+import { registerCommands, registerMenuAction } from "../shortcuts/dispatcher";
+import { resolveThreadRouteRef } from "../threadRoutes";
 
 const MACOS_TRAFFIC_LIGHTS_LEFT_INSET = "var(--desktop-window-controls-inset, 90px)";
 
@@ -119,11 +121,10 @@ function readInitialThreadSidebarWidth(): number {
   try {
     return resolveInitialThreadSidebarWidth(
       getLocalStorageItem(THREAD_SIDEBAR_WIDTH_STORAGE_KEY, Schema.Finite),
-      window.innerWidth,
     );
   } catch (error) {
     console.error("Could not read persisted thread sidebar width.", error);
-    return resolveInitialThreadSidebarWidth(null, window.innerWidth);
+    return resolveInitialThreadSidebarWidth(null);
   }
 }
 
@@ -315,7 +316,7 @@ function registerAppShellCommands(router: AnyRouter, shellElement: Element): () 
 }
 
 function SidebarControl({ showSidebar }: { readonly showSidebar: boolean }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const router = useRouter();
   const usagePageOpen = useLocation({ select: (location) => location.pathname === "/usage" });
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
@@ -349,15 +350,17 @@ function SidebarControl({ showSidebar }: { readonly showSidebar: boolean }) {
         // the toggle stays available everywhere else.
         return;
       }
-      const command = resolveShortcutCommand(event, keybindings, {
-        context: {
-          terminalFocus: isTerminalFocused(),
-          previewFocus: isPreviewFocused(),
-          ...readRoutePanelsOpen(router),
-          usagePageOpen,
-        },
-      });
-      if (command !== "sidebar.toggle") return;
+      if (
+        !isSidebarToggleShortcut(event, keybindings, {
+          context: {
+            terminalFocus: isTerminalFocused(),
+            previewFocus: isPreviewFocused(),
+            ...readRoutePanelsOpen(router),
+            usagePageOpen,
+          },
+        })
+      )
+        return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -400,15 +403,14 @@ function SidebarControl({ showSidebar }: { readonly showSidebar: boolean }) {
                   "pointer-events-auto",
                   isSidebarVisible && stageBackdropVariant && "relative top-auto translate-y-0",
                 )}
-                aria-label={uiT("Toggle main sidebar")}
+                aria-label={gt("Toggle main sidebar")}
               />
             }
           />
           <TooltipPopup side="bottom">
-            <UiText
-              message={"Toggle main sidebar{0}"}
-              values={{ "0": shortcutLabel ? ` (${shortcutLabel})` : "" }}
-            />
+            {shortcutLabel
+              ? gt("Toggle main sidebar ({shortcut})", { shortcut: shortcutLabel })
+              : gt("Toggle main sidebar")}
           </TooltipPopup>
         </Tooltip>
       ) : null}
@@ -423,8 +425,9 @@ export function AppSidebarLayout({
   children: ReactNode;
   showSidebar?: boolean;
 }) {
-  const { t: uiT, direction } = useUiLanguage();
-  const sidebarArea = workspaceAreaProps("sidebar", 0, "Threads");
+  const { direction } = useUiLanguage();
+  const gt = useGT();
+  const sidebarArea = workspaceAreaProps("sidebar", 0, gt("Threads"));
   const [sidebarRouteReveal] = useState<SidebarRouteReveal>(() => ({
     observedKey: null,
     pendingKey: null,
@@ -447,7 +450,7 @@ export function AppSidebarLayout({
     } catch (error) {
       console.error("Could not clear persisted thread sidebar width.", error);
     }
-    setSidebarWidth(resolveInitialThreadSidebarWidth(null, viewportWidth));
+    setSidebarWidth(resolveInitialThreadSidebarWidth(null));
   };
   const isWindowFullscreen = useSyncExternalStore(
     subscribeToWindowFullscreen,
@@ -485,7 +488,7 @@ export function AppSidebarLayout({
               data-app-sidebar=""
               {...sidebarArea}
               role="navigation"
-              aria-label={uiT("Threads")}
+              aria-label={gt("Threads")}
               resizable={{
                 maxWidth: sidebarMaximumWidth,
                 minWidth: sidebarMinimumWidth,

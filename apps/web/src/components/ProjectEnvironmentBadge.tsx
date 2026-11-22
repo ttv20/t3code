@@ -1,5 +1,5 @@
 import type { EnvironmentId, EnvironmentMachineKind } from "@t3tools/contracts";
-import { useUiLanguage } from "../i18n";
+import { useGT } from "gt-react";
 
 import type { SidebarProjectSnapshot } from "~/sidebarProjectGrouping";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
@@ -10,11 +10,13 @@ export function ProjectEnvironmentBadge(props: {
   readonly primaryEnvironmentId: EnvironmentId | null;
   readonly machineByEnvironmentId: ReadonlyMap<EnvironmentId, EnvironmentMachineKind>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const remoteMembers = props.group.memberProjects
     .filter((member) => member.environmentId !== props.primaryEnvironmentId)
-    .map((member) => ({ ...member, environmentLabel: member.environmentLabel ?? "Remote" }))
+    .map((member) => ({
+      ...member,
+      environmentLabel: member.environmentLabel ?? gt("Remote", { $context: "machine location" }),
+    }))
     .sort((a, b) => a.environmentLabel.localeCompare(b.environmentLabel));
   const first = remoteMembers[0];
   if (!first) return null;
@@ -23,7 +25,7 @@ export function ProjectEnvironmentBadge(props: {
     .filter((label, index, all) => all.indexOf(label) === index)
     .join(", ");
   const alsoHere = remoteMembers.length < props.group.memberProjects.length;
-  const description = `${alsoHere ? "Also on" : "On"} ${labels}`;
+  const description = alsoHere ? gt("Also on {labels}", { labels }) : gt("On {labels}", { labels });
   return (
     <Tooltip>
       <TooltipTrigger
@@ -41,7 +43,7 @@ export function ProjectEnvironmentBadge(props: {
           className="size-3.5"
         />
       </TooltipTrigger>
-      <TooltipPopup side="top">{uiT(description)}</TooltipPopup>
+      <TooltipPopup side="top">{description}</TooltipPopup>
     </Tooltip>
   );
 }

@@ -1,8 +1,8 @@
-import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
+import { msg } from "gt-react";
 import type { AnyRouter } from "@tanstack/react-router";
-import { AsyncResult, type AtomRegistry } from "effect/reactivity";
+import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
 import { CircleAlertIcon, CircleCheckIcon } from "lucide-react";
-import { currentUiTranslator } from "../../../currentUiTranslator";
+import { AsyncResult, type AtomRegistry } from "effect/reactivity";
 
 import { getClientSettings } from "~/hooks/useSettings";
 import { observedPullRequestTitle, pullRequestEnvironment } from "~/state/pullRequests";
@@ -15,6 +15,7 @@ import {
 import { toastManager } from "../../ui/toast";
 import { readPullRequestListPreferences } from "../pullRequestListPreferences";
 import { useGuideRunStore, type GuideRunWatch } from "./guideRunStore";
+import { m } from "~/i18n/messages";
 
 const RUN_POLL_MS = 5_000;
 const UNSEEN_RUN_MS = 60_000;
@@ -90,8 +91,7 @@ function watchGuideRun(
     const looking = document.visibilityState === "visible" && document.hasFocus();
     if (looking && isGuideShown(runKey)) return;
 
-    const uiT = currentUiTranslator();
-    const title = failure === null ? uiT("Review guide ready") : uiT("Review guide failed");
+    const title = failure === null ? m(msg("Review guide ready")) : m(msg("Review guide failed"));
     const body =
       watch.title ??
       observedPullRequestTitle(registry, watch.environmentId, watch.reference) ??
@@ -131,7 +131,7 @@ function watchGuideRun(
             ),
         },
         actionProps: {
-          children: "Open guide",
+          children: m(msg("Open guide")),
           onClick: () => {
             toastManager.close(toastId);
             open();

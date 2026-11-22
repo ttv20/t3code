@@ -2,9 +2,9 @@ import {
   codexFeedbackNotice,
   type CodexFeedbackSubmission,
 } from "@t3tools/client-runtime/state/threads";
+import { useGT, useMessages } from "gt-react-native";
 import { Pressable, View } from "react-native";
 import { Button } from "../../components/ui/Button";
-import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -17,9 +17,9 @@ export function ComposerFeedback({
   readonly submission: CodexFeedbackSubmission;
   readonly onDismiss: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
-  const notice = codexFeedbackNotice(submission);
+  const gt = useGT();
+  const m = useMessages();
+  const notice = codexFeedbackNotice(submission, m);
   if (!notice) return null;
   return (
     <View className="px-4 pb-3">
@@ -30,7 +30,7 @@ export function ComposerFeedback({
           </Text>
           {submission.status !== "uploading" ? (
             <Pressable
-              accessibilityLabel={uiT("Dismiss feedback notice")}
+              accessibilityLabel={gt("Dismiss feedback notice")}
               accessibilityRole="button"
               hitSlop={12}
               onPress={onDismiss}
@@ -47,12 +47,12 @@ export function ComposerFeedback({
         </View>
         {notice.description ? (
           <Text selectable className="text-xs text-foreground-muted">
-            {uiT(notice.description)}
+            {notice.description}
           </Text>
         ) : null}
         {submission.status === "sent" ? (
           <Button
-            label={uiT("Copy ID")}
+            label={gt("Copy ID")}
             tone="text"
             onPress={() =>
               copyTextWithHaptic(submission.feedbackId, { target: "Codex feedback thread ID" })

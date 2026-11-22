@@ -1,10 +1,7 @@
 import { Spinner } from "~/components/ui/spinner";
-import { useUiLanguage } from "../../i18n";
 
 import { Toast } from "@base-ui/react/toast";
-import { type ScopedThreadRef, type ThreadId } from "@t3tools/contracts";
-
-import { CircleAlertIcon, CircleCheckIcon, InfoIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { msg, useGT } from "gt-react";
 import {
   useEffect,
   useState,
@@ -13,15 +10,23 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CopyIcon } from "lucide-react";
+import { type ScopedThreadRef, type ThreadId } from "@t3tools/contracts";
+import {
+  CircleAlertIcon,
+  CircleCheckIcon,
+  InfoIcon,
+  TriangleAlertIcon,
+  XIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CopyIcon,
+} from "lucide-react";
 
 import { cn } from "~/lib/utils";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { useComposerDraftStore } from "~/composerDraftStore";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
-import { useThreadRouteTarget } from "~/hooks/useThreadRouteTarget";
-
 import {
   buildVisibleToastLayout,
   hasVisibleToastAction,
@@ -29,6 +34,7 @@ import {
   shouldRenderThreadScopedToast,
 } from "./toast.logic";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./tooltip";
+import { useThreadRouteTarget } from "~/hooks/useThreadRouteTarget";
 
 export type ThreadToastData = {
   threadRef?: ScopedThreadRef | null;
@@ -138,10 +144,15 @@ function handleToastDismissClick(
 }
 
 function CopyErrorButton({ text }: { text: string }) {
-  const { t: uiT } = useUiLanguage();
-
-  const { copyToClipboard, isCopied } = useCopyToClipboard({ target: "error-message" });
-  const label = isCopied ? uiT("Copied error") : uiT("Copy error");
+  const { copyToClipboard, isCopied } = useCopyToClipboard({
+    target: {
+      target: "error-message",
+      unavailableMessage: msg("Clipboard API is unavailable while copying error-message."),
+      failureMessage: msg("Failed to copy error-message to the clipboard."),
+    },
+  });
+  const gt = useGT();
+  const label = isCopied ? gt("Copied error") : gt("Copy error");
 
   return (
     <Tooltip>
@@ -173,11 +184,10 @@ function ToastExpandableSection({
   children: ReactNode;
   labels: { expand?: string; collapse?: string };
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const [open, setOpen] = useState(false);
-  const expandLabel = labels.expand ?? uiT("Show details");
-  const collapseLabel = labels.collapse ?? uiT("Hide details");
+  const gt = useGT();
+  const expandLabel = labels.expand ?? gt("Show details");
+  const collapseLabel = labels.collapse ?? gt("Hide details");
 
   return (
     <div className="min-w-0 [unicode-bidi:plaintext]">
@@ -208,11 +218,10 @@ function ToastDescriptionAndExpandable({
   toastDescription: unknown;
   toastType: unknown;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const expandableContent = toastData?.expandableContent;
   const labels = toastData?.expandableLabels ?? {};
   const descriptionTrigger = toastData?.expandableDescriptionTrigger ?? false;
+  const gt = useGT();
   const descriptionClassName = cn(
     "min-w-0 select-text wrap-break-word text-muted-foreground",
     errorDescriptionClampClass(toastType, toastDescription),
@@ -232,8 +241,8 @@ function ToastDescriptionAndExpandable({
     );
   }
 
-  const expandLabel = labels.expand ?? uiT("Show details");
-  const collapseLabel = labels.collapse ?? uiT("Hide details");
+  const expandLabel = labels.expand ?? gt("Show details");
+  const collapseLabel = labels.collapse ?? gt("Hide details");
 
   const toggle = () => setOpen((v) => !v);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -564,10 +573,9 @@ function ToastProvider({ children, position = "top-right", ...props }: ToastProv
 }
 
 function Toasts({ position }: { position: ToastPosition }) {
-  const { t: uiT } = useUiLanguage();
-
   const { toasts } = Toast.useToastManager<ThreadToastData>();
   const activeThreadRef = useActiveThreadRefFromRoute();
+  const gt = useGT();
   const isTop = position.startsWith("top");
   const visibleToasts = toasts.filter((toast) =>
     shouldRenderThreadScopedToast(toast.data, activeThreadRef),
@@ -587,6 +595,7 @@ function Toasts({ position }: { position: ToastPosition }) {
   return (
     <Toast.Portal data-slot="toast-portal">
       <Toast.Viewport
+        aria-label={gt("Notifications", { $context: "screen reader name of the toast area" })}
         className={cn(
           "fixed z-100 mx-auto flex w-[calc(100%-var(--toast-inset)*2)] max-w-90 [--toast-header-offset:var(--workspace-topbar-height)] [--toast-inset:--spacing(4)] sm:[--toast-inset:--spacing(8)]",
           "data-[position*=top]:top-[calc(var(--toast-inset)+var(--toast-header-offset))]",
@@ -675,7 +684,7 @@ function Toasts({ position }: { position: ToastPosition }) {
               />
               <div className={toastCornerDismissClass}>
                 <button
-                  aria-label={uiT("Dismiss notification")}
+                  aria-label={gt("Dismiss notification")}
                   className={toastCornerOrbClass}
                   data-slot="toast-close"
                   onClick={() =>
@@ -724,14 +733,18 @@ function AnchoredToastProvider({ children, ...props }: Toast.Provider.Props) {
 }
 
 function AnchoredToasts() {
-  const { t: uiT } = useUiLanguage();
-
   const { toasts } = Toast.useToastManager<ThreadToastData>();
   const activeThreadRef = useActiveThreadRefFromRoute();
+  const gt = useGT();
 
   return (
     <Toast.Portal data-slot="toast-portal-anchored">
-      <Toast.Viewport className="outline-none" data-slot="toast-viewport-anchored">
+      <Toast.Viewport
+        aria-label={undefined}
+        className="outline-none"
+        data-slot="toast-viewport-anchored"
+        role={undefined}
+      >
         {toasts
           .filter((toast) => shouldRenderThreadScopedToast(toast.data, activeThreadRef))
           .map((toast) => {
@@ -768,7 +781,7 @@ function AnchoredToasts() {
                     <>
                       <div className={toastCornerDismissClass}>
                         <button
-                          aria-label={uiT("Dismiss notification")}
+                          aria-label={gt("Dismiss notification")}
                           className={toastCornerOrbClass}
                           data-slot="toast-close"
                           onClick={() =>
@@ -818,9 +831,9 @@ export { stackedThreadToast } from "./toastHelpers";
 export type { StackedThreadToastOptions } from "./toastHelpers";
 
 export {
-  AnchoredToastProvider,
   ToastProvider,
-  anchoredToastManager,
-  toastManager,
   type ToastPosition,
+  toastManager,
+  AnchoredToastProvider,
+  anchoredToastManager,
 };

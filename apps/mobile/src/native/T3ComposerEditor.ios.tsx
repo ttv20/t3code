@@ -1,7 +1,11 @@
 import { PASTED_TEXT_ATTACHMENT_THRESHOLD_BYTES } from "@t3tools/client-runtime/text-paste";
 import { PROVIDER_SEND_TURN_MAX_INPUT_CHARS } from "@t3tools/contracts";
 import { collectComposerInlineTokens } from "@t3tools/shared/composerInlineTokens";
+import { markdownMathRanges } from "@t3tools/shared/markdownMath";
+import { composerContextEditorTokens, composerSkillLabels } from "../lib/composerContext";
+import { useComposerModelTokens } from "./useComposerModelTokens";
 import { requireNativeView } from "expo";
+import { useGT } from "gt-react-native";
 import {
   useCallback,
   useEffect,
@@ -13,10 +17,9 @@ import {
 } from "react";
 import type { NativeSyntheticEvent, StyleProp, ViewProps, ViewStyle } from "react-native";
 import { StyleSheet } from "react-native";
-import { useUiLanguage } from "../i18n";
-import { composerContextEditorTokens, composerSkillLabels } from "../lib/composerContext";
+
 import { DEFAULT_COMPOSER_ENTER_BEHAVIOR } from "../lib/composerEnterBehavior";
-import { useComposerModelTokens } from "./useComposerModelTokens";
+
 import { useComposerTextRole } from "../features/settings/appearance/useScaledTextRole";
 import {
   composerChipSizeSuffix,
@@ -155,8 +158,7 @@ export function ComposerEditor({
   readResetGeneration = NO_RESET,
   ...props
 }: ComposerEditorProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const nativeRef = useRef<NativeComposerEditorRef>(null);
   const mostRecentEventCountRef = useRef(0);
   const [mostRecentEventCount, setMostRecentEventCount] = useState(0);
@@ -169,11 +171,12 @@ export function ComposerEditor({
   // an abandoned render from leaking a trailing token into the next one.
   const [confirmedTokens, setConfirmedTokens] = useState(() => ({
     value: props.value,
-    tokens: collectComposerInlineTokens(props.value),
+    tokens: collectComposerInlineTokens(props.value, { findMath: markdownMathRanges }),
   }));
   let tokens = confirmedTokens.tokens;
   if (confirmedTokens.value !== props.value) {
     tokens = collectComposerInlineTokens(props.value, {
+      findMath: markdownMathRanges,
       preserveTrailingFrom: confirmedTokens.tokens,
     });
     setConfirmedTokens({ value: props.value, tokens });
@@ -202,7 +205,7 @@ export function ComposerEditor({
           token.type === "mention" ? token.value : contextRecordFileName(record),
         );
         return {
-          type: token.type,
+          type: token.type === "citation" ? "context" : token.type,
           source: token.source,
           start: token.start,
           end: token.end,
@@ -217,8 +220,10 @@ export function ComposerEditor({
               : model
                 ? model.label
                 : token.type === "context"
-                  ? `${token.label}${props.context?.records.some((record) => record.contextId === token.contextId) ? "" : uiT(" · unavailable")}`
-                  : basename(token.value),
+                  ? `${token.label}${props.context?.records.some((record) => record.contextId === token.contextId) ? "" : " · unavailable"}`
+                  : token.type === "citation"
+                    ? token.value
+                    : basename(token.value).normalize("NFC"),
           detail: token.type === "context" ? composerChipSizeSuffix(record) : "",
           iconUri: model ? modelChipIconUri(model) : contextChipIconUri(icon),
           tintsIcon: model ? modelChipIcon(model).tintsIcon : icon.kind === "chip",
@@ -234,7 +239,6 @@ export function ComposerEditor({
     modelTokens,
     theme,
     chipTextColor,
-    uiT,
   ]);
   // Every render resolves against the snapshot history, so a render whose
   // (value, selection) lags the acknowledged native state is stamped behind
@@ -369,8 +373,8 @@ export function ComposerEditor({
       editable={props.editable ?? true}
       readOnly={props.readOnly ?? false}
       enterBehavior={props.enterBehavior ?? DEFAULT_COMPOSER_ENTER_BEHAVIOR}
-      submitTitle={props.submitTitle ?? "Send Message"}
-      alternateSubmitTitle={props.alternateSubmitTitle ?? props.submitTitle ?? "Send Message"}
+      submitTitle={props.submitTitle ?? gt("Send Message")}
+      alternateSubmitTitle={props.alternateSubmitTitle ?? props.submitTitle ?? gt("Send Message")}
       scrollEnabled={props.scrollEnabled ?? true}
       autoFocus={props.autoFocus ?? false}
       autoCorrect={props.autoCorrect ?? true}

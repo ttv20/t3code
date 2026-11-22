@@ -1,17 +1,15 @@
-import {
-  capitalizeTerm,
-  sourceControlClients,
-} from "@t3tools/client-runtime/source-control-clients";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { changeRequestTermKind } from "../../lib/changeRequestTerm";
 import {
   pullRequestListLines,
   resolveThreadPullRequestChains,
   threadPullRequestKeyOf,
   type PullRequestListLine,
 } from "@t3tools/client-runtime/thread-pull-requests";
+import { useGT, useMessages } from "gt-react-native";
 import { memo, useMemo } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { RelativeTime } from "../../components/RelativeTime";
 import { SymbolView } from "../../components/ui/AppSymbol";
@@ -64,40 +62,82 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
   readonly openPullRequest: (url: string) => Promise<boolean>;
   readonly actions: LinkedPullRequestActions | null;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const { link, depth, stack } = props.line;
   const snapshot = link.snapshot;
-  const status = snapshot === null ? null : pullRequestStatus(snapshot);
-  const conflict = snapshot === null ? null : pullRequestConflict(snapshot);
+  const status = snapshot === null ? null : pullRequestStatus(snapshot, messages);
+  const conflict = snapshot === null ? null : pullRequestConflict(snapshot, messages);
   const open = snapshot === null || snapshot.state === "open";
   const checks =
     open && snapshot?.checksState ? pullRequestChecksStatus(snapshot.checksState) : null;
   const review =
     open && snapshot?.reviewDecision
-      ? pullRequestListReviewStatus({
-          reviewDecision: snapshot.reviewDecision,
-          viewerReviewRequested: false,
-        })
+      ? pullRequestListReviewStatus(
+          {
+            reviewDecision: snapshot.reviewDecision,
+            viewerReviewRequested: false,
+          },
+          messages,
+        )
       : null;
   const watching = open && link.watch !== undefined;
   const additions = snapshot?.additions ?? 0;
   const deletions = snapshot?.deletions ?? 0;
-  const { shortLabel, singular } = (
-    sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined)
-  ).changeRequest;
+  const term = changeRequestTermKind(
+    (sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined))
+      .changeRequest,
+  );
   const metaLineHeight = useScaledTextRole("label").lineHeight * useWindowDimensions().fontScale;
   const row = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${uiT(capitalizeTerm(singular))} ${link.number}, ${snapshot?.title ?? uiT("waiting for host state")}${status ? `, ${status.label}` : ""}${conflict ? `, ${conflict.label.toLowerCase()}` : ""}, ${link.repository}${stack ? uiT(", stack of {0}", { "0": stack.size }) : ""}${watching ? uiT(", watching") : ""}${checks ? uiT(", checks {0}", { "0": snapshot?.checksState }) : ""}${review ? `, ${review.accessibleLabel}` : ""}`}
-      accessibilityHint={props.actions ? uiT("Touch and hold for actions.") : undefined}
+      accessibilityLabel={[
+        gt(
+          "{term, select, mr {Merge request {number}, {title}} cr {Change request {number}, {title}} other {Pull request {number}, {title}}}",
+          {
+            term,
+            number: link.number,
+            title: snapshot?.title ?? gt("waiting for host state"),
+          },
+        ),
+        status?.label,
+        conflict === null || snapshot === null
+          ? undefined
+          : snapshot.baseBranch
+            ? gt("conflicts with {branch}", { branch: snapshot.baseBranch })
+            : gt("has conflicts"),
+        link.repository,
+        stack
+          ? gt("{size, plural, one {stack of {size}} other {stack of {size}}}", {
+              size: stack.size,
+            })
+          : undefined,
+        watching ? gt("watching") : undefined,
+        checks === null
+          ? undefined
+          : snapshot?.checksState === "passing"
+            ? gt("checks passing")
+            : snapshot?.checksState === "failing"
+              ? gt("checks failing")
+              : gt("checks pending"),
+        review?.accessibleLabel,
+      ]
+        .filter(Boolean)
+        .join(", ")}
+      accessibilityHint={props.actions ? gt("Touch and hold for actions.") : undefined}
       onPress={() => {
         void props.openPullRequest(link.url).then((opened) => {
           if (!opened)
             Dialog.alert(
-              uiT("Unable to open {0}", { "0": uiT(shortLabel) }),
-              uiT("The {0} could not be opened.", { "0": uiT(singular) }),
+              gt(
+                "{term, select, mr {Unable to open MR} cr {Unable to open change request} other {Unable to open PR}}",
+                { term },
+              ),
+              gt(
+                "{term, select, mr {The merge request could not be opened.} cr {The change request could not be opened.} other {The pull request could not be opened.}}",
+                { term },
+              ),
             );
         });
       }}
@@ -167,7 +207,7 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
           numberOfLines={2}
           ellipsizeMode="tail"
         >
-          {snapshot?.title ?? uiT("Waiting for host state")}
+          {snapshot?.title ?? gt("Waiting for host state")}
         </Text>
       </View>
     </Pressable>

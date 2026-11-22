@@ -7,10 +7,11 @@ import type {
   ProviderApprovalOption,
   RuntimeRequestId,
 } from "@t3tools/contracts";
+
+import { T, useGT, useMessages } from "gt-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Button } from "../../components/ui/Button";
-import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import type { PendingApproval } from "../../lib/threadActivity";
@@ -25,17 +26,17 @@ export interface PendingApprovalCardProps {
   ) => Promise<unknown>;
 }
 
-const DEFAULT_APPROVAL_OPTIONS: ReadonlyArray<ProviderApprovalOption> = [
-  { decision: "accept", label: "Allow once" },
-  { decision: "acceptForSession", label: "Allow session" },
-  { decision: "decline", label: "Decline" },
-];
-
 export function PendingApprovalCard(props: PendingApprovalCardProps) {
-  const { t: uiT } = useUiLanguage();
-
-  const options: ReadonlyArray<ProviderApprovalOption> =
-    props.approval.options ?? DEFAULT_APPROVAL_OPTIONS;
+  const gt = useGT();
+  const m = useMessages();
+  const options: ReadonlyArray<ProviderApprovalOption> = props.approval.options ?? [
+    { decision: "accept", label: gt("Allow once") },
+    { decision: "acceptForSession", label: gt("Allow session") },
+    {
+      decision: "decline",
+      label: gt("Decline", { $context: "verb, rejects the approval request" }),
+    },
+  ];
   const warning = options.find((option) => option.warning)?.warning;
   const canRespond = props.approval.responseCapability === "live";
   const disabled = !canRespond || props.respondingApprovalId === props.approval.requestId;
@@ -43,7 +44,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
   return (
     <View className="gap-2.5 rounded-[20px] border border-border bg-card-alt p-4">
       <Text className="font-t3-bold text-2xs uppercase tracking-[1.1px] text-foreground-secondary">
-        {uiT("Approval needed")}
+        <T>Approval needed</T>
       </Text>
       <Text className="font-t3-bold text-lg text-foreground">
         {props.approval.appName ?? props.approval.requestKind}
@@ -65,20 +66,21 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
           onPress={() => setExplanationOpen((open) => !open)}
         >
           <Text className="font-t3-bold text-xs text-foreground-secondary underline">
-            {uiT(FULL_ACCESS_OVERRIDE_QUESTION)}
+            {m(FULL_ACCESS_OVERRIDE_QUESTION)}
           </Text>
           {explanationOpen ? (
             <Text className="mt-1 font-sans text-xs leading-normal text-foreground-muted">
-              {uiT(fullAccessOverrideExplanation(props.approval.fullAccessOverride))}
+              {fullAccessOverrideExplanation(props.approval.fullAccessOverride, m)}
             </Text>
           ) : null}
         </Pressable>
       ) : null}
       {!canRespond ? (
         <Text className="font-sans text-sm leading-5 text-foreground-muted">
-          {uiT(
-            "The provider process for this request is no longer available. Interrupt or restart the run to continue.",
-          )}
+          <T>
+            The provider process for this request is no longer available. Interrupt or restart the
+            run to continue.
+          </T>
         </Text>
       ) : null}
       {warning ? (
@@ -88,7 +90,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
         {options.map((option) => (
           <Button
             key={option.decision}
-            label={uiT(option.label)}
+            label={option.label}
             tone={
               option.decision === "accept"
                 ? "primary"
@@ -104,7 +106,7 @@ export function PendingApprovalCard(props: PendingApprovalCardProps) {
       </View>
       {!props.canOperateThread ? (
         <Text className="font-sans text-xs text-foreground-muted">
-          {uiT("This connection cannot respond to approvals.")}
+          <T>This connection cannot respond to approvals.</T>
         </Text>
       ) : null}
     </View>

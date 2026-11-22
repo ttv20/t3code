@@ -1,3 +1,4 @@
+import { serverEnvironment } from "../../state/server";
 import { LegendList, type LegendListRef } from "@legendapp/list/react-native";
 import { useAtomValue } from "@effect/atom-react";
 import { useNavigation } from "@react-navigation/native";
@@ -8,7 +9,8 @@ import {
   type EnvironmentThreadSearchMatch,
   type ShownOrder,
 } from "@t3tools/client-runtime/state/thread-search";
-import { isListedThreadLineage, THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
+import { isShownUnderParent } from "@t3tools/client-runtime/state/threads";
+import { THREAD_JUMP_KEYBINDING_COMMANDS } from "@t3tools/contracts";
 import {
   foldSearchQuery,
   PALETTE_MESSAGE_LIMIT,
@@ -17,6 +19,8 @@ import {
   splitSearchText,
   threadRecentUse,
 } from "@t3tools/shared/paletteSearch";
+import { searchMatchHintLabel } from "@t3tools/shared/paletteSearchCopy";
+import { T, useGT, useMessages } from "gt-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -28,7 +32,7 @@ import {
   View,
   type TextInputInstance,
 } from "react-native";
-import { useUiLanguage } from "../../i18n";
+
 import { uuidv4 } from "../../lib/uuid";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -45,13 +49,15 @@ import { useNativeLayoutMetrics } from "../../native/native-layout-metrics";
 import { T3KeyboardCommands } from "../../native/T3KeyboardCommands";
 import { useActiveNewTask } from "../../state/active-new-task";
 import {
+  useDelegatedUnderParent,
   useProjects,
   useServerConfigs,
   useThreadShell,
   useVisibleThreadShells,
 } from "../../state/entities";
 import { useThreadSearch } from "../../state/queries";
-import { serverEnvironment } from "../../state/server";
+import { requestThreadMessageJump } from "../threads/threadMessageJump";
+import { useCanShareWithGuest } from "../threads/useCanShareWithGuest";
 import { threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useSavedRemoteConnections } from "../../state/use-remote-environment-registry";
@@ -63,7 +69,7 @@ import { useAppearancePreferences } from "../settings/appearance/AppearancePrefe
 import { openSettings } from "../settings/settings-navigation";
 import { useNewTaskFlow } from "../threads/new-task-flow-provider";
 import { ThreadSearchMatchExcerpt } from "../threads/thread-search-match";
-import { requestThreadMessageJump } from "../threads/threadMessageJump";
+
 import { pickTriageEnvironment } from "../triage/triageTarget";
 import { useStartTriage } from "../triage/useStartTriage";
 import {
@@ -120,6 +126,7 @@ function PaletteRow(props: {
   const mutedForegroundClassName = props.selected
     ? "text-thread-selected-foreground-muted"
     : "text-foreground-muted";
+  const m = useMessages();
   return (
     <RowPressable
       accessibilityRole="button"
@@ -171,8 +178,8 @@ function PaletteRow(props: {
               lives, unless the hint already names it. */}
           {(props.searchMatch ||
             (props.item.matchHint &&
-              props.item.matchHint.label !== "Project" &&
-              props.item.matchHint.label !== "Environment")) &&
+              props.item.matchHint.field !== "project" &&
+              props.item.matchHint.field !== "environment")) &&
           props.item.detail ? (
             <Text
               numberOfLines={1}
@@ -191,7 +198,7 @@ function PaletteRow(props: {
           />
         ) : props.item.matchHint ? (
           <Text numberOfLines={1} className={cn("text-sm", mutedForegroundClassName)}>
-            {props.item.matchHint.label}:{" "}
+            {searchMatchHintLabel(props.item.matchHint.field, m)}:{" "}
             {splitSearchText(props.item.matchHint.text, props.item.matchHint.ranges).map((part) => (
               <Text key={part.start} className={cn("text-sm", part.highlighted && "font-t3-bold")}>
                 {part.text}
@@ -221,14 +228,15 @@ export function CommandPalette(props: {
   readonly onClose: () => void;
   readonly onCommand: (command: HardwareKeyboardCommand) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const navigation = useNavigation();
+  const gt = useGT();
   const selectTab = useSelectWorkspaceTab();
   const { themeVariables } = useAppearancePreferences();
   const selectDetail = useSelectWorkspaceDetail();
   const runCommand = props.onCommand;
   const projects = useProjects();
   const threads = useVisibleThreadShells();
+  const delegatedUnderParent = useDelegatedUnderParent();
   const activeThreadRef = parseActiveThreadPath(props.pathname);
   const activeThread = useThreadShell(activeThreadRef);
   const visitThread = useAtomCommand(threadEnvironment.visit, { reportFailure: false });
@@ -285,6 +293,7 @@ export function CommandPalette(props: {
     useAtomValue(serverEnvironment.prepareTriage.permissionAtom(triageEnvironmentId)) &&
     triageEnvironmentId !== null &&
     serverConfigs.get(triageEnvironmentId)?.environment.capabilities.triage === true;
+  const canShareWithGuest = useCanShareWithGuest(activeThreadRef?.environmentId ?? null);
   const contentMatchByKey = new Map(
     search.matches
       .filter((match) => match.source === "user" || match.source === "assistant")
@@ -295,69 +304,71 @@ export function CommandPalette(props: {
       {
         key: "newTask",
         kind: "action",
-        title: uiT("New thread in…"),
+        title: gt("New thread in…"),
         searchTerms: ["new task", "chat", "create", "project"],
         run: () => runCommand("newTask"),
       },
       {
         key: "addProject",
         kind: "action",
-        title: uiT("Add project"),
+        title: gt("Add project"),
         searchTerms: ["folder", "clone", "repository", "git"],
         run: () => navigation.navigate("AddProject"),
       },
       {
         key: "settings",
         kind: "action",
-        title: uiT("Open settings"),
+        title: gt("Open settings"),
         searchTerms: ["preferences", "configuration"],
         run: () => selectTab("settings"),
       },
       {
         key: "appearance",
         kind: "action",
-        title: uiT("Appearance"),
+        title: gt("Appearance"),
         searchTerms: ["theme", "colors", "dark", "light"],
         run: () => openSettings(navigation, "SettingsAppearance"),
       },
       {
         key: "environments",
         kind: "action",
-        title: uiT("Manage environments"),
+        title: gt("Manage environments"),
         searchTerms: ["connections", "server", "remote"],
         run: () => openSettings(navigation, "SettingsEnvironments"),
       },
       {
         key: "scheduledTasks",
         kind: "action",
-        title: uiT("Scheduled tasks"),
+        title: gt("Scheduled tasks"),
         searchTerms: ["schedule", "automations", "recurring"],
         run: () => openSettings(navigation, "SettingsScheduledTasks"),
       },
       {
         key: "usage",
         kind: "action",
-        title: uiT("Usage"),
+        title: gt("Usage", { $context: "command, opens usage settings" }),
         searchTerms: ["limits", "accounts", "quota"],
         run: () => openSettings(navigation, "SettingsUsage"),
       },
       {
         key: "archive",
         kind: "action",
-        title: uiT("Archived threads"),
+        title: gt("Archived threads"),
         searchTerms: ["restore", "history"],
         run: () => openSettings(navigation, "SettingsArchive"),
       },
     ];
     if (canTriage) {
+      const triageEnvironmentLabel = savedConnectionsById[triageEnvironmentId]?.environmentLabel;
       actions.push({
         key: "triage",
         kind: "action",
-        title: uiT("Triage an issue"),
+        title: gt("Triage an issue"),
         // Mobile has no triage hero, so name the machine before it starts.
-        detail: uiT("On {0}", {
-          "0": savedConnectionsById[triageEnvironmentId]?.environmentLabel ?? "this machine",
-        }),
+        detail:
+          triageEnvironmentLabel !== undefined
+            ? gt("On {environment}", { environment: triageEnvironmentLabel })
+            : gt("On this machine"),
         searchTerms: ["triage", "bug", "issue", "report", "broken", "debug", "help", "support"],
         run: () => void startTriage(triageEnvironmentId),
       });
@@ -372,7 +383,7 @@ export function CommandPalette(props: {
       actions.unshift({
         key: "newThread",
         kind: "action",
-        title: uiT("New thread in {0}", { "0": activeProject.title }),
+        title: gt("New thread in {project}", { project: activeProject.title }),
         searchTerms: ["new task", "chat", "create"],
         run: () =>
           selectDetail({
@@ -390,10 +401,10 @@ export function CommandPalette(props: {
     }
     if (activeThreadRef) {
       const threadActions = [
-        ["files", "Go to file", ["open", "files", "browse", "search"]],
-        ["terminal", "Open terminal", ["shell", "console"]],
-        ["review", "Review changes", ["diff", "git", "pull request"]],
-        ["copyThreadReference", "Copy PR link or thread", ["reference", "clipboard"]],
+        ["files", gt("Go to file"), ["open", "files", "browse", "search"]],
+        ["terminal", gt("Open terminal"), ["shell", "console"]],
+        ["review", gt("Review changes"), ["diff", "git", "pull request"]],
+        ["copyThreadReference", gt("Copy PR link or thread"), ["reference", "clipboard"]],
       ] as const;
       actions.push(
         ...threadActions.map(([command, title, searchTerms]) => ({
@@ -404,6 +415,15 @@ export function CommandPalette(props: {
           run: () => runCommand(command),
         })),
       );
+      if (canShareWithGuest) {
+        actions.push({
+          key: "shareWithGuest",
+          kind: "action",
+          title: gt("Share with guest"),
+          searchTerms: ["share", "guest", "invite", "link", "teammate"],
+          run: () => navigation.navigate("ThreadGuestShare", activeThreadRef),
+        });
+      }
     }
     const openProjects = projects.filter((project) => project.archivedAt == null);
     const projectItems: CommandPaletteItem[] = [
@@ -414,8 +434,9 @@ export function CommandPalette(props: {
       kind: "project",
       project,
       title: project.title,
-      detail: uiT("New thread · {0}", {
-        "0": savedConnectionsById[project.environmentId]?.environmentLabel ?? project.environmentId,
+      detail: gt("New thread · {environment}", {
+        environment:
+          savedConnectionsById[project.environmentId]?.environmentLabel ?? project.environmentId,
       }),
       searchTerms: [project.workspaceRoot, "new thread", "project"],
       run: () =>
@@ -432,7 +453,15 @@ export function CommandPalette(props: {
         }),
     }));
     const threadItems: CommandPaletteItem[] = threads
-      .filter((thread) => thread.archivedAt === null && isListedThreadLineage(thread.lineage))
+      .filter(
+        (thread) =>
+          thread.archivedAt === null &&
+          !isShownUnderParent(
+            { environmentId: thread.environmentId, threadId: thread.id },
+            thread.lineage,
+            delegatedUnderParent,
+          ),
+      )
       .map((thread) => {
         const project = projectByKey.get(scopedProjectKey(thread.environmentId, thread.projectId));
         const environment =
@@ -440,7 +469,7 @@ export function CommandPalette(props: {
         return {
           key: scopedThreadKey(thread.environmentId, thread.id),
           kind: "thread",
-          title: thread.title || uiT("Untitled thread"),
+          title: thread.title || gt("Untitled thread"),
           detail: [project?.title, environment].filter(Boolean).join(" · "),
           searchTerms: [],
           threadSearch: threadSearchSubject(
@@ -467,12 +496,12 @@ export function CommandPalette(props: {
     );
     return [...actions, ...projectItems, ...threadItems];
   }, [
-    uiT,
     selectTab,
     activeThread,
     activeThreadRef,
     environments.length,
     canTriage,
+    canShareWithGuest,
     navigation,
     projects,
     runCommand,
@@ -480,7 +509,9 @@ export function CommandPalette(props: {
     selectDetail,
     startTriage,
     threads,
+    delegatedUnderParent,
     triageEnvironmentId,
+    gt,
   ]);
   const rankedMessageKeys = useMemo(() => {
     const subjectByKey = new Map(
@@ -622,7 +653,7 @@ export function CommandPalette(props: {
           >
             <Pressable
               className="absolute inset-0 bg-backdrop"
-              accessibilityLabel={uiT("Close command palette")}
+              accessibilityLabel={gt("Close command palette")}
               onPress={() => close()}
             />
             <GlassSurface
@@ -646,8 +677,8 @@ export function CommandPalette(props: {
                   />
                   <TextInput
                     ref={inputRef}
-                    accessibilityLabel={uiT("Search commands, projects, and threads")}
-                    placeholder={uiT("Search commands, projects, and threads…")}
+                    accessibilityLabel={gt("Search commands, projects, and threads")}
+                    placeholder={gt("Search commands, projects, and threads…")}
                     placeholderTextColorClassName="accent-placeholder"
                     autoCorrect={false}
                     autoCapitalize="none"
@@ -689,14 +720,18 @@ export function CommandPalette(props: {
                 contentContainerStyle={{ paddingBottom: 8 }}
                 ListEmptyComponent={
                   <Text className="p-5 text-center text-foreground-muted">
-                    {search.isPending ? uiT("Searching…") : uiT("No results")}
+                    {search.isPending
+                      ? gt("Searching…")
+                      : search.failed
+                        ? gt("Couldn't search messages")
+                        : gt("No results")}
                   </Text>
                 }
                 // Message results from slower environments may still arrive below.
                 ListFooterComponent={
                   results.length > 0 && search.isPending && !query.startsWith(">") ? (
                     <Text className="px-5 pt-2 text-xs text-foreground-muted">
-                      {uiT("Searching messages…")}
+                      <T>Searching messages…</T>
                     </Text>
                   ) : undefined
                 }
@@ -707,7 +742,7 @@ export function CommandPalette(props: {
                         className="px-5 pt-2 text-xs text-foreground-muted"
                         style={{ height: SECTION_LABEL_HEIGHT }}
                       >
-                        {uiT("In messages")}
+                        <T>In messages</T>
                       </Text>
                     ) : null}
                     <PaletteRow

@@ -1,3 +1,4 @@
+import { createUiMessageResolver } from "../i18n.ts";
 // @effect-diagnostics globalDate:off -- Tests exercise local calendar snooze boundaries.
 import * as DateTime from "effect/DateTime";
 import { RunId, RuntimeRequestId } from "@t3tools/contracts";
@@ -483,26 +484,38 @@ describe("localized snooze presets", () => {
       [Symbol.dispose]: () => Object.defineProperty(Intl, "RelativeTimeFormat", original),
     };
     Object.defineProperty(Intl, "RelativeTimeFormat", { ...original, value: undefined });
-    const presets = resolveSnoozePresets(localDate(2026, 4, 8, 10), {
-      locale: "he",
-      presets: [{ kind: "after", minutes: 180 }],
-      formatTime: () => "13:00",
-    });
+    const presets = resolveSnoozePresets(
+      localDate(2026, 4, 8, 10),
+      {
+        locale: "he",
+        presets: [{ kind: "after", minutes: 180 }],
+        formatTime: () => "13:00",
+      },
+      createUiMessageResolver("he"),
+    );
     expect(presets[0]?.label).toMatch(/[\u0590-\u05ff]/u);
-    expect(presets[0]?.label).toContain("2026");
+    expect(presets[0]?.label).toBe("בעוד 3 שעות");
     expect(presets[0]?.snoozedUntil).toBe(localDate(2026, 4, 8, 13).toISOString());
   });
   it("uses the selected interface language for custom durations and calendar weekdays", () => {
-    const presets = resolveSnoozePresets(localDate(2026, 4, 8, 10), {
-      locale: "he",
-      presets: [
-        { kind: "after", minutes: 180 },
-        { kind: "at", day: "friday", time: "09:00" },
-      ],
-      formatTime: () => "09:00",
-    });
+    const presets = resolveSnoozePresets(
+      localDate(2026, 4, 8, 10),
+      {
+        locale: "he",
+        presets: [
+          { kind: "after", minutes: 180 },
+          { kind: "at", day: "friday", time: "09:00" },
+          { kind: "after", minutes: 2880 },
+        ],
+        formatTime: () => "09:00",
+      },
+      createUiMessageResolver("he"),
+    );
     expect(presets[0]?.label).toBe("בעוד 3 שעות");
     expect(presets[1]?.label).toBe("יום שישי");
+    expect(presets[2]?.whenLabel).toBe(
+      `${new Intl.DateTimeFormat("he", { weekday: "short", calendar: "gregory" }).format(localDate(2026, 4, 10, 10))} 09:00`,
+    );
     expect(presets[0]?.whenLabel).toBe("09:00");
     expect(presets[1]?.snoozedUntil).toBe(localDate(2026, 4, 10, 9).toISOString());
   });

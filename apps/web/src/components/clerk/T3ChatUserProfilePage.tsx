@@ -1,7 +1,7 @@
 import { T3CHAT_PLAN_TUNNEL_LIMITS, type RelayT3ChatLink } from "@t3tools/contracts/relay";
 import { MessageSquareIcon } from "lucide-react";
+import { T, useGT, Var } from "gt-react";
 import type { ReactNode } from "react";
-import { UiText, useUiLanguage } from "../../i18n";
 
 import { useManagedTunnelUsage } from "../../cloud/managedRelayState";
 import { T3CHAT_SUBSCRIPTION_URL, TunnelUsageMeter } from "../cloud/TunnelUsage";
@@ -13,49 +13,61 @@ import {
 } from "./ClerkUserProfilePage";
 import { useT3ChatLink } from "./useT3ChatLink";
 
-const upgradeLink = (
-  <a className="underline" href={T3CHAT_SUBSCRIPTION_URL} target="_blank" rel="noopener noreferrer">
-    <UiText message={"Upgrade on T3 Chat"} />
-  </a>
-);
-
 function planLabel(link: RelayT3ChatLink): ReactNode {
   switch (link.plan) {
     case "premier":
-      return `Premier · up to ${T3CHAT_PLAN_TUNNEL_LIMITS.premier} tunnels`;
+      return (
+        <T>
+          Premier · up to <Var>{T3CHAT_PLAN_TUNNEL_LIMITS.premier}</Var> tunnels
+        </T>
+      );
     case "pro":
       return (
-        <>
-          <UiText message={"Pro · up to"} /> {T3CHAT_PLAN_TUNNEL_LIMITS.pro}{" "}
-          <UiText message={"tunnels."} /> {upgradeLink} <UiText message={"to Premier for"} />{" "}
-          {T3CHAT_PLAN_TUNNEL_LIMITS.premier}.
-        </>
+        <T>
+          Pro · up to <Var>{T3CHAT_PLAN_TUNNEL_LIMITS.pro}</Var> tunnels.{" "}
+          <a
+            className="underline"
+            href={T3CHAT_SUBSCRIPTION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Upgrade on T3 Chat
+          </a>{" "}
+          to Premier for <Var>{T3CHAT_PLAN_TUNNEL_LIMITS.premier}</Var>.
+        </T>
       );
     case "free":
       return (
-        <>
-          {upgradeLink} <UiText message={"for more tunnels"} />
-        </>
+        <T>
+          <a
+            className="underline"
+            href={T3CHAT_SUBSCRIPTION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Upgrade on T3 Chat
+          </a>{" "}
+          for more tunnels
+        </T>
       );
   }
 }
 
 /** Links a T3 Chat account so paid subscribers get more tunnels. */
 export function T3ChatUserProfilePage() {
-  const { t: uiT } = useUiLanguage();
-
   const { linkState, pending, linkUrl, link: handleLink, unlink: handleUnlink } = useT3ChatLink();
   const usage = useManagedTunnelUsage();
+  const gt = useGT();
 
   const data = linkState.data;
   const link = data?.link ?? null;
 
   return (
     <ClerkUserProfilePage
-      title={uiT("T3 Chat")}
-      description={uiT(
-        "Link a paid T3 Chat account for more T3 Connect tunnels: up to {0} with Pro, {1} with Premier.",
-        { "0": T3CHAT_PLAN_TUNNEL_LIMITS.pro, "1": T3CHAT_PLAN_TUNNEL_LIMITS.premier },
+      title="T3 Chat"
+      description={gt(
+        "Link a paid T3 Chat account for more T3 Connect tunnels: up to {pro} with Pro, {premier} with Premier.",
+        { pro: T3CHAT_PLAN_TUNNEL_LIMITS.pro, premier: T3CHAT_PLAN_TUNNEL_LIMITS.premier },
       )}
       action={
         <ClerkUserProfileRefreshButton
@@ -68,13 +80,13 @@ export function T3ChatUserProfilePage() {
       {linkState.error ? (
         <div className="border-t py-3 text-xs" role="alert">
           <p className="font-medium text-destructive-foreground">
-            {uiT("Could not load T3 Chat link")}
+            <T>Could not load T3 Chat link</T>
           </p>
           <p className="mt-0.5 text-muted-foreground">{linkState.error}</p>
         </div>
       ) : data === null ? null : !data.available ? (
         <p className="border-t py-4 text-xs text-muted-foreground">
-          {uiT("This T3 Connect server does not support T3 Chat linking.")}
+          <T>This T3 Connect server does not support T3 Chat linking.</T>
         </p>
       ) : (
         <ul className="border-t">
@@ -82,26 +94,26 @@ export function T3ChatUserProfilePage() {
             <div className="flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-sm leading-4.5 font-medium text-foreground">
-                  {link ? link.email : uiT("Not linked")}
+                  {link ? link.email : gt("Not linked")}
                 </h3>
                 <p className="mt-1 text-xs leading-4.5 text-muted-foreground">
                   {link ? (
                     planLabel(link)
                   ) : linkUrl ? (
-                    <>
-                      {uiT("Confirm on")}{" "}
+                    <T>
+                      Confirm on{" "}
                       <a
                         className="underline"
                         href={linkUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {uiT("t3.chat")}
+                        t3.chat
                       </a>
-                      {uiT(", then select Refresh.")}
-                    </>
+                      , then select Refresh.
+                    </T>
                   ) : (
-                    uiT("You confirm the link on t3.chat.")
+                    gt("You confirm the link on t3.chat.")
                   )}
                 </p>
               </div>
@@ -112,11 +124,11 @@ export function T3ChatUserProfilePage() {
                   disabled={pending !== null}
                   onClick={() => void handleUnlink()}
                 >
-                  {pending === "unlink" ? uiT("Unlinking…") : uiT("Unlink")}
+                  {pending === "unlink" ? gt("Unlinking…") : gt("Unlink")}
                 </Button>
               ) : (
                 <Button size="sm" disabled={pending !== null} onClick={() => void handleLink()}>
-                  {pending === "link" ? uiT("Opening…") : uiT("Link T3 Chat")}
+                  {pending === "link" ? gt("Opening…") : gt("Link T3 Chat")}
                 </Button>
               )}
             </div>

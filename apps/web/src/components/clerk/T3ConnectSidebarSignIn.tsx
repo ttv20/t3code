@@ -1,13 +1,12 @@
-import { UiText } from "../../i18n";
 import { UserButton, useAuth } from "@clerk/react";
+import { T, useMessages } from "gt-react";
 import { LogInIcon, RotateCwIcon } from "lucide-react";
+
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 import { retryClerkLoad, useClerkLoadFailed } from "./clerkLoadFailure";
 import { T3_CONNECT_ACCOUNT_PAGES } from "./T3ConnectAccountPages";
 import { useT3ConnectAuthPrompt } from "./useT3ConnectAuthPrompt";
-
-import { useUiLanguage } from "../../i18n";
 
 export function T3ConnectSidebarSignIn() {
   if (!hasCloudPublicConfig()) return null;
@@ -23,6 +22,7 @@ export function T3ConnectSidebarAvatar() {
 
 function ConfiguredT3ConnectSidebarAvatar() {
   const { isLoaded, isSignedIn } = useAuth();
+  const m = useMessages();
 
   if (!isLoaded || !isSignedIn) return null;
 
@@ -39,7 +39,7 @@ function ConfiguredT3ConnectSidebarAvatar() {
       {T3_CONNECT_ACCOUNT_PAGES.map((page) => (
         <UserButton.UserProfilePage
           key={page.url}
-          label={page.label}
+          label={m(page.label)}
           labelIcon={page.icon}
           url={page.url}
         >
@@ -51,7 +51,6 @@ function ConfiguredT3ConnectSidebarAvatar() {
 }
 
 function ConfiguredT3ConnectSidebarSignIn() {
-  const { t: uiT } = useUiLanguage();
   const { isLoaded, isSignedIn } = useAuth();
   const loadFailed = useClerkLoadFailed();
   const { openAuthPrompt } = useT3ConnectAuthPrompt();
@@ -63,7 +62,7 @@ function ConfiguredT3ConnectSidebarSignIn() {
           <SidebarMenuButton onClick={retryClerkLoad}>
             <RotateCwIcon />
             <span>
-              <UiText message={"Retry T3 Connect"} />
+              <T>Retry T3 Connect</T>
             </span>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -77,7 +76,9 @@ function ConfiguredT3ConnectSidebarSignIn() {
       <SidebarMenuItem>
         <SidebarMenuButton onClick={openAuthPrompt}>
           <LogInIcon />
-          <span>{uiT("Sign in to T3 Connect")}</span>
+          <span>
+            <T>Sign in to T3 Connect</T>
+          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

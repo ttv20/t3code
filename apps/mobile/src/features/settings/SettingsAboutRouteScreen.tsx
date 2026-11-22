@@ -1,11 +1,13 @@
-import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+import { T, useGT } from "gt-react-native";
+import * as Dialog from "../../components/ui/Dialog";
+import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
+import * as Application from "expo-application";
 import Constants from "expo-constants";
+import { settlePromise } from "@t3tools/client-runtime/state/runtime";
+
 import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Dialog from "../../components/ui/Dialog";
-import { ScreenScrollView as ScrollView } from "../../components/ui/ScreenScrollView";
-import { useUiLanguage } from "../../i18n";
 
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
@@ -21,11 +23,11 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { SettingsSection } from "./components/SettingsSection";
 
 export function SettingsAboutRouteScreen() {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const insets = useSafeAreaInsets();
 
   return (
-    <SettingsScreen title={uiT("About")}>
+    <SettingsScreen title={gt("About")}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -40,8 +42,7 @@ export function SettingsAboutRouteScreen() {
 }
 
 function AppSettingsSection() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [checkState, setCheckState] = useState<{
     readonly state: AppUpdateCheckState;
     // "Up to date" is a confirmation that fades back to idle.
@@ -57,7 +58,10 @@ function AppSettingsSection() {
   // Match app.config.ts's production fallback to avoid mislabeling builds as development.
   const variant = (Constants.expoConfig?.extra?.appVariant as string | undefined) ?? "production";
   const variantLabel = variant === "production" ? "" : capitalize(variant);
-  const versionLabel = variantLabel ? `${version} · ${variantLabel}` : version;
+  // EAS assigns build numbers remotely; only the installed binary knows its own.
+  const build = Application.nativeBuildVersion;
+  const versionWithBuild = build ? `${version} (${build})` : version;
+  const versionLabel = variantLabel ? `${versionWithBuild} · ${variantLabel}` : versionWithBuild;
   const updateCheckAvailable = isAppUpdateCheckAvailable();
   const busy =
     updateState === "checking" || updateState === "downloading" || updateState === "restarting";
@@ -70,7 +74,7 @@ function AppSettingsSection() {
     await settlePromise(() =>
       runAppUpdateCheck({
         applyMode: "immediate",
-        onFailure: (message) => Dialog.alert(uiT("Update failed"), message),
+        onFailure: (message) => Dialog.alert(gt("Update failed"), message),
         onStateChange: (state) =>
           setCheckState({
             state,
@@ -92,15 +96,15 @@ function AppSettingsSection() {
 
   const statusLabel =
     updateState === "checking"
-      ? uiT("Checking…")
+      ? gt("Checking…")
       : updateState === "downloading"
-        ? uiT("Downloading…")
+        ? gt("Downloading…")
         : updateState === "ready"
-          ? uiT("Update ready")
+          ? gt("Update ready")
           : updateState === "restarting"
-            ? uiT("Restarting…")
+            ? gt("Restarting…")
             : updateState === "current"
-              ? uiT("Up to date")
+              ? gt("Up to date")
               : null;
 
   const versionRow = (
@@ -112,33 +116,35 @@ function AppSettingsSection() {
         type="monochrome"
         weight="regular"
       />
-      <Text className="flex-1 text-lg text-foreground">{uiT("Version")}</Text>
+      <Text className="flex-1 text-lg text-foreground">
+        <T>Version</T>
+      </Text>
       <View className="items-end">
         <Text className="text-lg text-foreground-muted">{versionLabel}</Text>
         {statusLabel ? (
-          <Text className="text-xs text-foreground-muted/70">{uiT(statusLabel)}</Text>
+          <Text className="text-xs text-foreground-muted/70">{statusLabel}</Text>
         ) : null}
       </View>
     </View>
   );
 
   return (
-    <SettingsSection title={uiT("App")}>
+    <SettingsSection title={gt("App", { $context: "settings section about this mobile app" })}>
       <SettingsRow
         icon="internaldrive"
-        label={uiT("Client Storage")}
+        label={gt("Client Storage")}
         target="SettingsClientStorage"
       />
-      <SettingsRow icon="stethoscope" label={uiT("Diagnostics")} target="SettingsDiagnostics" />
+      <SettingsRow icon="stethoscope" label={gt("Diagnostics")} target="SettingsDiagnostics" />
       <SettingsRow
         icon="doc.on.doc"
-        label={uiT("Open source licenses")}
+        label={gt("Open source licenses")}
         target="SettingsOpenSourceLicenses"
       />
-      <SettingsRow icon="doc.text" label={uiT("Legal")} fullScreenTarget="SettingsLegal" />
+      <SettingsRow icon="doc.text" label={gt("Legal")} fullScreenTarget="SettingsLegal" />
       {updateCheckAvailable ? (
         <Pressable
-          accessibilityLabel={uiT("Version {0}", { "0": versionLabel })}
+          accessibilityLabel={gt("Version {version}", { version: versionLabel })}
           accessibilityRole="text"
           disabled={busy}
           onPress={handleVersionPress}

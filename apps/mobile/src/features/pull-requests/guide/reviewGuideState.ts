@@ -1,5 +1,7 @@
-import { readUiTranslator } from "../../../state/ui-language";
 import type { PullRequestReviewGuideResult } from "@t3tools/contracts";
+import { msg } from "gt-react-native";
+
+import { m, type MessageResolver } from "../../../i18n/messages";
 
 export function reviewGuideState(data: PullRequestReviewGuideResult | null) {
   const guide = data?.guide ?? null;
@@ -14,66 +16,72 @@ export function reviewGuideState(data: PullRequestReviewGuideResult | null) {
   };
 }
 
-export function guideNoticeState(state: {
-  readonly data: PullRequestReviewGuideResult | null;
-  readonly isPending: boolean;
-  readonly running: boolean;
-  readonly startError: string | null;
-  readonly error: string | null;
-}) {
-  const uiT = readUiTranslator();
+export function guideNoticeState(
+  state: {
+    readonly data: PullRequestReviewGuideResult | null;
+    readonly isPending: boolean;
+    readonly running: boolean;
+    readonly startError: string | null;
+    readonly error: string | null;
+  },
+  resolve: MessageResolver = m,
+) {
   const { guide, stale, failure } = reviewGuideState(state.data);
   if (state.running) {
     return {
       kind: "writing" as const,
-      title: uiT("Rewriting guide"),
+      title: resolve(msg("Rewriting guide")),
       description: guide
-        ? uiT("You can keep reading this guide while the agent writes the update.")
-        : uiT(
-            "An agent is reading the change and writing the tour. You can leave and come back when it’s ready.",
+        ? resolve(msg("You can keep reading this guide while the agent writes the update."))
+        : resolve(
+            msg(
+              "An agent is reading the change and writing the tour. You can leave and come back when it’s ready.",
+            ),
           ),
-      action: guide ? "Rewriting…" : "Writing guide…",
+      action: guide ? resolve(msg("Rewriting…")) : resolve(msg("Writing guide…")),
     };
   }
   const error = state.startError ?? failure;
   if (error) {
     return {
       kind: "failed" as const,
-      title: uiT("Could not write guide"),
+      title: resolve(msg("Could not write guide")),
       description: error,
-      action: "Try again",
+      action: resolve(msg("Try again")),
     };
   }
   if (state.error) {
     return {
       kind: "unavailable" as const,
-      title: uiT("Could not refresh guide"),
+      title: resolve(msg("Could not refresh guide")),
       description: state.error,
-      action: "Try again",
+      action: resolve(msg("Try again")),
     };
   }
   if (!state.data) {
     return {
       kind: "loading" as const,
-      title: uiT("Review guide"),
-      description: uiT("Checking for a saved guide…"),
-      action: "Loading guide…",
+      title: resolve(msg("Review guide")),
+      description: resolve(msg("Checking for a saved guide…")),
+      action: resolve(msg("Loading guide…")),
     };
   }
   if (stale) {
     return {
       kind: "stale" as const,
-      title: uiT("New changes since this guide"),
-      description: uiT("You can read the previous guide, or rewrite it for the latest changes."),
-      action: "Rewrite guide",
+      title: resolve(msg("New changes since this guide")),
+      description: resolve(
+        msg("You can read the previous guide, or rewrite it for the latest changes."),
+      ),
+      action: resolve(msg("Rewrite guide")),
     };
   }
   return {
     kind: guide ? ("ready" as const) : ("empty" as const),
-    title: uiT("Review guide"),
-    description: uiT(
-      "Get a tour of the change, with code excerpts and notes on what needs a closer look.",
+    title: resolve(msg("Review guide")),
+    description: resolve(
+      msg("Get a tour of the change, with code excerpts and notes on what needs a closer look."),
     ),
-    action: "Write guide",
+    action: resolve(msg("Write guide")),
   };
 }

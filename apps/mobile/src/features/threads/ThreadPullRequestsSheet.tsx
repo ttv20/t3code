@@ -1,9 +1,11 @@
+import { type StaticScreenProps } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { LegendList } from "@legendapp/list/react-native";
-import { useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { useGT } from "gt-react-native";
+import { changeRequestTermKind } from "../../lib/changeRequestTerm";
 import { useMemo } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { UiText, useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { ScreenContent } from "../../components/ui/ScreenContent";
@@ -20,9 +22,8 @@ import { useLinkedPullRequestActions } from "./useLinkedPullRequestActions";
 export function ThreadPullRequestsSheet(
   _props: StaticScreenProps<{ readonly environmentId: string; readonly threadId: string }>,
 ) {
-  const { t: uiT } = useUiLanguage();
-
   const navigation = useNavigation();
+  const gt = useGT();
   const insets = useSafeAreaInsets();
   const { selectedThread, selectedThreadProject, selectedEnvironmentRuntime } =
     useThreadSelection();
@@ -43,8 +44,11 @@ export function ThreadPullRequestsSheet(
     runtime: selectedEnvironmentRuntime,
   });
   const rowInputs = { lines, actions };
-  const { singular } = actions.terminology;
-  const title = uiT("Linked {0}", { "0": uiT(actions.terminology.plural) });
+  const term = changeRequestTermKind(actions.terminology);
+  const title = gt(
+    "{term, select, mr {Linked merge requests} cr {Linked change requests} other {Linked pull requests}}",
+    { term },
+  );
 
   const content = (
     <View className="flex-1 bg-screen">
@@ -75,19 +79,16 @@ export function ThreadPullRequestsSheet(
         ListHeaderComponent={
           lines.length > 0 ? (
             <Text className="px-4 pt-2 pb-1 text-xs text-foreground-muted">
-              <UiText
-                message={uiT("{0}  open ·{1}  linked")}
-                values={{ "0": openCount, "1": lines.length }}
-              />
+              {gt("{open} open · {linked} linked", { open: openCount, linked: lines.length })}
             </Text>
           ) : null
         }
         ListEmptyComponent={
           <Text className="pt-6 text-center text-sm text-foreground-muted">
-            <UiText
-              message={uiT("No linked {0}.")}
-              values={{ "0": <UiText message={actions.terminology.plural} /> }}
-            />
+            {gt(
+              "{term, select, mr {No linked merge requests.} cr {No linked change requests.} other {No linked pull requests.}}",
+              { term },
+            )}
           </Text>
         }
       />
@@ -103,7 +104,10 @@ export function ThreadPullRequestsSheet(
           actions.canLink
             ? [
                 {
-                  accessibilityLabel: uiT("Link {0}", { "0": uiT(singular) }),
+                  accessibilityLabel: gt(
+                    "{term, select, mr {Link merge request} cr {Link change request} other {Link pull request}}",
+                    { term },
+                  ),
                   icon: "plus",
                   onPress: actions.promptLink,
                 },

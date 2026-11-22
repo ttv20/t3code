@@ -1,3 +1,4 @@
+import { createUiMessageResolver } from "../i18n.ts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { ThreadId, TurnItemId, type OrchestrationV2TurnItem } from "@t3tools/contracts";
@@ -238,7 +239,7 @@ describe("summarizeToolGroup", () => {
       summary: "Used Settings and Default integrations and changed 2 files",
       hasFailure: true,
     });
-    expect(summarizeToolGroup(entries, "he")).toEqual({
+    expect(summarizeToolGroup(entries, createUiMessageResolver("he"))).toEqual({
       summary: "נעשה שימוש בשילובים Settings ו־Default ו־שונו 2 קבצים",
       hasFailure: true,
     });

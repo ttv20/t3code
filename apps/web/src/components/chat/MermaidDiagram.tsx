@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import type { DiagramType, MathResolver } from "pele/lazy";
+import { T, useGT, Var } from "gt-react";
 import { use, useState } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { serializeCodeBlockToMarkdown } from "../../markdown-clipboard";
 import { Button } from "../ui/button";
@@ -227,8 +227,7 @@ export function MermaidDiagram({
   source: string;
   onExpand: (imageUrl: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [, setAttempt] = useState(0);
   const [renderError, setRenderError] = useState<string | null>(null);
   const trimmedSource = source.trim();
@@ -250,7 +249,7 @@ export function MermaidDiagram({
       onRender: () => setRenderError(null),
       onError: (error) =>
         setRenderError(
-          error instanceof Error ? error.message : "The diagram could not be rendered.",
+          error instanceof Error ? error.message : gt("The diagram could not be rendered."),
         ),
     });
     return () => mounted.destroy();
@@ -259,7 +258,7 @@ export function MermaidDiagram({
   if (load.status === "failed") {
     return (
       <DiagramError
-        message={uiT("The diagram renderer failed to load.")}
+        message={gt("The diagram renderer failed to load.")}
         source={source}
         onRetry={() => {
           if (core.status === "failed") coreLoad = null;
@@ -279,7 +278,7 @@ export function MermaidDiagram({
       {renderError ? <DiagramError message={renderError} source={source} /> : null}
       <button
         type="button"
-        aria-label={uiT("Expand diagram")}
+        aria-label={gt("Expand diagram")}
         hidden={renderError !== null}
         className="block w-full cursor-zoom-in rounded-md focus-visible:outline-2 focus-visible:outline-ring"
         onClick={(event) => {
@@ -302,18 +301,17 @@ function DiagramError({
   source: string;
   onRetry?: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
         <p className="m-0 text-xs text-destructive">
-          {uiT("Unable to render diagram:")}
-          {message}
+          <T>
+            Unable to render diagram: <Var>{message}</Var>
+          </T>
         </p>
         {onRetry ? (
           <Button type="button" variant="ghost" size="xs" onClick={onRetry}>
-            {uiT("Retry")}
+            <T>Retry</T>
           </Button>
         ) : null}
       </div>

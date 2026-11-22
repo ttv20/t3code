@@ -1,30 +1,32 @@
-import { parseScopedThreadKey } from "@t3tools/client-runtime/environment";
-import type { WorkflowOpening } from "@t3tools/client-runtime/state/subagentRuntime";
-import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
+import { T, useGT, useMessages, Var } from "gt-react";
+import type { SideThreadOpenIntent } from "@t3tools/client-runtime/side-thread";
+import { threadErrorText } from "@t3tools/client-runtime/state/threads";
+import { threadEnvironment } from "../../state/threads";
+import { useAtomCommand } from "../../state/use-atom-command";
+import type { ToolCallDiffTarget } from "../../diffPanelStore";
+import { AudioPreviewUnmountContext } from "../files/AudioPreview";
+import { ThreadFindTimelineContext } from "./ThreadFindProvider";
+import { MarkdownFindContext } from "./markdownFindContext";
+import { useChatCanvas } from "./ChatCanvasContext";
+import { WorkLogBlock } from "./WorkLog";
+import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
 import type { WorktreeSetupSnapshot } from "@t3tools/contracts";
+import { deriveTimelineMinimapItems } from "./timelineMinimapItems";
 import {
   type AssistantCitation,
   type EnvironmentId,
   type MessageId,
   type OrchestrationV2TurnItem,
   type RunAttemptId,
-  type RunId,
   type ServerProviderSkill,
+  type RunId,
   ThreadId,
 } from "@t3tools/contracts";
-import { useStableCallback } from "~/hooks/useStableCallback";
+import { parseScopedThreadKey } from "@t3tools/client-runtime/environment";
+import { resolveWorkGroupScrollAnchor } from "@t3tools/client-runtime/work-log/scroll-anchor";
+import type { WorkflowOpening } from "@t3tools/client-runtime/state/subagentRuntime";
 import { observeResize } from "~/lib/observeResize";
-import type { ToolCallDiffTarget } from "../../diffPanelStore";
-import { useUiLanguage } from "../../i18n";
-import { threadEnvironment } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { AudioPreviewUnmountContext } from "../files/AudioPreview";
-import { useChatCanvas } from "./ChatCanvasContext";
-import { MarkdownFindContext } from "./markdownFindContext";
-import { ThreadFindTimelineContext } from "./ThreadFindProvider";
-import { deriveTimelineMinimapItems } from "./timelineMinimapItems";
-import { TimelinePendingApprovalRow } from "./TimelinePendingApprovalRow";
-import { WorkLogBlock } from "./WorkLog";
+import { useStableCallback } from "~/hooks/useStableCallback";
 
 const NOOP_USE_ARTIFACT_TEMPLATE = () => {};
 const EMPTY_PENDING_APPROVALS: ReadonlyArray<PendingApproval> = [];
@@ -32,16 +34,28 @@ const EMPTY_RESPONDING_REQUEST_IDS: TimelineRowSharedState["respondingRequestIds
 
 const NOOP_OPEN_ATTACHMENT = (_attachment: ChatFileAttachment) => {};
 
+import { resolveChatListAnchoredEndSpace } from "@t3tools/shared/chatList";
+import { observeVisibleAnimation } from "../../lib/visibleAnimation";
+import {
+  memo,
+  use,
+  useContext,
+  useLayoutEffect,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
 import {
   LegendList,
   type LegendListRef,
   type MaintainScrollAtEndOptions,
 } from "@legendapp/list/react";
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-import { type TimestampFormat } from "@t3tools/contracts/settings";
-import { resolveChatListAnchoredEndSpace } from "@t3tools/shared/chatList";
+import { type PendingApproval, type TimelineEntry } from "../../session-logic";
 import type { CodexArtifactTemplate } from "@t3tools/shared/codexArtifactTemplates";
-
+import { type ChatFileAttachment, type TurnDiffSummary } from "../../types";
 import {
   ArrowRightIcon,
   BotIcon,
@@ -51,45 +65,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from "lucide-react";
-import {
-  memo,
-  type ReactNode,
-  type SyntheticEvent,
-  use,
-  useContext,
-  useEffect,
-  useEffectEvent,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-
-import { useMediaQuery } from "~/hooks/useMediaQuery";
-import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
-import { useOpenPrLink } from "~/lib/openPullRequestLink";
-import { cn } from "~/lib/utils";
-import { observeVisibleAnimation } from "../../lib/visibleAnimation";
-import { type PendingApproval, type TimelineEntry } from "../../session-logic";
-import { type ChatFileAttachment, type TurnDiffSummary } from "../../types";
 import { Skeleton } from "../ui/skeleton";
-import { TooltipScrollDismissArea } from "../ui/tooltip";
-import { type AssistantCitationRequest } from "./AssistantCitationSource";
-import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
-import { type CitedHistory, resolveCitationPhase } from "./citationProcedure";
 import { ExpandedImagePreview } from "./ExpandedImagePreview";
-import {
-  isTimelineMinimapRowVisible,
-  liveAnswerPreview,
-  type MessagesTimelineRow,
-  resolveTimelineIsAtEnd,
-  resolveTimelineMinimapCurrentIndex,
-  resolveTimelineMinimapHasPersistentGutter,
-  resolveTimelineMinimapHitStripWidth,
-  resolveTimelineMinimapVisibleRange,
-  type TimelineLatestRun,
-  timelineTurnFoldRunIdsByEntryId,
-} from "./MessagesTimeline.logic";
-import { type ThreadFindMatch } from "./threadFind";
 import {
   CHAT_TIMELINE_ANCHOR_OFFSET,
   readTimelinePosition,
@@ -97,20 +74,38 @@ import {
   rememberTimelinePosition,
   resolveDisclosureRevealScrollDelta,
 } from "./timelineScrollAnchoring";
-
+import { AssistantSelectionToolbar } from "./AssistantSelectionToolbar";
+import type { AssistantCitationSourceAnchor } from "~/lib/assistantTextSelection";
+import { type AssistantCitationRequest } from "./AssistantCitationSource";
 import { useAssistantCitationTarget } from "./useAssistantCitationTarget";
-
-import { TIMELINE_MINIMAP_TARGET_OFFSET } from "./MessagesTimeline.logic";
-
+import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
+import { resolveCitationPhase, type CitedHistory } from "./citationProcedure";
+import {
+  resolveTimelineIsAtEnd,
+  resolveTimelineMinimapHasPersistentGutter,
+  resolveTimelineMinimapCurrentIndex,
+  isTimelineMinimapTurnVisible,
+  resolveTimelineMinimapVisibleRange,
+  resolveTimelineMinimapHitStripWidth,
+  TIMELINE_MINIMAP_TARGET_OFFSET,
+  timelineTurnFoldRunIdsByEntryId,
+  liveAnswerPreview,
+  type MessagesTimelineRow,
+  type TimelineLatestRun,
+} from "./MessagesTimeline.logic";
+import { type ThreadFindMatch } from "./threadFind";
 import { useThreadFindNavigation } from "./useThreadFindNavigation";
-
+import { TooltipScrollDismissArea } from "../ui/tooltip";
 import { WorktreeSetupCard } from "./WorktreeSetupCard";
-
+import { useOpenPrLink } from "~/lib/openPullRequestLink";
+import { useMediaQuery } from "~/hooks/useMediaQuery";
+import { cn } from "~/lib/utils";
+import { type TimestampFormat } from "@t3tools/contracts/settings";
 import { type HandoffTimelineRun } from "./V2LifecycleRow";
 import { TimelineSystemDivider } from "./TimelineSystemDivider";
 
-import { useClientSettings } from "../../hooks/useSettings";
-import { ThreadActivityAnnouncer } from "./ThreadActivityAnnouncer";
+import { forwardWheelToTimeline } from "./timelineMinimapWheel";
+import { TimelineMinimap } from "./TimelineMinimap";
 import {
   type TimelineRowSharedState,
   type TimelineRowActivityState,
@@ -132,25 +127,23 @@ import { UserMessageRow } from "./TimelineUserMessageRow";
 import {
   AssistantTimelineRow,
   AssistantMetaTimelineRow,
+  ProposedPlanTimelineRow,
   HtmlRenderTimelineRow,
   SentMessageTimelineRow,
   McpAppTimelineRow,
-  ProposedPlanTimelineRow,
 } from "./TimelineAssistantRows";
-import { TimelineMinimap } from "./TimelineMinimap";
-import { forwardWheelToTimeline } from "./timelineMinimapWheel";
-
 import { V2EventTimelineRow } from "./TimelineV2EventRow";
+import { startTimelinePositionRestore } from "./useTimelinePositionRestore";
 import {
   attachTimelineViewport,
   nextListOpening,
   type TimelineListOpening,
   type TimelineViewport,
 } from "./timelineViewport";
-
 import { useThreadFindPositionReader } from "./useThreadFindPositionReader";
-import { startTimelinePositionRestore } from "./useTimelinePositionRestore";
-import { useIncrementalTimelineRows, useStableHandoffRuns, useStableRows } from "./useTimelineRows";
+import { ThreadActivityAnnouncer } from "./ThreadActivityAnnouncer";
+import { useStableHandoffRuns, useIncrementalTimelineRows, useStableRows } from "./useTimelineRows";
+import { useClientSettings } from "../../hooks/useSettings";
 
 function timelineListStateFor(identity: string): {
   readonly identity: string;
@@ -264,6 +257,8 @@ interface MessagesTimelineProps {
   ) => boolean;
   onReplyToResponse?: TimelineRowSharedState["onReplyToResponse"];
   isWorking: boolean;
+  /** The thread is catching up from a cached copy, whose working state may be stale. */
+  syncing?: boolean;
   runlessWorkActive?: boolean;
   activeTurnStartedAt?: string | null;
   /** Replaces "Thinking" while the active run's provider has not started a turn. */
@@ -299,6 +294,8 @@ interface MessagesTimelineProps {
   onOpenThread: (
     threadId: OrchestrationV2TurnItem["threadId"],
     environmentId?: EnvironmentId,
+    /** How the click asked to open a subagent or side chat; a plain click when absent. */
+    intent?: SideThreadOpenIntent,
   ) => void;
   renderHtmlRender?: TimelineRowSharedState["renderHtmlRender"];
   turnItemSource?: TimelineRowSharedState["turnItemSource"];
@@ -383,6 +380,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   onCiteAssistantText,
   onReplyToResponse,
   isWorking,
+  syncing = false,
   runlessWorkActive = false,
   activeTurnStartedAt = null,
   providerStartingLabel = null,
@@ -451,8 +449,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   topFadeEnabled = false,
   historyControls,
 }: MessagesTimelineProps) {
-  const { t: uiT, locale } = useUiLanguage();
-
+  const gt = useGT();
   const listIdentityKey = displayThreadKey ?? routeThreadKey;
   // Snapshot restore positions on identity changes; ongoing scroll writes must not move them.
   // Find open at the opening is part of the snapshot: opening find later
@@ -770,7 +767,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
     pendingApprovals.filter(isVisiblePendingApproval).map((approval) => approval.requestId),
   );
   const rawRows = useIncrementalTimelineRows(`${listIdentityKey}\0${workspaceRoot ?? ""}`, {
-    locale,
     timelineEntries,
     pendingApprovalRequestIds,
     latestRun,
@@ -975,10 +971,11 @@ const ConversationTimeline = memo(function ConversationTimeline({
           firstBufferedRow.getBoundingClientRect().top
         : state.scroll;
     const visibleRange = resolveTimelineMinimapVisibleRange({ ...state, scroll });
-    for (const item of minimapItems) {
+    for (const [index, item] of minimapItems.entries()) {
       const strip = minimapStripMap.get(item.id);
-      const inView = isTimelineMinimapRowVisible(
+      const inView = isTimelineMinimapTurnVisible(
         item.rowIndex,
+        minimapItems[index + 1]?.rowIndex,
         visibleRange.start,
         visibleRange.end,
       );
@@ -1248,19 +1245,27 @@ const ConversationTimeline = memo(function ConversationTimeline({
       <div className="messages-timeline-row-frame">
         <div className="chat-content-lane pt-1 sm:pt-2">
           <TimelineSystemDivider
-            label={parentThreadLink.sideChat ? uiT("Context from") : uiT("Subagent of")}
+            label={
+              parentThreadLink.sideChat
+                ? gt("Context from", {
+                    $context: "divider label; the parent thread title follows as a link",
+                  })
+                : gt("Subagent of", {
+                    $context: "divider label; the parent thread title follows as a link",
+                  })
+            }
             detail={
               parentThreadLink.environmentLabel === undefined
                 ? parentThreadLink.title
-                : uiT("{0} on {1}", {
-                    "0": parentThreadLink.title,
-                    "1": parentThreadLink.environmentLabel,
+                : gt("{title} on {environment}", {
+                    title: parentThreadLink.title,
+                    environment: parentThreadLink.environmentLabel,
                   })
             }
             icon={parentThreadLink.sideChat ? MessagesSquareIcon : BotIcon}
             {...(parentThreadLink.open === undefined
               ? {}
-              : { actionLabel: uiT("Open parent thread"), onAction: parentThreadLink.open })}
+              : { actionLabel: gt("Open parent thread"), onAction: parentThreadLink.open })}
           />
         </div>
       </div>
@@ -1441,7 +1446,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
       return (
         <>
           {activityAnnouncer}
-          <div className="h-full min-h-0 bg-background" data-timeline-loading="true" />
+          <div className="h-full min-h-0" data-timeline-loading="true" />
         </>
       );
     }
@@ -1453,7 +1458,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
           style={{ paddingBottom: emptyPlaceholderInset }}
         >
           <p className="text-sm text-muted-foreground">
-            {uiT("Send a message to start the conversation.")}
+            <T>Send a message to start the conversation.</T>
           </p>
         </div>
       </>
@@ -1514,7 +1519,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
                 !liveFollowEnabled ||
                 fullscreenAppRowId !== null
                   ? false
-                  : isWorking && !prefersReducedMotion && settlingListIdentity === null
+                  : isWorking && !syncing && !prefersReducedMotion && settlingListIdentity === null
                     ? TIMELINE_MAINTAIN_SCROLL_AT_END_SMOOTH
                     : TIMELINE_MAINTAIN_SCROLL_AT_END
               }
@@ -1564,8 +1569,8 @@ const ConversationTimeline = memo(function ConversationTimeline({
 });
 
 function TimelineHistoryControl(props: MessagesTimelineHistoryControls) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   if (!props.hasMoreHistory && props.error === null) {
     return null;
   }
@@ -1576,20 +1581,20 @@ function TimelineHistoryControl(props: MessagesTimelineHistoryControls) {
           <button
             type="button"
             disabled={props.loading}
-            aria-label={uiT("Load earlier turns")}
+            aria-label={gt("Load earlier turns")}
             onClick={() => props.onLoadEarlier()}
             className="flex w-full cursor-pointer items-center gap-3 py-1.5 text-muted-foreground text-xs hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-default"
           >
             <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
             <span className="shrink-0">
-              {props.loading ? uiT("Loading earlier turns…") : uiT("Load earlier turns")}
+              {props.loading ? gt("Loading earlier turns…") : gt("Load earlier turns")}
             </span>
             <span aria-hidden="true" className="h-px flex-1 bg-border/70" />
           </button>
         ) : null}
         {props.error !== null ? (
           <p role="status" className="text-center text-muted-foreground text-xs">
-            {props.error}
+            {threadErrorText(props.error, messages)}
           </p>
         ) : null}
       </div>
@@ -1777,23 +1782,13 @@ function ContextCompactionTimelineRow({
 }: {
   row: Extract<TimelineRow, { kind: "context-compaction" }>;
 }) {
-  const { t: uiT } = useUiLanguage();
-
-  const idleAge = row.title?.match(/^Context compacted after (.+) idle$/)?.[1];
-  const title = idleAge
-    ? uiT("Context compacted after {0} idle", { "0": idleAge })
-    : row.title
-      ? uiT(row.title)
-      : undefined;
-  const label = row.tokenCounts
-    ? uiT("{0} {1} → {2} tokens", {
-        "0": title ?? uiT("Context compacted"),
-        "1": row.tokenCounts.before,
-        "2": row.tokenCounts.after,
-      })
-    : title && row.label.startsWith("Context compacted")
-      ? title + row.label.slice("Context compacted".length)
-      : uiT(row.label);
+  const gt = useGT();
+  const label =
+    row.title && row.compacted
+      ? row.tokenCounts
+        ? gt("{title} {before} → {after} tokens", { title: row.title, ...row.tokenCounts })
+        : row.title
+      : row.label;
   const content = (
     <span className="flex min-w-0 items-center gap-1.5">
       {row.failed ? (
@@ -1803,14 +1798,25 @@ function ContextCompactionTimelineRow({
       )}
       {row.tokenCounts ? (
         <>
-          {title ?? uiT("Context compacted")} {row.tokenCounts.before}
-          <ArrowRightIcon aria-hidden="true" className="size-3" />
-          {row.tokenCounts.after} {uiT("tokens")}
+          {row.title ? (
+            <T>
+              <Var>{row.title}</Var> <Var>{row.tokenCounts.before}</Var>
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+              <Var>{row.tokenCounts.after}</Var> tokens
+            </T>
+          ) : (
+            <T>
+              Context compacted <Var>{row.tokenCounts.before}</Var>
+              <ArrowRightIcon aria-hidden="true" className="size-3" />
+              <Var>{row.tokenCounts.after}</Var> tokens
+            </T>
+          )}
         </>
       ) : (
         label
       )}
       {row.failure ? (
+        // oxlint-disable-next-line t3code/no-untranslated-copy -- separator before server-authored failure text
         <span className="min-w-0 truncate opacity-80">&middot; {row.failure}</span>
       ) : null}
     </span>
@@ -1841,6 +1847,7 @@ function useDeferredWorkLoading(
   row: { expanded: boolean; deferredWorkItemIds?: ReadonlyArray<string> },
   onToggle: () => void,
 ) {
+  const gt = useGT();
   const ctx = use(TimelineRowCtx);
   const loadWork = useAtomCommand(threadEnvironment.loadEarlierHistory, { reportFailure: false });
   const ref = parseScopedThreadKey(ctx.routeThreadKey);
@@ -1865,7 +1872,7 @@ function useDeferredWorkLoading(
   useEffect(() => {
     if (row.expanded && anchorsKey && environmentId && threadId) loadOnExpand();
   }, [row.expanded, anchorsKey, environmentId, threadId]);
-  const error = anchorsKey && failed ? "Couldn't load work. Click to retry." : null;
+  const error = anchorsKey && failed ? gt("Couldn't load work. Click to retry.") : null;
   const loading = ref !== null && row.expanded && anchorsKey !== "" && !failed;
   const toggle = () => {
     setFailed(false);
@@ -1877,14 +1884,9 @@ function useDeferredWorkLoading(
 }
 
 function WorkHistorySkeleton() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
-    <div
-      role="status"
-      aria-label={uiT("Loading work history")}
-      className="space-y-2 px-1 pb-1 pt-3"
-    >
+    <div role="status" aria-label={gt("Loading work history")} className="space-y-2 px-1 pb-1 pt-3">
       {[0, 1, 2].map((index) => (
         <div key={index} className="flex items-center gap-2" aria-hidden="true">
           <Skeleton className="size-3 shrink-0" />
@@ -1899,8 +1901,6 @@ function WorkHistorySkeleton() {
 }
 
 function TurnFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "turn-fold" }> }) {
-  const { t: uiT } = useUiLanguage();
-
   const ctx = use(TimelineRowCtx);
   const { loading, error, toggle } = useDeferredWorkLoading(row, () =>
     ctx.onToggleTurnFold(row.runId),
@@ -1918,7 +1918,7 @@ function TurnFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "turn-
           className="flex cursor-pointer select-none items-center gap-1 rounded-md px-1 text-sm leading-relaxed text-muted-foreground tabular-nums transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/70"
         >
           <span>
-            {uiT(row.label)}
+            {row.label}
             {error ? ` · ${error}` : ""}
           </span>
           {row.expanded ? (
@@ -1939,8 +1939,6 @@ function TurnFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "turn-
 }
 
 function AttemptFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "attempt-fold" }> }) {
-  const { t: uiT } = useUiLanguage();
-
   const ctx = use(TimelineRowCtx);
   const { loading, error, toggle } = useDeferredWorkLoading(row, () =>
     ctx.onToggleAttemptFold(row.attemptId),
@@ -1963,10 +1961,12 @@ function AttemptFoldTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "at
           <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
         )}
         <span className="text-xs font-medium text-foreground/80">
-          {uiT(row.label)}
+          {row.label}
           {error ? ` · ${error}` : ""}
         </span>
-        <span className="text-2xs text-muted-foreground">{uiT("Cut off by a steer")}</span>
+        <span className="text-2xs text-muted-foreground">
+          <T>Cut off by a steer</T>
+        </span>
       </button>
       {loading ? <WorkHistorySkeleton /> : null}
     </div>

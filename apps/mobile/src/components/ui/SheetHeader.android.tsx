@@ -1,5 +1,5 @@
+import { useGT } from "gt-react-native";
 import { View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { AppBar } from "./AppBar";
@@ -8,14 +8,11 @@ import { IconButton } from "./IconButton";
 import type { SheetCloseButtonProps, SheetHeaderProps } from "./SheetHeader.types";
 
 export function SheetCloseButton(props: SheetCloseButtonProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <IconButton
       icon="xmark"
-      accessibilityLabel={
-        props.accessibilityLabel ?? (props.onCancel ? uiT("Cancel") : uiT("Close"))
-      }
+      accessibilityLabel={props.accessibilityLabel ?? (props.onCancel ? gt("Cancel") : gt("Close"))}
       disabled={props.disabled}
       tintColorClassName="accent-header-foreground"
       onPress={props.onCancel ?? props.onClose}

@@ -1,3 +1,5 @@
+import { msg, useGT, useMessages } from "gt-react";
+import { useState } from "react";
 import {
   duoFoldState,
   duoHoldOrientation,
@@ -5,11 +7,9 @@ import {
   type DuoControlState,
 } from "@t3tools/client-runtime/device/duo-control";
 import type { DeviceScreenSize } from "@t3tools/client-runtime/device/stream";
-import { useState } from "react";
+import { DeviceDuoGlyph } from "./DeviceDuoGlyph";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { useUiLanguage } from "../../i18n";
-import { DeviceDuoGlyph } from "./DeviceDuoGlyph";
 
 const FOLDS = [
   { id: "closed", angle: 0 },
@@ -17,8 +17,8 @@ const FOLDS = [
   { id: "open", angle: 180 },
 ] as const;
 const STANDS = [
-  { id: "laptop", label: "Laptop stand" },
-  { id: "tent", label: "Tent stand" },
+  { id: "laptop", label: msg("Laptop stand") },
+  { id: "tent", label: msg("Tent stand") },
 ] as const;
 
 export function DeviceDuoControls(props: {
@@ -27,8 +27,9 @@ export function DeviceDuoControls(props: {
   enabled: boolean;
   onCommand: (command: DuoCommand) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const { screen } = props;
+  const gt = useGT();
+  const m = useMessages();
   const { fold, stand, phoneVertical: reportedVertical, settled } = duoFoldState(screen);
   const [settledVertical, setSettledVertical] = useState(reportedVertical);
   if (settled && settledVertical !== reportedVertical) setSettledVertical(reportedVertical);
@@ -38,9 +39,11 @@ export function DeviceDuoControls(props: {
   // correct display frame.
   const foldWaits = props.state.pending && (stand || props.state.requested?.control === "pose");
   const foldLabels = {
-    closed: "Closed",
-    half: phoneVertical ? "Book" : "Laptop",
-    open: "Open",
+    closed: gt("Closed", { $context: "iPhone Duo fold shape" }),
+    half: phoneVertical
+      ? gt("Book", { $context: "iPhone Duo fold shape" })
+      : gt("Laptop", { $context: "iPhone Duo fold shape" }),
+    open: gt("Open", { $context: "iPhone Duo fold shape" }),
   };
   const button = (
     key: string,
@@ -66,14 +69,14 @@ export function DeviceDuoControls(props: {
       >
         {glyph}
       </TooltipTrigger>
-      <TooltipPopup side="left">{uiT(label)}</TooltipPopup>
+      <TooltipPopup side="left">{label}</TooltipPopup>
     </Tooltip>
   );
   const group =
     "pointer-events-auto flex shrink-0 flex-col items-center gap-1 rounded-full border border-border/50 bg-background/80 p-1 shadow-sm";
   return (
-    <div aria-label={uiT("iPhone Duo stands")} className="flex flex-col items-center gap-2">
-      <div role="group" aria-label={uiT("Fold shape")} className={group}>
+    <div aria-label={gt("iPhone Duo stands")} className="flex flex-col items-center gap-2">
+      <div role="group" aria-label={gt("Fold shape")} className={group}>
         {FOLDS.map(({ id, angle: value }) =>
           button(
             id,
@@ -92,11 +95,11 @@ export function DeviceDuoControls(props: {
           ),
         )}
       </div>
-      <div role="group" aria-label={uiT("Device stance")} className={group}>
+      <div role="group" aria-label={gt("Device stance")} className={group}>
         {STANDS.map(({ id, label }) =>
           button(
             id,
-            label,
+            m(label),
             screen.hingePose === id,
             () => {
               if (!stand) setStandVertical(settledVertical);

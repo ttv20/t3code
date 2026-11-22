@@ -1,15 +1,19 @@
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
-import type { ProjectId, ThreadContextRecord } from "@t3tools/contracts";
-import { Link } from "@tanstack/react-router";
+import type { ThreadContextRecord, ProjectId } from "@t3tools/contracts";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { MessagesSquareIcon } from "lucide-react";
-import { useUiLanguage } from "../i18n";
+import { useGT } from "gt-react";
 
+import { resolveThreadOpenRoute } from "~/lib/sideChatPane";
+import { buildThreadRouteParams } from "~/threadRoutes";
 import { useProject, useThreadShell } from "~/state/entities";
 import { orchestrationEnvironment } from "~/state/orchestration";
 import { useEnvironmentQuery } from "~/state/query";
 import { ContextChip, ContextChipLabel } from "./ContextChip";
 import { ProjectFavicon } from "./ProjectFavicon";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { ThreadChipHoverCard } from "./ThreadChipHoverCard";
+import { ThreadHoverCardPopup } from "./ThreadHoverCard";
+import { Tooltip, TooltipTrigger } from "./ui/tooltip";
 
 export function ThreadContextChip(props: {
   record: Pick<ThreadContextRecord, "environmentId" | "threadId" | "title">;
@@ -17,8 +21,7 @@ export function ThreadContextChip(props: {
   copyMarkdown?: string;
   unreadable?: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { environmentId, threadId } = props.record;
   const shell = useThreadShell({ environmentId, threadId });
   const lookup = useEnvironmentQuery(
@@ -33,6 +36,7 @@ export function ThreadContextChip(props: {
   const projectId = shell?.projectId ?? props.projectId ?? metadata?.projectId;
   const project = useProject(projectId ? scopeProjectRef(environmentId, projectId) : null);
   const title = shell?.title?.trim() || metadata?.title.trim() || props.record.title;
+  const navigate = useNavigate();
   return (
     <Tooltip>
       <TooltipTrigger
@@ -40,8 +44,26 @@ export function ThreadContextChip(props: {
           <ContextChip
             kind="thread"
             {...(props.unreadable ? { state: "invalid" as const } : {})}
-            render={<Link to="/$environmentId/$threadId" params={{ environmentId, threadId }} />}
-            aria-label={uiT("Thread, {0}", { "0": title })}
+            render={
+              <Link
+                to="/$environmentId/$threadId"
+                params={{ environmentId, threadId }}
+                onClick={(event) => {
+                  if (shell?.lineage.sideChat !== true || event.button !== 0) return;
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  // A side chat opens as a tab beside its parent, not as its own page.
+                  event.preventDefault();
+                  void navigate({
+                    to: "/$environmentId/$threadId",
+                    params: buildThreadRouteParams(
+                      resolveThreadOpenRoute({ environmentId, threadId }, shell),
+                    ),
+                  });
+                }}
+                draggable={false}
+              />
+            }
+            aria-label={gt("Thread, {title}", { title })}
             data-markdown-copy={props.copyMarkdown}
             className="no-underline"
           >
@@ -54,13 +76,14 @@ export function ThreadContextChip(props: {
           </ContextChip>
         }
       />
-      <TooltipPopup side="top">
-        {props.unreadable
-          ? uiT(
-              "On another machine, so this machine's agent can't read it. Remove it or switch back to send.",
-            )
-          : uiT("Open thread")}
-      </TooltipPopup>
+      <ThreadHoverCardPopup side="top">
+        <ThreadChipHoverCard
+          title={title}
+          project={project}
+          shell={shell}
+          unreadable={props.unreadable === true}
+        />
+      </ThreadHoverCardPopup>
     </Tooltip>
   );
 }

@@ -1,3 +1,4 @@
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import { describe, expect, it } from "vite-plus/test";
 
 import { filterSettingsSections } from "./settings-search";
@@ -25,16 +26,15 @@ const SECTIONS = [
     title: "Server settings",
     rows: [
       { id: "SettingsProviderAccounts", label: "Provider accounts" },
-      { id: "SettingsEnvironmentSourceControl", label: "Source control" },
+      { id: "SettingsEnvironmentSourceControl", label: "Source control & issues" },
     ],
   },
 ];
 
 function visible(query: string, locale: "en" | "he" | "ar" | "fa" = "en") {
-  return filterSettingsSections(SECTIONS, query, locale).map((section) => [
-    section.title ?? null,
-    section.rows.map((row) => row.label),
-  ]);
+  return filterSettingsSections(SECTIONS, query, createUiMessageResolver(locale), locale).map(
+    (section) => [section.title ?? null, section.rows.map((row) => row.label)],
+  );
 }
 
 describe("filterSettingsSections", () => {
@@ -51,10 +51,10 @@ describe("filterSettingsSections", () => {
     { query: "KEYBOARD", expected: [["Interface", ["Keyboard"]]] },
     { query: "dark mode", expected: [["Interface", ["Appearance"]]] },
     { query: "microphone", expected: [["Interface", ["Voice"]]] },
-    { query: "agent credits", expected: [["Server settings", ["Source control"]]] },
+    { query: "agent credits", expected: [["Server settings", ["Source control & issues"]]] },
     {
       query: "server settings",
-      expected: [["Server settings", ["Provider accounts", "Source control"]]],
+      expected: [["Server settings", ["Provider accounts", "Source control & issues"]]],
     },
     {
       query: "accounts",
@@ -83,9 +83,15 @@ describe("filterSettingsSections", () => {
 
   it("keeps English search available for rows already translated by the interface", () => {
     const translated = [{ title: "ממשק", rows: [{ id: "SettingsAppearance", label: "מראה" }] }];
-    expect(filterSettingsSections(translated, "appearance", "he")).toEqual(translated);
-    expect(filterSettingsSections(translated, "interface", "he")).toEqual(translated);
-    expect(filterSettingsSections(translated, "מראה", "he")).toEqual(translated);
+    expect(
+      filterSettingsSections(translated, "appearance", createUiMessageResolver("he"), "he"),
+    ).toEqual(translated);
+    expect(
+      filterSettingsSections(translated, "interface", createUiMessageResolver("he"), "he"),
+    ).toEqual(translated);
+    expect(filterSettingsSections(translated, "מראה", createUiMessageResolver("he"), "he")).toEqual(
+      translated,
+    );
   });
 
   it("drops sections that start empty", () => {

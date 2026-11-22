@@ -1,27 +1,43 @@
 import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
+import { useLocale, useMessages } from "gt-react-native";
 import * as Linking from "expo-linking";
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { Platform } from "react-native";
-import { environmentCatalog } from "../connection/catalog";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
-import { useUiLanguage } from "../i18n";
+import { environmentCatalog } from "../connection/catalog";
 import { environmentPresentations } from "../state/presentation";
+import { republishAgentActivityWidget } from "./publishAgentActivityWidget";
 import { publishSubscriptionUsage } from "./publishSubscriptionUsage";
 import { buildSubscriptionUsageSnapshot } from "./subscriptionUsageSnapshot";
 import { createWidgetTheme } from "./widgetTheme";
+import type { MessageResolver } from "../i18n/messages";
 
 // Isolate quota changes from the much busier thread/config presentation stream.
-const snapshotAtom = Atom.make((get) =>
-  buildSubscriptionUsageSnapshot(
-    get(environmentPresentations.presentationsWithProvidersAtom),
-    Linking.createURL("settings/usage", { queryParams: { tab: "limits" } }),
-    Platform.OS === "android" ? Infinity : 6,
-  ),
-).pipe(Atom.withEquality((a, b) => JSON.stringify(a) === JSON.stringify(b)));
+// One atom per UI language, so a language switch republishes the widget's copy.
+const snapshotAtoms = new Map<string, ReturnType<typeof makeSnapshotAtom>>();
+
+function makeSnapshotAtom(resolve: MessageResolver) {
+  return Atom.make((get) =>
+    buildSubscriptionUsageSnapshot(
+      get(environmentPresentations.presentationsWithProvidersAtom),
+      Linking.createURL("settings/usage", { queryParams: { tab: "limits" } }),
+      Platform.OS === "android" ? Infinity : 6,
+      resolve,
+    ),
+  ).pipe(Atom.withEquality((a, b) => JSON.stringify(a) === JSON.stringify(b)));
+}
+
+function snapshotAtom(locale: string, resolve: MessageResolver) {
+  let atom = snapshotAtoms.get(locale);
+  if (atom === undefined) {
+    atom = makeSnapshotAtom(resolve);
+    snapshotAtoms.set(locale, atom);
+  }
+  return atom;
+}
 
 export function SubscriptionUsageCoordinator() {
-  const { t, locale } = useUiLanguage();
   const {
     themeMode,
     themeAppearance,
@@ -29,7 +45,9 @@ export function SubscriptionUsageCoordinator() {
     isReady: appearanceReady,
   } = useAppearancePreferences();
   const catalog = useAtomValue(environmentCatalog.catalogValueAtom);
-  const snapshot = useAtomValue(snapshotAtom);
+  const resolve = useMessages();
+  const locale = useLocale();
+  const snapshot = useAtomValue(snapshotAtom(locale, resolve));
   const androidAppearance = Platform.OS === "android" ? themeAppearance : null;
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- publishes subscription usage and theme to the native home screen widget
   useEffect(() => {
@@ -39,27 +57,6 @@ export function SubscriptionUsageCoordinator() {
         publishSubscriptionUsage({
           ...snapshot,
           theme: createWidgetTheme(themeMode, themeVariablesByAppearance),
-          locale,
-          messages: Object.fromEntries(
-            [
-              "Open T3 to connect",
-              "Open T3 to refresh",
-              "Open T3",
-              "{0} · {1}% left",
-              "{0}% left",
-              "% left",
-              "{0} more in T3",
-              "more in T3",
-              "No subscription limits available.",
-              "As of {0}",
-              "Tap to connect in T3",
-            ].map((message) => [message, t(message)]),
-          ),
-          providers: snapshot.providers.map((provider) => ({
-            ...provider,
-            detail: t(provider.detail),
-            windows: provider.windows.map((window) => ({ ...window, label: t(window.label) })),
-          })),
         }),
       )
       .catch((error: unknown) => {
@@ -69,12 +66,23 @@ export function SubscriptionUsageCoordinator() {
     catalog.isReady,
     appearanceReady,
     snapshot,
-    locale,
-    t,
     themeMode,
     themeVariablesByAppearance,
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Android stores resolved colors; System appearance changes must republish them.
     androidAppearance,
   ]);
+  const republishActivity = useEffectEvent(() => {
+    republishAgentActivityWidget(resolve).catch((error: unknown) => {
+      console.warn("Could not update agent activity widget", error);
+    });
+  });
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- republishes the agent activity widget's copy in the new UI language
+  useEffect(
+    () => republishActivity(),
+    [
+      // oxlint-disable-next-line react/exhaustive-effect-dependencies -- the widget's copy follows the UI language.
+      locale,
+    ],
+  );
   return null;
 }

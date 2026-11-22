@@ -135,7 +135,7 @@ class T3WorkspaceNavigationView(
   private val onOverlayChange by EventDispatcher()
   var rtl by mutableStateOf(false)
   var labels by mutableStateOf<Map<String, String>>(emptyMap())
-  var tabs by mutableStateOf(listOf("threads", "pullRequests", "usage", "settings"))
+  var tabs by mutableStateOf(listOf("threads", "pullRequests", "issues", "usage", "settings"))
   var selectedTab by mutableStateOf("threads")
   var rail by mutableStateOf(false)
   var floating by mutableStateOf(false)
@@ -428,6 +428,7 @@ class T3WorkspaceNavigationView(
   private fun tabTitle(tab: String) = when (tab) {
     "threads" -> labels["threads"] ?: "Chats"
     "pullRequests" -> labels["pullRequests"] ?: "Pulls"
+    "issues" -> labels["issues"] ?: "Issues"
     "usage" -> labels["usage"] ?: "Usage"
     else -> labels["settings"] ?: "Settings"
   }
@@ -440,6 +441,7 @@ class T3WorkspaceNavigationView(
     when (tab) {
       "threads" -> R.drawable.t3_chats
       "pullRequests" -> R.drawable.t3_pull_requests
+      "issues" -> R.drawable.t3_issues
       "usage" -> R.drawable.t3_usage
       else -> R.drawable.t3_settings
     }

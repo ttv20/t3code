@@ -26,9 +26,13 @@ import {
   ScrollTextIcon,
   Trash2Icon,
 } from "lucide-react";
+import { Branch, msg, T, useGT, useMessages } from "gt-react";
 import { useId, useState } from "react";
+
+import { useOpenLink } from "~/browser/useOpenLink";
+import { m } from "~/i18n/messages";
+
 import { shortcutLabelForCommand } from "~/keybindings";
-import { readLocalApi } from "~/localApi";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 import { useAtomCommand } from "~/state/use-atom-command";
@@ -58,7 +62,7 @@ import type { PickableEnvironment } from "./pullRequestProjectAssignment.logic";
 import { PullRequestThreadLinks } from "./PullRequestThreadLinks";
 import { useInlineActionConfirm } from "./useInlineActionConfirm";
 
-import { UiText, useUiLanguage } from "../../i18n";
+import { changeRequestTermKind } from "./changeRequestTerm";
 
 /** Everything else the reader can do with the pull request, behind the header's overflow button. */
 export function PullRequestActionsMenu({
@@ -67,6 +71,7 @@ export function PullRequestActionsMenu({
   pullRequestKey,
   detail,
   terminology,
+  threadRef,
   linkThreadRef,
   onThreadPickerOpenChange,
   refreshing,
@@ -119,6 +124,7 @@ export function PullRequestActionsMenu({
     | "observedAt"
   >;
   terminology: ChangeRequestTerminology;
+  threadRef: ScopedThreadRef | null;
   linkThreadRef: ScopedThreadRef | null;
   onThreadPickerOpenChange: (open: boolean) => void;
   refreshing: boolean;
@@ -154,10 +160,11 @@ export function PullRequestActionsMenu({
   pendingAction: PullRequestAction | null;
   perform: PerformPullRequestAction;
   openOnHostText: string;
-  copyReference: (value: string, label: string) => void;
+  copyReference: (value: string, failureTitle: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const openLink = useOpenLink(threadRef);
+  const resolve = useMessages();
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
   const inlineConfirm = useInlineActionConfirm(pullRequestKey);
   const actionPending = pendingAction !== null;
@@ -195,8 +202,8 @@ export function PullRequestActionsMenu({
       setMaintainerEditsChoice(previousChoice);
       toastManager.add({
         type: "error",
-        title: uiT("Could not save maintainer access"),
-        description: readableFailure(squashAtomCommandFailure(result), "Try again."),
+        title: m(msg("Could not save maintainer access")),
+        description: readableFailure(squashAtomCommandFailure(result), m(msg("Try again."))),
       });
       return;
     }
@@ -212,8 +219,14 @@ export function PullRequestActionsMenu({
                 <Button
                   aria-label={
                     refreshing
-                      ? uiT("Refreshing {0}", { "0": uiT(terminology.singular) })
-                      : uiT("More {0} actions", { "0": uiT(terminology.singular) })
+                      ? gt(
+                          "Refreshing {term, select, mr {merge request} cr {change request} other {pull request}}",
+                          { term: changeRequestTermKind(terminology) },
+                        )
+                      : gt(
+                          "More {term, select, mr {merge request} cr {change request} other {pull request}} actions",
+                          { term: changeRequestTermKind(terminology) },
+                        )
                   }
                   size="icon-xs"
                   variant="ghost-muted"
@@ -230,8 +243,14 @@ export function PullRequestActionsMenu({
         />
         <TooltipPopup>
           {refreshing
-            ? uiT("Refreshing {0}", { "0": terminology.singular })
-            : uiT("More {0} actions", { "0": terminology.singular })}
+            ? gt(
+                "Refreshing {term, select, mr {merge request} cr {change request} other {pull request}}",
+                { term: changeRequestTermKind(terminology) },
+              )
+            : gt(
+                "More {term, select, mr {merge request} cr {change request} other {pull request}} actions",
+                { term: changeRequestTermKind(terminology) },
+              )}
         </TooltipPopup>
       </Tooltip>
       <MenuPopup align="end" side="bottom">
@@ -245,18 +264,24 @@ export function PullRequestActionsMenu({
         />
         <MenuItem disabled={refreshing} onClick={() => void refreshFromHost()}>
           <RefreshIcon size="sm" refreshing={refreshing} />
-          {uiT("Refresh")}
+          <T context="verb, menu item">Refresh</T>
         </MenuItem>
         <MenuItem disabled={handoff !== null} onClick={askAboutPullRequest}>
           <MessageCircleQuestionIcon className="mt-1 size-3.5 shrink-0 self-start" />
           <span className="flex min-w-0 flex-col">
-            <span>{handoff === "ask" ? uiT("Opening...") : uiT("Ask a question")}</span>
+            <span>{handoff === "ask" ? gt("Opening...") : gt("Ask a question")}</span>
             <span className="text-xs text-muted-foreground">
               {attachesToComposer
-                ? uiT("Adds the {0} to this thread's composer.", { "0": terminology.singular })
-                : uiT("Opens a thread that knows which {0} you mean.", {
-                    "0": terminology.singular,
-                  })}
+                ? gt(
+                    "Adds the {term, select, mr {merge request} cr {change request} other {pull request}} to this thread's composer.",
+                    { term: changeRequestTermKind(terminology) },
+                  )
+                : gt(
+                    "Opens a thread that knows which {term, select, mr {merge request} cr {change request} other {pull request}} you mean.",
+                    {
+                      term: changeRequestTermKind(terminology),
+                    },
+                  )}
             </span>
           </span>
         </MenuItem>
@@ -265,26 +290,28 @@ export function PullRequestActionsMenu({
           <span className="flex min-w-0 flex-col">
             <span>
               {handoff === "explain"
-                ? uiT("Opening...")
-                : uiT("Explain this {0}", { "0": terminology.shortLabel })}
+                ? gt("Opening...")
+                : gt("Explain this {term, select, mr {MR} cr {change request} other {PR}}", {
+                    term: changeRequestTermKind(terminology),
+                  })}
             </span>
             <span className="text-xs text-muted-foreground">
-              {uiT("A walk through the diff and what to read closely.")}
+              <T>A walk through the diff and what to read closely.</T>
             </span>
           </span>
         </MenuItem>
         <MenuItem disabled={handoff !== null || !canFixFindings} onClick={startFixFindings}>
           <HammerIcon className="size-3.5" />
-          {handoff === "findings" ? uiT("Preparing...") : handoffLabels.fixFindings}
+          {handoff === "findings" ? gt("Preparing...") : handoffLabels.fixFindings}
         </MenuItem>
         {canWriteGuide ? (
           <MenuItem disabled={guideRunning} onClick={writeGuide}>
             <ScrollTextIcon className="size-3.5" />
             {guideRunning
-              ? uiT("Writing guide...")
+              ? gt("Writing guide...")
               : !guideWritten
-                ? uiT("Write guide")
-                : uiT("Rewrite guide")}
+                ? gt("Write guide")
+                : gt("Rewrite guide")}
           </MenuItem>
         ) : null}
         {pickableEnvironments.length > 0 ? (
@@ -303,24 +330,23 @@ export function PullRequestActionsMenu({
               checked={maintainerCanModify === true}
               disabled={!canSaveMaintainerEdits}
               closeOnClick={false}
-              aria-label={uiT("Allow edits from maintainers")}
+              aria-label={gt("Allow edits from maintainers")}
               aria-describedby={maintainerEditsHintId}
               onCheckedChange={(value) => void saveMaintainerEdits(value)}
             >
               <span className="flex max-w-xs flex-col gap-0.5">
                 <span>
-                  <UiText message={"Allow edits from maintainers"} />
+                  <T>Allow edits from maintainers</T>
                 </span>
                 <span id={maintainerEditsHintId} className="text-xs text-muted-foreground">
-                  <UiText
-                    message={
-                      "Maintainers can push to this branch. If your fork has workflows, this can also give access to its secrets."
-                    }
-                  />
+                  <T>
+                    Maintainers can push to this branch. If your fork has workflows, this can also
+                    give access to its secrets.
+                  </T>
                 </span>
                 {maintainerEditsSaving ? (
                   <span role="status" className="text-xs text-muted-foreground">
-                    <UiText message={"Saving…"} />
+                    <T>Saving…</T>
                   </span>
                 ) : null}
               </span>
@@ -340,34 +366,32 @@ export function PullRequestActionsMenu({
                 ) : (
                   <PullRequestGlyph.draft className="size-3.5" />
                 )}
-                {detail.isDraft ? uiT("Ready for review") : uiT("Convert to draft")}
+                {detail.isDraft ? gt("Ready for review") : gt("Convert to draft")}
               </MenuItem>
             ) : null}
             {showsMergeNow ? (
               <MenuItem
                 closeOnClick={inlineConfirm.isArmed("merge")}
-                aria-label={
-                  inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")
-                }
+                aria-label={inlineConfirm.isArmed("merge") ? gt("Confirm merge?") : gt("Merge now")}
                 disabled={actionPending}
                 {...inlineConfirm.props("merge", () => void perform("merge", selectedMergeMethod))}
               >
                 <PullRequestGlyph.merged className="size-3.5" />
-                {inlineConfirm.isArmed("merge") ? uiT("Confirm merge?") : uiT("Merge now")}
+                {inlineConfirm.isArmed("merge") ? gt("Confirm merge?") : gt("Merge now")}
               </MenuItem>
             ) : null}
             {autoMergeArmed && can("disable-auto-merge") ? (
               <MenuItem disabled={actionPending} onClick={() => void perform("disable-auto-merge")}>
                 <PullRequestGlyph.merged className="size-3.5" />
-                {uiT("Disable auto-merge")}
+                <T>Disable auto-merge</T>
               </MenuItem>
             ) : showsAutoMerge ? (
               <MenuItem
                 closeOnClick={inlineConfirm.isArmed("enable-auto-merge")}
                 aria-label={
                   inlineConfirm.isArmed("enable-auto-merge")
-                    ? uiT("Confirm auto-merge?")
-                    : uiT("Enable auto-merge")
+                    ? gt("Confirm auto-merge?")
+                    : gt("Enable auto-merge")
                 }
                 disabled={actionPending}
                 {...inlineConfirm.props(
@@ -377,8 +401,8 @@ export function PullRequestActionsMenu({
               >
                 <PullRequestGlyph.merged className="size-3.5" />
                 {inlineConfirm.isArmed("enable-auto-merge")
-                  ? uiT("Confirm auto-merge?")
-                  : uiT("Enable auto-merge")}
+                  ? gt("Confirm auto-merge?")
+                  : gt("Enable auto-merge")}
               </MenuItem>
             ) : null}
             {showsMergeMethods ? (
@@ -397,7 +421,7 @@ export function PullRequestActionsMenu({
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         <PullRequestGlyph.merged className="size-3.5" />
-                        <span>{uiT(PULL_REQUEST_MERGE_METHOD_LABELS[method])}</span>
+                        <span>{resolve(PULL_REQUEST_MERGE_METHOD_LABELS[method])}</span>
                       </span>
                     </MenuRadioItem>
                   ))}
@@ -413,22 +437,49 @@ export function PullRequestActionsMenu({
             ) : null}
           </>
         ) : null}
-        <MenuItem onClick={() => void readLocalApi()?.shell.openExternal(detail.url)}>
+        <MenuItem onClick={(event) => void openLink(detail.url, { event }).catch(console.error)}>
           <ArrowUpRightIcon className="size-3.5" />
           {openOnHostText}
         </MenuItem>
-        <MenuItem onClick={() => copyReference(detail.url, `${terminology.shortLabel} link`)}>
+        <MenuItem
+          onClick={() =>
+            copyReference(
+              detail.url,
+              resolve(
+                msg("Failed to copy {term, select, mr {MR} cr {change request} other {PR}} link", {
+                  term: changeRequestTermKind(terminology),
+                }),
+              ),
+            )
+          }
+        >
           <LinkIcon className="size-3.5" />
-          {uiT("Copy link")}
+          <T>Copy link</T>
           <MenuShortcut>
             {shortcutLabelForCommand(keybindings, "thread.copyReference")}
           </MenuShortcut>
         </MenuItem>
         <MenuItem
-          onClick={() => copyReference(`#${reference.number}`, `${terminology.shortLabel} number`)}
+          onClick={() =>
+            copyReference(
+              `#${reference.number}`,
+              resolve(
+                msg(
+                  "Failed to copy {term, select, mr {MR} cr {change request} other {PR}} number",
+                  { term: changeRequestTermKind(terminology) },
+                ),
+              ),
+            )
+          }
         >
           <CopyIcon className="size-3.5" />
-          {uiT("Copy")} {terminology.shortLabel} {uiT("number")}
+          <T>
+            Copy{" "}
+            <Branch branch={changeRequestTermKind(terminology)} mr="MR" cr="change request">
+              PR
+            </Branch>{" "}
+            number
+          </T>
           <MenuShortcut>
             {shortcutLabelForCommand(keybindings, "pullRequest.copyNumber")}
           </MenuShortcut>
@@ -440,8 +491,11 @@ export function PullRequestActionsMenu({
               closeOnClick={inlineConfirm.isArmed("close")}
               aria-label={
                 inlineConfirm.isArmed("close")
-                  ? uiT("Confirm close?")
-                  : uiT("Close {0}", { "0": uiT(terminology.singular) })
+                  ? gt("Confirm close?")
+                  : gt(
+                      "Close {term, select, mr {merge request} cr {change request} other {pull request}}",
+                      { term: changeRequestTermKind(terminology) },
+                    )
               }
               variant="destructive"
               disabled={actionPending}
@@ -449,8 +503,11 @@ export function PullRequestActionsMenu({
             >
               <PullRequestGlyph.closed className="size-3.5" />
               {inlineConfirm.isArmed("close")
-                ? uiT("Confirm close?")
-                : uiT("Close {0}", { "0": terminology.singular })}
+                ? gt("Confirm close?")
+                : gt(
+                    "Close {term, select, mr {merge request} cr {change request} other {pull request}}",
+                    { term: changeRequestTermKind(terminology) },
+                  )}
             </MenuItem>
           </>
         ) : detail.state === "closed" && can("reopen") ? (
@@ -458,7 +515,16 @@ export function PullRequestActionsMenu({
             <MenuSeparator />
             <MenuItem disabled={actionPending} onClick={() => void perform("reopen")}>
               <PullRequestGlyph.reopen className="size-3.5" />
-              {uiT("Reopen")} {terminology.singular}
+              <T>
+                Reopen{" "}
+                <Branch
+                  branch={changeRequestTermKind(terminology)}
+                  mr="merge request"
+                  cr="change request"
+                >
+                  pull request
+                </Branch>
+              </T>
             </MenuItem>
           </>
         ) : detail.state === "merged" && can("revert") ? (
@@ -467,14 +533,14 @@ export function PullRequestActionsMenu({
             <MenuItem
               closeOnClick={inlineConfirm.isArmed("revert")}
               aria-label={
-                inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")
+                inlineConfirm.isArmed("revert") ? gt("Confirm revert?") : gt("Revert changes")
               }
               variant={inlineConfirm.isArmed("revert") ? "destructive" : "default"}
               disabled={actionPending}
               {...inlineConfirm.props("revert", () => void perform("revert"))}
             >
               <RotateCcwIcon className="size-3.5" />
-              {inlineConfirm.isArmed("revert") ? uiT("Confirm revert?") : uiT("Revert changes")}
+              {inlineConfirm.isArmed("revert") ? gt("Confirm revert?") : gt("Revert changes")}
             </MenuItem>
           </>
         ) : null}
@@ -490,13 +556,11 @@ export function PullRequestActionsMenu({
               <span className="flex min-w-0 flex-col">
                 <span>
                   {pendingAction === "delete-branch"
-                    ? uiT("Deleting branch...")
-                    : uiT("Delete branch")}
+                    ? gt("Deleting branch...")
+                    : gt("Delete branch")}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {environmentConnected
-                    ? detail.headBranch
-                    : uiT("Reconnect to delete this branch")}
+                  {environmentConnected ? detail.headBranch : gt("Reconnect to delete this branch")}
                 </span>
               </span>
             </MenuItem>

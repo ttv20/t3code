@@ -10,9 +10,9 @@ import {
 } from "@t3tools/client-runtime/state/subagentRuntime";
 import type { EnvironmentId, ScopedThreadRef, ThreadId } from "@t3tools/contracts";
 import { Atom } from "effect/reactivity";
+import { T, useGT, useMessages } from "gt-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { environmentThreadDetails } from "../../state/threads";
@@ -27,6 +27,7 @@ const FOLDED_SCRIPT_LINES = 10;
 const NO_THREAD_ATOM = Atom.make<EnvironmentThread | null>(null);
 
 export function useWorkflowOpening(ref: ScopedThreadRef | null) {
+  const messages = useMessages();
   const threadAtom = ref === null ? NO_THREAD_ATOM : environmentThreadDetails.threadAtom(ref);
   // Selected as a primitive so an ordinary thread's updates never change the result.
   const parentId = useAtomValue(threadAtom, (thread) =>
@@ -48,11 +49,14 @@ export function useWorkflowOpening(ref: ScopedThreadRef | null) {
   );
   return projection === null
     ? null
-    : resolveWorkflowOpening({
-        thread: projection.thread,
-        messages: projection.messages,
-        parentSubagents,
-      });
+    : resolveWorkflowOpening(
+        {
+          thread: projection.thread,
+          messages: projection.messages,
+          parentSubagents,
+        },
+        messages,
+      );
 }
 
 function memberRowSubagent(
@@ -83,11 +87,11 @@ export function ThreadWorkflowOpening(props: {
   readonly threadId: ThreadId;
   readonly opening: WorkflowOpeningValue;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
+  const messages = useMessages();
   const openLinkedThread = useOpenLinkedThread();
   const { opening } = props;
-  const headline = workflowOpeningHeadline(opening);
+  const headline = workflowOpeningHeadline(opening, messages);
   const canListMembers = opening.driver !== null && opening.providerInstanceId !== null;
   const phases = (opening.group?.phases ?? []).filter((phase) => phase.members.length > 0);
   const unphased = opening.group?.unphasedMembers ?? [];
@@ -97,7 +101,7 @@ export function ThreadWorkflowOpening(props: {
       <Pressable
         key={member.id}
         accessibilityRole={threadId === null ? undefined : "link"}
-        accessibilityHint={threadId === null ? undefined : uiT("Opens this agent's thread")}
+        accessibilityHint={threadId === null ? undefined : gt("Opens this agent's thread")}
         disabled={threadId === null}
         onPress={() => {
           if (threadId !== null)
@@ -119,7 +123,7 @@ export function ThreadWorkflowOpening(props: {
         <View className="flex-row items-start gap-2">
           <View className="min-w-0 flex-1 gap-0.5">
             <Text className="font-t3-medium text-2xs text-foreground-muted">
-              {uiT("Workflow started")}
+              <T>Workflow started</T>
             </Text>
             <Text numberOfLines={1} className="font-t3-medium text-sm text-foreground">
               {headline.title}
@@ -152,8 +156,7 @@ export function ThreadWorkflowOpening(props: {
 }
 
 function WorkflowScript(props: { readonly script: string }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [expanded, setExpanded] = useState(false);
   const { themeAppearance } = useAppearancePreferences();
   const script = props.script.trimEnd();
@@ -198,7 +201,9 @@ function WorkflowScript(props: { readonly script: string }) {
           className="self-start py-1 active:opacity-70"
         >
           <Text className="font-t3-medium text-xs text-foreground-muted">
-            {expanded ? uiT("Show less") : uiT("Show full script")}
+            {expanded
+              ? gt("Show less", { $context: "collapses the workflow script" })
+              : gt("Show full script")}
           </Text>
         </Pressable>
       ) : null}

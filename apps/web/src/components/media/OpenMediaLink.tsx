@@ -1,5 +1,5 @@
+import { useGT } from "gt-react";
 import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
-import { useUiLanguage } from "../../i18n";
 
 import { resolveExternalWebLinkHost } from "../chat/externalLinkContextMenu";
 import { Button } from "../ui/button";
@@ -11,7 +11,7 @@ export function OpenMediaLink(props: {
   readonly fileName?: string | undefined;
   readonly className?: string | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const originalUrl =
     resolveExternalWebLinkHost(props.originalUrl) !== null ? props.originalUrl : undefined;
   const source = originalUrl ?? props.src;
@@ -40,7 +40,7 @@ export function OpenMediaLink(props: {
       }
     >
       {isBlob ? <DownloadIcon /> : <ExternalLinkIcon />}
-      {originalUrl ? uiT("Open original") : isBlob ? uiT("Download video") : uiT("Open in browser")}
+      {originalUrl ? gt("Open original") : isBlob ? gt("Download video") : gt("Open in browser")}
     </Button>
   );
 }

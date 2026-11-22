@@ -1,6 +1,5 @@
-import { currentUiTranslator } from "../currentUiTranslator";
-
-import { threadKey } from "@t3tools/client-runtime/state/entities";
+import { msg } from "gt-react";
+import { m } from "../i18n/messages";
 import {
   type EnvironmentThreadShell,
   type PendingSubagentRequest,
@@ -8,11 +7,10 @@ import {
 } from "@t3tools/client-runtime/state/models";
 import { isShownUnderParent } from "@t3tools/client-runtime/state/threads";
 import type { AnyRouter } from "@tanstack/react-router";
-import { parseThreadKey } from "@t3tools/client-runtime/state/entities";
+import { parseThreadKey, threadKey } from "@t3tools/client-runtime/state/entities";
 import type { EnvironmentId, OrchestrationV2ThreadShell, ThreadId } from "@t3tools/contracts";
 import { monitorHoldsWakeCompletion } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import type { ClientSettings } from "@t3tools/contracts/settings";
-
 import * as Option from "effect/Option";
 import type { AtomRegistry } from "effect/reactivity";
 import {
@@ -137,7 +135,6 @@ export function startThreadNotifications(
     state: NotificationState,
     kind: ThreadNotificationKind,
   ) => {
-    const uiT = currentUiTranslator();
     const { thread, status } = state;
     if (
       registry
@@ -149,16 +146,16 @@ export function startThreadNotifications(
     const active = activeThread();
     const title =
       kind === "completion"
-        ? uiT("Thread completed")
+        ? m(msg("Thread completed"))
         : status === "approval"
-          ? uiT("Approval needed")
+          ? m(msg("Approval needed"))
           : status === "limited"
-            ? uiT("Usage limit reached")
+            ? m(msg("Usage limit reached"))
             : status === "failed"
-              ? uiT("Thread failed")
+              ? m(msg("Thread failed"))
               : status === "request"
-                ? uiT("Guest request")
-                : uiT("Input needed");
+                ? m(msg("Guest request"))
+                : m(msg("Input needed"));
     if (hasNotificationSound(mode)) {
       void playNotificationSound(kind, () =>
         hasNotificationSound(getClientSettings().notificationMode),
@@ -192,7 +189,7 @@ export function startThreadNotifications(
             ),
         },
         actionProps: {
-          children: uiT("Open thread"),
+          children: m(msg("Open thread")),
           onClick: () => {
             toastManager.close(toastId);
             void router.navigate({

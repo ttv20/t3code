@@ -1,3 +1,4 @@
+import { useAtomCommand } from "../../state/use-atom-command";
 import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
@@ -5,7 +6,7 @@ import { Linking, Platform } from "react-native";
 import * as Dialog from "../../components/ui/Dialog";
 import { useUiLanguage } from "../../i18n";
 import { runtime } from "../../lib/runtime";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { mobilePreferencesAtom, saveMobilePreferences } from "../../state/preferences";
 import { requestAgentNotificationPermission } from "../agent-awareness/notificationPermissions";
 import { notificationStatusAtom } from "../agent-awareness/notificationStatus";
 import { SettingsSection } from "./components/SettingsSection";
@@ -14,7 +15,7 @@ import { SettingsSwitchRow } from "./components/SettingsSwitchRow";
 export function LocalCompletionNotificationSettings() {
   const { t: uiT } = useUiLanguage();
   const preferences = useAtomValue(mobilePreferencesAtom);
-  const save = useAtomSet(updateMobilePreferencesAtom);
+  const save = useAtomCommand(saveMobilePreferences);
   const status = useAtomValue(notificationStatusAtom);
   const setStatus = useAtomSet(notificationStatusAtom);
   const [requesting, setRequesting] = useState(false);

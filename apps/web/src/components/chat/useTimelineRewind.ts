@@ -1,39 +1,41 @@
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import {
-  isAtomCommandInterrupted,
-  squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+import { msg } from "gt-react";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m } from "~/i18n/messages";
 import type { EnvironmentThreadShell, ThreadStructure } from "@t3tools/client-runtime/state/shell";
+import type { ComposerThreadTarget } from "../../composerDraftStore";
+import type { ComposerHandleRef } from "../../composerHandleContext";
+import type { SessionPhase } from "../../types";
+import { useStableCallback } from "../../hooks/useStableCallback";
 import {
   AuthOrchestrationOperateScope,
   type EnvironmentId,
   type MessageId,
-  type RunId,
   type ScopedThreadRef,
   type ThreadId,
+  type RunId,
 } from "@t3tools/contracts";
+import { scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { useNavigate } from "@tanstack/react-router";
-import { newThreadId } from "~/lib/utils";
-import type { ComposerThreadTarget } from "../../composerDraftStore";
-import { useComposerDraftStore } from "../../composerDraftStore";
-import type { ComposerHandleRef } from "../../composerHandleContext";
-import { useStableCallback } from "../../hooks/useStableCallback";
-import { useUiLanguage } from "../../i18n";
+import {
+  isAtomCommandInterrupted,
+  squashAtomCommandFailure,
+} from "@t3tools/client-runtime/state/runtime";
 import { readLocalApi } from "../../localApi";
 import { findRevertCheckpoint } from "../../session-logic";
-import { assetEnvironment } from "../../state/assets";
-import { waitForThreadShell } from "../../state/entities";
-import { readEnvironmentScope } from "../../state/session";
-import { threadEnvironment } from "../../state/threads";
-import { useAtomCommand } from "../../state/use-atom-command";
-import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
-import { useOrchestrationCommand } from "../../state/use-orchestration-command";
-import { buildThreadRouteParams } from "../../threadRoutes";
-import type { SessionPhase } from "../../types";
 import { type ChatMessage } from "../../types";
-import { makeThreadErrorSetter } from "../ChatView.logic";
+import { newThreadId } from "~/lib/utils";
+import { buildThreadRouteParams } from "../../threadRoutes";
+import { useComposerDraftStore } from "../../composerDraftStore";
+import { threadEnvironment } from "../../state/threads";
+import { waitForThreadShell } from "../../state/entities";
 import { openRevertConfirm } from "./ChatOverlayHosts";
+import { assetEnvironment } from "../../state/assets";
+import { readEnvironmentScope } from "../../state/session";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { useOrchestrationCommand } from "../../state/use-orchestration-command";
+import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
 import { rewindToMessage } from "./chatViewSend";
+import { makeThreadErrorSetter } from "../ChatView.logic";
 interface TimelineRewindInput {
   readonly environmentId: EnvironmentId;
   readonly routeThreadRef: ScopedThreadRef;
@@ -59,8 +61,6 @@ interface TimelineRewindInput {
  * the composer) and forking a new thread from a run.
  */
 export function useTimelineRewind(input: TimelineRewindInput) {
-  const { t: uiT } = useUiLanguage();
-
   const {
     environmentId,
     routeThreadRef,
@@ -112,19 +112,30 @@ export function useTimelineRewind(input: TimelineRewindInput) {
     if (!supportsConversationRollback) {
       setThreadError(
         activeThread.id,
-        "This provider does not support reverting conversation history. Start a new thread instead.",
+        m(
+          msg(
+            "This provider does not support reverting conversation history. Start a new thread instead.",
+          ),
+        ),
       );
       return;
     }
     if (activeEnvironmentUnavailable && activeEnvironmentUnavailableLabel) {
       setThreadError(
         activeThread.id,
-        `Reconnect ${activeEnvironmentUnavailableLabel} before reverting checkpoints.`,
+        m(
+          msg("Reconnect {environment} before reverting checkpoints.", {
+            environment: activeEnvironmentUnavailableLabel,
+          }),
+        ),
       );
       return;
     }
     if (phase === "running" || isSendBusy) {
-      setThreadError(activeThread.id, "Interrupt the current turn before reverting checkpoints.");
+      setThreadError(
+        activeThread.id,
+        m(msg("Interrupt the current turn before reverting checkpoints.")),
+      );
       return;
     }
     if (restoreFiles === undefined) {
@@ -144,7 +155,7 @@ export function useTimelineRewind(input: TimelineRewindInput) {
       turnCount,
       restoreFiles,
       // Keep the live checkpoint identity when command context refetches a bounded window.
-      checkpoint: findRevertCheckpoint(serverProjection?.checkpoints ?? [], turnCount),
+      checkpoint: findRevertCheckpoint(serverProjection, turnCount),
       draftTarget: composerDraftTarget,
       composerHasPendingAttachments: composerRef.current?.hasPendingAttachments() === true,
       createAssetUrl: createAttachmentAssetUrl,
@@ -187,7 +198,7 @@ export function useTimelineRewind(input: TimelineRewindInput) {
         sourceThreadId: input.sourceThreadId,
         targetThreadId,
         runId: input.runId,
-        title: uiT("{0} fork", { "0": activeThread.title }),
+        title: `${activeThread.title} fork`,
       },
     });
     if (result._tag === "Failure") {
@@ -195,7 +206,7 @@ export function useTimelineRewind(input: TimelineRewindInput) {
         const error = squashAtomCommandFailure(result);
         setThreadError(
           activeThread.id,
-          error instanceof Error ? error.message : "Failed to fork this response.",
+          thrownErrorMessage(error, m) ?? m(msg("Failed to fork this response.")),
         );
       }
       return;
@@ -204,7 +215,11 @@ export function useTimelineRewind(input: TimelineRewindInput) {
     if (!targetThreadReady) {
       setThreadError(
         activeThread.id,
-        "The fork was created, but its thread data did not reach this client. Reconnect and try opening it from the sidebar.",
+        m(
+          msg(
+            "The fork was created, but its thread data did not reach this client. Reconnect and try opening it from the sidebar.",
+          ),
+        ),
       );
       return;
     }

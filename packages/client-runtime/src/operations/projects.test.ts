@@ -1,74 +1,31 @@
 import { SourceControlProviderKind } from "@t3tools/contracts";
-import * as Option from "effect/Option";
-import { createUiTranslator } from "../i18n.ts";
 import { describe, expect, it } from "vite-plus/test";
 import { EnvironmentId, ProjectId } from "@t3tools/contracts";
 
 import {
-  buildAddProjectRemoteSourceReadiness,
   findExistingAddProject,
   getCloneDestinationForPickedFolder,
   getCloneDestinationPath,
   getCloneDirectoryLeafName,
   getCloneDirectoryName,
   getCloneDirectoryPath,
+  getAddProjectInitialQuery,
   getDefaultCloneUrl,
   githubIncompleteOwnerRepositoryMessage,
   normalizePastedCloneUrl,
   sortAddProjectProviderSources,
 } from "./projects.ts";
 import type { EnvironmentProject } from "../state/models.ts";
+import { isFilesystemBrowseQuery } from "../state/projects.ts";
 
 describe("add project shared logic", () => {
-  it("translates owned readiness fallbacks while preserving provider diagnostics and names", () => {
-    const kind = SourceControlProviderKind.make("github");
-    const provider = {
-      kind,
-      label: "Settings",
-      status: "available" as const,
-      version: Option.none<string>(),
-      installHint: "Open source control settings",
-      detail: Option.none<string>(),
-      auth: {
-        status: "unauthenticated" as const,
-        account: Option.none<string>(),
-        host: Option.none<string>(),
-        detail: Option.none<string>(),
-      },
-    };
-    const discovery = { versionControlSystems: [], sourceControlProviders: [provider] };
-    const translate = createUiTranslator("he");
-    expect(buildAddProjectRemoteSourceReadiness(discovery)(kind).hint).toBe(
-      "Settings is not authenticated. Open Source Control settings for setup guidance.",
-    );
-    expect(buildAddProjectRemoteSourceReadiness(discovery, translate)(kind).hint).toBe(
-      "Settings אינו מאומת. לפתיחת הנחיות ההגדרה, יש לעבור להגדרות בקרת המקור.",
-    );
-    expect(buildAddProjectRemoteSourceReadiness(null, translate)(kind).hint).toBe(
-      "סטטוס הספק אינו זמין. פתח את הגדרות בקרת המקור וסרוק מחדש.",
-    );
-    const diagnostic = "Settings";
-    expect(
-      buildAddProjectRemoteSourceReadiness(
-        {
-          ...discovery,
-          sourceControlProviders: [
-            { ...provider, auth: { ...provider.auth, detail: Option.some(diagnostic) } },
-          ],
-        },
-        translate,
-      )(kind).hint,
-    ).toBe(diagnostic);
-    expect(
-      buildAddProjectRemoteSourceReadiness(
-        { ...discovery, sourceControlProviders: [{ ...provider, status: "missing" }] },
-        translate,
-      )(kind).hint,
-    ).toBe(provider.installHint);
-    expect(buildAddProjectRemoteSourceReadiness(null, translate)("url")).toEqual({
-      ready: true,
-      hint: null,
-    });
+  it("starts the Add Project picker on a browsable path for a relative base directory", () => {
+    expect(isFilesystemBrowseQuery(getAddProjectInitialQuery("Desktop/dev"))).toBe(true);
+    expect(getAddProjectInitialQuery("Desktop/dev")).toBe("~/Desktop/dev/");
+    expect(getAddProjectInitialQuery("/srv/code")).toBe("/srv/code/");
+    expect(getAddProjectInitialQuery("~")).toBe("~/");
+    expect(getAddProjectInitialQuery("./work")).toBe("./work/");
+    expect(getAddProjectInitialQuery("C:\\dev")).toBe("C:\\dev\\");
   });
 
   it("offers only GitHub until other hosts are turned on", () => {

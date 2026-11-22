@@ -1,11 +1,11 @@
-import { msg, useMessages } from "gt-react";
+import { msg, useGT, useMessages } from "gt-react";
+
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
   WorkspaceBreadcrumbSeparator,
 } from "../WorkspaceBreadcrumb";
 import { SETTINGS_SECTION_LABELS } from "./settingsSearch";
-import { useUiLanguage } from "../../i18n";
 
 const SETTINGS_LABEL = msg("Settings");
 
@@ -21,12 +21,12 @@ function settingsBreadcrumbLabel(pathname: string): string | null {
 }
 
 export function SettingsBreadcrumb({ pathname }: { pathname: string }) {
-  const { t } = useUiLanguage();
+  const gt = useGT();
   const m = useMessages();
   const sectionLabel = settingsBreadcrumbLabel(pathname);
 
   return (
-    <WorkspaceBreadcrumb ariaLabel={t("Settings breadcrumb")}>
+    <WorkspaceBreadcrumb ariaLabel={gt("Settings breadcrumb")}>
       {sectionLabel ? (
         <>
           <WorkspaceBreadcrumbItem>{m(SETTINGS_LABEL)}</WorkspaceBreadcrumbItem>

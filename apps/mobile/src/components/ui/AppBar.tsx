@@ -1,3 +1,12 @@
+import { useUiLanguage } from "../../i18n";
+import { useNativeMailSearchToolbar } from "../../native/use-native-mail-search-toolbar";
+import { useScreenOptionsWriter } from "../../native/StackHeader";
+import { isDuoDevice } from "../../lib/device-type";
+import { NativeStackScreenOptions } from "../../native/StackHeader";
+import { useDeviceType } from "../../native/native-layout-metrics";
+import { useNativeWorkspaceColumnsSupported } from "../../native/NativeWorkspaceColumns";
+import { useGT, useLocale, useMessages } from "gt-react-native";
+
 import { Toolbar } from "./Toolbar";
 import { AppActivityIndicator } from "./AppActivityIndicator";
 import type { HeaderBarButtonMailSearchToolbarItem, SearchBarCommands } from "react-native-screens";
@@ -12,13 +21,7 @@ import {
 } from "../../features/layout/native-mail-search-toolbar";
 import { useSidebarToggle } from "../../features/layout/useSidebarToggle";
 import { useAppearancePreferences } from "../../features/settings/appearance/AppearancePreferencesProvider";
-import { useUiLanguage } from "../../i18n";
-import { isDuoDevice } from "../../lib/device-type";
-import { useDeviceType } from "../../native/native-layout-metrics";
-import { useNativeWorkspaceColumnsSupported } from "../../native/NativeWorkspaceColumns";
-import { NativeStackScreenOptions, useScreenOptionsWriter } from "../../native/StackHeader";
-import { useNativeMailSearchToolbar } from "../../native/use-native-mail-search-toolbar";
-import type { AppBarMenuItem, AppBarProps } from "./AppBar.types";
+import type { AppBarMenu, AppBarMenuItem, AppBarProps } from "./AppBar.types";
 import type { AppSymbolName } from "./AppSymbol";
 import { createNativeHeaderMenu } from "./nativeHeaderMenu.ios";
 import { ScreenHeaderButton } from "./ScreenHeaderButton";
@@ -44,7 +47,10 @@ function mailMenuItems(items: ReadonlyArray<AppBarMenuItem>): MailMenu["items"] 
 }
 
 export function AppBar(props: AppBarProps) {
-  const { t: uiT, direction } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
+  const locale = useLocale();
+  const { direction } = useUiLanguage();
   const usesNativeWorkspaceColumns = useNativeWorkspaceColumnsSupported();
   const deviceType = useDeviceType();
   const headerId = useId();
@@ -115,7 +121,41 @@ export function AppBar(props: AppBarProps) {
     search !== undefined &&
     (search.compactToolbar ?? !layout.usesSplitView) &&
     usesNativeMailSearchToolbar;
-  const visibleMenus = compactSearch ? (menus?.slice(1) ?? []) : (menus ?? []);
+  const trailingMenus = compactSearch ? (menus?.slice(1) ?? []) : (menus ?? []);
+  // The Duo's vertical bar never overflows: items that don't fit slide under the workspace tabs,
+  // and a Live Activity pushes them down further. More than one tool shares one menu there.
+  const groupTrailing =
+    usesNativeWorkspaceColumns &&
+    isDuoDevice(deviceType) &&
+    props.onClose === undefined &&
+    (props.actions?.length ?? 0) + trailingMenus.length > 1;
+  const actions = groupTrailing ? [] : (props.actions ?? []);
+  const visibleMenus: ReadonlyArray<AppBarMenu> = groupTrailing
+    ? [
+        {
+          title: gt("More actions"),
+          icon: "ellipsis",
+          items: [
+            ...(props.actions ?? []).map((action) => ({
+              id: action.accessibilityLabel,
+              title: action.accessibilityLabel,
+              icon: iosIcon(action.icon),
+              subtitle: action.subtitle,
+              disabled: action.disabled || action.loading,
+              selected: action.selected,
+              destructive: action.destructive,
+              onPress: action.onPress,
+            })),
+            ...trailingMenus.map((menu) => ({
+              id: menu.title,
+              title: menu.title,
+              icon: iosIcon(menu.icon),
+              items: menu.items,
+            })),
+          ],
+        },
+      ]
+    : trailingMenus;
   // Where the mail toolbar isn't used, the Duo keeps search at the bottom of the pane like its
   // workspace lists; elsewhere inline search is a button in the bar.
   const duoBottomSearch =
@@ -127,7 +167,7 @@ export function AppBar(props: AppBarProps) {
   return (
     <>
       <NativeStackScreenOptions
-        optionsVersion={[props.optionsVersion, compactSearch ? menu : undefined]}
+        optionsVersion={[props.optionsVersion, compactSearch ? menu : undefined, locale]}
         options={{
           headerShown: true,
           headerBackVisible:
@@ -145,19 +185,22 @@ export function AppBar(props: AppBarProps) {
             ? {
                 unstable_headerToolbarItems: compactSearch
                   ? () => [
-                      createNativeMailSearchToolbarItem({
-                        showsSearchDismissButton: true,
-                        placeholder: search.compactPlaceholder ?? search.placeholder,
-                        onSearchTextChange: search.onChangeText,
-                        searchTextChangeId: `${headerId}-search-text`,
-                        ...(menu
-                          ? {
-                              filterButtonId: `${headerId}-filter`,
-                              filterSystemImageName: iosIcon(menu.icon),
-                              filterMenu: { title: menu.title, items: mailMenuItems(menu.items) },
-                            }
-                          : undefined),
-                      }),
+                      createNativeMailSearchToolbarItem(
+                        {
+                          showsSearchDismissButton: true,
+                          placeholder: search.compactPlaceholder ?? search.placeholder,
+                          onSearchTextChange: search.onChangeText,
+                          searchTextChangeId: `${headerId}-search-text`,
+                          ...(menu
+                            ? {
+                                filterButtonId: `${headerId}-filter`,
+                                filterSystemImageName: iosIcon(menu.icon),
+                                filterMenu: { title: menu.title, items: mailMenuItems(menu.items) },
+                              }
+                            : undefined),
+                        },
+                        m,
+                      ),
                     ]
                   : () => [],
                 headerSearchBarOptions: compactSearch
@@ -187,7 +230,7 @@ export function AppBar(props: AppBarProps) {
         <Toolbar placement="left">
           <Toolbar.Button
             icon="xmark"
-            accessibilityLabel={props.closeAccessibilityLabel ?? uiT("Close")}
+            accessibilityLabel={props.closeAccessibilityLabel ?? gt("Close")}
             onPress={props.onClose}
           />
         </Toolbar>
@@ -195,7 +238,7 @@ export function AppBar(props: AppBarProps) {
         <Toolbar placement="left">
           {rootBack ? (
             <ScreenHeaderButton
-              accessibilityLabel={uiT("Back")}
+              accessibilityLabel={gt("Back")}
               icon={direction === "rtl" ? "chevron.right" : "chevron.left"}
               onPress={rootBack}
               separateBackground
@@ -213,8 +256,8 @@ export function AppBar(props: AppBarProps) {
           ) : null}
           {compose ? (
             <ScreenHeaderButton
-              accessibilityLabel={uiT("New task")}
-              label={uiT("New task")}
+              accessibilityLabel={gt("New task")}
+              label={gt("New task")}
               icon="square.and.pencil"
               onPress={compose}
               separateBackground
@@ -222,13 +265,13 @@ export function AppBar(props: AppBarProps) {
           ) : null}
         </Toolbar>
       ) : null}
-      {props.actions?.length ||
+      {actions.length ||
       visibleMenus.length ||
       props.trailing ||
       props.confirm ||
       closeInspector ? (
         <Toolbar placement="right">
-          {props.actions?.map(({ loading, ...action }) =>
+          {actions.map(({ loading, ...action }) =>
             loading ? (
               <Toolbar.Custom key={action.accessibilityLabel}>
                 <View
@@ -273,7 +316,7 @@ export function AppBar(props: AppBarProps) {
           ) : null}
           {closeInspector ? (
             <ScreenHeaderButton
-              accessibilityLabel={uiT("Close inspector")}
+              accessibilityLabel={gt("Close inspector")}
               icon="xmark"
               onPress={closeInspector}
               separateBackground

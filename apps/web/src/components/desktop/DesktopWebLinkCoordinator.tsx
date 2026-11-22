@@ -1,31 +1,34 @@
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { m } from "~/i18n/messages";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ScopedThreadRef } from "@t3tools/contracts";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 import { promptLinkAppPath } from "@t3tools/shared/promptLinks";
 import { readPairingAppLink, resolveRemotePairingTarget } from "@t3tools/shared/remote";
 import { useRouter } from "@tanstack/react-router";
 import * as Effect from "effect/Effect";
 import { AtomRegistry } from "effect/reactivity";
 import * as Stream from "effect/Stream";
+import { useGT } from "gt-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { useUiLanguage } from "../../i18n";
 
 import { openFileInPreview, openUrlInPreview } from "../../browser/openFileInPreview";
 import { isPreviewAvailableFor } from "../../browser/previewRuntime";
-import { useComposerDraftStore } from "../../composerDraftStore";
 import { requestConfirmDialog } from "../../confirmDialog";
 import { connectPairing } from "../../connection/onboarding";
+import { isLocalEnvironmentDisabled } from "../../localEnvironment";
+import { useComposerDraftStore } from "../../composerDraftStore";
 import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useScratchProject } from "../../hooks/useScratchProject";
 import { useClientSettings } from "../../hooks/useSettings";
 import { useOpenChangeRequestLink } from "../../lib/openPullRequestLink";
-import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { selectActiveRightPanelSurface, useRightPanelStore } from "../../rightPanelStore";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
+import { resolveThreadRouteTarget } from "../../threadRoutes";
 import { assetEnvironment } from "../../state/assets";
 import { readProject, readThreadShell } from "../../state/entities";
 import { useEnvironmentHttpBaseUrl, usePrimaryEnvironment } from "../../state/environments";
@@ -33,7 +36,6 @@ import { previewEnvironment } from "../../state/preview";
 import { allReachableShellsLiveAtom } from "../../state/shell";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useAtomQueryRunner } from "../../state/use-atom-query-runner";
-import { resolveThreadRouteTarget } from "../../threadRoutes";
 import { stackedThreadToast, toastManager } from "../ui/toast";
 
 /** A link handed over by the OS is a plain click: nothing about it asks for the browser. */
@@ -80,8 +82,8 @@ function threadShowingBrowser(
 }
 
 export function DesktopWebLinkCoordinator() {
-  const { t: uiT } = useUiLanguage();
   const router = useRouter();
+  const gt = useGT();
   const primaryEnvironment = usePrimaryEnvironment();
   const openPullRequestsInApp = useClientSettings((settings) => settings.pullRequestLinksOpenInApp);
   const openChangeRequest = useOpenChangeRequestLink();
@@ -109,15 +111,15 @@ export function DesktopWebLinkCoordinator() {
 
   const reportFailure = (url: string, description = url) =>
     toastManager.add(
-      stackedThreadToast({ type: "error", title: uiT("Could not open the link"), description }),
+      stackedThreadToast({ type: "error", title: gt("Could not open the link"), description }),
     );
 
   const reportPairingFailure = (error: unknown) =>
     toastManager.add(
       stackedThreadToast({
         type: "error",
-        title: uiT("Could not add backend"),
-        description: error instanceof Error ? error.message : uiT("Failed to add backend."),
+        title: gt("Could not add backend"),
+        description: thrownErrorMessage(error, m) ?? gt("Failed to add backend."),
       }),
     );
 
@@ -133,7 +135,8 @@ export function DesktopWebLinkCoordinator() {
       reportPairingFailure(error);
       return;
     }
-    const confirmed = (await requestConfirmDialog(`Add the backend at ${origin}?`)) ?? false;
+    const confirmed =
+      (await requestConfirmDialog(gt("Add the backend at {origin}?", { origin }))) ?? false;
     if (!confirmed) return;
     const result = await connectPairingEnvironment({ pairingUrl });
     if (result._tag === "Failure") {
@@ -143,8 +146,8 @@ export function DesktopWebLinkCoordinator() {
     pairedUrlsRef.current.add(pairingUrl);
     toastManager.add({
       type: "success",
-      title: uiT("Backend added"),
-      description: uiT("The environment is saved and will reconnect on app startup."),
+      title: gt("Backend added"),
+      description: gt("The environment is saved and will reconnect on app startup."),
     });
   };
 
@@ -154,7 +157,7 @@ export function DesktopWebLinkCoordinator() {
       reportFailure(url);
       return null;
     }
-    const project = await openScratchProject(environmentId, "Could not open the link");
+    const project = await openScratchProject(environmentId, gt("Could not open the link"));
     if (!project) return null;
     const opened = await openThread(scopeProjectRef(project.environmentId, project.id));
     if (!opened) {
@@ -198,7 +201,7 @@ export function DesktopWebLinkCoordinator() {
     }
     if (result._tag === "Failure") {
       const error = squashAtomCommandFailure(result);
-      reportFailure(url, error instanceof Error ? error.message : url);
+      reportFailure(url, thrownErrorMessage(error, m) ?? url);
     }
   });
 

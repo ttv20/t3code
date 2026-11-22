@@ -1,6 +1,3 @@
-import type { UiLocale } from "@t3tools/client-runtime/i18n";
-import { currentUiLocale, currentUiTranslator } from "../../currentUiTranslator";
-
 import { useAtomValue } from "@effect/atom-react";
 import { AVAILABLE_CONNECTION_STATE } from "@t3tools/client-runtime/connection";
 import {
@@ -13,9 +10,11 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
+import { msg } from "gt-react";
 
 import { APP_VERSION } from "~/branding";
 import { environmentCatalog } from "~/connection/catalog";
+import { m } from "~/i18n/messages";
 import { appAtomRegistry } from "~/rpc/atomRegistry";
 import { desktopUpdateStateAtom } from "~/state/desktopUpdate";
 import { serverEnvironment } from "~/state/server";
@@ -124,7 +123,7 @@ export function retryFailedUpdateRunServers(
           ? providerFailure
           : outcome.status === "failed"
             ? outcome.message
-            : "Could not start the update",
+            : m(msg("Could not start the update")),
         { serverUpdated: outcome.status === "updated" },
       ),
     );
@@ -265,12 +264,8 @@ function takeSavedUpdateEverythingResult(): typeof SavedResult.Type | null {
   }
 }
 
-/** Shows the one summary toast for a finished pass. */
-export function showUpdateEverythingResult(
-  result: UpdateEverythingResult,
-  locale: UiLocale = "en",
-): void {
-  const view = getUpdateEverythingToastView(result, APP_VERSION, locale);
+export function showUpdateEverythingResult(result: UpdateEverythingResult): void {
+  const view = getUpdateEverythingToastView(result, APP_VERSION);
   if (!view) return;
   toastManager.add(
     stackedThreadToast({
@@ -283,7 +278,7 @@ export function showUpdateEverythingResult(
   );
 }
 
-function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale: UiLocale): void {
+function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>): void {
   if (servers.length === 0) return;
   setUpdateEverythingRun(() => ({
     localVersion: null,
@@ -328,23 +323,23 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale:
       releaseState();
       settleUpdateRunMachine(server.environmentId, failure);
       if (failure === null) updatedServers += 1;
-      else failures.push(`${server.label}: ${failure}`);
+      else failures.push(m(msg("{machine}: {failure}", { machine: server.label, failure })));
       remaining -= 1;
       if (remaining === 0) {
-        showUpdateEverythingResult(
-          {
-            localVersion: null,
-            updatedServers,
-            updatedProviders: 0,
-            failures,
-            restarting: [],
-          },
-          locale,
-        );
+        showUpdateEverythingResult({
+          localVersion: null,
+          updatedServers,
+          updatedProviders: 0,
+          failures,
+          restarting: [],
+        });
       }
     };
     const timer = setTimeout(
-      () => settle(`Not back after ${HANDOFF_TIMEOUT_MS / 60_000} minutes`),
+      () =>
+        settle(
+          m(msg("Not back after {minutes} minutes", { minutes: HANDOFF_TIMEOUT_MS / 60_000 })),
+        ),
       server.startedAt + HANDOFF_TIMEOUT_MS - Date.now(),
     );
     const stopReconnectNudge = Effect.runCallback(
@@ -355,9 +350,9 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale:
         ).pipe(
           Stream.map((state) => AsyncResult.getOrElse(state, () => AVAILABLE_CONNECTION_STATE)),
         ),
-        retryNow: Effect.promise(() =>
-          environmentCatalog.retryNow.run(appAtomRegistry, server.environmentId),
-        ).pipe(Effect.asVoid),
+        retryNow: environmentCatalog.retryNow
+          .run(appAtomRegistry, server.environmentId)
+          .pipe(Effect.ignoreCause),
       }),
     );
     const unsubscribe = appAtomRegistry.subscribe(
@@ -372,15 +367,11 @@ function followHandedOffServers(servers: ReadonlyArray<HandedOffServer>, locale:
 
 /** Reports, once per launch, how the update run that restarted the app ended. */
 export function startDesktopUpdateLaunchNotice(): () => void {
-  const locale = currentUiLocale();
   const saved = takeSavedUpdateEverythingResult();
   if (saved) {
     const handedOff = saved.handedOff ?? [];
-    showUpdateEverythingResult(
-      { ...saved, restarting: handedOff.map((server) => server.label) },
-      locale,
-    );
-    followHandedOffServers(handedOff, locale);
+    showUpdateEverythingResult({ ...saved, restarting: handedOff.map((server) => server.label) });
+    followHandedOffServers(handedOff);
   }
 
   let notifiedNotAppliedVersion: string | null = null;
@@ -394,10 +385,12 @@ export function startDesktopUpdateLaunchNotice(): () => void {
       toastManager.add(
         stackedThreadToast({
           type: "error",
-          title: currentUiTranslator()("Update did not apply"),
-          description: currentUiTranslator()(
-            "T3 Code is still on {0}. Install {1} again from the update button.",
-            { "0": APP_VERSION, "1": notAppliedVersion },
+          title: m(msg("Update did not apply")),
+          description: m(
+            msg("T3 Code is still on {current}. Install {version} again from the update button.", {
+              current: APP_VERSION,
+              version: notAppliedVersion,
+            }),
           ),
         }),
       );

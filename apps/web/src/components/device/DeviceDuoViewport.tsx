@@ -1,11 +1,11 @@
-import { createDuoPinch } from "@t3tools/client-runtime/device/duo-control";
+import { useGT } from "gt-react";
+import { useEffect, useRef } from "react";
 import type { DuoViewer } from "@t3tools/client-runtime/device/duo-viewer";
-import { createCanvasFrameSink } from "@t3tools/client-runtime/device/frame";
 import type { DeviceModelSource } from "@t3tools/client-runtime/device/model";
 import type { createPhoneInteraction } from "@t3tools/client-runtime/device/phone-interaction";
+import { createCanvasFrameSink } from "@t3tools/client-runtime/device/frame";
 import type { DeviceScreenSize, DeviceStreamClient } from "@t3tools/client-runtime/device/stream";
-import { useEffect, useRef } from "react";
-import { useUiLanguage } from "../../i18n";
+import { createDuoPinch } from "@t3tools/client-runtime/device/duo-control";
 import { mountDeviceViewer } from "./mountDeviceViewer";
 
 const loadDuoViewer = () => import("@t3tools/client-runtime/device/duo-viewer");
@@ -22,8 +22,7 @@ export function DeviceDuoViewport(props: {
   readonly onControlRejectedListener: (listener: (() => void) | null) => void;
   readonly onUnavailable: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const viewerRef = useRef<
     (DuoViewer & { readonly sources: Record<1 | 3, HTMLCanvasElement> }) | null
   >(null);
@@ -157,7 +156,7 @@ export function DeviceDuoViewport(props: {
         />
         <canvas
           ref={mountViewer}
-          aria-label={uiT(
+          aria-label={gt(
             "Interactive 3D iPhone Duo. Drag the screen to interact. Drag outside it or swipe with two fingers to turn. Pinch over the device to open or close its hinge.",
           )}
           className="size-full touch-none"

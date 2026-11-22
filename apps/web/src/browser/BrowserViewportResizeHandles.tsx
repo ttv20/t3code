@@ -3,7 +3,7 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
-import { useUiLanguage } from "../i18n";
+import { useGT } from "gt-react";
 
 import { cn } from "~/lib/utils";
 
@@ -44,8 +44,6 @@ function ResizeHandle(props: {
   readonly onPointerDown: Props["onPointerDown"];
   readonly onKeyDown: Props["onKeyDown"];
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const {
     direction,
     label,
@@ -57,10 +55,11 @@ function ResizeHandle(props: {
     onPointerDown,
     onKeyDown,
   } = props;
+  const gt = useGT();
   return (
     <button
       type="button"
-      aria-label={uiT("{0}. Use arrow keys to resize.", { "0": label })}
+      aria-label={gt("{label}. Use arrow keys to resize.", { label })}
       className={cn(EDGE_BUTTON_CLASS, kind === "corner" && "z-30", cursorClassName)}
       style={style}
       onPointerDown={(event) => onPointerDown(direction, event)}
@@ -105,20 +104,19 @@ export function BrowserViewportResizeHandles({
   onPointerDown,
   onKeyDown,
 }: Props) {
-  const { t: uiT } = useUiLanguage();
-
   const left = layout.viewportX;
   const top = layout.viewportY;
   const right = left + layout.viewportWidth;
   const bottom = top + layout.viewportHeight;
   const railSize = BROWSER_VIEWPORT_RESIZE_RAIL_SIZE;
 
+  const gt = useGT();
   const shared = { activeDirection, onPointerDown, onKeyDown };
   return (
     <>
       <ResizeHandle
         direction="west"
-        label={uiT("Resize browser viewport from left edge")}
+        label={gt("Resize browser viewport from left edge")}
         kind="vertical"
         cursorClassName="cursor-ew-resize"
         style={{ left: left - railSize, top, width: railSize, height: layout.viewportHeight }}
@@ -128,7 +126,7 @@ export function BrowserViewportResizeHandles({
       />
       <ResizeHandle
         direction="east"
-        label={uiT("Resize browser viewport from right edge")}
+        label={gt("Resize browser viewport from right edge")}
         kind="vertical"
         cursorClassName="cursor-ew-resize"
         style={{ left: right, top, width: railSize, height: layout.viewportHeight }}
@@ -138,7 +136,7 @@ export function BrowserViewportResizeHandles({
       />
       <ResizeHandle
         direction="south"
-        label={uiT("Resize browser viewport from bottom edge")}
+        label={gt("Resize browser viewport from bottom edge")}
         kind="horizontal"
         cursorClassName="cursor-ns-resize"
         style={{ left, top: bottom, width: layout.viewportWidth, height: railSize }}
@@ -148,7 +146,7 @@ export function BrowserViewportResizeHandles({
       />
       <ResizeHandle
         direction="southwest"
-        label={uiT("Resize browser viewport from bottom-left corner")}
+        label={gt("Resize browser viewport from bottom-left corner")}
         kind="corner"
         cursorClassName="cursor-nesw-resize"
         style={{ left: left - railSize, top: bottom, width: railSize, height: railSize }}
@@ -159,7 +157,7 @@ export function BrowserViewportResizeHandles({
       />
       <ResizeHandle
         direction="southeast"
-        label={uiT("Resize browser viewport from bottom-right corner")}
+        label={gt("Resize browser viewport from bottom-right corner")}
         kind="corner"
         cursorClassName="cursor-nwse-resize"
         style={{ left: right, top: bottom, width: railSize, height: railSize }}

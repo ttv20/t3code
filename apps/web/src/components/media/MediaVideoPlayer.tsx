@@ -1,15 +1,15 @@
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { AsyncResult } from "effect/reactivity";
 import { PlayIcon, RotateCwIcon, TriangleAlertIcon } from "lucide-react";
+import { useGT } from "gt-react";
 import { useState, type CSSProperties } from "react";
+
 import { observeIntersection } from "../../lib/observeIntersection";
 import { cn } from "../../lib/utils";
 import { prepareVideoFirstFrame } from "../../lib/videoFirstFrame";
 import { Button } from "../ui/button";
 import { OpenMediaLink } from "./OpenMediaLink";
 import { MediaActions, type MediaActionSource } from "./MediaActions";
-
-import { useUiLanguage } from "../../i18n";
 
 interface MediaVideoPlayerProps {
   readonly src: string | null;
@@ -48,8 +48,7 @@ export function MediaVideoPlayer({
   onRetry,
   actionsSource,
 }: MediaVideoPlayerProps) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const [playbackSource, setPlaybackSource] = useState<{
     src: string;
     revision: string | null;
@@ -143,7 +142,7 @@ export function MediaVideoPlayer({
         >
           <span data-thread-find-ignore className="inline-flex items-center gap-1.5">
             <TriangleAlertIcon aria-hidden className="size-3.5 shrink-0" />
-            {["Video unavailable", label, unavailableDetail].filter(Boolean).join(" · ")}
+            {[gt("Video unavailable"), label, unavailableDetail].filter(Boolean).join(" · ")}
           </span>
           <span className="flex flex-wrap items-center justify-center gap-2">
             {latestSrc !== null || onRetry ? (
@@ -154,7 +153,7 @@ export function MediaVideoPlayer({
                 onClick={() => void retry()}
               >
                 <RotateCwIcon />
-                {retrying ? uiT("Retrying…") : uiT("Retry video")}
+                {retrying ? gt("Retrying…") : gt("Retry video")}
               </Button>
             ) : null}
             <OpenMediaLink originalUrl={originalUrl} src={latestSrc ?? src} fileName={label} />
@@ -165,7 +164,7 @@ export function MediaVideoPlayer({
           key={loadAttempt}
           ref={attachVideo}
           src={src}
-          aria-label={label || uiT("Video preview")}
+          aria-label={label || gt("Video preview")}
           aria-hidden={onOpen ? true : undefined}
           autoPlay={onOpen ? false : autoPlay}
           controls={!onOpen}
@@ -197,7 +196,7 @@ export function MediaVideoPlayer({
       ) : (
         <span
           role="status"
-          aria-label={failed ? uiT("Video preview unavailable") : uiT("Loading video")}
+          aria-label={failed ? gt("Video preview unavailable") : gt("Loading video")}
           className={cn("block aspect-video w-full rounded-lg bg-muted/60", stateClassName)}
           style={style}
         />
@@ -205,7 +204,7 @@ export function MediaVideoPlayer({
       {onOpen ? (
         <button
           type="button"
-          aria-label={label ? uiT("Play {0}", { "0": label }) : uiT("Play video")}
+          aria-label={label ? gt("Play {name}", { name: label }) : gt("Play video")}
           onClick={onOpen}
           className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
         >

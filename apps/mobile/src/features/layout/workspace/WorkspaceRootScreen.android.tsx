@@ -1,3 +1,9 @@
+import { useGT } from "gt-react-native";
+import { useAndroidFloatingTabs } from "../../settings/appearance/AppearancePreferencesProvider";
+import { WorkspaceNoTabs } from "./WorkspaceNoTabs";
+import { useEnabledNavigationTabs } from "./navigation-tabs";
+import { NAVIGATION_TAB_ORDER } from "./navigation-tab-order";
+import { WorkspaceExtraTab } from "./WorkspaceExtraTab";
 import type { ReactNode } from "react";
 import { View } from "react-native";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,25 +12,23 @@ import { usePaneRole } from "../../../components/ui/Pane";
 import { ScreenContent } from "../../../components/ui/ScreenContent";
 import { useAndroidControlSizing } from "../../../components/ui/useAndroidControlSizing";
 import { WorkspaceAppBarScope } from "../../../components/ui/WorkspaceAppBar.android";
-import { useUiLanguage } from "../../../i18n";
+
 import { NativeStackScreenOptions } from "../../../native/StackHeader";
 import { HomeRouteScreen } from "../../home/HomeRouteScreen";
 import { PullRequestsScreen } from "../../pull-requests/PullRequestsScreen";
-import { useAndroidFloatingTabs } from "../../settings/appearance/AppearancePreferencesProvider";
+import { ListSearchToolbar } from "./ListSearchToolbar.android";
+import { IssuesScreen } from "../../issues/IssuesScreen";
 import { useAdaptiveWorkspaceLayout } from "../AdaptiveWorkspaceLayout";
 import { WorkspaceSettledContentWidthContext } from "../workspace-content-width";
 import { WorkspaceEmptyDetail } from "../WorkspaceEmptyDetail";
 import { AndroidWorkspaceNavigation, FloatingWorkspaceTabs } from "./AndroidWorkspaceNavigation";
 import { AndroidWorkspaceSidebar } from "./AndroidWorkspaceSidebar.android";
 import { FLOATING_TABS } from "./floating-workspace-tabs";
-import { NAVIGATION_TAB_ORDER } from "./navigation-tab-order";
-import { useEnabledNavigationTabs } from "./navigation-tabs";
-import { PullRequestToolbar } from "./PullRequestToolbar.android";
+
 import type { WorkspaceTab } from "./workspace-tabs-state";
 import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 import { useHardwareBack } from "../../../lib/backHandler";
-import { WorkspaceExtraTab } from "./WorkspaceExtraTab";
-import { WorkspaceNoTabs } from "./WorkspaceNoTabs";
+
 import { WorkspaceTabPanes } from "./WorkspaceTabPanes";
 import { WorkspaceTabsContext, useWorkspaceTabs } from "./WorkspaceTabsContext";
 
@@ -35,8 +39,7 @@ export function WorkspaceRootScreen() {
 }
 
 function WorkspaceRoot() {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const floatingTabsEnabled = useAndroidFloatingTabs();
   const { layout, startNewTask, workspacePageWidth } = useAdaptiveWorkspaceLayout();
   const workspace = useWorkspaceTabs()!;
@@ -98,21 +101,37 @@ function WorkspaceRoot() {
                 renderTab={(tab) =>
                   tab === "threads" ? (
                     <HomeRouteScreen />
-                  ) : tab !== "pullRequests" ? (
+                  ) : tab === "usage" ? (
                     <WorkspacePageFrame width={workspacePageWidth ?? null}>
                       <WorkspaceExtraTab tab={tab} />
                     </WorkspacePageFrame>
                   ) : layout.usesSplitView ? (
                     <>
                       <NativeStackScreenOptions options={{ headerShown: false }} />
-                      <AppBar embedded title={uiT("Pull requests")} />
-                      <WorkspaceEmptyDetail tab="pullRequests" />
+                      <AppBar
+                        embedded
+                        title={
+                          tab === "issues"
+                            ? gt("Issues", { $context: "screen title, list of issues" })
+                            : gt("Pull requests")
+                        }
+                      />
+                      <WorkspaceEmptyDetail tab={tab} />
                     </>
+                  ) : tab === "issues" ? (
+                    <IssuesScreen
+                      renderFrame={(filters, list) => (
+                        <>
+                          <ListSearchToolbar tab="issues" filters={filters} />
+                          <ScreenContent>{list}</ScreenContent>
+                        </>
+                      )}
+                    />
                   ) : (
                     <PullRequestsScreen
                       renderFrame={(filters, list) => (
                         <>
-                          <PullRequestToolbar filters={filters} />
+                          <ListSearchToolbar tab="pullRequests" filters={filters} />
                           <ScreenContent>{list}</ScreenContent>
                         </>
                       )}

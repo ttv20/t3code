@@ -1,26 +1,29 @@
+import { useGT } from "gt-react-native";
+import { createContext, useContext, useState } from "react";
+import {
+  pullRequestMediaSource,
+  pullRequestImageSource,
+  type PullRequestMediaLocation,
+} from "./pullRequestMediaSource";
+import { useFilePreviewGallery } from "../../components/ui/FilePreviewGallery";
 import { videoMimeType } from "@t3tools/shared/video";
 import { Image } from "expo-image";
-import { createContext, useContext, useState } from "react";
+
 import { Pressable, View } from "react-native";
 import { MediaVideoPlayer } from "../../components/MediaVideoPlayer";
 import { VideoAttachmentTile } from "../../components/VideoAttachmentTile";
 import { AppText } from "../../components/ui/AppText";
-import { useFilePreviewGallery } from "../../components/ui/FilePreviewGallery";
+
 import {
   FilePreviewModal,
   type FilePreviewItem,
   type FilePreviewSource,
 } from "../../components/ui/FilePreviewModal";
 import { VideoPreviewModal, type VideoPreviewSource } from "../../components/ui/VideoPreviewModal";
-import { useUiLanguage } from "../../i18n";
+
 import { assetImageCacheKey } from "../../lib/assetImageSource";
 import { useAssetUrlState, useRefreshAssetUrl } from "../../state/assets";
 import { ThreadMarkdownImageView } from "../threads/ThreadMarkdownImage";
-import {
-  pullRequestImageSource,
-  pullRequestMediaSource,
-  type PullRequestMediaLocation,
-} from "./pullRequestMediaSource";
 
 export const PullRequestMediaVisibleContext = createContext(true);
 
@@ -48,12 +51,13 @@ export function PullRequestMedia(props: {
   readonly compact?: boolean;
 }) {
   const media = usePullRequestMediaUrl(props.url);
+  const gt = useGT();
   const visible = useContext(PullRequestMediaVisibleContext);
   const context = useContext(PullRequestMediaContext);
   const withGallery = useFilePreviewGallery();
   const [image, setImage] = useState<FilePreviewSource | null>(null);
   const [video, setVideo] = useState<VideoPreviewSource | null>(null);
-  const name = props.caption || new URL(props.url).pathname.split("/").pop() || "Attachment";
+  const name = props.caption || new URL(props.url).pathname.split("/").pop() || gt("Attachment");
   if (props.kind === "image")
     return (
       <>
@@ -117,14 +121,14 @@ export function PullRequestImageAttachment(props: {
   readonly source: FilePreviewItem;
   readonly gallery: readonly FilePreviewItem[];
 }) {
-  const { t: uiT } = useUiLanguage();
   const media = usePullRequestMediaUrl(props.url);
+  const gt = useGT();
   const [preview, setPreview] = useState<FilePreviewSource | null>(null);
   return (
     <>
       <Pressable
         accessibilityRole="imagebutton"
-        accessibilityLabel={uiT("View attachment: {0}", { "0": props.caption })}
+        accessibilityLabel={gt("View attachment: {caption}", { caption: props.caption })}
         onPress={() => setPreview({ ...props.source, gallery: props.gallery })}
         className="gap-2 active:opacity-70"
         style={{ width: 176 }}

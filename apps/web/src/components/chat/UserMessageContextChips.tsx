@@ -1,4 +1,7 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { msg, T, useGT, useMessages } from "gt-react";
+import type { MessageResolver } from "~/i18n/messages";
+import { useNativeFileDrag } from "../../useNativeFileDrag";
+import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
 import { documentChipKindForFileName } from "~/pierre-icons";
 import { isSvgAttachment } from "@t3tools/shared/image";
 import { useRenderedAppearance } from "../../hooks/useTheme";
@@ -42,9 +45,12 @@ import {
 } from "../contextChipParts";
 import {
   isPullRequestSummaryContext,
+  previewAnnotationTargetText,
   pullRequestContextDisplayState,
   pullRequestContextKindLabel,
   reviewCommentContextLabel,
+  reviewCommentRangeText,
+  reviewCommentSectionText,
 } from "~/lib/composerContextRecords";
 import { formatComposerContextReference } from "@t3tools/shared/composerContextReferences";
 import { ContextChip, ContextChipLabel, type ContextChipKind } from "../ContextChip";
@@ -64,23 +70,24 @@ import {
 import { TimelineRowCtx } from "./timelineRowContext";
 import { userMessageFileLabel } from "./TimelineUserMessageRow.logic";
 
-import { useUiLanguage } from "../../i18n";
-
 function UserMessageMentionChip(props: {
   record: Extract<KnownComposerContextRecord, { kind: "mention" }>;
   copyMarkdown: string;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const ctx = use(TimelineRowCtx);
+  const nativeDrag = useNativeFileDrag(ctx.activeThreadEnvironmentId, () =>
+    resolvePathLinkTarget(props.record.path, ctx.workspaceRoot ?? ""),
+  );
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <ContextChip
+            {...nativeDrag}
             kind={documentChipKindForFileName(props.record.path) ?? "mention"}
             render={<button type="button" />}
-            aria-label={uiT("Preview {0}", { "0": props.record.path })}
+            aria-label={gt("Preview {name}", { name: props.record.path })}
             data-markdown-copy={props.copyMarkdown}
             onClick={() => {
               if (ctx.threadRef)
@@ -97,7 +104,7 @@ function UserMessageMentionChip(props: {
           </ContextChip>
         }
       />
-      <TooltipPopup>
+      <TooltipPopup className="pointer-events-auto">
         <WorkspaceEntryTooltip
           path={props.record.path}
           environmentId={ctx.activeThreadEnvironmentId}
@@ -130,14 +137,15 @@ function UserMessagePullRequestContextChip(props: {
   kind: ContextChipKind;
 }) {
   const { activeThreadEnvironmentId, openPullRequest } = use(TimelineRowCtx);
+  const messages = useMessages();
   const metadata = props.record.pullRequest;
   if (metadata === undefined) return null;
   return (
     <PullRequestChip
       metadata={metadata}
       environmentId={activeThreadEnvironmentId}
-      label={reviewCommentContextLabel(props.record)}
-      kindLabel={pullRequestContextKindLabel(props.record)}
+      label={reviewCommentContextLabel(props.record, messages)}
+      kindLabel={pullRequestContextKindLabel(props.record, messages)}
       kind={props.kind}
       copyMarkdown={props.copyMarkdown}
       onOpen={openPullRequest}
@@ -149,17 +157,18 @@ function UserMessagePreviewAnnotationDetails(props: {
   record: Extract<KnownComposerContextRecord, { kind: "preview-annotation" }>;
   image: ChatImageAttachment | null;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const ctx = use(TimelineRowCtx);
+  const gt = useGT();
+  const messages = useMessages();
   const visibleElements = props.record.elements ?? [];
+  const targetText = previewAnnotationTargetText(props.record, messages);
   return (
     <div className="max-w-full overflow-hidden rounded-lg border border-border/70 bg-background/70">
       {props.image?.previewUrl ? (
         <button
           type="button"
           className="block max-h-64 w-full cursor-zoom-in overflow-hidden border-b border-border/70 bg-muted"
-          aria-label={uiT("Preview {0}", { "0": props.image.name })}
+          aria-label={gt("Preview {name}", { name: props.image.name })}
           onClick={() => {
             if (!props.image) return;
             const preview = buildExpandedImagePreview([props.image], props.image.id);
@@ -168,18 +177,18 @@ function UserMessagePreviewAnnotationDetails(props: {
         >
           <img
             src={props.image.previewUrl}
-            alt={uiT("Annotated preview crop")}
+            alt={gt("Annotated preview crop")}
             className="max-h-64 w-full object-contain"
           />
         </button>
       ) : (
         <div className="border-b border-border/70 bg-muted/40 px-3 py-2 text-secondary-label text-xs">
-          {uiT("Screenshot unavailable")}
+          <T>Screenshot unavailable</T>
         </div>
       )}
       <div className="min-w-0 px-3 py-2.5">
         <div className="text-message-foreground text-xs font-medium">
-          {props.record.pageTitle?.trim() || props.record.pageUrl || uiT("Preview annotation")}
+          {props.record.pageTitle?.trim() || props.record.pageUrl || gt("Preview annotation")}
         </div>
         {props.record.comment ? (
           <div className="mt-1 whitespace-pre-wrap wrap-break-word text-sm">
@@ -187,9 +196,7 @@ function UserMessagePreviewAnnotationDetails(props: {
           </div>
         ) : null}
         <div className="mt-1 flex items-center gap-2 text-secondary-label text-3xs">
-          {props.record.targetSummary ? (
-            <span className="truncate">{props.record.targetSummary}</span>
-          ) : null}
+          {targetText ? <span className="truncate">{targetText}</span> : null}
           {(props.record.styleChanges?.length ?? 0) > 0 ? (
             <span className="inline-flex shrink-0 items-center gap-1">
               <PaintbrushIcon className="size-3" />
@@ -273,7 +280,6 @@ function UserMessageElementDetails({
 }
 
 interface UserMessageContextRenderContext {
-  translate: ReturnType<typeof createUiTranslator>;
   environmentId: import("@t3tools/contracts").EnvironmentId;
   reference: ChatMarkdownContextReference;
   annotationImage: ChatImageAttachment | null;
@@ -283,16 +289,15 @@ interface UserMessageContextRenderContext {
   onExpandImage: (image: ChatImageAttachment) => void;
   onExpandVideo: (file: ChatFileAttachment) => void;
   onOpenFile: (file: ChatFileAttachment) => void;
+  m: MessageResolver;
 }
 
 function UnavailableUserMessageContextChip(props: UserMessageContextRenderContext) {
-  const { t: uiT } = useUiLanguage();
-
   return (
     <UnresolvedChip
       label={props.reference.label}
       copyMarkdown={props.copyMarkdown}
-      tooltip={uiT("This context is no longer available.")}
+      tooltip={props.m(msg("This context is no longer available."))}
     />
   );
 }
@@ -378,7 +383,7 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
           <ImageChipButton
             name={record.name}
             previewUrl={attachment.previewUrl}
-            size={formatAttachmentSize(record.sizeBytes)}
+            size={formatAttachmentSize(record.sizeBytes, context.m)}
             data-markdown-copy={context.copyMarkdown}
             onClick={() => context.onExpandImage(attachment)}
           />
@@ -399,13 +404,13 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         }
         const attachment = context.attachment;
         const isVideo = isVideoAttachment(attachment);
-        const label = userMessageFileLabel(attachment);
+        const label = userMessageFileLabel(attachment, context.m);
         const disabled =
           attachment.downloadable === false && (!isVideo || attachment.previewUrl === undefined);
         const size =
           attachment.downloadable === false
-            ? context.translate("Sending…")
-            : formatAttachmentSize(record.sizeBytes);
+            ? context.m(msg("Sending…"))
+            : formatAttachmentSize(record.sizeBytes, context.m);
         return (
           <FileChip
             name={label}
@@ -418,10 +423,11 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
             isVideo={isVideo}
             theme={context.resolvedTheme}
             disabled={disabled}
-            accessibleLabel={context.translate(
-              isVideo ? "Video attachment, {0}, {1}" : "File attachment, {0}, {1}",
-              { "0": label, "1": size },
-            )}
+            accessibleLabel={
+              isVideo
+                ? context.m(msg("Video attachment, {label}, {size}", { label, size }))
+                : context.m(msg("File attachment, {label}, {size}", { label, size }))
+            }
             copyMarkdown={context.copyMarkdown}
             onOpen={() =>
               isVideo ? context.onExpandVideo(attachment) : context.onOpenFile(attachment)
@@ -457,7 +463,7 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         record.kind === "element" ? (
           <UserMessageContextPopover
             copyMarkdown={context.copyMarkdown}
-            accessibleLabel={context.translate("Browser element, {0}", { "0": record.label })}
+            accessibleLabel={context.m(msg("Browser element, {label}", { label: record.label }))}
             kind="element"
             icon={<MousePointerClickIcon />}
             label={record.label}
@@ -476,10 +482,10 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
           return <UnavailableUserMessageContextChip {...context} />;
         }
         const isPullRequest = isPullRequestSummaryContext(record);
-        const label = reviewCommentContextLabel(record);
+        const label = reviewCommentContextLabel(record, context.m);
         const kindLabel = isPullRequest
-          ? pullRequestContextKindLabel(record)
-          : context.translate("Review comment");
+          ? pullRequestContextKindLabel(record, context.m)
+          : context.m(msg("Review comment"));
         const pullRequestState = pullRequestContextDisplayState(record) ?? "unknown";
         if (isPullRequest && record.pullRequest !== undefined) {
           return (
@@ -493,7 +499,17 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         return (
           <UserMessageContextPopover
             copyMarkdown={context.copyMarkdown}
-            accessibleLabel={`${kindLabel}, ${label}${record.pullRequest ? `, ${record.pullRequest.title}` : ""}`}
+            accessibleLabel={
+              record.pullRequest
+                ? context.m(
+                    msg("{kind}, {label}, {title}", {
+                      kind: kindLabel,
+                      label,
+                      title: record.pullRequest.title,
+                    }),
+                  )
+                : context.m(msg("{kind}, {label}", { kind: kindLabel, label }))
+            }
             kind={isPullRequest ? PULL_REQUEST_CHIP_KINDS[pullRequestState] : "review-comment"}
             icon={isPullRequest ? <PullRequestGlyph.pullRequest /> : <MessageCircleIcon />}
             label={label}
@@ -526,7 +542,7 @@ const userMessageContextPresentationRegistry = createContextPresentationRegistry
         record.kind === "preview-annotation" ? (
           <UserMessageContextPopover
             copyMarkdown={context.copyMarkdown}
-            accessibleLabel={context.translate("Preview annotation, {0}", { "0": record.label })}
+            accessibleLabel={context.m(msg("Preview annotation, {label}", { label: record.label }))}
             kind="preview-annotation"
             icon={<MousePointerClickIcon />}
             label={record.label}
@@ -550,15 +566,14 @@ export function UserMessageContextReferenceChip(props: {
   onExpandVideo: (file: ChatFileAttachment) => void;
   onOpenFile: (file: ChatFileAttachment) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   const { resolvedTheme, activeThreadEnvironmentId } = use(TimelineRowCtx);
+  const m = useMessages();
   const copyMarkdown = formatComposerContextReference({
     kind: props.reference.kind,
     contextId: props.reference.contextId as ComposerContextId,
     label: props.reference.label,
   });
   return userMessageContextPresentationRegistry.render(props.reference.kind, props.record, {
-    translate: uiT,
     environmentId: activeThreadEnvironmentId,
     reference: props.reference,
     annotationImage: props.annotationImage,
@@ -568,16 +583,20 @@ export function UserMessageContextReferenceChip(props: {
     onExpandImage: props.onExpandImage,
     onExpandVideo: props.onExpandVideo,
     onOpenFile: props.onOpenFile,
+    m,
   });
 }
 
 function UserMessageReviewCommentCard({ comment }: { comment: ReviewCommentContext }) {
+  const m = useMessages();
   const renderedAppearance = useRenderedAppearance();
   const ctx = use(TimelineRowCtx);
   const fenceLanguage = comment.fenceLanguage ?? "diff";
   const renderablePatch = getRenderablePatch(
     buildReviewCommentRenderablePatch(comment),
     `review-comment:${comment.id}`,
+    undefined,
+    m,
   );
 
   return (
@@ -587,7 +606,8 @@ function UserMessageReviewCommentCard({ comment }: { comment: ReviewCommentConte
           {formatWorkspaceRelativePath(comment.filePath, ctx.workspaceRoot)}
         </div>
         <div className="text-2xs text-muted-foreground">
-          {comment.sectionTitle} · {comment.rangeLabel}
+          {reviewCommentSectionText(comment.sectionTitle, m)} ·{" "}
+          {reviewCommentRangeText(comment.rangeLabel, m)}
         </div>
       </div>
       {comment.text.length > 0 && (

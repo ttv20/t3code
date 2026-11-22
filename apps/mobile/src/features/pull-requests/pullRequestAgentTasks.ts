@@ -4,7 +4,10 @@ import {
   type ChangeRequestTerminology,
 } from "@t3tools/client-runtime/source-control-clients";
 import type { PullRequestDetail, PullRequestLinkedThreadsResult } from "@t3tools/contracts";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { msg } from "gt-react-native";
+
+import { m, type MessageResolver } from "../../i18n/messages";
+import { changeRequestTermKind } from "../../lib/changeRequestTerm";
 
 export type PullRequestAgentTask = "ask" | "explain" | "feedback" | "conflicts" | "watch";
 
@@ -22,7 +25,7 @@ export function pullRequestAgentThreadActions(
   threads: PullRequestLinkedThreadsResult["threads"],
   task: PullRequestAgentTask,
   canAsk: boolean,
-  uiT = createUiTranslator("en"),
+  resolve: MessageResolver = m,
 ): MenuAction[] {
   const active: MenuAction[] = [];
   const settled: MenuAction[] = [];
@@ -31,20 +34,22 @@ export function pullRequestAgentThreadActions(
       id: `${task}:${thread.id}`,
       title: thread.title,
       subtitle: thread.archivedAt
-        ? uiT("Archived thread")
+        ? resolve(msg("Archived thread"))
         : thread.settled
-          ? uiT("Settled thread")
-          : uiT("Continue thread"),
+          ? resolve(msg("Settled thread"))
+          : resolve(msg("Continue thread")),
       image: "bubble.left.and.bubble.right",
       attributes: { disabled: task !== "ask" && Boolean(thread.archivedAt) },
     };
     (thread.settled ? settled : active).push(action);
   }
   return [
-    ...(canAsk ? [{ id: `${task}:new`, title: uiT("Start a new thread"), image: "plus" }] : []),
+    ...(canAsk
+      ? [{ id: `${task}:new`, title: resolve(msg("Start a new thread")), image: "plus" }]
+      : []),
     ...active,
     ...(settled.length
-      ? [{ id: `${task}:settled`, title: uiT("Settled threads"), subactions: settled }]
+      ? [{ id: `${task}:settled`, title: resolve(msg("Settled threads")), subactions: settled }]
       : []),
   ];
 }
@@ -58,12 +63,16 @@ export function pullRequestAgentPrompt(
     case "ask":
       return "";
     case "explain":
+      // oxlint-disable-next-line t3code/no-untranslated-copy -- prompt sent to the agent
       return `Explain this ${singular}. Read the diff and walk through its purpose, the changes, the risks, and what I should read closely before approving. Do not change any code.`;
     case "feedback":
+      // oxlint-disable-next-line t3code/no-untranslated-copy -- prompt sent to the agent
       return `Address the actionable feedback and failing checks on this ${singular}. Fetch the latest review threads and check results, skip resolved feedback, and verify each finding before changing code. First confirm this thread is on the ${shortLabel}'s branch; if it isn't, prepare the ${shortLabel} in its own worktree. Keep the fixes focused and run the relevant checks.`;
     case "conflicts":
+      // oxlint-disable-next-line t3code/no-untranslated-copy -- prompt sent to the agent
       return `Resolve this ${singular}'s conflicts with its base branch. First confirm this thread is on the ${shortLabel}'s branch; if it isn't, prepare the ${shortLabel} in its own worktree. Bring it up to date using this repository's convention, preserve the intent of both sides, and run the relevant checks before pushing.`;
     case "watch":
+      // oxlint-disable-next-line t3code/no-untranslated-copy -- prompt sent to the agent
       return `Watch this ${singular} for check results, new feedback, and conflicts using T3's pull request watch. End the turn once the watch is armed. When it wakes you, assess what changed and report what needs attention.`;
   }
 }
@@ -71,37 +80,39 @@ export function pullRequestAgentPrompt(
 export function pullRequestAgentActions(
   pr: PullRequestDetail,
   canWatch: boolean,
-  uiT = createUiTranslator("en"),
+  resolve: MessageResolver = m,
 ) {
-  const { shortLabel } = sourceControlClients.get(pr.provider).changeRequest;
+  const term = changeRequestTermKind(sourceControlClients.get(pr.provider).changeRequest);
   return [
     {
       task: "ask",
-      title: uiT("Ask a question"),
+      title: resolve(msg("Ask a question")),
       icon: "bubble.left.and.text.bubble.right",
       disabled: false,
     },
     {
       task: "explain",
-      title: uiT("Explain this {0}", { "0": shortLabel }),
+      title: resolve(
+        msg("Explain this {term, select, mr {MR} cr {change request} other {PR}}", { term }),
+      ),
       icon: "book",
       disabled: false,
     },
     {
       task: "feedback",
-      title: uiT("Address feedback"),
+      title: resolve(msg("Address feedback")),
       icon: "wrench.and.screwdriver",
       disabled: pr.state !== "open",
     },
     {
       task: "conflicts",
-      title: uiT("Resolve conflicts"),
+      title: resolve(msg("Resolve conflicts")),
       icon: "arrow.triangle.branch",
       disabled: pr.state !== "open" || pr.mergeability !== "conflicting",
     },
     {
       task: "watch",
-      title: uiT("Watch {0}", { "0": shortLabel }),
+      title: resolve(msg("Watch {term, select, mr {MR} cr {change request} other {PR}}", { term })),
       icon: "eye",
       disabled: pr.state !== "open" || !canWatch,
     },

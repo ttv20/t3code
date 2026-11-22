@@ -1,6 +1,6 @@
+import { useGT } from "gt-react";
 import { memo } from "react";
 import { cn } from "~/lib/utils";
-import { useUiLanguage } from "../../i18n";
 
 export function hasNonZeroStat(stat: { additions: number; deletions: number }): boolean {
   return stat.additions > 0 || stat.deletions > 0;
@@ -26,13 +26,12 @@ export const DiffStatLabel = memo(function DiffStatLabel(props: {
   className?: string;
   layout?: "aligned" | "inline";
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const { additions, deletions, className, layout = "aligned" } = props;
+  const gt = useGT();
   return (
     <span
       role="group"
-      aria-label={uiT("{0} additions, {1} deletions", { "0": additions, "1": deletions })}
+      aria-label={gt("{additions} additions, {deletions} deletions", { additions, deletions })}
       className={cn(
         layout === "inline"
           ? "inline-flex items-center gap-1 tabular-nums align-middle"

@@ -1,13 +1,10 @@
-import {
-  capitalizeTerm,
-  sourceControlClients,
-} from "@t3tools/client-runtime/source-control-clients";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, PullRequestDetail, PullRequestRef } from "@t3tools/contracts";
+import { msg, T, useGT } from "gt-react";
 import { useState } from "react";
-import { useUiLanguage } from "../../i18n";
+import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
 
-import { canEditPullRequestChangeRequest } from "@t3tools/client-runtime/pull-request-editing";
+import { m } from "~/i18n/messages";
 import { pullRequestEnvironment } from "~/state/pullRequests";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { Button } from "../ui/button";
@@ -17,6 +14,9 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { PullRequestDetailTitleRow } from "./PullRequestDetailLayout";
 import { PullRequestEditButton } from "./PullRequestEditButton";
 import { readableFailure } from "./pullRequestDetail.logic";
+import { canEditPullRequestChangeRequest } from "@t3tools/client-runtime/pull-request-editing";
+
+import { changeRequestTermKind } from "./changeRequestTerm";
 
 /** The pull request title, which the reader can rename in place when the host allows it. */
 export function PullRequestTitleEditor({
@@ -25,23 +25,20 @@ export function PullRequestTitleEditor({
   pullRequestKey,
   detail,
   canWriteSourceControl,
-  onSaved,
 }: {
   environmentId: EnvironmentId;
   reference: PullRequestRef;
   pullRequestKey: string;
   detail: PullRequestDetail;
   canWriteSourceControl: boolean;
-  onSaved: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
   const update = useAtomCommand(pullRequestEnvironment.update, { reportFailure: false });
   const [titleScope, setTitleScope] = useState<{
     readonly pullRequestKey: string;
     readonly text: string;
   } | null>(null);
   const titleDraft = titleScope?.pullRequestKey === pullRequestKey ? titleScope.text : null;
+  const gt = useGT();
   const [titleSaving, setTitleSaving] = useState(false);
 
   const saveTitle = async (next: string) => {
@@ -52,21 +49,21 @@ export function PullRequestTitleEditor({
       return;
     }
     setTitleSaving(true);
+    // The new title shows while the host takes it, so the editor closes at once.
+    setTitleScope(null);
     const result = await update({ environmentId, input: { ...reference, title } });
     setTitleSaving(false);
     if (result._tag === "Failure") {
+      setTitleScope({ pullRequestKey, text: title });
       toastManager.add({
         type: "error",
-        title: uiT("The title could not be saved"),
+        title: m(msg("The title could not be saved")),
         description: readableFailure(
           squashAtomCommandFailure(result),
-          "The host refused the new title.",
+          m(msg("The host refused the new title.")),
         ),
       });
-      return;
     }
-    setTitleScope(null);
-    onSaved();
   };
 
   if (titleDraft === null) {
@@ -84,7 +81,7 @@ export function PullRequestTitleEditor({
         </Tooltip>
         {canEditPullRequestChangeRequest(detail) ? (
           <PullRequestEditButton
-            aria-label={uiT("Edit title")}
+            aria-label={gt("Edit title")}
             onClick={() => setTitleScope({ pullRequestKey, text: detail.title })}
           />
         ) : null}
@@ -98,11 +95,12 @@ export function PullRequestTitleEditor({
         size="sm"
         disabled={titleSaving}
         value={titleDraft}
-        aria-label={uiT("{0} title", {
-          "0": uiT(
-            capitalizeTerm(sourceControlClients.get(detail.provider).changeRequest.singular),
-          ),
-        })}
+        aria-label={gt(
+          "{term, select, mr {Merge request} cr {Change request} other {Pull request}} title",
+          {
+            term: changeRequestTermKind(sourceControlClients.get(detail.provider).changeRequest),
+          },
+        )}
         onChange={(event) => setTitleScope({ pullRequestKey, text: event.target.value })}
         onKeyDown={(event) => {
           if (event.nativeEvent.isComposing || event.keyCode === 229) return;
@@ -122,7 +120,7 @@ export function PullRequestTitleEditor({
           disabled={titleSaving}
           onClick={() => setTitleScope(null)}
         >
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </Button>
         <Button
           size="xs"
@@ -130,7 +128,7 @@ export function PullRequestTitleEditor({
           disabled={!canWriteSourceControl || titleSaving || titleDraft.trim().length === 0}
           onClick={() => void saveTitle(titleDraft)}
         >
-          {titleSaving ? uiT("Saving...") : uiT("Save")}
+          {titleSaving ? gt("Saving...") : gt("Save")}
         </Button>
       </div>
     </div>

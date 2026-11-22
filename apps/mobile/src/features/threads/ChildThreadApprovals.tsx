@@ -1,23 +1,24 @@
+import { type ChildThreadApproval } from "@t3tools/client-runtime/state/thread-requests";
+import { type ScopedThreadRef } from "@t3tools/contracts";
+import { AuthOrchestrationOperateScope } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
-import type { ChildThreadApproval } from "@t3tools/client-runtime/state/thread-requests";
-import { AuthOrchestrationOperateScope, type ScopedThreadRef } from "@t3tools/contracts";
+import { T, useGT, Var } from "gt-react-native";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import Animated, { useAnimatedStyle, type DerivedValue } from "react-native-reanimated";
 import { AppText } from "../../components/ui/AppText";
-import { UiText, useUiLanguage } from "../../i18n";
+
 import { useEnvironmentScope } from "../../state/session";
 import { childThreadApprovalsAtom, threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { PendingApprovalCard } from "./PendingApprovalCard";
 
 function ChildApproval({ entry }: { entry: ChildThreadApproval }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const canRespond = useEnvironmentScope(entry.thread.environmentId, AuthOrchestrationOperateScope);
   const respond = useAtomCommand(threadEnvironment.respondToApproval, { reportFailure: false });
   const [responding, setResponding] = useState(false);
@@ -25,7 +26,9 @@ function ChildApproval({ entry }: { entry: ChildThreadApproval }) {
   return (
     <View className="mx-3.5 my-2 gap-2">
       <AppText className="font-t3-bold text-sm text-foreground">
-        <UiText message={uiT("Approval from")} /> {entry.title}
+        <T>
+          Approval from <Var>{entry.title}</Var>
+        </T>
       </AppText>
       <PendingApprovalCard
         canOperateThread={canRespond}
@@ -42,7 +45,9 @@ function ChildApproval({ entry }: { entry: ChildThreadApproval }) {
           if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
             const failure = squashAtomCommandFailure(result);
             setError(
-              failure instanceof Error ? failure.message : "Failed to submit approval decision.",
+              failure instanceof Error
+                ? failure.message
+                : gt("Failed to submit approval decision."),
             );
           }
           setResponding(false);

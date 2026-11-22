@@ -1,7 +1,7 @@
 import type { ManagedPolicySummary } from "@t3tools/contracts";
+import { T, Var } from "gt-react";
 import { BuildingIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { UiText } from "../i18n";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
 
@@ -53,7 +53,9 @@ export function ManagedNotice({ children }: { children: ReactNode }) {
 export function ManagedByOrganization({ policy }: { policy: ManagedPolicySummary }) {
   return (
     <ManagedNotice>
-      <UiText message={"This environment is managed by"} /> {policy.organization}.
+      <T>
+        This environment is managed by <Var>{policy.organization}</Var>.
+      </T>
       {policy.supportUrl ? (
         <>
           {" "}
@@ -63,7 +65,7 @@ export function ManagedByOrganization({ policy }: { policy: ManagedPolicySummary
             rel="noreferrer"
             className="text-foreground underline underline-offset-2"
           >
-            <UiText message={"Get help"} />
+            <T>Get help</T>
           </a>
         </>
       ) : null}

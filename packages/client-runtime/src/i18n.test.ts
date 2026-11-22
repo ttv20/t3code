@@ -3,12 +3,15 @@ import { ARABIC_UI_MESSAGES } from "./locales/ar.ts";
 import { PERSIAN_UI_MESSAGES } from "./locales/fa.ts";
 
 import { describe, expect, it } from "vite-plus/test";
+import { decodeOptions, msg } from "gt-i18n";
 
 import {
+  createUiMessageResolver,
   createUiTranslator,
   formatUiRelativeTime,
   resolveUiDirection,
   resolveUiLocale,
+  registerUiTranslationLookup,
   translateUiText,
 } from "./i18n.ts";
 
@@ -120,6 +123,28 @@ describe("interface localization", () => {
     expect(t(undefined)).toBeUndefined();
   });
 
+  it("resolves encoded GT templates without translating interpolated content", () => {
+    const resolve = createUiMessageResolver("he");
+    expect(resolve(msg("{machine} failed", { machine: "Settings $& {0}" }))).toBe(
+      "העדכון של Settings $& {0} נכשל",
+    );
+    expect(
+      resolve(msg("{count, plural, one {In {count} day} other {In {count} days}}", { count: 2 })),
+    ).toBe("בעוד 2 ימים");
+    expect(resolve(null)).toBeNull();
+    expect(resolve(undefined)).toBeUndefined();
+    registerUiTranslationLookup((locale, source) =>
+      locale === "sv" && source === "Thread on {machine}" ? "Tråd på {machine}" : undefined,
+    );
+    try {
+      expect(createUiTranslator("sv")("Thread on {machine}", { machine: "Settings" })).toBe(
+        "Tråd på Settings",
+      );
+    } finally {
+      registerUiTranslationLookup(() => undefined);
+    }
+  });
+
   it.each([
     ["he", HEBREW_UI_MESSAGES],
     ["ar", ARABIC_UI_MESSAGES],
@@ -128,12 +153,19 @@ describe("interface localization", () => {
     expect(Object.keys(messages).sort()).toEqual(Object.keys(HEBREW_UI_MESSAGES).sort());
     for (const [source, translated] of Object.entries(messages)) {
       expect(translated.trim(), source).not.toBe("");
-      expect(translated.match(/\{\w+\}/g)?.sort() ?? [], source).toEqual(
-        source.match(/\{\w+\}/g)?.sort() ?? [],
-      );
-      expect(translated.match(/\{\{[^}]+\}\}/g)?.sort() ?? [], source).toEqual(
-        source.match(/\{\{[^}]+\}\}/g)?.sort() ?? [],
-      );
+      if (!/\{\w+,\s*(?:plural|select|selectordinal),/.test(source)) {
+        expect(translated.match(/\{\w+\}/g)?.sort() ?? [], source).toEqual(
+          source.match(/\{\w+\}/g)?.sort() ?? [],
+        );
+        expect(translated.match(/\{\{[^}]+\}\}/g)?.sort() ?? [], source).toEqual(
+          source.match(/\{\{[^}]+\}\}/g)?.sort() ?? [],
+        );
+      } else {
+        const variables = Object.fromEntries(
+          [...source.matchAll(/\{(\w+)(?:,|\})/g)].map((match) => [match[1], 2]),
+        );
+        expect(decodeOptions(msg(translated, variables))?.$_source, source).toBe(translated);
+      }
       expect(translated, source).not.toMatch(/ZXQ\d+QXZ|QX[IP]\d+|PXQ|IXQ/);
       for (const example of source.match(/`[^`]+`/g) ?? []) {
         expect(translated, source).toContain(example);

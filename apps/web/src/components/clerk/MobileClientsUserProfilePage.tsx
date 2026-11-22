@@ -1,6 +1,6 @@
 import type { RelayClientDeviceRecord } from "@t3tools/contracts/relay";
+import { T, useGT, useMessages } from "gt-react";
 import { SmartphoneIcon } from "lucide-react";
-import { useUiLanguage } from "../../i18n";
 
 import { useManagedRelayDevices } from "../../cloud/managedRelayState";
 import { Badge } from "../ui/badge";
@@ -8,15 +8,15 @@ import { Button } from "../ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "../ui/empty";
 import { Skeleton } from "../ui/skeleton";
 import {
-  ClerkUserProfilePage,
-  ClerkUserProfileRefreshButton,
-  ClerkUserProfileRow,
-} from "./ClerkUserProfilePage";
-import {
   mobileClientNotificationDetail,
   mobileClientPlatformLabel,
   mobileClientUpdatedAtLabel,
 } from "./MobileClientsUserProfilePage.logic";
+import {
+  ClerkUserProfilePage,
+  ClerkUserProfileRefreshButton,
+  ClerkUserProfileRow,
+} from "./ClerkUserProfilePage";
 
 const MOBILE_CLIENT_SKELETON_ROWS = ["primary", "secondary"] as const;
 
@@ -27,52 +27,55 @@ function MobileClientStatusBadge({
   readonly enabled: boolean;
   readonly label: string;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <Badge variant={enabled ? "success" : "outline"}>
-      {uiT(label)}: {enabled ? uiT("On") : uiT("Off")}
+      {enabled
+        ? gt("{label}: On", { label, $context: "a setting is on" })
+        : gt("{label}: Off", { label, $context: "a setting is off" })}
     </Badge>
   );
 }
 
 function MobileClientRow({ device }: { readonly device: RelayClientDeviceRecord }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
   return (
     <ClerkUserProfileRow icon={<SmartphoneIcon className="size-4" />}>
       <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 [unicode-bidi:plaintext]">
           <h3 className="truncate text-sm leading-4.5 font-medium text-foreground">
-            {uiT(device.label)}
+            {device.label}
           </h3>
           <p className="text-xs leading-4.5 text-muted-foreground">
             {mobileClientPlatformLabel(device)}
           </p>
         </div>
         <p className="shrink-0 text-2xs leading-4 text-muted-foreground/75">
-          {mobileClientUpdatedAtLabel(device.updatedAt)}
+          {mobileClientUpdatedAtLabel(device.updatedAt, m)}
         </p>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
         <MobileClientStatusBadge
           enabled={device.notifications.enabled}
-          label={uiT("Push notifications")}
+          label={gt("Push notifications")}
         />
         <MobileClientStatusBadge
           enabled={device.liveActivities.enabled}
-          label={uiT("Live Activities")}
+          label={gt("Live Activities")}
         />
       </div>
       <p className="mt-1.5 text-xs leading-4.5 text-muted-foreground/80">
-        {mobileClientNotificationDetail(device)}
+        {mobileClientNotificationDetail(device, m)}
       </p>
     </ClerkUserProfileRow>
   );
 }
 
 function MobileClientsSkeleton() {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
-    <div aria-label={uiT("Loading mobile clients")} className="divide-y border-t" role="status">
+    <div aria-label={gt("Loading mobile clients")} className="divide-y border-t" role="status">
       {MOBILE_CLIENT_SKELETON_ROWS.map((row) => (
         <div key={row} className="py-4">
           <div className="flex gap-3">
@@ -93,18 +96,20 @@ function MobileClientsSkeleton() {
 }
 
 function EmptyMobileClients() {
-  const { t: uiT } = useUiLanguage();
   return (
     <Empty size="compact">
       <EmptyMedia variant="icon">
         <SmartphoneIcon />
       </EmptyMedia>
       <EmptyHeader>
-        <EmptyTitle>{uiT("No mobile clients")}</EmptyTitle>
+        <EmptyTitle>
+          <T>No mobile clients</T>
+        </EmptyTitle>
         <EmptyDescription>
-          {uiT(
-            "Install T3 Code on your phone and sign in to T3 Connect to get push notifications and Live Activities.",
-          )}
+          <T>
+            Install T3 Code on your phone and sign in to T3 Connect to get push notifications and
+            Live Activities.
+          </T>
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
@@ -112,8 +117,8 @@ function EmptyMobileClients() {
 }
 
 export function MobileClientsUserProfilePage() {
-  const { t: uiT } = useUiLanguage();
   const devicesState = useManagedRelayDevices();
+  const gt = useGT();
   const devices = devicesState.data ?? [];
   const isInitialLoad =
     !devicesState.accountId || (devicesState.data === null && !devicesState.error);
@@ -121,8 +126,8 @@ export function MobileClientsUserProfilePage() {
 
   return (
     <ClerkUserProfilePage
-      title={uiT("Mobile clients")}
-      description={uiT("Mobile devices that get notifications from your environments.")}
+      title={gt("Mobile clients")}
+      description={gt("Mobile devices that get notifications from your environments.")}
       action={
         <ClerkUserProfileRefreshButton
           isPending={devicesState.isPending}
@@ -138,12 +143,12 @@ export function MobileClientsUserProfilePage() {
           >
             <div>
               <p className="font-medium text-destructive-foreground">
-                {uiT("Could not load mobile clients")}
+                <T>Could not load mobile clients</T>
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">{devicesState.error}</p>
             </div>
             <Button size="xs" variant="outline" onClick={devicesState.refresh}>
-              {uiT("Try again")}
+              <T>Try again</T>
             </Button>
           </div>
         ) : null}

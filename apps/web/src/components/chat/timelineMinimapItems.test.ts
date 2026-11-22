@@ -1,8 +1,14 @@
-import { MessageId } from "@t3tools/contracts";
-import { ATTACHMENT_ONLY_BOOTSTRAP_PROMPT } from "@t3tools/shared/composerContextReferences";
-import { describe, expect, it } from "vite-plus/test";
 import type { ChatMessage } from "../../types";
 import type { MessagesTimelineRow } from "./MessagesTimeline.logic";
+import { describe, expect, it } from "vite-plus/test";
+import { EnvironmentId, MessageId, ThreadId } from "@t3tools/contracts";
+import { serializeAssistantCitation } from "@t3tools/shared/assistantCitations";
+import {
+  ATTACHMENT_ONLY_BOOTSTRAP_PROMPT,
+  formatComposerContextReference,
+  toComposerContextId,
+} from "@t3tools/shared/composerContextReferences";
+
 import { deriveTimelineMinimapItems, resolveTimelineMinimapPreview } from "./timelineMinimapItems";
 
 function rows(
@@ -194,4 +200,37 @@ describe("resolveTimelineMinimapPreview", () => {
     });
     expect(preview?.assistantText).toBe("Started a thread and Fix CI.");
   });
+
+  it.each([
+    ["The cache misses on a cold start.", "ltr"],
+    ["המטמון מחטיא שוב ושוב בהפעלה הראשונה כשהוא עדיין ריק לגמרי.", "rtl"],
+  ])(
+    "previews a quote, a context chip and a file link as their visible text (%s)",
+    (quotedText, direction) => {
+      const quote = serializeAssistantCitation({
+        version: 1,
+        environmentId: EnvironmentId.make("env-1"),
+        threadId: ThreadId.make("thread-1"),
+        messageId: MessageId.make("assistant-1"),
+        text: quotedText,
+        start: 0,
+        end: quotedText.length,
+        prefix: "",
+        suffix: "",
+      });
+      const file = formatComposerContextReference({
+        kind: "file",
+        contextId: toComposerContextId("readme"),
+        label: "README.md",
+      });
+      const preview = resolveTimelineMinimapPreview({
+        id: "turn-1",
+        rowIndex: 0,
+        userText: `${quote}\nWhere do ${file} and [math.ts](src/math.ts) cover this?`,
+        assistantText: null,
+      });
+      expect(preview?.userText).toBe(`${quotedText} Where do README.md and math.ts cover this?`);
+      expect(preview?.userDirection).toBe(direction);
+    },
+  );
 });

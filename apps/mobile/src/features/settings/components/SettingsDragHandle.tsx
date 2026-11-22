@@ -1,7 +1,7 @@
+import { useGT } from "gt-react-native";
 import { useEffectEvent, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useUiLanguage } from "../../../i18n";
 
 import { SymbolView } from "../../../components/ui/AppSymbol";
 
@@ -14,10 +14,7 @@ export function SettingsDragHandle(props: {
   readonly onEnd: (translation: number, cancelled: boolean) => void;
   readonly onStep: (direction: "up" | "down") => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
-  // Gesture callbacks fire outside render, so effect events give them the
-  // latest props while the gesture object itself stays stable.
+  const gt = useGT();
   const onStart = useEffectEvent(() => props.onStart());
   const onMove = useEffectEvent((translation: number) => props.onMove(translation));
   const onEnd = useEffectEvent((translation: number, cancelled: boolean) =>
@@ -40,10 +37,10 @@ export function SettingsDragHandle(props: {
         collapsable={false}
         accessible
         accessibilityRole="adjustable"
-        accessibilityLabel={uiT("Reorder {0}", { "0": props.title })}
+        accessibilityLabel={gt("Reorder {item}", { item: props.title })}
         accessibilityActions={[
-          ...(props.canMoveUp ? [{ name: "decrement", label: uiT("Move up") }] : []),
-          ...(props.canMoveDown ? [{ name: "increment", label: uiT("Move down") }] : []),
+          ...(props.canMoveUp ? [{ name: "decrement", label: gt("Move up") }] : []),
+          ...(props.canMoveDown ? [{ name: "increment", label: gt("Move down") }] : []),
         ]}
         onAccessibilityAction={({ nativeEvent }) => {
           if (nativeEvent.actionName === "decrement" && props.canMoveUp) props.onStep("up");

@@ -1,4 +1,5 @@
 import type { EnvironmentId, PullRequestContextMetadata } from "@t3tools/contracts";
+import { useGT } from "gt-react";
 import { CircleDashedIcon, FilmIcon, ImageIcon } from "lucide-react";
 import {
   useEffect,
@@ -10,18 +11,17 @@ import {
 } from "react";
 import { useAssetUrlState } from "~/assets/assetUrls";
 import { documentChipKindForFileName } from "~/pierre-icons";
-import { useUiLanguage } from "../i18n";
 
 import { PULL_REQUEST_STATE_PRESENTATION } from "~/components/pullRequest/pullRequestIcons";
 import type { PullRequestContextDisplayState } from "~/lib/composerContextRecords";
-import { usePullRequestPreviewTarget } from "~/lib/openPullRequestLink";
 import { PierreEntryIcon } from "./chat/PierreEntryIcon";
 import { middleTruncateAttachmentName } from "./composerInlineChip";
-import { ContextChip, ContextChipLabel, type ContextChipKind } from "./ContextChip";
-import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
 import { PullRequestContextDetails } from "./PullRequestContextDetails";
+import { ContextChip, ContextChipLabel, type ContextChipKind } from "./ContextChip";
 import { Popover, PopoverPopup, PopoverTitle, PopoverTrigger } from "./ui/popover";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "./ui/tooltip";
+import { PullRequestLinkPreview } from "./pullRequest/PullRequestLinkPreview";
+import { usePullRequestPreviewTarget } from "~/lib/openPullRequestLink";
 
 export const PULL_REQUEST_CHIP_KINDS = {
   open: "pr-open",
@@ -73,7 +73,7 @@ export function ContextChipPopover(props: {
   accent?: string | undefined;
   children: ReactNode;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <Popover>
       <PopoverTrigger
@@ -87,13 +87,13 @@ export function ContextChipPopover(props: {
                 : undefined
             }
             render={<button type="button" />}
-            aria-label={uiT("{0}. Show details", { "0": props.accessibleLabel })}
+            aria-label={gt("{label}. Show details", { label: props.accessibleLabel })}
             data-markdown-copy={props.copyMarkdown}
           />
         }
       >
         {props.icon}
-        <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
+        <ContextChipLabel>{props.label}</ContextChipLabel>
       </PopoverTrigger>
       <PopoverPopup side="top" width="lg" padding="compact">
         <PopoverTitle className="sr-only">{props.accessibleLabel}</PopoverTitle>
@@ -112,7 +112,7 @@ export function PullRequestChip(props: {
   copyMarkdown?: string;
   onOpen: (event: MouseEvent<HTMLElement>, url: string) => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const previewTarget = usePullRequestPreviewTarget(props.environmentId, props.metadata.url);
   const displayState =
     props.metadata.state === "open" && props.metadata.isDraft ? "draft" : props.metadata.state;
@@ -121,17 +121,17 @@ export function PullRequestChip(props: {
     <ContextChip
       kind={props.kind}
       render={<button type="button" />}
-      aria-label={uiT("Open {0} {1}: {2}", {
-        "0": props.kindLabel,
-        "1": props.label,
-        "2": props.metadata.title,
+      aria-label={gt("Open {kind} {label}: {title}", {
+        kind: props.kindLabel,
+        label: props.label,
+        title: props.metadata.title,
       })}
       data-markdown-copy={props.copyMarkdown}
       onClick={(event) => props.onOpen(event, props.metadata.url)}
       onAuxClick={(event) => props.onOpen(event, props.metadata.url)}
     >
       <StateIcon />
-      <ContextChipLabel>{uiT(props.label)}</ContextChipLabel>
+      <ContextChipLabel>{props.label}</ContextChipLabel>
     </ContextChip>
   );
   if (previewTarget !== null) {
@@ -171,13 +171,12 @@ export function ImageChipButton({
   disabled?: boolean | undefined;
   onPreviewError?: (() => void) | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   return (
     <ContextChip
       kind="image"
       render={<button type="button" disabled={disabled} />}
-      aria-label={uiT("Image attachment, {0}, {1}", { "0": name, "1": size })}
+      aria-label={gt("Image attachment, {name}, {size}", { name, size })}
       {...props}
     >
       {previewUrl ? (
@@ -352,13 +351,13 @@ function FileChipContent(props: {
 }
 
 export function UnresolvedChip(props: { label: string; tooltip: string; copyMarkdown?: string }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <ContextChipShell
       icon={<CircleDashedIcon />}
-      label={uiT(props.label)}
+      label={props.label}
       state="unresolved"
-      aria-label={uiT("Unavailable context, {0}", { "0": props.label })}
+      aria-label={gt("Unavailable context, {label}", { label: props.label })}
       data-markdown-copy={props.copyMarkdown}
       tooltip={props.tooltip}
     />

@@ -1,6 +1,14 @@
 {
   "defaultLocale": "en",
-  "locales": ["es", "zh", "pt-BR", "fr", "de", "ja", "ko", "ru", "he", "ar", "fa"],
+  "locales": ["es", "zh", "pt-BR", "fr", "de", "ja", "ko", "ru", "sv", "he", "ar", "fa"],
+  "src": [
+    "src/**/*.{ts,tsx}",
+    "../../packages/client-runtime/src/**/*.{ts,tsx}",
+    "../../packages/shared/src/**/*.{ts,tsx}",
+    "!**/*.test.{ts,tsx}",
+    "!../../packages/client-runtime/src/**/*.test.{ts,tsx}",
+    "!../../packages/shared/src/**/*.test.{ts,tsx}"
+  ],
   "files": {
     "gt": {
       "output": "src/i18n/translations/[locale].json"

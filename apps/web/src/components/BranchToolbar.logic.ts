@@ -1,19 +1,32 @@
-import type {
-  EnvironmentId,
-  EnvironmentMachineKind,
-  VcsRef,
-  ProjectId,
-  WorktreeSubmodules,
+import {
+  GitCommandError,
+  type EnvironmentId,
+  type EnvironmentMachineKind,
+  type VcsRef,
+  type ProjectId,
+  type WorktreeSubmodules,
 } from "@t3tools/contracts";
+import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import type { ThreadStructureRuntime } from "@t3tools/client-runtime/state/shell";
 import * as Schema from "effect/Schema";
+import { msg } from "gt-react";
 import { sanitizeNewRefName } from "@t3tools/shared/git";
 import { workspaceRelativeFilePath } from "@t3tools/shared/path";
 import { toSortableTimestamp } from "@t3tools/client-runtime/state/thread-sort";
+import { m, type MessageResolver } from "../i18n/messages";
 import { deriveCanInterruptRunningThread } from "../session-logic";
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
-
 export { deriveLocalBranchNameFromRemoteRef, sanitizeNewRefName } from "@t3tools/shared/git";
+
+const isGitCommandError = Schema.is(GitCommandError);
+
+// A toast clamps to a few lines, so Git failures show their sanitized detail
+// rather than the message's operation and cwd prefix.
+export function toBranchActionErrorMessage(error: unknown): string {
+  if (isGitCommandError(error)) {
+    return error.reason === undefined ? error.detail : `${error.detail} (${error.reason})`;
+  }
+  return thrownErrorMessage(error, m) ?? m(msg("An error occurred."));
+}
 
 export interface EnvironmentOption {
   environmentId: EnvironmentId;
@@ -37,12 +50,15 @@ function normalizeDisplayLabel(value: string | null | undefined): string | null 
   return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
-export function resolveEnvironmentOptionLabel(input: {
-  isPrimary: boolean;
-  environmentId: EnvironmentId;
-  runtimeLabel?: string | null;
-  savedLabel?: string | null;
-}): string {
+export function resolveEnvironmentOptionLabel(
+  input: {
+    isPrimary: boolean;
+    environmentId: EnvironmentId;
+    runtimeLabel?: string | null;
+    savedLabel?: string | null;
+  },
+  resolve: MessageResolver = m,
+): string {
   const runtimeLabel = normalizeDisplayLabel(input.runtimeLabel);
   const savedLabel = normalizeDisplayLabel(input.savedLabel);
 
@@ -51,7 +67,7 @@ export function resolveEnvironmentOptionLabel(input: {
       if (!label) return false;
       return !GENERIC_LOCAL_ENVIRONMENT_LABELS.has(label.toLowerCase());
     });
-    return preferredLocalLabel ?? "This device";
+    return preferredLocalLabel ?? resolve(msg("This device"));
   }
 
   return runtimeLabel ?? savedLabel ?? input.environmentId;
@@ -93,35 +109,35 @@ export function resolveContextStripLabelsCompact(input: {
     : input.neededWidth > input.availableWidth;
 }
 
-export function resolveEnvModeLabel(mode: EnvMode, translate = createUiTranslator("en")): string {
-  return mode === "worktree" ? translate("New worktree") : translate("Current checkout");
+export function resolveEnvModeLabel(mode: EnvMode, resolve: MessageResolver = m): string {
+  return mode === "worktree" ? resolve(msg("New worktree")) : resolve(msg("Current checkout"));
 }
 
 export const WORKTREE_SUBMODULES_LABELS: Record<WorktreeSubmodules, string> = {
-  recursive: "Recursive",
-  "top-level": "Top level only",
-  none: "Skip",
+  recursive: msg("Recursive"),
+  "top-level": msg("Top level only"),
+  none: msg("Skip"),
 };
 
 export function resolveCurrentWorkspaceLabel(
   activeWorktreePath: string | null,
-  translate = createUiTranslator("en"),
+  resolve: MessageResolver = m,
 ): string {
   return activeWorktreePath
-    ? translate("Current worktree")
-    : resolveEnvModeLabel("local", translate);
+    ? resolve(msg("Current worktree"))
+    : resolveEnvModeLabel("local", resolve);
 }
 
 export function resolveLockedWorkspaceLabel(
   activeWorktreePath: string | null,
   effectiveEnvMode: EnvMode,
-  translate = createUiTranslator("en"),
+  resolve: MessageResolver = m,
 ): string {
   if (activeWorktreePath)
-    return activeWorktreePath.split(/[\\/]/).findLast(Boolean) ?? translate("Worktree");
+    return activeWorktreePath.split(/[\\/]/).findLast(Boolean) ?? resolve(msg("Worktree"));
   return effectiveEnvMode === "worktree"
-    ? resolveEnvModeLabel("worktree", translate)
-    : translate("Local checkout");
+    ? resolveEnvModeLabel("worktree", resolve)
+    : resolve(msg("Local checkout"));
 }
 
 export interface PreviousWorktreeSeed {
@@ -162,8 +178,13 @@ export function resolvePreviousWorktreeSeed(input: {
   return latest === null ? null : { branch: latest.branch, worktreePath: latest.worktreePath };
 }
 
-export function resolvePreviousWorktreeLabel(seed: PreviousWorktreeSeed): string {
-  return seed.branch ? `Previous worktree (${seed.branch})` : "Previous worktree";
+export function resolvePreviousWorktreeLabel(
+  seed: PreviousWorktreeSeed,
+  resolve: MessageResolver = m,
+): string {
+  return seed.branch
+    ? resolve(msg("Previous worktree ({branch})", { branch: seed.branch }))
+    : resolve(msg("Previous worktree"));
 }
 
 export function resolveEffectiveEnvMode(input: {
@@ -258,7 +279,7 @@ export function resolveBranchTriggerLabel(
     resolvedActiveBranchIsRemote: boolean | null;
     startFromOrigin: boolean;
   },
-  translate = createUiTranslator("en"),
+  resolve: MessageResolver = m,
 ): string {
   const {
     activeWorktreePath,
@@ -268,12 +289,13 @@ export function resolveBranchTriggerLabel(
     startFromOrigin,
   } = input;
   if (!resolvedActiveBranch) {
-    return translate("Select ref");
+    return resolve(msg("Select ref"));
   }
   if (effectiveEnvMode === "worktree" && !activeWorktreePath) {
+    // Only the server can determine a local branch's configured remote.
     return startFromOrigin && resolvedActiveBranchIsRemote === false
-      ? translate("From {0} (remote)", { "0": resolvedActiveBranch })
-      : translate("From {0}", { "0": resolvedActiveBranch });
+      ? resolve(msg("From {branch} (remote)", { branch: resolvedActiveBranch }))
+      : resolve(msg("From {branch}", { branch: resolvedActiveBranch }));
   }
   return resolvedActiveBranch;
 }

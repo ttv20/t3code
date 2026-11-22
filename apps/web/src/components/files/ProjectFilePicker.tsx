@@ -1,6 +1,8 @@
 import { useAtomValue } from "@effect/atom-react";
+import { msg, T, useGT, useMessages } from "gt-react";
 import { useState, type ReactNode } from "react";
-import { useUiLanguage } from "../../i18n";
+
+import type { MessageResolver } from "~/i18n/messages";
 
 import { useActiveProjectTarget, type ActiveProjectTarget } from "~/hooks/useActiveProjectTarget";
 import { useTheme } from "~/hooks/useTheme";
@@ -8,8 +10,8 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { primaryServerKeybindingsAtom } from "~/state/server";
 
 import { PierreEntryIcon } from "../chat/PierreEntryIcon";
-import { type CommandPaletteActionItem } from "../CommandPalette.logic";
 import { CommandPaletteContent } from "../CommandPaletteContent";
+import { type CommandPaletteActionItem } from "../CommandPalette.logic";
 import { CommandPaletteResults } from "../CommandPaletteResults";
 import {
   getProjectFilePickerMatches,
@@ -44,35 +46,44 @@ function HighlightedFuzzyText(props: {
   return <span className="text-muted-foreground">{parts}</span>;
 }
 
-function getEmptyStateMessage(query: string, error: string | null, isPending: boolean): string {
+function getEmptyStateMessage(
+  query: string,
+  error: string | null,
+  isPending: boolean,
+  resolve: MessageResolver,
+): string {
   if (error) return error;
   const isSearching = query.trim().length > 0;
-  if (isPending) return isSearching ? "Searching workspace files…" : "Indexing workspace files…";
-  return isSearching ? "No matching files." : "No files found.";
+  if (isPending)
+    return isSearching
+      ? resolve(msg("Searching workspace files…"))
+      : resolve(msg("Indexing workspace files…"));
+  return isSearching ? resolve(msg("No matching files.")) : resolve(msg("No files found."));
 }
 
 function EmptyProjectFilePicker() {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <CommandPaletteContent
-      aria-label={uiT("File picker")}
-      escapeLabel="Back"
-      footerActionLabel="Open file"
-      inputProps={{ disabled: true, placeholder: uiT("Search files…") }}
+      aria-label={gt("File picker")}
+      escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
+      footerActionLabel={gt("Open file")}
+      inputProps={{ disabled: true, placeholder: gt("Search files…") }}
       mode="none"
       testId="project-file-picker"
       value=""
     >
       <div className="py-10 text-center text-sm text-muted-foreground">
-        {uiT("Open a project to search its files.")}
+        <T>Open a project to search its files.</T>
       </div>
     </CommandPaletteContent>
   );
 }
 
 function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveProjectTarget }) {
-  const { t: uiT } = useUiLanguage();
   const { target } = props;
+  const gt = useGT();
+  const messages = useMessages();
   const [query, setQuery] = useState("");
   const [highlightedItemValue, setHighlightedItemValue] = useState<string | null>(null);
   const result = useProjectFilePickerQuery(
@@ -80,6 +91,8 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
     target.cwd,
     query,
     PROJECT_FILE_PICKER_RESULT_LIMIT,
+    undefined,
+    messages,
   );
   const { resolvedTheme } = useTheme();
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
@@ -109,15 +122,15 @@ function OpenProjectFilePicker(props: ProjectFilePickerProps & { target: ActiveP
     },
   }));
 
-  const emptyStateMessage = getEmptyStateMessage(query, result.error, result.isPending);
+  const emptyStateMessage = getEmptyStateMessage(query, result.error, result.isPending, messages);
 
   return (
     <CommandPaletteContent
-      aria-label={uiT("File picker")}
+      aria-label={gt("File picker")}
       autoHighlight="always"
-      escapeLabel="Back"
-      footerActionLabel="Open file"
-      inputProps={{ placeholder: uiT("Search files…") }}
+      escapeLabel={gt("Back", { $context: "button, leaves the file picker" })}
+      footerActionLabel={gt("Open file")}
+      inputProps={{ placeholder: gt("Search files…") }}
       mode="none"
       onItemHighlighted={(value) => {
         setHighlightedItemValue(typeof value === "string" ? value : null);

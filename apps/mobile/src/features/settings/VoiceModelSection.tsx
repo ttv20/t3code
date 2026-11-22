@@ -1,8 +1,10 @@
+import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
+import { T, useGT, useLocale, Var } from "gt-react-native";
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { useNavigation } from "@react-navigation/native";
 import {
   cancelEnvironmentSpeechModelDownload,
-  downloadEnvironmentSpeechModel,
+  installEnvironmentSpeechModel,
   selectEnvironmentSpeechModel,
 } from "@t3tools/client-runtime/voice-input";
 import {
@@ -12,8 +14,9 @@ import {
 } from "@t3tools/contracts";
 import { AsyncResult } from "effect/reactivity";
 import { type ReactNode, useEffect, useState } from "react";
-import { Text as NativeText, Platform, View } from "react-native";
-import { useUiLanguage } from "../../i18n";
+import { Platform, Text as NativeText, View } from "react-native";
+import { m } from "../../i18n/messages";
+
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { AppText as Text } from "../../components/ui/AppText";
 import * as Dialog from "../../components/ui/Dialog";
@@ -34,8 +37,7 @@ const isDownloading = (model: EnvironmentSpeechModel) =>
   model.state === "downloading" || model.state === "verifying";
 
 export function useVoiceModels(environmentId: EnvironmentId, label: string) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const connection = useAtomValue(voiceConnectionAtom(environmentId));
   const statusAtom = voiceSpeechStatusAtom(environmentId);
   const modelsAtom = voiceSpeechModelsAtom(environmentId);
@@ -63,7 +65,10 @@ export function useVoiceModels(environmentId: EnvironmentId, label: string) {
     try {
       await work();
     } catch (error) {
-      Dialog.alert(title, error instanceof Error ? error.message : String(error));
+      Dialog.alert(
+        title,
+        error instanceof Error ? (errorDisplayMessage(error, m) ?? error.message) : String(error),
+      );
     }
     if (downloadId) setRequested(null);
     else setBusy(false);
@@ -84,33 +89,29 @@ export function useVoiceModels(environmentId: EnvironmentId, label: string) {
     download: (model: EnvironmentSpeechModel) => {
       if (!ready) return;
       Dialog.confirm({
-        title: uiT("Download {0}?", { "0": model.name }),
-        message: uiT("{0} will download {1} and use it as its transcription model.", {
-          "0": label,
-          "1": formatBytes(model.size),
+        title: gt("Download {model}?", { model: model.name }),
+        message: gt("{environment} will download {size} and use it as its transcription model.", {
+          environment: label,
+          size: formatBytes(model.size),
         }),
-        confirmText: uiT("Download"),
+        confirmText: gt("Download", { $context: "verb" }),
         onConfirm: () =>
           void run(
-            uiT("Could not download the model"),
-            async () => {
-              await runSpeech(downloadEnvironmentSpeechModel(connection, model.id));
-              if (model.id !== status.modelId)
-                await runSpeech(selectEnvironmentSpeechModel(connection, model.id));
-            },
+            gt("Could not download the model"),
+            () => runSpeech(installEnvironmentSpeechModel(connection, model.id)),
             model.id,
           ),
       });
     },
     select: (model: EnvironmentSpeechModel) => {
       if (!ready || model.active) return;
-      void run(uiT("Could not select the model"), () =>
+      void run(gt("Could not select the model"), () =>
         runSpeech(selectEnvironmentSpeechModel(connection, model.id)),
       );
     },
     cancel: (model: EnvironmentSpeechModel) => {
       if (!ready) return;
-      void run(uiT("Could not cancel the download"), () =>
+      void run(gt("Could not cancel the download"), () =>
         runSpeech(cancelEnvironmentSpeechModelDownload(connection, model.id)),
       );
     },
@@ -119,15 +120,18 @@ export function useVoiceModels(environmentId: EnvironmentId, label: string) {
 
 export type VoiceModels = ReturnType<typeof useVoiceModels>;
 
-const languageNames =
-  typeof Intl.DisplayNames === "function"
-    ? new Intl.DisplayNames(undefined, { type: "language" })
-    : null;
-const languageLabel = (code: string) => languageNames?.of(code) ?? code.toUpperCase();
+const languageNames = new Map<string, Intl.DisplayNames>();
+function languageLabel(code: string, locale: string) {
+  if (typeof Intl.DisplayNames !== "function") return code.toUpperCase();
+  let names = languageNames.get(locale);
+  if (!names)
+    languageNames.set(locale, (names = new Intl.DisplayNames([locale], { type: "language" })));
+  return names.of(code) ?? code.toUpperCase();
+}
 
 function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly language: string }) {
-  const { t: uiT } = useUiLanguage();
   const { model, language } = props;
+  const locale = useLocale();
   const data = model.benchmark;
   const code = !data
     ? undefined
@@ -140,11 +144,13 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
       ? ([
           [
             "score",
-            <>
-              {languageLabel(code)}{" "}
-              <Text className="font-t3-medium text-foreground">{score.grade}</Text> (
-              {uiT("{0}% error", { "0": score.errorPercent })})
-            </>,
+            <T key="score">
+              <Var>{languageLabel(code, locale)}</Var>{" "}
+              <Text className="font-t3-medium text-foreground">
+                <Var>{score.grade}</Var>
+              </Text>{" "}
+              (<Var>{score.errorPercent}</Var>% error)
+            </T>,
           ],
         ] as const)
       : []),
@@ -154,7 +160,7 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
             "speed",
             <>
               <Text className="font-t3-medium text-foreground">
-                {data.secondsPer30s.accelerated} {uiT("s")}{" "}
+                {Number(data.secondsPer30s.accelerated.toFixed(2))} s
               </Text>{" "}
               / 30 s
             </>,
@@ -180,7 +186,7 @@ function ModelStats(props: { readonly model: EnvironmentSpeechModel; readonly la
         ] as const)
       : score
         ? []
-        : ([["languages", languageLabel(model.languages[0] ?? "")]] as const)),
+        : ([["languages", languageLabel(model.languages[0] ?? "", locale)]] as const)),
     ["size", formatBytes(model.size)],
   ];
   return (
@@ -226,8 +232,7 @@ export function VoiceModelRow(props: {
   /** The language whose benchmark score to show, when the model has one. */
   readonly language: string;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const { model, voice, separated } = props;
   const meta = <ModelStats model={model} language={props.language} />;
   if (model.state === "installed")
@@ -252,8 +257,10 @@ export function VoiceModelRow(props: {
           label={model.name}
           description={
             model.state === "verifying"
-              ? uiT("Verifying download…")
-              : uiT("{0}% downloaded · Tap to cancel", { "0": Math.round((progress ?? 0) * 100) })
+              ? gt("Verifying download…")
+              : gt("{percent}% downloaded · Tap to cancel", {
+                  percent: Math.round((progress ?? 0) * 100),
+                })
           }
           disabled={!voice.canManage || voice.busy}
           onPress={() => voice.cancel(model)}
@@ -261,7 +268,7 @@ export function VoiceModelRow(props: {
         <Progress
           className="bg-grouped-card px-4 pb-3"
           value={model.state === "verifying" ? undefined : progress}
-          label={uiT("{0} download progress", { "0": model.name })}
+          label={gt("{model} download progress", { model: model.name })}
         />
       </View>
     );
@@ -286,8 +293,7 @@ export function LocalModelChoice(props: {
   readonly selected: boolean;
   readonly onSelect: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
-
+  const gt = useGT();
   const navigation = useNavigation();
   const voice = useVoiceModels(props.environmentId, props.label);
   const { status } = voice;
@@ -296,13 +302,13 @@ export function LocalModelChoice(props: {
   if (!voice.connection || !status || !status.supported)
     return (
       <ListChoiceRow
-        label={uiT("Local model")}
+        label={gt("Local model")}
         description={
           !voice.connection
-            ? uiT("Not available on this environment")
+            ? gt("Not available on this environment")
             : status?.supported === false
               ? status.reason
-              : uiT("Checking…")
+              : gt("Checking…")
         }
         selected={props.selected}
         disabled
@@ -316,20 +322,23 @@ export function LocalModelChoice(props: {
     pending?.downloaded === undefined ? undefined : pending.downloaded / pending.size;
   return (
     <ListRow
-      label={active?.model ?? uiT("Local model")}
+      label={active?.model ?? gt("Local model")}
       description={
         pending
           ? pending.state === "verifying"
-            ? uiT("Verifying {0}…", { "0": pending.name })
-            : uiT("Downloading {0} · {1}%", {
-                "0": pending.name,
-                "1": Math.round((progress ?? 0) * 100),
+            ? gt("Verifying {model}…", { model: pending.name })
+            : gt("Downloading {model} · {percent}%", {
+                model: pending.name,
+                percent: Math.round((progress ?? 0) * 100),
               })
           : active
-            ? uiT("Local model · {0}", { "0": formatBytes(active.size) })
+            ? gt("Local model · {size}", { size: formatBytes(active.size) })
             : voice.canManage
-              ? uiT("No model installed · Choose one to download")
-              : uiT("No model installed · Add one using T3 Code on {0}", { "0": props.label })
+              ? gt("No model installed · Choose one to download")
+              : gt("No model installed · Add one using {product} on {environment}", {
+                  product: "T3 Code",
+                  environment: props.label,
+                })
       }
       selected={props.selected}
       onPress={() => {

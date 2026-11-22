@@ -1,4 +1,5 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
+import { resolveSnoozePresets } from "@t3tools/client-runtime/state/thread-settled";
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import { describe, expect, it } from "vite-plus/test";
 
 import { buildThreadActionMenuItems, type ThreadActionMenuState } from "./threadActionMenu.logic";
@@ -28,12 +29,20 @@ const baseState: ThreadActionMenuState = {
 
 describe("buildThreadActionMenuItems", () => {
   it("localizes nested labels while preserving branch and project names", () => {
-    const t = createUiTranslator("he");
+    const t = createUiMessageResolver("he");
     const items = buildThreadActionMenuItems(
       {
         ...baseState,
         branch: "feature/עברית-English-123",
         projectFilter: { label: "Settings", isActive: false },
+        snoozePresets: resolveSnoozePresets(
+          new Date(2026, 7, 7, 14),
+          {
+            presets: [{ kind: "after", minutes: 60 }],
+            formatTime: () => "3:00 PM",
+          },
+          t,
+        ),
       },
       t,
     );
@@ -41,7 +50,7 @@ describe("buildThreadActionMenuItems", () => {
       "שיחה חדשה על feature/עברית-English-123",
     );
     expect(items.find((item) => item.id === "filter-by-project")?.label).toBe("סינון לפי Settings");
-    expect(items.find((item) => item.id === "snooze")?.children?.[0]?.label).toBe("בעוד שעה");
+    expect(items.find((item) => item.id === "snooze")?.children?.[0]?.label).toBe("בעוד 1 שעה");
     expect(items.find((item) => item.id === "snooze")?.children?.[0]?.detail).toBe("3:00 PM");
     expect(items.find((item) => item.id === "copy")?.children?.[0]?.label).toBe(t("Path"));
     expect(items.map((item) => item.id)).toEqual(
@@ -100,5 +109,10 @@ describe("buildThreadActionMenuItems", () => {
     });
     expect(items.find((item) => item.id === "archive")?.disabled).toBe(true);
     expect(items.find((item) => item.id === "turn-into-project")?.disabled).toBe(true);
+  });
+
+  it("disables only rename where no inline title editor exists", () => {
+    const items = buildThreadActionMenuItems({ ...baseState, canRename: false });
+    expect(items.filter((item) => item.disabled).map((item) => item.id)).toEqual(["rename"]);
   });
 });

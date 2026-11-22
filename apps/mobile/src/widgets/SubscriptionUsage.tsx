@@ -30,10 +30,7 @@ function SubscriptionUsage(
   },
 ) {
   "widget";
-  const uiT = (message: string, values: Readonly<Record<string, unknown>> = {}) =>
-    (props.messages?.[message] ?? message).replace(/\{(\d+)\}/g, (token, key: string) =>
-      String(values[key] ?? token),
-    );
+
   // The extension evaluates this function without the app's module scope.
   const family = widgetEnvironment.widgetFamily;
   // Gallery snapshots can render an old timeline entry after it has expired.
@@ -59,9 +56,28 @@ function SubscriptionUsage(
       : undefined;
   const primary = palette?.foreground ?? "primary";
   const secondary = palette?.secondary ?? "secondary";
+  // English until the app publishes its first snapshot in the UI language.
+  const text = props.text ?? {
+    refresh: "Open T3 to refresh",
+    noSessionLimit: "No session limit reported",
+    noWeeklyLimit: "No weekly limit reported",
+    subscriptionRemaining: "Subscription remaining",
+    percentLeft: "{remaining}% left",
+    windowPercentLeft: "{window} · {remaining}% left",
+    notApplicable: "N/A",
+    openApp: "Open T3",
+    noLimits: "No subscription limits available.",
+    asOf: "As of {time}",
+    tapToConnect: "Tap to connect in T3",
+    providerAccessibility: "{provider}. {detail}.",
+    windowAccessibility: "{provider}, {window}, {remaining} percent remaining. {reset}. {detail}.",
+    moreInApp: {} as Record<string, string>,
+  };
   const providers = props.providers ?? [
-    { name: "Codex", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
-    { name: "Claude", detail: uiT("Open T3 to connect"), windows: [], expiresAt: 0 },
+    // oxlint-disable-next-line t3code/no-untranslated-copy -- widget fallback until the app publishes translated text
+    { name: "Codex", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
+    // oxlint-disable-next-line t3code/no-untranslated-copy -- widget fallback until the app publishes translated text
+    { name: "Claude", detail: "Open T3 to connect", windows: [], expiresAt: 0 },
   ];
   const columns = providers.map((provider) => {
     const stale = provider.windows.length > 0 && now >= provider.expiresAt;
@@ -94,10 +110,14 @@ function SubscriptionUsage(
               ].slice(0, limit)
             : windows.slice(0, limit);
     const detail = stale
-      ? "Open T3 to refresh"
+      ? text.refresh
       : period !== "auto" && windows.length === 0 && provider.windows.length > 0
-        ? `No ${period} limit reported`
+        ? period === "session"
+          ? text.noSessionLimit
+          : text.noWeeklyLimit
         : provider.detail;
+    const hiddenCount =
+      (period === "auto" ? (provider.totalWindows ?? windows.length) : windows.length) - limit;
     const barModifiers = [
       progressViewStyle("linear"),
       frame({ height: 4 }),
@@ -113,8 +133,15 @@ function SubscriptionUsage(
             accessibilityElement("ignore"),
             accessibilityLabel(
               tightest
-                ? `${provider.name}, ${tightest.label}, ${tightest.remaining} percent remaining. ${tightest.reset}. ${provider.detail}.`
-                : `${provider.name}. ${detail}.`,
+                ? text.windowAccessibility
+                    .replace("{provider}", provider.name)
+                    .replace("{window}", tightest.label)
+                    .replace("{remaining}", String(tightest.remaining))
+                    .replace("{reset}", tightest.reset)
+                    .replace("{detail}", provider.detail)
+                : text.providerAccessibility
+                    .replace("{provider}", provider.name)
+                    .replace("{detail}", detail),
             ),
           ]}
         >
@@ -139,10 +166,10 @@ function SubscriptionUsage(
               ]}
             >
               {tightest
-                ? uiT("{0}% left", { "0": tightest.remaining })
+                ? text.percentLeft.replace("{remaining}", String(tightest.remaining))
                 : period !== "auto" && !stale && provider.windows.length > 0
-                  ? "N/A"
-                  : uiT("Open T3")}
+                  ? text.notApplicable
+                  : text.openApp}
             </Text>
           </HStack>
           {tightest ? (
@@ -174,7 +201,7 @@ function SubscriptionUsage(
           <Text
             modifiers={[font({ textStyle: "caption2" }), foregroundStyle(secondary), lineLimit(1)]}
           >
-            {detail === "Subscription remaining" ? " " : detail}
+            {detail === text.subscriptionRemaining ? " " : detail}
           </Text>
         ) : null}
         {shown.map((window) => (
@@ -185,7 +212,12 @@ function SubscriptionUsage(
             modifiers={[
               accessibilityElement("ignore"),
               accessibilityLabel(
-                `${provider.name}, ${window.label}, ${window.remaining} percent remaining. ${window.reset}. ${provider.detail}.`,
+                text.windowAccessibility
+                  .replace("{provider}", provider.name)
+                  .replace("{window}", window.label)
+                  .replace("{remaining}", String(window.remaining))
+                  .replace("{reset}", window.reset)
+                  .replace("{detail}", provider.detail),
               ),
             ]}
           >
@@ -216,8 +248,7 @@ function SubscriptionUsage(
                   ),
                 ]}
               >
-                {window.remaining}
-                {uiT("% left")}
+                {text.percentLeft.replace("{remaining}", String(window.remaining))}
               </Text>
             </HStack>
             <ProgressView value={window.remaining / 100} modifiers={barModifiers} />
@@ -228,15 +259,12 @@ function SubscriptionUsage(
             ) : null}
           </VStack>
         ))}
-        {!compact &&
-        !stale &&
-        (period === "auto" ? (provider.totalWindows ?? windows.length) : windows.length) > limit ? (
+        {!compact && !stale && hiddenCount > 0 ? (
           <Text
             modifiers={[font({ textStyle: "caption2" }), foregroundStyle(secondary), lineLimit(1)]}
           >
-            {(period === "auto" ? (provider.totalWindows ?? windows.length) : windows.length) -
-              limit}{" "}
-            {uiT("more in T3")}
+            {/* oxlint-disable-next-line t3code/no-untranslated-copy -- widget fallback until the app publishes translated text */}
+            {text.moreInApp[String(hiddenCount)] ?? `${hiddenCount} more in T3`}
           </Text>
         ) : null}
       </VStack>
@@ -258,7 +286,7 @@ function SubscriptionUsage(
     >
       {providers.length === 0 ? (
         <Text modifiers={[font({ textStyle: "caption" }), foregroundStyle(secondary)]}>
-          {uiT("No subscription limits available.")}
+          {text.noLimits}
         </Text>
       ) : compact ? (
         <VStack alignment="leading" spacing={accessory || dense ? 4 : 8}>
@@ -275,15 +303,16 @@ function SubscriptionUsage(
           modifiers={[font({ textStyle: "caption2" }), foregroundStyle(secondary), lineLimit(1)]}
         >
           {props.checkedAt
-            ? uiT("As of {0}", {
-                "0": new Date(props.checkedAt).toLocaleString(props.locale, {
+            ? text.asOf.replace(
+                "{time}",
+                new Date(props.checkedAt).toLocaleString(undefined, {
                   hour: "numeric",
                   minute: "2-digit",
                   month: "short",
                   day: "numeric",
                 }),
-              })
-            : uiT("Tap to connect in T3")}
+              )
+            : text.tapToConnect}
         </Text>
       ) : null}
     </VStack>

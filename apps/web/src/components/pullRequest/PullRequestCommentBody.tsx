@@ -1,16 +1,16 @@
+import { useGT } from "gt-react";
 import { useId, useRef, useState, type ComponentProps } from "react";
-import { useUiLanguage } from "../../i18n";
 
-import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
 import { Button } from "../ui/button";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
+import { observeResize } from "~/lib/observeResize";
 
 export function PullRequestCommentBody({
   className,
   ...props
 }: ComponentProps<typeof PullRequestMarkdown>) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const [expanded, setExpanded] = useState(false);
   const [overflowing, setOverflowing] = useState(false);
   const clip = useRef<HTMLDivElement>(null);
@@ -53,7 +53,7 @@ export function PullRequestCommentBody({
             setExpanded(!expanded);
           }}
         >
-          {expanded ? uiT("Show less") : uiT("Show full comment")}
+          {expanded ? gt("Show less") : gt("Show full comment")}
         </Button>
       ) : null}
     </div>

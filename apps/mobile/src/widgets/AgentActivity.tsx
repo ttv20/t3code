@@ -43,7 +43,28 @@ export interface AgentActivityRowProps {
   readonly deepLink: string;
 }
 
+/**
+ * Copy for the widget extension, which runs without the app's catalogs. Count-keyed tables hold
+ * one string per count. Live Activities updated by push have none and fall back to English.
+ */
+export interface AgentActivityText {
+  readonly outOfDate: string;
+  readonly failed: string;
+  readonly done: string;
+  readonly workFailed: string;
+  readonly workCompleted: string;
+  readonly statusOutOfDate: string;
+  readonly approval: string;
+  readonly input: string;
+  readonly noActiveAgents: string;
+  readonly activeAgents: Readonly<Record<string, string>>;
+  readonly active: Readonly<Record<string, string>>;
+  readonly needAttention: Readonly<Record<string, string>>;
+  readonly needYou: Readonly<Record<string, string>>;
+}
+
 export interface AgentActivityProps {
+  readonly text?: AgentActivityText;
   readonly title: string;
   readonly subtitle: string;
   readonly activeCount: number;
@@ -63,6 +84,7 @@ function AgentActivity(
       String(values[key] ?? token),
     );
 
+  const text = props.text;
   // Hierarchical foregrounds inherit system tint and vibrancy.
   type Foreground = Parameters<typeof foregroundStyle>[0];
   const primaryForeground = { type: "hierarchical", style: "primary" } as const;
@@ -108,7 +130,7 @@ function AgentActivity(
     ? props.activities.map((row) =>
         row.phase === "completed" || row.phase === "failed"
           ? row
-          : { ...row, phase: "stale", status: uiT("Out of date") },
+          : { ...row, phase: "stale", status: text?.outOfDate ?? "Out of date" },
       )
     : props.activities;
   const ordered = [...activities].sort((a, b) => phasePriority(a.phase) - phasePriority(b.phase));
@@ -132,24 +154,28 @@ function AgentActivity(
       : tint;
 
   const allDone = props.activeCount === 0;
-  const doneLabel = failedRow ? uiT("Failed") : uiT("Done");
-  const outcomeLabel = failedRow ? uiT("Agent work failed") : uiT("Agent work completed");
+  const doneLabel = failedRow ? (text?.failed ?? "Failed") : (text?.done ?? "Done");
+  const outcomeLabel = failedRow
+    ? (text?.workFailed ?? "Agent work failed")
+    : (text?.workCompleted ?? "Agent work completed");
 
   const agentWord = props.activeCount === 1 ? uiT("agent") : uiT("agents");
   const agentsLabel = allDone
     ? outcomeLabel
     : environment.isStale
-      ? uiT("Agent status out of date")
-      : uiT("{0} active {1}", { "0": props.activeCount, "1": agentWord });
+      ? (text?.statusOutOfDate ?? "Agent status out of date")
+      : (text?.activeAgents[String(props.activeCount)] ??
+        `${props.activeCount} active ${agentWord}`);
   const attentionSuffix =
     attentionRows.length > 0
-      ? `${attentionRows.length} need${attentionRows.length === 1 ? "s" : ""} attention`
+      ? (text?.needAttention[String(attentionRows.length)] ??
+        `${attentionRows.length} need${attentionRows.length === 1 ? "s" : ""} attention`)
       : "";
   const activeLabel = allDone
     ? doneLabel
     : environment.isStale
-      ? uiT("Out of date")
-      : uiT("{0} active", { "0": props.activeCount });
+      ? (text?.outOfDate ?? "Out of date")
+      : (text?.active[String(props.activeCount)] ?? `${props.activeCount} active`);
   const showCompactGlyph = !attentionRow && !failedRow && !allDone && !environment.isStale;
   const summary = attentionSuffix || activeLabel;
 
@@ -351,10 +377,13 @@ function AgentActivity(
       >
         {attentionRow
           ? attentionRow.phase === "waiting_for_approval"
-            ? (props.messages?.["Approval"] ?? uiT("Approval"))
-            : (props.messages?.["Input"] ?? uiT("Input"))
+            ? // oxlint-disable-next-line t3code/no-untranslated-copy -- fallback for a Live Activity without translated text
+              (text?.approval ?? "Approval")
+            : // oxlint-disable-next-line t3code/no-untranslated-copy -- fallback for a Live Activity without translated text
+              (text?.input ?? "Input")
           : failedRow
-            ? uiT("Failed")
+            ? // oxlint-disable-next-line t3code/no-untranslated-copy -- fallback for a Live Activity without translated text
+              (text?.failed ?? "Failed")
             : activeLabel}
       </Text>
     ),

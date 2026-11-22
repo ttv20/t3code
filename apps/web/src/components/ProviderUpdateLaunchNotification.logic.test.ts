@@ -1,3 +1,4 @@
+import { createUiMessageResolver } from "@t3tools/client-runtime/i18n";
 import { describe, expect, it } from "vite-plus/test";
 import {
   EnvironmentId,
@@ -181,7 +182,8 @@ describe("provider update launch notification logic", () => {
           },
         }),
       ],
-      { locale: "he" },
+      undefined,
+      createUiMessageResolver("he"),
     );
     expect(localized?.key).toBe(view?.key);
     expect(localized?.title).toBe("מעדכן את Claude");
@@ -291,6 +293,59 @@ describe("provider update launch notification logic", () => {
       tone: "error",
       title: "Claude v1.1.0 update failed",
     });
+  });
+
+  it("does not count an already dismissed success again when another provider updates", () => {
+    const claudeUpdated = provider({
+      driver: driver("claudeAgent"),
+      version: "1.1.0",
+      latestVersion: "1.1.0",
+      advisoryStatus: "current",
+      updateState: {
+        status: "succeeded",
+        startedAt: checkedAt,
+        finishedAt: checkedAt,
+        message: "Provider updated.",
+        output: null,
+      },
+    });
+    const claudeView = getProviderUpdateSidebarPillView([claudeUpdated], {
+      visibleAfterIso: sessionStartedAt,
+    });
+    expect(claudeView).toMatchObject({ title: "Claude updated: v1.1.0" });
+
+    const bothUpdated = [
+      claudeUpdated,
+      provider({
+        driver: driver("codex"),
+        version: "1.2.0",
+        latestVersion: "1.2.0",
+        advisoryStatus: "current",
+        updateState: {
+          status: "succeeded",
+          startedAt: laterCheckedAt,
+          finishedAt: laterCheckedAt,
+          message: "Provider updated.",
+          output: null,
+        },
+      }),
+    ];
+    const codexView = getProviderUpdateSidebarPillView(bothUpdated, {
+      visibleAfterIso: sessionStartedAt,
+      dismissedKeys: new Set(claudeView?.dismissKeys),
+    });
+    expect(codexView).toMatchObject({ tone: "success", title: "Codex updated: v1.2.0" });
+
+    const groupedView = getProviderUpdateSidebarPillView(bothUpdated, {
+      visibleAfterIso: sessionStartedAt,
+    });
+    expect(groupedView).toMatchObject({ title: "2 providers updated" });
+    expect(
+      getProviderUpdateSidebarPillView(bothUpdated, {
+        visibleAfterIso: sessionStartedAt,
+        dismissedKeys: new Set(groupedView?.dismissKeys),
+      }),
+    ).toBeNull();
   });
 });
 

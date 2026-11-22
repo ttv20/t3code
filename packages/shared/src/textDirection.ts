@@ -2,8 +2,12 @@ export type TextDirection = "ltr" | "rtl";
 
 // Hebrew through Arabic Extended-A, their presentation forms, and the
 // supplementary right-to-left blocks.
-const RTL_LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿\u{10800}-\u{10FFF}\u{1E800}-\u{1EFFF}]/u;
-const LETTER = /\p{L}/u;
+export const RTL_LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿\u{10800}-\u{10FFF}\u{1E800}-\u{1EFFF}]/u;
+export const LETTER = /\p{L}/u;
+
+export function hasRightToLeftLetter(text: string): boolean {
+  return RTL_LETTER.test(text);
+}
 
 /**
  * Words without letters do not vote. Mixed technical prose stays RTL when at

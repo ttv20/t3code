@@ -1,11 +1,14 @@
-import { createUiTranslator } from "@t3tools/client-runtime/i18n";
 import { PermissionChecklist, PermissionContinueButton } from "../permissions/PermissionChecklist";
 import { usePermissionStatus } from "../permissions/usePermissionStatus";
-import type { BrowserImportSource } from "@t3tools/contracts";
-import { BROWSER_IMPORT_FAILURE_COPY } from "@t3tools/contracts";
+import { browserImportFailureMessage } from "@t3tools/client-runtime/contract-labels";
+import type { BROWSER_IMPORT_FAILURE_COPY, BrowserImportSource } from "@t3tools/contracts";
 import { ArrowDownIcon, ArrowRightIcon, CheckIcon, HardDriveIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { msg, T, useGT, useMessages, Var } from "gt-react";
+import type { MessageResolver } from "~/i18n/messages";
+
 import { cn, randomUUID } from "~/lib/utils";
+
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -37,8 +40,6 @@ import {
   type WizardStep,
 } from "./browserImportWizard.logic";
 
-import { UiText, useUiLanguage } from "../../i18n";
-
 export type { WizardTarget } from "./browserImportWizard.logic";
 
 interface BrowserImportWizardProps {
@@ -67,6 +68,7 @@ export function BrowserImportWizard({
   onCheckFullDiskAccess,
   onClose,
 }: BrowserImportWizardProps) {
+  const gt = useGT();
   const [source, setSource] = useState(initialSource);
   const [step, setStep] = useState<WizardStep>(() => initialWizardStep(initialSource));
   const [sourceProfileDirectory, setSourceProfileDirectory] = useState(
@@ -84,7 +86,9 @@ export function BrowserImportWizard({
     if (importInFlight.current) return;
     const chosen = resolveWizardTarget(target, newProfileId.current, targetProfiles);
     if (chosen === undefined) {
-      setTargetError("That profile is no longer available. Choose where to import these cookies.");
+      setTargetError(
+        gt("That profile is no longer available. Choose where to import these cookies."),
+      );
       setStep({ step: "configure" });
       return;
     }
@@ -191,43 +195,42 @@ function QuitStep({
   readonly onCancel: () => void;
   readonly onRechecked: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          <UiText message={"Quit {0} to import"} values={{ "0": source.name }} />
+          <T>
+            Quit <Var>{source.name}</Var> to import
+          </T>
         </DialogTitle>
         <DialogDescription>
-          <UiText
-            message={"{0} is open, so its cookies can’t be read yet. Quit it, then continue."}
-            values={{ "0": source.name }}
-          />
+          <T>
+            <Var>{source.name}</Var> is open, so its cookies can&rsquo;t be read yet. Quit it, then
+            continue.
+          </T>
         </DialogDescription>
       </DialogHeader>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </Button>
         <DialogAction onClick={onRechecked}>
-          <UiText message={"I’ve quit it"} />
+          <T>I&rsquo;ve quit it</T>
         </DialogAction>
       </DialogFooter>
     </>
   );
 }
 
-function cookieCountLabel(
-  count: number | undefined,
-  translate = createUiTranslator("en"),
-): string | undefined {
+function cookieCountLabel(count: number | undefined, resolve: MessageResolver): string | undefined {
   if (count === undefined) return undefined;
-  if (count === 0) return translate("no cookies");
-  return translate(count === 1 ? "{0} cookie" : "{0} cookies", { "0": count.toLocaleString() });
-}
-
-function cookieResultCount(count: number, translate = createUiTranslator("en")): string {
-  return translate(count === 1 ? "{0} cookie" : "{0} cookies", { "0": count.toLocaleString() });
+  if (count === 0) return resolve(msg("no cookies"));
+  return resolve(
+    msg("{count, plural, one {{formatted} cookie} other {{formatted} cookies}}", {
+      count,
+      formatted: count.toLocaleString(),
+    }),
+  );
 }
 
 type ConfigureStepProps = {
@@ -259,7 +262,7 @@ function FullDiskAccessStep({
   readonly onGranted: () => void;
   readonly stillRequired: boolean;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   const [opening, setOpening] = useState(false);
   const [openingError, setOpeningError] = useState<string | null>(null);
   const permission = usePermissionStatus(async () => ({ fullDiskAccess: await onCheck() }), {
@@ -271,20 +274,23 @@ function FullDiskAccessStep({
     setOpeningError(null);
     void Promise.resolve()
       .then(onOpenSettings)
-      .catch(() => setOpeningError("Could not open System Settings. Try Allow again."))
+      .catch(() => setOpeningError(gt("Could not open System Settings. Try Allow again.")))
       .finally(() => setOpening(false));
   };
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          <UiText message={"Let T3 Code read {0}’s cookies"} values={{ "0": source.name }} />
+          <T>
+            Let T3 Code read <Var>{source.name}</Var>&rsquo;s cookies
+          </T>
         </DialogTitle>
         <DialogDescription>
-          {uiT("To import cookies from")} {source.name}
-          {uiT(
-            ", T3 Code needs Full Disk Access. Turn it on in System Settings, then come back to finish the import. You can revoke it again once the import is done.",
-          )}
+          <T>
+            To import cookies from <Var>{source.name}</Var>, T3 Code needs Full Disk Access. Turn it
+            on in System Settings, then come back to finish the import. You can revoke it again once
+            the import is done.
+          </T>
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>
@@ -299,8 +305,10 @@ function FullDiskAccessStep({
                   aria-hidden="true"
                 />
               ),
-              title: uiT("Full Disk Access"),
-              description: uiT("Read {0}'s cookies for this import.", { "0": source.name }),
+              title: gt("Full Disk Access"),
+              description: gt("Read {browser}''s cookies for this import.", {
+                browser: source.name,
+              }),
               granted: permission.status.fullDiskAccess,
               onAllow: () => void allow(),
             },
@@ -314,10 +322,10 @@ function FullDiskAccessStep({
         {!permission.isReady(["fullDiskAccess"]) ? (
           <p className="mt-3 text-xs text-muted-foreground">
             {stillRequired
-              ? uiT(
+              ? gt(
                   "Access is still required. Quit and reopen T3 Code if you just allowed it, then retry the import.",
                 )
-              : uiT(
+              : gt(
                   "If access doesn't update after you allow it, quit and reopen T3 Code, then retry the import.",
                 )}
           </p>
@@ -325,14 +333,14 @@ function FullDiskAccessStep({
       </DialogPanel>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </Button>
         <PermissionContinueButton
           ready={permission.isReady(["fullDiskAccess"])}
           busy={opening}
           onClick={onGranted}
         >
-          {uiT("Continue")}
+          <T>Continue</T>
         </PermissionContinueButton>
       </DialogFooter>
     </>
@@ -351,7 +359,8 @@ function ConfigureStep({
   onCancel,
   onImport,
 }: ConfigureStepProps) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
   const targetMissing =
     target.kind === "existing" &&
     !targetProfiles.some((profile) => profile.id === target.profileId);
@@ -359,35 +368,36 @@ function ConfigureStep({
   const targetFeedback =
     targetError ??
     (targetMissing
-      ? "That profile is no longer available. Choose where to import these cookies."
+      ? gt("That profile is no longer available. Choose where to import these cookies.")
       : targetUncreatable
-        ? "You've reached the profile limit. Choose an existing profile to import into."
+        ? gt("You've reached the profile limit. Choose an existing profile to import into.")
         : undefined);
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          <UiText message={"Import from {0}"} values={{ "0": source.name }} />
+          <T>
+            Import from <Var>{source.name}</Var>
+          </T>
         </DialogTitle>
         <DialogDescription>
-          <UiText
-            message={"Choose which cookies to import for {0}."}
-            values={{ "0": destinationEnvironmentName }}
-          />
+          <T>
+            Choose which cookies to import for <Var>{destinationEnvironmentName}</Var>.
+          </T>
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <section className="flex-1 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {uiT("From")}
+              {gt("From", { $context: "source browser profile" })}
             </p>
             {source.profiles.map((profile) => (
               <SelectableTile
                 key={profile.directory}
                 selected={sourceProfileDirectory === profile.directory}
                 title={profile.name}
-                subtitle={cookieCountLabel(profile.cookieCount, uiT)}
+                subtitle={cookieCountLabel(profile.cookieCount, m)}
                 onSelect={() => onSourceProfileChange(profile.directory)}
               />
             ))}
@@ -398,13 +408,13 @@ function ConfigureStep({
           </div>
           <section className="flex-1 space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {uiT("Into")}
+              {gt("Into", { $context: "destination profile" })}
             </p>
             {canCreateProfile ? (
               <SelectableTile
                 selected={target.kind === "new"}
-                title={uiT("New profile")}
-                subtitle={uiT("Created for these cookies")}
+                title={gt("New profile")}
+                subtitle={gt("Created for these cookies")}
                 onSelect={() => onTargetChange({ kind: "new" })}
               />
             ) : null}
@@ -413,7 +423,7 @@ function ConfigureStep({
                 key={profile.id}
                 selected={target.kind === "existing" && target.profileId === profile.id}
                 title={profile.name}
-                subtitle={uiT("Existing profile")}
+                subtitle={gt("Existing profile")}
                 onSelect={() => onTargetChange({ kind: "existing", profileId: profile.id })}
               />
             ))}
@@ -427,13 +437,13 @@ function ConfigureStep({
       </DialogPanel>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
-          {uiT("Cancel")}
+          <T>Cancel</T>
         </Button>
         <Button
           disabled={sourceProfileDirectory === "" || targetMissing || targetUncreatable}
           onClick={onImport}
         >
-          {uiT("Import")}
+          {gt("Import", { $context: "verb" })}
         </Button>
       </DialogFooter>
     </>
@@ -484,17 +494,22 @@ function SelectableTile({
 }
 
 function ImportingStep() {
-  const { t: uiT } = useUiLanguage();
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{uiT("Importing cookies")}</DialogTitle>
-        <DialogDescription>{uiT("This may take a moment.")}</DialogDescription>
+        <DialogTitle>
+          <T>Importing cookies</T>
+        </DialogTitle>
+        <DialogDescription>
+          <T>This may take a moment.</T>
+        </DialogDescription>
       </DialogHeader>
       <DialogPanel>
         <div className="flex items-center gap-3 py-2">
           <Spinner size="md" tone="muted" />
-          <span className="text-sm text-muted-foreground">{uiT("Importing…")}</span>
+          <span className="text-sm text-muted-foreground">
+            <T>Importing…</T>
+          </span>
         </div>
       </DialogPanel>
     </>
@@ -508,24 +523,26 @@ function CheckingStep({
   readonly sourceName: string;
   readonly check: "browser" | "fullDiskAccess";
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          <UiText message={"Checking {0}"} values={{ "0": sourceName }} />
+          <T>
+            Checking <Var>{sourceName}</Var>
+          </T>
         </DialogTitle>
         <DialogDescription>
           {check === "fullDiskAccess"
-            ? uiT("Checking Full Disk Access.")
-            : uiT("Checking whether the browser has closed.")}
+            ? gt("Checking Full Disk Access.")
+            : gt("Checking whether the browser has closed.")}
         </DialogDescription>
       </DialogHeader>
       <DialogPanel>
         <div className="flex items-center gap-3 py-2">
           <Spinner size="md" tone="muted" />
           <span className="text-sm text-muted-foreground">
-            {check === "fullDiskAccess" ? uiT("Checking access…") : uiT("Checking…")}
+            {check === "fullDiskAccess" ? gt("Checking access…") : gt("Checking…")}
           </span>
         </div>
       </DialogPanel>
@@ -548,43 +565,54 @@ function DoneStep({
   readonly destinationEnvironmentName: string;
   readonly onClose: () => void;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const gt = useGT();
+  const m = useMessages();
+  const environment = destinationEnvironmentName;
   return (
     <>
       <DialogHeader>
         <DialogTitle>
           {imported > 0
-            ? uiT("Imported {0}", { "0": cookieResultCount(imported, uiT) })
+            ? gt(
+                "{count, plural, one {Imported {formatted} cookie} other {Imported {formatted} cookies}}",
+                { count: imported, formatted: imported.toLocaleString() },
+              )
             : skipped > 0
-              ? uiT("Skipped {0}", { "0": cookieResultCount(skipped, uiT) })
-              : uiT("No cookies found")}
+              ? gt(
+                  "{count, plural, one {Skipped {formatted} cookie} other {Skipped {formatted} cookies}}",
+                  { count: skipped, formatted: skipped.toLocaleString() },
+                )
+              : gt("No cookies found")}
         </DialogTitle>
         <DialogDescription>
           {imported > 0
-            ? uiT("Added to {0} for {1}.{2}", {
-                "0": targetName,
-                "1": destinationEnvironmentName,
-                "2":
-                  skipped > 0 ? uiT(" {0} skipped.", { "0": cookieResultCount(skipped, uiT) }) : "",
-              })
+            ? skipped > 0
+              ? gt(
+                  "{count, plural, one {Added to {target} for {environment}. {formatted} cookie skipped.} other {Added to {target} for {environment}. {formatted} cookies skipped.}}",
+                  {
+                    count: skipped,
+                    formatted: skipped.toLocaleString(),
+                    target: targetName,
+                    environment,
+                  },
+                )
+              : gt("Added to {target} for {environment}.", { target: targetName, environment })
             : skipped > 0
-              ? uiT("No cookies were imported for {0}.", { "0": destinationEnvironmentName })
-              : uiT("There were no cookies to import for {0}.", {
-                  "0": destinationEnvironmentName,
-                })}
+              ? gt("No cookies were imported for {environment}.", { environment })
+              : gt("There were no cookies to import for {environment}.", { environment })}
         </DialogDescription>
       </DialogHeader>
       {skippedDomains.length > 0 ? (
         <DialogPanel>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {uiT("Skipped")}
+            {gt("Skipped", { $context: "heading, cookie domains that were skipped" })}
           </p>
-          <p className="mt-1 text-sm text-foreground">{formatSkippedDomains(skippedDomains)}</p>
+          <p className="mt-1 text-sm text-foreground">{formatSkippedDomains(skippedDomains, m)}</p>
         </DialogPanel>
       ) : null}
       <DialogFooter>
         <DialogClose render={<Button />} onClick={onClose}>
-          {uiT("Done")}
+          <T>Done</T>
         </DialogClose>
       </DialogFooter>
     </>
@@ -604,22 +632,26 @@ function BlockedStep({
   readonly onClose: () => void;
   readonly onRetry: (() => void) | undefined;
 }) {
-  const { t: uiT } = useUiLanguage();
+  const messages = useMessages();
   return (
     <>
       <DialogHeader>
         <DialogTitle>
-          <UiText message={"Couldn’t import from {0}"} values={{ "0": source.name }} />
+          <T>
+            Couldn&rsquo;t import from <Var>{source.name}</Var>
+          </T>
         </DialogTitle>
-        <DialogDescription>{message ?? uiT(BROWSER_IMPORT_FAILURE_COPY[reason])}</DialogDescription>
+        <DialogDescription>
+          {message ?? browserImportFailureMessage(reason, messages)}
+        </DialogDescription>
       </DialogHeader>
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
-          {uiT("Close")}
+          <T>Close</T>
         </Button>
         {onRetry ? (
           <DialogAction onClick={onRetry}>
-            <UiText message={"Try again"} />
+            <T>Try again</T>
           </DialogAction>
         ) : null}
       </DialogFooter>
