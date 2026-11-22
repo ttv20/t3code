@@ -7,6 +7,17 @@ import { m, type MessageResolver } from "../../i18n/messages";
 
 import type { SettingsPageTarget } from "./components/settings-page-targets";
 
+const LANGUAGE_SEARCH_TERMS = [
+  ...INTERFACE_LANGUAGES.map(({ label }) => label),
+  msg("Interface language"),
+  msg("Interface direction"),
+  "Hebrew",
+  "Arabic",
+  "Persian",
+  "RTL",
+  "LTR",
+];
+
 /** What each page holds besides its row's label, so search finds a setting by its own name. */
 const SETTINGS_SEARCH_TERMS = {
   account: [
@@ -49,16 +60,7 @@ const SETTINGS_SEARCH_TERMS = {
     msg("zen", { $context: "settings search keyword" }),
     msg("final answers only", { $context: "settings search keyword" }),
   ],
-  SettingsLanguage: [
-    ...INTERFACE_LANGUAGES.map(({ label }) => label),
-    msg("Interface language"),
-    msg("Interface direction"),
-    "Hebrew",
-    "Arabic",
-    "Persian",
-    "RTL",
-    "LTR",
-  ],
+  SettingsLanguage: LANGUAGE_SEARCH_TERMS,
   SettingsNavigation: [
     msg("tabs", { $context: "settings search keyword" }),
     msg("tab order", { $context: "settings search keyword" }),
@@ -99,6 +101,7 @@ const SETTINGS_SEARCH_TERMS = {
     msg("delete project", { $context: "settings search keyword" }),
   ],
   SettingsOrganization: [
+    ...LANGUAGE_SEARCH_TERMS,
     msg("language", { $context: "settings search keyword" }),
     msg("locale", { $context: "settings search keyword" }),
     msg("translation", { $context: "settings search keyword" }),

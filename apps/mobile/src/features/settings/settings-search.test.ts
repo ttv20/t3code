@@ -18,7 +18,6 @@ const SECTIONS = [
       { id: "SettingsAppearance", label: "Appearance" },
       { id: "SettingsKeyboard", label: "Keyboard" },
       { id: "SettingsVoice", label: "Voice" },
-      { id: "SettingsLanguage", label: "Language" },
       { id: "SettingsOrganization", label: "General" },
     ],
   },
@@ -66,17 +65,19 @@ describe("filterSettingsSections", () => {
     {
       query: "ממשק",
       locale: "he" as const,
-      expected: [["Interface", ["Appearance", "Keyboard", "Voice", "Language", "General"]]],
+      expected: [["Interface", ["Appearance", "Keyboard", "Voice", "General"]]],
     },
     { query: "גודל הגופן", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
     { query: "appearance", locale: "he" as const, expected: [["Interface", ["Appearance"]]] },
     { query: "المظهر", locale: "ar" as const, expected: [["Interface", ["Appearance"]]] },
     { query: "ظاهر", locale: "fa" as const, expected: [["Interface", ["Appearance"]]] },
-    { query: "עברית", locale: "he" as const, expected: [["Interface", ["Language"]]] },
-    { query: "עברית", expected: [["Interface", ["Language"]]] },
+    { query: "עברית", locale: "he" as const, expected: [["Interface", ["General"]]] },
+    { query: "עברית", expected: [["Interface", ["General"]]] },
+    { query: "Hebrew", expected: [["Interface", ["General"]]] },
+    { query: "RTL", expected: [["Interface", ["General"]]] },
     { query: "working", locale: "he" as const, expected: [["Interface", ["General"]]] },
-    { query: "العربية", locale: "ar" as const, expected: [["Interface", ["Language"]]] },
-    { query: "فارسی", locale: "fa" as const, expected: [["Interface", ["Language"]]] },
+    { query: "العربية", locale: "ar" as const, expected: [["Interface", ["General"]]] },
+    { query: "فارسی", locale: "fa" as const, expected: [["Interface", ["General"]]] },
   ])("$query", ({ query, expected, ...options }) => {
     expect(visible(query, "locale" in options ? options.locale : "en")).toEqual(expected);
   });
