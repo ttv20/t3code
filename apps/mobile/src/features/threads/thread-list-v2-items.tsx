@@ -1335,6 +1335,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
           accessibilityLabel: gt("Settle {title}", { title: thread.title }),
           icon: "checkmark" as const,
           label: gt("Settle", { $context: "verb, thread action" }),
+          disabled: swipeActions.primaryDisabled,
           swipeHint: gt("Opens the thread. Swipe left to settle."),
           swipeSnoozeHint: gt("Opens the thread. Swipe left for settle and snooze actions."),
           onPress: handleSettle,
@@ -1346,6 +1347,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     handleUnsettle,
     handleUnsnooze,
     swipeActions.primary,
+    swipeActions.primaryDisabled,
     thread.title,
   ]);
   const secondaryAction = useMemo(
