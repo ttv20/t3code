@@ -116,6 +116,8 @@ const browserTestProject = {
       "@base-ui/react/separator",
       "@base-ui/react/toolbar",
       "@pierre/diffs/worker",
+      "@pierre/trees/react",
+      "effect/reactivity/Atom",
       "@tiptap/core",
       "@tiptap/extension-blockquote",
       "@tiptap/extension-bold",
