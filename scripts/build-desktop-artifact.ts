@@ -1065,8 +1065,8 @@ export function resolveWindowsServerAsarIgnoreGlobs(arch: typeof BuildArch.Type)
   ];
 }
 
-// Native transcription adds CPU/Vulkan DLLs; the release payload now contains 84 files.
-export const WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT = 100;
+// The current Windows release has 107 loose files, including native addons and transcription DLLs.
+export const WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT = 120;
 export const WINDOWS_SERVER_RESOURCE_SOURCE_DIR = "apps/desktop/prod-resources/windows-server";
 export const WINDOWS_SERVER_EXTRA_RESOURCES = [
   {

@@ -1020,8 +1020,8 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         const fs = yield* FileSystem.FileSystem;
         const path = yield* Path.Path;
         const fixture = yield* makeWindowsPayloadFixture({ copyUnpackedNatives: true });
-        // The release with native transcription contains 84 loose files.
-        for (let index = 0; index < 79; index += 1) {
+        // Match the loose-file count of the current Windows release payload.
+        for (let index = 0; index < 102; index += 1) {
           yield* fs.writeFileString(
             path.join(fixture.packagedAppDir, `runtime-${index}.dll`),
             "MZ",
@@ -1046,7 +1046,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         ]);
 
         assert.equal(result.packagedAppDir, fixture.packagedAppDir);
-        assert.equal(result.fileCount, 84);
+        assert.equal(result.fileCount, 107);
         assert.deepStrictEqual(result.unpackedFiles, ["node_modules/native/addon.node"]);
         assert.isBelow(result.fileCount, WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT);
         assert.deepStrictEqual(secondAsar, firstAsar);
