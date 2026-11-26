@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { markdownProseDirection, textDirection } from "./textDirection";
+import { hasRightToLeftLetter, markdownProseDirection, textDirection } from "./textDirection";
 
 describe("textDirection", () => {
   it.each([
@@ -60,6 +60,12 @@ describe("textDirection", () => {
     expect(textDirection("one two three four five six seven אבגדהוזחט יכלמנסעפצ קרשת")).toBe("rtl");
     expect(textDirection("one two three four five six seven 123 ! 456 א ב ג")).toBe("rtl");
     expect(textDirection("one two three four five six seven שלום عالم فارسی")).toBe("rtl");
+  });
+});
+
+describe("hasRightToLeftLetter", () => {
+  it("does not count a byte order mark as a right-to-left letter", () => {
+    expect(hasRightToLeftLetter("\uFEFFHello")).toBe(false);
   });
 });
 

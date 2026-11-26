@@ -23,9 +23,8 @@ import { WorkspaceSettledContentWidthContext } from "../workspace-content-width"
 import { WorkspaceEmptyDetail } from "../WorkspaceEmptyDetail";
 import { AndroidWorkspaceNavigation, FloatingWorkspaceTabs } from "./AndroidWorkspaceNavigation";
 import { AndroidWorkspaceSidebar } from "./AndroidWorkspaceSidebar.android";
+import { workspaceUsesColumns, type WorkspaceTab } from "./workspace-tabs-state";
 import { FLOATING_TABS } from "./floating-workspace-tabs";
-
-import type { WorkspaceTab } from "./workspace-tabs-state";
 import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 import { useHardwareBack } from "../../../lib/backHandler";
 
@@ -81,7 +80,7 @@ function WorkspaceRoot() {
             layout.usesSplitView
               ? insets
               : floatingTabsEnabled
-                ? tab === "usage"
+                ? !workspaceUsesColumns(tab)
                   ? { ...insets, bottom: context.bottomClearance }
                   : insets
                 : { ...insets, bottom: 0 }
@@ -101,7 +100,7 @@ function WorkspaceRoot() {
                 renderTab={(tab) =>
                   tab === "threads" ? (
                     <HomeRouteScreen />
-                  ) : tab === "usage" ? (
+                  ) : tab === "usage" || tab === "workflows" ? (
                     <WorkspacePageFrame width={workspacePageWidth ?? null}>
                       <WorkspaceExtraTab tab={tab} />
                     </WorkspacePageFrame>

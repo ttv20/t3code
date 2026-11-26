@@ -114,6 +114,10 @@ import {
   rootNavigationRef,
 } from "./lib/rootNavigation";
 
+import { perfProbe } from "./features/development/perf-probe-hooks";
+
+import "../global.css";
+
 if (process.env.EXPO_PUBLIC_SHOWCASE === "1") {
   prepareNativeShowcaseCapture();
 }
@@ -309,7 +313,12 @@ function AppContent() {
       <QuickActionsLanguage />
       <SubscriptionUsageCoordinator />
       <ConnectDeviceApprovalCoordinator />
-      <GestureHandlerRootView className="flex-1">
+      <GestureHandlerRootView
+        className="flex-1"
+        onTouchStartCapture={perfProbe?.touchStart}
+        onTouchEndCapture={perfProbe?.touchEnd}
+        onTouchCancelCapture={perfProbe?.touchEnd}
+      >
         <KeyboardProvider statusBarTranslucent>
           <SafeAreaProvider>
             <StatusBar barStyle={themeAppearance === "dark" ? "light-content" : "dark-content"} />

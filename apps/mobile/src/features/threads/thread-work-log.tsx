@@ -1,3 +1,4 @@
+import { ProviderIcon } from "../../components/ProviderIcon";
 import { useUiLanguage } from "../../i18n";
 import { Button } from "../../components/ui/Button";
 import { ThreadSubagentGroup } from "./thread-subagent-group";
@@ -65,7 +66,7 @@ import * as DateTime from "effect/DateTime";
 import { environmentThreadDetails, threadEnvironment } from "../../state/threads";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useMarkdownCodeHighlight } from "./markdownCodeHighlightState";
-import { highlightCommand, type HighlightedLines } from "../../lib/highlights";
+import { highlightCommand, type HighlightedLines, withTokenStarts } from "../../lib/highlights";
 import {
   commandHighlightLanguage,
   withVisibleControlCharacters,
@@ -75,6 +76,7 @@ import { T3Wordmark } from "../../components/T3Wordmark";
 import { BrowserAppIcon } from "./BrowserAppIcon";
 import { useAppActive, useReduceMotionEnabled } from "../../lib/appState";
 import { cn } from "../../lib/cn";
+import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 import { THREAD_WORK_ROW_MIN_HEIGHT, type deriveThreadWorkLogSizing } from "../../lib/layout";
 
 import { notificationChildThreadId } from "@t3tools/client-runtime/state/thread-execution";
@@ -219,6 +221,7 @@ function ShimmerWorkContent(props: {
   readonly environmentId?: EnvironmentId;
   readonly highlighted: boolean;
   readonly icon: WorkContentIcon;
+  readonly iconNode?: ReactNode;
   readonly iconSubtleColor: ColorValue;
   readonly label: string;
   readonly onTextLayout?: ComponentProps<typeof Text>["onTextLayout"];
@@ -230,7 +233,9 @@ function ShimmerWorkContent(props: {
     <View className="flex-row items-center gap-1.5">
       {props.showIcon ? (
         <View className="h-6 w-6 shrink-0 items-center justify-center">
-          {props.toolIcon && props.environmentId ? (
+          {props.iconNode !== undefined ? (
+            props.iconNode
+          ) : props.toolIcon && props.environmentId ? (
             <ToolActivityIconView
               environmentId={props.environmentId}
               icon={props.toolIcon}
@@ -269,6 +274,7 @@ export function ShimmeringWorkContent(props: {
   readonly compact?: boolean;
   readonly environmentId?: EnvironmentId;
   readonly icon: WorkContentIcon;
+  readonly iconNode?: ReactNode;
   readonly iconSubtleColor: ColorValue;
   readonly label: string;
   readonly showIcon: boolean;
@@ -292,7 +298,7 @@ export function ShimmeringWorkContent(props: {
 
   // Uses a native Animated value instead of Reanimated, whose per-frame commits
   // starve React's while commit pausing is disabled (package.json). See
-  // docs/internals/performance-regressions.md.
+  // docs/internals/16_performance-regressions.md.
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- steps the native shimmer value on timers while visible and active, and stops them on cleanup
   useEffect(() => {
     progress.setValue(0);
@@ -328,6 +334,7 @@ export function ShimmeringWorkContent(props: {
         environmentId={props.environmentId}
         highlighted={false}
         icon={props.icon}
+        iconNode={props.iconNode}
         iconSubtleColor={props.iconSubtleColor}
         label={props.label}
         showIcon={props.showIcon}
@@ -385,6 +392,7 @@ export function ShimmeringWorkContent(props: {
                 environmentId={props.environmentId}
                 highlighted
                 icon={props.icon}
+                iconNode={props.iconNode}
                 iconSubtleColor={props.iconSubtleColor}
                 label={props.label}
                 showIcon={props.showIcon}
@@ -863,15 +871,11 @@ function HighlightedCodeText({
   readonly code: string;
   readonly lines: HighlightedLines | null;
 }) {
-  let offset = 0;
-  const highlighted = lines?.flatMap((line, lineIndex) => {
+  const highlighted = (lines ? withTokenStarts(lines) : undefined)?.flatMap((line, lineIndex) => {
     const separator = lineIndex > 0 ? "\n" : "";
-    offset += separator.length;
     return [
       separator,
-      ...line.map((token) => {
-        const start = offset;
-        offset += token.content.length;
+      ...line.map(({ token, start }) => {
         // Plain RN Text inherits the mono font; AppText would reset it to sans.
         return (
           <RNText key={start} style={token.color ? { color: token.color } : undefined}>
@@ -954,7 +958,7 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
         ? gt("Usage limit reached. Retry after {resetTime}.", { resetTime })
         : gt("Usage limit reached.")
       : row.summary;
-    return (
+    const errorRow = (
       <WorkLogPressable
         accessibilityLabel={
           warning
@@ -1017,6 +1021,22 @@ const ThreadWorkLogRow = function ThreadWorkLogRow(
           ) : null}
         </View>
       </WorkLogPressable>
+    );
+    const verificationUrl = failureItem.failure.verificationUrl;
+    return verificationUrl === undefined ? (
+      errorRow
+    ) : (
+      <View>
+        {errorRow}
+        <View className="ml-7 mt-1.5 pb-1">
+          <Button
+            label={gt("Verify Google account")}
+            size="compact"
+            tone="secondary"
+            onPress={() => void tryOpenExternalUrl(verificationUrl, "provider-auth")}
+          />
+        </View>
+      </View>
     );
   }
   const notifiedSubagentThreadId =
@@ -1435,7 +1455,6 @@ export function ThreadWorkGroupToggle(props: {
   readonly hasFailure: boolean;
   readonly shimmer: boolean;
   readonly thought?: string | undefined;
-  readonly trailing?: ReactNode;
   readonly onToggle: () => void;
 }) {
   const gt = useGT();
@@ -1525,7 +1544,6 @@ export function ThreadWorkGroupToggle(props: {
             />
           </WorkLogPressable>
         </View>
-        {props.trailing}
       </View>
     </WorkLogBlock>
   );
@@ -1537,9 +1555,12 @@ export function ThreadThinkingRow(props: {
   readonly label?: string;
   /** Replaces "Thinking" while the provider has not started a turn. */
   readonly providerStartingLabel?: string | undefined;
+  /** The starting provider, whose logo replaces the thinking icon. */
+  readonly providerStartingDriver?: string | undefined;
 }) {
   const gt = useGT();
   const label = props.providerStartingLabel ?? props.label ?? gt("Thinking");
+  const driver = props.providerStartingDriver;
   return (
     <View
       accessible
@@ -1549,6 +1570,13 @@ export function ThreadThinkingRow(props: {
     >
       <ShimmeringWorkContent
         icon="brain"
+        iconNode={
+          driver === undefined ? undefined : (
+            <View style={{ opacity: 0.7 }}>
+              <ProviderIcon provider={driver} size={14} />
+            </View>
+          )
+        }
         iconSubtleColor={props.iconSubtleColor}
         label={label}
         showIcon

@@ -35,7 +35,11 @@ import { useAppearancePreferences } from "../settings/appearance/AppearancePrefe
 import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { leaveSettingsPage } from "../settings/settings-navigation";
 import { CloudEnvironmentRows } from "./CloudEnvironmentRows";
-import { autoConnectReport, devAutoConnectAttemptAtom } from "./devAutoConnect";
+import {
+  autoConnectReport,
+  devAutoConnectAttemptAtom,
+  pairingLinksAllowed,
+} from "./devAutoConnect";
 import { linkedEnvironmentPrefillAtom } from "./linkedEnvironmentPrefill";
 import { splitEnvironmentSections } from "./environmentSections";
 
@@ -54,8 +58,8 @@ export function ConnectionsNewRouteScreen({
   route,
 }: StaticScreenProps<ConnectionsNewRouteParams | undefined>) {
   const params = route.params ?? {};
-  // Dev-only prefill prevents production links from supplying an attacker-chosen host and token.
-  const routePairingUrl = __DEV__ ? (params.pairingUrl?.trim() ?? "") : "";
+  // Store builds ignore the prefill so a link can never supply an attacker-chosen host and token.
+  const routePairingUrl = pairingLinksAllowed() ? (params.pairingUrl?.trim() ?? "") : "";
   const known = useAtomValue(linkedEnvironmentPrefillAtom);
   const linked = known !== null && known.environmentId === params.linked ? known : null;
   // A new prefill link replaces whatever the form held.

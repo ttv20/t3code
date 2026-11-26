@@ -4,11 +4,11 @@ import { View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 
 import { NativeThemeHost } from "./NativeThemeHost.android";
-import { clampProgress, type ProgressProps } from "./Progress.types";
 import { useControlTheme } from "./useControlTheme";
+import { resolveProgress, type ProgressProps } from "./Progress.types";
 
 export function Progress(props: ProgressProps) {
-  const value = clampProgress(props.value);
+  const progress = resolveProgress(props);
   const reducedMotion = useReducedMotion();
   const { colors } = useControlTheme();
   return (
@@ -18,17 +18,17 @@ export function Progress(props: ProgressProps) {
       accessibilityRole="progressbar"
       accessibilityLabel={props.label}
       accessibilityValue={
-        value === undefined ? undefined : { min: 0, max: 100, now: Math.round(value * 100) }
+        progress === undefined ? undefined : { min: 0, max: 100, now: progress.now }
       }
-      accessibilityState={{ busy: value === undefined }}
+      accessibilityState={{ busy: progress === undefined }}
     >
-      {reducedMotion && value === undefined ? (
+      {reducedMotion && progress === undefined ? (
         <View className="h-1 rounded-full bg-primary/30" />
       ) : (
         <View importantForAccessibility="no-hide-descendants">
           <NativeThemeHost matchContents={{ vertical: true }} style={{ width: "100%" }}>
             <LinearProgressIndicator
-              progress={value}
+              progress={progress?.fraction}
               color={colors["--color-primary"]}
               trackColor={colors["--color-subtle"]}
               modifiers={[fillMaxWidth()]}

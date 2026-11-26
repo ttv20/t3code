@@ -1,9 +1,12 @@
 import {
+  assistantCitationsToPlainText,
+  splitsSurrogatePair,
+} from "@t3tools/shared/assistantCitations";
+import {
   countMarkdownDirectionCharacters,
   resolveMarkdownDirection,
 } from "@t3tools/client-runtime/markdown-direction";
 import { rehypeRtlSentenceBoundaries } from "./markdownRtlSentenceBoundaries";
-import { assistantCitationsToPlainText } from "@t3tools/shared/assistantCitations";
 import { parseThreadLinkHref } from "@t3tools/shared/threadLinks";
 import {
   isAttachmentOnlyBootstrapPrompt,
@@ -63,8 +66,10 @@ function resolveFinalAssistantTextForTurn(
 }
 
 // Elements whose children run together; every other element is separated by a space.
+// A tight list item holds its text bare, without the paragraph a loose one wraps it in.
 const INLINE_PARENTS = new Set([
   "p",
+  "li",
   "h1",
   "h2",
   "h3",
@@ -104,7 +109,9 @@ export function markdownPlainText(markdown: string): string {
 // The tooltip shows a few lines; bound parsing work for long messages and streaming responses.
 function markdownMinimapPreview(markdown: string | null) {
   if (markdown === null) return null;
-  const tree = markdownTree(markdown.slice(0, 1_500));
+  const tree = markdownTree(
+    markdown.slice(0, splitsSurrogatePair(markdown, 1_500) ? 1_499 : 1_500),
+  );
   rehypeRtlSentenceBoundaries(tree);
   const compact = markdownNodeText(tree).replace(/\s+/g, " ").trim();
   return compact.length > 0 ? compact : null;

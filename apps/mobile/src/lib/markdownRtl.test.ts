@@ -29,7 +29,7 @@ describe("native direction before file presentation", () => {
         () => "notes.md",
       ).markdown,
     ).toBe(
-      "\u200falpha beta gamma delta epsilon zeta eta [א ב ג](./notes.md) [notes.md](<./notes.md>)",
+      "\u200falpha beta gamma delta epsilon zeta eta [א ב ג](./notes.md)\n\n[notes.md](<./notes.md>)",
     );
   });
 
@@ -57,11 +57,13 @@ describe("native direction before file presentation", () => {
 
   it("keeps below-threshold prose LTR when an embed receives a Hebrew filename", () => {
     const prepared = prepareNativeMarkdown(
-      "שלום alpha beta gamma ![notes](./notes.md)",
+      "שלום alpha beta gamma ![notes](./notes.md) delta",
       ENRICHED_INLINE_FILE_LINK_REGEX,
       () => "הערות בעברית.md",
     );
-    expect(prepared.markdown).toBe("\u200eשלום alpha beta gamma [הערות בעברית.md](<./notes.md>)");
+    expect(prepared.markdown).toBe(
+      "\u200eשלום alpha beta gamma [הערות בעברית.md](<./notes.md>) delta",
+    );
   });
 
   it.each([
@@ -94,11 +96,9 @@ describe("native direction before file presentation", () => {
     );
     expect(prepared.markdown.startsWith("\u200f")).toBe(true);
     const document = processor.parse(prepared.markdown);
-    const paragraph = document.children[0];
-    const links =
-      paragraph?.type === "paragraph"
-        ? paragraph.children.filter((node) => node.type === "link")
-        : [];
+    const links = document.children.flatMap((node) =>
+      node.type === "paragraph" ? node.children.filter((child) => child.type === "link") : [],
+    );
     expect(links.map((link) => [link.url, link.children.map(proseText).join("")])).toEqual([
       [path, path],
       ["./notes&a.md", "notes [draft]&.md"],

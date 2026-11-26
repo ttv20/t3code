@@ -217,9 +217,9 @@ export interface SnoozePreset {
 }
 
 export interface SnoozePresetOptions {
-  readonly locale?: string;
   readonly presets?: ReadonlyArray<SnoozePresetSetting>;
   readonly formatTime?: (date: Date) => string;
+  readonly locale?: string | undefined;
 }
 
 function snoozeTimeOfDayLabel(date: Date): string {
@@ -376,12 +376,12 @@ export function resolveSnoozePresets(
  * starts at selection. A set time keeps the shown wake, which a day change would otherwise shift.
  */
 export function pickSnoozePreset(input: {
-  readonly locale?: string;
   readonly shown: ReadonlyArray<SnoozePreset>;
   readonly id: string;
   readonly now: Date;
   readonly presets?: ReadonlyArray<SnoozePresetSetting>;
   readonly formatTime?: (date: Date) => string;
+  readonly locale?: string | undefined;
   readonly resolve?: MFunctionType;
 }): SnoozePreset | undefined {
   const original = input.shown.find((preset) => preset.id === input.id);

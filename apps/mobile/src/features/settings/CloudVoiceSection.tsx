@@ -9,6 +9,7 @@ import {
 } from "@t3tools/client-runtime/secret-request";
 
 import {
+  AuthProvidersManageScope,
   AuthSettingsWriteScope,
   CLOUD_SPEECH_LABELS,
   CLOUD_SPEECH_PROVIDER_NAMES,
@@ -190,6 +191,7 @@ function CloudChoices({ environment, active, onClose }: Props & { onClose: () =>
   const keys = useAtomValue(cloudVoiceKeysAtom(id));
   const reload = useAtomRefresh(cloudVoiceKeysAtom(id));
   const canManage = useEnvironmentScope(id, AuthSettingsWriteScope);
+  const canUseReferences = useEnvironmentScope(id, AuthProvidersManageScope);
   const [editing, setEditing] = useState<{
     provider: CloudSpeechProvider;
     enable: boolean;
@@ -201,6 +203,7 @@ function CloudChoices({ environment, active, onClose }: Props & { onClose: () =>
   const [model, setModel] = useState("");
   const [sourceId, setSourceId] = useState<SecretProviderId | null>(null);
   const sources =
+    canUseReferences &&
     hasFeatureFlag(environment.serverConfig, "secretProviders") &&
     environment.serverConfig?.secretReferences
       ? configuredSecretSources(environment.serverConfig.settings.secretProviders, messages)

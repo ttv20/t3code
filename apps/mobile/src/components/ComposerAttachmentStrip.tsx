@@ -9,6 +9,8 @@ import { AsyncResult, Atom } from "effect/reactivity";
 import { Paths } from "expo-file-system";
 import { Image, Pressable, ScrollView, View } from "react-native";
 
+import { AppText as Text } from "./ui/AppText";
+import { AppActivityIndicator } from "./ui/AppActivityIndicator";
 import type { EnvironmentId } from "@t3tools/contracts";
 import { resolveOwnedComposerAttachmentFileUri } from "../lib/composerAttachmentFiles";
 import { MaterializedPreviewKey, materializedPreviewAtom } from "../lib/composerImagePreview";
@@ -31,7 +33,6 @@ import {
   useComposerAttachmentUploadState,
 } from "../state/composer-attachment-uploads";
 import { PierreEntryIcon } from "./PierreEntryIcon";
-import { AppText as Text } from "./ui/AppText";
 
 export interface ComposerAttachmentStripProps {
   readonly environmentId?: EnvironmentId;
@@ -46,6 +47,8 @@ export interface ComposerAttachmentStripProps {
   readonly imageSize?: number;
   readonly imageBorderRadius?: number;
   readonly removeButtonPlacement?: "overlay" | "gutter";
+  /** Pasted images still being prepared, shown as placeholders after the attachments. */
+  readonly pendingImageCount?: number;
 }
 
 type ComposerAttachmentThumbnailProps = {
@@ -303,7 +306,8 @@ export function ComposerAttachmentStrip(props: ComposerAttachmentStripProps) {
   const removeButtonPlacement = props.removeButtonPlacement ?? "overlay";
   const removeButtonGutter = removeButtonPlacement === "gutter" ? 10 : 0;
 
-  if (props.attachments.length === 0) {
+  const pendingImageCount = props.pendingImageCount ?? 0;
+  if (props.attachments.length === 0 && pendingImageCount === 0) {
     return null;
   }
 
@@ -353,6 +357,21 @@ export function ComposerAttachmentStrip(props: ComposerAttachmentStripProps) {
                   weight="bold"
                 />
               </Pressable>
+            </View>
+          ))}
+          {Array.from({ length: pendingImageCount }, (_, index) => (
+            <View
+              key={`pending-${index}`}
+              accessibilityLabel={gt("Preparing pasted image")}
+              className="items-center justify-center bg-subtle"
+              style={{
+                width: size,
+                height: size,
+                borderRadius: radius,
+                marginTop: removeButtonGutter,
+              }}
+            >
+              <AppActivityIndicator />
             </View>
           ))}
         </View>

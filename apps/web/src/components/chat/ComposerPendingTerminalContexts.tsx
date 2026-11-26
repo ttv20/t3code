@@ -1,9 +1,4 @@
-import {
-  type TerminalContextDraft,
-  formatTerminalContextLabel,
-  isTerminalContextExpired,
-} from "~/lib/terminalContext";
-import { useUiLanguage } from "../../i18n";
+import { type TerminalContextDraft, isTerminalContextExpired } from "~/lib/terminalContext";
 import type { ContextPresentationCapability } from "../contextPresentationRegistry";
 import { TerminalContextInlineChip } from "./TerminalContextInlineChip";
 
@@ -16,13 +11,10 @@ export function ComposerPendingTerminalContextChip({
   context,
   detailsMode,
 }: ComposerPendingTerminalContextChipProps) {
-  const { t: uiT } = useUiLanguage();
-  const label = formatTerminalContextLabel(context);
   const expired = isTerminalContextExpired(context);
 
   return (
     <TerminalContextInlineChip
-      label={uiT(label)}
       terminalLabel={context.terminalLabel}
       lineStart={context.lineStart}
       lineEnd={context.lineEnd}
