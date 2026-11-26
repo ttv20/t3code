@@ -109,6 +109,12 @@ jobs:
       - name: Build web, server, and desktop bundle
         run: vp run build:desktop
 
+      - name: Stage web asset manifest
+        shell: bash
+        run: |
+          client=apps/server/dist/client
+          cp "$client/.vite/manifest.json" "$client/vite-manifest.release.json"
+
       - name: Upload desktop bundle
         uses: actions/upload-artifact@v7
         with:
@@ -118,6 +124,9 @@ jobs:
             apps/desktop/dist-electron
           if-no-files-found: error
           retention-days: 1
+
+      - name: Remove staged web asset manifest
+        run: rm apps/server/dist/client/vite-manifest.release.json
 
       - name: Build resource monitor
         run: cargo build --locked --release --manifest-path native/resource-monitor/Cargo.toml
